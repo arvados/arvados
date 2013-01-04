@@ -1,0 +1,75 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <b>Locator:</b>
+  <%= @collection.locator %>
+</p>
+
+<p>
+  <b>Create by client:</b>
+  <%= @collection.create_by_client %>
+</p>
+
+<p>
+  <b>Created by user:</b>
+  <%= @collection.created_by_user %>
+</p>
+
+<p>
+  <b>Created at:</b>
+  <%= @collection.created_at %>
+</p>
+
+<p>
+  <b>Modified by client:</b>
+  <%= @collection.modified_by_client %>
+</p>
+
+<p>
+  <b>Modified by user:</b>
+  <%= @collection.modified_by_user %>
+</p>
+
+<p>
+  <b>Modified at:</b>
+  <%= @collection.modified_at %>
+</p>
+
+<p>
+  <b>Portable data hash:</b>
+  <%= @collection.portable_data_hash %>
+</p>
+
+<p>
+  <b>Name:</b>
+  <%= @collection.name %>
+</p>
+
+<p>
+  <b>Redundancy:</b>
+  <%= @collection.redundancy %>
+</p>
+
+<p>
+  <b>Arbitrary string:</b>
+  <%= @collection.arbitrary_string %>
+</p>
+
+<p>
+  <b>Redundancy confirmed by client:</b>
+  <%= @collection.redundancy_confirmed_by_client %>
+</p>
+
+<p>
+  <b>Redundancy confirmed at:</b>
+  <%= @collection.redundancy_confirmed_at %>
+</p>
+
+<p>
+  <b>Redundancy confirmed as:</b>
+  <%= @collection.redundancy_confirmed_as %>
+</p>
+
+
+<%= link_to 'Edit', edit_collection_path(@collection) %> |
+<%= link_to 'Back', collections_path %>

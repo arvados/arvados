@@ -1,0 +1,24 @@
+development:
+  adapter: mysql
+  encoding: utf8
+  database: orvos_development
+  username: orvos
+  password: ********
+  host: localhost
+
+test:
+  adapter: mysql
+  encoding: utf8
+  database: orvos_test
+  username: orvos
+  password: ********
+  host: localhost
+
+production:
+  adapter: mysql
+  encoding: utf8
+  database: orvos_production
+  username: orvos
+  password: ********
+  host: localhost
+

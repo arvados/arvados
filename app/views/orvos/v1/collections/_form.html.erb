@@ -1,0 +1,73 @@
+<%= form_for(@collection) do |f| %>
+  <% if @collection.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@collection.errors.count, "error") %> prohibited this collection from being saved:</h2>
+
+      <ul>
+      <% @collection.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :locator %><br />
+    <%= f.text_field :locator %>
+  </div>
+  <div class="field">
+    <%= f.label :create_by_client %><br />
+    <%= f.text_field :create_by_client %>
+  </div>
+  <div class="field">
+    <%= f.label :created_by_user %><br />
+    <%= f.text_field :created_by_user %>
+  </div>
+  <div class="field">
+    <%= f.label :created_at %><br />
+    <%= f.datetime_select :created_at %>
+  </div>
+  <div class="field">
+    <%= f.label :modified_by_client %><br />
+    <%= f.text_field :modified_by_client %>
+  </div>
+  <div class="field">
+    <%= f.label :modified_by_user %><br />
+    <%= f.text_field :modified_by_user %>
+  </div>
+  <div class="field">
+    <%= f.label :modified_at %><br />
+    <%= f.datetime_select :modified_at %>
+  </div>
+  <div class="field">
+    <%= f.label :portable_data_hash %><br />
+    <%= f.text_field :portable_data_hash %>
+  </div>
+  <div class="field">
+    <%= f.label :name %><br />
+    <%= f.text_field :name %>
+  </div>
+  <div class="field">
+    <%= f.label :redundancy %><br />
+    <%= f.number_field :redundancy %>
+  </div>
+  <div class="field">
+    <%= f.label :arbitrary_string %><br />
+    <%= f.text_field :arbitrary_string %>
+  </div>
+  <div class="field">
+    <%= f.label :redundancy_confirmed_by_client %><br />
+    <%= f.text_field :redundancy_confirmed_by_client %>
+  </div>
+  <div class="field">
+    <%= f.label :redundancy_confirmed_at %><br />
+    <%= f.datetime_select :redundancy_confirmed_at %>
+  </div>
+  <div class="field">
+    <%= f.label :redundancy_confirmed_as %><br />
+    <%= f.number_field :redundancy_confirmed_as %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>
