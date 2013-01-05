@@ -1,4 +1,6 @@
 Server::Application.routes.draw do
+  resources :metadata
+
   resources :collections
 
   # The priority is based upon order of creation:

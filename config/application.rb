@@ -1,6 +1,7 @@
 require File.expand_path('../boot', __FILE__)
 
 require 'rails/all'
+require 'digest'
 
 if defined?(Bundler)
   # If you precompile assets before deploying to production, use this line
@@ -48,6 +49,8 @@ module Server
     config.middleware.use Rack::Static, :urls => [ '/discovery' ], :root => "public"
 
     config.force_ssl = true
+
+    config.uuid_prefix = Digest::MD5.hexdigest('CHANGE-ME').to_i(16).to_s(36)[0..4]
   end
 
 end
