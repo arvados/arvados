@@ -1,7 +1,6 @@
 Server::Application.routes.draw do
-  resources :metadata
-
   resources :collections
+  resources :metadata
 
   # The priority is based upon order of creation:
   # first created -> highest priority.
@@ -63,6 +62,7 @@ Server::Application.routes.draw do
   namespace :orvos do
     namespace :v1 do
       resources :collections
+      resources :metadata
     end
   end
 

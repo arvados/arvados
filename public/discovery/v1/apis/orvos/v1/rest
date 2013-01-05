@@ -1625,6 +1625,84 @@
     }
    }
   },
+  "metadata": {
+   "methods": {
+    "create": {
+     "id": "orvos.metadata.create",
+     "path": "metadata",
+     "httpMethod": "POST",
+     "description": "Create a new metadata object.",
+     "parameters": {
+      "metadatum": {
+       "required": true,
+       "location": "query",
+       "properties": {
+        "metadata_class": {
+         "type": "string",
+         "description": "Metadata class.",
+         "required": true
+        },
+        "key": {
+         "type": "string",
+         "description": "Metadata key.",
+         "required": true
+        },
+        "value": {
+         "type": "string",
+         "description": "Metadata value.",
+         "required": true
+        }
+       }
+      }
+     },
+     "request": {
+      "$ref": "Metadatum"
+     },
+     "response": {
+      "$ref": "Metadatum"
+     },
+     "scopes": [
+      "https://api.clinicalfuture.com/auth/orvos",
+      "https://api.clinicalfuture.com/auth/orvos.metadatum"
+     ]
+    },
+    "list": {
+     "id": "orvos.metadata.list",
+     "path": "metadata",
+     "httpMethod": "GET",
+     "description": "Lists metadata objects.",
+     "parameters": {
+      "maxResults": {
+       "type": "integer",
+       "description": "Maximum number of metadata objects to return.",
+       "default": "100",
+       "format": "int32",
+       "minimum": "0",
+       "location": "query"
+      },
+      "pageToken": {
+       "type": "string",
+       "description": "Page token for metadata objects.",
+       "location": "query"
+      },
+      "q": {
+       "type": "string",
+       "description": "Query string for searching metadata.",
+       "location": "query"
+      }
+     },
+     "response": {
+      "$ref": "MetadatumList"
+     },
+     "scopes": [
+      "https://api.clinicalfuture.com/auth/orvos",
+      "https://api.clinicalfuture.com/auth/orvos.metadatum",
+      "https://api.clinicalfuture.com/auth/orvos.metadatum.readonly",
+      "https://api.clinicalfuture.com/auth/orvos.readonly"
+     ]
+    }
+   }
+  },
   "collections": {
    "methods": {
     "copy": {
