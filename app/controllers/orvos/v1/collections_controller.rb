@@ -47,7 +47,11 @@ class Orvos::V1::CollectionsController < ApplicationController
   # POST /collections
   # POST /collections.json
   def create
-    @collection = Collection.new(params[:collection])
+    if params[:collection].class == String
+      @collection = Collection.new(JSON.parse(params[:collection]))
+    else
+      @collection = Collection.new(params[:collection])
+    end
 
     respond_to do |format|
       if @collection.save
