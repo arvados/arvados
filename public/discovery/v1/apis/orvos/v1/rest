@@ -715,274 +715,78 @@
   "Collection": {
    "id": "Collection",
    "type": "object",
-   "description": "The metadata for a collection.",
+   "description": "A collection of data files.",
    "properties": {
-    "alternateLink": {
-     "type": "string",
-     "description": "A link for opening the collection in using a relevant Google editor or viewer."
-    },
-    "createdDate": {
-     "type": "string",
-     "description": "Create time for this collection (formatted ISO8601 timestamp).",
-     "format": "date-time"
-    },
-    "description": {
-     "type": "string",
-     "description": "A short description of the collection."
-    },
-    "downloadUrl": {
-     "type": "string",
-     "description": "Short term download URL for the collection. This will only be populated on collections with content stored in Orvos."
-    },
-    "editable": {
-     "type": "boolean",
-     "description": "Whether the collection can be edited by the current user."
-    },
-    "embedLink": {
-     "type": "string",
-     "description": "A link for embedding the collection."
-    },
-    "etag": {
-     "type": "string",
-     "description": "ETag of the collection."
-    },
-    "explicitlyTrashed": {
-     "type": "boolean",
-     "description": "Whether this collection has been explicitly trashed, as opposed to recursively trashed. This will only be populated if the collection is trashed."
-    },
-    "exportLinks": {
-     "type": "object",
-     "description": "Links for exporting Google Docs to specific formats.",
-     "additionalProperties": {
-      "type": "string",
-      "description": "A mapping from export format to URL"
-     }
-    },
-    "collectionExtension": {
-     "type": "string",
-     "description": "The collection extension used when downloading this collection. This field is set from the title when inserting or uploading new content. This will only be populated on collections with content stored in Orvos."
-    },
-    "collectionSize": {
-     "type": "string",
-     "description": "The size of the collection in bytes. This will only be populated on collections with content stored in Orvos.",
-     "format": "int64"
-    },
-    "id": {
-     "type": "string",
-     "description": "The id of the collection."
-    },
-    "imageMediaMetadata": {
-     "type": "object",
-     "description": "Metadata about image media. This will only be present for image types, and its contents will depend on what can be parsed from the image content.",
-     "properties": {
-      "aperture": {
-       "type": "number",
-       "description": "The aperture used to create the photo (f-number).",
-       "format": "float"
-      },
-      "cameraMake": {
-       "type": "string",
-       "description": "The make of the camera used to create the photo."
-      },
-      "cameraModel": {
-       "type": "string",
-       "description": "The model of the camera used to create the photo."
-      },
-      "date": {
-       "type": "string",
-       "description": "The date and time the photo was taken (EXIF format timestamp)."
-      },
-      "exposureTime": {
-       "type": "number",
-       "description": "The length of the exposure, in seconds.",
-       "format": "float"
-      },
-      "flashUsed": {
-       "type": "boolean",
-       "description": "Whether a flash was used to create the photo."
-      },
-      "focalLength": {
-       "type": "number",
-       "description": "The focal length used to create the photo, in millimeters.",
-       "format": "float"
-      },
-      "height": {
-       "type": "integer",
-       "description": "The height of the image in pixels.",
-       "format": "int32"
-      },
-      "isoSpeed": {
-       "type": "integer",
-       "description": "The ISO speed used to create the photo.",
-       "format": "int32"
-      },
-      "location": {
-       "type": "object",
-       "description": "Geographic location information stored in the image.",
-       "properties": {
-        "altitude": {
-         "type": "number",
-         "description": "The altitude stored in the image.",
-         "format": "double"
-        },
-        "latitude": {
-         "type": "number",
-         "description": "The latitude stored in the image.",
-         "format": "double"
-        },
-        "longitude": {
-         "type": "number",
-         "description": "The longitude stored in the image.",
-         "format": "double"
-        }
-       }
-      },
-      "rotation": {
-       "type": "integer",
-       "description": "The rotation in clockwise degrees from the image's original orientation.",
-       "format": "int32"
-      },
-      "width": {
-       "type": "integer",
-       "description": "The width of the image in pixels.",
-       "format": "int32"
-      }
-     }
-    },
-    "indexableText": {
-     "type": "object",
-     "description": "Indexable text attributes for the collection (can only be written)",
-     "properties": {
-      "text": {
-       "type": "string",
-       "description": "The text to be indexed for this collection"
-      }
-     }
-    },
     "kind": {
      "type": "string",
      "description": "The type of collection. This is always orvos#collection.",
      "default": "orvos#collection"
     },
-    "labels": {
-     "type": "object",
-     "description": "A group of labels for the collection.",
-     "properties": {
-      "hidden": {
-       "type": "boolean",
-       "description": "Whether this collection is hidden from the user."
-      },
-      "restricted": {
-       "type": "boolean",
-       "description": "Whether viewers are prevented from downloading this collection."
-      },
-      "starred": {
-       "type": "boolean",
-       "description": "Whether this collection is starred by the user."
-      },
-      "trashed": {
-       "type": "boolean",
-       "description": "Whether this collection has been trashed."
-      },
-      "viewed": {
-       "type": "boolean",
-       "description": "Whether this collection has been viewed by this user."
-      }
-     }
-    },
-    "lastModifyingUserName": {
+    "id": {
      "type": "string",
-     "description": "Name of the last user to modify this collection. This will only be populated if a user has edited this collection."
+     "description": "The id of the collection."
     },
-    "lastViewedByMeDate": {
+    "etag": {
      "type": "string",
-     "description": "Last time this collection was viewed by the user (formatted RFC 3339 timestamp).",
-     "format": "date-time"
+     "description": "ETag of the collection."
     },
-    "md5Checksum": {
+    "locator": {
      "type": "string",
-     "description": "An MD5 checksum for the content of this collection. This will only be populated on collections with content stored in Orvos."
-    },
-    "mimeType": {
-     "type": "string",
-     "description": "The MIME type of the collection. This is only mutable on update when uploading new content. This field can be left blank, and the mimetype will be determined from the uploaded content's MIME type."
-    },
-    "modifiedByMeDate": {
-     "type": "string",
-     "description": "Last time this collection was modified by the user (formatted RFC 3339 timestamp). Note that setting modifiedDate will also update the modifiedByMe date for the user which set the date.",
-     "format": "date-time"
-    },
-    "modifiedDate": {
-     "type": "string",
-     "description": "Last time this collection was modified by anyone (formatted RFC 3339 timestamp). This is only mutable on update when the setModifiedDate parameter is set.",
-     "format": "date-time"
-    },
-    "originalCollectionname": {
-     "type": "string",
-     "description": "The original collectionname if the collection was uploaded manually, or the original title if the collection was inserted through the API. Note that renames of the title will not change the original collectionname. This will only be populated on collections with content stored in Orvos."
-    },
-    "ownerNames": {
-     "type": "array",
-     "description": "Name(s) of the owner(s) of this collection.",
-     "items": {
-      "type": "string"
-     }
-    },
-    "parents": {
-     "type": "array",
-     "description": "Collection of parent folders which contain this collection.\nSetting this field will put the collection in all of the provided folders. On insert, if no folders are provided, the collection will be placed in the default root folder.",
-     "items": {
-      "$ref": "ParentReference"
-     }
-    },
-    "quotaBytesUsed": {
-     "type": "string",
-     "description": "The number of quota bytes used by this collection.",
-     "format": "int64"
+     "description": "CAS locator for the data in the collection."
     },
     "selfLink": {
      "type": "string",
      "description": "A link back to this collection."
     },
-    "sharedWithMeDate": {
+    "createdByClient": {
      "type": "string",
-     "description": "Time at which this collection was shared with the user (formatted RFC 3339 timestamp).",
+     "description": "ID of the API client that created the collection."
+    },
+    "createdByUser": {
+     "type": "string",
+     "description": "ID of the user who created the collection."
+    },
+    "createdAt": {
+     "type": "string",
+     "description": "Create time for this collection (formatted RFC 3339 timestamp).",
      "format": "date-time"
     },
-    "thumbnail": {
-     "type": "object",
-     "description": "Thumbnail for the collection. Only accepted on upload and for collections that are not already thumbnailed by Google.",
-     "properties": {
-      "image": {
-       "type": "string",
-       "description": "The URL-safe Base64 encoded bytes of the thumbnail image.",
-       "format": "byte"
-      },
-      "mimeType": {
-       "type": "string",
-       "description": "The MIME type of the thumbnail."
-      }
-     }
-    },
-    "thumbnailLink": {
+    "modifiedByClient": {
      "type": "string",
-     "description": "A link to the collection's thumbnail."
+     "description": "ID of the API client that last modified the collection."
     },
-    "title": {
+    "modifiedByUser": {
      "type": "string",
-     "description": "The title of this collection."
+     "description": "ID of the user who last modified the collection."
     },
-    "userPermission": {
-     "$ref": "Permission",
-     "description": "The permissions for the authenticated user on this collection."
-    },
-    "webContentLink": {
+    "modifiedAt": {
      "type": "string",
-     "description": "A link for downloading the content of the collection in a browser using cookie based authentication. In cases where the content is shared publicly, the content can be downloaded without any credentials."
+     "description": "Modification time for this collection (formatted RFC 3339 timestamp).",
+     "format": "date-time"
     },
-    "writersCanShare": {
-     "type": "boolean",
-     "description": "Whether writers can share the document with other users."
+    "portableDataHash": {
+     "type": "string",
+     "description": "Relocatable hash of content only."
+    },
+    "name": {
+     "type": "string",
+     "description": "Name of the collection."
+    },
+    "redundancy": {
+     "type": "integer",
+     "description": "Desired replication level."
+    },
+    "redundancyConfirmedByClient": {
+     "type": "string",
+     "description": "ID of the API client that last verified redundancy level."
+    },
+    "redundancyConfirmedAt": {
+     "type": "string",
+     "description": "Time when replication level was last verified (formatted RFC 3339 timestamp)."
+    },
+    "redundancyConfirmedAs": {
+     "type": "integer",
+     "description": "Most recently verified replication level."
     }
    }
   },
@@ -1959,54 +1763,29 @@
       "https://api.clinicalfuture.com/auth/orvos.readonly"
      ]
     },
-    "insert": {
-     "id": "orvos.collections.insert",
+    "create": {
+     "id": "orvos.collections.create",
      "path": "collections",
      "httpMethod": "POST",
-     "description": "Insert a new collection.",
+     "description": "Create a new collection.",
      "parameters": {
-      "convert": {
-       "type": "boolean",
-       "description": "Whether to convert this collection to the corresponding Google Docs format.",
-       "default": "false",
-       "location": "query"
-      },
-      "ocr": {
-       "type": "boolean",
-       "description": "Whether to attempt OCR on .jpg, .png, .gif, or .pdf uploads.",
-       "default": "false",
-       "location": "query"
-      },
-      "ocrLanguage": {
-       "type": "string",
-       "description": "If ocr is true, hints at the language to use. Valid values are ISO 639-1 codes.",
-       "location": "query"
-      },
-      "pinned": {
-       "type": "boolean",
-       "description": "Whether to pin the head revision of the uploaded collection.",
-       "default": "false",
-       "location": "query"
-      },
-      "sourceLanguage": {
-       "type": "string",
-       "description": "The language of the original collection to be translated.",
-       "location": "query"
-      },
-      "targetLanguage": {
-       "type": "string",
-       "description": "Target language to translate the collection to. If no sourceLanguage is provided, the API will attempt to detect the language.",
-       "location": "query"
-      },
-      "timedTextLanguage": {
-       "type": "string",
-       "description": "The language of the timed text.",
-       "location": "query"
-      },
-      "timedTextTrackName": {
-       "type": "string",
-       "description": "The timed text track name.",
-       "location": "query"
+      "collection": {
+       "type": "object",
+       "description": "New collection attributes.",
+       "properties": {
+        "locator": {
+         "type": "string",
+         "description": "CAS locator.",
+         "location": "query",
+         "required": true
+        },
+        "name": {
+         "type": "string",
+         "description": "Name.",
+         "location": "query",
+         "required": true
+        }
+       }
       }
      },
      "request": {
