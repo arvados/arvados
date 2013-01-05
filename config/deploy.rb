@@ -5,7 +5,7 @@ role :web, "controller.van"
 role :app, "controller.van"
 role :db, "controller.van", :primary=>true
 set :scm,         :git
-set :repository,  "git@git.clinicalfuture.com:orvos.git"
+set :repository,  "git@git.clinicalfuture.com:orvos-server.git"
 set :rails_env,   "production"
 set :config_files, ['database.yml']
 set :git_enable_submodules, true
