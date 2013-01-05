@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130105203021) do
+ActiveRecord::Schema.define(:version => 20130105224358) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -42,7 +42,7 @@ ActiveRecord::Schema.define(:version => 20130105203021) do
     t.string   "target_kind"
     t.integer  "native_target_id"
     t.string   "native_target_type"
-    t.string   "metadatum_class"
+    t.string   "metadata_class"
     t.string   "key"
     t.string   "value"
     t.text     "info"
