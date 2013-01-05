@@ -11,11 +11,11 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130105224358) do
+ActiveRecord::Schema.define(:version => 20130105224618) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
-    t.string   "create_by_client"
+    t.string   "created_by_client"
     t.string   "created_by_user"
     t.datetime "created_at"
     t.string   "modified_by_client"
