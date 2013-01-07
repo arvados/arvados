@@ -23,11 +23,11 @@ class Orvos::V1::MetadataController < ApplicationController
   end
 
   def create
+    @m = params[:metadatum]
     if params[:metadatum].class == String
-      @m = Metadatum.new(JSON.parse(params[:metadatum]))
-    else
-      @m = Metadatum.new(params[:metadatum])
+      @m = uncamelcase_hash_keys(JSON.parse params[:metadatum])
     end
+    @m = Metadatum.new @m
     respond_to do |format|
       if @m.save
         format.html { redirect_to @m, notice: 'Metadatum was successfully created.' }
