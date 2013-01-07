@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130105224618) do
+ActiveRecord::Schema.define(:version => 20130107181109) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -28,6 +28,7 @@ ActiveRecord::Schema.define(:version => 20130105224618) do
     t.datetime "redundancy_confirmed_at"
     t.integer  "redundancy_confirmed_as"
     t.datetime "updated_at"
+    t.string   "uuid"
   end
 
   create_table "metadata", :force => true do |t|
