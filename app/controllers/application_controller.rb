@@ -1,8 +1,18 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
+  before_filter :find_object_by_uuid
 
   protected
+
+  def model_class
+    controller_name.classify.constantize
+  end
+
+  def find_object_by_uuid
+    logger.info params.inspect
+    @object = model_class.where('uuid=?', params[:uuid]).first
+  end
 
   def uncamelcase_params_hash_keys
     uncamelcase_hash_keys(params)

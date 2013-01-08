@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130107181109) do
+ActiveRecord::Schema.define(:version => 20130107212832) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -49,5 +49,27 @@ ActiveRecord::Schema.define(:version => 20130107181109) do
     t.text     "info"
     t.datetime "updated_at"
   end
+
+  create_table "nodes", :force => true do |t|
+    t.string   "uuid"
+    t.string   "created_by_client"
+    t.string   "created_by_user"
+    t.datetime "created_at"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.integer  "slot_number"
+    t.string   "hostname"
+    t.string   "domain"
+    t.string   "ip_address"
+    t.datetime "first_ping_at"
+    t.datetime "last_ping_at"
+    t.text     "info"
+    t.datetime "updated_at"
+  end
+
+  add_index "nodes", ["hostname"], :name => "index_nodes_on_hostname", :unique => true
+  add_index "nodes", ["slot_number"], :name => "index_nodes_on_slot_number", :unique => true
+  add_index "nodes", ["uuid"], :name => "index_nodes_on_uuid", :unique => true
 
 end

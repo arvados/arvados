@@ -1,4 +1,5 @@
 Server::Application.routes.draw do
+  resources :nodes
   resources :collections
   resources :metadata
 
@@ -63,6 +64,8 @@ Server::Application.routes.draw do
     namespace :v1 do
       resources :collections
       resources :metadata
+      resources :nodes
+      match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
     end
   end
 

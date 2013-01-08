@@ -1703,6 +1703,27 @@
     }
    }
   },
+  "nodes": {
+   "methods": {
+     "create": {
+      "id": "orvos.nodes.create",
+      "path": "nodes",
+      "httpMethod": "POST",
+      "parameters": {
+      }
+     },
+     "get": {
+      "id": "orvos.nodes.get",
+      "path": "nodes/{nodeId}",
+      "httpMethod": "GET",
+      "parameters": {
+       "uuid": {
+	"type": "string"
+       }
+      }
+     }
+   }
+  },
   "collections": {
    "methods": {
     "copy": {
