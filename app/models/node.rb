@@ -58,8 +58,8 @@ class Node < ActiveRecord::Base
     logger.info "#{self.uuid} ec2_start_result= #{result.inspect}"
     result.match(/INSTANCE\s*(i-[0-9a-f]+)/) do |m|
       self.info[:ec2_instance_id] = m[1]
-      self.save!
     end
+    self.save!
   end
 
   protected
