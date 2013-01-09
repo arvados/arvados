@@ -12,10 +12,24 @@ class ApplicationController < ActionController::Base
     render json: @object
   end
 
+  def create
+    @attrs = params[resource_name]
+    if @attrs.class == String
+      @attrs = uncamelcase_hash_keys(JSON.parse @attrs)
+    end
+    @object = model_class.new @attrs
+    @object.save
+    show
+  end
+
   protected
 
   def model_class
     controller_name.classify.constantize
+  end
+
+  def resource_name             # params[] key used by client
+    controller_name.classify.camelcase(:lower)
   end
 
   def find_object_by_uuid
@@ -47,7 +61,7 @@ class ApplicationController < ActionController::Base
 
   def render_list
     @object_list = {
-      :kind  => "orvos##{model_class.to_s.camelize(:down)}List",
+      :kind  => "orvos##{resource_name}List",
       :etag => "",
       :self_link => "",
       :next_page_token => "",

@@ -1,4 +1,5 @@
 Server::Application.routes.draw do
+  resources :pipelines
   resources :nodes
   resources :collections
   resources :metadata
@@ -65,6 +66,7 @@ Server::Application.routes.draw do
       resources :collections
       resources :metadata
       resources :nodes
+      resources :pipelines
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/metadata/:target_kind/:target_uuid' => 'metadata#index'
     end
