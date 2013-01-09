@@ -66,6 +66,7 @@ Server::Application.routes.draw do
       resources :metadata
       resources :nodes
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
+      match '/metadata/:target_kind/:target_uuid' => 'metadata#index'
     end
   end
 

@@ -1,7 +1,16 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
-  before_filter :find_object_by_uuid
+  before_filter :find_object_by_uuid, :except => :index
+
+  def index
+    @objects ||= model_class.all
+    render_list
+  end
+
+  def show
+    render json: @object
+  end
 
   protected
 
@@ -34,5 +43,17 @@ class ApplicationController < ActionController::Base
       h.replace(nh)
     end
     h
+  end
+
+  def render_list
+    @object_list = {
+      :kind  => "orvos##{model_class.to_s.camelize(:down)}List",
+      :etag => "",
+      :self_link => "",
+      :next_page_token => "",
+      :next_link => "",
+      :items => @objects.map { |x| x }
+    }
+    render json: @object_list
   end
 end

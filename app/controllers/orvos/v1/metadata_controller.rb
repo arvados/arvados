@@ -1,25 +1,10 @@
 class Orvos::V1::MetadataController < ApplicationController
   def index
-    @metadata = Collection.all
-    @metadatumlist = {
-      :kind  => "orvos#metadatumList",
-      :etag => "",
-      :self_link => "",
-      :next_page_token => "",
-      :next_link => "",
-      :items => @metadata.map { |x| x }
-    }
-    respond_to do |format|
-      format.json { render json: @metadatumlist }
+    if params[:target_kind] and params[:target_uuid]
+      @objects = Metadatum.where('target_kind=? and target_uuid=?',
+                                 params[:target_kind], params[:target_uuid])
     end
-  end
-
-  def show
-    @m = Metadatum.find(params[:id])
-
-    respond_to do |format|
-      format.json { render json: @m }
-    end
+    super
   end
 
   def create
@@ -38,4 +23,5 @@ class Orvos::V1::MetadataController < ApplicationController
       end
     end
   end
+
 end
