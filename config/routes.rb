@@ -1,9 +1,4 @@
 Server::Application.routes.draw do
-  resources :pipelines
-  resources :nodes
-  resources :collections
-  resources :metadata
-
   # The priority is based upon order of creation:
   # first created -> highest priority.
 
@@ -67,6 +62,7 @@ Server::Application.routes.draw do
       resources :metadata
       resources :nodes
       resources :pipelines
+      resources :pipeline_invocations
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/metadata/:target_kind/:target_uuid' => 'metadata#index'
     end

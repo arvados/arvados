@@ -14,6 +14,9 @@ class ApplicationController < ActionController::Base
 
   def create
     @attrs = params[resource_name]
+    if @attrs.nil?
+      raise "no #{resource_name} provided with request #{params.inspect}"
+    end
     if @attrs.class == String
       @attrs = uncamelcase_hash_keys(JSON.parse @attrs)
     end
@@ -38,7 +41,7 @@ class ApplicationController < ActionController::Base
   end
 
   def uncamelcase_params_hash_keys
-    uncamelcase_hash_keys(params)
+    self.params = uncamelcase_hash_keys(params)
   end
 
   def uncamelcase_hash_keys(h)
