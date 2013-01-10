@@ -43,8 +43,12 @@ class Node < ActiveRecord::Base
       try_slot = 0
       begin
         self.slot_number = try_slot
-        try_slot += 1
-        break if self.save rescue nil
+        begin
+          self.save!
+          break
+        rescue ActiveRecord::RecordNotUnique
+          try_slot += 1
+        end
         raise "No available node slots" if try_slot == MAX_SLOTS
       end while true
       self.hostname = self.class.hostname_for_slot(self.slot_number)
@@ -79,7 +83,9 @@ class Node < ActiveRecord::Base
 
   def dnsmasq_update
     if self.hostname_changed? or self.ip_address_changed?
-      self.class.dnsmasq_update(self.hostname, self.ip_address)
+      if self.hostname and self.ip_address
+        self.class.dnsmasq_update(self.hostname, self.ip_address)
+      end
     end
   end
 
