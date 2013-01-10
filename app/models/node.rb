@@ -5,9 +5,12 @@ class Node < ActiveRecord::Base
 
   MAX_SLOTS = 64
 
-  @@confdir = begin
-                Rails.configuration.dnsmasq_conf_dir or
-                  ('/etc/dnsmasq.d' if File.exists? '/etc/dnsmasq.d/.')
+  @@confdir = if Rails.configuration.respond_to? :dnsmasq_conf_dir
+                Rails.configuration.dnsmasq_conf_dir
+              elsif File.exists? '/etc/dnsmasq.d/.'
+                '/etc/dnsmasq.d'
+              else
+                nil
               end
 
   def info
