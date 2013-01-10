@@ -2,6 +2,7 @@ class Node < ActiveRecord::Base
   include AssignUuid
   serialize :info, Hash
   before_validation :ensure_ping_secret
+  after_update :dnsmasq_update
 
   MAX_SLOTS = 64
 
@@ -47,7 +48,6 @@ class Node < ActiveRecord::Base
         raise "No available node slots" if try_slot == MAX_SLOTS
       end while true
       self.hostname = self.class.hostname_for_slot(self.slot_number)
-      self.class.dnsmasq_update(self.hostname, self.ip_address)
     end
 
     save
@@ -75,6 +75,12 @@ class Node < ActiveRecord::Base
 
   def ensure_ping_secret
     self.info[:ping_secret] ||= rand(2**256).to_s(36)
+  end
+
+  def dnsmasq_update
+    if self.hostname_changed? or self.ip_address_changed?
+      self.class.dnsmasq_update(self.hostname, self.ip_address)
+    end
   end
 
   def self.dnsmasq_update(hostname, ip_address)
