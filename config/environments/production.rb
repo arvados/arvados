@@ -57,4 +57,6 @@ Server::Application.configure do
 
   # Send deprecation notices to registered listeners
   config.active_support.deprecation = :notify
+
+  config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 end

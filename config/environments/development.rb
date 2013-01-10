@@ -29,4 +29,6 @@ Server::Application.configure do
   config.assets.debug = true
 
   config.force_ssl = false
+
+  config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 end

@@ -5,6 +5,11 @@ class Node < ActiveRecord::Base
 
   MAX_SLOTS = 64
 
+  @@confdir = begin
+                Rails.configuration.dnsmasq_conf_dir or
+                  ('/etc/dnsmasq.d' if File.exists? '/etc/dnsmasq.d/.')
+              end
+
   def info
     @info ||= Hash.new
     super
@@ -38,7 +43,8 @@ class Node < ActiveRecord::Base
         break if self.save rescue nil
         raise "No available node slots" if try_slot == MAX_SLOTS
       end while true
-      self.hostname = "compute#{self.slot_number}"
+      self.hostname = self.class.hostname_for_slot(self.slot_number)
+      self.class.dnsmasq_update(self.hostname, self.ip_address)
     end
 
     save
@@ -66,5 +72,36 @@ class Node < ActiveRecord::Base
 
   def ensure_ping_secret
     self.info[:ping_secret] ||= rand(2**256).to_s(36)
+  end
+
+  def self.dnsmasq_update(hostname, ip_address)
+    return unless @@confdir
+    ptr_domain = ip_address.
+      split('.').reverse.join('.').concat('.in-addr.arpa')
+    hostfile = File.join @@confdir, hostname
+    File.open hostfile, 'w' do |f|
+      f.puts "address=/#{hostname}/#{ip_address}"
+      f.puts "ptr-record=#{ptr_domain},#{hostname}"
+    end
+    File.open(File.join(@@confdir, 'restart.txt'), 'w') do |f|
+      # this should trigger a dnsmasq restart
+    end
+  end
+
+  def self.hostname_for_slot(slot_number)
+    "compute#{slot_number}"
+  end
+
+  # At startup, make sure all DNS entries exist.  Otherwise, slurmctld
+  # will refuse to start.
+  if @@confdir and
+      !File.exists? (File.join(@@confdir, hostname_for_slot(MAX_SLOTS-1)))
+    (0..MAX_SLOTS-1).each do |slot_number|
+      hostname = hostname_for_slot(slot_number)
+      hostfile = File.join @@confdir, hostname
+      if !File.exists? hostfile
+        dnsmasq_update(hostname, '127.40.4.0')
+      end
+    end
   end
 end
