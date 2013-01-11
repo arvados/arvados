@@ -17,6 +17,8 @@ class ApplicationController < ActionController::Base
   end
 
   def render_error(e)
+    logger.error e.inspect
+    logger.error e.backtrace.collect { |x| x + "\n" } if e.backtrace
     if @object and @object.errors and @object.errors.full_messages
       errors = @object.errors.full_messages
     else
@@ -25,7 +27,8 @@ class ApplicationController < ActionController::Base
     render json: { errors: errors }, status: 422
   end
 
-  def render_not_found
+  def render_not_found(e=ActionController::RoutingError.new("Path not found"))
+    logger.error e.inspect
     render json: { errors: ["Path not found"] }, status: 401
   end
 
