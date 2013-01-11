@@ -43,7 +43,7 @@
     </td>
   </tr>
 
-  <% if o.info[:ec2_start_command] and (!o.first_ping_at or !o.info[:ec2_start_result].match /\bi-[0-9a-f]{8}\b/ rescue nil) %>
+  <% if o.info[:ec2_start_command] and !o.first_ping_at %>
   <tr>
     <td colspan="8">
       <%= o.info[:ec2_start_command] %>
