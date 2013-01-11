@@ -1,4 +1,10 @@
 Server::Application.routes.draw do
+  resources :collections
+  resources :metadata
+  resources :nodes
+  resources :pipelines
+  resources :pipeline_invocations
+
   # The priority is based upon order of creation:
   # first created -> highest priority.
 

@@ -19,6 +19,20 @@ class Node < ActiveRecord::Base
     super
   end
 
+  def status
+    if !self.last_ping_at
+      if Time.now - self.created_at > 5.minutes
+        'startup-fail'
+      else
+        'pending'
+      end
+    elsif Time.now - self.last_ping_at > 1.hours
+      'missing'
+    else
+      'alive'
+    end
+  end
+
   def ping(o)
     raise "must have :ip and :ping_secret" unless o[:ip] and o[:ping_secret]
 

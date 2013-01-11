@@ -1,0 +1,57 @@
+<table>
+  <tr class="contain-align-left">
+    <th>
+      status
+    </th><th>
+      uuid
+    </th><th>
+      hostname
+    </th><th>
+      domain
+    </th><th>
+      ip address
+    </th><th>
+      created
+    </th><th>
+      startup delay
+    </th><th>
+      last ping
+    </th>
+  </tr>
+
+  <% @objects.each do |o| %>
+
+  <tr class="node-status node-status-<%= o.status %>">
+    <td>
+      <%= o.status %>
+    </td><td>
+      <%= o.uuid %>
+    </td><td>
+      <%= o.hostname %>
+    </td><td>
+      <%= o.domain %>
+    </td><td>
+      <%= o.ip_address %>
+    </td><td>
+      <%= o.created_at %>
+    </td><td>
+      <%= distance_of_time_in_words(o.first_ping_at, o.created_at, true) if o.first_ping_at %>
+    </td><td>
+      <%= distance_of_time_in_words(o.last_ping_at, Time.now, true) + ' ago' if o.last_ping_at %>
+    </td><td>
+      <%= o.info[:ec2_instance_id] %>
+    </td>
+  </tr>
+
+  <% if o.info[:ec2_start_command] and (!o.first_ping_at or !o.info[:ec2_start_result].match /\bi-[0-9a-f]{8}\b/ rescue nil) %>
+  <tr>
+    <td colspan="8">
+      <%= o.info[:ec2_start_command] %>
+      <br />
+      <%= o.info[:ec2_start_result] %>
+    </td>
+  </tr>
+
+  <% end %>
+  <% end %>
+</table>
