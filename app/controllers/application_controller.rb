@@ -71,7 +71,6 @@ class ApplicationController < ActionController::Base
   end
 
   def find_object_by_uuid
-    logger.info params.inspect
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
