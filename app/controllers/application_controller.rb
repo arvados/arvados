@@ -16,8 +16,13 @@ class ApplicationController < ActionController::Base
     :with => :render_not_found
   end
 
-  def render_error
-    render json: { errors: @object.errors.full_messages }, status: 422
+  def render_error(e)
+    if @object and @object.errors and @object.errors.full_messages
+      errors = @object.errors.full_messages
+    else
+      errors = [e.inspect]
+    end
+    render json: { errors: errors }, status: 422
   end
 
   def render_not_found
