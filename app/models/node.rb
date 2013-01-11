@@ -29,7 +29,7 @@ class Node < ActiveRecord::Base
     elsif Time.now - self.last_ping_at > 1.hours
       'missing'
     else
-      'alive'
+      'running'
     end
   end
 
