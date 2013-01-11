@@ -69,4 +69,7 @@ Server::Application.routes.draw do
     end
   end
 
+  # Send unroutable requests to an arbitrary controller
+  # (ends up at ApplicationController#render_not_found)
+  match '*a', :to => 'orvos/v1/metadata#render_not_found'
 end

@@ -3,6 +3,27 @@ class ApplicationController < ActionController::Base
   before_filter :uncamelcase_params_hash_keys
   before_filter :find_object_by_uuid, :except => :index
 
+  unless Rails.application.config.consider_all_requests_local
+    rescue_from Exception,
+    :with => :render_error
+    rescue_from ActiveRecord::RecordNotFound,
+    :with => :render_not_found
+    rescue_from ActionController::RoutingError,
+    :with => :render_not_found
+    rescue_from ActionController::UnknownController,
+    :with => :render_not_found
+    rescue_from ActionController::UnknownAction,
+    :with => :render_not_found
+  end
+
+  def render_error
+    render json: { errors: @object.errors.full_messages }, status: 422
+  end
+
+  def render_not_found
+    render json: { errors: ["Path not found"] }, status: 401
+  end
+
   def index
     @objects ||= model_class.all
     render_list
@@ -27,7 +48,7 @@ class ApplicationController < ActionController::Base
 
   def update
     @attrs = params[resource_name]
-    if @attrs.class == String
+    if @attrs.is_a? String
       @attrs = uncamelcase_hash_keys(JSON.parse @attrs)
     end
     @object.update_attributes @attrs
@@ -52,12 +73,26 @@ class ApplicationController < ActionController::Base
     @object = model_class.where('uuid=?', params[:uuid]).first
   end
 
+  def self.accept_attribute_as_json(attr, force_class=nil)
+    before_filter lambda { accept_attribute_as_json attr, force_class }
+  end
+  def accept_attribute_as_json(attr, force_class)
+    if params[resource_name].is_a? Hash
+      if params[resource_name][attr].is_a? String
+        params[resource_name][attr] = JSON.parse params[resource_name][attr]
+        if force_class and !params[resource_name][attr].is_a? force_class
+          raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
+        end
+      end
+    end
+  end
+
   def uncamelcase_params_hash_keys
     self.params = uncamelcase_hash_keys(params)
   end
 
-  def uncamelcase_hash_keys(h)
-    if h.is_a? Hash
+  def uncamelcase_hash_keys(h, max_depth=-1)
+    if h.is_a? Hash and max_depth != 0
       nh = Hash.new
       h.each do |k,v|
         if k.class == String
@@ -67,7 +102,7 @@ class ApplicationController < ActionController::Base
         else
           nk = k
         end
-        nh[nk] = uncamelcase_hash_keys(v)
+        nh[nk] = uncamelcase_hash_keys(v, max_depth-1)
       end
       h.replace(nh)
     end

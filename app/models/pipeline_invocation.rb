@@ -3,7 +3,7 @@ class PipelineInvocation < ActiveRecord::Base
   serialize :components, Hash
   belongs_to :pipeline, :foreign_key => :pipeline_uuid, :primary_key => :uuid
 
-  after_validation :bootstrap_components
+  before_validation :bootstrap_components
 
   protected
   def bootstrap_components
