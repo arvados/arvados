@@ -37,5 +37,7 @@ Server::Application.configure do
   # Print deprecation notices to the stderr
   config.active_support.deprecation = :stderr
 
-  config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
+  # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
+
+  # config.compute_node_domain = `hostname --domain`.strip
 end

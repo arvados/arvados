@@ -13,10 +13,15 @@ class Node < ActiveRecord::Base
               else
                 nil
               end
+  @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
 
   def info
     @info ||= Hash.new
     super
+  end
+
+  def domain
+    super || @@domain
   end
 
   def status
@@ -110,6 +115,7 @@ class Node < ActiveRecord::Base
     hostfile = File.join @@confdir, hostname
     File.open hostfile, 'w' do |f|
       f.puts "address=/#{hostname}/#{ip_address}"
+      f.puts "address=/#{hostname}.#{@@domain}/#{ip_address}" if @@domain
       f.puts "ptr-record=#{ptr_domain},#{hostname}"
     end
     File.open(File.join(@@confdir, 'restart.txt'), 'w') do |f|

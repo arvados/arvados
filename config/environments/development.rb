@@ -30,5 +30,7 @@ Server::Application.configure do
 
   config.force_ssl = false
 
-  config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
+  # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
+
+  # config.compute_node_domain = `hostname --domain`.strip
 end
