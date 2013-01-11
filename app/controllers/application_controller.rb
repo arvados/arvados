@@ -15,13 +15,22 @@ class ApplicationController < ActionController::Base
   def create
     @attrs = params[resource_name]
     if @attrs.nil?
-      raise "no #{resource_name} provided with request #{params.inspect}"
+      raise "no #{resource_name} (or #{resource_name.camelcase(:lower)}) provided with request #{params.inspect}"
     end
     if @attrs.class == String
       @attrs = uncamelcase_hash_keys(JSON.parse @attrs)
     end
     @object = model_class.new @attrs
     @object.save
+    show
+  end
+
+  def update
+    @attrs = params[resource_name]
+    if @attrs.class == String
+      @attrs = uncamelcase_hash_keys(JSON.parse @attrs)
+    end
+    @object.update_attributes @attrs
     show
   end
 
@@ -32,11 +41,14 @@ class ApplicationController < ActionController::Base
   end
 
   def resource_name             # params[] key used by client
-    controller_name.classify.camelcase(:lower)
+    controller_name.singularize
   end
 
   def find_object_by_uuid
     logger.info params.inspect
+    if params[:id] and params[:id].match /\D/
+      params[:uuid] = params.delete :id
+    end
     @object = model_class.where('uuid=?', params[:uuid]).first
   end
 

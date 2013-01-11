@@ -63,6 +63,7 @@ Server::Application.routes.draw do
       resources :nodes
       resources :pipelines
       resources :pipeline_invocations
+      resources :pipelineInvocations
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/metadata/:target_kind/:target_uuid' => 'metadata#index'
     end
