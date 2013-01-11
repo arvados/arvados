@@ -11,6 +11,7 @@ set :config_files, ['database.yml']
 set :git_enable_submodules, true
 set :rvm_ruby_string, '1.9.3'
 require "rvm/capistrano"
+load "deploy/assets"
 default_run_options[:shell] = '/bin/bash --login'
 #default_run_options[:shell] = '/bin/bash'
 
