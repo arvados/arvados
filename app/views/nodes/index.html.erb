@@ -1,4 +1,4 @@
-<table>
+<table style="width:100%">
   <tr class="contain-align-left">
     <th>
       status
@@ -16,12 +16,14 @@
       startup delay
     </th><th>
       last ping
+    </th><th>
+      instance_id
     </th>
   </tr>
 
   <% @objects.each do |o| %>
 
-  <tr class="node-status node-status-<%= o.status %>">
+  <tr class="node-status node-status-<%= o.status %>" data-showhide-selector="tr#extra-info-<%= o.uuid %>" style="cursor:pointer">
     <td>
       <%= o.status %>
     </td><td>
@@ -43,12 +45,15 @@
     </td>
   </tr>
 
-  <% if o.info[:ec2_start_command] and !o.first_ping_at %>
-  <tr>
+  <% if  %>
+  <tr id="extra-info-<%= o.uuid %>" <%= 'data-showhide-default' unless o.info[:ec2_start_command] and !o.first_ping_at %>>
     <td colspan="8">
-      <%= o.info[:ec2_start_command] %>
-      <br />
-      <%= o.info[:ec2_start_result] %>
+      <dl>
+      <% o.info.each do |k,v| %>
+      <dt><em><%= k %></em></dt>
+      <dd><%= v %></dd>
+      <% end %>
+      </dl>
     </td>
   </tr>
 
