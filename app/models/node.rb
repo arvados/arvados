@@ -31,6 +31,7 @@ class Node < ActiveRecord::Base
     t.add :last_ping_at
     t.add :info
     t.add :updated_at
+    t.add :status
   end
 
   def info
