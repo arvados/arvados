@@ -1,5 +1,7 @@
 class Node < ActiveRecord::Base
   include AssignUuid
+  include KindAndEtag
+  include CommonApiTemplate
   serialize :info, Hash
   before_validation :ensure_ping_secret
   after_update :dnsmasq_update
@@ -15,22 +17,13 @@ class Node < ActiveRecord::Base
               end
   @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
 
-  acts_as_api
-  api_accessible :superuser do |t|
-    t.add :uuid
-    t.add :created_by_client
-    t.add :created_by_user
-    t.add :created_at
-    t.add :modified_by_client
-    t.add :modified_by_user
-    t.add :modified_at
+  api_accessible :superuser, :extend => :common do |t|
     t.add :hostname
     t.add :domain
     t.add :ip_address
     t.add :first_ping_at
     t.add :last_ping_at
     t.add :info
-    t.add :updated_at
     t.add :status
   end
 
