@@ -18,3 +18,5 @@
 /config/api.clinicalfuture.com.*
 /config/database.yml
 
+# asset cache
+/public/assets/
