@@ -1,3 +1,4 @@
+# encoding: UTF-8
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -10,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130109220548) do
+ActiveRecord::Schema.define(:version => 20130113214204) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -30,6 +31,8 @@ ActiveRecord::Schema.define(:version => 20130109220548) do
     t.string   "uuid"
   end
 
+  add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
+
   create_table "metadata", :force => true do |t|
     t.string   "uuid"
     t.string   "created_by_client"
@@ -48,6 +51,8 @@ ActiveRecord::Schema.define(:version => 20130109220548) do
     t.text     "info"
     t.datetime "updated_at"
   end
+
+  add_index "metadata", ["uuid"], :name => "index_metadata_on_uuid", :unique => true
 
   create_table "nodes", :force => true do |t|
     t.string   "uuid"

@@ -1,8 +1,18 @@
 class Metadatum < ActiveRecord::Base
-  serialize :info, Hash
-
-  before_validation :populate_native_target
   include AssignUuid
+  include KindAndEtag
+  include CommonApiTemplate
+  serialize :info, Hash
+  before_validation :populate_native_target
+
+  api_accessible :superuser, :extend => :common do |t|
+    t.add :target_kind
+    t.add :target_uuid
+    t.add :metadata_class
+    t.add :key
+    t.add :value
+    t.add :info
+  end
 
   def info
     @info ||= Hash.new
