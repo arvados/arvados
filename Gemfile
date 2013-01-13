@@ -37,3 +37,5 @@ gem 'jquery-rails'
 # gem 'ruby-debug'
 
 gem 'rvm-capistrano', :group => :test
+
+gem 'acts_as_api'

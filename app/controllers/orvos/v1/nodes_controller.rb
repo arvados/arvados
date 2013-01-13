@@ -6,10 +6,6 @@ class Orvos::V1::NodesController < ApplicationController
     show
   end
 
-  def show
-    render json: @object.to_json
-  end
-
   def ping
     @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
                    ping_secret: params[:ping_secret],

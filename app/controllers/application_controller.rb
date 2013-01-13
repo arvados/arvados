@@ -38,7 +38,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render json: @object
+    render_for_api :superuser, json: @object
   end
 
   def create
@@ -123,7 +123,7 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :next_page_token => "",
       :next_link => "",
-      :items => @objects.map { |x| x }
+      :items => @objects.as_api_response(:superuser)
     }
     render json: @object_list
   end
