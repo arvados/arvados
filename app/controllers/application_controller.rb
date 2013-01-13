@@ -38,7 +38,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render_for_api :superuser, json: @object
+    render json: @object.as_api_response(:superuser)
   end
 
   def create
