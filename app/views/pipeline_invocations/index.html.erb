@@ -1,0 +1,64 @@
+<table style="width:100%">
+  <tr class="contain-align-left">
+    <th>
+      success
+    </th><th>
+      active
+    </th><th>
+      % complete
+    </th><th>
+      uuid
+    </th><th>
+      pipeline uuid
+    </th><th>
+      name
+    </th><th>
+      last updated
+    </th>
+  </tr>
+
+  <% @objects.each do |o| %>
+
+  <% status = o.success ? 'success' : (o.success == false ? 'failure' : 'pending') %>
+
+  <tr class="pipeline-invocation-status pipeline-invocation-status-<%= status %>" data-showhide-selector="tr#extra-info-<%= o.uuid %>" style="cursor:pointer">
+    <td>
+      <%= status %>
+    </td><td>
+      <%= o.active ? 'yes' : '-' %>
+    </td><td>
+      <%= (o.progress_ratio * 1000).floor / 10 %>
+    </td><td>
+      <%= o.uuid %>
+    </td><td>
+      <%= o.pipeline_uuid %>
+    </td><td>
+      <%= o.name %>
+    </td><td>
+      <%= distance_of_time_in_words(o.updated_at, Time.now, true) + ' ago' if o.updated_at %>
+    </td>
+  </tr>
+
+  <% if  %>
+  <tr id="extra-info-<%= o.uuid %>" data-showhide-default>
+    <td colspan="7">
+      <table>
+	<% o.progress_table.each do |r| %>
+	<tr>
+	  <% r[2] = "#{(r[2]*100).floor}%" %>
+	  <% r[4] = r[4][0..5] rescue '' %>
+	  <% r.each do |c| %>
+	  <td>
+	    <%= (c.is_a? Time) ? distance_of_time_in_words(c, Time.now, true) + ' ago' : c %>
+	  </td>
+	  <% end %>
+	</tr>
+	<% end %>
+      </table>
+      </dl>
+    </td>
+  </tr>
+
+  <% end %>
+  <% end %>
+</table>
