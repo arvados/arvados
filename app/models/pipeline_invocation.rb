@@ -1,10 +1,20 @@
 class PipelineInvocation < ActiveRecord::Base
   include AssignUuid
+  include KindAndEtag
+  include CommonApiTemplate
   serialize :components, Hash
   belongs_to :pipeline, :foreign_key => :pipeline_uuid, :primary_key => :uuid
 
   before_validation :bootstrap_components
   before_validation :update_success
+
+  api_accessible :superuser, :extend => :common do |t|
+    t.add :pipeline_uuid
+    t.add :name
+    t.add :components
+    t.add :success
+    t.add :active
+  end
 
   def progress_table
     begin
