@@ -40,4 +40,6 @@ Server::Application.configure do
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
   # config.compute_node_domain = `hostname --domain`.strip
+
+  # config.compute_node_nameservers = [Net::HTTP.get(URI('http://169.254.169.254/latest/meta-data/local-ipv4')).match(/^[\d\.]+$/)[0]]
 end
