@@ -34,6 +34,6 @@ Server::Application.configure do
 
   # config.compute_node_domain = `hostname --domain`.strip
 
-  # config.compute_node_nameservers = [Net::HTTP.get(URI('http://169.254.169.254/latest/meta-data/local-ipv4')).match(/^[\d\.]+$/)[0]]
+  # config.compute_node_nameservers = ['1.2.3.4', '1.2.3.5']
   config.compute_node_nameservers = ['192.168.201.3']
 end

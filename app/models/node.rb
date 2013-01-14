@@ -16,12 +16,7 @@ class Node < ActiveRecord::Base
                 nil
               end
   @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
-  @@nameservers = begin
-                    Rails.configuration.compute_node_nameservers
-                  rescue
-                    [Net::HTTP.get(URI('http://169.254.169.254/latest/meta-data/local-ipv4')).
-                     match(/^[\d\.]+$/)[0]]
-                  end
+  @@nameservers = Rails.configuration.compute_node_nameservers
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :hostname
