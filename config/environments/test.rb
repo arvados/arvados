@@ -42,6 +42,7 @@ Server::Application.configure do
   # config.compute_node_domain = `hostname --domain`.strip
 
   # config.compute_node_nameservers = ['1.2.3.4', '1.2.3.5']
+  require 'net/http'
   config.compute_node_nameservers = ['local', 'public'].collect do |iface|
     Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
   end << '172.16.0.23'
