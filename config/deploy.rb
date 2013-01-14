@@ -76,13 +76,13 @@ namespace :deploy do
   end
 
   task :stop, :roles => :app, :except => { :no_release => true } do
-    run "cd #{release_path} && #{passenger_cmd} stop -p #{passenger_port}"
+    run "cd #{previous_release} && #{passenger_cmd} stop -p #{passenger_port}"
   end
 
   task :restart, :roles => :app, :except => { :no_release => true } do
     run <<-CMD
-      if [[ -f #{release_path}/tmp/pids/passenger.#{passenger_port}.pid ]]; then
-        cd #{release_path} && #{passenger_cmd} stop -p #{passenger_port};
+      if [[ -f #{previous_release}/tmp/pids/passenger.#{passenger_port}.pid ]]; then
+        cd #{previous_release} && #{passenger_cmd} stop -p #{passenger_port};
       fi
     CMD
 
