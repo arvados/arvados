@@ -70,6 +70,7 @@ Server::Application.routes.draw do
       resources :pipelines
       resources :pipeline_invocations
       resources :pipelineInvocations
+      match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/metadata/:target_kind/:target_uuid' => 'metadata#index'
     end
