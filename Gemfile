@@ -39,3 +39,5 @@ gem 'jquery-rails'
 
 gem 'rvm-capistrano', :group => :test
 
+gem 'passenger', :group => :production
+
