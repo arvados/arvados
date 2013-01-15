@@ -29,10 +29,20 @@ class OrvosBase < ActiveRecord::Base
     new(api('/' + uuid))
   end
   def save
-    self.class.api('/' + uuid, {
-                     '_method' => 'PUT',
-                     self.class.to_s.underscore => { :name => self.name }
-                   })
+    postdata = {}
+    postdata[self.class.to_s.underscore] =
+      Hash[self.class.columns.collect do |col|
+             [col.name.to_sym, self.send(col.name.to_sym)]
+           end]
+    if etag
+      postdata['_method'] = 'PUT'
+      resp = self.class.api('/' + uuid, postdata)
+    else
+      resp = self.class.api('', postdata)
+    end
+    @etag = resp[:etag]
+    @kind = resp[:kind]
+    self.uuid ||= resp[:uuid]
   end
   def initialize(h={})
     @etag = h.delete :etag
