@@ -15,7 +15,7 @@ load "deploy/assets"
 default_run_options[:shell] = '/bin/bash --login'
 #default_run_options[:shell] = '/bin/bash'
 
-set :passenger_port, 3000
+set :passenger_port, 3100
 #set :passenger_cmd, "#{bundle_cmd} exec passenger"
 set :passenger_cmd, "passenger"
 
@@ -49,11 +49,14 @@ namespace :deploy do
     # This is used by the lib/add_debug_info.rb middleware, which injects it in the
     # environment.
     run "cd #{release_path}; /usr/bin/git rev-parse HEAD > #{release_path}/git-commit.version"
+
+    # make sure to symlink the vendor bundle. Cf. http://gembundler.com/rationale.html
+    run "cd #{release_path}; ln -s #{shared_path}/vendor_bundle #{release_path}/vendor/bundle"
   end
 
   # desc "Install new gems if necessary"
   task :bundle_install, :roles => :app,  :except => { :no_release => true } do
-    run "cd #{release_path} && bundle install --local"
+    run "cd #{release_path} && bundle install --deployment"
   end
 
   desc "Restarting mod_rails with restart.txt"
