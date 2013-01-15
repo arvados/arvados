@@ -1,0 +1,2 @@
+class PipelinesController < ApplicationController
+end

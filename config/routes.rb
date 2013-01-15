@@ -1,4 +1,13 @@
 Vcffarm::Application.routes.draw do
+  resources :pipelines
+
+
+  resources :pipeline_invocations
+
+
+  resources :metadata
+
+
   resources :collections
 
 

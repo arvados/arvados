@@ -1,0 +1,2 @@
+class Metadatum < OrvosBase
+end
