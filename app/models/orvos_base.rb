@@ -40,9 +40,14 @@ class OrvosBase < ActiveRecord::Base
     else
       resp = self.class.api('', postdata)
     end
+    return false if !resp[:etag] || !resp[:uuid]
     @etag = resp[:etag]
     @kind = resp[:kind]
     self.uuid ||= resp[:uuid]
+    self
+  end
+  def save!
+    self.save or raise Exception.new("Save failed")
   end
   def initialize(h={})
     @etag = h.delete :etag
