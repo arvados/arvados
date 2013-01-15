@@ -34,4 +34,6 @@ Vcffarm::Application.configure do
 
   # Expands the lines which load the assets
   config.assets.debug = true
+
+  config.orvos_v1_base = 'https://orvos/orvos/v1'
 end
