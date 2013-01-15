@@ -48,9 +48,11 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.4.0)
+    daemon_controller (1.1.0)
     erubis (2.7.0)
     execjs (1.4.0)
       multi_json (~> 1.0)
+    fastthread (1.0.7)
     highline (1.6.15)
     hike (1.2.1)
     i18n (0.6.1)
@@ -72,9 +74,14 @@ GEM
     net-ssh (2.6.3)
     net-ssh-gateway (1.1.0)
       net-ssh (>= 1.99.1)
+    passenger (3.0.19)
+      daemon_controller (>= 1.0.0)
+      fastthread (>= 1.0.1)
+      rack
+      rake (>= 0.8.1)
     pg (0.14.1)
     polyglot (0.3.3)
-    rack (1.3.8)
+    rack (1.3.9)
     rack-cache (1.2)
       rack (>= 0.4)
     rack-mount (0.8.3)
@@ -135,6 +142,7 @@ DEPENDENCIES
   coffee-rails (~> 3.1.1)
   jquery-rails
   json
+  passenger
   pg
   rails (= 3.1.5)
   rvm-capistrano

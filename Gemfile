@@ -39,3 +39,5 @@ gem 'jquery-rails'
 gem 'rvm-capistrano', :group => :test
 
 gem 'acts_as_api'
+
+gem 'passenger', :group => :production
