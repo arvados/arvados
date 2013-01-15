@@ -12,4 +12,20 @@ class Collection < ActiveRecord::Base
     t.add :redundancy_confirmed_at
     t.add :redundancy_confirmed_as
   end
+
+  def redundancy_status
+    if redundancy_confirmed_as.nil?
+      'unconfirmed'
+    elsif redundancy_confirmed_as < redundancy
+      'degraded'
+    else
+      if redundancy_confirmed_at.nil?
+        'unconfirmed'
+      elsif Time.now - redundancy_confirmed_at < 7.days
+        'OK'
+      else
+        'stale'
+      end
+    end
+  end
 end
