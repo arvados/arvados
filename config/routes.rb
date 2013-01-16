@@ -1,4 +1,6 @@
 Server::Application.routes.draw do
+  resources :projects
+
   resources :specimens
   resources :collections
   resources :metadata
