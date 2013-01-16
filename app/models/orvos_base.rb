@@ -10,7 +10,7 @@ class OrvosBase < ActiveRecord::Base
         @columns << column(k, coldef[:type].to_sym)
       else
         @columns << column(k, :text)
-        serialize k, coldef[:type].to_sym
+        serialize k, coldef[:type].constantize
       end
       attr_accessible k
     end
@@ -29,11 +29,13 @@ class OrvosBase < ActiveRecord::Base
     new(api('/' + uuid))
   end
   def save
-    postdata = {}
-    postdata[self.class.to_s.underscore] =
-      Hash[self.class.columns.collect do |col|
-             [col.name.to_sym, self.send(col.name.to_sym)]
-           end]
+    obdata = {}
+    self.class.columns.each do |col|
+      obdata[col.name.to_sym] = self.send(col.name.to_sym)
+    end
+    obdata.delete :id
+    obdata.delete :uuid
+    postdata = { self.class.to_s.underscore => obdata }
     if etag
       postdata['_method'] = 'PUT'
       resp = self.class.api('/' + uuid, postdata)
@@ -81,7 +83,11 @@ class OrvosBase < ActiveRecord::Base
              'r') do |io|
       json = io.read
     end
-    JSON.parse json, :symbolize_names => true
+    resp = JSON.parse json, :symbolize_names => true
+    if resp[:errors]
+      raise "API errors:\n#{json[:errors].join "\n"}\n"
+    end
+    resp
   end
 
   def self.orvos_schema
