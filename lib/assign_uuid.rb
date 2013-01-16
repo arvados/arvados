@@ -9,7 +9,7 @@ module AssignUuid
 
   module ClassMethods
     def uuid_prefix
-      Digest::MD5.hexdigest(self.to_s).to_i(16).to_s(36)[0..4]
+      Digest::MD5.hexdigest(self.to_s).to_i(16).to_s(36)[-5..-1]
     end
   end
 
@@ -23,7 +23,7 @@ module AssignUuid
     return true if !self.respond_to_uuid?
     self.uuid ||= [Server::Application.config.uuid_prefix,
                    self.class.uuid_prefix,
-                   rand(2**256).to_s(36)[0..14]].
+                   rand(2**256).to_s(36)[-15..-1]].
       join '-'
   end
 end

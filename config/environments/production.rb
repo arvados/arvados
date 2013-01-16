@@ -67,4 +67,6 @@ Server::Application.configure do
   config.compute_node_nameservers = ['local', 'public'].collect do |iface|
     Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
   end << '172.16.0.23'
+
+  config.uuid_prefix = Digest::MD5.hexdigest('cfi-aws-0').to_i(16).to_s(36)[0..4] # '9ujm1'
 end

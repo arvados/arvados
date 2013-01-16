@@ -50,7 +50,15 @@ module Server
 
     config.force_ssl = true
 
-    config.uuid_prefix = Digest::MD5.hexdigest('CHANGE-ME').to_i(16).to_s(36)[0..4]
+    def config.uuid_prefix(x=nil)
+      if x and @uuid_prefix
+        raise "uuid_prefix was already set to #{@uuid_prefix}"
+      end
+      @uuid_prefix ||= Digest::MD5.hexdigest(x || `hostname`.strip).to_i(16).to_s(36)[-5..-1]
+    end
+    def config.uuid_prefix=(x)
+      @uuid_prefix = x
+    end
   end
 
 end

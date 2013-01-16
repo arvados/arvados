@@ -36,4 +36,6 @@ Server::Application.configure do
 
   # config.compute_node_nameservers = ['1.2.3.4', '1.2.3.5']
   config.compute_node_nameservers = ['192.168.201.3']
+
+  config.uuid_prefix('development@' + `hostname`.strip)
 end
