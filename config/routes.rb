@@ -1,4 +1,7 @@
 Vcffarm::Application.routes.draw do
+  resources :uploaded_datasets
+
+
   resources :projects
 
 

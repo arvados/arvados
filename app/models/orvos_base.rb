@@ -28,6 +28,13 @@ class OrvosBase < ActiveRecord::Base
   def self.find(uuid)
     new(api('/' + uuid))
   end
+  def self.where(cond)
+    all.select do |o|
+      0 == cond.select do |k,v|
+        o.send(k) != v
+      end.size
+    end
+  end
   def save
     obdata = {}
     self.class.columns.each do |col|
