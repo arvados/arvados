@@ -1,0 +1,2 @@
+class Project < OrvosBase
+end

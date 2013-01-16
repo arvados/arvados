@@ -55,6 +55,10 @@ class OrvosBase < ActiveRecord::Base
     super
   end
 
+  def kind_uuid
+    self.kind + '#' + self.uuid
+  end
+
   protected
   def self.api(action, data=nil, o={})
     dataargs = []
