@@ -29,7 +29,7 @@ class ApplicationController < ActionController::Base
 
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
-    render json: { errors: ["Path not found"] }, status: 401
+    render json: { errors: ["Path not found"] }, status: 404
   end
 
   def index
@@ -38,7 +38,11 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render json: @object.as_api_response(:superuser)
+    if @object
+      render json: @object.as_api_response(:superuser)
+    else
+      render_not_found("object not found")
+    end
   end
 
   def create
