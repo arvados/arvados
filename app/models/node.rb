@@ -95,7 +95,7 @@ class Node < ActiveRecord::Base
     cmd = ["ec2-run-instances",
            "--user-data '#{ping_url}'",
            "-t c1.xlarge -n 1 -g orvos-compute",
-           "ami-68ca6901"
+           Rails.configuration.compute_node_ami
           ].join(' ')
     self.info[:ec2_start_command] = cmd
     logger.info "#{self.uuid} ec2_start_command= #{cmd.inspect}"

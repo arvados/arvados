@@ -39,6 +39,8 @@ Server::Application.configure do
 
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
+  # config.compute_node_ami = 'ami-cbca41a2'
+
   # config.compute_node_domain = `hostname --domain`.strip
 
   # config.compute_node_nameservers = ['1.2.3.4', '1.2.3.5']
