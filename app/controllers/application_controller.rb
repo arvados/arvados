@@ -17,4 +17,11 @@ class ApplicationController < ActionController::Base
   def model_class
     controller_name.classify.constantize
   end
+
+  def find_object_by_uuid
+    if params[:id] and params[:id].match /\D/
+      params[:uuid] = params.delete :id
+    end
+    @object = model_class.where('uuid=?', params[:uuid]).first
+  end
 end
