@@ -69,7 +69,10 @@ class Node < ActiveRecord::Base
     end
 
     # Record instance ID if not already known
-    self.info[:ec2_instance_id] ||= o[:ec2_instance_id]
+    if !self.info[:ec2_instance_id] and o[:ec2_instance_id]
+      self.info[:ec2_instance_id] = o[:ec2_instance_id]
+      `ec2-create-tags #{self.info[:ec2_instance_id]} --tag 'Name=#{self.uuid}'`
+    end
 
     # Assign hostname
     if self.slot_number.nil?
@@ -85,6 +88,9 @@ class Node < ActiveRecord::Base
         raise "No available node slots" if try_slot == MAX_SLOTS
       end while true
       self.hostname = self.class.hostname_for_slot(self.slot_number)
+      if info[:ec2_instance_id]
+        `ec2-create-tags #{self.info[:ec2_instance_id]} --tag 'hostname=#{self.hostname}'`
+      end
     end
 
     save
@@ -95,6 +101,7 @@ class Node < ActiveRecord::Base
     cmd = ["ec2-run-instances",
            "--user-data '#{ping_url}'",
            "-t c1.xlarge -n 1 -g orvos-compute",
+           "--client-token", self.uuid,
            Rails.configuration.compute_node_ami
           ].join(' ')
     self.info[:ec2_start_command] = cmd
@@ -103,7 +110,9 @@ class Node < ActiveRecord::Base
     self.info[:ec2_start_result] = result
     logger.info "#{self.uuid} ec2_start_result= #{result.inspect}"
     result.match(/INSTANCE\s*(i-[0-9a-f]+)/) do |m|
-      self.info[:ec2_instance_id] = m[1]
+      instance_id = m[1]
+      self.info[:ec2_instance_id] = instance_id
+      `ec2-create-tags #{instance_id} --tag 'Name=#{self.uuid}'`
     end
     self.save!
   end
