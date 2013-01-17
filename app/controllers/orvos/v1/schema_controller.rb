@@ -13,6 +13,9 @@ class Orvos::V1::SchemaController < ApplicationController
             type: col.type }
         end
       end
+      if k.respond_to? :add_schema_columns
+        classes[k].concat k.add_schema_columns
+      end
     end
     render json: classes
   end
