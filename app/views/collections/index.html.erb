@@ -1,0 +1,62 @@
+<table style="width:100%">
+  <tr class="contain-align-left">
+    <th>
+      collection
+    </th><th>
+      specimen
+    </th><th>
+      project
+    </th><th>
+      data size
+    </th><th>
+      notified at
+    </th>
+  </tr>
+
+  <% @objects.each do |collection| %>
+
+  <% file_info_md = Metadatum.by_target(collection, metadata_class: 'data_origin', key: 'upload_notified_at') %>
+
+  <% Metadatum.by_target(collection, metadata_class: 'data_origin', key: 'derived_from').collect(&:head_uuid).compact.map { |s| Specimen.find(s) }.each do |specimen| %>
+
+  <% specimen_ext_ids = Metadatum.by_target(specimen, metadata_class: 'identifier', key: 'external_id').collect(&:value) %>
+
+  <% Metadatum.by_target(specimen, metadata_class: 'group', key: 'member_of').collect(&:head_uuid).compact.map { |p| Project.find(p) }.each do |project| %>
+
+  <tr class="collection-status collection-status-<%= collection.uuid %>" data-showhide-selector="tr#extra-info-<%= collection.uuid %>" style="cursor:pointer">
+    <td>
+      <%= collection.uuid %>
+    </td><td>
+      <%= specimen.uuid %>
+      <% specimen_ext_ids.each do |x| %>
+      <br />
+      <strong><%= x %></strong>
+      <% end %>
+    </td><td>
+      <%= project.name %>
+    </td><td>
+      <% file_info_md.each do |fi| %>
+      (<%= fi.value %>)<%= fi.info[:file_sizes].inject(0) { |s,x| s += x } rescue nil %><br />
+      <% end %>
+    </td><td>
+      <%= file_info_md.collect &:value %>
+    </td>
+  </tr>
+
+  <% if file_info_md.size > 0 %>
+  <tr id="extra-info-<%= collection.uuid %>" data-showhide-default>
+    <td colspan="5">
+      <dl>
+      <% file_info_md.collect(&:info).each do |k,v| %>
+      <dt><em><%= k %></em></dt>
+      <dd><%= v %></dd>
+      <% end %>
+      </dl>
+    </td>
+  </tr>
+
+  <% end %>
+  <% end %>
+  <% end %>
+  <% end %>
+</table>
