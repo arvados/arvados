@@ -92,7 +92,7 @@ class OrvosBase < ActiveRecord::Base
     end
     resp = JSON.parse json, :symbolize_names => true
     if resp[:errors]
-      raise "API errors:\n#{json[:errors].join "\n"}\n"
+      raise "API errors:\n#{resp[:errors].join "\n"}\n"
     end
     resp
   end
