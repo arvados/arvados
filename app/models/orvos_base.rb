@@ -1,4 +1,6 @@
 class OrvosBase < ActiveRecord::Base
+  self.abstract_class = true
+
   @@orvos_v1_base = Rails.configuration.orvos_v1_base
   def self.columns
     return @columns unless @columns.nil?
@@ -70,8 +72,43 @@ class OrvosBase < ActiveRecord::Base
     o[:head_kind] ||= args.shift
     o[:tail_kind] = self.kind
     o[:tail] = self.uuid
+    if all_metadata
+      return all_metadata.select do |m|
+        ok = true
+        o.each do |k,v|
+          if !v.nil?
+            test_v = m.send(k)
+            if (v.respond_to?(:uuid) ? v.uuid : v.to_s) != (test_v.respond_to?(:uuid) ? test_v.uuid : test_v.to_s)
+              ok = false
+            end
+          end
+        end
+        ok
+      end
+    end
     @metadata = self.class.api '', { _method: 'GET', where: o, eager: true }, { resource_path: 'metadata' }
     @metadata = self.class.unpack_api_response(@metadata)
+  end
+  def all_metadata
+    return @all_metadata if @all_metadata
+    res = self.class.api '', {
+      _method: 'GET',
+      where: {
+        tail_kind: self.kind,
+        tail: self.uuid
+      },
+      eager: true
+    }, {
+      resource_path: 'metadata'
+    }
+    @all_metadata = self.class.unpack_api_response(res)
+  end
+  def reload
+    raise "No such object" if !uuid
+    api('/' + uuid).each do |k,v|
+      self.instance_variable_set('@' + k.to_s, v)
+    end
+    @all_metadata = nil
   end
 
   protected
