@@ -1,9 +1,9 @@
 set :application, "vcffarm"
-set :domain,      "controller.van"
+set :domain,      "orvos-app-0.van"
 set :deploy_to,   "/var/www/parabase.clinicalfuture.com"
-role :web, "controller.van"
-role :app, "controller.van"
-role :db, "controller.van", :primary=>true
+role :web, "orvos-app-0.van"
+role :app, "orvos-app-0.van"
+role :db, "orvos-app-0.van", :primary=>true
 set :scm,         :git
 set :repository,  "git@git.clinicalfuture.com:vcffarm.git"
 set :rails_env,   "production"
