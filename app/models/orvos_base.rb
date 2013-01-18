@@ -30,11 +30,10 @@ class OrvosBase < ActiveRecord::Base
     new(api('/' + uuid))
   end
   def self.where(cond)
-    all.select do |o|
-      0 == cond.select do |k,v|
-        o.send(k) != v
-      end.size
-    end
+    self.unpack_api_response(self.api '', {
+                               _method: 'GET',
+                               where: cond
+                             })
   end
   def save
     obdata = {}
@@ -110,8 +109,18 @@ class OrvosBase < ActiveRecord::Base
     end
     @all_metadata = nil
   end
+  def dup
+    super.forget_uuid!
+  end
 
   protected
+
+  def forget_uuid!
+    self.uuid = nil
+    @etag = nil
+    self
+  end
+
   def self.api(action, data=nil, o={})
     dataargs = []
     if !data.nil?
