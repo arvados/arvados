@@ -77,7 +77,7 @@ Server::Application.routes.draw do
       resources :projects
       match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
-      match '/metadata/:target_kind/:target_uuid' => 'metadata#index'
+      match '/metadata/:tail_kind/:tail' => 'metadata#index'
     end
   end
 

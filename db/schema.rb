@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130116215213) do
+ActiveRecord::Schema.define(:version => 20130118002239) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -41,17 +41,22 @@ ActiveRecord::Schema.define(:version => 20130116215213) do
     t.string   "modified_by_client"
     t.string   "modified_by_user"
     t.datetime "modified_at"
-    t.string   "target_uuid"
-    t.string   "target_kind"
+    t.string   "tail"
+    t.string   "tail_kind"
     t.integer  "native_target_id"
     t.string   "native_target_type"
     t.string   "metadata_class"
-    t.string   "key"
-    t.string   "value"
+    t.string   "name"
+    t.string   "head"
     t.text     "info"
     t.datetime "updated_at"
+    t.string   "head_kind"
   end
 
+  add_index "metadata", ["head"], :name => "index_metadata_on_head"
+  add_index "metadata", ["head_kind"], :name => "index_metadata_on_head_kind"
+  add_index "metadata", ["tail"], :name => "index_metadata_on_tail"
+  add_index "metadata", ["tail_kind"], :name => "index_metadata_on_tail_kind"
   add_index "metadata", ["uuid"], :name => "index_metadata_on_uuid", :unique => true
 
   create_table "nodes", :force => true do |t|

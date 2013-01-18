@@ -1,8 +1,8 @@
 class Orvos::V1::MetadataController < ApplicationController
   def index
-    if params[:target_kind] and params[:target_uuid]
-      @objects = Metadatum.where('target_kind=? and target_uuid=?',
-                                 params[:target_kind], params[:target_uuid])
+    if params[:tail_kind] and params[:tail]
+      @objects = Metadatum.where('tail_kind=? and tail=?',
+                                 params[:tail_kind], params[:tail])
     end
     super
   end
