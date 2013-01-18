@@ -15,13 +15,13 @@
 
   <% @objects.each do |collection| %>
 
-  <% file_info_md = Metadatum.by_tail(collection, metadata_class: 'data_origin', name: 'upload_notified_at') %>
+  <% file_info_md = collection.metadata :data_origin, :upload_notified_at %>
 
-  <% Metadatum.by_tail(collection, metadata_class: 'data_origin', name: 'derived_from').collect(&:head).compact.map { |s| Specimen.find(s) }.each do |specimen| %>
+  <% collection.metadata(:data_origin, :derived_from, 'orvos#specimen').collect(&:head).select { |s| s.is_a? Specimen }.each do |specimen| %>
 
-  <% specimen_ext_ids = Metadatum.by_tail(specimen, metadata_class: 'identifier', name: 'external_id').collect(&:head) %>
+  <% specimen_ext_ids = specimen.metadata(:identifier, :external_id).collect(&:head) %>
 
-  <% Metadatum.by_tail(specimen, metadata_class: 'group', name: 'member_of').collect(&:head).compact.map { |p| Project.find(p) }.each do |project| %>
+  <% specimen.metadata(:group, :member_of, 'orvos#project').collect(&:head).select { |p| p.is_a? Project }.each do |project| %>
 
   <tr class="collection-status collection-status-<%= collection.uuid %>" data-showhide-selector="tr#extra-info-<%= collection.uuid %>" style="cursor:pointer">
     <td>
