@@ -15,13 +15,13 @@
 
   <% @objects.each do |collection| %>
 
-  <% file_info_md = Metadatum.by_target(collection, metadata_class: 'data_origin', key: 'upload_notified_at') %>
+  <% file_info_md = Metadatum.by_tail(collection, metadata_class: 'data_origin', name: 'upload_notified_at') %>
 
-  <% Metadatum.by_target(collection, metadata_class: 'data_origin', key: 'derived_from').collect(&:head_uuid).compact.map { |s| Specimen.find(s) }.each do |specimen| %>
+  <% Metadatum.by_tail(collection, metadata_class: 'data_origin', name: 'derived_from').collect(&:head).compact.map { |s| Specimen.find(s) }.each do |specimen| %>
 
-  <% specimen_ext_ids = Metadatum.by_target(specimen, metadata_class: 'identifier', key: 'external_id').collect(&:value) %>
+  <% specimen_ext_ids = Metadatum.by_tail(specimen, metadata_class: 'identifier', name: 'external_id').collect(&:head) %>
 
-  <% Metadatum.by_target(specimen, metadata_class: 'group', key: 'member_of').collect(&:head_uuid).compact.map { |p| Project.find(p) }.each do |project| %>
+  <% Metadatum.by_tail(specimen, metadata_class: 'group', name: 'member_of').collect(&:head).compact.map { |p| Project.find(p) }.each do |project| %>
 
   <tr class="collection-status collection-status-<%= collection.uuid %>" data-showhide-selector="tr#extra-info-<%= collection.uuid %>" style="cursor:pointer">
     <td>
@@ -36,10 +36,11 @@
       <%= project.name %>
     </td><td>
       <% file_info_md.each do |fi| %>
-      (<%= fi.value %>)<%= fi.info[:file_sizes].inject(0) { |s,x| s += x } rescue nil %><br />
+      <strong><%= number_to_human_size(fi.info[:file_sizes].inject(0) { |s,x| s += x.to_i }) rescue nil %></strong> (<%= fi.head %>)
+      <br />
       <% end %>
     </td><td>
-      <%= file_info_md.collect &:value %>
+      <%= file_info_md.collect &:head %>
     </td>
   </tr>
 
