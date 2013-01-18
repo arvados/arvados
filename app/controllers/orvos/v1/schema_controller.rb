@@ -3,7 +3,7 @@ class Orvos::V1::SchemaController < ApplicationController
   def show
     Rails.application.eager_load!
     classes = {}
-    ActiveRecord::Base.descendants.each do |k|
+    ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
       classes[k] = k.columns.collect do |col|
         if k.serialized_attributes.has_key? col.name
           { name: col.name,
