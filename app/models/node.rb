@@ -1,4 +1,4 @@
-class Node < ActiveRecord::Base
+class Node < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

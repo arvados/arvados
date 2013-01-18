@@ -1,4 +1,4 @@
-class Project < ActiveRecord::Base
+class Project < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

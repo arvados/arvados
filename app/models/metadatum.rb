@@ -1,4 +1,4 @@
-class Metadatum < ActiveRecord::Base
+class Metadatum < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

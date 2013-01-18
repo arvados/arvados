@@ -1,4 +1,4 @@
-class Collection < ActiveRecord::Base
+class Collection < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

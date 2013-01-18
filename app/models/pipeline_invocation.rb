@@ -1,4 +1,4 @@
-class PipelineInvocation < ActiveRecord::Base
+class PipelineInvocation < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

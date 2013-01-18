@@ -33,7 +33,24 @@ class ApplicationController < ActionController::Base
   end
 
   def index
+    @objects ||= if params[:where]
+      where = params[:where]
+      where = JSON.parse(where) if where.is_a?(String)
+      conditions = ['1=1']
+      where.each do |attr,value|
+        if (!value.nil? and
+            attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
+            model_class.columns.collect(&:name).index(attr))
+          conditions[0] << " and #{attr}=?"
+          conditions << value
+        end
+      end
+      model_class.where(*conditions)
+    end
     @objects ||= model_class.all
+    if params[:eager]
+      @objects.each(&:eager_load_associations)
+    end
     render_list
   end
 

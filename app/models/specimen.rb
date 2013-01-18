@@ -1,4 +1,4 @@
-class Specimen < ActiveRecord::Base
+class Specimen < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
