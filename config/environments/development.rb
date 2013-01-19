@@ -36,4 +36,6 @@ Vcffarm::Application.configure do
   config.assets.debug = true
 
   config.orvos_v1_base = 'https://orvos/orvos/v1'
+
+  config.data_import_dir = '/data/vcffarm-upload'
 end

@@ -66,4 +66,6 @@ Vcffarm::Application.configure do
   # config.active_record.auto_explain_threshold_in_seconds = 0.5
 
   config.orvos_v1_base = 'https://9ujm1.orvosapi.com/orvos/v1'
+
+  config.data_import_dir = '/data/parabase-upload'
 end
