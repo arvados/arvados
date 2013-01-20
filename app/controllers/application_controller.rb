@@ -41,14 +41,19 @@ class ApplicationController < ActionController::Base
         if (!value.nil? and
             attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr))
-          conditions[0] << " and #{attr}=?"
-          conditions << value
+          if value.is_a? Array
+            conditions[0] << " and #{attr} in (?)"
+            conditions << value
+          else
+            conditions[0] << " and #{attr}=?"
+            conditions << value
+          end
         end
       end
       model_class.where(*conditions)
     end
     @objects ||= model_class.all
-    if params[:eager]
+    if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)
     end
     render_list
