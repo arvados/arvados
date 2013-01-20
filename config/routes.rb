@@ -1,4 +1,7 @@
 Vcffarm::Application.routes.draw do
+  resources :factory_jobs
+
+
   resources :uploaded_datasets
 
 

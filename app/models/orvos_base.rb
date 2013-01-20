@@ -1,12 +1,11 @@
 class OrvosBase < ActiveRecord::Base
   self.abstract_class = true
 
-  @@orvos_v1_base = Rails.configuration.orvos_v1_base
   def self.columns
     return @columns unless @columns.nil?
     @columns = []
-    return @columns if orvos_schema[self.to_s.to_sym].nil?
-    orvos_schema[self.to_s.to_sym].each do |coldef|
+    return @columns if $orvos_api_client.orvos_schema[self.to_s.to_sym].nil?
+    $orvos_api_client.orvos_schema[self.to_s.to_sym].each do |coldef|
       k = coldef[:name].to_sym
       if coldef[:type] == coldef[:type].downcase
         @columns << column(k, coldef[:type].to_sym)
@@ -23,17 +22,17 @@ class OrvosBase < ActiveRecord::Base
   def self.column(name, sql_type = nil, default = nil, null = true)
     ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
   end
-  def self.all
-    unpack_api_response(api(''))
-  end
   def self.find(uuid)
-    new(api('/' + uuid))
+    new($orvos_api_client.api(self, '/' + uuid))
   end
-  def self.where(cond)
-    self.unpack_api_response(self.api '', {
-                               _method: 'GET',
-                               where: cond
-                             })
+  def self.where(*args)
+    OrvosResourceList.new(self).where(*args)
+  end
+  def self.eager(*args)
+    OrvosResourceList.new(self).eager(*args)
+  end
+  def self.all(*args)
+    OrvosResourceList.new(self).all(*args)
   end
   def save
     obdata = {}
@@ -45,9 +44,9 @@ class OrvosBase < ActiveRecord::Base
     postdata = { self.class.to_s.underscore => obdata }
     if etag
       postdata['_method'] = 'PUT'
-      resp = self.class.api('/' + uuid, postdata)
+      resp = $orvos_api_client.api(self.class, '/' + uuid, postdata)
     else
-      resp = self.class.api('', postdata)
+      resp = $orvos_api_client.api(self.class, '', postdata)
     end
     return false if !resp[:etag] || !resp[:uuid]
     @etag = resp[:etag]
@@ -85,26 +84,24 @@ class OrvosBase < ActiveRecord::Base
         ok
       end
     end
-    @metadata = self.class.api '', { _method: 'GET', where: o, eager: true }, { resource_path: 'metadata' }
-    @metadata = self.class.unpack_api_response(@metadata)
+    @metadata = $orvos_api_client.api Metadatum, '', { _method: 'GET', where: o, eager: true }
+    @metadata = $orvos_api_client.unpack_api_response(@metadata)
   end
   def all_metadata
     return @all_metadata if @all_metadata
-    res = self.class.api '', {
+    res = $orvos_api_client.api Metadatum, '', {
       _method: 'GET',
       where: {
         tail_kind: self.kind,
         tail: self.uuid
       },
       eager: true
-    }, {
-      resource_path: 'metadata'
     }
-    @all_metadata = self.class.unpack_api_response(res)
+    @all_metadata = $orvos_api_client.unpack_api_response(res)
   end
   def reload
     raise "No such object" if !uuid
-    api('/' + uuid).each do |k,v|
+    $orvos_api_client.api(self, '/' + uuid).each do |k,v|
       self.instance_variable_set('@' + k.to_s, v)
     end
     @all_metadata = nil
@@ -119,64 +116,5 @@ class OrvosBase < ActiveRecord::Base
     self.uuid = nil
     @etag = nil
     self
-  end
-
-  def self.api(action, data=nil, o={})
-    dataargs = []
-    if !data.nil?
-      data.each do |k,v|
-        dataargs << '-d'
-        if v.is_a? String or v.nil?
-          dataargs << "#{k}=#{v}"
-        elsif v == true or v == false
-          dataargs << "#{k}=#{v ? 1 : 0}"
-        else
-          dataargs << "#{k}=#{JSON.generate v}"
-        end
-      end
-    end
-    json = nil
-    IO.popen([ENV,
-              'curl',
-              '-sk',
-              *dataargs,
-              "#{@@orvos_v1_base}/#{o[:resource_path] || self.to_s.underscore.pluralize}#{action}"],
-             'r') do |io|
-      json = io.read
-    end
-    resp = JSON.parse json, :symbolize_names => true
-    if resp[:errors]
-      raise "API errors:\n#{resp[:errors].join "\n"}\n"
-    end
-    resp
-  end
-
-  def self.orvos_schema
-    $orvos_schema ||= api '', nil, {resource_path: 'schema'}
-  end
-
-  def self.kind_class(kind)
-    kind.match(/^orvos\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
-  end
-
-  def self.unpack_api_response(j, kind=nil)
-    if j.is_a? Hash and j[:items].is_a? Array and j[:kind].match(/(_list|List)$/)
-      j[:items].collect { |x| unpack_api_response x, j[:kind] }
-    elsif j.is_a? Hash and (kind || j[:kind])
-      oclass = self.kind_class(kind || j[:kind])
-      if oclass
-        j.keys.each do |k|
-          childkind = j["#{k.to_s}_kind".to_sym]
-          if childkind
-            j[k] = self.unpack_api_response(j[k], childkind)
-          end
-        end
-        oclass.new(j)
-      else
-        j
-      end
-    else
-      j
-    end
   end
 end
