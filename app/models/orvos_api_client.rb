@@ -3,7 +3,7 @@ class OrvosApiClient
     dataargs = []
     if !data.nil?
       data.each do |k,v|
-        dataargs << '-d'
+        dataargs << '--data-urlencode'
         if v.is_a? String or v.nil?
           dataargs << "#{k}=#{v}"
         elsif v == true or v == false
