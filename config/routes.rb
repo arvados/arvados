@@ -23,6 +23,11 @@ Vcffarm::Application.routes.draw do
   resources :collections
 
 
+  # Send unroutable requests to an arbitrary controller
+  # (ends up at ApplicationController#render_not_found)
+  match '*a', :to => 'metadata#render_not_found'
+
+
   # The priority is based upon order of creation:
   # first created -> highest priority.
 
