@@ -38,4 +38,8 @@ Vcffarm::Application.configure do
   config.orvos_v1_base = 'https://orvos/orvos/v1'
 
   config.data_import_dir = '/data/vcffarm-upload'
+
+  # Authentication stub: hard code pre-approved API tokens.
+  # config.accept_api_token = { rand(2**256).to_s(36) => true }
+  config.accept_api_token = {}
 end

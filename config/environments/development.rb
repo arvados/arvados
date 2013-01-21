@@ -38,4 +38,6 @@ Vcffarm::Application.configure do
   config.orvos_v1_base = 'https://orvos/orvos/v1'
 
   config.data_import_dir = '/data/vcffarm-upload'
+
+  config.secret_token = File.read('config/.secret_token') if File.exist? 'config/.secret_token'
 end

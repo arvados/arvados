@@ -1,6 +1,7 @@
 class OrvosApiClient
   def api(resources_kind, action, data=nil)
-    dataargs = []
+    dataargs = ['--data-urlencode',
+                'api_token=' + Thread.current[:orvos_api_token]]
     if !data.nil?
       data.each do |k,v|
         dataargs << '--data-urlencode'
@@ -12,6 +13,8 @@ class OrvosApiClient
           dataargs << "#{k}=#{JSON.generate v}"
         end
       end
+    else
+      dataargs << '--data-urlencode' << '_method=GET'
     end
     json = nil
     resources_kind = class_kind(resources_kind).pluralize if resources_kind.is_a? Class

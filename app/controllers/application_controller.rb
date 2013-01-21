@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :find_object_by_uuid, :except => [:index, :render_error, :render_not_found]
+  around_filter :thread_with_api_token, :except => [:render_error, :render_not_found]
 
   unless Rails.application.config.consider_all_requests_local
     rescue_from Exception,
@@ -15,20 +16,28 @@ class ApplicationController < ActionController::Base
     :with => :render_not_found
   end
 
+  def error(opts)
+    respond_to do |f|
+      f.html { render opts.merge(controller: 'application', action: 'error') }
+      f.json { render opts.merge(json: {success: false, errors: @errors}) }
+    end
+  end
+
   def render_error(e)
     logger.error e.inspect
     logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
     if @object and @object.errors and @object.errors.full_messages
-      errors = @object.errors.full_messages
+      @errors = @object.errors.full_messages
     else
-      errors = [e.inspect]
+      @errors = [e.inspect]
     end
-    render json: { errors: errors }, status: 422
+    self.error status: 422
   end
 
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
-    render json: { errors: ["Path not found"] }, status: 404
+    @errors = ["Path not found"]
+    self.error status: 404
   end
 
 
@@ -53,5 +62,38 @@ class ApplicationController < ActionController::Base
       params[:uuid] = params.delete :id
     end
     @object = model_class.where('uuid=?', params[:uuid]).first
+  end
+
+  def thread_with_api_token
+    begin
+      if params[:api_token]
+        Thread.current[:orvos_api_token] = params[:api_token]
+        # Before copying the token into session[], do a simple API
+        # call to verify its authenticity.
+        if verify_api_token
+          session[:orvos_api_token] = params[:api_token]
+          yield
+        else
+          @errors = ['Could not verify API token.']
+          self.error status: 401
+        end
+      elsif session[:orvos_api_token]
+        # In this case, the token must have already verified at some
+        # point, although it might have been revoked since.  TODO:
+        # graceful failure if the token is revoked.
+        Thread.current[:orvos_api_token] = session[:orvos_api_token]
+        yield
+      else
+        @errors = ['No API token supplied -- can\'t really do anything.']
+        self.error status: 422
+      end
+    ensure
+      # Remove token in case this Thread is used for anything else.
+      Thread.current[:orvos_api_token] = nil
+    end
+  end
+
+  def verify_api_token
+    Metadatum.where(uuid: 'the-philosophers-stone').size rescue false
   end
 end
