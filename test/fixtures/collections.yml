@@ -2,7 +2,7 @@
 
 one:
   locator: MyString
-  create_by_client: MyString
+  created_by_client: MyString
   created_by_user: MyString
   created_at: 2012-10-15 20:50:09
   modified_by_client: MyString
@@ -11,14 +11,13 @@ one:
   portable_data_hash: MyString
   name: MyString
   redundancy: 1
-  arbitrary_string: MyString
   redundancy_confirmed_by_client: MyString
   redundancy_confirmed_at: 2012-10-15 20:50:09
   redundancy_confirmed_as: 1
 
 two:
   locator: MyString
-  create_by_client: MyString
+  created_by_client: MyString
   created_by_user: MyString
   created_at: 2012-10-15 20:50:09
   modified_by_client: MyString
@@ -27,7 +26,6 @@ two:
   portable_data_hash: MyString
   name: MyString
   redundancy: 1
-  arbitrary_string: MyString
   redundancy_confirmed_by_client: MyString
   redundancy_confirmed_at: 2012-10-15 20:50:09
   redundancy_confirmed_as: 1
