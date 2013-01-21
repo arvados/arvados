@@ -20,3 +20,6 @@
 
 # asset cache
 /public/assets/
+
+# ignore .rvmrc
+.rvmrc
