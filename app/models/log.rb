@@ -1,0 +1,2 @@
+class Log < OrvosBase
+end

@@ -1,4 +1,7 @@
 Vcffarm::Application.routes.draw do
+  resources :logs
+
+
   resources :factory_jobs
 
 

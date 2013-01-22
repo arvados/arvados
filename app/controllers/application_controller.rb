@@ -43,11 +43,17 @@ class ApplicationController < ActionController::Base
 
   def index
     @objects ||= model_class.all
+    respond_to do |f|
+      f.json { render json: @objects }
+    end
   end
 
   def show
     if !@object
       render_not_found("object not found")
+    end
+    respond_to do |f|
+      f.json { render json: @object }
     end
   end
 
