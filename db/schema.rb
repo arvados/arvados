@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130122201442) do
+ActiveRecord::Schema.define(:version => 20130122221616) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -47,6 +47,7 @@ ActiveRecord::Schema.define(:version => 20130122201442) do
     t.text     "info"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.datetime "modified_at"
   end
 
   add_index "logs", ["event_at"], :name => "index_logs_on_event_at"

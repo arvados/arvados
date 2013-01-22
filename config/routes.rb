@@ -1,8 +1,6 @@
 Server::Application.routes.draw do
   resources :logs
-
   resources :projects
-
   resources :specimens
   resources :collections
   resources :metadata
@@ -77,6 +75,7 @@ Server::Application.routes.draw do
       resources :pipelineInvocations
       resources :specimens
       resources :projects
+      resources :logs
       match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/metadata/:tail_kind/:tail' => 'metadata#index'
