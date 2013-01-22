@@ -1,4 +1,6 @@
 Server::Application.routes.draw do
+  resources :logs
+
   resources :projects
 
   resources :specimens

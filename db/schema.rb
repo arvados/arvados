@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130118002239) do
+ActiveRecord::Schema.define(:version => 20130122201442) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -32,6 +32,29 @@ ActiveRecord::Schema.define(:version => 20130118002239) do
   end
 
   add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
+
+  create_table "logs", :force => true do |t|
+    t.string   "uuid"
+    t.string   "created_by_client"
+    t.string   "created_by_user"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.string   "object_kind"
+    t.string   "object_uuid"
+    t.datetime "event_at"
+    t.string   "event_type"
+    t.text     "summary"
+    t.text     "info"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "logs", ["event_at"], :name => "index_logs_on_event_at"
+  add_index "logs", ["event_type"], :name => "index_logs_on_event_type"
+  add_index "logs", ["object_kind"], :name => "index_logs_on_object_kind"
+  add_index "logs", ["object_uuid"], :name => "index_logs_on_object_uuid"
+  add_index "logs", ["summary"], :name => "index_logs_on_summary"
+  add_index "logs", ["uuid"], :name => "index_logs_on_uuid", :unique => true
 
   create_table "metadata", :force => true do |t|
     t.string   "uuid"
