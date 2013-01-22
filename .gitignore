@@ -26,3 +26,6 @@
 
 # site-specific hardcoded API tokens
 /config/initializers/hardcoded_api_tokens.rb
+
+# editor backup files
+*~
