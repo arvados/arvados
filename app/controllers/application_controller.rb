@@ -2,6 +2,7 @@ class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
   before_filter :find_object_by_uuid, :except => :index
+  before_filter :authenticate_api_token
 
   unless Rails.application.config.consider_all_requests_local
     rescue_from Exception,
@@ -152,5 +153,14 @@ class ApplicationController < ActionController::Base
       :items => @objects.as_api_response(:superuser)
     }
     render json: @object_list
+  end
+
+  def authenticate_api_token
+    unless Rails.configuration.
+      accept_api_token.
+      has_key?(params[:api_token] ||
+               cookies[:api_token])
+      render_error(Exception.new("Invalid API token"))
+    end
   end
 end

@@ -71,4 +71,8 @@ Server::Application.configure do
   end << '172.16.0.23'
 
   config.uuid_prefix = Digest::MD5.hexdigest('cfi-aws-0').to_i(16).to_s(36)[0..4] # '9ujm1'
+
+  # Authentication stub: hard code pre-approved API tokens.
+  # config.accept_api_token = { rand(2**256).to_s(36) => true }
+  config.accept_api_token = {}
 end

@@ -50,4 +50,8 @@ Server::Application.configure do
   config.compute_node_nameservers = [ "172.16.0.23" ]
 
   config.uuid_prefix('test@' + `hostname`.strip)
+
+  # Authentication stub: hard code pre-approved API tokens.
+  # config.accept_api_token = { rand(2**256).to_s(36) => true }
+  config.accept_api_token = {}
 end
