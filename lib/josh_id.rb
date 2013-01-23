@@ -4,7 +4,6 @@ module OmniAuth
     class JoshId < OmniAuth::Strategies::OAuth2
 
       CUSTOM_PROVIDER_URL = 'http://auth.clinicalfuture.com'
-      #CUSTOM_PROVIDER_URL = 'http://auth.clinicalfuture.com:3001'
 
       option :client_options, {
         :site =>  CUSTOM_PROVIDER_URL,
