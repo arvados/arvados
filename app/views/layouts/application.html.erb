@@ -7,8 +7,39 @@
   <%= csrf_meta_tags %>
 </head>
 <body>
+<div id="header">
+  <div class="apptitle">ORVOS <span class="beta"><span>BETA</span></span></div>
+  <div style="float:right">
+    <% if current_user %>
+    <%= current_user.full_name %>
+    <% if current_user.is_admin %>
+    &nbsp;&bull;&nbsp;
+    <a class="logout" href="/admin/users">Admin</a>
+    <% end %>
+    &nbsp;&bull;&nbsp;
+    <a class="logout" href="/logout">Log out</a>
+    <% else %>
+    <a class="logout" href="/auth/joshid">Log in</a>
+    <% end %>
+
+    <% if current_user and session[:real_uid] and session[:switch_back_to] and User.find(session[:real_uid].to_i).verify_userswitch_cookie(session[:switch_back_to]) %>
+    &nbsp;&bull;&nbsp;
+    <span class="sudo-warning">Logged in as <b><%= current_user.full_name %></b>. <%= link_to "Back to #{User.find(session[:real_uid]).full_name}", switch_to_user_path(session[:real_uid]), :method => :post, :class => 'sudo-logout' %></span>
+    <% end %>
+  </div>
+</div>
+
 
 <%= yield %>
+
+<div style="clear:both"></div>
+
+<% if current_user or session['invite_code'] %>
+<div id="footer">
+  <div style="float:right">Questions &rarr; <a href="mailto:orvos@clinicalfuture.com">orvos@clinicalfuture.com</a></div>
+  <div style="clear:both"></div>
+</div>
+<% end %>
 
 </body>
 </html>

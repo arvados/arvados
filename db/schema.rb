@@ -167,4 +167,21 @@ ActiveRecord::Schema.define(:version => 20130122221616) do
 
   add_index "specimens", ["uuid"], :name => "index_specimens_on_uuid", :unique => true
 
+  create_table "users", :force => true do |t|
+    t.string   "uuid"
+    t.string   "created_by_client"
+    t.string   "created_by_user"
+    t.datetime "created_at"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "email"
+    t.string   "first_name"
+    t.string   "last_name"
+    t.string   "identity_url"
+    t.boolean  "is_admin"
+    t.text     "prefs"
+    t.datetime "updated_at"
+  end
+
 end

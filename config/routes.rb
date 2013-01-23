@@ -82,7 +82,17 @@ Server::Application.routes.draw do
     end
   end
 
+  # omniauth
+  match '/auth/:provider/callback', :to => 'user_sessions#create'
+  match '/auth/failure', :to => 'user_sessions#failure'
+
+  # Custom logout
+  match '/login', :to => 'user_sessions#login'
+  match '/logout', :to => 'user_sessions#logout'
+
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
   match '*a', :to => 'orvos/v1/metadata#render_not_found'
+
+  root :to => 'static#home'
 end

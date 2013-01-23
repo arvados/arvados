@@ -9,3 +9,171 @@
 .contain-align-left {
     text-align: left;
 }
+
+body {
+    margin: 0;
+}
+body > div {
+    margin: 2px;
+}
+div#footer {
+    font-family: Verdana,Arial,sans-serif;
+    font-size: 12px;
+    margin-top: 24px;
+    border-top: 1px solid #ccc;
+}
+div#footer, div#footer a {
+    color: #777;
+}
+div#header {
+    margin: 0;
+    padding: .5em 1em;
+    background: #000;
+    font-weight: bold;
+    font-size: 18px;
+    font-family: Verdana,Arial,sans-serif;
+    vertical-align: middle;
+    color: #ddd;
+}
+div#header > div {
+    display: inline-block;
+    font-size: 12px;
+    line-height: 18px;
+}
+div#header > .apptitle {
+    font-size: 18px;
+}
+div#header a.logout {
+    color: #fff;
+    font-weight: normal;
+}
+div#header button {
+    font-size: 12px;
+}
+div#header span.beta {
+    opacity: 0.5;
+}
+div#header span.beta > span {
+    border-top: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+    font-size: 0.8em;
+}
+img.clinicalfuture-logo {
+    width: 221px;
+    height: 44px;
+}
+#intropage {
+    font-family: Verdana,Arial,sans-serif;
+}
+#errorpage {
+    font-family: Verdana,Arial,sans-serif;
+}
+
+div.full-page-tab-set > ul > li {
+    font-size: 14px;
+}
+.titlebanner p {
+    font-size: 16px;
+}
+p {
+    font-size: 12px;
+}
+.small-text {
+    font-size: 12px;
+}
+.autoui-icon-float-left {
+    float: left;
+    margin-right: .3em;
+}
+.autoui-pad {
+    padding: 0 1em;
+}
+table.datatablesme {
+    border: 0;
+    border-collapse: collapse;
+    width: 100%;
+}
+.loadinggif {
+    background: #fff url(/images/ajax-loader-16-fff-aad.gif) no-repeat;
+}
+.clientprogressgif {
+    /* warning: depends on 24px outer container. */
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    width: 16px;
+    height: 16px;
+}
+.counttable {
+    width: 100%;
+    display: table;
+    border-collapse: collapse;
+    margin-bottom: 0.5em;
+}
+.counttable > div {
+    display: table-row;
+}
+.counttable > div > div {
+    display: table-cell;
+    text-align: center;
+    background: #ccf;
+    padding: 0 2px;
+    font-size: 0.8em;
+}
+.counttable > div > div.counter {
+    font-size: 2em;
+    padding: 4px 2px 0 2px;
+}
+table.admin_table {
+    border-collapse: collapse;
+}
+table.admin_table tbody tr {
+    height: 2.5em;
+}
+table.admin_table th,table.admin_table td {
+    text-align: left;
+    border: 1px solid #bbb;
+    padding: 3px;
+}
+table.admin_table tbody tr:hover {
+    background: #ff8;
+}
+table.admin_table tbody tr:hover td {
+    background: transparent;
+}
+
+div.helptopics {
+    position: fixed;
+}
+div.helptopics ul {
+    padding: 0;
+    margin-left: 1em;
+    list-style-type: none;
+}
+div.helptopics ul li {
+    margin: 0 0 1em 0;
+}
+div.helpcontent li {
+    margin-bottom: .5em;
+}
+
+div.preview {
+    color: red;
+    font-weight: bold;
+    text-align: center;
+}
+
+.sudo-warning {
+    padding: 4px 10px;
+    background: #ffdd00;
+    color: red;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px
+}
+
+div#header a.sudo-logout {
+    color: #000;
+    font-weight: bold;
+}
+

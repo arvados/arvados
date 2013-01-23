@@ -17,6 +17,7 @@
 # Some sensitive files
 /config/api.clinicalfuture.com.*
 /config/database.yml
+/config/initializers/omniauth.rb
 
 # asset cache
 /public/assets/

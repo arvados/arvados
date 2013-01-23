@@ -4,6 +4,85 @@ class ApplicationController < ActionController::Base
   before_filter :find_object_by_uuid, :except => :index
   before_filter :authenticate_api_token
 
+  before_filter :set_remote_ip
+  before_filter :login_required
+
+  before_filter :catch_redirect_hint
+
+  def catch_redirect_hint
+    if !current_user
+      if params.has_key?('redirect_to') then
+        session[:redirect_to] = params[:redirect_to]
+      end
+    end
+  end
+
+  # Authentication
+  def login_required
+    if !current_user
+      respond_to do |format|
+        format.html  {
+          redirect_to '/auth/joshid'
+        }
+        format.json {
+          render :json => { 'error' => 'Not logged in' }.to_json
+        }
+      end
+    end
+  end
+
+  def current_user
+    return nil unless session[:user_id]
+    @current_user ||= User.find(session[:user_id]) rescue nil
+  end
+  # /Authentication
+
+  before_filter :set_remote_ip
+  before_filter :login_required
+
+  # Authentication
+  def login_required
+    if !current_user
+      respond_to do |format|
+        format.html  {
+          redirect_to '/auth/joshid'
+        }
+        format.json {
+          render :json => { 'error' => 'Not logged in' }.to_json
+        }
+      end
+    end
+  end
+
+  def current_user
+    return nil unless session[:user_id]
+    @current_user ||= User.find(session[:user_id]) rescue nil
+  end
+  # /Authentication
+
+  before_filter :set_remote_ip
+  before_filter :login_required
+
+  # Authentication
+  def login_required
+    if !current_user
+      respond_to do |format|
+        format.html  {
+          redirect_to '/auth/joshid'
+        }
+        format.json {
+          render :json => { 'error' => 'Not logged in' }.to_json
+        }
+      end
+    end
+  end
+
+  def current_user
+    return nil unless session[:user_id]
+    @current_user ||= User.find(session[:user_id]) rescue nil
+  end
+  # /Authentication
+
   unless Rails.application.config.consider_all_requests_local
     rescue_from Exception,
     :with => :render_error
@@ -163,4 +242,17 @@ class ApplicationController < ActionController::Base
       render_error(Exception.new("Invalid API token"))
     end
   end
+
+private
+  def set_remote_ip
+    # Caveat: this is highly dependent on the proxy setup. YMMV.
+    if request.headers.has_key?('HTTP_X_REAL_IP') then
+      # We're behind a reverse proxy
+      @remote_ip = request.headers['HTTP_X_REAL_IP']
+    else
+      # Hopefully, we are not!
+      @remote_ip = request.env['REMOTE_ADDR']
+    end
+  end
+
 end

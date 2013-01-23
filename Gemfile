@@ -41,3 +41,6 @@ gem 'rvm-capistrano', :group => :test
 gem 'acts_as_api'
 
 gem 'passenger', :group => :production
+
+gem 'omniauth', '1.1.1'
+gem 'omniauth-oauth2', '1.1.1'

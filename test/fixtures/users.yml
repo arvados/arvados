@@ -1,0 +1,31 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  uuid: MyString
+  created_by_client: MyString
+  created_by_user: MyString
+  created_at: 2013-01-21 21:00:42
+  modified_by_client: MyString
+  modified_by_user: MyString
+  modified_at: 2013-01-21 21:00:42
+  email: MyString
+  first_name: MyString
+  last_name: MyString
+  identity_url: MyString
+  is_admin: false
+  prefs: MyText
+
+two:
+  uuid: MyString
+  created_by_client: MyString
+  created_by_user: MyString
+  created_at: 2013-01-21 21:00:42
+  modified_by_client: MyString
+  modified_by_user: MyString
+  modified_at: 2013-01-21 21:00:42
+  email: MyString
+  first_name: MyString
+  last_name: MyString
+  identity_url: MyString
+  is_admin: false
+  prefs: MyText
