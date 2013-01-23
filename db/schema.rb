@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130122221616) do
+ActiveRecord::Schema.define(:version => 20130123174514) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
@@ -183,5 +183,7 @@ ActiveRecord::Schema.define(:version => 20130122221616) do
     t.text     "prefs"
     t.datetime "updated_at"
   end
+
+  add_index "users", ["uuid"], :name => "index_users_on_uuid", :unique => true
 
 end

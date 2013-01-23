@@ -2,10 +2,10 @@ class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
   before_filter :find_object_by_uuid, :except => :index
-  before_filter :authenticate_api_token
+  before_filter :authenticate_api_token, :except => :render_not_found
 
   before_filter :set_remote_ip
-  before_filter :login_required
+  before_filter :login_required, :except => :render_not_found
 
   before_filter :catch_redirect_hint
 
@@ -16,52 +16,6 @@ class ApplicationController < ActionController::Base
       end
     end
   end
-
-  # Authentication
-  def login_required
-    if !current_user
-      respond_to do |format|
-        format.html  {
-          redirect_to '/auth/joshid'
-        }
-        format.json {
-          render :json => { 'error' => 'Not logged in' }.to_json
-        }
-      end
-    end
-  end
-
-  def current_user
-    return nil unless session[:user_id]
-    @current_user ||= User.find(session[:user_id]) rescue nil
-  end
-  # /Authentication
-
-  before_filter :set_remote_ip
-  before_filter :login_required
-
-  # Authentication
-  def login_required
-    if !current_user
-      respond_to do |format|
-        format.html  {
-          redirect_to '/auth/joshid'
-        }
-        format.json {
-          render :json => { 'error' => 'Not logged in' }.to_json
-        }
-      end
-    end
-  end
-
-  def current_user
-    return nil unless session[:user_id]
-    @current_user ||= User.find(session[:user_id]) rescue nil
-  end
-  # /Authentication
-
-  before_filter :set_remote_ip
-  before_filter :login_required
 
   # Authentication
   def login_required
