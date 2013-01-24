@@ -15,3 +15,5 @@
 /tmp
 
 config/.secret_token
+
+/public/assets
