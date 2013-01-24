@@ -38,6 +38,7 @@ namespace :deploy do
     run "cp /home/passenger/orvos-server/database.yml #{release_path}/config/database.yml"
     run "cp /home/passenger/orvos-server/secret_token.rb #{release_path}/config/initializers/secret_token.rb"
     run "cp /home/passenger/orvos-server/production.rb #{release_path}/config/environments/production.rb"
+    run "cp /home/passenger/orvos-server/omniauth.rb #{release_path}/config/initializers/omniauth.rb"
     # Ensure correct ownership of a few files
     run "chown www-data:www-data #{release_path}/config/environment.rb"
     run "chown www-data:www-data #{release_path}/config.ru"
