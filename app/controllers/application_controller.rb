@@ -51,8 +51,8 @@ class ApplicationController < ActionController::Base
   def index
     @objects ||= model_class.
       joins("LEFT JOIN metadata permissions ON permissions.tail=#{table_name}.uuid AND permissions.head=#{model_class.sanitize current_user.uuid} AND permissions.metadata_class='permission' AND permissions.name='visible_to'").
-      where("#{table_name}.created_by_user=? OR permissions.head IS NOT NULL",
-            current_user.uuid)
+      where("#{table_name}.created_by_user=? OR #{table_name}.uuid=? OR permissions.head IS NOT NULL",
+            current_user.uuid, current_user.uuid)
     if params[:where]
       where = params[:where]
       where = JSON.parse(where) if where.is_a?(String)

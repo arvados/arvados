@@ -10,6 +10,7 @@ class OrvosModel < ActiveRecord::Base
   attr_protected :modified_by_client
   attr_protected :modified_at
   before_create :initialize_created_by_fields
+  before_update :permission_to_update
   before_update :update_modified_by_fields
 
   def self.kind_class(kind)
@@ -30,6 +31,17 @@ class OrvosModel < ActiveRecord::Base
   end
 
   protected
+
+  def permission_to_update
+    return false unless current_user
+    self.created_by_user == current_user.uuid or
+      current_user.is_admin or
+      current_user.uuid == self.uuid or
+      Metadatum.where(metadata_class: 'permission',
+                      name: 'can_write',
+                      tail: self.uuid,
+                      head: current_user.uuid).count > 0
+  end
 
   def update_modified_by_fields
     if self.changed?

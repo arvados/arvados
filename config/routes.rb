@@ -1,8 +1,6 @@
 Server::Application.routes.draw do
   resources :api_client_authorizations
-
   resources :api_clients
-
   resources :logs
   resources :projects
   resources :specimens
@@ -80,6 +78,7 @@ Server::Application.routes.draw do
       resources :specimens
       resources :projects
       resources :logs
+      resources :users
       match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/metadata/:tail_kind/:tail' => 'metadata#index'

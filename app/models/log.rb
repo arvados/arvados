@@ -1,4 +1,4 @@
-class Log < ActiveRecord::Base
+class Log < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
