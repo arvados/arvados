@@ -1,4 +1,8 @@
 Server::Application.routes.draw do
+  resources :api_client_authorizations
+
+  resources :api_clients
+
   resources :logs
   resources :projects
   resources :specimens

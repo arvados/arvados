@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  api_token: MyString
+  api_client: 
+  user: 
+
+two:
+  api_token: MyString
+  api_client: 
+  user: 

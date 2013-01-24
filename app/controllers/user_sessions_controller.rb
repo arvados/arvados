@@ -3,7 +3,6 @@ class UserSessionsController < ApplicationController
 
   skip_before_filter :uncamelcase_params_hash_keys
   skip_before_filter :find_object_by_uuid
-  skip_before_filter :authenticate_api_token
 
   respond_to :html
 
@@ -39,12 +38,15 @@ class UserSessionsController < ApplicationController
 
     omniauth.delete('extra')
 
+    # Give the authenticated user a cookie for direct API access
     session[:user_id] = user.id
+    session[:user_uuid] = user.uuid
+    session[:api_client_uuid] = nil
+    session[:api_client_trusted] = true # full permission to see user's secrets
 
     @redirect_to = root_path
-    if session.has_key?('redirect_to') then
-      @redirect_to = session[:redirect_to]
-      session.delete(:redirect_to)
+    if session.has_key? :return_to
+      return send_api_token_to(session.delete :return_to)
     end
     redirect_to @redirect_to
   end
@@ -67,6 +69,46 @@ class UserSessionsController < ApplicationController
   # to save the redirect_to parameter (if it exists; see the application
   # controller). /auth/joshid bypasses the application controller.
   def login
-    redirect_to "/auth/joshid"
+    if current_user and params[:return_to]
+      # Already logged in; just need to send a token to the requesting
+      # API client.
+      #
+      # FIXME: if current_user has never authorized this app before,
+      # ask for confirmation here!
+
+      send_api_token_to(params[:return_to])
+    else
+      # TODO: make joshid propagate return_to as a GET parameter, and
+      # use that GET parameter instead of session[] when redirecting
+      # in create().  Using session[] is inappropriate: completing a
+      # login in browser window A can cause a token to be sent to a
+      # different API client who has requested a token in window B.
+
+      session[:return_to] = params[:return_to]
+      redirect_to "/auth/joshid"
+    end
+  end
+
+  def send_api_token_to(callback_url)
+    # Give the API client a token for making API calls on behalf of
+    # the authenticated user
+
+    # Stub: automatically register all new API clients
+    api_client_url_prefix = callback_url.match(%r{^.*?://[^/]+})[0] + '/'
+    api_client = ApiClient.find_or_create_by_url_prefix(api_client_url_prefix)
+
+    api_client_auth = ApiClientAuthorization.
+      new(user: user,
+          api_client: api_client,
+          created_by_ip_address: Thread.current[:remote_ip])
+    api_client_auth.save!
+
+    if callback_url.index('?')
+      callback_url << '&'
+    else
+      callback_url << '?'
+    end
+    callback_url << 'api_token=' << api_client_auth.api_token
+    redirect_to callback_url
   end
 end

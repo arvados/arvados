@@ -11,7 +11,39 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130123174514) do
+ActiveRecord::Schema.define(:version => 20130123180228) do
+
+  create_table "api_client_authorizations", :force => true do |t|
+    t.string   "api_token",               :null => false
+    t.integer  "api_client_id",           :null => false
+    t.integer  "user_id",                 :null => false
+    t.string   "created_by_ip_address"
+    t.string   "last_used_by_ip_address"
+    t.datetime "last_used_at"
+    t.datetime "expires_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "api_client_authorizations", ["api_client_id"], :name => "index_api_client_authorizations_on_api_client_id"
+  add_index "api_client_authorizations", ["api_token"], :name => "index_api_client_authorizations_on_api_token", :unique => true
+  add_index "api_client_authorizations", ["expires_at"], :name => "index_api_client_authorizations_on_expires_at"
+  add_index "api_client_authorizations", ["user_id"], :name => "index_api_client_authorizations_on_user_id"
+
+  create_table "api_clients", :force => true do |t|
+    t.string   "uuid"
+    t.string   "created_by_client"
+    t.string   "created_by_user"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "name"
+    t.string   "url_prefix"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "api_clients", ["uuid"], :name => "index_api_clients_on_uuid", :unique => true
 
   create_table "collections", :force => true do |t|
     t.string   "locator"

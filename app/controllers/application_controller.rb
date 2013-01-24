@@ -1,10 +1,10 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
+  around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
   before_filter :find_object_by_uuid, :except => :index
-  before_filter :authenticate_api_token, :except => :render_not_found
 
-  before_filter :set_remote_ip
+  before_filter :remote_ip
   before_filter :login_required, :except => :render_not_found
 
   before_filter :catch_redirect_hint
@@ -16,26 +16,6 @@ class ApplicationController < ActionController::Base
       end
     end
   end
-
-  # Authentication
-  def login_required
-    if !current_user
-      respond_to do |format|
-        format.html  {
-          redirect_to '/auth/joshid'
-        }
-        format.json {
-          render :json => { 'error' => 'Not logged in' }.to_json
-        }
-      end
-    end
-  end
-
-  def current_user
-    return nil unless session[:user_id]
-    @current_user ||= User.find(session[:user_id]) rescue nil
-  end
-  # /Authentication
 
   unless Rails.application.config.consider_all_requests_local
     rescue_from Exception,
@@ -67,7 +47,11 @@ class ApplicationController < ActionController::Base
   end
 
   def index
-    @objects ||= if params[:where]
+    @objects ||= model_class.
+      joins("LEFT JOIN metadata permissions ON permissions.tail=#{table_name}.uuid AND permissions.head=#{model_class.sanitize Thread.current[:user_uuid]} AND permissions.metadata_class='permission' AND permissions.name='visible_to'").
+      where("#{table_name}.created_by_user=? OR permissions.head IS NOT NULL",
+            Thread.current[:user_uuid])
+    if params[:where]
       where = params[:where]
       where = JSON.parse(where) if where.is_a?(String)
       conditions = ['1=1']
@@ -76,17 +60,20 @@ class ApplicationController < ActionController::Base
             attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr))
           if value.is_a? Array
-            conditions[0] << " and #{attr} in (?)"
+            conditions[0] << " and #{table_name}.#{attr} in (?)"
             conditions << value
           else
-            conditions[0] << " and #{attr}=?"
+            conditions[0] << " and #{table_name}.#{attr}=?"
             conditions << value
           end
         end
       end
-      model_class.where(*conditions)
+      if conditions.length > 1
+        conditions[0].sub!(/^1=1 and /, '')
+        @objects = @objects.
+          where(*conditions)
+      end
     end
-    @objects ||= model_class.all
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)
     end
@@ -123,7 +110,56 @@ class ApplicationController < ActionController::Base
     show
   end
 
+  def current_user
+    Thread.current[:user]
+  end
+
   protected
+
+  # Authentication
+  def login_required
+    if !current_user
+      respond_to do |format|
+        format.html  {
+          redirect_to '/auth/joshid'
+        }
+        format.json {
+          render :json => { 'error' => 'Not logged in' }.to_json
+        }
+      end
+    end
+  end
+
+  def thread_with_auth_info
+    begin
+      if params[:api_token]
+        @api_client_auth = ApiClientAuthorization.
+          includes(:api_client, :user).
+          where('api_token=?', params[:api_token]).
+          first
+        if @api_client_auth
+          session[:user_id] = @api_client_auth.user.id
+          session[:user_uuid] = @api_client_auth.user.uuid
+          session[:api_client_uuid] = @api_client_auth.api_client.uuid
+        end
+      end
+      Thread.current[:api_client_trusted] = session[:api_client_trusted]
+      Thread.current[:api_client_ip_address] = remote_ip
+      Thread.current[:api_client_uuid] = session[:api_client_uuid]
+      Thread.current[:user_uuid] = session[:user_uuid]
+      Thread.current[:remote_ip] = remote_ip
+      Thread.current[:user] = User.find(session[:user_id]) rescue nil
+      yield
+    ensure
+      Thread.current[:api_client_trusted] = nil
+      Thread.current[:api_client_ip_address] = nil
+      Thread.current[:api_client_uuid] = nil
+      Thread.current[:user_uuid] = nil
+      Thread.current[:remote_ip] = nil
+      Thread.current[:user] = nil
+    end
+  end
+  # /Authentication
 
   def model_class
     controller_name.classify.constantize
@@ -131,6 +167,10 @@ class ApplicationController < ActionController::Base
 
   def resource_name             # params[] key used by client
     controller_name.singularize
+  end
+
+  def table_name
+    controller_name
   end
 
   def find_object_by_uuid
@@ -188,17 +228,8 @@ class ApplicationController < ActionController::Base
     render json: @object_list
   end
 
-  def authenticate_api_token
-    unless Rails.configuration.
-      accept_api_token.
-      has_key?(params[:api_token] ||
-               cookies[:api_token])
-      render_error(Exception.new("Invalid API token"))
-    end
-  end
-
 private
-  def set_remote_ip
+  def remote_ip
     # Caveat: this is highly dependent on the proxy setup. YMMV.
     if request.headers.has_key?('HTTP_X_REAL_IP') then
       # We're behind a reverse proxy
@@ -208,5 +239,4 @@ private
       @remote_ip = request.env['REMOTE_ADDR']
     end
   end
-
 end

@@ -3,6 +3,7 @@ class User < ActiveRecord::Base
   include KindAndEtag
   include CommonApiTemplate
   serialize :prefs, Hash
+  has_many :api_client_authorizations
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :email

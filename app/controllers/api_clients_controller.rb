@@ -1,0 +1,2 @@
+class ApiClientsController < ApplicationController
+end
