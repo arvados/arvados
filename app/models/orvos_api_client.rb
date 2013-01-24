@@ -4,8 +4,8 @@ class OrvosApiClient
     orvos_api_token = '' if orvos_api_token.nil?
     dataargs = ['--data-urlencode',
                 "api_token=#{orvos_api_token}",
-                '--data-urlencode',
-                'format=json']
+                '--header',
+                'Accept:application/json']
     if !data.nil?
       data.each do |k,v|
         dataargs << '--data-urlencode'
