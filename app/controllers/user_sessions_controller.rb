@@ -46,7 +46,7 @@ class UserSessionsController < ApplicationController
 
     @redirect_to = root_path
     if session.has_key? :return_to
-      return send_api_token_to(session.delete :return_to)
+      return send_api_token_to(session.delete(:return_to), user)
     end
     redirect_to @redirect_to
   end
@@ -76,7 +76,7 @@ class UserSessionsController < ApplicationController
       # FIXME: if current_user has never authorized this app before,
       # ask for confirmation here!
 
-      send_api_token_to(params[:return_to])
+      send_api_token_to(params[:return_to], current_user)
     else
       # TODO: make joshid propagate return_to as a GET parameter, and
       # use that GET parameter instead of session[] when redirecting
@@ -89,7 +89,7 @@ class UserSessionsController < ApplicationController
     end
   end
 
-  def send_api_token_to(callback_url)
+  def send_api_token_to(callback_url, user)
     # Give the API client a token for making API calls on behalf of
     # the authenticated user
 
