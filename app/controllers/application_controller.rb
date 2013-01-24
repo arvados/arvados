@@ -78,7 +78,15 @@ class ApplicationController < ActionController::Base
         # call to verify its authenticity.
         if verify_api_token
           session[:orvos_api_token] = params[:api_token]
-          yield
+          if !request.format.json? and request.method == 'GET'
+            # Repeat this request with api_token in the (new) session
+            # cookie instead of the query string.  This prevents API
+            # tokens from appearing in (and being inadvisedly copied
+            # and pasted from) browser Location bars.
+            redirect_to request.fullpath.sub(%r{([&\?]api_token=)[^&\?]*}, '')
+          else
+            yield
+          end
         else
           @errors = ['Could not verify API token.']
           self.error status: 401
@@ -90,8 +98,15 @@ class ApplicationController < ActionController::Base
         Thread.current[:orvos_api_token] = session[:orvos_api_token]
         yield
       else
-        @errors = ['No API token supplied -- can\'t really do anything.']
-        self.error status: 422
+        respond_to do |f|
+          f.html {
+            redirect_to $orvos_api_client.orvos_login_url(return_to: request.url)
+          }
+          f.json {
+            @errors = ['No API token supplied -- can\'t really do anything.']
+            self.error status: 422
+          }
+        end
       end
     ensure
       # Remove token in case this Thread is used for anything else.

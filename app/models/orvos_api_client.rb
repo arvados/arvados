@@ -57,6 +57,15 @@ class OrvosApiClient
     end
   end
 
+  def orvos_login_url(params={})
+    uri = self.orvos_v1_base.sub(%r{/orvos/v\d+.*}, '/login')
+    if params.size > 0
+      uri << '?' << params.collect { |k,v|
+        CGI.escape(k.to_s) + '=' + CGI.escape(v.to_s)
+      }.join('&')
+    end
+  end
+
   def orvos_v1_base
     @orvos_v1_base ||= Rails.configuration.orvos_v1_base
   end
