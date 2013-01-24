@@ -3,7 +3,9 @@ class OrvosApiClient
     orvos_api_token = Thread.current[:orvos_api_token]
     orvos_api_token = '' if orvos_api_token.nil?
     dataargs = ['--data-urlencode',
-                "api_token=#{orvos_api_token}"]
+                "api_token=#{orvos_api_token}",
+                '--data-urlencode',
+                'format=json']
     if !data.nil?
       data.each do |k,v|
         dataargs << '--data-urlencode'
