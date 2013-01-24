@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  include CurrentApiClient
+
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
@@ -48,9 +50,9 @@ class ApplicationController < ActionController::Base
 
   def index
     @objects ||= model_class.
-      joins("LEFT JOIN metadata permissions ON permissions.tail=#{table_name}.uuid AND permissions.head=#{model_class.sanitize Thread.current[:user_uuid]} AND permissions.metadata_class='permission' AND permissions.name='visible_to'").
+      joins("LEFT JOIN metadata permissions ON permissions.tail=#{table_name}.uuid AND permissions.head=#{model_class.sanitize current_user.uuid} AND permissions.metadata_class='permission' AND permissions.name='visible_to'").
       where("#{table_name}.created_by_user=? OR permissions.head IS NOT NULL",
-            Thread.current[:user_uuid])
+            current_user.uuid)
     if params[:where]
       where = params[:where]
       where = JSON.parse(where) if where.is_a?(String)
@@ -110,10 +112,6 @@ class ApplicationController < ActionController::Base
     show
   end
 
-  def current_user
-    Thread.current[:user]
-  end
-
   protected
 
   # Authentication
@@ -132,30 +130,35 @@ class ApplicationController < ActionController::Base
 
   def thread_with_auth_info
     begin
+      user = nil
+      api_client = nil
+      api_client_auth = nil
       if params[:api_token]
-        @api_client_auth = ApiClientAuthorization.
+        api_client_auth = ApiClientAuthorization.
           includes(:api_client, :user).
           where('api_token=?', params[:api_token]).
           first
-        if @api_client_auth
-          session[:user_id] = @api_client_auth.user.id
-          session[:user_uuid] = @api_client_auth.user.uuid
-          session[:api_client_uuid] = @api_client_auth.api_client.uuid
+        if api_client_auth
+          session[:user_id] = api_client_auth.user.id
+          session[:api_client_uuid] = api_client_auth.api_client.uuid
+          user = api_client_auth.user
+          api_client = api_client_auth.api_client
         end
+      elsif session[:user_id]
+        user = User.find(session[:user_id]) rescue nil
+        api_client = ApiClient.
+          where('uuid=?',session[:api_client_uuid]).
+          first rescue nil
       end
       Thread.current[:api_client_trusted] = session[:api_client_trusted]
       Thread.current[:api_client_ip_address] = remote_ip
-      Thread.current[:api_client_uuid] = session[:api_client_uuid]
-      Thread.current[:user_uuid] = session[:user_uuid]
-      Thread.current[:remote_ip] = remote_ip
-      Thread.current[:user] = User.find(session[:user_id]) rescue nil
+      Thread.current[:api_client] = api_client
+      Thread.current[:user] = user
       yield
     ensure
       Thread.current[:api_client_trusted] = nil
       Thread.current[:api_client_ip_address] = nil
       Thread.current[:api_client_uuid] = nil
-      Thread.current[:user_uuid] = nil
-      Thread.current[:remote_ip] = nil
       Thread.current[:user] = nil
     end
   end
@@ -228,7 +231,6 @@ class ApplicationController < ActionController::Base
     render json: @object_list
   end
 
-private
   def remote_ip
     # Caveat: this is highly dependent on the proxy setup. YMMV.
     if request.headers.has_key?('HTTP_X_REAL_IP') then

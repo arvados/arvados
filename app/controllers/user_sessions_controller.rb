@@ -40,7 +40,6 @@ class UserSessionsController < ApplicationController
 
     # Give the authenticated user a cookie for direct API access
     session[:user_id] = user.id
-    session[:user_uuid] = user.uuid
     session[:api_client_uuid] = nil
     session[:api_client_trusted] = true # full permission to see user's secrets
 
@@ -100,7 +99,7 @@ class UserSessionsController < ApplicationController
     api_client_auth = ApiClientAuthorization.
       new(user: user,
           api_client: api_client,
-          created_by_ip_address: Thread.current[:remote_ip])
+          created_by_ip_address: remote_ip)
     api_client_auth.save!
 
     if callback_url.index('?')
