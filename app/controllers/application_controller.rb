@@ -50,8 +50,10 @@ class ApplicationController < ActionController::Base
 
   def index
     @objects ||= model_class.
-      joins("LEFT JOIN metadata permissions ON permissions.tail=#{table_name}.uuid AND permissions.head=#{model_class.sanitize current_user.uuid} AND permissions.metadata_class='permission' AND permissions.name='visible_to'").
-      where("#{table_name}.owner=? OR #{table_name}.uuid=? OR permissions.head IS NOT NULL",
+      joins("LEFT JOIN metadata permissions ON permissions.head=#{table_name}.owner AND permissions.tail=#{model_class.sanitize current_user.uuid} AND permissions.metadata_class='permission'").
+      group("#{table_name}.id").
+      where("?=? OR #{table_name}.owner=? OR #{table_name}.uuid=? OR permissions.head IS NOT NULL",
+            true, current_user.is_admin,
             current_user.uuid, current_user.uuid)
     if params[:where]
       where = params[:where]
