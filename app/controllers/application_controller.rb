@@ -72,7 +72,9 @@ class ApplicationController < ActionController::Base
 
   def thread_with_api_token
     begin
+      try_redirect_to_login = true
       if params[:api_token]
+        try_redirect_to_login = false
         Thread.current[:orvos_api_token] = params[:api_token]
         # Before copying the token into session[], do a simple API
         # call to verify its authenticity.
@@ -93,11 +95,17 @@ class ApplicationController < ActionController::Base
         end
       elsif session[:orvos_api_token]
         # In this case, the token must have already verified at some
-        # point, although it might have been revoked since.  TODO:
-        # graceful failure if the token is revoked.
+        # point, but it might have been revoked since.  We'll try
+        # using it, and catch the exception if it doesn't work.
+        try_redirect_to_login = false
         Thread.current[:orvos_api_token] = session[:orvos_api_token]
-        yield
-      else
+        begin
+          yield
+        rescue OrvosApiClient::NotLoggedInException
+          try_redirect_to_login = true
+        end
+      end
+      if try_redirect_to_login
         respond_to do |f|
           f.html {
             redirect_to $orvos_api_client.orvos_login_url(return_to: request.url)

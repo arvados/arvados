@@ -1,4 +1,6 @@
 class OrvosApiClient
+  class NotLoggedInException < Exception
+  end
   def api(resources_kind, action, data=nil)
     orvos_api_token = Thread.current[:orvos_api_token]
     orvos_api_token = '' if orvos_api_token.nil?
@@ -25,7 +27,7 @@ class OrvosApiClient
     url = "#{self.orvos_v1_base}/#{resources_kind}#{action}"
     IO.popen([ENV,
               'curl',
-              '-sk',
+              '-s',
               *dataargs,
               url],
              'r') do |io|
@@ -33,7 +35,11 @@ class OrvosApiClient
     end
     resp = JSON.parse json, :symbolize_names => true
     if resp[:errors]
-      raise "API errors:\n#{resp[:errors].join "\n"}\n"
+      if resp[:errors][0] == 'Not logged in'
+        raise NotLoggedInException.new
+      else
+        raise "API errors:\n\n#{resp[:errors].join "\n\n"}\n"
+      end
     end
     resp
   end
