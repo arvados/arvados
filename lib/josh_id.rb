@@ -3,15 +3,13 @@ module OmniAuth
   module Strategies
     class JoshId < OmniAuth::Strategies::OAuth2
 
-      CUSTOM_PROVIDER_URL = 'http://auth.clinicalfuture.com'
+      args [:client_id, :client_secret, :custom_provider_url]
 
-      option :client_options, {
-        :site =>  CUSTOM_PROVIDER_URL,
-        :authorize_url => "#{CUSTOM_PROVIDER_URL}/auth/josh_id/authorize",
-        :access_token_url => "#{CUSTOM_PROVIDER_URL}/auth/josh_id/access_token"
-      }
+      option :custom_provider_url, ''
 
       uid { raw_info['id'] }
+
+      option :client_options, {}
 
       info do
         {
@@ -28,6 +26,13 @@ module OmniAuth
         }
       end
       
+      def client
+        options.client_options[:site] = options[:custom_provider_url]
+        options.client_options[:authorize_url] = "#{options[:custom_provider_url]}/auth/josh_id/authorize"
+        options.client_options[:access_token_url] = "#{options[:custom_provider_url]}/auth/josh_id/access_token"
+        ::OAuth2::Client.new(options.client_id, options.client_secret, deep_symbolize(options.client_options))
+      end
+
       def callback_url
         full_host + script_name + callback_path + query_string
       end
