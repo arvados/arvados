@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130123180228) do
+ActiveRecord::Schema.define(:version => 20130125220425) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -32,8 +32,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "api_clients", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
     t.datetime "modified_at"
@@ -47,8 +46,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
@@ -67,8 +65,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "logs", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
     t.string   "object_kind"
@@ -91,8 +88,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "metadata", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
@@ -117,8 +113,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "nodes", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
@@ -139,8 +134,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "pipeline_invocations", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
@@ -157,8 +151,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "pipelines", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
@@ -172,8 +165,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "projects", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
@@ -187,8 +179,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "specimens", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"
@@ -201,8 +192,7 @@ ActiveRecord::Schema.define(:version => 20130123180228) do
 
   create_table "users", :force => true do |t|
     t.string   "uuid"
-    t.string   "created_by_client"
-    t.string   "created_by_user"
+    t.string   "owner"
     t.datetime "created_at"
     t.string   "modified_by_client"
     t.string   "modified_by_user"

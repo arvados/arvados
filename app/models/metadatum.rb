@@ -33,22 +33,22 @@ class Metadatum < OrvosModel
     # Administrators can grant permissions
     return true if current_user.is_admin
 
-    # All users can grant permissions on objects they created themselves
+    # All users can grant permissions on objects they own
     head_obj = self.class.
       kind_class(self.head_kind).
       where('uuid=?',head_uuid).
       first
     if head_obj
-      return true if head_obj.created_by_user == current_user.uuid
+      return true if head_obj.owner == current_user.uuid
     end
 
-    # Users with "can_manage" permission on an object can grant
+    # Users with "can_grant" permission on an object can grant
     # permissions on that object
-    has_manage_permission = self.class.
+    has_grant_permission = self.class.
       where('metadata_class=? AND name=? AND tail=? AND head=?',
-            'permission', 'can_manage', current_user.uuid, self.head).
+            'permission', 'can_grant', current_user.uuid, self.head).
       count > 0
-    return true if has_manage_permission
+    return true if has_grant_permission
 
     # Default = deny.
     false

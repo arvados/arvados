@@ -6,8 +6,7 @@ module CommonApiTemplate
       t.add :kind
       t.add :etag
       t.add :uuid
-      t.add :created_by_client
-      t.add :created_by_user
+      t.add :owner
       t.add :created_at
       t.add :modified_by_client
       t.add :modified_by_user
