@@ -122,7 +122,7 @@ class ApplicationController < ActionController::Base
           redirect_to '/auth/joshid'
         }
         format.json {
-          render :json => { 'error' => 'Not logged in' }.to_json
+          render :json => { errors: ['Not logged in'] }.to_json
         }
       end
     end
