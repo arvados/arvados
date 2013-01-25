@@ -72,4 +72,6 @@ Vcffarm::Application.configure do
   # Authentication stub: hard code pre-approved API tokens.
   # config.accept_api_token = { rand(2**256).to_s(36) => true }
   config.accept_api_token = {}
+
+  config.vcf_pipeline_uuid = '9ujm1-mxsvm-o62u4mdoxvs0ckp'
 end
