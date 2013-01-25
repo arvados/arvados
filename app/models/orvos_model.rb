@@ -53,7 +53,7 @@ class OrvosModel < ActiveRecord::Base
       self.owner ||= current_user.uuid
       self.modified_at = Time.now
       self.modified_by_user = current_user.uuid
-      self.modified_by_client = current_api_client.uuid
+      self.modified_by_client = current_api_client ? current_api_client.uuid : nil
     end
   end
 end
