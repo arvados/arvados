@@ -11,3 +11,7 @@
  *= require_self
  *= require_tree .
  */
+
+.contain-align-left {
+    text-align: left;
+}
