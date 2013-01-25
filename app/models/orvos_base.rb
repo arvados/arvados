@@ -23,7 +23,7 @@ class OrvosBase < ActiveRecord::Base
     ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
   end
   def self.find(uuid)
-    new($orvos_api_client.api(self, '/' + uuid))
+    new.private_reload(uuid)
   end
   def self.where(*args)
     OrvosResourceList.new(self).where(*args)
@@ -56,11 +56,6 @@ class OrvosBase < ActiveRecord::Base
   end
   def save!
     self.save or raise Exception.new("Save failed")
-  end
-  def initialize(h={})
-    @etag = h.delete :etag
-    @kind = h.delete :kind
-    super
   end
   def metadata(*args)
     o = {}
@@ -100,11 +95,31 @@ class OrvosBase < ActiveRecord::Base
     @all_metadata = $orvos_api_client.unpack_api_response(res)
   end
   def reload
-    raise "No such object" if !uuid
-    $orvos_api_client.api(self, '/' + uuid).each do |k,v|
-      self.instance_variable_set('@' + k.to_s, v)
+    private_reload(self.uuid)
+  end
+  def private_reload(uuid_or_hash)
+    raise "No such object" if !uuid_or_hash
+    if uuid_or_hash.is_a? Hash
+      hash = uuid_or_hash
+    else
+      hash = $orvos_api_client.api(self.class, '/' + uuid_or_hash)
+    end
+    hash.each do |k,v|
+      if self.respond_to?((k.to_s + '=').to_s)
+        self.send(k.to_s + '=', v)
+      else
+        # When OrvosApiClient#schema starts telling us what to expect
+        # in API responses (not just the server side database
+        # columns), this sort of awfulness can be avoided:
+        self.instance_variable_set('@' + k.to_s, v)
+        if !self.respond_to?(k.to_s)
+          singleton = class << self; self end
+          singleton.send :define_method, k, lambda { instance_variable_get('@' + k.to_s) }
+        end
+      end
     end
     @all_metadata = nil
+    self
   end
   def dup
     super.forget_uuid!
