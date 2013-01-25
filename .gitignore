@@ -17,3 +17,5 @@
 config/.secret_token
 
 /public/assets
+
+/config/environments/development.rb
