@@ -28,6 +28,10 @@ module OmniAuth
         }
       end
       
+      def callback_url
+        full_host + script_name + callback_path + query_string
+      end
+
       def raw_info
         @raw_info ||= access_token.get("/auth/josh_id/user.json?oauth_token=#{access_token.token}").parsed
       end

@@ -44,8 +44,8 @@ class UserSessionsController < ApplicationController
     session[:api_client_trusted] = true # full permission to see user's secrets
 
     @redirect_to = root_path
-    if session.has_key? :return_to
-      return send_api_token_to(session.delete(:return_to), user)
+    if params.has_key?(:return_to)
+      return send_api_token_to(params[:return_to], user)
     end
     redirect_to @redirect_to
   end
@@ -76,14 +76,9 @@ class UserSessionsController < ApplicationController
       # ask for confirmation here!
 
       send_api_token_to(params[:return_to], current_user)
+    elsif params[:return_to]
+      redirect_to "/auth/joshid?return_to=#{CGI.escape(params[:return_to])}"
     else
-      # TODO: make joshid propagate return_to as a GET parameter, and
-      # use that GET parameter instead of session[] when redirecting
-      # in create().  Using session[] is inappropriate: completing a
-      # login in browser window A can cause a token to be sent to a
-      # different API client who has requested a token in window B.
-
-      session[:return_to] = params[:return_to]
       redirect_to "/auth/joshid"
     end
   end
