@@ -14,6 +14,11 @@ class PipelineInvocation < OrvosModel
     t.add :components
     t.add :success
     t.add :active
+    t.add :dependencies
+  end
+
+  def dependencies
+    dependency_search(self.components).keys
   end
 
   def progress_table
@@ -55,6 +60,30 @@ class PipelineInvocation < OrvosModel
   def update_success
     if components and progress_ratio == 1.0
       self.success = true
+    end
+  end
+
+  def dependency_search(haystack)
+    if haystack.is_a? String
+      if (re = haystack.match /^([0-9a-f]{32}(\+[^,]+)*)+/)
+        {re[1] => true}
+      else
+        {}
+      end
+    elsif haystack.is_a? Array
+      deps = {}
+      haystack.each do |value|
+        deps.merge! dependency_search(value)
+      end
+      deps
+    elsif haystack.respond_to? :keys
+      deps = {}
+      haystack.each do |key, value|
+        deps.merge! dependency_search(value)
+      end
+      deps
+    else
+      {}
     end
   end
 end
