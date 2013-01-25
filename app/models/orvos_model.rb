@@ -32,7 +32,7 @@ class OrvosModel < ActiveRecord::Base
 
   def permission_to_update
     return false unless current_user
-    if self.owner_changed? and self.owner_was != self.uuid
+    if self.owner_changed? and self.owner_was != current_user.uuid
       return Metadatum.where(metadata_class: 'permission',
                              name: 'can_pillage',
                              tail: self.owner,
