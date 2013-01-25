@@ -65,7 +65,7 @@ class UserSessionsController < ApplicationController
   end
 
   # login - Just bounce to /auth/joshid. The only purpose of this function is
-  # to save the redirect_to parameter (if it exists; see the application
+  # to save the return_to parameter (if it exists; see the application
   # controller). /auth/joshid bypasses the application controller.
   def login
     if current_user and params[:return_to]
