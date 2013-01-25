@@ -56,7 +56,7 @@ class OrvosApiClient
             j[k] = self.unpack_api_response(j[k], childkind)
           end
         end
-        oclass.new(j)
+        oclass.new.private_reload(j)
       else
         j
       end
@@ -75,7 +75,7 @@ class OrvosApiClient
   end
 
   def orvos_v1_base
-    @orvos_v1_base ||= Rails.configuration.orvos_v1_base
+    Rails.configuration.orvos_v1_base
   end
 
   def orvos_schema
