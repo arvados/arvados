@@ -105,14 +105,14 @@ class OrvosBase < ActiveRecord::Base
       hash = $orvos_api_client.api(self.class, '/' + uuid_or_hash)
     end
     hash.each do |k,v|
-      if self.respond_to?((k.to_s + '=').to_s)
+      if self.respond_to?(k.to_s + '=')
         self.send(k.to_s + '=', v)
       else
         # When OrvosApiClient#schema starts telling us what to expect
         # in API responses (not just the server side database
         # columns), this sort of awfulness can be avoided:
         self.instance_variable_set('@' + k.to_s, v)
-        if !self.respond_to?(k.to_s)
+        if !self.respond_to? k
           singleton = class << self; self end
           singleton.send :define_method, k, lambda { instance_variable_get('@' + k.to_s) }
         end
