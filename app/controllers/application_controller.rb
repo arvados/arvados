@@ -123,6 +123,6 @@ class ApplicationController < ActionController::Base
   end
 
   def verify_api_token
-    Metadatum.where(uuid: 'the-philosophers-stone').size rescue false
+    Link.where(uuid: 'the-philosophers-stone').size rescue false
   end
 end

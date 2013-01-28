@@ -20,7 +20,7 @@ Vcffarm::Application.routes.draw do
   resources :pipeline_invocations
 
 
-  resources :metadata
+  resources :links
 
 
   resources :collections
@@ -29,7 +29,7 @@ Vcffarm::Application.routes.draw do
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
-  match '*a', :to => 'metadata#render_not_found'
+  match '*a', :to => 'links#render_not_found'
 
 
   # The priority is based upon order of creation:

@@ -57,16 +57,16 @@ class OrvosBase < ActiveRecord::Base
   def save!
     self.save or raise Exception.new("Save failed")
   end
-  def metadata(*args)
+  def links(*args)
     o = {}
     o.merge!(args.pop) if args[-1].is_a? Hash
-    o[:metadata_class] ||= args.shift
+    o[:link_class] ||= args.shift
     o[:name] ||= args.shift
     o[:head_kind] ||= args.shift
     o[:tail_kind] = self.kind
-    o[:tail] = self.uuid
-    if all_metadata
-      return all_metadata.select do |m|
+    o[:tail_uuid] = self.uuid
+    if all_links
+      return all_links.select do |m|
         ok = true
         o.each do |k,v|
           if !v.nil?
@@ -79,20 +79,20 @@ class OrvosBase < ActiveRecord::Base
         ok
       end
     end
-    @metadata = $orvos_api_client.api Metadatum, '', { _method: 'GET', where: o, eager: true }
-    @metadata = $orvos_api_client.unpack_api_response(@metadata)
+    @links = $orvos_api_client.api Link, '', { _method: 'GET', where: o, eager: true }
+    @links = $orvos_api_client.unpack_api_response(@links)
   end
-  def all_metadata
-    return @all_metadata if @all_metadata
-    res = $orvos_api_client.api Metadatum, '', {
+  def all_links
+    return @all_links if @all_links
+    res = $orvos_api_client.api Link, '', {
       _method: 'GET',
       where: {
         tail_kind: self.kind,
-        tail: self.uuid
+        tail_uuid: self.uuid
       },
       eager: true
     }
-    @all_metadata = $orvos_api_client.unpack_api_response(res)
+    @all_links = $orvos_api_client.unpack_api_response(res)
   end
   def reload
     private_reload(self.uuid)
@@ -118,7 +118,7 @@ class OrvosBase < ActiveRecord::Base
         end
       end
     end
-    @all_metadata = nil
+    @all_links = nil
     self
   end
   def dup
