@@ -5,7 +5,7 @@ Server::Application.routes.draw do
   resources :projects
   resources :specimens
   resources :collections
-  resources :metadata
+  resources :links
   resources :nodes
   resources :pipelines
   resources :pipeline_invocations
@@ -70,7 +70,7 @@ Server::Application.routes.draw do
   namespace :orvos do
     namespace :v1 do
       resources :collections
-      resources :metadata
+      resources :links
       resources :nodes
       resources :pipelines
       resources :pipeline_invocations
@@ -81,7 +81,7 @@ Server::Application.routes.draw do
       resources :users
       match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
-      match '/metadata/:tail_kind/:tail' => 'metadata#index'
+      match '/links/:tail_uuid' => 'links#index'
     end
   end
 
@@ -95,7 +95,7 @@ Server::Application.routes.draw do
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
-  match '*a', :to => 'orvos/v1/metadata#render_not_found'
+  match '*a', :to => 'orvos/v1/links#render_not_found'
 
   root :to => 'static#home'
 end

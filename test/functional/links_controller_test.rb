@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class MetadataControllerTest < ActionController::TestCase
+class LinksControllerTest < ActionController::TestCase
   # test "the truth" do
   #   assert true
   # end

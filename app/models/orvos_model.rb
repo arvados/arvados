@@ -34,19 +34,19 @@ class OrvosModel < ActiveRecord::Base
     return false unless current_user
     if self.owner_changed? and
         self.owner_was != current_user.uuid and
-        0 == Metadatum.where(metadata_class: 'permission',
-                             name: 'can_pillage',
-                             tail: self.owner,
-                             head: current_user.uuid).count
+        0 == Link.where(link_class: 'permission',
+                        name: 'can_pillage',
+                        tail_uuid: self.owner,
+                        head_uuid: current_user.uuid).count
       return false
     end
     self.owner == current_user.uuid or
       current_user.is_admin or
       current_user.uuid == self.uuid or
-      Metadatum.where(metadata_class: 'permission',
-                      name: 'can_write',
-                      tail: self.owner,
-                      head: current_user.uuid).count > 0
+      Link.where(link_class: 'permission',
+                 name: 'can_write',
+                 tail_uuid: self.owner,
+                 head_uuid: current_user.uuid).count > 0
   end
 
   def update_modified_by_fields

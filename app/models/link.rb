@@ -1,19 +1,19 @@
-class Metadatum < OrvosModel
+class Link < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
-  serialize :info, Hash
+  serialize :properties, Hash
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :tail_kind
-    t.add :tail
-    t.add :metadata_class
+    t.add :tail_uuid
+    t.add :link_class
     t.add :name
     t.add :head_kind
-    t.add :head
-    t.add :info
+    t.add :head_uuid
+    t.add :properties
   end
 
   def info
@@ -24,11 +24,11 @@ class Metadatum < OrvosModel
   protected
 
   def permission_to_attach_to_objects
-    # Anonymous users cannot write metadata
+    # Anonymous users cannot write links
     return false if !current_user
 
-    # All users can write metadata that doesn't affect permissions
-    return true if self.metadata_class != 'permission'
+    # All users can write links that don't affect permissions
+    return true if self.link_class != 'permission'
 
     # Administrators can grant permissions
     return true if current_user.is_admin
@@ -45,8 +45,8 @@ class Metadatum < OrvosModel
     # Users with "can_grant" permission on an object can grant
     # permissions on that object
     has_grant_permission = self.class.
-      where('metadata_class=? AND name=? AND tail=? AND head=?',
-            'permission', 'can_grant', current_user.uuid, self.head).
+      where('link_class=? AND name=? AND tail_uuid=? AND head_uuid=?',
+            'permission', 'can_grant', current_user.uuid, self.head_uuid).
       count > 0
     return true if has_grant_permission
 

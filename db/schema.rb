@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130125220425) do
+ActiveRecord::Schema.define(:version => 20130128202518) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -63,6 +63,31 @@ ActiveRecord::Schema.define(:version => 20130125220425) do
 
   add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
 
+  create_table "links", :force => true do |t|
+    t.string   "uuid"
+    t.string   "owner"
+    t.datetime "created_at"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "tail_uuid"
+    t.string   "tail_kind"
+    t.integer  "native_target_id"
+    t.string   "native_target_type"
+    t.string   "link_class"
+    t.string   "name"
+    t.string   "head_uuid"
+    t.text     "properties"
+    t.datetime "updated_at"
+    t.string   "head_kind"
+  end
+
+  add_index "links", ["head_kind"], :name => "index_links_on_head_kind"
+  add_index "links", ["head_uuid"], :name => "index_links_on_head_uuid"
+  add_index "links", ["tail_kind"], :name => "index_links_on_tail_kind"
+  add_index "links", ["tail_uuid"], :name => "index_links_on_tail_uuid"
+  add_index "links", ["uuid"], :name => "index_links_on_uuid", :unique => true
+
   create_table "logs", :force => true do |t|
     t.string   "uuid"
     t.string   "owner"
@@ -85,31 +110,6 @@ ActiveRecord::Schema.define(:version => 20130125220425) do
   add_index "logs", ["object_uuid"], :name => "index_logs_on_object_uuid"
   add_index "logs", ["summary"], :name => "index_logs_on_summary"
   add_index "logs", ["uuid"], :name => "index_logs_on_uuid", :unique => true
-
-  create_table "metadata", :force => true do |t|
-    t.string   "uuid"
-    t.string   "owner"
-    t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
-    t.datetime "modified_at"
-    t.string   "tail"
-    t.string   "tail_kind"
-    t.integer  "native_target_id"
-    t.string   "native_target_type"
-    t.string   "metadata_class"
-    t.string   "name"
-    t.string   "head"
-    t.text     "info"
-    t.datetime "updated_at"
-    t.string   "head_kind"
-  end
-
-  add_index "metadata", ["head"], :name => "index_metadata_on_head"
-  add_index "metadata", ["head_kind"], :name => "index_metadata_on_head_kind"
-  add_index "metadata", ["tail"], :name => "index_metadata_on_tail"
-  add_index "metadata", ["tail_kind"], :name => "index_metadata_on_tail_kind"
-  add_index "metadata", ["uuid"], :name => "index_metadata_on_uuid", :unique => true
 
   create_table "nodes", :force => true do |t|
     t.string   "uuid"
