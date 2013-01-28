@@ -32,12 +32,14 @@ class OrvosModel < ActiveRecord::Base
 
   def permission_to_update
     return false unless current_user
+    return true if current_user.is_admin
     if self.owner_changed? and
         self.owner_was != current_user.uuid and
         0 == Link.where(link_class: 'permission',
                         name: 'can_pillage',
                         tail_uuid: self.owner,
                         head_uuid: current_user.uuid).count
+      logger.warn "User #{current_user.uuid} tried to change owner of #{self.class.to_s} #{self.uuid} to #{self.owner}"
       return false
     end
     self.owner == current_user.uuid or

@@ -23,9 +23,10 @@ class User < OrvosModel
   protected
 
   def prevent_privilege_escalation
-    if self.is_admin_changed?
+    if self.is_admin_changed? and !current_user.is_admin
       if current_user.uuid == self.uuid
         if self.is_admin != self.is_admin_was
+          logger.warn "User #{self.uuid} tried to change is_admin from #{self.is_admin_was} to #{self.is_admin}"
           self.is_admin = self.is_admin_was
         end
       end
