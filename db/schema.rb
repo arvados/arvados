@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130128202518) do
+ActiveRecord::Schema.define(:version => 20130128231343) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -186,6 +186,7 @@ ActiveRecord::Schema.define(:version => 20130128202518) do
     t.datetime "modified_at"
     t.string   "material"
     t.datetime "updated_at"
+    t.text     "properties"
   end
 
   add_index "specimens", ["uuid"], :name => "index_specimens_on_uuid", :unique => true
