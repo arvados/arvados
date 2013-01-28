@@ -6,6 +6,9 @@ class Link < OrvosModel
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
 
+  attr_accessor :head
+  attr_accessor :tail
+
   api_accessible :superuser, :extend => :common do |t|
     t.add :tail_kind
     t.add :tail_uuid
@@ -13,6 +16,8 @@ class Link < OrvosModel
     t.add :name
     t.add :head_kind
     t.add :head_uuid
+    t.add :head, :if => :head
+    t.add :tail, :if => :tail
     t.add :properties
   end
 

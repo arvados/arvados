@@ -4,12 +4,14 @@ class PipelineInvocation < OrvosModel
   include CommonApiTemplate
   serialize :components, Hash
   belongs_to :pipeline, :foreign_key => :pipeline_uuid, :primary_key => :uuid
+  attr_accessor :pipeline
 
   before_validation :bootstrap_components
   before_validation :update_success
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :pipeline_uuid
+    t.add :pipeline, :if => :pipeline
     t.add :name
     t.add :components
     t.add :success

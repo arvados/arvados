@@ -4,10 +4,12 @@ class Log < OrvosModel
   include CommonApiTemplate
   serialize :info, Hash
   before_validation :set_default_event_at
+  attr_accessor :object
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :object_kind
     t.add :object_uuid
+    t.add :object, :if => :object
     t.add :event_at
     t.add :event_type
     t.add :summary
