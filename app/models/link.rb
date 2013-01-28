@@ -21,8 +21,8 @@ class Link < OrvosModel
     t.add :properties
   end
 
-  def info
-    @info ||= Hash.new
+  def properties
+    @properties ||= Hash.new
     super
   end
 
