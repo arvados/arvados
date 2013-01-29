@@ -38,7 +38,9 @@ class OrvosApiClient
       if resp[:errors][0] == 'Not logged in'
         raise NotLoggedInException.new
       else
-        raise "API errors:\n\n#{resp[:errors].join "\n\n"}\n"
+        errors = resp[:errors]
+        errors = errors.join("\n\n") if errors.is_a? Array
+        raise "API errors:\n\n#{errors}\n"
       end
     end
     resp
