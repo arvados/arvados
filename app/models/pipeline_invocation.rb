@@ -30,10 +30,17 @@ class PipelineInvocation < OrvosModel
       components['steps'].collect do |step|
         nrow += 1
         row = [nrow, step['name']]
-        if step['output_data_locator']
-          row << 1.0
+        if step['complete'] and step['complete'] != 0
+          if step['output_data_locator']
+            row << 1.0
+          else
+            row << 0.0
+          end
         else
           row << 0.0
+          if step['failed']
+            self.success = false
+          end
         end
         row << (step['warehousejob']['id'] rescue nil)
         row << (step['warehousejob']['revision'] rescue nil)
@@ -50,6 +57,10 @@ class PipelineInvocation < OrvosModel
     t = progress_table
     return 0 if t.size < 1
     t.collect { |r| r[2] }.inject(0.0) { |sum,a| sum += a } / t.size
+  end
+
+  def active
+    success.nil? and Time.now - modified_at < 5.minutes
   end
 
   protected
