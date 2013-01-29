@@ -60,7 +60,7 @@ class PipelineInvocation < OrvosModel
   end
 
   def active
-    success.nil? and Time.now - modified_at < 5.minutes
+    success.nil? and modified_at and Time.now - modified_at < 5.minutes
   end
 
   protected
