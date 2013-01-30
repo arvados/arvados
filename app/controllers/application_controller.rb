@@ -1,11 +1,11 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
-  before_filter :find_object_by_uuid, :except => [:index, :render_error, :render_not_found]
-  around_filter :thread_with_api_token, :except => [:render_error, :render_not_found]
+  before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
+  around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
 
   unless Rails.application.config.consider_all_requests_local
     rescue_from Exception,
-    :with => :render_error
+    :with => :render_exception
     rescue_from ActiveRecord::RecordNotFound,
     :with => :render_not_found
     rescue_from ActionController::RoutingError,
@@ -16,14 +16,20 @@ class ApplicationController < ActionController::Base
     :with => :render_not_found
   end
 
-  def error(opts)
+  def unprocessable(message=nil)
+    @errors ||= []
+    @errors << message if message
+    render_error status: 422
+  end
+
+  def render_error(opts)
     respond_to do |f|
       f.html { render opts.merge(controller: 'application', action: 'error') }
       f.json { render opts.merge(json: {success: false, errors: @errors}) }
     end
   end
 
-  def render_error(e)
+  def render_exception(e)
     logger.error e.inspect
     logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
     if @object and @object.errors and @object.errors.full_messages
@@ -31,13 +37,13 @@ class ApplicationController < ActionController::Base
     else
       @errors = [e.inspect]
     end
-    self.error status: 422
+    self.render_error status: 422
   end
 
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
     @errors = ["Path not found"]
-    self.error status: 404
+    self.render_error status: 404
   end
 
 
@@ -90,8 +96,8 @@ class ApplicationController < ActionController::Base
             yield
           end
         else
-          @errors = ['Could not verify API token.']
-          self.error status: 401
+          @errors = ['Invalid API token']
+          self.render_error status: 401
         end
       elsif session[:orvos_api_token]
         # In this case, the token must have already verified at some
@@ -112,7 +118,7 @@ class ApplicationController < ActionController::Base
           }
           f.json {
             @errors = ['No API token supplied -- can\'t really do anything.']
-            self.error status: 422
+            self.render_error status: 422
           }
         end
       end
@@ -123,6 +129,11 @@ class ApplicationController < ActionController::Base
   end
 
   def verify_api_token
-    Link.where(uuid: 'the-philosophers-stone').size rescue false
+    begin
+      Link.where(uuid: 'just-verifying-my-api-token')
+      true
+    rescue OrvosApiClient::NotLoggedInException
+      false
+    end
   end
 end
