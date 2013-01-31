@@ -73,7 +73,7 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    @object = model_class.where('uuid=?', params[:uuid]).first
+    @object = model_class.where(uuid: params[:uuid]).first
   end
 
   def thread_with_api_token
