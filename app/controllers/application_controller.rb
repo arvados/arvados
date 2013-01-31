@@ -136,4 +136,15 @@ class ApplicationController < ActionController::Base
       false
     end
   end
+
+  def current_user
+    @current_user ||= User.current
+  end
+
+  def ensure_current_user_is_admin
+    unless current_user and current_user.is_admin
+      @errors = ['Permission denied']
+      self.render_error status: 401
+    end
+  end
 end
