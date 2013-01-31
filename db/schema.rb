@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130128231343) do
+ActiveRecord::Schema.define(:version => 20130130205749) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -59,6 +59,7 @@ ActiveRecord::Schema.define(:version => 20130128231343) do
     t.integer  "redundancy_confirmed_as"
     t.datetime "updated_at"
     t.string   "uuid"
+    t.text     "manifest_text"
   end
 
   add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
