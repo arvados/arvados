@@ -1,2 +1,2 @@
-class MetadataController < ApplicationController
+class LinksController < ApplicationController
 end
