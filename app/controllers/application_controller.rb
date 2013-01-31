@@ -1,7 +1,7 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
-  before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
+  before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
 
   unless Rails.application.config.consider_all_requests_local
     rescue_from Exception,
