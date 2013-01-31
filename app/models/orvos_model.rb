@@ -31,7 +31,14 @@ class OrvosModel < ActiveRecord::Base
   protected
 
   def permission_to_update
-    return false unless current_user
+    if !current_user
+      logger.warn "Anonymous user tried to update #{self.class.to_s} #{self.uuid_was}"
+      return false
+    end
+    if self.uuid_changed?
+      logger.warn "User #{current_user.uuid} tried to change uuid of #{self.class.to_s} #{self.uuid_was} to #{self.uuid}"
+      return false
+    end
     return true if current_user.is_admin
     if self.owner_changed? and
         self.owner_was != current_user.uuid and

@@ -2,9 +2,7 @@ module AssignUuid
 
   def self.included(base)
     base.extend(ClassMethods)
-    base.validates_presence_of :uuid, :if => :respond_to_uuid?
-    base.validates_uniqueness_of :uuid, :if => :respond_to_uuid?
-    base.before_validation :assign_uuid
+    base.before_create :assign_uuid
   end
 
   module ClassMethods
@@ -21,9 +19,9 @@ module AssignUuid
 
   def assign_uuid
     return true if !self.respond_to_uuid?
-    self.uuid ||= [Server::Application.config.uuid_prefix,
-                   self.class.uuid_prefix,
-                   rand(2**256).to_s(36)[-15..-1]].
+    self.uuid = [Server::Application.config.uuid_prefix,
+                 self.class.uuid_prefix,
+                 rand(2**256).to_s(36)[-15..-1]].
       join '-'
   end
 end
