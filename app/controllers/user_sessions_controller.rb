@@ -25,10 +25,13 @@ class UserSessionsController < ApplicationController
     user = User.find_by_identity_url(omniauth['info']['identity_url'])
     if not user
       # New user registration
-      user = User.create!(:email => omniauth['info']['email'],
-                          :first_name => omniauth['info']['first_name'],
-                          :last_name => omniauth['info']['last_name'],
-                          :identity_url => omniauth['info']['identity_url'])
+      user = User.new(:email => omniauth['info']['email'],
+                      :first_name => omniauth['info']['first_name'],
+                      :last_name => omniauth['info']['last_name'],
+                      :identity_url => omniauth['info']['identity_url'])
+      Thread.current[:user] = user # prevents OrvosModel#before_create
+                                   # from throwing "unauthorized"
+      user.save!
     else
       user.email = omniauth['info']['email']
       user.first_name = omniauth['info']['first_name']

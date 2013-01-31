@@ -61,6 +61,8 @@ class Node < OrvosModel
     end
     self.last_ping_at = Time.now
 
+    @bypass_orvos_authorization = true
+
     # Record IP address
     if self.ip_address.nil?
       logger.info "#{self.uuid} ip_address= #{o[:ip]}"
@@ -97,6 +99,7 @@ class Node < OrvosModel
   end
 
   def start!(ping_url_method)
+    ensure_permission_to_update
     ping_url = ping_url_method.call({ uuid: self.uuid, ping_secret: self.info[:ping_secret] })
     cmd = ["ec2-run-instances",
            "--user-data '#{ping_url}'",
@@ -161,5 +164,13 @@ class Node < OrvosModel
         dnsmasq_update(hostname, '127.40.4.0')
       end
     end
+  end
+
+  def permission_to_update
+    @bypass_orvos_authorization or super
+  end
+
+  def permission_to_create
+    current_user and current_user.is_admin
   end
 end

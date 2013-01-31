@@ -7,7 +7,8 @@ class OrvosModel < ActiveRecord::Base
   attr_protected :modified_by_user
   attr_protected :modified_by_client
   attr_protected :modified_at
-  before_update :permission_to_update
+  before_create :ensure_permission_to_create
+  before_update :ensure_permission_to_update
   before_create :update_modified_by_fields
   before_update :update_modified_by_fields
 
@@ -29,6 +30,18 @@ class OrvosModel < ActiveRecord::Base
   end
 
   protected
+
+  def ensure_permission_to_create
+    raise "Permission denied" unless permission_to_create
+  end
+
+  def permission_to_create
+    current_user
+  end
+
+  def ensure_permission_to_update
+    raise "Permission denied" unless permission_to_update
+  end
 
   def permission_to_update
     if !current_user

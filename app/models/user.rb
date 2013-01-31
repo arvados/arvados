@@ -22,6 +22,11 @@ class User < OrvosModel
 
   protected
 
+  def permission_to_create
+    Thread.current[:user] == self or
+      (Thread.current[:user] and Thread.current[:user].is_admin)
+  end
+
   def prevent_privilege_escalation
     if self.is_admin_changed? and !current_user.is_admin
       if current_user.uuid == self.uuid
