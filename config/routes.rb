@@ -69,6 +69,10 @@ Server::Application.routes.draw do
 
   namespace :orvos do
     namespace :v1 do
+      match '/schema' => 'schema#show'
+      match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
+      match '/links/from/:tail_uuid' => 'links#index', :as => :orvos_v1_links_from
+      match '/users/current' => 'users#current'
       resources :collections
       resources :links
       resources :nodes
@@ -79,9 +83,6 @@ Server::Application.routes.draw do
       resources :projects
       resources :logs
       resources :users
-      match '/schema' => 'schema#show'
-      match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
-      match '/links/:tail_uuid' => 'links#index'
     end
   end
 
