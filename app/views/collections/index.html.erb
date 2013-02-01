@@ -1,5 +1,56 @@
-    <h1>Bootstrap starter template</h1>
-    <p>Use this document as a way to quick start any new project.<br> All you get is this message and a barebones HTML document.</p>
+<% content_for :head do %>
+<style>
+  table.topalign>tbody>tr>td {
+  vertical-align: top;
+  }
+  table.topalign>thead>tr>td {
+  vertical-align: bottom;
+  }
+  .deemphasize {
+  font-size: .8em;
+  color: #888;
+  }
+</style>
+<% end %>
 
-<p>foo
-</p>
+<table class="topalign">
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+	uuid
+      </th><th>
+	created
+      </th><th>
+	protected
+      </th><th>
+	projects
+      </th><th>
+	origin
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <% @collections.values.sort_by { |c| c[:created_at] }.reverse.each do |c| %>
+
+    <tr class="collection">
+      <td>
+	<%= c[:uuid] %>
+      </td><td>
+	<%= distance_of_time_in_words(c[:created_at], Time.now).sub('about ','~').sub(' ','&nbsp;') if c[:created_at] %>
+      </td><td>
+	<%= ('Y' if c[:wanted_by_me]) or ('y' if c[:wanted]) %>
+      </td><td>
+	<%= c[:projects].size if c[:projects] %>
+      </td><td>
+	<% if c[:origin] %>
+	<span class="deemphasize"><%= c[:origin].name %></span>
+	<%= c[:origin].head_uuid %>
+	<% end %>
+      </td>
+    </tr>
+
+    <% end %>
+
+  </tbody>
+</table>
