@@ -63,6 +63,10 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def current_user
+    @current_user ||= User.current
+  end
+
   protected
     
   def model_class
@@ -135,10 +139,6 @@ class ApplicationController < ActionController::Base
     rescue OrvosApiClient::NotLoggedInException
       false
     end
-  end
-
-  def current_user
-    @current_user ||= User.current
   end
 
   def ensure_current_user_is_admin

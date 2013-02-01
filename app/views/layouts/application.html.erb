@@ -32,9 +32,14 @@
         <a class="brand" href="#"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
         <div class="nav-collapse collapse">
           <ul class="nav">
-	    <% [['Jobs', '/factory_jobs'],
-	       ['Graph', '/collections/graph']].each do |nav| %>
-            <li<%= raw ' class="active"' if request.fullpath.index(nav[1]) %>><a href="<%= nav[1] %>"><%= nav[0] %></a></li>
+	    <% [
+	       [true, 'FactoryJobs', '/factory_jobs'],
+	       [true, 'Data', '/collections/graph'],
+	       [false, 'Log out', logout_path]
+	       ].each do |admin_only, name, path| %>
+	    <% if !admin_only or (current_user and current_user.is_admin) %>
+            <li<%= raw ' class="active"' if request.fullpath.index(path) %>><a href="<%= path %>"><%= name %></a></li>
+	    <% end %>
 	    <% end %>
           </ul>
         </div><!--/.nav-collapse -->

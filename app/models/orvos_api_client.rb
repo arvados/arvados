@@ -76,6 +76,10 @@ class OrvosApiClient
     end
   end
 
+  def orvos_logout_url(params={})
+    orvos_login_url(params).sub('/login','/logout')
+  end
+
   def orvos_v1_base
     Rails.configuration.orvos_v1_base
   end

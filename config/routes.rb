@@ -1,4 +1,8 @@
 Vcffarm::Application.routes.draw do
+  match '/logout' => 'sessions#destroy'
+  match '/logged_out' => 'sessions#index'
+
+
   resources :users
 
 
