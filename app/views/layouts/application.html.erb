@@ -34,13 +34,15 @@
           <ul class="nav">
 	    <% [
 	       [true, 'FactoryJobs', factory_jobs_path],
-	       [true, 'Data', collections_path],
-	       [false, 'Log out', logout_path]
+	       [true, 'Data', collections_path]
 	       ].each do |admin_only, name, path| %>
 	    <% if !admin_only or (current_user and current_user.is_admin) %>
             <li<%= raw ' class="active"' if request.fullpath.index(path) %>><a href="<%= path %>"><%= name %></a></li>
 	    <% end %>
 	    <% end %>
+	  </ul>
+	  <ul class="nav pull-right">
+            <li><a href="<%= logout_path %>">Log out</a></li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
