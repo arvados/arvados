@@ -1,7 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>Vcffarm</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
@@ -9,10 +13,40 @@
   <%= javascript_tag do %>
   <%= yield :js %>
   <% end %>
+  <style>
+    body {
+    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+    }
+  </style>
 </head>
 <body>
 
-<%= yield %>
+  <div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
+        <a class="brand" href="#"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
+        <div class="nav-collapse collapse">
+          <ul class="nav">
+	    <% [['Jobs', '/factory_jobs'],
+	       ['Graph', '/collections/graph']].each do |nav| %>
+            <li<%= raw ' class="active"' if request.fullpath.index(nav[1]) %>><a href="<%= nav[1] %>"><%= nav[0] %></a></li>
+	    <% end %>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <%= yield %>
+
+  </div> <!-- /container -->
 
 </body>
 </html>

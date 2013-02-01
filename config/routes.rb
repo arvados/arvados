@@ -25,6 +25,7 @@ Vcffarm::Application.routes.draw do
 
   resources :links
 
+  match '/collections/graph' => 'collections#graph'
 
   resources :collections
 

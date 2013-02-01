@@ -74,4 +74,6 @@ Vcffarm::Application.configure do
   config.accept_api_token = {}
 
   config.vcf_pipeline_uuid = '9ujm1-mxsvm-o62u4mdoxvs0ckp'
+
+  config.site_name = 'vcffarm.example.com'
 end
