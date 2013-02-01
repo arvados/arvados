@@ -29,15 +29,17 @@ class UserSessionsController < ApplicationController
                       :first_name => omniauth['info']['first_name'],
                       :last_name => omniauth['info']['last_name'],
                       :identity_url => omniauth['info']['identity_url'])
-      Thread.current[:user] = user # prevents OrvosModel#before_create
-                                   # from throwing "unauthorized"
-      user.save!
     else
       user.email = omniauth['info']['email']
       user.first_name = omniauth['info']['first_name']
       user.last_name = omniauth['info']['last_name']
-      user.save
     end
+
+    # prevent OrvosModel#before_create and _update from throwing
+    # "unauthorized":
+    Thread.current[:user] = user
+
+    user.save!
 
     omniauth.delete('extra')
 
