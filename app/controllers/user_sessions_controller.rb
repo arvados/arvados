@@ -64,7 +64,8 @@ class UserSessionsController < ApplicationController
     session[:user_id] = nil
 
     flash[:notice] = 'You have logged off'
-    redirect_to "#{CUSTOM_PROVIDER_URL}/users/sign_out?redirect_uri=#{root_url}"
+    return_to = params[:return_to] || root_url
+    redirect_to "#{CUSTOM_PROVIDER_URL}/users/sign_out?redirect_uri=#{CGI.escape return_to}"
   end
 
   # login - Just bounce to /auth/joshid. The only purpose of this function is
