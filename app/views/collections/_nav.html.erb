@@ -1,0 +1,6 @@
+<ul class="nav nav-pills">
+  <% [['Table', collections_path],
+     ['Graph', collections_graph_path]].each do |name, path| %>
+  <li class="<%= 'active' if request.fullpath == path %>"><%= link_to name, path %></li>
+  <% end %>
+</ul>
