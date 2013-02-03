@@ -23,6 +23,9 @@ class OrvosBase < ActiveRecord::Base
     ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
   end
   def self.find(uuid)
+    if uuid.class != String or uuid.length < 27 then
+      raise 'argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx'
+    end
     new.private_reload(uuid)
   end
   def self.where(*args)
@@ -102,7 +105,7 @@ class OrvosBase < ActiveRecord::Base
     if uuid_or_hash.is_a? Hash
       hash = uuid_or_hash
     else
-      hash = $orvos_api_client.api(self.class, '/' + uuid_or_hash.to_s)
+      hash = $orvos_api_client.api(self.class, '/' + uuid_or_hash)
     end
     hash.each do |k,v|
       if self.respond_to?(k.to_s + '=')
