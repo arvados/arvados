@@ -64,7 +64,9 @@ class ApplicationController < ActionController::Base
   end
 
   def current_user
-    @current_user ||= User.current
+    if Thread.current[:api_token]
+      @current_user ||= User.current
+    end
   end
 
   protected
