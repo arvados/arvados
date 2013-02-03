@@ -10,7 +10,7 @@ class OrvosModel < ActiveRecord::Base
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
   before_create :update_modified_by_fields
-  before_update :update_modified_by_fields
+  before_update :maybe_update_modified_by_fields
 
   def self.kind_class(kind)
     kind.match(/^orvos\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
@@ -71,13 +71,15 @@ class OrvosModel < ActiveRecord::Base
                  head_uuid: current_user.uuid).count > 0
   end
 
+  def maybe_update_modified_by_fields
+    update_modified_by_fields if self.changed?
+  end
+
   def update_modified_by_fields
-    if self.changed?
-      self.created_at ||= Time.now
-      self.owner ||= current_user.uuid
-      self.modified_at = Time.now
-      self.modified_by_user = current_user.uuid
-      self.modified_by_client = current_api_client ? current_api_client.uuid : nil
-    end
+    self.created_at ||= Time.now
+    self.owner ||= current_user.uuid
+    self.modified_at = Time.now
+    self.modified_by_user = current_user.uuid
+    self.modified_by_client = current_api_client ? current_api_client.uuid : nil
   end
 end
