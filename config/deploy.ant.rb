@@ -3,11 +3,9 @@ set :domain,      "orvos-app-0.ant"
 set :deploy_to,   "/var/www/orvos-explorer.ant.freelogy.org"
 role :web, "orvos-app-0.ant"
 role :app, "orvos-app-0.ant"
-role :db, "orvos-app-0.ant", :primary=>true
 set :scm,         :git
 set :repository,  "git@git.clinicalfuture.com:vcffarm.git"
 set :rails_env,   "production"
-set :config_files, ['database.yml']
 set :git_enable_submodules, true
 set :rvm_ruby_string, '1.9.3'
 require "rvm/capistrano"
@@ -23,7 +21,6 @@ before("deploy:cleanup") { set :use_sudo, false }
 
 before "deploy:assets:precompile", "deploy:copy_files", :roles => :app
 after "deploy:copy_files", "deploy:bundle_install", :roles => :app
-after "deploy:update", "deploy:migrate", :roles => :db
 after :deploy, 'deploy:cleanup', :roles => :app
 
 namespace :deploy do
@@ -39,9 +36,6 @@ namespace :deploy do
     run "chown www-data:www-data #{release_path}/db/production.sqlite3"
     run "chown root:www-data #{release_path}/db"
     run "chmod g+w,+t #{release_path}/db"
-    # This is for the drb server
-    run "touch #{release_path}/Gemfile.lock"
-    run "chown www-data:www-data #{release_path}/Gemfile.lock"
     # Keep track of the git commit used for this deploy
     # This is used by the lib/add_debug_info.rb middleware, which injects it in the
     # environment.
@@ -58,7 +52,7 @@ namespace :deploy do
 
   desc "Restarting mod_rails with restart.txt"
   task :restart, :roles => :app, :except => { :no_release => true } do
-    # Tell passenger to resetart.
+    # Tell passenger to restart.
     run "touch #{release_path}/tmp/restart.txt"
   end
 
