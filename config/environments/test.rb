@@ -35,6 +35,7 @@ Vcffarm::Application.configure do
   # Print deprecation notices to the stderr
   config.active_support.deprecation = :stderr
 
+  config.orvos_login_base = 'http://orvos/login'
   config.orvos_v1_base = 'https://orvos/orvos/v1'
 
   config.data_import_dir = '/data/vcffarm-upload'

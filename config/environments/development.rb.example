@@ -35,6 +35,7 @@ Vcffarm::Application.configure do
   # Expands the lines which load the assets
   config.assets.debug = true
 
+  config.orvos_login_base = 'http://orvos.local/login'
   config.orvos_v1_base = 'http://orvos.local/orvos/v1'
 
   config.data_import_dir = '/data/vcffarm-upload'
