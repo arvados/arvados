@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130203104824) do
+ActiveRecord::Schema.define(:version => 20130203115329) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -105,6 +105,7 @@ ActiveRecord::Schema.define(:version => 20130203104824) do
     t.string   "output"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "priority"
   end
 
   add_index "jobs", ["command"], :name => "index_jobs_on_command"
