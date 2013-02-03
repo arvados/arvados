@@ -62,13 +62,18 @@ class OrvosModel < ActiveRecord::Base
       logger.warn "User #{current_user.uuid} tried to change owner of #{self.class.to_s} #{self.uuid} to #{self.owner}"
       return false
     end
-    self.owner == current_user.uuid or
+    if self.owner == current_user.uuid or
       current_user.is_admin or
       current_user.uuid == self.uuid or
       Link.where(link_class: 'permission',
                  name: 'can_write',
                  tail_uuid: self.owner,
                  head_uuid: current_user.uuid).count > 0
+      return true
+    else
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not can_write permission and owner is #{self.owner}"
+      return false
+    end
   end
 
   def maybe_update_modified_by_fields
