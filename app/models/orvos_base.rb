@@ -102,7 +102,7 @@ class OrvosBase < ActiveRecord::Base
     if uuid_or_hash.is_a? Hash
       hash = uuid_or_hash
     else
-      hash = $orvos_api_client.api(self.class, '/' + uuid_or_hash)
+      hash = $orvos_api_client.api(self.class, '/' + uuid_or_hash.to_s)
     end
     hash.each do |k,v|
       if self.respond_to?(k.to_s + '=')
