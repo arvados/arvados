@@ -64,8 +64,11 @@ class ApplicationController < ActionController::Base
   end
 
   def current_user
-    if Thread.current[:api_token]
+    if Thread.current[:orvos_api_token]
       @current_user ||= User.current
+    else
+      logger.error "No API token in Thread"
+      return nil
     end
   end
 
