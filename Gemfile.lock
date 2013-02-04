@@ -87,6 +87,7 @@ GEM
       jwt (~> 0.1.4)
       multi_json (~> 1.0)
       rack (~> 1.2)
+    oj (2.0.3)
     omniauth (1.1.1)
       hashie (~> 1.2)
       rack
@@ -160,7 +161,7 @@ DEPENDENCIES
   acts_as_api
   coffee-rails (~> 3.1.1)
   jquery-rails
-  json
+  oj
   omniauth (= 1.1.1)
   omniauth-oauth2 (= 1.1.1)
   passenger

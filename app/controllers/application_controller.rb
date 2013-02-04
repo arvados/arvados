@@ -56,7 +56,7 @@ class ApplicationController < ActionController::Base
             current_user.uuid, current_user.uuid)
     if params[:where]
       where = params[:where]
-      where = JSON.parse(where) if where.is_a?(String)
+      where = Oj.load(where) if where.is_a?(String)
       conditions = ['1=1']
       where.each do |attr,value|
         if (!value.nil? and
@@ -98,7 +98,7 @@ class ApplicationController < ActionController::Base
       raise "no #{resource_name} (or #{resource_name.camelcase(:lower)}) provided with request #{params.inspect}"
     end
     if @attrs.class == String
-      @attrs = uncamelcase_hash_keys(JSON.parse @attrs)
+      @attrs = uncamelcase_hash_keys(Oj.load @attrs)
     end
     @object = model_class.new @attrs
     @object.save
@@ -108,7 +108,7 @@ class ApplicationController < ActionController::Base
   def update
     @attrs = params[resource_name]
     if @attrs.is_a? String
-      @attrs = uncamelcase_hash_keys(JSON.parse @attrs)
+      @attrs = uncamelcase_hash_keys(Oj.load @attrs)
     end
     @object.update_attributes @attrs
     show
@@ -191,7 +191,7 @@ class ApplicationController < ActionController::Base
   def accept_attribute_as_json(attr, force_class)
     if params[resource_name].is_a? Hash
       if params[resource_name][attr].is_a? String
-        params[resource_name][attr] = JSON.parse params[resource_name][attr]
+        params[resource_name][attr] = Oj.load params[resource_name][attr]
         if force_class and !params[resource_name][attr].is_a? force_class
           raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
         end
