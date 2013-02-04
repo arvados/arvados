@@ -16,7 +16,7 @@ class OrvosApiClient
         elsif v == true or v == false
           dataargs << "#{k}=#{v ? 1 : 0}"
         else
-          dataargs << "#{k}=#{Oj.dump(v)}"
+          dataargs << "#{k}=#{MultiJson.dump(v)}"
         end
       end
     else
@@ -33,7 +33,7 @@ class OrvosApiClient
              'r') do |io|
       json = io.read
     end
-    resp = Oj.load json, :symbolize_names => true
+    resp = MultiJson.load(json, :symbolize_keys => true)
     if resp[:errors]
       if resp[:errors][0] == 'Not logged in'
         raise NotLoggedInException.new
