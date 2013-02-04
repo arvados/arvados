@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130130205749) do
+ActiveRecord::Schema.define(:version => 20130203115329) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -63,6 +63,57 @@ ActiveRecord::Schema.define(:version => 20130130205749) do
   end
 
   add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
+
+  create_table "job_steps", :force => true do |t|
+    t.string   "uuid"
+    t.string   "owner"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "job_uuid"
+    t.integer  "sequence"
+    t.text     "parameters"
+    t.text     "output"
+    t.float    "progress"
+    t.boolean  "success"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "job_steps", ["job_uuid"], :name => "index_job_steps_on_job_uuid"
+  add_index "job_steps", ["sequence"], :name => "index_job_steps_on_sequence"
+  add_index "job_steps", ["success"], :name => "index_job_steps_on_success"
+  add_index "job_steps", ["uuid"], :name => "index_job_steps_on_uuid", :unique => true
+
+  create_table "jobs", :force => true do |t|
+    t.string   "uuid"
+    t.string   "owner"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "submit_id"
+    t.string   "command"
+    t.string   "command_version"
+    t.text     "command_parameters"
+    t.string   "cancelled_by_client"
+    t.string   "cancelled_by_user"
+    t.datetime "cancelled_at"
+    t.datetime "started_at"
+    t.datetime "finished_at"
+    t.boolean  "running"
+    t.boolean  "success"
+    t.string   "output"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "priority"
+  end
+
+  add_index "jobs", ["command"], :name => "index_jobs_on_command"
+  add_index "jobs", ["finished_at"], :name => "index_jobs_on_finished_at"
+  add_index "jobs", ["output"], :name => "index_jobs_on_output"
+  add_index "jobs", ["started_at"], :name => "index_jobs_on_started_at"
+  add_index "jobs", ["submit_id"], :name => "index_jobs_on_submit_id", :unique => true
+  add_index "jobs", ["uuid"], :name => "index_jobs_on_uuid", :unique => true
 
   create_table "links", :force => true do |t|
     t.string   "uuid"

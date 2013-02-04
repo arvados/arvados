@@ -1,4 +1,6 @@
 Server::Application.routes.draw do
+  resources :job_steps
+  resources :jobs
   resources :api_client_authorizations
   resources :api_clients
   resources :logs
@@ -78,11 +80,12 @@ Server::Application.routes.draw do
       resources :nodes
       resources :pipelines
       resources :pipeline_invocations
-      resources :pipelineInvocations
       resources :specimens
       resources :projects
       resources :logs
       resources :users
+      resources :jobs
+      resources :job_steps
     end
   end
 
