@@ -161,6 +161,7 @@ DEPENDENCIES
   acts_as_api
   coffee-rails (~> 3.1.1)
   jquery-rails
+  multi_json
   oj
   omniauth (= 1.1.1)
   omniauth-oauth2 (= 1.1.1)

@@ -8,6 +8,7 @@ gem 'rails', '3.1.10'
 #gem 'sqlite3'
 gem 'pg'
 
+gem 'multi_json'
 gem 'oj'
 
 # Gems used only for assets and not required
