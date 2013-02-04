@@ -74,7 +74,7 @@ class OrvosApiClient
       uri = self.orvos_v1_base.sub(%r{/orvos/v\d+.*}, '/login')
     end
     if params.size > 0
-      uri << '?' << params.collect { |k,v|
+      uri += '?' << params.collect { |k,v|
         CGI.escape(k.to_s) + '=' + CGI.escape(v.to_s)
       }.join('&')
     end
