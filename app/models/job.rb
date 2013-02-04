@@ -21,6 +21,7 @@ class Job < OrvosModel
     t.add :finished_at
     t.add :success
     t.add :running
+    t.add :dependencies
   end
 
   protected
@@ -32,5 +33,16 @@ class Job < OrvosModel
       end
     end
     true
+  end
+
+  def dependencies
+    deps = {}
+    self.command_parameters.values.each do |v|
+      v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
+        bare_locator = locator[0].gsub(/\+[^,]+/,'')
+        deps[bare_locator] = true
+      end
+    end
+    deps.keys
   end
 end
