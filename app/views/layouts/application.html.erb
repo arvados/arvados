@@ -42,7 +42,11 @@
 	    <% end %>
 	  </ul>
 	  <ul class="nav pull-right">
+      <% if current_user -%>
             <li><a href="<%= logout_path %>">Log out</a></li>
+      <% else -%>
+            <li><a href="<%= root_path %>">Log in</a></li>
+      <% end -%>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
