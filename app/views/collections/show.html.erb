@@ -34,7 +34,7 @@
       </td><td>
 	<tt class="deemphasize"><%= p[:output] %></tt><br />
 	&uarr;
-	<%= j.command %> <tt class="deemphasize"><%= link_to j.command_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/warehouse-apps/revisions/#{j.command_version}" if j.command_version %></tt><br />
+	<%= j.command %> <tt class="deemphasize"><%= link_to_if j.command_version.match(/[0-9a-f]{40}/), j.command_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.command_version}" if j.command_version %></tt><br />
 	<% j.command_parameters.each do |k,v| %>
 	<%= k.to_s %>
 	<br />
