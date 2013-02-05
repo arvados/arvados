@@ -11,10 +11,5 @@ module ApplicationHelper
       raw = raw[0..-4]
     end
     cooked = raw + cooked
-    if cooked.length >= 9
-      '<b>' + cooked[0..-9] + '</b>' + cooked[-8..-1]
-    else
-      cooked
-    end
   end
 end
