@@ -1,114 +1,119 @@
 <%= render :partial => 'nav' %>
 
 <ul class="nav nav-tabs">
-  <li><a href="#" class="active">Jobs (<%= @provenance.size %>)</a></li>
-  <li><a href="#">Source data (<%= @sourcedata.size %>)</a></li>
+  <li class="active"><a href="#jobs" data-toggle="tab">Jobs (<%= @provenance.size %>)</a></li>
+  <li><a href="#sourcedata" data-toggle="tab">Source data (<%= @sourcedata.size %>)</a></li>
 </ul>
 
-<table class="topalign table table-bordered">
-  <thead>
-    <tr class="contain-align-left">
-      <th>
-	job
-      </th><th>
-	output &uarr; command/version + parameters
-      </th><th>
-	start
-      </th><th>
-	clock time
-      </th>
-    </tr>
-  </thead>
-  <tbody>
+<div class="tab-content">
+  <div id="jobs" class="tab-pane fade in active">
+    <table class="topalign table table-bordered">
+      <thead>
+	<tr class="contain-align-left">
+	  <th>
+	    job
+	  </th><th>
+	    output &uarr; command/version + parameters
+	  </th><th>
+	    start
+	  </th><th>
+	    clock time
+	  </th>
+	</tr>
+      </thead>
+      <tbody>
 
-    <% @provenance.each do |p| %>
-    <% j = p[:job] %>
+	<% @provenance.each do |p| %>
+	<% j = p[:job] %>
 
-    <% if j %>
+	<% if j %>
 
-    <tr class="job">
-      <td>
-	<tt class="btn <%= if j.success then 'btn-success'; elsif j.active then 'btn-primary'; else 'btn-warning'; end %>"><%= j.uuid %></tt>
-	<br />
-	<tt class="deemphasize"><%= j.submit_id %></tt>
-      </td><td>
-	<tt class="deemphasize"><%= p[:output] %></tt><br />
-	&uarr;
-	<%= j.command %> <tt class="deemphasize"><%= link_to_if j.command_version.match(/[0-9a-f]{40}/), j.command_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.command_version}" if j.command_version %></tt><br />
-	<% j.command_parameters.each do |k,v| %>
-	<%= k.to_s %>
-	<br />
-	<tt class="deemphasize"><%= v %></tt>
-	<br />
-	<% end %>
-      </td><td>
-	<%= j.started_at %>
-      </td><td>
-	<% if j.started_at and j.finished_at %>
-	<%= raw(distance_of_time_in_words(j.started_at, j.finished_at).sub('about ','~').sub(' ','&nbsp;')) %>
-	<% elsif j.started_at and j.running %>
-	<%= raw(distance_of_time_in_words(j.started_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) %> (running)
-	<% end %>
-      </td>
-    </tr>
+	<tr class="job">
+	  <td>
+	    <tt class="btn <%= if j.success then 'btn-success'; elsif j.active then 'btn-primary'; else 'btn-warning'; end %>"><%= j.uuid %></tt>
+	    <br />
+	    <tt class="deemphasize"><%= j.submit_id %></tt>
+	  </td><td>
+	    <tt class="deemphasize"><%= p[:output] %></tt><br />
+	    &uarr;
+	    <%= j.command %> <tt class="deemphasize"><%= link_to_if j.command_version.match(/[0-9a-f]{40}/), j.command_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.command_version}" if j.command_version %></tt><br />
+	    <% j.command_parameters.each do |k,v| %>
+	    <%= k.to_s %>
+	    <br />
+	    <tt class="deemphasize"><%= v %></tt>
+	    <br />
+	    <% end %>
+	  </td><td>
+	    <%= j.started_at %>
+	  </td><td>
+	    <% if j.started_at and j.finished_at %>
+	    <%= raw(distance_of_time_in_words(j.started_at, j.finished_at).sub('about ','~').sub(' ','&nbsp;')) %>
+	    <% elsif j.started_at and j.running %>
+	    <%= raw(distance_of_time_in_words(j.started_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) %> (running)
+	    <% end %>
+	  </td>
+	</tr>
 
-    <% else %>
-    <tr>
-      <td>
-	<span class="btn btn-danger">lookup fail</span>
-	<br />
-	<tt class="deemphasize"><%= p[:target] %></tt>
-      </td><td colspan="4">
-      </td>
-    </tr>
-    <% end %>
-
-    <% end %>
-
-  </tbody>
-</table>
-
-<table class="table table-bordered table-striped">
-  <thead>
-    <tr class="contain-align-left">
-      <th>
-	collection
-      </th><th>
-	data size
-      </th><th>
-	protected?
-      </th><th>
-	origin
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-
-    <% @sourcedata.values.each do |sourcedata| %>
-
-    <tr class="collection">
-      <td>
-	<span class="btn"><tt class="deemphasize"><%= sourcedata[:uuid] %></tt></span>
-      </td><td>
-	<%= sourcedata[:collection].data_size if sourcedata[:collection] and sourcedata[:collection].data_size %>
-      </td><td>
-	<% if sourcedata[:protected] %>
-	<span class="btn btn-success">yes</span>
 	<% else %>
-	<span class="btn btn-danger">no</span>
+	<tr>
+	  <td>
+	    <span class="btn btn-danger">lookup fail</span>
+	    <br />
+	    <tt class="deemphasize"><%= p[:target] %></tt>
+	  </td><td colspan="4">
+	  </td>
+	</tr>
 	<% end %>
-      </td><td>
-	<% if sourcedata[:data_origins] %>
-	<% sourcedata[:data_origins].each do |data_origin| %>
-	<span class="deemphasize"><%= data_origin[0] %></span>
-	<%= data_origin[2] %>
-	<br />
-	<% end %>
-	<% end %>
-      </td>
-    </tr>
 
-    <% end %>
+	<% end %>
 
-  </tbody>
-</table>
+      </tbody>
+    </table>
+  </div>
+  <div id="sourcedata" class="tab-pane fade">
+    <table class="table table-bordered table-striped">
+      <thead>
+	<tr class="contain-align-left">
+	  <th>
+	    collection
+	  </th><th>
+	    data size
+	  </th><th>
+	    protected?
+	  </th><th>
+	    origin
+	  </th>
+	</tr>
+      </thead>
+      <tbody>
+
+	<% @sourcedata.values.each do |sourcedata| %>
+
+	<tr class="collection">
+	  <td>
+	    <span class="btn"><tt class="deemphasize"><%= sourcedata[:uuid] %></tt></span>
+	  </td><td>
+	    <%= sourcedata[:collection].data_size if sourcedata[:collection] and sourcedata[:collection].data_size %>
+	  </td><td>
+	    <% if sourcedata[:protected] %>
+	    <span class="btn btn-success">yes</span>
+	    <% else %>
+	    <span class="btn btn-danger">no</span>
+	    <% end %>
+	  </td><td>
+	    <% if sourcedata[:data_origins] %>
+	    <% sourcedata[:data_origins].each do |data_origin| %>
+	    <span class="deemphasize"><%= data_origin[0] %></span>
+	    <%= data_origin[2] %>
+	    <br />
+	    <% end %>
+	    <% end %>
+	  </td>
+	</tr>
+
+	<% end %>
+
+      </tbody>
+    </table>
+  </div>
+</div>
