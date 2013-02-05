@@ -76,7 +76,7 @@
 	<tr class="contain-align-left">
 	  <th>
 	    collection
-	  </th><th>
+	  </th><th class="data-size">
 	    data size
 	  </th><th>
 	    protected?
@@ -92,8 +92,8 @@
 	<tr class="collection">
 	  <td>
 	    <span class="btn"><tt class="deemphasize"><%= sourcedata[:uuid] %></tt></span>
-	  </td><td>
-	    <%= sourcedata[:collection].data_size if sourcedata[:collection] and sourcedata[:collection].data_size %>
+	  </td><td class="data-size">
+	    <%= raw(human_readable_bytes_html(18972784837 || sourcedata[:collection].data_size)) if sourcedata[:collection] and sourcedata[:collection].data_size %>
 	  </td><td>
 	    <% if sourcedata[:protected] %>
 	    <span class="btn btn-success">yes</span>

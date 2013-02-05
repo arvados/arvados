@@ -27,3 +27,6 @@ table.topalign>thead>tr>td {
     font-size: .8em;
     color: #888;
 }
+table .data-size, .table .data-size {
+    text-align: right;
+}
