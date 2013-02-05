@@ -15,13 +15,31 @@
 <%= render :partial => 'nav' %>
 
 <ul class="nav nav-tabs">
-  <li class="active"><a href="#provenance" data-toggle="tab">Provenance (<%= @provenance.size %>)</a></li>
+  <li class="active"><a href="#files" data-toggle="tab">Files (<%= @object.files ? @object.files.size : 0 %>)</a></li>
+  <li><a href="#provenance" data-toggle="tab">Provenance (<%= @provenance.size %>)</a></li>
   <li><a href="#jobs" data-toggle="tab">Jobs (<%= @provenance.size %>)</a></li>
   <li><a href="#sourcedata" data-toggle="tab">Source data (<%= @sourcedata.size %>)</a></li>
 </ul>
 
 <div class="tab-content">
-  <div id="provenance" class="tab-pane fade in active">
+  <div id="files" class="tab-pane fade in active">
+    <table class="table table-bordered">
+      <thead>
+        <tr><th style="text-align:right">size (bytes)</th><th>filename</th></tr>
+      </thead><tbody>
+        <% if @object then @object.files.each do |file| %>
+        <tr>
+          <td style="text-align:right">
+            <%= raw(human_readable_bytes_html(file[2])) %>
+          </td><td>
+            <%= file[0] %>/<%= file[1] %>
+          </td>
+        </tr>
+        <% end; end %>
+      </tbody>
+    </table>
+  </div>
+  <div id="provenance" class="tab-pane fade">
     <table class="topalign table table-bordered">
       <thead>
       </thead>
