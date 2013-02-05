@@ -17,3 +17,13 @@
 .contain-align-left {
     text-align: left;
 }
+table.topalign>tbody>tr>td {
+    vertical-align: top;
+}
+table.topalign>thead>tr>td {
+    vertical-align: bottom;
+}
+.deemphasize {
+    font-size: .8em;
+    color: #888;
+}

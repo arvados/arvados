@@ -1,5 +1,6 @@
 class CollectionsController < ApplicationController
   before_filter :ensure_current_user_is_admin
+  skip_before_filter :find_object_by_uuid, :only => [:graph]
 
   def graph
     index
@@ -34,6 +35,42 @@ class CollectionsController < ApplicationController
         if l.link_class == 'data_origin'
           c[:origin] = l
         end
+      end
+    end
+  end
+
+  def show
+    return super if !@object
+    @provenance = []
+    @sourcedata = {params[:uuid] => {uuid: params[:uuid]}}
+    whence = `whence #{params[:uuid]}`
+    whence.split("\n").each do |line|
+      if line.match /^(\#\d+@\S+)$/
+        job = Job.where(submit_id: line).first
+        @provenance << {job: job, target: line}
+      elsif (re = line.match /^ +output *= *(\S+)/)
+        if !@provenance.empty?
+          @provenance[-1][:output] = re[1]
+          @sourcedata.delete re[1]
+        end
+      elsif (re = line.match /^([0-9a-f]{32}\b)/)
+        @sourcedata[re[1]] ||= {uuid: re[1]}
+      end
+    end
+    Link.where(head_uuid: @sourcedata.keys).each do |link|
+      if link.link_class == 'resources' and link.name == 'wants'
+        @sourcedata[link.head_uuid][:protected] = true
+      end
+    end
+    Link.where(tail_uuid: @sourcedata.keys).each do |link|
+      if link.link_class == 'data_origin'
+        @sourcedata[link.tail_uuid][:data_origins] ||= []
+        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_kind, link.head_uuid]
+      end
+    end
+    Collection.where(uuid: @sourcedata.keys).each do |collection|
+      if @sourcedata[collection.uuid]
+        @sourcedata[collection.uuid][:collection] = collection
       end
     end
   end

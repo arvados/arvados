@@ -1,18 +1,3 @@
-<% content_for :head do %>
-<style>
-  table.topalign>tbody>tr>td {
-  vertical-align: top;
-  }
-  table.topalign>thead>tr>td {
-  vertical-align: bottom;
-  }
-  .deemphasize {
-  font-size: .8em;
-  color: #888;
-  }
-</style>
-<% end %>
-
 <%= render :partial => 'nav' %>
 
 <table class="topalign table table-bordered table-striped">
@@ -37,7 +22,7 @@
 
     <tr class="collection">
       <td>
-	<%= c[:uuid] %>
+	<%= link_to c[:uuid], collection_path(c[:uuid]) %>
       </td><td>
 	<%= raw(distance_of_time_in_words(c[:created_at], Time.now).sub('about ','~').sub(' ','&nbsp;')) if c[:created_at] %>
       </td><td>
