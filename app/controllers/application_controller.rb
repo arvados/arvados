@@ -69,6 +69,11 @@ class ApplicationController < ActionController::Base
             conditions[0] << " and #{table_name}.#{attr}=?"
             conditions << value
           end
+        elsif (!value.nil? and attr == 'any' and
+          value.is_a?(Array) and value[0] == 'contains' and
+          model_class.columns.collect(&:name).index('name')) then
+            conditions[0] << " and #{table_name}.name ilike ?"
+            conditions << "%#{value[1]}%"
         end
       end
       if conditions.length > 1
