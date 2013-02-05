@@ -49,11 +49,7 @@ class OrvosResourceList
   end
 
   def all
-    res = $orvos_api_client.api @resource_class, '', {
-      _method: 'GET',
-      eager: (@eager ? '1' : '0')
-    }
-    @results = $orvos_api_client.unpack_api_response res
+    where({})
   end
 
   def to_ary
