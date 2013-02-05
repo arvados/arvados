@@ -8,6 +8,11 @@ class OrvosResourceList
     self
   end
 
+  def limit(max_results)
+    @limit = max_results
+    self
+  end
+
   def where(cond)
     cond = cond.dup
     cond.keys.each do |uuid_key|
@@ -33,11 +38,13 @@ class OrvosResourceList
         cond = cond.merge({ kind_key => 'orvos#' + $orvos_api_client.class_kind(cond[kind_key]) })
       end
     end
-    res = $orvos_api_client.api @resource_class, '', {
+    api_params = {
       _method: 'GET',
-      where: cond,
-      eager: (@eager ? '1' : '0')
+      where: cond
     }
+    api_params[:eager] = '1' if @eager
+    api_params[:limit] = @limit if @limit
+    res = $orvos_api_client.api @resource_class, '', api_params
     @results = $orvos_api_client.unpack_api_response res
   end
 

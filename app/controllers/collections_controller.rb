@@ -6,9 +6,12 @@ class CollectionsController < ApplicationController
   end
 
   def index
-    @links = Link.eager.where(head_kind: 'orvos#collection') |
-      Link.eager.where(tail_kind: 'orvos#collection')
+    @links = Link.eager.limit(1000).where(head_kind: 'orvos#collection') |
+      Link.eager.limit(1000).where(tail_kind: 'orvos#collection')
     @collections = {}
+    Collection.limit(1000).where({}).each do |c|
+      @collections[c.uuid] = {uuid: c.uuid}
+    end
     @links.each do |l|
       if l.head_kind == 'orvos#collection'
         c = (@collections[l.head_uuid] ||= {uuid: l.head_uuid})

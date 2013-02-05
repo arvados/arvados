@@ -31,6 +31,9 @@ class OrvosBase < ActiveRecord::Base
   def self.where(*args)
     OrvosResourceList.new(self).where(*args)
   end
+  def self.limit(*args)
+    OrvosResourceList.new(self).limit(*args)
+  end
   def self.eager(*args)
     OrvosResourceList.new(self).eager(*args)
   end
