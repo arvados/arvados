@@ -83,6 +83,8 @@ class ApplicationController < ActionController::Base
       rescue
         raise "invalid argument (limit)"
       end
+    else
+      @objects = @objects.limit(100)
     end
     @objects.uniq!(&:id)
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
