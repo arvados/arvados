@@ -33,8 +33,8 @@
         <div class="nav-collapse collapse">
           <ul class="nav">
 	    <% [
-	       [true, 'FactoryJobs', factory_jobs_path],
-	       [true, 'Data', collections_path]
+	       [true, 'Data', collections_path],
+	       [true, 'FactoryJobs', factory_jobs_path]
 	       ].each do |admin_only, name, path| %>
 	    <% if !admin_only or (current_user and current_user.is_admin) %>
             <li<%= raw ' class="active"' if request.fullpath.index(path) %>><a href="<%= path %>"><%= name %></a></li>

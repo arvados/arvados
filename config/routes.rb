@@ -39,7 +39,7 @@ Vcffarm::Application.routes.draw do
 
   resources :collections
 
-  root :to => 'factory_jobs#index'
+  root :to => 'collections#index'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
