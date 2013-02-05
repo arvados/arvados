@@ -93,7 +93,7 @@
 	  <td>
 	    <span class="btn"><tt class="deemphasize"><%= sourcedata[:uuid] %></tt></span>
 	  </td><td class="data-size">
-	    <%= raw(human_readable_bytes_html(18972784837 || sourcedata[:collection].data_size)) if sourcedata[:collection] and sourcedata[:collection].data_size %>
+	    <%= raw(human_readable_bytes_html(sourcedata[:collection].data_size)) if sourcedata[:collection] and sourcedata[:collection].data_size %>
 	  </td><td>
 	    <% if sourcedata[:protected] %>
 	    <span class="btn btn-success">yes</span>
