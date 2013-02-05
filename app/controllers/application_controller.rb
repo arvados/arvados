@@ -77,6 +77,13 @@ class ApplicationController < ActionController::Base
           where(*conditions)
       end
     end
+    if params[:limit]
+      begin
+        @objects = @objects.limit(params[:limit].to_i)
+      rescue
+        raise "invalid argument (limit)"
+      end
+    end
     @objects.uniq!(&:id)
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)
