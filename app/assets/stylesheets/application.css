@@ -23,6 +23,12 @@ table.topalign>tbody>tr>td {
 table.topalign>thead>tr>td {
     vertical-align: bottom;
 }
+tr.cell-valign-center>td {
+    vertical-align: middle;
+}
+tr.cell-noborder>td {
+    border: none;
+}
 .deemphasize {
     font-size: .8em;
     color: #888;

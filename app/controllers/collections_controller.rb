@@ -42,8 +42,12 @@ class CollectionsController < ApplicationController
   def show
     return super if !@object
     @provenance = []
+    @output2job = {}
+    @output2colorindex = {}
     @sourcedata = {params[:uuid] => {uuid: params[:uuid]}}
+    @protected = {}
     whence = `whence #{params[:uuid]}`
+    colorindex = -1
     whence.split("\n").each do |line|
       if line.match /^(\#\d+@\S+)$/
         job = Job.where(submit_id: line).first
@@ -51,15 +55,19 @@ class CollectionsController < ApplicationController
       elsif (re = line.match /^ +output *= *(\S+)/)
         if !@provenance.empty?
           @provenance[-1][:output] = re[1]
+          @output2job[re[1]] = @provenance[-1][:job]
+          if !@output2colorindex[re[1]]
+            @output2colorindex[re[1]] = (colorindex += 1) % 10
+          end
           @sourcedata.delete re[1]
         end
       elsif (re = line.match /^([0-9a-f]{32}\b)/)
         @sourcedata[re[1]] ||= {uuid: re[1]}
       end
     end
-    Link.where(head_uuid: @sourcedata.keys).each do |link|
+    Link.where(head_uuid: @sourcedata.keys | @output2job.keys).each do |link|
       if link.link_class == 'resources' and link.name == 'wants'
-        @sourcedata[link.head_uuid][:protected] = true
+        @protected[link.head_uuid] = true
       end
     end
     Link.where(tail_uuid: @sourcedata.keys).each do |link|

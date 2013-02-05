@@ -1,21 +1,115 @@
+<%= content_for :head do %>
+<style>
+<%# https://github.com/mbostock/d3/wiki/Ordinal-Scales %>
+<% n=-1; %w(#1f77b4 #ff7f0e #2ca02c #d62728 #9467bd #8c564b #e377c2 #7f7f7f #bcbd22 #17becf).each do |color| %>
+.colorseries-10-<%= n += 1 %>, .btn.colorseries-10-<%= n %>:hover {
+  *background-color: <%= color %>;
+  background-color: <%= color %>;
+  background-image: none;
+}
+<% end %>
+.colorseries-nil { background-color: white }
+</style>
+<% end %>
+
 <%= render :partial => 'nav' %>
 
 <ul class="nav nav-tabs">
-  <li class="active"><a href="#jobs" data-toggle="tab">Jobs (<%= @provenance.size %>)</a></li>
+  <li class="active"><a href="#provenance" data-toggle="tab">Provenance (<%= @provenance.size %>)</a></li>
+  <li><a href="#jobs" data-toggle="tab">Jobs (<%= @provenance.size %>)</a></li>
   <li><a href="#sourcedata" data-toggle="tab">Source data (<%= @sourcedata.size %>)</a></li>
 </ul>
 
 <div class="tab-content">
-  <div id="jobs" class="tab-pane fade in active">
+  <div id="provenance" class="tab-pane fade in active">
+    <table class="topalign table table-bordered">
+      <thead>
+      </thead>
+      <tbody>
+
+	<% @provenance.reverse.each do |p| %>
+	<% j = p[:job] %>
+
+	<% if j %>
+
+	<tr class="job">
+	  <td style="padding-bottom: 3em">
+            <table class="table" style="margin-bottom: 0; background: #f0f0ff">
+	      <% j.command_parameters.each do |k,v| %>
+              <tr>
+                <td style="width: 60%">
+                  <% re = v.match(/^([0-9a-f]+)/) %>
+                  <% justhash = (re and re[1].length == 32) ? re[1] : nil %>
+	          <% if justhash and @output2job.has_key? justhash %>
+	          <tt class="btn colorseries-10-<%= @output2colorindex[v] %> deemphasize"><%= v %></tt>
+                  <% elsif justhash %>
+	          <tt class="btn colorseries-nil deemphasize"><%= justhash %></tt><br /><span class="deemphasize"><%= v %></span>
+                  <% else %>
+	          <span class="deemphasize"><%= v %></span>
+                  <% end %>
+                </td><td style="text-align: center; width: 20%">
+                  <% if justhash
+                       if @protected[justhash]
+                         btnclass = 'success'
+                         btntext = 'keep'
+                       else
+                         btnclass = @output2job.has_key?(v) ? 'warning' : 'danger'
+                         btntext = 'cache'
+                       end %>
+
+	          <tt class="btn btn-<%= btnclass %> deemphasize"><%= btntext %></tt>
+                  <% end %>
+                </td><td style="width: 20%">
+                  <%= k.to_s %>
+                </td>
+              </tr>
+	      <% end %>
+            </table>
+            <div style="text-align: center">
+              &darr;
+              <br />
+	      <span class="btn deemphasize"><%= j.command %><br /><tt><%= link_to_if j.command_version.match(/[0-9a-f]{40}/), j.command_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.command_version}/entry/mapreduce/mr-#{j.command}" if j.command_version %></tt></span>
+              <br />
+              &darr;
+              <br />
+	      <tt class="btn colorseries-10-<%= @output2colorindex[p[:output]] %> deemphasize"><%= p[:output] %></tt>
+            </div>
+	  </td>
+          <td>
+	    <tt><span class="deemphasize">job:</span><br /><%= j.uuid %><br /><span class="deemphasize"><%= j.submit_id %></span></tt>
+          </td>
+	</tr>
+
+	<% else %>
+	<tr>
+	  <td>
+	    <span class="btn btn-danger">lookup fail</span>
+	    <br />
+	    <tt class="deemphasize"><%= p[:target] %></tt>
+	  </td><td colspan="4">
+	  </td>
+	</tr>
+	<% end %>
+
+	<% end %>
+
+      </tbody>
+    </table>
+  </div>
+  <div id="jobs" class="tab-pane fade">
     <table class="topalign table table-bordered">
       <thead>
 	<tr class="contain-align-left">
 	  <th>
 	    job
 	  </th><th>
-	    output &uarr; command/version + parameters
+	    version
+	  </th><th>
+	    status
 	  </th><th>
 	    start
+	  </th><th>
+	    finish
 	  </th><th>
 	    clock time
 	  </th>
@@ -23,28 +117,26 @@
       </thead>
       <tbody>
 
-	<% @provenance.each do |p| %>
+	<% @provenance.reverse.each do |p| %>
 	<% j = p[:job] %>
 
 	<% if j %>
 
 	<tr class="job">
 	  <td>
-	    <tt class="btn <%= if j.success then 'btn-success'; elsif j.active then 'btn-primary'; else 'btn-warning'; end %>"><%= j.uuid %></tt>
+	    <tt><%= j.uuid %></tt>
 	    <br />
 	    <tt class="deemphasize"><%= j.submit_id %></tt>
 	  </td><td>
-	    <tt class="deemphasize"><%= p[:output] %></tt><br />
-	    &uarr;
-	    <%= j.command %> <tt class="deemphasize"><%= link_to_if j.command_version.match(/[0-9a-f]{40}/), j.command_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.command_version}" if j.command_version %></tt><br />
-	    <% j.command_parameters.each do |k,v| %>
-	    <%= k.to_s %>
-	    <br />
-	    <tt class="deemphasize"><%= v %></tt>
-	    <br />
-	    <% end %>
+	    <%= j.command_version %>
+	  </td><td>
+            <span class="btn <%= if j.success then 'btn-success'; elsif j.active then 'btn-primary'; else 'btn-warning'; end %>">
+	      <%= j.success || j.active ? 'ok' : 'failed' %>
+            </span>
 	  </td><td>
 	    <%= j.started_at %>
+	  </td><td>
+	    <%= j.finished_at %>
 	  </td><td>
 	    <% if j.started_at and j.finished_at %>
 	    <%= raw(distance_of_time_in_words(j.started_at, j.finished_at).sub('about ','~').sub(' ','&nbsp;')) %>
@@ -79,7 +171,7 @@
 	  </th><th class="data-size">
 	    data size
 	  </th><th>
-	    protected?
+	    storage
 	  </th><th>
 	    origin
 	  </th>
@@ -95,10 +187,10 @@
 	  </td><td class="data-size">
 	    <%= raw(human_readable_bytes_html(sourcedata[:collection].data_size)) if sourcedata[:collection] and sourcedata[:collection].data_size %>
 	  </td><td>
-	    <% if sourcedata[:protected] %>
-	    <span class="btn btn-success">yes</span>
+	    <% if @protected[sourcedata[:uuid]] %>
+	    <span class="btn btn-success">keep</span>
 	    <% else %>
-	    <span class="btn btn-danger">no</span>
+	    <span class="btn btn-warning">cache</span>
 	    <% end %>
 	  </td><td>
 	    <% if sourcedata[:data_origins] %>
