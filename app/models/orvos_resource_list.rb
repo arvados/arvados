@@ -48,11 +48,19 @@ class OrvosResourceList
     @results = $orvos_api_client.unpack_api_response res
   end
 
+  def results
+    where({})
+  end
+
   def all
     where({})
   end
 
   def to_ary
-    @results
+    results
+  end
+
+  def to_hash
+    Hash[results.collect { |x| [x.uuid, x] }]
   end
 end
