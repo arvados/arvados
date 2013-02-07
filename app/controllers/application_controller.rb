@@ -56,7 +56,7 @@ class ApplicationController < ActionController::Base
 
   def show
     if !@object
-      render_not_found("object not found")
+      return render_not_found("object not found")
     end
     respond_to do |f|
       f.json { render json: @object }
