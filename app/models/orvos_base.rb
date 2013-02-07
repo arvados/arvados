@@ -55,9 +55,18 @@ class OrvosBase < ActiveRecord::Base
       resp = $orvos_api_client.api(self.class, '', postdata)
     end
     return false if !resp[:etag] || !resp[:uuid]
+
+    # set read-only non-database attributes
     @etag = resp[:etag]
     @kind = resp[:kind]
-    self.uuid ||= resp[:uuid]
+
+    # these attrs can be modified by "save" -- we should update our copies
+    %w(uuid owner created_at
+       modified_at modified_by_user modified_by_client
+      ).each do |attr|
+      self.send(attr + '=', resp[attr.to_sym])
+    end
+
     self
   end
   def save!
