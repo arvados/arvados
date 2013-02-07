@@ -2,7 +2,7 @@
   <thead>
   </thead>
   <tbody>
-    <% %w(summary created_at modified_at info).each do |attr| %>
+    <% %w(event_type summary created_at modified_at info).each do |attr| %>
     <% attrvalue = @object.send attr %>
     <% if attrvalue.is_a? Hash then attrvalue.each do |infokey, infocontent| %>
     <tr>
