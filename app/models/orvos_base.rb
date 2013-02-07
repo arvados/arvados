@@ -7,7 +7,9 @@ class OrvosBase < ActiveRecord::Base
       '4zz18' => 'orvos#collection',
       'tpzed' => 'orvos#user',
       'ozdt8' => 'orvos#api_client',
-      '57u5n' => 'orvos#log'
+      '57u5n' => 'orvos#log',
+      'j58dm' => 'orvos#specimen',
+      'ldvyl' => 'orvos#project'
     }
   end
 
@@ -185,7 +187,7 @@ class OrvosBase < ActiveRecord::Base
       return nil
     end
     if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
-      return 'orvos#collection'
+      return Collection
     end
     resource_class = nil
     uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
