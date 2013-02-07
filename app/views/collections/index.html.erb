@@ -22,7 +22,7 @@
 
     <tr class="collection">
       <td>
-	<%= link_to c[:uuid], collection_path(c[:uuid]) %>
+	<%= link_to_if_orvos_object c[:uuid] %>
       </td><td>
 	<%= raw(distance_of_time_in_words(c[:created_at], Time.now).sub('about ','~').sub(' ','&nbsp;')) if c[:created_at] %>
       </td><td>
