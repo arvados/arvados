@@ -60,6 +60,7 @@ class ApplicationController < ActionController::Base
     end
     respond_to do |f|
       f.json { render json: @object }
+      f.html { render }
     end
   end
 
