@@ -178,10 +178,13 @@ class OrvosBase < ActiveRecord::Base
   end
 
   def self.resource_class_for_uuid(uuid, attr_name=nil, object=nil)
-    resource_class = nil
+    unless uuid.is_a? String
+      return nil
+    end
     if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
       return 'orvos#collection'
     end
+    resource_class = nil
     uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
       resource_class ||= $orvos_api_client.
         kind_class(self.uuid_infix_object_kind[re[1]])

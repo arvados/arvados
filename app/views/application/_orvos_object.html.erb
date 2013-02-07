@@ -22,11 +22,7 @@
     <% elsif attrvalue.is_a? String or attrvalue.respond_to? :to_s %>
     <tr>
       <td><%= attr %></td>
-      <% if attrvalue.is_a? String and (resource_class = OrvosBase::resource_class_for_uuid(attrvalue, attr, @object)) %>
-      <td><%= link_to "#{resource_class.to_s} #{attrvalue}", { controller: resource_class.to_s.camelize(:lower).pluralize, action: 'show', id: attrvalue } %></td>
-      <% else %>
-      <td><%= attrvalue %></td>
-      <% end %>
+      <td><%= link_to_if_orvos_object attrvalue, attr, @object %></td>
     </tr>
     <% end; end %>
   </tbody>
