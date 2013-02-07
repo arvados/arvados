@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130203115329) do
+ActiveRecord::Schema.define(:version => 20130207195855) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -42,6 +42,8 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "updated_at"
   end
 
+  add_index "api_clients", ["created_at"], :name => "index_api_clients_on_created_at"
+  add_index "api_clients", ["modified_at"], :name => "index_api_clients_on_modified_at"
   add_index "api_clients", ["uuid"], :name => "index_api_clients_on_uuid", :unique => true
 
   create_table "collections", :force => true do |t|
@@ -62,6 +64,8 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.text     "manifest_text"
   end
 
+  add_index "collections", ["created_at"], :name => "index_collections_on_created_at"
+  add_index "collections", ["modified_at"], :name => "index_collections_on_modified_at"
   add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
 
   create_table "job_steps", :force => true do |t|
@@ -80,7 +84,9 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "updated_at"
   end
 
+  add_index "job_steps", ["created_at"], :name => "index_job_steps_on_created_at"
   add_index "job_steps", ["job_uuid"], :name => "index_job_steps_on_job_uuid"
+  add_index "job_steps", ["modified_at"], :name => "index_job_steps_on_modified_at"
   add_index "job_steps", ["sequence"], :name => "index_job_steps_on_sequence"
   add_index "job_steps", ["success"], :name => "index_job_steps_on_success"
   add_index "job_steps", ["uuid"], :name => "index_job_steps_on_uuid", :unique => true
@@ -109,7 +115,9 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
   end
 
   add_index "jobs", ["command"], :name => "index_jobs_on_command"
+  add_index "jobs", ["created_at"], :name => "index_jobs_on_created_at"
   add_index "jobs", ["finished_at"], :name => "index_jobs_on_finished_at"
+  add_index "jobs", ["modified_at"], :name => "index_jobs_on_modified_at"
   add_index "jobs", ["output"], :name => "index_jobs_on_output"
   add_index "jobs", ["started_at"], :name => "index_jobs_on_started_at"
   add_index "jobs", ["submit_id"], :name => "index_jobs_on_submit_id", :unique => true
@@ -134,8 +142,10 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.string   "head_kind"
   end
 
+  add_index "links", ["created_at"], :name => "index_links_on_created_at"
   add_index "links", ["head_kind"], :name => "index_links_on_head_kind"
   add_index "links", ["head_uuid"], :name => "index_links_on_head_uuid"
+  add_index "links", ["modified_at"], :name => "index_links_on_modified_at"
   add_index "links", ["tail_kind"], :name => "index_links_on_tail_kind"
   add_index "links", ["tail_uuid"], :name => "index_links_on_tail_uuid"
   add_index "links", ["uuid"], :name => "index_links_on_uuid", :unique => true
@@ -156,8 +166,10 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "modified_at"
   end
 
+  add_index "logs", ["created_at"], :name => "index_logs_on_created_at"
   add_index "logs", ["event_at"], :name => "index_logs_on_event_at"
   add_index "logs", ["event_type"], :name => "index_logs_on_event_type"
+  add_index "logs", ["modified_at"], :name => "index_logs_on_modified_at"
   add_index "logs", ["object_kind"], :name => "index_logs_on_object_kind"
   add_index "logs", ["object_uuid"], :name => "index_logs_on_object_uuid"
   add_index "logs", ["summary"], :name => "index_logs_on_summary"
@@ -180,7 +192,9 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "updated_at"
   end
 
+  add_index "nodes", ["created_at"], :name => "index_nodes_on_created_at"
   add_index "nodes", ["hostname"], :name => "index_nodes_on_hostname", :unique => true
+  add_index "nodes", ["modified_at"], :name => "index_nodes_on_modified_at"
   add_index "nodes", ["slot_number"], :name => "index_nodes_on_slot_number", :unique => true
   add_index "nodes", ["uuid"], :name => "index_nodes_on_uuid", :unique => true
 
@@ -199,6 +213,8 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "updated_at"
   end
 
+  add_index "pipeline_invocations", ["created_at"], :name => "index_pipeline_invocations_on_created_at"
+  add_index "pipeline_invocations", ["modified_at"], :name => "index_pipeline_invocations_on_modified_at"
   add_index "pipeline_invocations", ["uuid"], :name => "index_pipeline_invocations_on_uuid", :unique => true
 
   create_table "pipelines", :force => true do |t|
@@ -213,6 +229,8 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "updated_at"
   end
 
+  add_index "pipelines", ["created_at"], :name => "index_pipelines_on_created_at"
+  add_index "pipelines", ["modified_at"], :name => "index_pipelines_on_modified_at"
   add_index "pipelines", ["uuid"], :name => "index_pipelines_on_uuid", :unique => true
 
   create_table "projects", :force => true do |t|
@@ -227,6 +245,8 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "updated_at"
   end
 
+  add_index "projects", ["created_at"], :name => "index_projects_on_created_at"
+  add_index "projects", ["modified_at"], :name => "index_projects_on_modified_at"
   add_index "projects", ["uuid"], :name => "index_projects_on_uuid", :unique => true
 
   create_table "specimens", :force => true do |t|
@@ -241,6 +261,8 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.text     "properties"
   end
 
+  add_index "specimens", ["created_at"], :name => "index_specimens_on_created_at"
+  add_index "specimens", ["modified_at"], :name => "index_specimens_on_modified_at"
   add_index "specimens", ["uuid"], :name => "index_specimens_on_uuid", :unique => true
 
   create_table "users", :force => true do |t|
@@ -259,6 +281,8 @@ ActiveRecord::Schema.define(:version => 20130203115329) do
     t.datetime "updated_at"
   end
 
+  add_index "users", ["created_at"], :name => "index_users_on_created_at"
+  add_index "users", ["modified_at"], :name => "index_users_on_modified_at"
   add_index "users", ["uuid"], :name => "index_users_on_uuid", :unique => true
 
 end

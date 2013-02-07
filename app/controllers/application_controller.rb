@@ -91,6 +91,7 @@ class ApplicationController < ActionController::Base
     else
       @objects = @objects.limit(100)
     end
+    @objects = @objects.order('modified_at desc')
     @objects.uniq!(&:id)
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)
