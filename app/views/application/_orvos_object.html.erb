@@ -22,7 +22,7 @@
     <% elsif attrvalue.is_a? String or attrvalue.respond_to? :to_s %>
     <tr>
       <td><%= attr %></td>
-      <td><%= link_to_if_orvos_object attrvalue, attr, @object %></td>
+      <td><%= link_to_if_orvos_object attrvalue, {referring_attr: attr, referring_object: @object, with_prefixes: true, with_class_name: true} %></td>
     </tr>
     <% end; end %>
   </tbody>

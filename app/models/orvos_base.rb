@@ -178,6 +178,9 @@ class OrvosBase < ActiveRecord::Base
   end
 
   def self.resource_class_for_uuid(uuid, attr_name=nil, object=nil)
+    if uuid.is_a? OrvosBase
+      return uuid.class
+    end
     unless uuid.is_a? String
       return nil
     end
@@ -190,7 +193,7 @@ class OrvosBase < ActiveRecord::Base
         kind_class(self.uuid_infix_object_kind[re[1]])
     end
     if object and attr_name and attr_name.match /_uuid$/
-      resource_class ||= $orvos_api_client.kind_class(object.attributes[attr.sub(/_uuid$/, '_kind')])
+      resource_class ||= $orvos_api_client.kind_class(object.attributes[attr_name.sub(/_uuid$/, '_kind')])
     end
     resource_class
   end

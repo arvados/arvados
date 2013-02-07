@@ -13,9 +13,17 @@ module ApplicationHelper
     cooked = raw + cooked
   end
 
-  def link_to_if_orvos_object(attrvalue, attr, object)
-    if (resource_class = OrvosBase::resource_class_for_uuid(attrvalue, attr, object))
-      link_to "#{resource_class.to_s} #{attrvalue}", { controller: resource_class.to_s.camelize(:lower).pluralize, action: 'show', id: attrvalue }
+  def link_to_if_orvos_object(attrvalue, opts={})
+    if (resource_class = OrvosBase::resource_class_for_uuid(attrvalue, opts[:referring_attr], opts[:referring_object]))
+      link_uuid = attrvalue.is_a?(OrvosBase) ? attrvalue.uuid : attrvalue
+      link_name = link_uuid
+      if !opts[:with_prefixes]
+        link_name = link_name.sub /^.{5}-.{5}-/, ''
+      end
+      if opts[:with_class_name]
+        link_name = "#{resource_class.to_s} #{link_name}"
+      end
+      link_to link_name, { controller: resource_class.to_s.underscore.pluralize, action: 'show', id: link_uuid }
     else
       attrvalue
     end
