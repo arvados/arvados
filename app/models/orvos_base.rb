@@ -1,5 +1,34 @@
 class OrvosBase < ActiveRecord::Base
   self.abstract_class = true
+  attr_accessor :attribute_sortkey
+
+  def self.uuid_infix_object_kind
+    @@uuid_infix_object_kind ||= {
+      '4zz18' => 'orvos#collection',
+      'tpzed' => 'orvos#user',
+      'ozdt8' => 'orvos#api_client',
+      '57u5n' => 'orvos#log'
+    }
+  end
+
+  def initialize
+    super
+    @attribute_sortkey ||= {
+      'id' => nil,
+      'uuid' => '000',
+      'owner' => '001',
+      'created_at' => '002',
+      'modified_at' => '003',
+      'modified_by_user' => '004',
+      'modified_by_client' => '005',
+      'tail_kind' => '100',
+      'tail_uuid' => '100',
+      'head_kind' => '101',
+      'head_uuid' => '101',
+      'info' => 'zzz-000',
+      'updated_at' => 'zzz-999'
+    }
+  end
 
   def self.columns
     return @columns unless @columns.nil?
@@ -138,6 +167,29 @@ class OrvosBase < ActiveRecord::Base
   end
   def dup
     super.forget_uuid!
+  end
+
+  def attributes_for_display
+    self.attributes.reject { |k,v|
+      attribute_sortkey.has_key?(k) and !attribute_sortkey[k]
+    }.sort_by { |k,v|
+      attribute_sortkey[k] or k
+    }
+  end
+
+  def self.resource_class_for_uuid(uuid, attr_name=nil, object=nil)
+    resource_class = nil
+    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
+      return 'orvos#collection'
+    end
+    uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
+      resource_class ||= $orvos_api_client.
+        kind_class(self.uuid_infix_object_kind[re[1]])
+    end
+    if object and attr_name and attr_name.match /_uuid$/
+      resource_class ||= $orvos_api_client.kind_class(object.attributes[attr.sub(/_uuid$/, '_kind')])
+    end
+    resource_class
   end
 
   protected

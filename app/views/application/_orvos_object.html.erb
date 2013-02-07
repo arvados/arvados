@@ -1,0 +1,33 @@
+<table class="table topalign">
+  <thead>
+  </thead>
+  <tbody>
+    <% @object.attributes_for_display.each do |attr, attrvalue| %>
+    <% if attrvalue.is_a? Hash then attrvalue.each do |infokey, infocontent| %>
+    <tr>
+      <td><%= infokey %></td>
+      <td>
+        <tt>
+          <% if infocontent.is_a? Array then infocontent.each do |message| %>
+          <%= message %><br />
+          <% end; elsif infocontent.is_a? String %>
+          <%= infocontent %>
+          <% else %>
+          <%= infocontent.inspect %>
+          <% end %>
+        </tt>
+      </td>
+    </tr>
+    <% end %>
+    <% elsif attrvalue.is_a? String or attrvalue.respond_to? :to_s %>
+    <tr>
+      <td><%= attr %></td>
+      <% if attrvalue.is_a? String and (resource_class = OrvosBase::resource_class_for_uuid(attrvalue, attr, @object)) %>
+      <td><%= link_to "#{resource_class.to_s} #{attrvalue}", { controller: resource_class.to_s.camelize(:lower).pluralize, action: 'show', id: attrvalue } %></td>
+      <% else %>
+      <td><%= attrvalue %></td>
+      <% end %>
+    </tr>
+    <% end; end %>
+  </tbody>
+</table>
