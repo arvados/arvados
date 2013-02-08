@@ -18,11 +18,15 @@
   </thead>
   <tbody>
 
-    <% @collections.values.sort_by { |c| c[:created_at] || Time.now }.reverse.each do |c| %>
+    <% @collection_info.sort_by { |k,c| c[:created_at] || Time.now }.reverse.each do |uuid, c| %>
 
     <tr class="collection">
       <td>
-	<%= link_to_if_orvos_object c[:uuid] %>
+	<% if @collections.has_key? uuid %>
+	<%= link_to_if_orvos_object uuid %>
+	<% else %>
+	<%= uuid %>
+	<% end %>
       </td><td>
 	<%= raw(distance_of_time_in_words(c[:created_at], Time.now).sub('about ','~').sub(' ','&nbsp;')) if c[:created_at] %>
       </td><td>

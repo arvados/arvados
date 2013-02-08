@@ -9,13 +9,20 @@ class CollectionsController < ApplicationController
   def index
     @links = Link.eager.limit(100).where(head_kind: 'orvos#collection') |
       Link.eager.limit(100).where(tail_kind: 'orvos#collection')
-    @collections = {}
-    Collection.limit(100).where({}).each do |c|
-      @collections[c.uuid] = {uuid: c.uuid}
+    @collections = Collection.limit(100).to_hash
+    @collections.merge!(Collection.
+                        limit(100).
+                        where(uuid: @links.select{|x|x.head_kind=='orvos#collection'}.collect(&:head_uuid) |
+                              @links.select{|x|x.tail_kind=='orvos#collection'}.collect(&:tail_uuid)).
+                        to_hash)
+    @collection_info = {}
+    @collections.each do |uuid, c|
+      ci = (@collection_info[uuid] ||= {uuid: uuid})
+      ci[:created_at] = c.created_at
     end
     @links.each do |l|
       if l.head_kind == 'orvos#collection'
-        c = (@collections[l.head_uuid] ||= {uuid: l.head_uuid})
+        c = (@collection_info[l.head_uuid] ||= {uuid: l.head_uuid})
         if l.link_class == 'resources' and l.name == 'wants'
           if l.head.respond_to? :created_at
             c[:created_at] = l.head.created_at
@@ -27,7 +34,7 @@ class CollectionsController < ApplicationController
         end
       end
       if l.tail_kind == 'orvos#collection'
-        c = (@collections[l.tail_uuid] ||= {uuid: l.tail_uuid})
+        c = (@collection_info[l.tail_uuid] ||= {uuid: l.tail_uuid})
         if l.link_class == 'group' and l.name == 'member_of'
           c[:projects] ||= {}
           c[:projects][l.tail_uuid] = true
