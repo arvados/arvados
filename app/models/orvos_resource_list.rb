@@ -1,4 +1,6 @@
 class OrvosResourceList
+  include Enumerable
+
   def initialize(resource_class)
     @resource_class = resource_class
   end
@@ -46,14 +48,31 @@ class OrvosResourceList
     api_params[:limit] = @limit if @limit
     res = $orvos_api_client.api @resource_class, '', api_params
     @results = $orvos_api_client.unpack_api_response res
+    self
   end
 
   def results
-    where({})
+    self.where({}) if !@results
+    @results
   end
 
   def all
     where({})
+  end
+
+  def each(&block)
+    results.each do |m|
+      block.call m
+    end
+    self
+  end
+
+  def |(x)
+    if x.is_a? Hash
+      self.to_hash | x
+    else
+      results | x.to_ary
+    end
   end
 
   def to_ary
