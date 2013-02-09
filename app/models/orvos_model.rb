@@ -82,9 +82,9 @@ class OrvosModel < ActiveRecord::Base
 
   def update_modified_by_fields
     self.created_at ||= Time.now
-    self.owner ||= current_user.uuid
+    self.owner ||= current_user.uuid if current_user
     self.modified_at = Time.now
-    self.modified_by_user = current_user.uuid
+    self.modified_by_user = current_user ? current_user.uuid : nil
     self.modified_by_client = current_api_client ? current_api_client.uuid : nil
   end
 end
