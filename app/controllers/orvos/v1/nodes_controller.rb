@@ -1,4 +1,6 @@
 class Orvos::V1::NodesController < ApplicationController
+  skip_before_filter :login_required, :only => :ping
+
   def create
     @object = Node.new
     @object.save!
