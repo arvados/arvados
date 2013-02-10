@@ -3,7 +3,7 @@
   <td><%= attr %>[<%= infokey %>]</td>
   <td>
     <tt>
-      <% if infocontent.is_a? Array then infocontent.each do |message| %>
+      <% if infocontent.is_a? Array and infocontent.collect(&:class).uniq.compact == [String] then infocontent.each do |message| %>
       <%= message %><br />
       <% end; elsif infocontent.is_a? String %>
       <%= infocontent %>
