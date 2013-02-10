@@ -11,6 +11,7 @@ class OrvosModel < ActiveRecord::Base
   before_update :ensure_permission_to_update
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
+  validate :ensure_serialized_attribute_type
 
   def self.kind_class(kind)
     kind.match(/^orvos\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
@@ -86,5 +87,21 @@ class OrvosModel < ActiveRecord::Base
     self.modified_at = Time.now
     self.modified_by_user = current_user ? current_user.uuid : nil
     self.modified_by_client = current_api_client ? current_api_client.uuid : nil
+  end
+
+  def ensure_serialized_attribute_type
+    # Specifying a type in the "serialize" declaration causes rails to
+    # raise an exception if a different data type is retrieved from
+    # the database during load().  The validation preventing such
+    # crash-inducing records from being inserted in the database in
+    # the first place seems to have been left as an exercise to the
+    # developer.
+    self.class.serialized_attributes.each do |colname, attr|
+      if attr.object_class
+        unless self.attributes[colname].is_a? attr.object_class
+          self.errors.add colname.to_sym, "must be a #{attr.object_class.to_s}"
+        end
+      end
+    end
   end
 end
