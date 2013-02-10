@@ -1,1 +1,30 @@
-<%= render :partial => 'application/orvos_object' %>
+<table class="table topalign">
+  <thead>
+  </thead>
+  <tbody>
+    <% @object.attributes_for_display.each do |attr, attrvalue| %>
+    <% if attr == 'components' and attrvalue.is_a? Hash %>
+
+    <tr><td><%= attr %></td><td>
+        <table class="table">
+          <% pipeline_jobs.each do |pj| %>
+          <tr><% %w(index name result job_id command command_version progress_detail progress_bar output_link).each do |key| %>
+            <td>
+              <% if key == 'command_version' %>
+              <%= pj[key.to_sym][0..6] rescue '' %>
+              <% else %>
+              <%= pj[key.to_sym] %>
+              <% end %>
+            </td>
+            <% end %>
+          </tr>
+          <% end %>
+        </table>
+    </td></tr>
+
+    <% else %>
+    <%= render partial: 'application/orvos_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
+    <% end %>
+    <% end %>
+  </tbody>
+</table>

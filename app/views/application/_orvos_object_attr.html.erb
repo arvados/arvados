@@ -1,0 +1,22 @@
+<% if attrvalue.is_a? Hash then attrvalue.each do |infokey, infocontent| %>
+<tr>
+  <td><%= attr %>[<%= infokey %>]</td>
+  <td>
+    <tt>
+      <% if infocontent.is_a? Array then infocontent.each do |message| %>
+      <%= message %><br />
+      <% end; elsif infocontent.is_a? String %>
+      <%= infocontent %>
+      <% else %>
+      <%= infocontent.inspect %>
+      <% end %>
+    </tt>
+  </td>
+</tr>
+<% end %>
+<% elsif attrvalue.is_a? String or attrvalue.respond_to? :to_s %>
+<tr>
+  <td><%= attr %></td>
+  <td><%= link_to_if_orvos_object attrvalue, {referring_attr: attr, referring_object: @object, with_prefixes: true, with_class_name: true} %></td>
+</tr>
+<% end %>
