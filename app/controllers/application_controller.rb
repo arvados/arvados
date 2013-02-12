@@ -4,12 +4,13 @@ class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
-  before_filter :find_object_by_uuid, :except => :index
+  before_filter :find_object_by_uuid, :except => [:index, :create]
 
   before_filter :remote_ip
   before_filter :login_required, :except => :render_not_found
 
   before_filter :catch_redirect_hint
+  attr_accessor :resource_attrs
 
   def catch_redirect_hint
     if !current_user
@@ -108,28 +109,32 @@ class ApplicationController < ActionController::Base
   end
 
   def create
-    @attrs = params[resource_name]
-    if @attrs.nil?
-      raise "no #{resource_name} (or #{resource_name.camelcase(:lower)}) provided with request #{params.inspect}"
-    end
-    if @attrs.class == String
-      @attrs = uncamelcase_hash_keys(Oj.load @attrs)
-    end
-    @object = model_class.new @attrs
+    @object = model_class.new resource_attrs
     @object.save
     show
   end
 
   def update
-    @attrs = params[resource_name]
-    if @attrs.is_a? String
-      @attrs = uncamelcase_hash_keys(Oj.load @attrs)
-    end
-    @object.update_attributes @attrs
+    @object.update_attributes resource_attrs
     show
   end
 
   protected
+
+  def resource_attrs
+    return @attrs if @attrs
+    @attrs = params[resource_name]
+    if @attrs.is_a? String
+      @attrs = uncamelcase_hash_keys(Oj.load @attrs)
+    end
+    if @attrs.nil?
+      raise "no #{resource_name} (or #{resource_name.camelcase(:lower)}) provided with request #{params.inspect}"
+    end
+    %w(created_at modified_by_client modified_by_user modified_at).each do |x|
+      @attrs.delete x
+    end
+    @attrs
+  end
 
   # Authentication
   def login_required
