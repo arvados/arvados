@@ -77,10 +77,10 @@ class OrvosBase < ActiveRecord::Base
       obdata[col.name.to_sym] = self.send(col.name.to_sym)
     end
     obdata.delete :id
-    obdata.delete :uuid
     postdata = { self.class.to_s.underscore => obdata }
     if etag
       postdata['_method'] = 'PUT'
+      obdata.delete :uuid
       resp = $orvos_api_client.api(self.class, '/' + uuid, postdata)
     else
       resp = $orvos_api_client.api(self.class, '', postdata)
