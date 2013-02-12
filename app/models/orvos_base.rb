@@ -13,8 +13,8 @@ class OrvosBase < ActiveRecord::Base
     }
   end
 
-  def initialize
-    super
+  def initialize(*args)
+    super(*args)
     @attribute_sortkey ||= {
       'id' => nil,
       'uuid' => '000',
