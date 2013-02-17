@@ -59,10 +59,6 @@ class PipelineInvocation < OrvosModel
     t.collect { |r| r[2] }.inject(0.0) { |sum,a| sum += a } / t.size
   end
 
-  def active
-    success.nil? and modified_at and Time.now - modified_at < 5.minutes
-  end
-
   protected
   def bootstrap_components
     if pipeline and (!components or components.empty?)
