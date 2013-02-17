@@ -16,6 +16,7 @@ Vcffarm::Application.routes.draw do
 
 
   resources :factory_jobs
+  match '/factory_jobs/reset_pipeline_invocation/:uuid' => 'factory_jobs#reset_pipeline_invocation', :as => 'reset_pipeline_invocation', :via => 'POST'
 
 
   resources :uploaded_datasets
