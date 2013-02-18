@@ -28,3 +28,6 @@
     <% end %>
   </tbody>
 </table>
+<pre>
+<%= JSON.pretty_generate(@object.components) rescue nil %>
+</pre>
