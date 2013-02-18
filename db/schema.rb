@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130207195855) do
+ActiveRecord::Schema.define(:version => 20130218181504) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -211,6 +211,7 @@ ActiveRecord::Schema.define(:version => 20130207195855) do
     t.boolean  "success"
     t.boolean  "active",             :default => false
     t.datetime "updated_at"
+    t.text     "properties"
   end
 
   add_index "pipeline_invocations", ["created_at"], :name => "index_pipeline_invocations_on_created_at"

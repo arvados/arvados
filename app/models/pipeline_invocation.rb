@@ -3,6 +3,7 @@ class PipelineInvocation < OrvosModel
   include KindAndEtag
   include CommonApiTemplate
   serialize :components, Hash
+  serialize :properties, Hash
   belongs_to :pipeline, :foreign_key => :pipeline_uuid, :primary_key => :uuid
   attr_accessor :pipeline
 
