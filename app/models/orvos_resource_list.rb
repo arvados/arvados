@@ -67,6 +67,18 @@ class OrvosResourceList
     self
   end
 
+  def first
+    results.first
+  end
+
+  def last
+    results.last
+  end
+
+  def [](*x)
+    results.send('[]', *x)
+  end
+
   def |(x)
     if x.is_a? Hash
       self.to_hash | x
