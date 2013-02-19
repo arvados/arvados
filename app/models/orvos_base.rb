@@ -9,6 +9,8 @@ class OrvosBase < ActiveRecord::Base
       'ozdt8' => 'orvos#api_client',
       '57u5n' => 'orvos#log',
       'j58dm' => 'orvos#specimen',
+      'mxsvm' => 'orvos#pipeline',
+      'uo14g' => 'orvos#pipeline_invocation',
       'ldvyl' => 'orvos#project'
     }
   end
@@ -179,12 +181,15 @@ class OrvosBase < ActiveRecord::Base
     }
   end
 
-  def self.resource_class_for_uuid(uuid, attr_name=nil, object=nil)
+  def self.resource_class_for_uuid(uuid, opts={})
     if uuid.is_a? OrvosBase
       return uuid.class
     end
     unless uuid.is_a? String
       return nil
+    end
+    if opts[:class].is_a? Class
+      return opts[:class]
     end
     if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
       return Collection
@@ -194,8 +199,13 @@ class OrvosBase < ActiveRecord::Base
       resource_class ||= $orvos_api_client.
         kind_class(self.uuid_infix_object_kind[re[1]])
     end
-    if object and attr_name and attr_name.match /_uuid$/
-      resource_class ||= $orvos_api_client.kind_class(object.attributes[attr_name.sub(/_uuid$/, '_kind')])
+    if opts[:referring_object] and
+        opts[:referring_attr] and
+        opts[:referring_attr].match /_uuid$/
+      resource_class ||= $orvos_api_client.
+        kind_class(opts[:referring_object].
+                   attributes[opts[:referring_attr].
+                              sub(/_uuid$/, '_kind')])
     end
     resource_class
   end
