@@ -16,4 +16,117 @@ module VcfPipelineHelper
     pi.active = true
     pi.success = nil
   end
+
+  def vcf_pipeline_statistics(pi)
+    stats = {}
+    collection_link = Link.
+      where(head_uuid: pi.uuid,
+            link_class: 'client-defined',
+            name: 'vcffarm-pipeline-invocation').
+      last
+    if collection_link
+      stats[:collection_uuid] = collection_link.tail_uuid
+    else
+      pi.components[:steps].each do |step|
+        if step[:name] == 'bwa'
+          step[:params].each do |param|
+            if param[:name] == 'INPUT'
+              stats[:collection_uuid] = param[:data_locator] || param[:value]
+              break
+            end
+          end
+        end
+      end
+    end
+    if stats[:collection_uuid]
+      Link.where(tail_uuid: stats[:collection_uuid],
+                 head_kind: Project)[0..0].each do |c2p|
+        stats[:project_uuid] = c2p.head_uuid
+        project = Project.find stats[:project_uuid]
+        stats[:project_name] = project.name rescue nil
+      end
+      Link.where(tail_uuid: stats[:collection_uuid],
+                 head_kind: Specimen)[0..0].each do |c2s|
+        stats[:specimen_uuid] = c2s.head_uuid
+        specimen = Specimen.find stats[:specimen_uuid]
+        stats[:specimen_id] = specimen.properties[:specimen_id] rescue nil
+      end
+    end
+    stats[:runtime] = {}
+    stats[:alignment_for_step] = {}
+    stats[:alignment] = {}
+    stats[:coverage] = []
+    pi.components[:steps].each do |step|
+      if step[:warehousejob]
+        if step[:name] == 'bwa' and step[:warehousejob][:starttime]
+          stats[:runtime][:started_at] = step[:warehousejob][:starttime]
+        end
+        if step[:warehousejob][:finishtime]
+          stats[:runtime][:finished_at] =
+            [ step[:warehousejob][:finishtime],
+              stats[:runtime][:finished_at] ].compact.max
+        end
+      end
+      if step[:name] == 'gatk-stats' and
+          step[:complete] and
+          step[:output_data_locator]
+        csv = IO.
+          popen("whget #{step[:output_data_locator]}/mincoverage_nlocus.csv").
+          readlines.
+          collect { |x| x.strip.split ',' }
+        csv.each do |depth, nlocus, percent|
+          stats[:coverage][depth.to_i] = nlocus.to_i
+        end
+      end
+      if step[:name] == 'gatk-realign' and
+          step[:complete] and
+          step[:output_data_locator]
+        logs = IO.
+          popen("whget #{step[:warehousejob][:metakey]}").
+          readlines.
+          collect(&:strip)
+        logs.each do |logline|
+          if (re = logline.match /\s(\d+) stderr INFO .* (\d+) reads were filtered out.*of (\d+) total/)
+            stats[:alignment_for_step][re[1]] ||= {}
+            stats[:alignment_for_step][re[1]][:filtered_reads] = re[2].to_i
+            stats[:alignment_for_step][re[1]][:total_reads] = re[3].to_i
+          elsif (re = logline.match /(\d+) reads.* failing BadMate/)
+            stats[:alignment][:bad_mate_reads] = re[1].to_i
+          elsif (re = logline.match /(\d+) reads.* failing MappingQualityZero/)
+            stats[:alignment][:mapq0_reads] = re[1].to_i
+          end
+        end
+      end
+      if step[:name] == 'gatk-merge-call' and
+          step[:complete] and
+          step[:output_data_locator]
+        stats[:vcf_file_name] = "#{stats[:project_name]}-#{stats[:specimen_id]}-#{step[:output_data_locator][0..31]}.vcf"
+        logs = IO.
+          popen("whget #{step[:warehousejob][:metakey]}").
+          readlines.
+          collect(&:strip)
+        logs.each do |logline|
+          if (re = logline.match /(\d+) reads were filtered out.*of (\d+) total/)
+            stats[:alignment][:filtered_reads] = re[1].to_i
+            stats[:alignment][:total_realigned_reads] = re[2].to_i
+          elsif (re = logline.match /(\d+) reads.* failing BadMate/)
+            stats[:alignment][:bad_mate_reads] = re[1].to_i
+          elsif (re = logline.match /(\d+) reads.* failing UnmappedRead/)
+            stats[:alignment][:unmapped_reads] = re[1].to_i
+          end
+        end
+      end
+    end
+    stats[:alignment][:total_reads] = 0
+    stats[:alignment][:filtered_reads] ||= 0
+    stats[:alignment][:bad_mate_reads] ||= 0
+    stats[:alignment][:mapq0_reads] ||= 0
+    stats[:alignment_for_step].values.each do |a4s|
+      stats[:alignment][:total_reads] += (a4s[:total_reads] || 0)
+      stats[:alignment][:filtered_reads] += (a4s[:filtered_reads] || 0)
+      stats[:alignment][:bad_mate_reads] += (a4s[:bad_mate_reads] || 0)
+      stats[:alignment][:mapq0_reads] += (a4s[:mapq0_reads] || 0)
+    end
+    stats
+  end
 end
