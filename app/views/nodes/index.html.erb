@@ -3,6 +3,8 @@
     <th>
       status
     </th><th>
+      sinfo
+    </th><th>
       uuid
     </th><th>
       hostname
@@ -23,9 +25,11 @@
 
   <% @objects.each do |o| %>
 
-  <tr class="node-status node-status-<%= o.status %>" data-showhide-selector="tr#extra-info-<%= o.uuid %>" style="cursor:pointer">
-    <td>
+  <tr class="node-status-<%= o.status %>">
+    <td class="node-status" data-showhide-selector="tr#extra-info-<%= o.uuid %>" style="cursor:pointer">
       <%= o.status %>
+    </td><td class="node-slurm-state node-slurm-state-<%= @slurm_state[o.hostname] %>">
+      <%= @slurm_state[o.hostname] %>
     </td><td>
       <%= o.uuid %>
     </td><td>
@@ -47,7 +51,7 @@
 
   <% if  %>
   <tr id="extra-info-<%= o.uuid %>" <%= 'data-showhide-default' unless o.info[:ec2_start_command] and !o.first_ping_at %>>
-    <td colspan="8">
+    <td colspan="9">
       <dl>
       <% o.info.each do |k,v| %>
       <dt><em><%= k %></em></dt>

@@ -6,12 +6,32 @@
     /* unknown status - might be bad */
     background: #ff8888;
 }
-.node-status-running {
+.node-status-running .node-status {
     background: #88ff88;
 }
-.node-status-missing {
+.node-status-missing .node-status {
     background: #ff8888;
 }
-.node-status-terminated {
+.node-status-terminated .node-status {
     background: #ffffff;
+}
+
+.node-slurm-state {
+    /* unknown status - might be bad */
+    background: #ff8888;
+}
+.node-status-missing .node-slurm-state {
+    background: #ffffff;
+}
+.node-status-terminated .node-slurm-state {
+    background: #ffffff;
+}
+.node-status-running .node-slurm-state-alloc {
+    background: #88ff88;
+}
+.node-status-running .node-slurm-state-idle {
+    background: #ffbbbb;
+}
+.node-status-running .node-slurm-state-down {
+    background: #ff8888;
 }
