@@ -1,0 +1,42 @@
+<table class="table topalign">
+  <thead>
+  </thead>
+  <tbody>
+    <% @object.attributes_for_display.each do |attr, attrvalue| %>
+    <% if attr == 'components' and attrvalue.is_a? Hash and attrvalue[:steps].is_a? Array %>
+
+    <tr><td>components[steps]</td><td>
+        <table class="table">
+          <% attrvalue[:steps].each_with_index do |s, i| %>
+          <tr>
+            <td><%= i %></td>
+            <% %w(name function min_revision max_steps_per_node params).each do |key| %>
+            <td>
+              <% if key == 'params' %>
+              <% s[key.to_sym].each do |p| %>
+              <%= p[:name] %>
+              <% if p[:data_locator] || p[:value] %>
+              &larr; <%= p[:data_locator] || p[:value] %>
+              <% end %>
+              <%= '(optional)' if p[:optional] %>
+              <br />
+              <% end %>
+              <% else %>
+              <%= s[key.to_sym] %>
+              <% end %>
+            </td>
+            <% end %>
+          </tr>
+          <% end %>
+        </table>
+    </td></tr>
+
+    <% else %>
+    <%= render partial: 'application/orvos_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
+    <% end %>
+    <% end %>
+  </tbody>
+</table>
+<pre>
+<%= JSON.pretty_generate(@object.components) rescue nil %>
+</pre>
