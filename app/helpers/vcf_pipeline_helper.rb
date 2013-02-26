@@ -6,6 +6,7 @@ module VcfPipelineHelper
       'GATK_TAR_BZ2' => '482ebab0408e173370c499f0b7c00878+93+K@van',
       'BWA' => '73be5598809c66f260fedd253c8608bd+67+K@van',
       'SAM' => '55d2115faa608eb95dab4f875b7511b1+72+K@van',
+      'REGION_PADDING' => '10',
       'REGIONS' => 'e52c086f41c2f089d88ec2bbd45355d3+87+K@van/SeqCap_EZ_Exome_v2.hg19.bed',
       'STAND_CALL_CONF' => '4.0',
       'STAND_EMIT_CONF' => '4.0',
