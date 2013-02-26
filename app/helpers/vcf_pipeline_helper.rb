@@ -18,7 +18,7 @@ module VcfPipelineHelper
     pi.success = nil
   end
 
-  def vcf_pipeline_statistics(pi)
+  def vcf_pipeline_summary(pi)
     stats = {}
     collection_link = Link.
       where(head_uuid: pi.uuid,
