@@ -68,6 +68,35 @@ module VcfPipelineHelper
               stats[:runtime][:finished_at] ].compact.max
         end
       end
+      if step[:name] == 'picard-casm' and
+          step[:complete] and
+          step[:output_data_locator]
+        tsv = IO.
+          popen("whget -r #{step[:output_data_locator]}/ -").
+          readlines.
+          collect { |x| x.strip.split "\t" }
+        casm = {}
+        head = []
+        tsv.each do |data|
+          if data.size < 4 or data[0].match /^\#/
+            next
+          elsif data[0] == 'CATEGORY' or data[1].match /[^\d\.]/
+            head = data
+          elsif data[0] == 'PAIR'
+            head.each_with_index do |name, index|
+              x = data[index]
+              if x and x.match /^\d+$/
+                x = x.to_i
+              elsif x and x.match /^\d+\.\d+$/
+                x = x.to_f
+              end
+              casm[name] ||= []
+              casm[name] << x
+            end
+          end
+        end
+        stats[:picard_alignment_summary] = casm
+      end
       if step[:name] == 'gatk-stats' and
           step[:complete] and
           step[:output_data_locator]
