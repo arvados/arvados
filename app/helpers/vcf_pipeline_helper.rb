@@ -145,6 +145,29 @@ module VcfPipelineHelper
             stats[:alignment][:unmapped_reads] = re[1].to_i
           end
         end
+
+        stats[:chromosome_calls] = {}
+        tsv = IO.
+          popen("whget #{step[:output_data_locator]}/merged.vcf | egrep -v '^#' | cut -f1 | uniq -c").
+          readlines.
+          collect { |x| x.strip.split }
+        tsv.each do |n_variants, sequence_name|
+          stats[:chromosome_calls][sequence_name] = n_variants.to_i
+        end
+
+        stats[:inferred_sex] = false
+        calls = stats[:chromosome_calls]
+        if calls['X'] and calls['X'] > 200
+          if !calls['Y']
+            stats[:inferred_sex] = 'female'
+          elsif calls['Y'] * 60 < calls['X']
+            # if Y < X/60 they are presumed to be misalignments
+            stats[:inferred_sex] = 'female'
+          elsif calls['Y'] * 25 > calls['X']
+            # if Y > X/25 we presume a Y chromosome was present
+            stats[:inferred_sex] = 'male'
+          end
+        end
       end
     end
     stats[:alignment][:total_reads] = 0
