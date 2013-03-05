@@ -1,4 +1,6 @@
 module VcfPipelineHelper
+  require 'csv'
+
   def reset_vcf_pipeline_invocation(pi, input_manifest)
     params = {
       'PICARD_ZIP' => '7a4073e29bfa87154b7102e75668c454+83+K@van',
@@ -90,6 +92,7 @@ module VcfPipelineHelper
               elsif x and x.match /^\d+\.\d+$/
                 x = x.to_f
               end
+              name = name.downcase.to_sym
               casm[name] ||= []
               casm[name] << x
             end
@@ -180,6 +183,52 @@ module VcfPipelineHelper
       stats[:alignment][:bad_mate_reads] += (a4s[:bad_mate_reads] || 0)
       stats[:alignment][:mapq0_reads] += (a4s[:mapq0_reads] || 0)
     end
+
+    if stats[:collection_uuid]
+      csv = CSV.parse IO.
+        popen("whget #{stats[:collection_uuid]}/SampleSheet.csv -").
+        read
+      if !csv.empty?
+        pivoted = []
+        csv[0].each_with_index do |head, col|
+          pivoted << csv.collect { |row| row[col] }
+        end
+        stats[:source_data_csv_columns] = pivoted
+      end
+    end
+
+    picardas = stats[:picard_alignment_summary]
+    stats[:summary_csv_columns] =
+      [['PROJECT', stats[:project_name]],
+       ['SPECIMEN', stats[:specimen_id]],
+       ['VCF_FILE_NAME', stats[:vcf_file_name]],
+       ['INFERRED_SEX', stats[:inferred_sex]],
+       ['SOURCE_DATA', stats[:collection_uuid]],
+       ['PIPELINE_UUID', pi.pipeline_uuid],
+       ['PIPELINE_RUN_UUID', pi.uuid],
+       ['PIPELINE_RUN_START', (stats[:runtime][:started_at] rescue nil)],
+       ['PIPELINE_RUN_FINISH', (stats[:runtime][:finished_at] rescue nil)],
+       ['N_READS_RAW',
+        (n_raw = picardas[:total_reads].inject(0,:+) rescue nil)],
+       ['N_READS_MAPPED',
+        (n_mapped = picardas[:reads_aligned_in_pairs].inject(0,:+) rescue nil)],
+       ['PERCENT_READS_MAPPED',
+        (100.0 * n_mapped / n_raw rescue nil)],
+       ['N_READS_ON_TARGET',
+        (n_on_target = stats[:alignment][:total_reads] - stats[:alignment][:filtered_reads] rescue nil)],
+       ['PERCENT_READS_ON_TARGET',
+        (100.0 * n_on_target / n_raw rescue nil)],
+       ['PERCENT_TARGET_COVERAGE_1X',
+        (100.0 * stats[:coverage][1] / stats[:coverage][0] rescue nil)],
+       ['PERCENT_TARGET_COVERAGE_10X',
+        (100.0 * stats[:coverage][10] / stats[:coverage][0] rescue nil)],
+       ['PERCENT_TARGET_COVERAGE_20X',
+        (100.0 * stats[:coverage][20] / stats[:coverage][0] rescue nil)],
+       ['PERCENT_TARGET_COVERAGE_50X',
+        (100.0 * stats[:coverage][50] / stats[:coverage][0] rescue nil)],
+       ['PERCENT_TARGET_COVERAGE_100X',
+        (100.0 * stats[:coverage][100] / stats[:coverage][0] rescue nil)]]
+
     stats
   end
 end
