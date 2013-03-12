@@ -28,7 +28,7 @@ class Collection < OrvosModel
     if self.manifest_text.nil? and self.uuid.nil?
       super
     elsif self.manifest_text and self.uuid
-      if self.uuid == Digest::MD5.hexdigest(self.manifest_text)
+      if self.uuid.gsub(/\+[^,]+/,'') == Digest::MD5.hexdigest(self.manifest_text)
         true
       else
         errors.add :uuid, 'uuid does not match checksum of manifest_text'
