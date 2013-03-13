@@ -22,7 +22,7 @@ Vcffarm::Application.routes.draw do
   resources :uploaded_datasets
 
 
-  resources :projects
+  resources :groups
 
 
   resources :specimens

@@ -1,0 +1,2 @@
+class Group < OrvosBase
+end

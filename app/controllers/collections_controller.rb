@@ -36,8 +36,8 @@ class CollectionsController < ApplicationController
       if l.tail_kind == 'orvos#collection'
         c = (@collection_info[l.tail_uuid] ||= {uuid: l.tail_uuid})
         if l.link_class == 'group' and l.name == 'member_of'
-          c[:projects] ||= {}
-          c[:projects][l.tail_uuid] = true
+          c[:groups] ||= {}
+          c[:groups][l.tail_uuid] = true
         end
         if l.link_class == 'data_origin'
           c[:origin] = l

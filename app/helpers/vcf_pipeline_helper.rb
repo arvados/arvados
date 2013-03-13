@@ -43,10 +43,10 @@ module VcfPipelineHelper
     end
     if stats[:collection_uuid]
       Link.where(tail_uuid: stats[:collection_uuid],
-                 head_kind: Project)[0..0].each do |c2p|
+                 head_kind: Group)[0..0].each do |c2p|
         stats[:project_uuid] = c2p.head_uuid
-        project = Project.find stats[:project_uuid]
-        stats[:project_name] = project.name rescue nil
+        group = Group.find stats[:project_uuid]
+        stats[:project_name] = group.name rescue nil
       end
       Link.where(tail_uuid: stats[:collection_uuid],
                  head_kind: Specimen)[0..0].each do |c2s|

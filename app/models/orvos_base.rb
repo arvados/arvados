@@ -11,7 +11,8 @@ class OrvosBase < ActiveRecord::Base
       'j58dm' => 'orvos#specimen',
       'mxsvm' => 'orvos#pipeline',
       'uo14g' => 'orvos#pipeline_invocation',
-      'ldvyl' => 'orvos#project'
+      'j7d0g' => 'orvos#group',
+      'ldvyl' => 'orvos#group' # only needed for legacy Project objects
     }
   end
 
