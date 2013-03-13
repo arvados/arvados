@@ -61,6 +61,8 @@ Server::Application.configure do
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
   # config.compute_node_ami = 'ami-cbca41a2'
+  # config.compute_node_security_group = 'orvos-compute'
+  # config.compute_node_spot_bid = 0.11
 
   # config.compute_node_domain = `hostname --domain`.strip
 

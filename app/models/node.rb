@@ -101,21 +101,33 @@ class Node < OrvosModel
   def start!(ping_url_method)
     ensure_permission_to_update
     ping_url = ping_url_method.call({ uuid: self.uuid, ping_secret: self.info[:ping_secret] })
-    cmd = ["ec2-run-instances",
-           "--user-data '#{ping_url}'",
-           "-t c1.xlarge -n 1 -g orvos-compute",
-           "--client-token", self.uuid,
-           Rails.configuration.compute_node_ami
-          ].join(' ')
-    self.info[:ec2_start_command] = cmd
-    logger.info "#{self.uuid} ec2_start_command= #{cmd.inspect}"
-    result = `#{cmd} 2>&1`
+    ec2_args = ["--user-data '#{ping_url}'",
+                "-t c1.xlarge -n 1",
+                "-g", Rails.configuration.compute_node_security_group,
+                Rails.configuration.compute_node_ami
+               ]
+    ec2run_cmd = ["ec2-run-instances",
+                  "--client-token", self.uuid,
+                  ec2_args].flatten.join(' ')
+    ec2spot_cmd = ["ec2-request-spot-instances",
+                   "-p #{Rails.configuration.compute_node_spot_bid} --type one-time",
+                   ec2_args].flatten.join(' ')
+    self.info[:ec2_run_command] = ec2run_cmd
+    self.info[:ec2_spot_command] = ec2spot_cmd
+    self.info[:ec2_start_command] = ec2spot_cmd
+    logger.info "#{self.uuid} ec2_start_command= #{ec2spot_cmd.inspect}"
+    result = `#{ec2spot_cmd} 2>&1`
     self.info[:ec2_start_result] = result
     logger.info "#{self.uuid} ec2_start_result= #{result.inspect}"
     result.match(/INSTANCE\s*(i-[0-9a-f]+)/) do |m|
       instance_id = m[1]
       self.info[:ec2_instance_id] = instance_id
       `ec2-create-tags #{instance_id} --tag 'Name=#{self.uuid}'`
+    end
+    result.match(/SPOTINSTANCEREQUEST\s*(sir-[0-9a-f]+)/) do |m|
+      sir_id = m[1]
+      self.info[:ec2_sir_id] = sir_id
+      `ec2-create-tags #{sir_id} --tag 'Name=#{self.uuid}'`
     end
     self.save!
   end
