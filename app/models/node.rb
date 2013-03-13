@@ -71,9 +71,14 @@ class Node < OrvosModel
     end
 
     # Record instance ID if not already known
-    if !self.info[:ec2_instance_id] and o[:ec2_instance_id]
-      self.info[:ec2_instance_id] = o[:ec2_instance_id]
-      `ec2-create-tags #{self.info[:ec2_instance_id]} --tag 'Name=#{self.uuid}'`
+    if o[:ec2_instance_id]
+      if !self.info[:ec2_instance_id] 
+        self.info[:ec2_instance_id] = o[:ec2_instance_id]
+        `ec2-create-tags #{o[:ec2_instance_id]} --tag 'Name=#{self.uuid}'`
+      elsif self.info[:ec2_instance_id] != o[:ec2_instance_id]
+        logger.debug "Multiple nodes have credentials for #{self.uuid}"
+        raise "#{self.uuid} is already running at #{self.info[:ec2_instance_id]} so rejecting ping from #{o[:ec2_instance_id]}"
+      end
     end
 
     # Assign hostname
@@ -95,7 +100,7 @@ class Node < OrvosModel
       end
     end
 
-    save
+    save!
   end
 
   def start!(ping_url_method)
