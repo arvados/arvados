@@ -4,7 +4,7 @@ Server::Application.routes.draw do
   resources :api_client_authorizations
   resources :api_clients
   resources :logs
-  resources :projects
+  resources :groups
   resources :specimens
   resources :collections
   resources :links
@@ -81,7 +81,7 @@ Server::Application.routes.draw do
       resources :pipelines
       resources :pipeline_invocations
       resources :specimens
-      resources :projects
+      resources :groups
       resources :logs
       resources :users
       resources :jobs

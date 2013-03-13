@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130218181504) do
+ActiveRecord::Schema.define(:version => 20130313175417) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -67,6 +67,22 @@ ActiveRecord::Schema.define(:version => 20130218181504) do
   add_index "collections", ["created_at"], :name => "index_collections_on_created_at"
   add_index "collections", ["modified_at"], :name => "index_collections_on_modified_at"
   add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
+
+  create_table "groups", :force => true do |t|
+    t.string   "uuid"
+    t.string   "owner"
+    t.datetime "created_at"
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "name"
+    t.text     "description"
+    t.datetime "updated_at"
+  end
+
+  add_index "groups", ["created_at"], :name => "index_groups_on_created_at"
+  add_index "groups", ["modified_at"], :name => "index_groups_on_modified_at"
+  add_index "groups", ["uuid"], :name => "index_groups_on_uuid", :unique => true
 
   create_table "job_steps", :force => true do |t|
     t.string   "uuid"
@@ -132,8 +148,6 @@ ActiveRecord::Schema.define(:version => 20130218181504) do
     t.datetime "modified_at"
     t.string   "tail_uuid"
     t.string   "tail_kind"
-    t.integer  "native_target_id"
-    t.string   "native_target_type"
     t.string   "link_class"
     t.string   "name"
     t.string   "head_uuid"
@@ -233,22 +247,6 @@ ActiveRecord::Schema.define(:version => 20130218181504) do
   add_index "pipelines", ["created_at"], :name => "index_pipelines_on_created_at"
   add_index "pipelines", ["modified_at"], :name => "index_pipelines_on_modified_at"
   add_index "pipelines", ["uuid"], :name => "index_pipelines_on_uuid", :unique => true
-
-  create_table "projects", :force => true do |t|
-    t.string   "uuid"
-    t.string   "owner"
-    t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
-    t.datetime "modified_at"
-    t.string   "name"
-    t.text     "description"
-    t.datetime "updated_at"
-  end
-
-  add_index "projects", ["created_at"], :name => "index_projects_on_created_at"
-  add_index "projects", ["modified_at"], :name => "index_projects_on_modified_at"
-  add_index "projects", ["uuid"], :name => "index_projects_on_uuid", :unique => true
 
   create_table "specimens", :force => true do |t|
     t.string   "uuid"

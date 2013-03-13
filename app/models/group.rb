@@ -1,4 +1,4 @@
-class Project < OrvosModel
+class Group < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
