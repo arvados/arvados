@@ -19,6 +19,7 @@ module AssignUuid
 
   def assign_uuid
     return true if !self.respond_to_uuid?
+    return true if uuid and current_user and current_user.is_admin
     self.uuid = [Server::Application.config.uuid_prefix,
                  self.class.uuid_prefix,
                  rand(2**256).to_s(36)[-15..-1]].

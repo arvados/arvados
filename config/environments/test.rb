@@ -37,6 +37,8 @@ Server::Application.configure do
   # Print deprecation notices to the stderr
   config.active_support.deprecation = :stderr
 
+  config.whjobmanager_wrapper = :slurm_immediate
+
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
   # config.compute_node_ami = 'ami-cbca41a2'

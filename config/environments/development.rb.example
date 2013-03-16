@@ -30,6 +30,8 @@ Server::Application.configure do
 
   config.force_ssl = false
 
+  config.whjobmanager_wrapper = :none
+
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
   # config.compute_node_ami = 'ami-cbca41a2'
