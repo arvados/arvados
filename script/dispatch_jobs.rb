@@ -166,9 +166,6 @@ class Dispatcher
                   j[:job].reload
                   j[:job].update_attributes running: true
                 end
-              elsif taskid == '' and message.match /^status: .* 0 todo/
-                $stderr.puts "dispatch: noticed #{job_uuid} succeeded"
-                j[:success] = true
               elsif taskid == '' and (re = message.match /^outputkey (\S+)$/)
                 $stderr.puts "dispatch: noticed #{job_uuid} output #{re[1]}"
                 j[:output] = re[1]
@@ -197,6 +194,10 @@ class Dispatcher
                   j[:job].tasks_summary[:running] = re[2].to_i
                   j[:job].tasks_summary[:todo] = re[3].to_i
                   j[:job].save
+                end
+                if re[2].to_i == 0 and re[3].to_i == 0
+                  $stderr.puts "dispatch: noticed #{job_uuid} succeeded"
+                  j[:success] = true
                 end
               end
             end
