@@ -77,7 +77,12 @@ class Dispatcher
       cmd_args << "id=#{job.uuid}"
       cmd_args << "mrfunction=#{job.command}"
       job.command_parameters.each do |k,v|
-        k = 'inputkey' if k == 'input'
+        k = k.to_s
+        if k == 'input'
+          k = 'inputkey'
+        else
+          k = k.upcase
+        end
         cmd_args << "#{k}=#{v}"
       end
       cmd_args << "revision=#{job.command_version}"
