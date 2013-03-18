@@ -5,6 +5,9 @@ class Link < OrvosModel
   serialize :properties, Hash
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
+  after_update :maybe_invalidate_permissions_cache
+  after_create :maybe_invalidate_permissions_cache
+  after_destroy :maybe_invalidate_permissions_cache
 
   attr_accessor :head
   attr_accessor :tail
@@ -57,5 +60,17 @@ class Link < OrvosModel
 
     # Default = deny.
     false
+  end
+
+  def maybe_invalidate_permissions_cache
+    if self.link_class == 'permission'
+      # Clearing the entire permissions cache can generate many
+      # unnecessary queries if many active users are not affected by
+      # this change. In such cases it would be better to search cached
+      # permissions for head_uuid and tail_uuid, and invalidate the
+      # cache for only those users. (This would require a browseable
+      # cache.)
+      invalidate_permissions_cache
+    end
   end
 end
