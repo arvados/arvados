@@ -90,10 +90,7 @@ namespace :deploy do
     CMD
 
     run "cd #{release_path} && #{passenger_cmd} start -e #{rails_env} -p #{passenger_port} -d"
-  end
-
-  desc "Restarting dispatch_jobs service"
-  task :restart_dispatch_jobs, :roles => :app, :except => { :no_release => true } do
     run "sv term /etc/service/dispatch_jobs"
   end
+
 end
