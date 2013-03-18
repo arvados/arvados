@@ -69,7 +69,12 @@ class Dispatcher
 
     @todo.each do |job|
 
-      min_nodes = begin job.resource_limits['min_nodes'].to_i rescue 1 end
+      min_nodes = 1
+      begin
+        if job.resource_limits['min_nodes']
+          min_nodes = begin job.resource_limits['min_nodes'].to_i rescue 1 end
+        end
+      end
       next if @idle_slurm_nodes and @idle_slurm_nodes < min_nodes
 
       next if @running[job.uuid]
@@ -85,7 +90,7 @@ class Dispatcher
                     "--exclusive",
                     "--no-kill",
                     "--job-name=#{job.uuid}",
-                    "--nodes=1"]
+                    "--nodes=#{min_nodes}"]
       else
         raise "Unknown whjobmanager_wrapper: #{Server::Application.config.whjobmanager_wrapper}"
       end
