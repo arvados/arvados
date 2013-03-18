@@ -54,7 +54,23 @@ class Dispatcher
   end
 
   def start_jobs
+    if Server::Application.config.whjobmanager_wrapper.to_s.match /^slurm/
+      @idle_slurm_nodes = 0
+      begin
+        `sinfo`.
+          split("\n").
+          collect { |line| line.match /(\d+) +idle/ }.
+          each do |re|
+          @idle_slurm_nodes = re[1].to_i if re
+        end
+      rescue
+      end
+    end
+
     @todo.each do |job|
+
+      min_nodes = begin job.resource_limits['min_nodes'].to_i rescue 1 end
+      next if @idle_slurm_nodes and @idle_slurm_nodes < min_nodes
 
       next if @running[job.uuid]
       next if !take(job)
@@ -301,15 +317,26 @@ class Dispatcher
           end
         end
       else
-        refresh_todo
-        start_jobs
+        refresh_todo unless did_recently(:refresh_todo, 1.0)
+        start_jobs unless @todo.empty? or did_recently(:start_jobs, 1.0)
       end
       reap_children
       select(@running.values.collect { |j| [j[:stdout], j[:stderr]] }.flatten,
              [], [], 1)
     end
   end
-  
+
+  protected
+
+  def did_recently(thing, min_interval)
+    @did_recently ||= {}
+    if !@did_recently[thing] or @did_recently[thing] < Time.now - min_interval
+      @did_recently[thing] = Time.now
+      false
+    else
+      true
+    end
+  end
 end
 
 Dispatcher.new.run
