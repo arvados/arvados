@@ -21,6 +21,7 @@ class Job < OrvosModel
     t.add :cancelled_by_user
     t.add :started_at
     t.add :finished_at
+    t.add :output
     t.add :success
     t.add :running
     t.add :is_locked_by
