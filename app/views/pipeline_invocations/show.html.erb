@@ -1,4 +1,4 @@
-<table class="table topalign">
+<table class="table table-condensed table-hover topalign">
   <thead>
   </thead>
   <tbody>
@@ -29,5 +29,5 @@
   </tbody>
 </table>
 <pre>
-<%= JSON.pretty_generate(@object.components) rescue nil %>
+<%= JSON.pretty_generate(@object.attributes) rescue nil %>
 </pre>
