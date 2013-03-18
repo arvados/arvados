@@ -10,7 +10,11 @@ module ApplicationHelper
     Rails.cache.delete_matched(/^groups_for_user_/)
   end
 
-  def current_groups
+  def groups_i_can(verb)
+    current_group_permissions.select { |uuid, mask| mask[verb] }.keys
+  end
+
+  def current_group_permissions
     return {} unless current_user
     Rails.cache.fetch "groups_for_user_#{current_user.uuid}" do
       permissions_from = {}
