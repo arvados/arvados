@@ -70,7 +70,7 @@ class Link < OrvosModel
       # permissions for head_uuid and tail_uuid, and invalidate the
       # cache for only those users. (This would require a browseable
       # cache.)
-      invalidate_permissions_cache
+      User.invalidate_permissions_cache
     end
   end
 end
