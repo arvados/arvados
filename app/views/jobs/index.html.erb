@@ -1,0 +1,71 @@
+<% content_for :head do %>
+<style>
+  table.topalign>tbody>tr>td {
+  vertical-align: top;
+  }
+  table.topalign>thead>tr>td {
+  vertical-align: bottom;
+  }
+</style>
+<% end %>
+
+<table class="topalign table">
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+	id
+      </th><th>
+	state
+      </th><th>
+	start
+      </th><th>
+	finish
+      </th><th>
+	command, parameters, input, output
+      </th><th>
+	resource_limits
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <% @jobs.sort_by { |j| j[:created_at] }.reverse.each do |j| %>
+
+    <tr>
+      <td>
+	<%= link_to_if_orvos_object j.uuid %>
+      </td><td>
+        <% if j.success == false %>
+        <span class="badge badge-warning" title="fail">&#x2716;</span>
+        <% elsif j.success %>
+        <span class="badge badge-success" title="success">&#x2714;</span>
+        <% elsif j.running %>
+        <span class="badge badge-info" title="running">&#x2708;</span>
+        <% else %>
+        <span class="badge" title="queued">&#x2709;</span>
+        <% end %>
+      </td><td>
+	<%= raw distance_of_time_in_words(j.started_at, Time.now).sub('about ','~').sub(' ','&nbsp;') if j.started_at.is_a? Time %>
+      </td><td>
+	<%= raw distance_of_time_in_words(j.finished_at, Time.now).sub('about ','~').sub(' ','&nbsp;') if j.finished_at.is_a? Time %>
+      </td><td>
+        <%= j.command %><br />
+        <table class="table">
+        <% j.command_parameters.sort.each do |k,v| %>
+        <tr><td><%= k %></td><td><%= link_to_if_orvos_object v %></td></tr>
+        <% end %>
+        <tr><td>output</td><td><%= link_to_if_orvos_object j.output %></td></tr>
+        </table>
+      </td><td>
+        <table class="table">
+        <% j.resource_limits.sort.each do |k,v| %>
+        <tr><td><%= k %></td><td><%= v %></td></tr>
+        <% end %>
+        </table>
+      </td>
+    </tr>
+
+    <% end %>
+
+  </tbody>
+</table>
