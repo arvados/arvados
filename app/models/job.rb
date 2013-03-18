@@ -26,6 +26,7 @@ class Job < OrvosModel
     t.add :running
     t.add :is_locked_by
     t.add :log
+    t.add :resource_limits
     t.add :tasks_summary
     t.add :dependencies
   end
