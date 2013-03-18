@@ -479,7 +479,7 @@
      "httpMethod": "GET",
      "description": "Lists the user's collections.",
      "parameters": {
-      "maxResults": {
+      "limit": {
        "type": "integer",
        "description": "Maximum number of collections to return.",
        "default": "100",
@@ -540,7 +540,7 @@
      "httpMethod": "GET",
      "description": "Lists the user's links.",
      "parameters": {
-      "maxResults": {
+      "limit": {
        "type": "integer",
        "description": "Maximum number of links to return.",
        "default": "100",
