@@ -195,7 +195,14 @@ class Dispatcher
                 j[:started] = true
                 ActiveRecord::Base.transaction do
                   j[:job].reload
-                  j[:job].update_attributes running: true
+                  j[:job].update_attributes running: true, started_at: Time.now
+                end
+              elsif taskid == '' and (re = message.match /^revision (\S+)$/)
+                $stderr.puts "dispatch: noticed #{job_uuid} version #{re[1]}"
+                ActiveRecord::Base.transaction do
+                  j[:job].reload
+                  j[:job].command_version = re[1]
+                  j[:job].save
                 end
               elsif taskid == '' and (re = message.match /^outputkey (\S+)$/)
                 $stderr.puts "dispatch: noticed #{job_uuid} output #{re[1]}"
