@@ -3,6 +3,7 @@ class Job < OrvosModel
   include KindAndEtag
   include CommonApiTemplate
   serialize :command_parameters, Hash
+  serialize :resource_limits, Hash
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
 

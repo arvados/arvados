@@ -48,7 +48,8 @@ class Dispatcher
 
   def refresh_todo
     @todo = Job.
-      where('started_at is ? and is_locked_by is ?', nil, nil).
+      where('started_at is ? and is_locked_by is ? and cancelled_at is ?',
+            nil, nil, nil).
       order('priority desc, created_at')
   end
 
@@ -86,6 +87,15 @@ class Dispatcher
         cmd_args << "#{k}=#{v}"
       end
       cmd_args << "revision=#{job.command_version}"
+
+      begin
+        cmd_args << "stepspernode=#{job.resource_limits['max_tasks_per_node'].to_i}"
+      rescue
+        # OK if limit is not specified. OK to ignore if not integer.
+      end
+
+      $stderr.puts "dispatch: #{cmd_args.join ' '}"
+
       begin
         i, o, e, t = Open3.popen3(*cmd_args)
       rescue
