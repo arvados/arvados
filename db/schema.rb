@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130318002138) do
+ActiveRecord::Schema.define(:version => 20130319165853) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -114,9 +114,9 @@ ActiveRecord::Schema.define(:version => 20130318002138) do
     t.string   "modified_by_user"
     t.datetime "modified_at"
     t.string   "submit_id"
-    t.string   "command"
-    t.string   "command_version"
-    t.text     "command_parameters"
+    t.string   "script"
+    t.string   "script_version"
+    t.text     "script_parameters"
     t.string   "cancelled_by_client"
     t.string   "cancelled_by_user"
     t.datetime "cancelled_at"
@@ -134,11 +134,11 @@ ActiveRecord::Schema.define(:version => 20130318002138) do
     t.text     "resource_limits"
   end
 
-  add_index "jobs", ["command"], :name => "index_jobs_on_command"
   add_index "jobs", ["created_at"], :name => "index_jobs_on_created_at"
   add_index "jobs", ["finished_at"], :name => "index_jobs_on_finished_at"
   add_index "jobs", ["modified_at"], :name => "index_jobs_on_modified_at"
   add_index "jobs", ["output"], :name => "index_jobs_on_output"
+  add_index "jobs", ["script"], :name => "index_jobs_on_script"
   add_index "jobs", ["started_at"], :name => "index_jobs_on_started_at"
   add_index "jobs", ["submit_id"], :name => "index_jobs_on_submit_id", :unique => true
   add_index "jobs", ["uuid"], :name => "index_jobs_on_uuid", :unique => true

@@ -2,7 +2,7 @@ class Job < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
-  serialize :command_parameters, Hash
+  serialize :script_parameters, Hash
   serialize :resource_limits, Hash
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
@@ -13,9 +13,9 @@ class Job < OrvosModel
   api_accessible :superuser, :extend => :common do |t|
     t.add :submit_id
     t.add :priority
-    t.add :command
-    t.add :command_parameters
-    t.add :command_version
+    t.add :script
+    t.add :script_parameters
+    t.add :script_version
     t.add :cancelled_at
     t.add :cancelled_by_client
     t.add :cancelled_by_user
@@ -50,7 +50,7 @@ class Job < OrvosModel
 
   def dependencies
     deps = {}
-    self.command_parameters.values.each do |v|
+    self.script_parameters.values.each do |v|
       v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
         bare_locator = locator[0].gsub(/\+[^,]+/,'')
         deps[bare_locator] = true
@@ -62,9 +62,9 @@ class Job < OrvosModel
   def permission_to_update
     if is_locked_by_was and !(current_user and
                               current_user.uuid == is_locked_by_was)
-      if command_changed? or
-          command_parameters_changed? or
-          command_version_changed? or
+      if script_changed? or
+          script_parameters_changed? or
+          script_version_changed? or
           cancelled_by_client_changed? or
           cancelled_by_user_changed? or
           cancelled_at_changed? or

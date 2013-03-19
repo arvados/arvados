@@ -97,8 +97,8 @@ class Dispatcher
 
       cmd_args << 'whjobmanager'
       cmd_args << "id=#{job.uuid}"
-      cmd_args << "mrfunction=#{job.command}"
-      job.command_parameters.each do |k,v|
+      cmd_args << "mrfunction=#{job.script}"
+      job.script_parameters.each do |k,v|
         k = k.to_s
         if k == 'input'
           k = 'inputkey'
@@ -107,7 +107,7 @@ class Dispatcher
         end
         cmd_args << "#{k}=#{v}"
       end
-      cmd_args << "revision=#{job.command_version}"
+      cmd_args << "revision=#{job.script_version}"
 
       begin
         cmd_args << "stepspernode=#{job.resource_limits['max_tasks_per_node'].to_i}"
@@ -201,7 +201,7 @@ class Dispatcher
                 $stderr.puts "dispatch: noticed #{job_uuid} version #{re[1]}"
                 ActiveRecord::Base.transaction do
                   j[:job].reload
-                  j[:job].command_version = re[1]
+                  j[:job].script_version = re[1]
                   j[:job].save
                 end
               elsif taskid == '' and (re = message.match /^outputkey (\S+)$/)
