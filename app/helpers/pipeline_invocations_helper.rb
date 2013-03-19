@@ -37,8 +37,8 @@ module PipelineInvocationsHelper
       end
       pj[:progress_detail] = (step[:progress] rescue nil)
       pj[:job_id] = (step[:warehousejob][:id] rescue nil)
-      pj[:command] = step[:function]
-      pj[:command_version] = (step[:warehousejob][:revision] rescue nil)
+      pj[:script] = step[:function]
+      pj[:script_version] = (step[:warehousejob][:revision] rescue nil)
       pj[:output] = step[:output_data_locator]
       pj[:finished_at] = (Time.parse(step[:warehousejob][:finishtime]) rescue nil)
       pj[:progress_bar] = raw("<div class=\"progress\" style=\"width:100px\"><div class=\"bar\" style=\"width:#{pj[:progress]*100}%\"></div></div>")

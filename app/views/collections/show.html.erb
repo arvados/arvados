@@ -53,7 +53,7 @@
 	<tr class="job">
 	  <td style="padding-bottom: 3em">
             <table class="table" style="margin-bottom: 0; background: #f0f0ff">
-	      <% j.command_parameters.each do |k,v| %>
+	      <% j.script_parameters.each do |k,v| %>
               <tr>
                 <td style="width: 60%">
                   <% re = v.match(/^([0-9a-f]+)/) %>
@@ -86,7 +86,7 @@
             <div style="text-align: center">
               &darr;
               <br />
-	      <span class="btn deemphasize"><%= j.command %><br /><tt><%= link_to_if j.command_version.match(/[0-9a-f]{40}/), j.command_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.command_version}/entry/mapreduce/mr-#{j.command}" if j.command_version %></tt></span>
+	      <span class="btn deemphasize"><%= j.script %><br /><tt><%= link_to_if j.script_version.match(/[0-9a-f]{40}/), j.script_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.script_version}/entry/mapreduce/mr-#{j.script}" if j.script_version %></tt></span>
               <br />
               &darr;
               <br />
@@ -146,7 +146,7 @@
 	    <br />
 	    <tt class="deemphasize"><%= j.submit_id %></tt>
 	  </td><td>
-	    <%= j.command_version %>
+	    <%= j.script_version %>
 	  </td><td>
             <span class="btn <%= if j.success then 'btn-success'; elsif j.active then 'btn-primary'; else 'btn-warning'; end %>">
 	      <%= j.success || j.active ? 'ok' : 'failed' %>

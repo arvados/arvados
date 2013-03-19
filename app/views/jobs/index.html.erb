@@ -15,7 +15,7 @@
       <th>
 	id, result, schedule
       </th><th>
-	command, parameters, input, output
+	script, parameters, input, output
       </th><th>
 	resource_limits
       </th>
@@ -88,9 +88,9 @@
       </td><td>
         <table class="table table-condensed table-hover">
           <tr class="info"><td colspan="2">
-              <%= j.command %> <%= j.command_version %>
+              <%= j.script %> <%= j.script_version %>
           </td></tr>
-          <% j.command_parameters.sort.each do |k,v| %>
+          <% j.script_parameters.sort.each do |k,v| %>
           <tr>
             <td><%= k %></td><td><%= link_to_if_orvos_object v %></td>
           </tr>

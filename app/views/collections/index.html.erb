@@ -18,7 +18,7 @@
   </thead>
   <tbody>
 
-    <% @collection_info.sort_by { |k,c| c[:created_at] || Time.now }.reverse.each do |uuid, c| %>
+    <% @collection_info.sort_by { |k,c| c[:created_at].is_a?(Time) ? c[:created_at] : Time.now }.reverse.each do |uuid, c| %>
 
     <tr class="collection">
       <td>

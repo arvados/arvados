@@ -8,9 +8,9 @@
     <tr><td><%= attr %></td><td>
         <table class="table">
           <% pipeline_jobs.each do |pj| %>
-          <tr><% %w(index name result job_id command command_version progress_detail progress_bar output_link).each do |key| %>
+          <tr><% %w(index name result job_id script script_version progress_detail progress_bar output_link).each do |key| %>
             <td>
-              <% if key == 'command_version' %>
+              <% if key == 'script_version' %>
               <%= pj[key.to_sym][0..6] rescue '' %>
               <% else %>
               <%= pj[key.to_sym] %>
