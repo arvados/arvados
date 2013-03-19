@@ -1,2 +1,0 @@
-class JobStep < OrvosBase
-end

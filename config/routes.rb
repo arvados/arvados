@@ -1,5 +1,5 @@
 Vcffarm::Application.routes.draw do
-  resources :job_steps
+  resources :job_tasks
 
 
   resources :jobs
