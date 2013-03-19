@@ -1,5 +1,5 @@
 class PipelineInstance < OrvosBase
-  attr_accessor :pipeline
+  attr_accessor :pipeline_template
 
   def update_job_parameters(new_params)
     self.components[:steps].each_with_index do |step, i|

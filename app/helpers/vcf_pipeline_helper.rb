@@ -14,7 +14,7 @@ module VcfPipelineHelper
       'STAND_EMIT_CONF' => '4.0',
       "bwa/INPUT" => input_manifest
     }
-    pi.components = Pipeline.find(pi.pipeline_uuid).components
+    pi.components = PipelineTemplate.find(pi.pipeline_uuid).components
     pi.update_job_parameters(params)
     pi.active = true
     pi.success = nil

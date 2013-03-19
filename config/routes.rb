@@ -28,7 +28,7 @@ Vcffarm::Application.routes.draw do
   resources :specimens
 
 
-  resources :pipelines
+  resources :pipeline_templates
 
 
   resources :pipeline_instances

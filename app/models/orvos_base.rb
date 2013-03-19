@@ -10,7 +10,8 @@ class OrvosBase < ActiveRecord::Base
       '8i9sb' => 'orvos#job',
       '57u5n' => 'orvos#log',
       'j58dm' => 'orvos#specimen',
-      'mxsvm' => 'orvos#pipeline',
+      'p5p6p' => 'orvos#pipeline_template',
+      'mxsvm' => 'orvos#pipeline_template', # legacy Pipeline objects
       'd1hrv' => 'orvos#pipeline_instance',
       'uo14g' => 'orvos#pipeline_instance', # legacy PipelineInstance objects
       'j7d0g' => 'orvos#group',

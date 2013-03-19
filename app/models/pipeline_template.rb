@@ -1,0 +1,2 @@
+class PipelineTemplate < OrvosBase
+end

@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class PipelinesControllerTest < ActionController::TestCase
+class PipelineTemplatesControllerTest < ActionController::TestCase
   # test "the truth" do
   #   assert true
   # end
