@@ -3,7 +3,7 @@ class Orvos::V1::SchemaController < ApplicationController
   skip_before_filter :login_required
 
   def show
-    classes = Rails.cache.fetch 'discovery_rest_description' do
+    classes = Rails.cache.fetch 'orvos_v1_schema' do
       Rails.application.eager_load!
       classes = {}
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
@@ -23,7 +23,7 @@ class Orvos::V1::SchemaController < ApplicationController
   end
 
   def discovery_rest_description
-    discovery = Rails.cache.fetch 'discovery_rest_description' do
+    discovery = Rails.cache.fetch 'orvos_v1_rest_discovery' do
       Rails.application.eager_load!
       discovery = {
         kind: "discovery#restDescription",
