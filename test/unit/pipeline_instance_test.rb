@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class PipelineInvocationTest < ActiveSupport::TestCase
+class PipelineInstanceTest < ActiveSupport::TestCase
   # test "the truth" do
   #   assert true
   # end

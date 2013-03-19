@@ -1,7 +1,7 @@
 module VcfPipelineHelper
   require 'csv'
 
-  def reset_vcf_pipeline_invocation(pi, input_manifest)
+  def reset_vcf_pipeline_instance(pi, input_manifest)
     params = {
       'PICARD_ZIP' => '7a4073e29bfa87154b7102e75668c454+83+K@van',
       'GATK_BUNDLE' => '0a37aaf212464efa2a77ff9ba51c0148+10524+K@van',

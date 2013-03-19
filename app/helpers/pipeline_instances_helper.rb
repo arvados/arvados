@@ -1,4 +1,4 @@
-module PipelineInvocationsHelper
+module PipelineInstancesHelper
   def pipeline_jobs
     ret = []
     @object.components[:steps].each_with_index do |step, i|

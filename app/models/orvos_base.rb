@@ -11,7 +11,8 @@ class OrvosBase < ActiveRecord::Base
       '57u5n' => 'orvos#log',
       'j58dm' => 'orvos#specimen',
       'mxsvm' => 'orvos#pipeline',
-      'uo14g' => 'orvos#pipeline_invocation',
+      'd1hrv' => 'orvos#pipeline_instance',
+      'uo14g' => 'orvos#pipeline_instance', # legacy PipelineInstance objects
       'j7d0g' => 'orvos#group',
       'ldvyl' => 'orvos#group' # only needed for legacy Project objects
     }
