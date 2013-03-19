@@ -4,15 +4,15 @@ class PipelineInstance < OrvosModel
   include CommonApiTemplate
   serialize :components, Hash
   serialize :properties, Hash
-  belongs_to :pipeline, :foreign_key => :pipeline_uuid, :primary_key => :uuid
-  attr_accessor :pipeline
+  belongs_to :pipeline_template, :foreign_key => :pipeline_template_uuid, :primary_key => :uuid
+  attr_accessor :pipeline_template
 
   before_validation :bootstrap_components
   before_validation :update_success
 
   api_accessible :superuser, :extend => :common do |t|
-    t.add :pipeline_uuid
-    t.add :pipeline, :if => :pipeline
+    t.add :pipeline_template_uuid
+    t.add :pipeline_template, :if => :pipeline_template
     t.add :name
     t.add :components
     t.add :success
@@ -62,8 +62,8 @@ class PipelineInstance < OrvosModel
 
   protected
   def bootstrap_components
-    if pipeline and (!components or components.empty?)
-      self.components = pipeline.components
+    if pipeline_template and (!components or components.empty?)
+      self.components = pipeline_template.components
     end
   end
 

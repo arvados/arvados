@@ -1,0 +1,2 @@
+module PipelineTemplatesHelper
+end

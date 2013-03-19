@@ -9,7 +9,7 @@ Server::Application.routes.draw do
   resources :collections
   resources :links
   resources :nodes
-  resources :pipelines
+  resources :pipeline_templates
   resources :pipeline_instances
 
   # The priority is based upon order of creation:
@@ -79,7 +79,7 @@ Server::Application.routes.draw do
       resources :collections
       resources :links
       resources :nodes
-      resources :pipelines
+      resources :pipeline_templates
       resources :pipeline_instances
       resources :specimens
       resources :groups
