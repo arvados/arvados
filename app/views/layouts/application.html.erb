@@ -35,6 +35,7 @@
 	    <% [
 	       [true, 'Data', collections_path],
 	       [true, 'FactoryJobs', factory_jobs_path],
+	       [true, 'Groups', groups_path],
 	       [true, 'Jobs', jobs_path]
 	       ].each do |admin_only, name, path| %>
 	    <% if !admin_only or (current_user and current_user.is_admin) %>

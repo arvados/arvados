@@ -7,3 +7,6 @@
     <% end %>
   </tbody>
 </table>
+<pre>
+<%= JSON.pretty_generate(@object.attributes) rescue nil %>
+</pre>
