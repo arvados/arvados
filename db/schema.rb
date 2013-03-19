@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130319194637) do
+ActiveRecord::Schema.define(:version => 20130319201431) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -84,7 +84,7 @@ ActiveRecord::Schema.define(:version => 20130319194637) do
   add_index "groups", ["modified_at"], :name => "index_groups_on_modified_at"
   add_index "groups", ["uuid"], :name => "index_groups_on_uuid", :unique => true
 
-  create_table "job_steps", :force => true do |t|
+  create_table "job_tasks", :force => true do |t|
     t.string   "uuid"
     t.string   "owner"
     t.string   "modified_by_client"
@@ -100,12 +100,12 @@ ActiveRecord::Schema.define(:version => 20130319194637) do
     t.datetime "updated_at"
   end
 
-  add_index "job_steps", ["created_at"], :name => "index_job_steps_on_created_at"
-  add_index "job_steps", ["job_uuid"], :name => "index_job_steps_on_job_uuid"
-  add_index "job_steps", ["modified_at"], :name => "index_job_steps_on_modified_at"
-  add_index "job_steps", ["sequence"], :name => "index_job_steps_on_sequence"
-  add_index "job_steps", ["success"], :name => "index_job_steps_on_success"
-  add_index "job_steps", ["uuid"], :name => "index_job_steps_on_uuid", :unique => true
+  add_index "job_tasks", ["created_at"], :name => "index_job_tasks_on_created_at"
+  add_index "job_tasks", ["job_uuid"], :name => "index_job_tasks_on_job_uuid"
+  add_index "job_tasks", ["modified_at"], :name => "index_job_tasks_on_modified_at"
+  add_index "job_tasks", ["sequence"], :name => "index_job_tasks_on_sequence"
+  add_index "job_tasks", ["success"], :name => "index_job_tasks_on_success"
+  add_index "job_tasks", ["uuid"], :name => "index_job_tasks_on_uuid", :unique => true
 
   create_table "jobs", :force => true do |t|
     t.string   "uuid"

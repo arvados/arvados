@@ -1,4 +1,4 @@
-class JobStep < OrvosModel
+class JobTask < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

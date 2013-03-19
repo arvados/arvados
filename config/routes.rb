@@ -1,5 +1,5 @@
 Server::Application.routes.draw do
-  resources :job_steps
+  resources :job_tasks
   resources :jobs
   resources :api_client_authorizations
   resources :api_clients
@@ -86,7 +86,7 @@ Server::Application.routes.draw do
       resources :logs
       resources :users
       resources :jobs
-      resources :job_steps
+      resources :job_tasks
     end
   end
 
