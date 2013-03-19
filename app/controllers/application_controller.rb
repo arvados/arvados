@@ -159,10 +159,11 @@ class ApplicationController < ActionController::Base
       user = nil
       api_client = nil
       api_client_auth = nil
-      if params[:api_token]
+      supplied_token = params[:api_token] || params[:oauth_token]
+      if supplied_token
         api_client_auth = ApiClientAuthorization.
           includes(:api_client, :user).
-          where('api_token=?', params[:api_token]).
+          where('api_token=?', supplied_token).
           first
         if api_client_auth
           session[:user_id] = api_client_auth.user.id

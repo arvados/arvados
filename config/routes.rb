@@ -72,6 +72,7 @@ Server::Application.routes.draw do
   namespace :orvos do
     namespace :v1 do
       match '/schema' => 'schema#show'
+      match '/rest' => 'schema#discovery_rest_description'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/links/from/:tail_uuid' => 'links#index', :as => :orvos_v1_links_from
       match '/users/current' => 'users#current'
