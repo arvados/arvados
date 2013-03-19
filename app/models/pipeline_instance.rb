@@ -1,4 +1,4 @@
-class PipelineInvocation < OrvosModel
+class PipelineInstance < OrvosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

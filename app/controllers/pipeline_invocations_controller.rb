@@ -1,2 +1,0 @@
-class PipelineInvocationsController < ApplicationController
-end

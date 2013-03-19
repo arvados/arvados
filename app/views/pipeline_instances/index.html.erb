@@ -21,7 +21,7 @@
 
   <% status = o.success ? 'success' : (o.success == false ? 'failure' : 'pending') %>
 
-  <tr class="pipeline-invocation-status pipeline-invocation-status-<%= status %>" data-showhide-selector="tr#extra-info-<%= o.uuid %>" style="cursor:pointer">
+  <tr class="pipeline-instance-status pipeline-instance-status-<%= status %>" data-showhide-selector="tr#extra-info-<%= o.uuid %>" style="cursor:pointer">
     <td>
       <%= status %>
     </td><td>

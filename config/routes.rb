@@ -10,7 +10,7 @@ Server::Application.routes.draw do
   resources :links
   resources :nodes
   resources :pipelines
-  resources :pipeline_invocations
+  resources :pipeline_instances
 
   # The priority is based upon order of creation:
   # first created -> highest priority.
@@ -80,7 +80,7 @@ Server::Application.routes.draw do
       resources :links
       resources :nodes
       resources :pipelines
-      resources :pipeline_invocations
+      resources :pipeline_instances
       resources :specimens
       resources :groups
       resources :logs

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130319165853) do
+ActiveRecord::Schema.define(:version => 20130319180730) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -216,7 +216,7 @@ ActiveRecord::Schema.define(:version => 20130319165853) do
   add_index "nodes", ["slot_number"], :name => "index_nodes_on_slot_number", :unique => true
   add_index "nodes", ["uuid"], :name => "index_nodes_on_uuid", :unique => true
 
-  create_table "pipeline_invocations", :force => true do |t|
+  create_table "pipeline_instances", :force => true do |t|
     t.string   "uuid"
     t.string   "owner"
     t.datetime "created_at"
@@ -232,9 +232,9 @@ ActiveRecord::Schema.define(:version => 20130319165853) do
     t.text     "properties"
   end
 
-  add_index "pipeline_invocations", ["created_at"], :name => "index_pipeline_invocations_on_created_at"
-  add_index "pipeline_invocations", ["modified_at"], :name => "index_pipeline_invocations_on_modified_at"
-  add_index "pipeline_invocations", ["uuid"], :name => "index_pipeline_invocations_on_uuid", :unique => true
+  add_index "pipeline_instances", ["created_at"], :name => "index_pipeline_instances_on_created_at"
+  add_index "pipeline_instances", ["modified_at"], :name => "index_pipeline_instances_on_modified_at"
+  add_index "pipeline_instances", ["uuid"], :name => "index_pipeline_instances_on_uuid", :unique => true
 
   create_table "pipelines", :force => true do |t|
     t.string   "uuid"
