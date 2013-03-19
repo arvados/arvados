@@ -1,0 +1,174 @@
+#!/usr/bin/env ruby
+
+# Orvos cli client
+#
+# Ward Vandewege <ward@clinicalfuture.com>
+
+if RUBY_VERSION < '1.9.3' then
+  abort <<-EOS
+#{$0.gsub(/^\.\//,'')} requires Ruby version 1.9.3 or higher.
+  EOS
+end
+
+ENV['ORVOS_API_VERSION'] ||= 'v1'
+
+if not ENV.include?('ORVOS_API_HOST') or not ENV.include?('ORVOS_API_TOKEN') then
+  abort <<-EOS
+ORVOS_API_HOST and ORVOS_API_TOKEN need to be defined as environment variables.
+  EOS
+end
+
+begin
+  require 'rubygems'
+  require 'google/api_client'
+  require 'json'
+  require 'pp'
+  require 'trollop'
+rescue LoadError
+  abort <<-EOS
+
+Please install all required gems: 
+
+  google-api-client
+  json
+  trollop
+
+  EOS
+end
+
+module Kernel
+  def suppress_warnings
+    original_verbosity = $VERBOSE
+    $VERBOSE = nil
+    result = yield
+    $VERBOSE = original_verbosity
+    return result
+  end
+end
+
+# do this if you're testing with a dev server and you don't care about SSL certificate checks:
+suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+
+class Google::APIClient
+ def discovery_document(api, version)
+  api = api.to_s
+  return @discovery_documents["#{api}:#{version}"] ||= (begin
+    response = self.execute!(
+      :http_method => :get,
+      :uri => self.discovery_uri(api, version),
+      :authenticated => false
+    )
+    response.body.class == String ? JSON.parse(response.body) : response.body
+  end)
+ end
+end
+
+client = Google::APIClient.new(:host => ENV['ORVOS_API_HOST'], :application_name => 'wh-cli', :application_version => '1.0')
+orvos = client.discovered_api('orvos', ENV['ORVOS_API_VERSION'])
+
+def parse_arguments(discovery_document)
+  sub_commands = Array.new()
+  sub_commands << '--help'
+  discovery_document["resources"].each do |k,v|
+    sub_commands << k
+  end
+
+  global_opts = Trollop::options do
+    banner "orvos cli client"
+    opt :dry_run, "Don't actually do anything", :short => "-n"
+    stop_on sub_commands
+  end
+  
+  cmd = ARGV.shift # get the subcommand
+  if sub_commands.include?(cmd) and cmd != '--help' then
+    # subcommand exists
+    # Now see if the method supplied exists
+    method = ARGV.shift 
+    if discovery_document["resources"][cmd]["methods"].include?(method) then
+      # method exists. Collect arguments.
+      method_opts = Trollop::options do
+        discovery_document["resources"][cmd]["methods"][method]["parameters"].each do |k,v|
+          opts = Hash.new()
+          opts[:type] = v["type"].to_sym if v.include?("type")
+          opts[:default] = v["default"] if v.include?("default")
+          opts[:default] = v["default"].to_i if v["type"].to_sym == :integer
+          opts[:required] = true if v.include?("required") and v["required"]
+          description = ''
+          description = '  ' + v["description"] if v.include?("description")
+          opt k.to_sym, description, opts
+        end
+        opt :json, "Return the raw json received from the API server", :short => "-j"
+        opt :jsonhuman, "Return the raw json received from the API server, formatted for human consumption", :short => "-h"
+      end
+    else
+      banner = "\nThis api command supports the following methods:\n\n"
+      discovery_document["resources"][cmd]["methods"].each do |k,v|
+        description = ''
+        description = '  ' + v["description"] if v.include?("description")
+        banner += "   #{sprintf("%20s",k)}#{description}\n"
+      end
+      banner += "\n"
+
+      STDERR.puts banner
+  
+      if not method.nil? and method != '--help' then 
+        Trollop::die "Unknown method #{method.to_s} for command #{cmd.to_s}"
+      else
+        exit 255
+      end
+
+    end
+    
+  else
+    banner = "\nThis Orvos cluster supports the following api commands:\n\n"
+    discovery_document["resources"].each do |k,v|
+      description = ''
+      if discovery_document["schemas"].include?(k.singularize.capitalize) and 
+         discovery_document["schemas"][k.singularize.capitalize].include?('description') then
+        description = '  ' + discovery_document["schemas"][k.singularize.capitalize]["description"]
+      end
+      banner += "   #{sprintf("%20s",k)}#{description}\n"
+    end
+    banner += "\n"
+
+    STDERR.puts banner
+
+    if not cmd.nil? and cmd != '--help' then 
+      Trollop::die "Unknown command #{cmd.inspect}"
+    else
+      exit 255
+    end
+  end
+
+  return cmd, method, method_opts, ARGV
+end
+
+cmd, method, method_opts, remaining_opts = parse_arguments(orvos.discovery_document)
+
+api_method = 'orvos.' + cmd + '.' + method
+
+m_o = method_opts.reject {|key,value| key =~ /_given$|^json$|^jsonhuman$|^help$/ or value == nil }
+
+result = client.execute :api_method => eval(api_method), :parameters => { :api_token => ENV['ORVOS_API_TOKEN'] }.merge(m_o), :authenticated => false
+results = JSON.parse result.body
+
+if method == 'list' then
+  results['items'].each do |i|
+    if method_opts[:json] then
+      puts i.to_s
+    elsif method_opts[:jsonhuman] then
+      puts i.pretty_inspect()
+    else
+      puts i['uuid']
+    end
+  end
+elsif method == 'get' then
+  if method_opts[:json] then
+    puts results.to_s
+  elsif method_opts[:jsonhuman] then
+    puts results.pretty_inspect()
+  else
+    puts results['uuid']
+  end
+end
+
