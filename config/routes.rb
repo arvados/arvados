@@ -97,7 +97,7 @@ Server::Application.routes.draw do
   match '/login', :to => 'user_sessions#login'
   match '/logout', :to => 'user_sessions#logout'
 
-  match '/discovery/v1/apis/orvos/v1/rest', :to => 'schema#discovery_rest_description'
+  match '/discovery/v1/apis/orvos/v1/rest', :to => 'orvos/v1/schema#discovery_rest_description'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
