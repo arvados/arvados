@@ -131,8 +131,8 @@ class ApplicationController < ActionController::Base
     if @attrs.is_a? String
       @attrs = uncamelcase_hash_keys(Oj.load @attrs)
     end
-    if @attrs.nil?
-      raise "no #{resource_name} (or #{resource_name.camelcase(:lower)}) provided with request #{params.inspect}"
+    unless @attrs.is_a? Hash
+      raise "no #{resource_name} (or #{resource_name.camelcase(:lower)}) hash provided with request #{params.inspect}"
     end
     %w(created_at modified_by_client modified_by_user modified_at).each do |x|
       @attrs.delete x
