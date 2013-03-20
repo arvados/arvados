@@ -46,8 +46,6 @@ module Server
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
 
-    config.middleware.use Rack::Static, :urls => [ '/discovery' ], :root => "public"
-
     config.force_ssl = true
 
     def config.uuid_prefix(x=nil)

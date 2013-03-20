@@ -72,7 +72,6 @@ Server::Application.routes.draw do
   namespace :orvos do
     namespace :v1 do
       match '/schema' => 'schema#show'
-      match '/rest' => 'schema#discovery_rest_description'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/links/from/:tail_uuid' => 'links#index', :as => :orvos_v1_links_from
       match '/users/current' => 'users#current'
@@ -97,6 +96,8 @@ Server::Application.routes.draw do
   # Custom logout
   match '/login', :to => 'user_sessions#login'
   match '/logout', :to => 'user_sessions#logout'
+
+  match '/discovery/v1/apis/orvos/v1/rest', :to => 'schema#discovery_rest_description'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
