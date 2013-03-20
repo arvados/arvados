@@ -66,6 +66,10 @@ end
 client = Google::APIClient.new(:host => ENV['ORVOS_API_HOST'], :application_name => 'wh-cli', :application_version => '1.0')
 orvos = client.discovered_api('orvos', ENV['ORVOS_API_VERSION'])
 
+def to_boolean(s)
+  !!(s =~ /^(true|t|yes|y|1)$/i)
+end
+
 def parse_arguments(discovery_document)
   sub_commands = Array.new()
   sub_commands << '--help'
@@ -92,6 +96,7 @@ def parse_arguments(discovery_document)
           opts[:type] = v["type"].to_sym if v.include?("type")
           opts[:default] = v["default"] if v.include?("default")
           opts[:default] = v["default"].to_i if v["type"].to_sym == :integer
+          opts[:default] = to_boolean(v["default"]) if v["type"].to_sym == :boolean
           opts[:required] = true if v.include?("required") and v["required"]
           description = ''
           description = '  ' + v["description"] if v.include?("description")
