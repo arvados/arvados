@@ -206,6 +206,29 @@ class Orvos::V1::SchemaController < ApplicationController
                        "https://api.clinicalfuture.com/auth/orvos",
                        "https://api.clinicalfuture.com/auth/orvos.readonly"
                       ]
+            },
+            create: {
+              id: "orvos.#{k.to_s.underscore.pluralize}.create",
+              path: "#{k.to_s.underscore.pluralize}",
+              httpMethod: "POST",
+              description: "Create a new #{k.to_s}.",
+              parameters: {
+                k.to_s.underscore => {
+                  type: "object",
+                  required: true,
+                  location: "query",
+                  properties: object_properties
+                }
+              },
+              request: {
+                "$ref" => k.to_s
+              },
+              response: {
+                "$ref" => k.to_s
+              },
+              scopes: [
+                       "https://api.clinicalfuture.com/auth/orvos"
+                      ]
             }
           }
         }
