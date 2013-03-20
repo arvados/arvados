@@ -154,11 +154,11 @@ class Orvos::V1::SchemaController < ApplicationController
               id: "orvos.#{k.to_s.underscore.pluralize}.get",
               path: "#{k.to_s.underscore.pluralize}/{uuid}",
               httpMethod: "GET",
-              description: "Gets a #{k.to_s}'s metadata by ID.",
+              description: "Gets a #{k.to_s}'s metadata by UUID.",
               parameters: {
                 uuid: {
                   type: "string",
-                  description: "The ID for the #{k.to_s} in question.",
+                  description: "The UUID of the #{k.to_s} in question.",
                   required: true,
                   location: "path"
                 }
@@ -238,7 +238,7 @@ class Orvos::V1::SchemaController < ApplicationController
               parameters: {
                 uuid: {
                   type: "string",
-                  description: "The ID for the #{k.to_s} in question.",
+                  description: "The UUID of the #{k.to_s} in question.",
                   required: true,
                   location: "path"
                 },
@@ -251,6 +251,26 @@ class Orvos::V1::SchemaController < ApplicationController
               },
               request: {
                 "$ref" => k.to_s
+              },
+              response: {
+                "$ref" => k.to_s
+              },
+              scopes: [
+                       "https://api.clinicalfuture.com/auth/orvos"
+                      ]
+            },
+            delete: {
+              id: "orvos.#{k.to_s.underscore.pluralize}.delete",
+              path: "#{k.to_s.underscore.pluralize}/{uuid}",
+              httpMethod: "DELETE",
+              description: "Delete an existing #{k.to_s}.",
+              parameters: {
+                uuid: {
+                  type: "string",
+                  description: "The UUID of the #{k.to_s} in question.",
+                  required: true,
+                  location: "path"
+                }
               },
               response: {
                 "$ref" => k.to_s

@@ -123,6 +123,11 @@ class ApplicationController < ActionController::Base
     show
   end
 
+  def destroy
+    @object.destroy
+    show
+  end
+
   protected
 
   def resource_attrs
