@@ -229,6 +229,35 @@ class Orvos::V1::SchemaController < ApplicationController
               scopes: [
                        "https://api.clinicalfuture.com/auth/orvos"
                       ]
+            },
+            update: {
+              id: "orvos.#{k.to_s.underscore.pluralize}.update",
+              path: "#{k.to_s.underscore.pluralize}/{uuid}",
+              httpMethod: "PUT",
+              description: "Update attributes of an existing #{k.to_s}.",
+              parameters: {
+                uuid: {
+                  type: "string",
+                  description: "The ID for the #{k.to_s} in question.",
+                  required: true,
+                  location: "path"
+                },
+                k.to_s.underscore => {
+                  type: "object",
+                  required: true,
+                  location: "query",
+                  properties: object_properties
+                }
+              },
+              request: {
+                "$ref" => k.to_s
+              },
+              response: {
+                "$ref" => k.to_s
+              },
+              scopes: [
+                       "https://api.clinicalfuture.com/auth/orvos"
+                      ]
             }
           }
         }
