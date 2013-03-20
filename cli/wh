@@ -174,7 +174,7 @@ if method_opts[:json] then
   puts results.to_s
 elsif method_opts[:jsonhuman] then
   puts results.pretty_inspect()
-elsif results["items"] and results["kind"].match /list$/
+elsif results["items"] and results["kind"].match /list$/i
   results['items'].each do |i| puts i['uuid'] end
 else
   puts results['uuid']
