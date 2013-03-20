@@ -168,23 +168,14 @@ results = JSON.parse result.body
 
 if results["errors"] then
   abort "Error: #{results["errors"][0]}"
-elsif method == 'list' then
-  results['items'].each do |i|
-    if method_opts[:json] then
-      puts i.to_s
-    elsif method_opts[:jsonhuman] then
-      puts i.pretty_inspect()
-    else
-      puts i['uuid']
-    end
-  end
-elsif method == 'get' then
-  if method_opts[:json] then
-    puts results.to_s
-  elsif method_opts[:jsonhuman] then
-    puts results.pretty_inspect()
-  else
-    puts results['uuid']
-  end
 end
 
+if method_opts[:json] then
+  puts results.to_s
+elsif method_opts[:jsonhuman] then
+  puts results.pretty_inspect()
+elsif results["items"] and results["kind"].match /list$/
+  results['items'].each do |i| puts i['uuid'] end
+else
+  puts results['uuid']
+end
