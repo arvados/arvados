@@ -90,13 +90,17 @@ def parse_arguments(discovery_document)
     method = ARGV.shift 
     if discovery_document["resources"][cmd]["methods"].include?(method) then
       # method exists. Collect arguments.
+      discovered_params = discovery_document["resources"][cmd]["methods"][method]["parameters"]
       method_opts = Trollop::options do
-        discovery_document["resources"][cmd]["methods"][method]["parameters"].each do |k,v|
+        discovered_params.each do |k,v|
           opts = Hash.new()
           opts[:type] = v["type"].to_sym if v.include?("type")
+          if [:datetime, :text, :object].index opts[:type]
+            opts[:type] = :string                       # else trollop bork
+          end
           opts[:default] = v["default"] if v.include?("default")
-          opts[:default] = v["default"].to_i if v["type"].to_sym == :integer
-          opts[:default] = to_boolean(v["default"]) if v["type"].to_sym == :boolean
+          opts[:default] = v["default"].to_i if opts[:type] == :integer
+          opts[:default] = to_boolean(v["default"]) if opts[:type] == :boolean
           opts[:required] = true if v.include?("required") and v["required"]
           description = ''
           description = '  ' + v["description"] if v.include?("description")
@@ -104,6 +108,11 @@ def parse_arguments(discovery_document)
         end
         opt :json, "Return the raw json received from the API server", :short => "-j"
         opt :jsonhuman, "Return the raw json received from the API server, formatted for human consumption", :short => "-h"
+      end
+      discovered_params.each do |k,v|
+        if v["type"] == "object" and method_opts.has_key? k
+          method_opts[k] = JSON.parse method_opts[k]
+        end
       end
     else
       banner = "\nThis api command supports the following methods:\n\n"
