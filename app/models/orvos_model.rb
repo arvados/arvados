@@ -54,25 +54,22 @@ class OrvosModel < ActiveRecord::Base
       return false
     end
     return true if current_user.is_admin
-    if self.owner_changed? and
-        self.owner_was != current_user.uuid and
-        0 == Link.where(link_class: 'permission',
-                        name: 'can_pillage',
-                        tail_uuid: self.owner_was,
-                        head_uuid: current_user.uuid).count
-      logger.warn "User #{current_user.uuid} tried to change owner of #{self.class.to_s} #{self.uuid} to #{self.owner}"
-      return false
+    if self.owner_changed?
+      if current_user.uuid == self.owner or
+          current_user.can? write: self.owner
+        # current_user is, or has :write permission on, the new owner
+      else
+        logger.warn "User #{current_user.uuid} tried to change owner of #{self.class.to_s} #{self.uuid} to #{self.owner} but does not have permission to write to #{self.owner}"
+        return false
+      end
     end
-    if self.owner_was == current_user.uuid or
-      current_user.is_admin or
-      current_user.uuid == self.uuid or
-      Link.where(link_class: 'permission',
-                 name: 'can_write',
-                 tail_uuid: self.owner_was,
-                 head_uuid: current_user.uuid).count > 0
+    if current_user.uuid == self.owner_was or
+        current_user.uuid == self.uuid or
+        current_user.can? write: self.owner_was
+      # current user is, or has :write permission on, the previous owner
       return true
     else
-      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have can_write permission and owner is #{self.owner_was}"
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_was}"
       return false
     end
   end
@@ -83,7 +80,7 @@ class OrvosModel < ActiveRecord::Base
 
   def update_modified_by_fields
     self.created_at ||= Time.now
-    self.owner ||= current_user.uuid if current_user
+    self.owner ||= current_default_owner
     self.modified_at = Time.now
     self.modified_by_user = current_user ? current_user.uuid : nil
     self.modified_by_client = current_api_client ? current_api_client.uuid : nil

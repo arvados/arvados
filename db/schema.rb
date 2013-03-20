@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130319201431) do
+ActiveRecord::Schema.define(:version => 20130320000107) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -23,6 +23,7 @@ ActiveRecord::Schema.define(:version => 20130319201431) do
     t.datetime "expires_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "default_owner"
   end
 
   add_index "api_client_authorizations", ["api_client_id"], :name => "index_api_client_authorizations_on_api_client_id"
@@ -282,6 +283,7 @@ ActiveRecord::Schema.define(:version => 20130319201431) do
     t.boolean  "is_admin"
     t.text     "prefs"
     t.datetime "updated_at"
+    t.string   "default_owner"
   end
 
   add_index "users", ["created_at"], :name => "index_users_on_created_at"

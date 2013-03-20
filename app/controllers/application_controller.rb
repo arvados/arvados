@@ -168,6 +168,7 @@ class ApplicationController < ActionController::Base
         if api_client_auth
           session[:user_id] = api_client_auth.user.id
           session[:api_client_uuid] = api_client_auth.api_client.uuid
+          session[:api_client_authorization_id] = api_client_auth.id
           user = api_client_auth.user
           api_client = api_client_auth.api_client
         end
@@ -176,16 +177,22 @@ class ApplicationController < ActionController::Base
         api_client = ApiClient.
           where('uuid=?',session[:api_client_uuid]).
           first rescue nil
+        api_client_auth = ApiClientAuthorization.
+          find session[:api_client_authorization_id]
       end
       Thread.current[:api_client_trusted] = session[:api_client_trusted]
       Thread.current[:api_client_ip_address] = remote_ip
+      Thread.current[:api_client_authorization] = api_client_auth
+      Thread.current[:api_client_uuid] = api_client.uuid
       Thread.current[:api_client] = api_client
       Thread.current[:user] = user
       yield
     ensure
       Thread.current[:api_client_trusted] = nil
       Thread.current[:api_client_ip_address] = nil
+      Thread.current[:api_client_authorization] = nil
       Thread.current[:api_client_uuid] = nil
+      Thread.current[:api_client] = nil
       Thread.current[:user] = nil
     end
   end
