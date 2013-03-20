@@ -182,8 +182,10 @@ class ApplicationController < ActionController::Base
         api_client = ApiClient.
           where('uuid=?',session[:api_client_uuid]).
           first rescue nil
-        api_client_auth = ApiClientAuthorization.
-          find session[:api_client_authorization_id]
+        if session[:api_client_authorization_id] then
+          api_client_auth = ApiClientAuthorization.
+            find session[:api_client_authorization_id]
+        end
       end
       Thread.current[:api_client_trusted] = session[:api_client_trusted]
       Thread.current[:api_client_ip_address] = remote_ip
