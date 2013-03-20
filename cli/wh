@@ -157,7 +157,9 @@ m_o = method_opts.reject {|key,value| key =~ /_given$|^json$|^jsonhuman$|^help$/
 result = client.execute :api_method => eval(api_method), :parameters => { :api_token => ENV['ORVOS_API_TOKEN'] }.merge(m_o), :authenticated => false
 results = JSON.parse result.body
 
-if method == 'list' then
+if results["errors"] then
+  abort "Error: #{results["errors"][0]}"
+elsif method == 'list' then
   results['items'].each do |i|
     if method_opts[:json] then
       puts i.to_s
