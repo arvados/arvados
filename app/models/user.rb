@@ -26,6 +26,25 @@ class User < OrvosModel
     self.group_permissions.select { |uuid, mask| mask[verb] }.keys
   end
 
+  def can?(actions)
+    actions.each do |action, target|
+      target_uuid = target
+      if target.respond_to? :uuid
+        target_uuid = target.uuid
+      end
+      next if target_uuid == self.uuid
+      next if (group_permissions[target_uuid] and
+               group_permissions[target_uuid][action])
+      if target.respond_to? :owner
+        next if target.owner == self.uuid
+        next if (group_permissions[target.owner] and
+                 group_permissions[target.owner][action])
+      end
+      return false
+    end
+    true
+  end
+
   def self.invalidate_permissions_cache
     Rails.cache.delete_matched(/^groups_for_user_/)
   end
@@ -50,7 +69,7 @@ class User < OrvosModel
   end
 
   def group_permissions
-    Rails.cache.fetch "groups_for_user_#{current_user.uuid}" do
+    Rails.cache.fetch "groups_for_user_#{self.uuid}" do
       permissions_from = {}
       todo = {self.uuid => true}
       done = {}
