@@ -183,7 +183,7 @@ class ApplicationController < ActionController::Base
       Thread.current[:api_client_trusted] = session[:api_client_trusted]
       Thread.current[:api_client_ip_address] = remote_ip
       Thread.current[:api_client_authorization] = api_client_auth
-      Thread.current[:api_client_uuid] = api_client.uuid
+      Thread.current[:api_client_uuid] = api_client && api_client.uuid
       Thread.current[:api_client] = api_client
       Thread.current[:user] = user
       yield
