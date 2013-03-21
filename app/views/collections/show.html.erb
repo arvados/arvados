@@ -19,6 +19,7 @@
   <li><a href="#provenance" data-toggle="tab">Provenance (<%= @provenance.size %>)</a></li>
   <li><a href="#jobs" data-toggle="tab">Jobs (<%= @provenance.size %>)</a></li>
   <li><a href="#sourcedata" data-toggle="tab">Source data (<%= @sourcedata.size %>)</a></li>
+  <li><a href="#owner-groups-resources" data-toggle="tab">Owner, groups, resources</a></li>
 </ul>
 
 <div class="tab-content">
@@ -225,5 +226,8 @@
 
       </tbody>
     </table>
+  </div>
+  <div id="owner-groups-resources" class="tab-pane fade">
+    <%= render :partial => 'application/orvos_object' %>
   </div>
 </div>
