@@ -2,13 +2,16 @@
 <style>
 <%# https://github.com/mbostock/d3/wiki/Ordinal-Scales %>
 <% n=-1; %w(#1f77b4 #ff7f0e #2ca02c #d62728 #9467bd #8c564b #e377c2 #7f7f7f #bcbd22 #17becf).each do |color| %>
-.colorseries-10-<%= n += 1 %>, .btn.colorseries-10-<%= n %>:hover {
+.colorseries-10-<%= n += 1 %>, .btn.colorseries-10-<%= n %>:hover, .label.colorseries-10-<%= n %>:hover {
   *background-color: <%= color %>;
   background-color: <%= color %>;
   background-image: none;
 }
 <% end %>
-.colorseries-nil { background-color: white }
+.colorseries-nil { }
+.label a {
+  color: inherit;
+}
 </style>
 <% end %>
 
@@ -60,23 +63,23 @@
                   <% re = v.match(/^([0-9a-f]+)/) %>
                   <% justhash = (re and re[1].length == 32) ? re[1] : nil %>
 	          <% if justhash and @output2job.has_key? justhash %>
-	          <tt class="btn colorseries-10-<%= @output2colorindex[v] %> deemphasize"><%= v %></tt>
+	          <tt class="label colorseries-10-<%= @output2colorindex[v] %>"><%= v %></tt>
                   <% elsif justhash %>
-	          <tt class="btn colorseries-nil deemphasize"><%= justhash %></tt><br /><span class="deemphasize"><%= v %></span>
+	          <tt class="label colorseries-nil"><%= justhash %></tt><br /><span class="deemphasize"><%= v %></span>
                   <% else %>
 	          <span class="deemphasize"><%= v %></span>
                   <% end %>
                 </td><td style="text-align: center; width: 20%">
                   <% if justhash
                        if @protected[justhash]
-                         btnclass = 'success'
-                         btntext = 'keep'
+                         labelclass = 'success'
+                         labeltext = 'keep'
                        else
-                         btnclass = @output2job.has_key?(v) ? 'warning' : 'danger'
-                         btntext = 'cache'
+                         labelclass = @output2job.has_key?(v) ? 'warning' : 'danger'
+                         labeltext = 'cache'
                        end %>
 
-	          <tt class="btn btn-<%= btnclass %> deemphasize"><%= btntext %></tt>
+	          <tt class="label label-<%= labelclass %>"><%= labeltext %></tt>
                   <% end %>
                 </td><td style="width: 20%">
                   <%= k.to_s %>
@@ -87,11 +90,11 @@
             <div style="text-align: center">
               &darr;
               <br />
-	      <span class="btn deemphasize"><%= j.script %><br /><tt><%= link_to_if j.script_version.match(/[0-9a-f]{40}/), j.script_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.script_version}/entry/mapreduce/mr-#{j.script}" if j.script_version %></tt></span>
+	      <span class="label"><%= j.script %><br /><tt><%= link_to_if j.script_version.match(/[0-9a-f]{40}/), j.script_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.script_version}/entry/mapreduce/mr-#{j.script}" if j.script_version %></tt></span>
               <br />
               &darr;
               <br />
-	      <tt class="btn colorseries-10-<%= @output2colorindex[p[:output]] %> deemphasize"><%= p[:output] %></tt>
+	      <tt class="label colorseries-10-<%= @output2colorindex[p[:output]] %>"><%= p[:output] %></tt>
             </div>
 	  </td>
           <td>
@@ -102,10 +105,10 @@
 	<% else %>
 	<tr>
 	  <td>
-	    <span class="btn btn-danger">lookup fail</span>
+	    <span class="label label-danger">lookup fail</span>
 	    <br />
 	    <tt class="deemphasize"><%= p[:target] %></tt>
-	  </td><td colspan="4">
+	  </td><td colspan="5">
 	  </td>
 	</tr>
 	<% end %>
@@ -149,7 +152,7 @@
 	  </td><td>
 	    <%= j.script_version %>
 	  </td><td>
-            <span class="btn <%= if j.success then 'btn-success'; elsif j.active then 'btn-primary'; else 'btn-warning'; end %>">
+            <span class="label <%= if j.success then 'label-success'; elsif j.active then 'label-primary'; else 'label-warning'; end %>">
 	      <%= j.success || j.active ? 'ok' : 'failed' %>
             </span>
 	  </td><td>
@@ -168,7 +171,7 @@
 	<% else %>
 	<tr>
 	  <td>
-	    <span class="btn btn-danger">lookup fail</span>
+	    <span class="label label-danger">lookup fail</span>
 	    <br />
 	    <tt class="deemphasize"><%= p[:target] %></tt>
 	  </td><td colspan="4">
@@ -202,14 +205,14 @@
 
 	<tr class="collection">
 	  <td>
-	    <span class="btn"><tt class="deemphasize"><%= sourcedata[:uuid] %></tt></span>
+	    <tt class="label"><%= sourcedata[:uuid] %></tt>
 	  </td><td class="data-size">
 	    <%= raw(human_readable_bytes_html(sourcedata[:collection].data_size)) if sourcedata[:collection] and sourcedata[:collection].data_size %>
 	  </td><td>
 	    <% if @protected[sourcedata[:uuid]] %>
-	    <span class="btn btn-success">keep</span>
+	    <span class="label label-success">keep</span>
 	    <% else %>
-	    <span class="btn btn-danger">cache</span>
+	    <span class="label label-danger">cache</span>
 	    <% end %>
 	  </td><td>
 	    <% if sourcedata[:data_origins] %>
