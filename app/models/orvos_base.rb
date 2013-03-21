@@ -8,6 +8,7 @@ class OrvosBase < ActiveRecord::Base
       'tpzed' => 'orvos#user',
       'ozdt8' => 'orvos#api_client',
       '8i9sb' => 'orvos#job',
+      'o0j2j' => 'orvos#link',
       '57u5n' => 'orvos#log',
       'j58dm' => 'orvos#specimen',
       'p5p6p' => 'orvos#pipeline_template',
