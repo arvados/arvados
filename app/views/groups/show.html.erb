@@ -1,1 +1,27 @@
-<%= render :partial => 'application/orvos_object' %>
+<ul class="nav nav-tabs">
+  <li class="active"><a href="#properties" data-toggle="tab">Properties</a></li>
+  <li><a href="#collections" data-toggle="tab">Collections (<%= @collections.count %>)</a></li>
+</ul>
+
+<div class="tab-content">
+  <div id="properties" class="tab-pane fade in active">
+    <%= render partial: 'application/orvos_object' %>
+  </div>
+  <div id="collections" class="tab-pane fade">
+    <table class="table table-condensed">
+      <thead>
+        <tr><th style="text-align: right">size</th><th>collection</th></tr>
+      </thead><tbody>
+        <% if @collections then @collections.each do |collection| %>
+        <tr>
+          <td style="text-align: right">
+            <%= raw(human_readable_bytes_html(collection.total_bytes)) %>
+          </td><td>
+            <%= link_to_if_orvos_object collection %>
+          </td>
+        </tr>
+        <% end; end %>
+      </tbody>
+    </table>
+  </div>
+</div>
