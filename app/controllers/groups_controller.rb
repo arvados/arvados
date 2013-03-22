@@ -11,6 +11,21 @@ class GroupsController < ApplicationController
 
   def show
     @collections = Collection.where(owner: @object.uuid)
+    @names = {}
+    @keep_flag = {}
+    Link.
+      limit(10000).
+      where(head_uuid: @collections.collect(&:uuid)).
+      each do |link|
+      if link.properties[:name]
+        @names[link.head_uuid] ||= []
+        @names[link.head_uuid] << link.properties[:name]
+      end
+      if link.link_class == 'resources' and link.name == 'wants'
+        @keep_flag[link.head_uuid] = true
+      end
+    end
+    @collections_total_bytes = @collections.collect(&:total_bytes).inject(0,&:+)
     super
   end
 end
