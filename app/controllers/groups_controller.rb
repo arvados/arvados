@@ -13,6 +13,7 @@ class GroupsController < ApplicationController
     @collections = Collection.where(owner: @object.uuid)
     @names = {}
     @keep_flag = {}
+    @pgp_hu_id = {}
     Link.
       limit(10000).
       where(head_uuid: @collections.collect(&:uuid)).
@@ -24,6 +25,7 @@ class GroupsController < ApplicationController
       if link.link_class == 'resources' and link.name == 'wants'
         @keep_flag[link.head_uuid] = true
       end
+      @pgp_hu_id[link.head_uuid] ||= link.properties[:pgp_hu_id]
     end
     @collections_total_bytes = @collections.collect(&:total_bytes).inject(0,&:+)
     super

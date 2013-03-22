@@ -22,6 +22,9 @@
           <td style="text-align: right">
             <%= raw(human_readable_bytes_html(collection.total_bytes)) %>
           </td><td>
+            <% if @pgp_hu_id[collection.uuid] %>
+            <a class="label" href="https://my.personalgenomes.org/profile/<%= @pgp_hu_id[collection.uuid] %>"><tt><%= @pgp_hu_id[collection.uuid] %></tt></a>
+            <% end %>
             <% (@names[collection.uuid] || []).compact.each do |name| %>
             <%= name %><br />
             <% end %>
