@@ -30,6 +30,7 @@ class OrvosBase < ActiveRecord::Base
       'modified_at' => '003',
       'modified_by_user' => '004',
       'modified_by_client' => '005',
+      'name' => '050',
       'tail_kind' => '100',
       'tail_uuid' => '100',
       'head_kind' => '101',
