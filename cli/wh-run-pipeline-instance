@@ -113,31 +113,34 @@ end
 # this program, that is, not the pipeline component parameters).
 
 p = Trollop::Parser.new do
-  opt(:"dry-run",
+  opt(:dry_run,
       "Do not start any new jobs or wait for existing jobs to finish. Just find out whether jobs are finished, queued, or running for each component.",
       :type => :boolean,
       :short => :n)
-  opt(:"status-text",
+  opt(:status_text,
       "Store plain text status in given file.",
+      :short => :none,
       :type => :string,
       :default => '/dev/stdout')
-  opt(:"status-json",
+  opt(:status_json,
       "Store json-formatted pipeline in given file.",
+      :short => :none,
       :type => :string,
       :default => '/dev/null')
-  opt(:"no-wait",
+  opt(:no_wait,
       "Do not wait for jobs to finish. Just look up status, submit new jobs if needed, and exit.",
+      :short => :none,
       :type => :boolean)
   opt(:debug,
       "Print extra debugging information on stderr.",
       :type => :boolean)
-  opt(:"debug-level",
+  opt(:debug_level,
       "Set debug verbosity level.",
-      :short => nil,
+      :short => :none,
       :type => :integer)
-  opt(:"template",
+  opt(:template,
       "UUID of pipeline template.",
-      :short => nil,
+      :short => :none,
       :type => :string,
       :required => true)
   stop_on [:'--']
@@ -145,25 +148,7 @@ end
 $options = Trollop::with_standard_exception_handling p do
   p.parse ARGV
 end
-$debuglevel = $options[:"debug-level"] || ($options[:debug] && 1) || 0
-params_args = p.leftovers
-
-
-# Parse pipeline component parameters.
-
-params_args.shift if params_args[0] == '--'
-params = {}
-while !params_args.empty?
-  if (re = params_args[0].match /^(--)?([^-].*?)=(.)/)
-    params[re[2]] = re[3]
-    params_args.shift
-  elsif params_args.size > 1
-    param = params_args.shift.sub /^--/, ''
-    params[param] = params_args.shift
-  else
-    abort "Syntax error: I do not know what to do with arg \"#{params_args[0]}\""
-  end
-end
+$debuglevel = $options[:debug_level] || ($options[:debug] && 1) || 0
 
 
 # Set up the API client.
@@ -175,49 +160,47 @@ $client ||= Google::APIClient.
 $orvos = $client.discovered_api('orvos', $orvos_api_version)
 
 
-# Fetch the pipeline template.
-
-result = $client.execute(:api_method => $orvos.pipeline_templates.get,
-                         :parameters => {
-                           :api_token => ENV['ORVOS_API_TOKEN'],
-                           :uuid => (uuid = $options[:"pipeline-template-uuid"])
-                         },
-                         :authenticated => false)
-pipeline = JSON.parse result.body, :symbolize_names => true
-
-if !pipeline[:uuid]
-  abort "#{$0}: fatal: failed to retrieve pipeline template #{uuid} #{pipeline[:errors].inspect rescue nil}"
-end
-
-errors = []
-pipeline[:components].each do |componentname, component|
-  component[:script_parameters].each do |parametername, parameter|
-    parameter = { :value => parameter } unless parameter.is_a? Hash
-
-    value =
-      (params["#{componentname}::#{parametername}"] ||
-       parameter[:value] ||
-       (parameter[:output_of].nil? &&
-        (params[parametername.to_s] ||
-         parameter[:default])) ||
-       nil)
-    if value.nil? and
-        ![false,'false',0,'0'].index parameter[:required]
-      if parameter[:output_of]
-        next
-      end
-      errors << [componentname, parametername, "required parameter is missing"]
+class PipelineInstance
+  def initialize(attributes)
+    @attributes_to_update = {}
+    result = $client.execute(:api_method => $orvos.pipeline_instances.create,
+                             :parameters => {
+                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :pipeline_instance => attributes.to_json
+                             },
+                             :authenticated => false)
+    j = JSON.parse result.body, :symbolize_names => true
+    unless j.is_a? Hash and j[:uuid]
+      abort "Failed to create pipeline_instance: #{j[:errors] rescue nil}"
     end
-    debuglog "parameter #{componentname}::#{parametername} == #{value}"
-    component[:script_parameters][parametername] = value
+    debuglog "Created pipeline instance: #{j[:uuid]}"
+    @pi = j
+  end
+  def save
+    result = $client.execute(:api_method => $orvos.pipeline_instances.update,
+                             :parameters => {
+                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :uuid => @pi[:uuid],
+                               :pipeline_instance => @attributes_to_update.to_json
+                             },
+                             :authenticated => false)
+    j = JSON.parse result.body, :symbolize_names => true
+    unless j.is_a? Hash and j[:uuid]
+      debuglog "Failed to save pipeline_instance: #{j[:errors] rescue nil}", 0
+      nil
+    else
+      @attributes_to_update = {}
+      @pi = j
+    end
+  end
+  def []=(x,y)
+    @attributes_to_update[x] = y
+    @pi[x] = y
+  end
+  def [](x)
+    @pi[x]
   end
 end
-
-if !errors.empty?
-  abort "Errors:\n#{errors.collect { |c,p,e| "#{c}::#{p} - #{e}\n" }.join ""}"
-end
-
-debuglog "options=" + $options.pretty_inspect
 
 class JobCache
   def self.get(uuid)
@@ -263,117 +246,209 @@ class JobCache
   end
 end
 
-def report_status(pipeline)
-  if $options[:"status-json"] != '/dev/null'
-    File.open($options[:"status-json"], 'w') do |f|
-      f.puts pipeline[:components].pretty_inspect
+class WhRunPipelineInstance
+  def initialize(_options)
+    @options = _options
+  end
+
+  def fetch_template(template_uuid)
+    result = $client.execute(:api_method => $orvos.pipeline_templates.get,
+                             :parameters => {
+                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :uuid => template_uuid
+                             },
+                             :authenticated => false)
+    @template = JSON.parse result.body, :symbolize_names => true
+    if !@template[:uuid]
+      abort "#{$0}: fatal: failed to retrieve pipeline template #{template_uuid} #{@template[:errors].inspect rescue nil}"
+    end
+    self
+  end
+
+  def apply_parameters(params_args)
+    params_args.shift if params_args[0] == '--'
+    params = {}
+    while !params_args.empty?
+      if (re = params_args[0].match /^(--)?([^-].*?)=(.)/)
+        params[re[2]] = re[3]
+        params_args.shift
+      elsif params_args.size > 1
+        param = params_args.shift.sub /^--/, ''
+        params[param] = params_args.shift
+      else
+        abort "Syntax error: I do not know what to do with arg \"#{params_args[0]}\""
+      end
+    end
+
+    @components = @template[:components].dup
+
+    errors = []
+    @components.each do |componentname, component|
+      component[:script_parameters].each do |parametername, parameter|
+        parameter = { :value => parameter } unless parameter.is_a? Hash
+        value =
+          (params["#{componentname}::#{parametername}"] ||
+           parameter[:value] ||
+           (parameter[:output_of].nil? &&
+            (params[parametername.to_s] ||
+             parameter[:default])) ||
+           nil)
+        if value.nil? and
+            ![false,'false',0,'0'].index parameter[:required]
+          if parameter[:output_of]
+            next
+          end
+          errors << [componentname, parametername, "required parameter is missing"]
+        end
+        debuglog "parameter #{componentname}::#{parametername} == #{value}"
+        component[:script_parameters][parametername] = value
+      end
+    end
+    if !errors.empty?
+      abort "Errors:\n#{errors.collect { |c,p,e| "#{c}::#{p} - #{e}\n" }.join ""}"
+    end
+    debuglog "options=" + @options.pretty_inspect
+    self
+  end
+
+  def run
+    moretodo = true
+    while moretodo
+      moretodo = false
+
+      @instance ||= PipelineInstance.new(:components => @components,
+                                         :pipeline_template_uuid => @template[:uuid],
+                                         :active => true)
+      @components.each do |cname, c|
+        job = nil
+        if !c[:job] and
+            c[:script_parameters].select { |pname, p| p.is_a? Hash }.empty?
+          # Job is fully specified (all parameter values are present) but
+          # no particular job has been found.
+
+          debuglog "component #{cname} ready to satisfy."
+
+          c.delete :wait
+          JobCache.where(:script => c[:script]).
+            each do |candidate_job|
+            candidate_params_downcase = Hash[candidate_job[:script_parameters].
+                                             map { |k,v| [k.downcase,v] }]
+            c_params_downcase = Hash[c[:script_parameters].
+                                     map { |k,v| [k.downcase,v] }]
+
+            debuglog "component #{cname} considering job #{candidate_job[:uuid]} version #{candidate_job[:script_version]} parameters #{candidate_params_downcase.inspect}", 3
+
+            unless candidate_params_downcase == c_params_downcase
+              next
+            end
+
+            unless candidate_job[:success] || candidate_job[:running] ||
+                (!candidate_job[:started_at] && !candidate_job[:cancelled_at])
+              debuglog "component #{cname} would be satisfied by job #{candidate_job[:uuid]} if it were running or successful.", 2
+              next
+            end
+
+            job = candidate_job
+            debuglog "component #{cname} satisfied by job #{job[:uuid]} version #{job[:script_version]}"
+            c[:job] = job
+            break
+          end
+          if not c[:job]
+            debuglog "component #{cname} not satisfied by any existing job."
+            if !@options[:dry_run]
+              debuglog "component #{cname} new job."
+              job = JobCache.create(:script => c[:script],
+                                    :script_parameters => c[:script_parameters],
+                                    :resource_limits => c[:resource_limits] || {},
+                                    :script_version => c[:script_version] || 'master')
+              if job
+                debuglog "component #{cname} new job #{job[:uuid]}"
+                c[:job] = job
+              else
+                debuglog "component #{cname} new job failed: #{job[:errors]}"
+              end
+            end
+          end
+        else
+          c[:wait] = true
+        end
+        if c[:job] and c[:job][:uuid]
+          if not c[:job][:finished_at] and not c[:job][:cancelled_at]
+            c[:job] = JobCache.get(c[:job][:uuid])
+          end
+          if c[:job][:success]
+            # Populate script_parameters of other components waiting for
+            # this job
+            @components.each do |c2name, c2|
+              c2[:script_parameters].each do |pname, p|
+                if p.is_a? Hash and p[:output_of] == cname.to_s
+                  debuglog "parameter #{c2name}::#{pname} == #{c[:job][:output]}"
+                  c2[:script_parameters][pname] = c[:job][:output]
+                end
+              end
+            end
+          elsif c[:job][:running] ||
+              (!c[:job][:started_at] && !c[:job][:cancelled_at])
+            moretodo ||= !@options[:no_wait]
+          elsif c[:job][:cancelled_at]
+            debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
+          end
+        end
+      end
+      @instance[:components] = @components
+      @instance[:active] = moretodo
+      report_status
+      sleep 10 if moretodo
     end
   end
 
-  if $options[:"status-text"] != '/dev/null'
-    File.open($options[:"status-text"], 'w') do |f|
-      f.puts Time.now
-      namewidth = pipeline[:components].collect { |cname, c| cname.size }.max
-      pipeline[:components].each do |cname, c|
-        jstatus = if !c[:job]
-                    "-"
-                  elsif c[:job][:running]
-                    "#{c[:job][:tasks_summary].inspect}"
-                  elsif c[:job][:success]
-                    c[:job][:output]
-                  elsif c[:job][:cancelled_at]
-                    "cancelled #{c[:job][:cancelled_at]}"
-                  elsif c[:job][:started_at]
-                    "started #{c[:job][:started_at]}"
-                  else
-                    "queued #{c[:job][:created_at]}"
-                  end
-        f.puts "#{cname.to_s.ljust namewidth} #{c[:job] ? c[:job][:uuid] : '-'.ljust(27)} #{jstatus}"
+  def cleanup
+    @instance[:active] = false
+    @instance.save
+  end
+
+  protected
+
+  def report_status
+    @instance.save
+
+    if @options[:status_json] != '/dev/null'
+      File.open(@options[:status_json], 'w') do |f|
+        f.puts @components.pretty_inspect
+      end
+    end
+
+    if @options[:status_text] != '/dev/null'
+      File.open(@options[:status_text], 'w') do |f|
+        f.puts Time.now
+        namewidth = @components.collect { |cname, c| cname.size }.max
+        @components.each do |cname, c|
+          jstatus = if !c[:job]
+                      "-"
+                    elsif c[:job][:running]
+                      "#{c[:job][:tasks_summary].inspect}"
+                    elsif c[:job][:success]
+                      c[:job][:output]
+                    elsif c[:job][:cancelled_at]
+                      "cancelled #{c[:job][:cancelled_at]}"
+                    elsif c[:job][:started_at]
+                      "started #{c[:job][:started_at]}"
+                    else
+                      "queued #{c[:job][:created_at]}"
+                    end
+          f.puts "#{cname.to_s.ljust namewidth} #{c[:job] ? c[:job][:uuid] : '-'.ljust(27)} #{jstatus}"
+        end
       end
     end
   end
 end
 
-moretodo = true
-while moretodo
-  moretodo = false
-
-  pipeline[:components].each do |cname, c|
-    job = nil
-    if !c[:job] and
-        c[:script_parameters].select { |pname, p| p.is_a? Hash }.empty?
-      # Job is fully specified (all parameter values are present) but
-      # no particular job has been found.
-
-      debuglog "component #{cname} ready to satisfy."
-
-      c.delete :wait
-      JobCache.where(:script => c[:script]).
-        each do |candidate_job|
-        candidate_params_downcase = Hash[candidate_job[:script_parameters].
-                                         map { |k,v| [k.downcase,v] }]
-        c_params_downcase = Hash[c[:script_parameters].
-                                 map { |k,v| [k.downcase,v] }]
-
-        debuglog "component #{cname} considering job #{candidate_job[:uuid]} version #{candidate_job[:script_version]} parameters #{candidate_params_downcase.inspect}", 3
-
-        unless candidate_params_downcase == c_params_downcase
-          next
-        end
-
-        unless candidate_job[:success] || candidate_job[:running] ||
-            (!candidate_job[:started_at] && !candidate_job[:cancelled_at])
-          debuglog "component #{cname} would be satisfied by job #{candidate_job[:uuid]} if it were running or successful.", 2
-          next
-        end
-
-        job = candidate_job
-        debuglog "component #{cname} satisfied by job #{job[:uuid]} version #{job[:script_version]}"
-        c[:job] = job
-        break
-      end
-      if not c[:job]
-        debuglog "component #{cname} not satisfied by any existing job."
-        if !$options[:"dry-run"]
-          debuglog "component #{cname} new job."
-          job = JobCache.create(:script => c[:script],
-                                :script_parameters => c[:script_parameters],
-                                :resource_limits => c[:resource_limits] || {},
-                                :script_version => c[:script_version] || 'master')
-          if job
-            debuglog "component #{cname} new job #{job[:uuid]}"
-            c[:job] = job
-          else
-            debuglog "component #{cname} new job failed: #{job[:errors]}"
-          end
-        end
-      end
-    else
-      c[:wait] = true
-    end
-    if c[:job] and c[:job][:uuid]
-      if not c[:job][:finished_at] and not c[:job][:cancelled_at]
-        c[:job] = JobCache.get(c[:job][:uuid])
-      end
-      if c[:job][:success]
-        # Populate script_parameters of other components waiting for
-        # this job
-        pipeline[:components].each do |c2name, c2|
-          c2[:script_parameters].each do |pname, p|
-            if p.is_a? Hash and p[:output_of] == cname.to_s
-              debuglog "parameter #{c2name}::#{pname} == #{c[:job][:output]}"
-              c2[:script_parameters][pname] = c[:job][:output]
-            end
-          end
-        end
-      elsif c[:job][:running] ||
-          (!c[:job][:started_at] && !c[:job][:cancelled_at])
-        moretodo ||= !$options[:"no-wait"]
-      elsif c[:job][:cancelled_at]
-        debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
-      end
-    end
-  end
-  report_status pipeline
-  sleep 10 if moretodo
+instance = WhRunPipelineInstance.new($options)
+begin
+  instance.fetch_template($options[:template]).
+    apply_parameters(p.leftovers).
+    run
+rescue Exception => e
+  instance.cleanup
+  raise e
 end
