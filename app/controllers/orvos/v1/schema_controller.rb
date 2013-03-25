@@ -101,15 +101,15 @@ class Orvos::V1::SchemaController < ApplicationController
             }
           end
         end
-        discovery[:schemas][k.to_s + 'List'] = {
+        discovery[:schemas][k.to_s.pluralize + 'List'] = {
           id: k.to_s,
           description: k.to_s,
           type: "object",
           properties: {
             kind: {
               type: "string",
-              description: "Object type. Always orvos##{k.to_s.camelcase(:lower)}List.",
-              default: "orvos##{k.to_s.camelcase(:lower)}List"
+              description: "Object type. Always orvos##{k.to_s.pluralize.camelcase(:lower)}List.",
+              default: "orvos##{k.to_s.pluralize.camelcase(:lower)}List"
             },
             etag: {
               type: "string",
