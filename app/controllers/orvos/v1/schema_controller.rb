@@ -87,6 +87,8 @@ class Orvos::V1::SchemaController < ApplicationController
       }
       
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+        next if k == ApiClientAuthorization
+        next if k == ApiClient
         object_properties = {}
         k.columns.
           select { |col| col.name != 'id' }.
