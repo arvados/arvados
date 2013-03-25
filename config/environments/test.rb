@@ -37,6 +37,8 @@ Server::Application.configure do
   # Print deprecation notices to the stderr
   config.active_support.deprecation = :stderr
 
+  config.git_repositories_dir = '/var/cache/git'
+
   config.whjobmanager_wrapper = :slurm_immediate
 
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'

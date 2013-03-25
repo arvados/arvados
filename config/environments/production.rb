@@ -58,6 +58,8 @@ Server::Application.configure do
   # Send deprecation notices to registered listeners
   config.active_support.deprecation = :notify
 
+  config.git_repositories_dir = '/var/cache/git'
+
   config.whjobmanager_wrapper = :slurm_immediate
 
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
