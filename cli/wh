@@ -83,7 +83,9 @@ def parse_arguments(discovery_document)
     stop_on sub_commands
   end
   
-  cmd = ARGV.shift # get the subcommand
+  # get the subcommand
+  cmd = ARGV.shift
+  cmd = cmd.pluralize unless cmd.nil?
   if sub_commands.include?(cmd) and cmd != '--help' then
     # subcommand exists
     # Now see if the method supplied exists
@@ -141,7 +143,7 @@ def parse_arguments(discovery_document)
          discovery_document["schemas"][k.singularize.capitalize].include?('description') then
         description = '  ' + discovery_document["schemas"][k.singularize.capitalize]["description"]
       end
-      banner += "   #{sprintf("%20s",k)}#{description}\n"
+      banner += "   #{sprintf("%30s",k.singularize)}#{description}\n"
     end
     banner += "\n"
 
