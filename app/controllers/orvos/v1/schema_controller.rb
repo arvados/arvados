@@ -101,15 +101,15 @@ class Orvos::V1::SchemaController < ApplicationController
             }
           end
         end
-        discovery[:schemas][k.to_s.pluralize + 'List'] = {
+        discovery[:schemas][k.to_s + 'List'] = {
           id: k.to_s,
           description: k.to_s,
           type: "object",
           properties: {
             kind: {
               type: "string",
-              description: "Object type. Always orvos##{k.to_s.pluralize.camelcase(:lower)}List.",
-              default: "orvos##{k.to_s.pluralize.camelcase(:lower)}List"
+              description: "Object type. Always orvos##{k.to_s.camelcase(:lower)}List.",
+              default: "orvos##{k.to_s.camelcase(:lower)}List"
             },
             etag: {
               type: "string",
@@ -117,7 +117,10 @@ class Orvos::V1::SchemaController < ApplicationController
             },
             items: {
               type: "array",
-              description: "The list of #{k.to_s.pluralize}."
+              description: "The list of #{k.to_s.pluralize}.",
+              items: {
+                "$ref" => k.to_s
+              }
             },
             next_link: {
               type: "string",
@@ -200,7 +203,7 @@ class Orvos::V1::SchemaController < ApplicationController
                 }
               },
               response: {
-                "$ref" => "#{k.to_s.pluralize}List"
+                "$ref" => "#{k.to_s}List"
               },
               scopes: [
                        "https://api.clinicalfuture.com/auth/orvos",
