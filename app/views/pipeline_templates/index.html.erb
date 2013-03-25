@@ -1,0 +1,34 @@
+<table class="table table-hover">
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+	id
+      </th><th>
+	name
+      </th><th>
+	owner
+      </th><th>
+	components
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <% @objects.sort_by { |ob| ob[:created_at] }.reverse.each do |ob| %>
+
+    <tr>
+      <td>
+        <%= link_to_if_orvos_object ob %>
+      </td><td>
+        <%= ob.name %>
+      </td><td>
+        <%= link_to_if_orvos_object ob.owner %>
+      </td><td>
+        <%= ob.components.collect { |k,v| k.to_s }.join(", ") %>
+      </td>
+    </tr>
+
+    <% end %>
+
+  </tbody>
+</table>
