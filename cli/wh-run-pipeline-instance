@@ -2,18 +2,32 @@
 
 # == Synopsis
 #
-#  wh-pipeline pipeline-uuid [options] -- [parameters]
+#  wh-run-pipeline-instance --template pipeline-template-uuid [options] [--] [parameters]
 #
 # Satisfy a pipeline template by finding or submitting a mapreduce job
 # for each pipeline component.
 #
 # == Options
 #
+# [--template uuid] Use the specified pipeline template.
+#
 # [-n, --dry-run] Do not start any new jobs or wait for existing jobs
 #                 to finish. Just find out whether jobs are finished,
 #                 queued, or running for each component
 #
-# [--debug]       Print extra debugging information on stderr.
+# [--no-wait] Make only as much progress as possible without entering
+#             a sleep/poll loop.
+#
+# [--debug] Print extra debugging information on stderr.
+#
+# [--debug-level N] Increase amount of debugging information. Default
+#                   1, possible range 0..3.
+#
+# [--status-text path] Print plain text status report to a file or
+#                      fifo. Default: /dev/stdout
+#
+# [--status-json path] Print JSON status report to a file or
+#                      fifo. Default: /dev/null
 #
 # == Parameters
 #
@@ -29,7 +43,7 @@
 #                                            parameter for a single
 #                                            component.
 #
-class Whpipeline
+class WhRunPipelineInstance
 end
 
 $application_version = 1.0
@@ -94,24 +108,10 @@ class Google::APIClient
   end
 end
 
-$client ||= Google::APIClient.
-  new(:host => $orvos_api_host,
-      :application_name => File.split($0).last,
-      :application_version => $application_version.to_s)
-$orvos = $client.discovered_api('orvos', $orvos_api_version)
-result = $client.execute(:api_method => $orvos.pipeline_templates.get,
-                         :parameters => {
-                           :api_token => ENV['ORVOS_API_TOKEN'],
-                           :uuid => (uuid = ARGV.shift)
-                         },
-                         :authenticated => false)
-pipeline = JSON.parse result.body, :symbolize_names => true
 
-if !pipeline[:uuid]
-  abort "#{$0}: fatal: failed to retrieve pipeline template #{uuid} #{pipeline[:errors].inspect rescue nil}"
-end
+# Parse command line options (the kind that control the behavior of
+# this program, that is, not the pipeline component parameters).
 
-parameternamecount = {}
 p = Trollop::Parser.new do
   opt(:"dry-run",
       "Do not start any new jobs or wait for existing jobs to finish. Just find out whether jobs are finished, queued, or running for each component.",
@@ -135,6 +135,11 @@ p = Trollop::Parser.new do
       "Set debug verbosity level.",
       :short => nil,
       :type => :integer)
+  opt(:"template",
+      "UUID of pipeline template.",
+      :short => nil,
+      :type => :string,
+      :required => true)
   stop_on [:'--']
 end
 $options = Trollop::with_standard_exception_handling p do
@@ -142,6 +147,9 @@ $options = Trollop::with_standard_exception_handling p do
 end
 $debuglevel = $options[:"debug-level"] || ($options[:debug] && 1) || 0
 params_args = p.leftovers
+
+
+# Parse pipeline component parameters.
 
 params_args.shift if params_args[0] == '--'
 params = {}
@@ -155,6 +163,30 @@ while !params_args.empty?
   else
     abort "Syntax error: I do not know what to do with arg \"#{params_args[0]}\""
   end
+end
+
+
+# Set up the API client.
+
+$client ||= Google::APIClient.
+  new(:host => $orvos_api_host,
+      :application_name => File.split($0).last,
+      :application_version => $application_version.to_s)
+$orvos = $client.discovered_api('orvos', $orvos_api_version)
+
+
+# Fetch the pipeline template.
+
+result = $client.execute(:api_method => $orvos.pipeline_templates.get,
+                         :parameters => {
+                           :api_token => ENV['ORVOS_API_TOKEN'],
+                           :uuid => (uuid = $options[:"pipeline-template-uuid"])
+                         },
+                         :authenticated => false)
+pipeline = JSON.parse result.body, :symbolize_names => true
+
+if !pipeline[:uuid]
+  abort "#{$0}: fatal: failed to retrieve pipeline template #{uuid} #{pipeline[:errors].inspect rescue nil}"
 end
 
 errors = []
