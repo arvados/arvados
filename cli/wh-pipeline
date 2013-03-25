@@ -26,8 +26,8 @@
 # [component_name::param_name param_value]
 # [--component_name::param_name=param_value]
 # [--component_name::param_name param_value] Set the value of a
-#                                           parameter for a single
-#                                           component.
+#                                            parameter for a single
+#                                            component.
 #
 class Whpipeline
 end
