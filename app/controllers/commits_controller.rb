@@ -1,0 +1,2 @@
+class CommitsController < ApplicationController
+end

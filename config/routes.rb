@@ -1,4 +1,8 @@
 Server::Application.routes.draw do
+  resources :commit_ancestors
+
+  resources :commits
+
   resources :job_tasks
   resources :jobs
   resources :api_client_authorizations

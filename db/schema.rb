@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130320000107) do
+ActiveRecord::Schema.define(:version => 20130326182917) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -68,6 +68,27 @@ ActiveRecord::Schema.define(:version => 20130320000107) do
   add_index "collections", ["created_at"], :name => "index_collections_on_created_at"
   add_index "collections", ["modified_at"], :name => "index_collections_on_modified_at"
   add_index "collections", ["uuid"], :name => "index_collections_on_uuid", :unique => true
+
+  create_table "commit_ancestors", :force => true do |t|
+    t.string   "repository_name"
+    t.string   "descendant",                         :null => false
+    t.string   "ancestor",                           :null => false
+    t.boolean  "is",              :default => false, :null => false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "commit_ancestors", ["descendant", "ancestor"], :name => "index_commit_ancestors_on_descendant_and_ancestor", :unique => true
+
+  create_table "commits", :force => true do |t|
+    t.string   "repository_name"
+    t.string   "sha1"
+    t.string   "message"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "commits", ["repository_name", "sha1"], :name => "index_commits_on_repository_name_and_sha1", :unique => true
 
   create_table "groups", :force => true do |t|
     t.string   "uuid"

@@ -1,0 +1,2 @@
+class CommitAncestorsController < ApplicationController
+end

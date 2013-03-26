@@ -4,12 +4,14 @@ class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :uncamelcase_params_hash_keys
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
-  before_filter :find_object_by_uuid, :except => [:index, :create]
 
   before_filter :remote_ip
   before_filter :login_required, :except => :render_not_found
-
   before_filter :catch_redirect_hint
+
+  before_filter :find_objects_for_index, :only => :index
+  before_filter :find_object_by_uuid, :except => [:index, :create]
+
   attr_accessor :resource_attrs
 
   def catch_redirect_hint
@@ -49,7 +51,7 @@ class ApplicationController < ActionController::Base
     render json: { errors: ["Path not found"] }, status: 404
   end
 
-  def index
+  def find_objects_for_index
     uuid_list = [current_user.uuid, *current_user.groups_i_can(:read)]
     sanitized_uuid_list = uuid_list.
       collect { |uuid| model_class.sanitize(uuid) }.join(', ')
@@ -59,18 +61,18 @@ class ApplicationController < ActionController::Base
             true, current_user.is_admin,
             uuid_list,
             current_user.uuid)
+    @where = params[:where] || {}
+    @where = Oj.load(@where) if @where.is_a?(String)
     if params[:where]
-      where = params[:where]
-      where = Oj.load(where) if where.is_a?(String)
       conditions = ['1=1']
-      where.each do |attr,value|
+      @where.each do |attr,value|
         if (!value.nil? and
             attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr))
           if value.is_a? Array
             conditions[0] << " and #{table_name}.#{attr} in (?)"
             conditions << value
-          else
+          elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
             conditions[0] << " and #{table_name}.#{attr}=?"
             conditions << value
           end
@@ -96,7 +98,10 @@ class ApplicationController < ActionController::Base
     else
       @objects = @objects.limit(100)
     end
-    @objects = @objects.order('modified_at desc')
+    @objects = @objects.order("#{table_name}.modified_at desc")
+  end
+
+  def index
     @objects.uniq!(&:id)
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)

@@ -6,6 +6,9 @@ class Job < OrvosModel
   serialize :resource_limits, Hash
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
+  before_create :ensure_script_version_is_commit
+
+  has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
 
   class SubmitIdReused < StandardError
   end
@@ -38,6 +41,15 @@ class Job < OrvosModel
   end
 
   protected
+
+  def ensure_script_version_is_commit
+    sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
+    if sha1
+      self.script_version = sha1
+    else
+      raise ArgumentError.new("Specified script_version does not resolve to a commit")
+    end
+  end
 
   def ensure_unique_submit_id
     if !submit_id.nil?
