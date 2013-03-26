@@ -18,7 +18,7 @@ class Commit < ActiveRecord::Base
     repositories.each do |repo_name, repo|
       next if want_repo and want_repo != repo_name
       ENV['GIT_DIR'] = repo[:git_dir]
-      IO.foreach("|git rev-list --max-count=1 --format=oneline ''#{commit_ish.shellescape}") do |line|
+      IO.foreach("|git rev-list --max-count=1 --format=oneline 'origin/'#{commit_ish.shellescape} 2>/dev/null || git rev-list --max-count=1 --format=oneline ''#{commit_ish.shellescape}") do |line|
         sha1, message = line.strip.split " ", 2
         next if sha1.length != 40
         begin
