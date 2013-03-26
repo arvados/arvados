@@ -75,6 +75,14 @@ class ApplicationController < ActionController::Base
           elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
             conditions[0] << " and #{table_name}.#{attr}=?"
             conditions << value
+          elsif value.is_a? Hash
+            # Not quite the same thing as "equal?" but better than nothing?
+            value.each do |k,v|
+              if v.is_a? String
+                conditions[0] << " and #{table_name}.#{attr} like ?"
+                conditions << "%:#{k}: #{v}%"
+              end
+            end
           end
         elsif (!value.nil? and attr == 'any' and
           value.is_a?(Array) and value[0] == 'contains' and
