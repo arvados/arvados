@@ -330,6 +330,7 @@ class WhRunPipelineInstance
 
           c.delete :wait
           JobCache.where(:script => c[:script],
+                         :script_parameters => c[:script_parameters],
                          :script_version_descends_from => c[:script_version_descends_from]).
             each do |candidate_job|
             candidate_params_downcase = Hash[candidate_job[:script_parameters].
