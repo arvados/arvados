@@ -464,6 +464,8 @@ class WhRunPipelineInstance
       report_status
       sleep 10 if moretodo
     end
+    @instance[:success] = @components.reject { |cname,c| c[:job] and c[:job][:success] }.empty?
+    @instance.save
   end
 
   def cleanup
