@@ -79,8 +79,8 @@ class ApplicationController < ActionController::Base
             # Not quite the same thing as "equal?" but better than nothing?
             value.each do |k,v|
               if v.is_a? String
-                conditions[0] << " and #{table_name}.#{attr} like ?"
-                conditions << "%:#{k}: #{v}%"
+                conditions[0] << " and #{table_name}.#{attr} ilike ?"
+                conditions << "%#{k}%#{v}%"
               end
             end
           end
