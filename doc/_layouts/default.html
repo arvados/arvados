@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{ page.title }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      body {
+      padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-responsive.min.css" rel="stylesheet">
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+        <script src="../assets/js/html5shiv.js"></script>
+        <![endif]-->
+  </head>
+  <body>
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="{{ site.baseurl }}/">Arvados Docs</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li {% if page.layout == 'userguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/user/">User</a></li>
+              <li {% if page.layout == 'adminguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/admin/">Admin</a></li>
+              <li {% if page.layout == 'installguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/install/">Install</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      {% if page.navsection == 'top' %}
+      {{ content }}
+      {% else %}
+      <div class="row">
+        <div class="span3">
+          <ul class="nav nav-tabs nav-stacked affix span3">
+            {% for navorder in (0..100) %}
+            {% for p in site.pages %}
+            {% if p.navsection == page.navsection and p.navorder == navorder %}
+            <li><a href="{{ site.baseurl }}{{ p.url }}" {% if p.url == page.url %} class="active"{% endif %} >{{ p.title }}</a></li>
+            {% endif %}
+            {% endfor %}
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="span9"><div style="padding-left: 2em;">
+          {{ content }}
+        </div></div>
+      </div>
+      {% endif %}
+
+      <div style="height: 2em"></div>
+
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/js/bootstrap.min.js"></script>
+  </body>
+</html>
+
