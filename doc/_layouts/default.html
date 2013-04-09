@@ -30,9 +30,9 @@
           <a class="brand" href="{{ site.baseurl }}/">Arvados Docs</a>
           <div class="nav-collapse collapse">
             <ul class="nav">
-              <li {% if page.layout == 'userguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/user/">User</a></li>
-              <li {% if page.layout == 'adminguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/admin/">Admin</a></li>
-              <li {% if page.layout == 'installguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/install/">Install</a></li>
+              <li {% if page.navsection == 'userguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/user/">User</a></li>
+              <li {% if page.navsection == 'adminguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/admin/">Admin</a></li>
+              <li {% if page.navsection == 'installguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/install/">Install</a></li>
             </ul>
           </div><!--/.nav-collapse -->
         </div>
