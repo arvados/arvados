@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: Setting up SSH keys
+title: Setting up SSH access
 navorder: 2
 ---
 
-# Setting up SSH keys
+# Setting up SSH access
 
 Arvados uses SSH public key authentication for two things:
 
