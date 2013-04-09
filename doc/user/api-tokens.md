@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: Using API tokens
+title: API authentication
 navorder: 1
 ---
 
-# Using API tokens
+# API authentication
 
 Open a browser and point it to the Workbench URL for your site. It
 will look something like this:

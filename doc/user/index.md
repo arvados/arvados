@@ -52,6 +52,6 @@ know about [screen](http://www.gnu.org/software/screen/).
 
 In order to get access to an Arvados VM, you need to:
 
-1. Upload an SSH public key
+1. Upload an SSH public key ([learn how](ssh-keys.html))
 1. Request a new VM (or access to a shared VM)
 

@@ -5,7 +5,7 @@ title: A sample pipeline
 navorder: 10
 ---
 
-# Run a sample pipeline
+# A sample pipeline
 
 You should do this.
 
