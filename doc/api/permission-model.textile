@@ -1,8 +1,8 @@
 ---
 layout: default
-navsection: userguide
-title: "Reference: Permission model"
-navorder: 81
+navsection: api
+title: "Permission model"
+navorder: 6
 ---
 
 h1. Permission model

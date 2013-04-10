@@ -1,11 +1,11 @@
 ---
 layout: default
-navsection: userguide
-title: API REST methods
-subnavsection: "Reference: API"
+navsection: api
+title: Methods
+navorder: 3
 ---
 
-h1. API REST Methods
+h1. REST Methods
 
 (using Group as an example)
 

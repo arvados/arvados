@@ -1,17 +1,17 @@
 ---
 layout: default
-navsection: userguide
-title: "Reference: API"
-navorder: 90
+navsection: api
+title: API Reference
+navorder: 0
 ---
 
 # API Reference
 
 ### Concepts
 
-* Each API uses the same [authentication mechanism](api-authentication.html)
-* Resources in requests and responses adhere to a [common structure](api-resources.html)
-* API transactions use common [REST methods](api-methods.html)
+* Each API uses the same [authentication mechanism](authentication.html)
+* Resources in requests and responses adhere to a [common structure](resources.html)
+* API transactions use common [REST methods](methods.html)
 
 ### Resources
 

@@ -1,11 +1,11 @@
 ---
 layout: default
-navsection: userguide
-title: API Authentication
-subnavsection: "Reference: API"
+navsection: api
+title: Authentication
+navorder: 2
 ---
 
-h1. API Authentication
+h1. Authentication
 
 Every API request (except the authentication API itself) includes an @access_token@ parameter.
 

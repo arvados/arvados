@@ -1,11 +1,11 @@
 ---
 layout: default
-navsection: userguide
-title: API Resources
-subnavsection: "Reference: API"
+navsection: api
+title: Resources
+navorder: 4
 ---
 
-h1. API Resources
+h1. Resources
 
 h2. Object IDs
 

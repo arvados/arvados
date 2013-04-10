@@ -1,11 +1,11 @@
 ---
 layout: default
-navsection: userguide
-title: "Reference: Job scripts"
-navorder: 82
+navsection: api
+title: Job scripts
+navorder: 5
 ---
 
-h1. Reference: Job scripts
+h1. Job scripts
 
 ...how to understand and write them.
 
