@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: API authentication
+title: Getting an API token
 navorder: 1
 ---
 
@@ -19,4 +19,4 @@ Click the "API tokens" link.
 Copy an API token and set an environment variable in your terminal
 session like this.
 
-    export ORVOS_API_TOKEN=unvz7ktg5p5k2q4wb9hpfl9fkge96rvv1j1gjpiq
+    export ARVADOS_API_TOKEN=unvz7ktg5p5k2q4wb9hpfl9fkge96rvv1j1gjpiq

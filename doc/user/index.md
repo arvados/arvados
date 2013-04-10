@@ -38,12 +38,7 @@ Technically you can make all API calls using a generic web client like
 [curl](http://curl.haxx.se/docs/) but you will have a more enjoyable
 experience with the Arvados CLI client.
 
-    echo "deb http://apt.arvados.org/apt precise main contrib non-free" \
-      | sudo tee -a /etc/apt/sources.list.d/arvados.list
-    wget -q http://apt.arvados.org/53212765.key -O- \
-      | sudo apt-key add -
-    sudo apt-get update
-    sudo apt-get install arvados-cli
+See [command line SDK](sdk-cli.html) for installation instructions.
 
 ### Request a virtual machine
 

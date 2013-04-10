@@ -1,0 +1,79 @@
+---
+layout: default
+navsection: userguide
+title: API REST methods
+subnavsection: "Reference: API"
+---
+
+h1. API REST Methods
+
+(using Group as an example)
+
+h2. Index, list, search
+
+<pre>
+GET https://xyzzy.arvados.org/arvados/v1/groups?where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+ 
+POST https://xyzzy.arvados.org/arvados/v1/groups
+_method=GET
+where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+</pre>
+
+&rarr; Group resource list
+
+table(table table-bordered table-condensed).
+|*Parameter name*|*Value*|*Description*|
+|max_results|integer|Maximum number of resources to return|
+|page_token|string||
+|where{}|list|Attribute values to search for|
+
+h2. Create
+
+<pre>
+POST https://xyzzy.arvados.org/arvados/v1/groups
+group={"name":"fresh new group"}
+</pre>
+
+&rarr; Group resource
+
+h2. Delete
+
+<pre>
+DELETE https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+</pre>
+
+&rarr; Group resource
+
+h2. Show
+
+<pre>
+GET https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+</pre>
+
+&rarr; Group resource
+
+h2. Update
+
+<pre>
+PUT https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+group={"uuid":"xyzzy-ldvyl-vyydjeplwaa6emg", "name":"Important group"}
+</pre>
+
+&rarr; Group resource
+
+<pre>
+PUT https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+group[uuid]=xyzzy-ldvyl-vyydjeplwaa6emg
+group[name]=Important group
+</pre>
+
+&rarr; Group resource
+
+More appropriate (but not yet implemented):
+
+<pre>
+PATCH https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+group={"uuid":"xyzzy-ldvyl-vyydjeplwaa6emg", "name":"Important group"}
+</pre>
+
+&rarr; Group resource
