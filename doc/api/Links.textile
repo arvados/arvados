@@ -7,7 +7,7 @@ navorder: 10
 
 h1. Links
 
-Links encode connections between Orvos objects, and from objects to primitives.  Each metadata object has a tail (subject), class, name, properties, and head (object or value).
+Links encode connections between Arvados objects, and from objects to primitives.  Each metadata object has a tail (subject), class, name, properties, and head (object or value).
 
 table(table table-bordered table-condensed).
 |tail (object)| _class, name_ 
@@ -16,13 +16,13 @@ table(table table-bordered table-condensed).
 
 h2. Methods
 
-See [[API REST Methods|REST methods for working with Orvos resources]]
+See "REST methods for working with Arvados resources":methods.html
 
-API endpoint base: @https://xyzzy.orvosapi.com/orvos/v1/links@
+API endpoint base: @https://xyzzy.arvados.org/arvados/v1/links@
 
 h2. Resource
 
-Each link has, in addition to the usual [[API Resources|attributes of Orvos resources]]:
+Each link has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
 |*Attribute*|*Type*|*Description*|

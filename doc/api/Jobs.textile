@@ -14,9 +14,9 @@ Applications submit compute jobs when:
 
 h2. Methods
 
-See [[API REST Methods|REST methods for working with Orvos resources]]
+See "REST methods for working with Orvos resources":methods.html
 
-API endpoint base: @https://xyzzy.orvosapi.com/orvos/v1/jobs@
+API endpoint base: @https://xyzzy.arvados.org/arvados/v1/jobs@
 
 h2. Additional parameters for "Create" method
 
@@ -26,7 +26,7 @@ table(table table-bordered table-condensed).
 
 h2. Resource
 
-Each job has, in addition to the usual [[API Resources|attributes of Orvos resources]]:
+Each job has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
 |*Property name*|*Type*|*Description*|*Notes*|
