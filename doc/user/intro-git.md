@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: Using git
+title: "Intro: git"
 navorder: 4
 ---
 

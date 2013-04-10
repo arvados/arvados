@@ -1,0 +1,56 @@
+---
+layout: default
+navsection: userguide
+title: "Intro: Jobs"
+navorder: 8
+---
+
+h1. Intro: Jobs
+
+You can run MapReduce jobs by storing a job script in a git repository and creating a [job](api-Jobs.html).
+
+Batch jobs offer several advantages over running programs on your own local machine:
+
+* Increase concurrency by running tasks asynchronously, using many CPUs and network interfaces at once (especially beneficial for CPU-bound and I/O-bound tasks respectively).
+
+* Track inputs, outputs, and settings so you can verify that the inputs, settings, and sequence of programs you used to arrive at an output is really what you think it was. See [provenance](provenance.html).
+
+* Ensure that your programs and workflows are repeatable with different versions of your code, OS updates, etc.
+
+* Interrupt and resume long-running jobs consisting of many short tasks.
+
+* Maintain timing statistics automatically, so they're there when you want them.
+
+h3. Structure of a job
+
+A job consists of a number of tasks which can be executed asynchronously.
+
+A single batch job program, or "mr-function", executes each task of a given job.  The logic of a typical mr-function looks like this:
+
+* If this is the first task: examine the input, divide it into a number of asynchronous tasks, instruct the Job Manager to queue these tasks, output nothing, and indicate successful completion.
+
+* Otherwise, fetch a portion of the input from the cloud storage system, do some computation, store some output in the cloud, output a fragment of the output manifest, and indicate successful completion.
+
+When all job tasks have completed, the output fragments are assembled into a single output manifest.
+
+If a job task fails, it is automatically re-attempted.  If the same step fails 3 times, any tasks still running are allowed to complete, and the job is abandoned.
+
+h3. Developing and testing job scripts
+
+Usually, it makes sense to test your job script locally on small data sets.  When you are satisfied that it works, commit it to the git repository and run it in Arvados.
+
+Save your job script (say, @foo@) in @{git-repo}/job_scripts/foo@
+
+Test your function:
+
+<pre>
+arv-jobmanager revision={git-repo} script=foo ...
+</pre>
+
+The arguments to arv-jobmanager(1) are the same as the arguments to "arv jobs create" (see arv(1)) with these exceptions:
+
+* script_version=/path/to/repo specifies the path to the working copy of a repository instead of a git commit or tag.
+
+* resource constraints like nodes and RAM are not required.
+
+You will see the progress of the job in your terminal.  Press Control-C to create a checkpoint and stop the job.

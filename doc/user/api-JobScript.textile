@@ -1,0 +1,24 @@
+---
+layout: default
+navsection: userguide
+title: "Reference: Job scripts"
+navorder: 82
+---
+
+h1. Reference: Job scripts
+
+...how to understand and write them.
+
+h3. Job task execution environment
+
+A task's context is established in environment variables.
+
+table(table table-bordered table-condensed).
+|Environment variable|Description|
+|@JOB_UUID@|UUID of the job|
+|@JOB_PARAMETER_X@|Value of the @x@ parameter supplied when the job was created|
+|@TASK_UUID@|UUID of the task|
+|@TASK_SEQUENCE@|Task execution sequence|
+|@TASK_PARAMETER_X@|Value of the @x@ parameter supplied when the job task was created|
+|@ARVADOS_API_TOKEN@|Authentication token to use with API calls made by the job task|
+
