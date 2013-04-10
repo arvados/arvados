@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: api
-title: API Reference
+title: "Resource: Jobs"
 navorder: 10
 ---
 
