@@ -7,6 +7,10 @@ navorder: 4
 
 h1. Resources
 
+This page describes the common attributes of Arvados resources.
+
+The list of resource types is on the "front page of the API Reference":./.
+
 h2. Object IDs
 
 Object IDs are alphanumeric strings, unique across all installations (each installation has a unique prefix to prevent collisions).
