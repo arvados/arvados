@@ -13,9 +13,8 @@
       body {
       padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
       }
-      .nav-tabs.nav-stacked.affix > li.activesubnav > a {
-      background: #0088cc;
-      color: #ffffff;
+      .sidebar-nav {
+        padding: 9px 0;
       }
     </style>
     <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-responsive.min.css" rel="stylesheet">
@@ -46,22 +45,22 @@
       </div>
     </div>
 
-    <div class="container">
+    <div class="container-fluid">
 
       {% if page.navsection == 'top' %}
       {{ content }}
       {% else %}
-      <div class="row">
+      <div class="row-fluid">
         <div class="span3">
-          <ul class="nav nav-tabs nav-stacked affix span3">
-            {% for navorder in (0..100) %}
-            {% for p in site.pages %}
-            {% if p.navsection == page.navsection and p.navorder == navorder %}
-            <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
-            {% endif %}
-            {% endfor %}
-            {% endfor %}
-          </ul>
+          <div class="span3 affix">
+            <div class="well sidebar-nav">
+              <ul class="nav nav-list">
+                {% for navorder in (0..100) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
+                <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
+                {% endif %}{% endfor %}{% endfor %}
+              </ul>
+            </div>
+          </div>
         </div>
         <div class="span9"><div style="padding-left: 2em;">
           {{ content }}
