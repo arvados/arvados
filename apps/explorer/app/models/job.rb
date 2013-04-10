@@ -1,0 +1,2 @@
+class Job < OrvosBase
+end

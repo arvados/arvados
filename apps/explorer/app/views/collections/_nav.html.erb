@@ -1,0 +1,8 @@
+<ul class="nav nav-pills">
+  <% [['Table', collections_path],
+     ['Graph', collections_graph_path],
+     ['Inspect', @object ? collection_path(@object.uuid) : '#']].
+     each do |name, path| %>
+  <li class="<%= 'active' if request.fullpath == path %> <%= 'disabled' if path == '#' %>"><%= link_to name, path %></li>
+  <% end %>
+</ul>

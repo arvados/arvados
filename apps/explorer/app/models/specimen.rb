@@ -1,0 +1,2 @@
+class Specimen < OrvosBase
+end
