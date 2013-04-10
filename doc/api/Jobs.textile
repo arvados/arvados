@@ -1,0 +1,56 @@
+---
+layout: default
+navsection: api
+title: API Reference
+navorder: 10
+---
+
+h1. Jobs
+
+Applications submit compute jobs when:
+* Provenance is important, i.e., it is worth recording how the output was produced; or
+* Computation time is significant; or
+* The job management features are convenient (failure detection/recovery, regression testing, etc).
+
+h2. Methods
+
+See [[API REST Methods|REST methods for working with Orvos resources]]
+
+API endpoint base: @https://xyzzy.orvosapi.com/orvos/v1/jobs@
+
+h2. Additional parameters for "Create" method
+
+table(table table-bordered table-condensed).
+|*Parameter name*|*Type*|*Description*|
+|allow_duplicate|boolean|If true, a new job is submitted even if an identical job has already been submitted (and has not failed). If false or not supplied, a new job will _not_ be submitted and the existing job will be returned in the API response.|
+
+h2. Resource
+
+Each job has, in addition to the usual [[API Resources|attributes of Orvos resources]]:
+
+table(table table-bordered table-condensed).
+|*Property name*|*Type*|*Description*|*Notes*|
+|submit_id|string|Unique ID provided by client when job was submitted|Optional. Can be used by client to ensure idempotence|
+|priority|string|||
+|resource_limits{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
+|script_name|string|Name of MapReduce script||
+|script_parameters{}|list|Parameters passed to MapReduce script||
+|script_version|string|git commit/tree used when running the job|If the job has not started, this can be a tag/branch instead of an unambiguous commit id.|
+|cancelled_by_client|string|API client ID|Is null if job has not been cancelled|
+|cancelled_by_user|string|Authenticated user ID|Is null if job has not been cancelled|
+|cancelled_at|string|When job was cancelled|Is null if job has not been cancelled|
+|started_at|datetime|When job started running|Is null if job has not [yet] started|
+|finished_at|datetime|When job finished running|Is null if job has not [yet] finished|
+|running|boolean|Whether the job is running||
+|success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
+|is_locked_by|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
+
+h3. Resource limits
+
+table(table table-bordered table-condensed).
+|*Key*|*Type*|*Description*|*Implemented*|
+|min_nodes|integer||&#x2713;|
+|max_nodes|integer|||
+|max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#x2713;|
+|min_ram_per_task|integer|Minimum real memory (KiB) per task||
+|min_ram_per_node|integer|Minimum real memory (KiB) per node||
