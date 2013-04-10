@@ -9,9 +9,11 @@ navorder: 0
 
 ### Concepts
 
-* Each API uses the same [authentication mechanism](authentication.html)
-* Resources in requests and responses adhere to a [common structure](resources.html)
-* API transactions use common [REST methods](methods.html)
+* Each API uses the same [authentication mechanism](authentication.html).
+* Resources in requests and responses adhere to a [common structure](resources.html).
+* API transactions use common [REST methods](methods.html).
+* API transactions are subject to a [permission model](permission-model.html).
+* [Job tasks](job-task.html) use some special API features.
 
 ### Resources
 
