@@ -17,20 +17,20 @@ navorder: 0
 
 ### Resources
 
-* [ApiClients](ApiClients.html)
-* [ApiClientAuthorizations](ApiClientAuthorizations.html)
+* ApiClients
+* ApiClientAuthorizations
 * [Collections](Collections.html)
-* [Files](Files.html)
+* Files
 * [Jobs](Jobs.html)
-* [JobTasks](JobTasks.html)
+* JobTasks
 * [Links](Links.html)
-* [Logs](Logs.html)
-* [People](People.html)
-* [PipelineTemplates](PipelineTemplates.html)
-* [PipelineInstances](PipelineInstances.html)
-* [Groups](Groups.html)
-* [Specimens](Specimens.html)
-* [Users](Users.html)
-* [Variants](Variants.html)
-* [VariantAnnotations](VariantAnnotations.html)
-* [VariantCalls](VariantCalls.html)
+* Logs
+* People
+* PipelineTemplates
+* PipelineInstances
+* Groups
+* Specimens
+* Users
+* Variants
+* VariantAnnotations
+* VariantCalls
