@@ -11,7 +11,25 @@
     <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap.min.css" rel="stylesheet">
     <style>
       body {
-      padding-top: 41px; /* 60px to make the container go all the way to the bottom of the topbar */
+      padding-top: 41px;
+      }
+      div.frontpagehero {
+      background: #fff;
+      height: 270px;
+      background-image: url('images/doc-bg.jpg');
+      background-repeat: no-repeat;
+      color: #fff;
+      margin-top:0;
+      margin-left:0;
+      z-index: -1000;
+      opacity: 0.8;
+      }
+      @media (max-width: 979px) {
+      div.frontpagehero {
+      margin-left: -20px;
+      margin-right: -20px;
+      padding-left: 20px;
+      }
       }
       .sidebar-nav {
         padding: 9px 0;
@@ -37,7 +55,7 @@
         <script src="../assets/js/html5shiv.js"></script>
         <![endif]-->
   </head>
-  <body>
+  <body class="nopad">
     <div class="navbar navbar-inverse navbar-fixed-top" style="margin-bottom:0;">
       <div class="navbar-inner">
         <div class="container">
