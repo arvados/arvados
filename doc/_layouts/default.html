@@ -59,11 +59,11 @@
       </div>
     </div>
 
-    <div class="container-fluid">
+    {% if page.navsection == 'top' %}
+    {{ content }}
+    {% else %}
 
-      {% if page.navsection == 'top' %}
-      {{ content }}
-      {% else %}
+    <div class="container-fluid">
       <div class="row-fluid">
         <div class="span3">
           <div class="span3 affix">
@@ -80,11 +80,11 @@
           {{ content }}
         </div></div>
       </div>
-      {% endif %}
 
       <div style="height: 2em"></div>
 
     </div>
+    {% endif %}
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/js/bootstrap.min.js"></script>
   </body>
