@@ -5,6 +5,8 @@ title: Provenance
 navorder: 8
 ---
 
+{% include alert-stub.html %}
+
 # Provenance
 
 Arvados provides features for tracking and inspecting provenance,

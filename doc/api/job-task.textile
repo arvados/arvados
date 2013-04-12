@@ -5,6 +5,8 @@ title: Job tasks
 navorder: 5
 ---
 
+{% include alert-incomplete.html %}
+
 h1. Job scripts
 
 ...how to understand and write them.

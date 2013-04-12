@@ -5,6 +5,8 @@ title: A sample pipeline
 navorder: 10
 ---
 
+{% include alert-stub.html %}
+
 # A sample pipeline
 
 You should do this.

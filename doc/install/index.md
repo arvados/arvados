@@ -5,6 +5,8 @@ title: Overview
 navorder: 0
 ---
 
+{% include alert-stub.html %}
+
 # Installation Overview
 
 1. Set up a cluster, or use Amazon

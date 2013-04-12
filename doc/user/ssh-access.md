@@ -56,6 +56,8 @@ what your account name is for each one.)
 
 ### Setup instructions for PuTTY
 
+{% include alert-stub.html %}
+
 If you use Microsoft Windows, you should download the PuTTY software.
 
 * Details about configuring PuTTY would be nice here.

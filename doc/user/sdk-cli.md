@@ -5,6 +5,8 @@ title: Command line SDK
 navorder: 10
 ---
 
+{% include alert-stub.html %}
+
 # Command line SDK
 
 If you are logged in to an Arvados VM, the command line SDK is

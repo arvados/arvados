@@ -5,6 +5,8 @@ title: Overview
 navorder: 0
 ---
 
+{% include alert-stub.html %}
+
 # Administration Overview
 
 Unlike other users, administrators

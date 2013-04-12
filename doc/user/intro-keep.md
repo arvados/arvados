@@ -83,6 +83,9 @@ Output:
 
     foo
 
+
+{% include alert-stub.html %}
+
 ### Writing a collection
 
 ### Reading a file from a collection

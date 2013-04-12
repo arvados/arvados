@@ -5,6 +5,8 @@ title: "Intro: git"
 navorder: 4
 ---
 
+{% include alert-stub.html %}
+
 # Using git
 
 Git is a revision control system. There are lots of resources for
