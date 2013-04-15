@@ -1,22 +1,22 @@
-class OrvosBase < ActiveRecord::Base
+class ArvadosBase < ActiveRecord::Base
   self.abstract_class = true
   attr_accessor :attribute_sortkey
 
   def self.uuid_infix_object_kind
     @@uuid_infix_object_kind ||= {
-      '4zz18' => 'orvos#collection',
-      'tpzed' => 'orvos#user',
-      'ozdt8' => 'orvos#api_client',
-      '8i9sb' => 'orvos#job',
-      'o0j2j' => 'orvos#link',
-      '57u5n' => 'orvos#log',
-      'j58dm' => 'orvos#specimen',
-      'p5p6p' => 'orvos#pipeline_template',
-      'mxsvm' => 'orvos#pipeline_template', # legacy Pipeline objects
-      'd1hrv' => 'orvos#pipeline_instance',
-      'uo14g' => 'orvos#pipeline_instance', # legacy PipelineInstance objects
-      'j7d0g' => 'orvos#group',
-      'ldvyl' => 'orvos#group' # only needed for legacy Project objects
+      '4zz18' => 'arvados#collection',
+      'tpzed' => 'arvados#user',
+      'ozdt8' => 'arvados#api_client',
+      '8i9sb' => 'arvados#job',
+      'o0j2j' => 'arvados#link',
+      '57u5n' => 'arvados#log',
+      'j58dm' => 'arvados#specimen',
+      'p5p6p' => 'arvados#pipeline_template',
+      'mxsvm' => 'arvados#pipeline_template', # legacy Pipeline objects
+      'd1hrv' => 'arvados#pipeline_instance',
+      'uo14g' => 'arvados#pipeline_instance', # legacy PipelineInstance objects
+      'j7d0g' => 'arvados#group',
+      'ldvyl' => 'arvados#group' # only needed for legacy Project objects
     }
   end
 
@@ -43,8 +43,8 @@ class OrvosBase < ActiveRecord::Base
   def self.columns
     return @columns unless @columns.nil?
     @columns = []
-    return @columns if $orvos_api_client.orvos_schema[self.to_s.to_sym].nil?
-    $orvos_api_client.orvos_schema[self.to_s.to_sym].each do |coldef|
+    return @columns if $arvados_api_client.arvados_schema[self.to_s.to_sym].nil?
+    $arvados_api_client.arvados_schema[self.to_s.to_sym].each do |coldef|
       k = coldef[:name].to_sym
       if coldef[:type] == coldef[:type].downcase
         @columns << column(k, coldef[:type].to_sym)
@@ -68,16 +68,16 @@ class OrvosBase < ActiveRecord::Base
     new.private_reload(uuid)
   end
   def self.where(*args)
-    OrvosResourceList.new(self).where(*args)
+    ArvadosResourceList.new(self).where(*args)
   end
   def self.limit(*args)
-    OrvosResourceList.new(self).limit(*args)
+    ArvadosResourceList.new(self).limit(*args)
   end
   def self.eager(*args)
-    OrvosResourceList.new(self).eager(*args)
+    ArvadosResourceList.new(self).eager(*args)
   end
   def self.all(*args)
-    OrvosResourceList.new(self).all(*args)
+    ArvadosResourceList.new(self).all(*args)
   end
   def save
     obdata = {}
@@ -89,9 +89,9 @@ class OrvosBase < ActiveRecord::Base
     if etag
       postdata['_method'] = 'PUT'
       obdata.delete :uuid
-      resp = $orvos_api_client.api(self.class, '/' + uuid, postdata)
+      resp = $arvados_api_client.api(self.class, '/' + uuid, postdata)
     else
-      resp = $orvos_api_client.api(self.class, '', postdata)
+      resp = $arvados_api_client.api(self.class, '', postdata)
     end
     return false if !resp[:etag] || !resp[:uuid]
 
@@ -133,12 +133,12 @@ class OrvosBase < ActiveRecord::Base
         ok
       end
     end
-    @links = $orvos_api_client.api Link, '', { _method: 'GET', where: o, eager: true }
-    @links = $orvos_api_client.unpack_api_response(@links)
+    @links = $arvados_api_client.api Link, '', { _method: 'GET', where: o, eager: true }
+    @links = $arvados_api_client.unpack_api_response(@links)
   end
   def all_links
     return @all_links if @all_links
-    res = $orvos_api_client.api Link, '', {
+    res = $arvados_api_client.api Link, '', {
       _method: 'GET',
       where: {
         tail_kind: self.kind,
@@ -146,7 +146,7 @@ class OrvosBase < ActiveRecord::Base
       },
       eager: true
     }
-    @all_links = $orvos_api_client.unpack_api_response(res)
+    @all_links = $arvados_api_client.unpack_api_response(res)
   end
   def reload
     private_reload(self.uuid)
@@ -156,13 +156,13 @@ class OrvosBase < ActiveRecord::Base
     if uuid_or_hash.is_a? Hash
       hash = uuid_or_hash
     else
-      hash = $orvos_api_client.api(self.class, '/' + uuid_or_hash)
+      hash = $arvados_api_client.api(self.class, '/' + uuid_or_hash)
     end
     hash.each do |k,v|
       if self.respond_to?(k.to_s + '=')
         self.send(k.to_s + '=', v)
       else
-        # When OrvosApiClient#schema starts telling us what to expect
+        # When ArvadosApiClient#schema starts telling us what to expect
         # in API responses (not just the server side database
         # columns), this sort of awfulness can be avoided:
         self.instance_variable_set('@' + k.to_s, v)
@@ -188,7 +188,7 @@ class OrvosBase < ActiveRecord::Base
   end
 
   def self.resource_class_for_uuid(uuid, opts={})
-    if uuid.is_a? OrvosBase
+    if uuid.is_a? ArvadosBase
       return uuid.class
     end
     unless uuid.is_a? String
@@ -202,13 +202,13 @@ class OrvosBase < ActiveRecord::Base
     end
     resource_class = nil
     uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
-      resource_class ||= $orvos_api_client.
+      resource_class ||= $arvados_api_client.
         kind_class(self.uuid_infix_object_kind[re[1]])
     end
     if opts[:referring_object] and
         opts[:referring_attr] and
         opts[:referring_attr].match /_uuid$/
-      resource_class ||= $orvos_api_client.
+      resource_class ||= $arvados_api_client.
         kind_class(opts[:referring_object].
                    attributes[opts[:referring_attr].
                               sub(/_uuid$/, '_kind')])

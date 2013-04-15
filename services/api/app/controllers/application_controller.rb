@@ -275,7 +275,7 @@ class ApplicationController < ActionController::Base
 
   def render_list
     @object_list = {
-      :kind  => "orvos##{resource_name}List",
+      :kind  => "arvados##{resource_name}List",
       :etag => "",
       :self_link => "",
       :next_page_token => "",

@@ -1,4 +1,4 @@
-class Node < OrvosModel
+class Node < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
@@ -61,7 +61,7 @@ class Node < OrvosModel
     end
     self.last_ping_at = Time.now
 
-    @bypass_orvos_authorization = true
+    @bypass_arvados_authorization = true
 
     # Record IP address
     if self.ip_address.nil?
@@ -184,7 +184,7 @@ class Node < OrvosModel
   end
 
   def permission_to_update
-    @bypass_orvos_authorization or super
+    @bypass_arvados_authorization or super
   end
 
   def permission_to_create

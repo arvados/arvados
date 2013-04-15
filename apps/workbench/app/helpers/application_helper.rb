@@ -13,9 +13,9 @@ module ApplicationHelper
     cooked = raw + cooked
   end
 
-  def link_to_if_orvos_object(attrvalue, opts={}, style_opts={})
-    if (resource_class = OrvosBase::resource_class_for_uuid(attrvalue, opts))
-      link_uuid = attrvalue.is_a?(OrvosBase) ? attrvalue.uuid : attrvalue
+  def link_to_if_arvados_object(attrvalue, opts={}, style_opts={})
+    if (resource_class = ArvadosBase::resource_class_for_uuid(attrvalue, opts))
+      link_uuid = attrvalue.is_a?(ArvadosBase) ? attrvalue.uuid : attrvalue
       link_name = opts[:link_text]
       if !link_name
         link_name = link_uuid

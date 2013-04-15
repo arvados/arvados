@@ -8,7 +8,7 @@ module KindAndEtag
   end
 
   def kind
-    'orvos#' + self.class.to_s.underscore
+    'arvados#' + self.class.to_s.underscore
   end
 
   def etag

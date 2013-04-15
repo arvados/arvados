@@ -1,4 +1,4 @@
-class Orvos::V1::LinksController < ApplicationController
+class Arvados::V1::LinksController < ApplicationController
   def index
     if params[:tail_uuid]
       params[:where] = Oj.load(params[:where]) if params[:where].is_a?(String)

@@ -1,4 +1,4 @@
-class OrvosModel < ActiveRecord::Base
+class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
   include CurrentApiClient      # current_user, current_api_client, etc.
@@ -14,7 +14,7 @@ class OrvosModel < ActiveRecord::Base
   validate :ensure_serialized_attribute_type
 
   def self.kind_class(kind)
-    kind.match(/^orvos\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
+    kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
   end
 
   def eager_load_associations

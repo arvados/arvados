@@ -58,12 +58,12 @@ module PipelineInstancesHelper
         end
       end
       pj[:job_id] = pj[:job][:uuid]
-      pj[:job_link] = link_to_if_orvos_object pj[:job][:uuid]
+      pj[:job_link] = link_to_if_arvados_object pj[:job][:uuid]
       pj[:script_version] = pj[:job][:script_version]
       pj[:output] = pj[:job][:output]
       pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
       pj[:progress_bar] = raw("<div class=\"progress\" style=\"width:100px\"><div class=\"bar bar-success\" style=\"width:#{pj[:percent_done]}%\"></div><div class=\"bar\" style=\"width:#{pj[:percent_running]}%\"></div></div>")
-      pj[:output_link] = link_to_if_orvos_object pj[:output]
+      pj[:output_link] = link_to_if_arvados_object pj[:output]
       ret << pj
     end
     ret
@@ -113,7 +113,7 @@ module PipelineInstancesHelper
       pj[:output] = step[:output_data_locator]
       pj[:finished_at] = (Time.parse(step[:warehousejob][:finishtime]) rescue nil)
       pj[:progress_bar] = raw("<div class=\"progress\" style=\"width:100px\"><div class=\"bar\" style=\"width:#{pj[:progress]*100}%\"></div></div>")
-      pj[:output_link] = link_to_if_orvos_object pj[:output]
+      pj[:output_link] = link_to_if_arvados_object pj[:output]
       ret << pj
     end
     ret

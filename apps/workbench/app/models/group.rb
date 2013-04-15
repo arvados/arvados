@@ -1,2 +1,2 @@
-class Group < OrvosBase
+class Group < ArvadosBase
 end

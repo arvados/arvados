@@ -1,10 +1,10 @@
-class Orvos::V1::NodesController < ApplicationController
+class Arvados::V1::NodesController < ApplicationController
   skip_before_filter :login_required, :only => :ping
 
   def create
     @object = Node.new
     @object.save!
-    @object.start!(lambda { |h| orvos_v1_ping_node_url(h) })
+    @object.start!(lambda { |h| arvados_v1_ping_node_url(h) })
     show
   end
 

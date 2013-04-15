@@ -1,4 +1,4 @@
-Vcffarm::Application.configure do
+ArvadosWorkbench::Application.configure do
   # Settings specified here will take precedence over those in config/application.rb
 
   # The test environment is used exclusively to run your application's
@@ -35,11 +35,11 @@ Vcffarm::Application.configure do
   # Print deprecation notices to the stderr
   config.active_support.deprecation = :stderr
 
-  config.orvos_login_base = 'http://orvos/login'
-  config.orvos_v1_base = 'https://orvos/orvos/v1'
+  config.arvados_login_base = 'http://arvados.local/login'
+  config.arvados_v1_base = 'https://arvados.local/arvados/v1'
 
-  config.data_import_dir = '/data/vcffarm-upload'
-  config.data_export_dir = '/data/vcffarm-download'
+  config.data_import_dir = '/data/arvados-workbench-upload'
+  config.data_export_dir = '/data/arvados-workbench-download'
 
   # Authentication stub: hard code pre-approved API tokens.
   # config.accept_api_token = { rand(2**256).to_s(36) => true }
@@ -47,5 +47,5 @@ Vcffarm::Application.configure do
 
   config.vcf_pipeline_uuid = '9ujm1-mxsvm-o62u4mdoxvs0ckp'
 
-  config.site_name = 'vcffarm.example.com'
+  config.site_name = 'arvados-workbench.example.com'
 end

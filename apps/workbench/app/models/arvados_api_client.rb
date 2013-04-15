@@ -1,11 +1,11 @@
-class OrvosApiClient
+class ArvadosApiClient
   class NotLoggedInException < Exception
   end
   def api(resources_kind, action, data=nil)
-    orvos_api_token = Thread.current[:orvos_api_token]
-    orvos_api_token = '' if orvos_api_token.nil?
+    arvados_api_token = Thread.current[:arvados_api_token]
+    arvados_api_token = '' if arvados_api_token.nil?
     dataargs = ['--data-urlencode',
-                "api_token=#{orvos_api_token}",
+                "api_token=#{arvados_api_token}",
                 '--header',
                 'Accept:application/json']
     if !data.nil?
@@ -24,7 +24,7 @@ class OrvosApiClient
     end
     json = nil
     resources_kind = class_kind(resources_kind).pluralize if resources_kind.is_a? Class
-    url = "#{self.orvos_v1_base}/#{resources_kind}#{action}"
+    url = "#{self.arvados_v1_base}/#{resources_kind}#{action}"
     IO.popen([ENV,
               'curl',
               '-s',
@@ -67,11 +67,11 @@ class OrvosApiClient
     end
   end
 
-  def orvos_login_url(params={})
-    if Rails.configuration.respond_to? :orvos_login_base
-      uri = Rails.configuration.orvos_login_base
+  def arvados_login_url(params={})
+    if Rails.configuration.respond_to? :arvados_login_base
+      uri = Rails.configuration.arvados_login_base
     else
-      uri = self.orvos_v1_base.sub(%r{/orvos/v\d+.*}, '/login')
+      uri = self.arvados_v1_base.sub(%r{/arvados/v\d+.*}, '/login')
     end
     if params.size > 0
       uri += '?' << params.collect { |k,v|
@@ -80,20 +80,20 @@ class OrvosApiClient
     end
   end
 
-  def orvos_logout_url(params={})
-    orvos_login_url(params).sub('/login','/logout')
+  def arvados_logout_url(params={})
+    arvados_login_url(params).sub('/login','/logout')
   end
 
-  def orvos_v1_base
-    Rails.configuration.orvos_v1_base
+  def arvados_v1_base
+    Rails.configuration.arvados_v1_base
   end
 
-  def orvos_schema
-    @orvos_schema ||= api 'schema', ''
+  def arvados_schema
+    @arvados_schema ||= api 'schema', ''
   end
 
   def kind_class(kind)
-    kind.match(/^orvos\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
+    kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
   end
 
   def class_kind(resource_class)

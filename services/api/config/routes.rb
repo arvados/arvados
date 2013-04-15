@@ -73,11 +73,11 @@ Server::Application.routes.draw do
   # Note: This route will make all actions in every controller accessible via GET requests.
   # match ':controller(/:action(/:id(.:format)))'
 
-  namespace :orvos do
+  namespace :arvados do
     namespace :v1 do
       match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
-      match '/links/from/:tail_uuid' => 'links#index', :as => :orvos_v1_links_from
+      match '/links/from/:tail_uuid' => 'links#index', :as => :arvados_v1_links_from
       match '/users/current' => 'users#current'
       resources :collections
       resources :links
@@ -101,11 +101,11 @@ Server::Application.routes.draw do
   match '/login', :to => 'user_sessions#login'
   match '/logout', :to => 'user_sessions#logout'
 
-  match '/discovery/v1/apis/orvos/v1/rest', :to => 'orvos/v1/schema#discovery_rest_description'
+  match '/discovery/v1/apis/arvados/v1/rest', :to => 'arvados/v1/schema#discovery_rest_description'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
-  match '*a', :to => 'orvos/v1/links#render_not_found'
+  match '*a', :to => 'arvados/v1/links#render_not_found'
 
   root :to => 'static#home'
 end

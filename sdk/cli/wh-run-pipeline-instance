@@ -60,11 +60,11 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
-$orvos_api_version = ENV['ORVOS_API_VERSION'] || 'v1'
-$orvos_api_host = ENV['ORVOS_API_HOST'] or
-  abort "#{$0}: fatal: ORVOS_API_HOST environment variable not set."
-$orvos_api_token = ENV['ORVOS_API_TOKEN'] or
-  abort "#{$0}: fatal: ORVOS_API_TOKEN environment variable not set."
+$arvados_api_version = ENV['ARVADOS_API_VERSION'] || 'v1'
+$arvados_api_host = ENV['ARVADOS_API_HOST'] or
+  abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
+$arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
+  abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
 
 begin
   require 'rubygems'
@@ -93,7 +93,7 @@ module Kernel
   end
 end
 
-if $orvos_api_host.match /local/
+if $arvados_api_host.match /local/
   # You probably don't care about SSL certificate checks if you're
   # testing with a dev server.
   suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
@@ -174,17 +174,17 @@ end
 # Set up the API client.
 
 $client ||= Google::APIClient.
-  new(:host => $orvos_api_host,
+  new(:host => $arvados_api_host,
       :application_name => File.split($0).last,
       :application_version => $application_version.to_s)
-$orvos = $client.discovered_api('orvos', $orvos_api_version)
+$arvados = $client.discovered_api('arvados', $arvados_api_version)
 
 
 class PipelineInstance
   def self.find(uuid)
-    result = $client.execute(:api_method => $orvos.pipeline_instances.get,
+    result = $client.execute(:api_method => $arvados.pipeline_instances.get,
                              :parameters => {
-                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :uuid => uuid
                              },
                              :authenticated => false)
@@ -198,9 +198,9 @@ class PipelineInstance
     end
   end
   def self.create(attributes)
-    result = $client.execute(:api_method => $orvos.pipeline_instances.create,
+    result = $client.execute(:api_method => $arvados.pipeline_instances.create,
                              :parameters => {
-                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :pipeline_instance => attributes.to_json
                              },
                              :authenticated => false)
@@ -212,9 +212,9 @@ class PipelineInstance
     self.new(j)
   end
   def save
-    result = $client.execute(:api_method => $orvos.pipeline_instances.update,
+    result = $client.execute(:api_method => $arvados.pipeline_instances.update,
                              :parameters => {
-                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :uuid => @pi[:uuid],
                                :pipeline_instance => @attributes_to_update.to_json
                              },
@@ -245,18 +245,18 @@ end
 class JobCache
   def self.get(uuid)
     @cache ||= {}
-    result = $client.execute(:api_method => $orvos.jobs.get,
+    result = $client.execute(:api_method => $arvados.jobs.get,
                              :parameters => {
-                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :uuid => uuid
                              },
                              :authenticated => false)
     @cache[uuid] = JSON.parse result.body, :symbolize_names => true
   end
   def self.where(conditions)
-    result = $client.execute(:api_method => $orvos.jobs.list,
+    result = $client.execute(:api_method => $arvados.jobs.list,
                              :parameters => {
-                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :limit => 10000,
                                :where => conditions.to_json
                              },
@@ -270,9 +270,9 @@ class JobCache
   end
   def self.create(attributes)
     @cache ||= {}
-    result = $client.execute(:api_method => $orvos.jobs.create,
+    result = $client.execute(:api_method => $arvados.jobs.create,
                              :parameters => {
-                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :job => attributes.to_json
                              },
                              :authenticated => false)
@@ -294,9 +294,9 @@ class WhRunPipelineInstance
   end
 
   def fetch_template(template_uuid)
-    result = $client.execute(:api_method => $orvos.pipeline_templates.get,
+    result = $client.execute(:api_method => $arvados.pipeline_templates.get,
                              :parameters => {
-                               :api_token => ENV['ORVOS_API_TOKEN'],
+                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :uuid => template_uuid
                              },
                              :authenticated => false)

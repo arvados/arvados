@@ -1,2 +1,2 @@
-class Job < OrvosBase
+class Job < ArvadosBase
 end

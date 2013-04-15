@@ -1,2 +1,2 @@
-class JobTask < OrvosBase
+class JobTask < ArvadosBase
 end

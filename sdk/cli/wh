@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Orvos cli client
+# Arvados cli client
 #
 # Ward Vandewege <ward@clinicalfuture.com>
 
@@ -10,11 +10,11 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
-ENV['ORVOS_API_VERSION'] ||= 'v1'
+ENV['ARVADOS_API_VERSION'] ||= 'v1'
 
-if not ENV.include?('ORVOS_API_HOST') or not ENV.include?('ORVOS_API_TOKEN') then
+if not ENV.include?('ARVADOS_API_HOST') or not ENV.include?('ARVADOS_API_TOKEN') then
   abort <<-EOS
-ORVOS_API_HOST and ORVOS_API_TOKEN need to be defined as environment variables.
+ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables.
   EOS
 end
 
@@ -63,8 +63,8 @@ class Google::APIClient
  end
 end
 
-client = Google::APIClient.new(:host => ENV['ORVOS_API_HOST'], :application_name => 'wh-cli', :application_version => '1.0')
-orvos = client.discovered_api('orvos', ENV['ORVOS_API_VERSION'])
+client = Google::APIClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'wh-cli', :application_version => '1.0')
+arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
 
 def to_boolean(s)
   !!(s =~ /^(true|t|yes|y|1)$/i)
@@ -78,7 +78,7 @@ def parse_arguments(discovery_document)
   end
 
   global_opts = Trollop::options do
-    banner "orvos cli client"
+    banner "arvados cli client"
     opt :dry_run, "Don't actually do anything", :short => "-n"
     stop_on sub_commands
   end
@@ -136,7 +136,7 @@ def parse_arguments(discovery_document)
     end
     
   else
-    banner = "\nThis Orvos cluster supports the following api commands:\n\n"
+    banner = "\nThis Arvados cluster supports the following api commands:\n\n"
     discovery_document["resources"].each do |k,v|
       description = ''
       if discovery_document["schemas"].include?(k.singularize.capitalize) and 
@@ -159,13 +159,13 @@ def parse_arguments(discovery_document)
   return cmd, method, method_opts, ARGV
 end
 
-cmd, method, method_opts, remaining_opts = parse_arguments(orvos.discovery_document)
+cmd, method, method_opts, remaining_opts = parse_arguments(arvados.discovery_document)
 
-api_method = 'orvos.' + cmd + '.' + method
+api_method = 'arvados.' + cmd + '.' + method
 
 m_o = method_opts.reject {|key,value| key =~ /_given$|^json$|^jsonhuman$|^help$/ or value == nil }
 
-result = client.execute :api_method => eval(api_method), :parameters => { :api_token => ENV['ORVOS_API_TOKEN'] }.merge(m_o), :authenticated => false
+result = client.execute :api_method => eval(api_method), :parameters => { :api_token => ENV['ARVADOS_API_TOKEN'] }.merge(m_o), :authenticated => false
 results = JSON.parse result.body
 
 if results["errors"] then

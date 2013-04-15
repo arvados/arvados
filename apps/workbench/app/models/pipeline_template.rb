@@ -1,2 +1,2 @@
-class PipelineTemplate < OrvosBase
+class PipelineTemplate < ArvadosBase
 end

@@ -39,7 +39,7 @@
               <% else %>
               <span class="badge" title="queued">&#x2709;</span>
               <% end %>
-	      <%= link_to_if_orvos_object j.uuid %>
+	      <%= link_to_if_arvados_object j.uuid %>
             </td>
             <td>
               <% if j.started_at and not j.finished_at %>
@@ -92,11 +92,11 @@
           </td></tr>
           <% j.script_parameters.sort.each do |k,v| %>
           <tr>
-            <td><%= k %></td><td><%= link_to_if_orvos_object v %></td>
+            <td><%= k %></td><td><%= link_to_if_arvados_object v %></td>
           </tr>
           <% end %>
           <tr>
-            <td>output</td><td><%= link_to_if_orvos_object j.output %></td>
+            <td>output</td><td><%= link_to_if_arvados_object j.output %></td>
           </tr>
         </table>
       </td><td>

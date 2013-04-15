@@ -4,4 +4,4 @@
 
 require File.expand_path('../config/application', __FILE__)
 
-Vcffarm::Application.load_tasks
+ArvadosWorkbench::Application.load_tasks

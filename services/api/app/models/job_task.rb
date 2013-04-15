@@ -1,4 +1,4 @@
-class JobTask < OrvosModel
+class JobTask < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

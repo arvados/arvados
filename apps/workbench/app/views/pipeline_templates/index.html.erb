@@ -18,11 +18,11 @@
 
     <tr>
       <td>
-        <%= link_to_if_orvos_object ob %>
+        <%= link_to_if_arvados_object ob %>
       </td><td>
         <%= ob.name %>
       </td><td>
-        <%= link_to_if_orvos_object ob.owner %>
+        <%= link_to_if_arvados_object ob.owner %>
       </td><td>
         <%= ob.components.collect { |k,v| k.to_s }.join(", ") %>
       </td>

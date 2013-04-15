@@ -5,7 +5,7 @@
 
 <div class="tab-content">
   <div id="properties" class="tab-pane fade in active">
-    <%= render partial: 'application/orvos_object' %>
+    <%= render partial: 'application/arvados_object' %>
   </div>
   <div id="collections" class="tab-pane fade">
     <table class="table table-condensed table-hover">
@@ -29,7 +29,7 @@
             <%= name %><br />
             <% end %>
           </td><td>
-            <%= link_to_if_orvos_object collection %>
+            <%= link_to_if_arvados_object collection %>
           </td><td>
             <% if @keep_flag[collection.uuid] %>
             <span class="badge badge-success">&#x2714;</span>

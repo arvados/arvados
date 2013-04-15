@@ -1,4 +1,4 @@
-class Log < OrvosModel
+class Log < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

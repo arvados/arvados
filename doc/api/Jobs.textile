@@ -14,7 +14,7 @@ Applications submit compute jobs when:
 
 h2. Methods
 
-See "REST methods for working with Orvos resources":methods.html
+See "REST methods for working with Arvados resources":methods.html
 
 API endpoint base: @https://xyzzy.arvados.org/arvados/v1/jobs@
 

@@ -1,4 +1,4 @@
-class User < OrvosModel
+class User < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
@@ -80,7 +80,7 @@ class User < OrvosModel
         Link.where('tail_uuid in (?) and link_class = ? and head_kind = ?',
                    lookup_uuids,
                    'permission',
-                   'orvos#group').each do |link|
+                   'arvados#group').each do |link|
           unless done.has_key? link.head_uuid
             todo[link.head_uuid] = true
           end

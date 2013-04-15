@@ -1,2 +1,2 @@
-class Specimen < OrvosBase
+class Specimen < ArvadosBase
 end

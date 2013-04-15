@@ -1,4 +1,4 @@
-Vcffarm::Application.configure do
+ArvadosWorkbench::Application.configure do
   # Settings specified here will take precedence over those in config/application.rb
 
   # In the development environment your application's code is reloaded on
@@ -35,13 +35,13 @@ Vcffarm::Application.configure do
   # Expands the lines which load the assets
   config.assets.debug = true
 
-  config.orvos_login_base = 'http://orvos.local/login'
-  config.orvos_v1_base = 'http://orvos.local/orvos/v1'
+  config.arvados_login_base = 'http://arvados.local/login'
+  config.arvados_v1_base = 'http://arvados.local/arvados/v1'
 
-  config.data_import_dir = '/tmp/vcffarm-upload'
-  config.data_export_dir = '/tmp/vcffarm-download'
+  config.data_import_dir = '/tmp/arvados-workbench-upload'
+  config.data_export_dir = '/tmp/arvados-workbench-download'
 
   config.secret_token = File.read('config/.secret_token') if File.exist? 'config/.secret_token'
 
-  config.site_name = 'vcffarm.example.com'
+  config.site_name = 'arvados-workbench.example.com'
 end

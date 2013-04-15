@@ -1,4 +1,4 @@
-Vcffarm::Application.configure do
+ArvadosWorkbench::Application.configure do
   # Settings specified here will take precedence over those in config/application.rb
 
   # Code is not reloaded between requests
@@ -65,11 +65,11 @@ Vcffarm::Application.configure do
   # with SQLite, MySQL, and PostgreSQL)
   # config.active_record.auto_explain_threshold_in_seconds = 0.5
 
-  config.orvos_login_base = 'https://9ujm1.orvosapi.com/login'
-  config.orvos_v1_base = 'https://9ujm1.orvosapi.com/orvos/v1'
+  config.arvados_login_base = 'https://arvados.local/login'
+  config.arvados_v1_base = 'https://arvados.local/arvados/v1'
 
-  config.data_import_dir = '/data/vcffarm-upload/data'
-  config.data_export_dir = '/data/vcffarm-download/data'
+  config.data_import_dir = '/data/arvados-workbench-upload/data'
+  config.data_export_dir = '/data/arvados-workbench-download/data'
 
   # Authentication stub: hard code pre-approved API tokens.
   # config.accept_api_token = { rand(2**256).to_s(36) => true }
@@ -77,5 +77,5 @@ Vcffarm::Application.configure do
 
   config.vcf_pipeline_uuid = '9ujm1-mxsvm-o62u4mdoxvs0ckp'
 
-  config.site_name = 'vcffarm.example.com'
+  config.site_name = 'arvados-workbench.example.com'
 end

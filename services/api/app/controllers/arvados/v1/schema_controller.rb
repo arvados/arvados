@@ -1,9 +1,9 @@
-class Orvos::V1::SchemaController < ApplicationController
+class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :find_object_by_uuid
   skip_before_filter :login_required
 
   def show
-    classes = Rails.cache.fetch 'orvos_v1_schema' do
+    classes = Rails.cache.fetch 'arvados_v1_schema' do
       Rails.application.eager_load!
       classes = {}
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
@@ -23,23 +23,23 @@ class Orvos::V1::SchemaController < ApplicationController
   end
 
   def discovery_rest_description
-    discovery = Rails.cache.fetch 'orvos_v1_rest_discovery' do
+    discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
       discovery = {
         kind: "discovery#restDescription",
         discoveryVersion: "v1",
-        id: "orvos:v1",
-        name: "orvos",
+        id: "arvados:v1",
+        name: "arvados",
         version: "v1",
         revision: "20130226",
-        title: "Orvos API",
-        description: "The API to interact with Orvos.",
-        documentationLink: "https://redmine.clinicalfuture.com/projects/orvos/",
+        title: "Arvados API",
+        description: "The API to interact with Arvados.",
+        documentationLink: "https://redmine.clinicalfuture.com/projects/arvados/",
         protocol: "rest",
-        baseUrl: root_url + "/orvos/v1/",
-        basePath: "/orvos/v1/",
+        baseUrl: root_url + "/arvados/v1/",
+        basePath: "/arvados/v1/",
         rootUrl: root_url,
-        servicePath: "orvos/v1/",
+        servicePath: "arvados/v1/",
         batchPath: "batch",
         parameters: {
           alt: {
@@ -73,10 +73,10 @@ class Orvos::V1::SchemaController < ApplicationController
         auth: {
           oauth2: {
             scopes: {
-              "https://api.clinicalfuture.com/auth/orvos" => {
+              "https://api.clinicalfuture.com/auth/arvados" => {
                 description: "View and manage objects"
               },
-              "https://api.clinicalfuture.com/auth/orvos.readonly" => {
+              "https://api.clinicalfuture.com/auth/arvados.readonly" => {
                 description: "View objects"
               }
             }
@@ -110,8 +110,8 @@ class Orvos::V1::SchemaController < ApplicationController
           properties: {
             kind: {
               type: "string",
-              description: "Object type. Always orvos##{k.to_s.camelcase(:lower)}List.",
-              default: "orvos##{k.to_s.camelcase(:lower)}List"
+              description: "Object type. Always arvados##{k.to_s.camelcase(:lower)}List.",
+              default: "arvados##{k.to_s.camelcase(:lower)}List"
             },
             etag: {
               type: "string",
@@ -156,7 +156,7 @@ class Orvos::V1::SchemaController < ApplicationController
         discovery[:resources][k.to_s.underscore.pluralize] = {
           methods: {
             get: {
-              id: "orvos.#{k.to_s.underscore.pluralize}.get",
+              id: "arvados.#{k.to_s.underscore.pluralize}.get",
               path: "#{k.to_s.underscore.pluralize}/{uuid}",
               httpMethod: "GET",
               description: "Gets a #{k.to_s}'s metadata by UUID.",
@@ -175,12 +175,12 @@ class Orvos::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/orvos",
-                       "https://api.clinicalfuture.com/auth/orvos.readonly"
+                       "https://api.clinicalfuture.com/auth/arvados",
+                       "https://api.clinicalfuture.com/auth/arvados.readonly"
                       ]
             },
             list: {
-              id: "orvos.#{k.to_s.underscore.pluralize}.list",
+              id: "arvados.#{k.to_s.underscore.pluralize}.list",
               path: k.to_s.underscore.pluralize,
               httpMethod: "GET",
               description: "List #{k.to_s.underscore.pluralize}.",
@@ -208,12 +208,12 @@ class Orvos::V1::SchemaController < ApplicationController
                 "$ref" => "#{k.to_s}List"
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/orvos",
-                       "https://api.clinicalfuture.com/auth/orvos.readonly"
+                       "https://api.clinicalfuture.com/auth/arvados",
+                       "https://api.clinicalfuture.com/auth/arvados.readonly"
                       ]
             },
             create: {
-              id: "orvos.#{k.to_s.underscore.pluralize}.create",
+              id: "arvados.#{k.to_s.underscore.pluralize}.create",
               path: "#{k.to_s.underscore.pluralize}",
               httpMethod: "POST",
               description: "Create a new #{k.to_s}.",
@@ -232,11 +232,11 @@ class Orvos::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/orvos"
+                       "https://api.clinicalfuture.com/auth/arvados"
                       ]
             },
             update: {
-              id: "orvos.#{k.to_s.underscore.pluralize}.update",
+              id: "arvados.#{k.to_s.underscore.pluralize}.update",
               path: "#{k.to_s.underscore.pluralize}/{uuid}",
               httpMethod: "PUT",
               description: "Update attributes of an existing #{k.to_s}.",
@@ -261,11 +261,11 @@ class Orvos::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/orvos"
+                       "https://api.clinicalfuture.com/auth/arvados"
                       ]
             },
             delete: {
-              id: "orvos.#{k.to_s.underscore.pluralize}.delete",
+              id: "arvados.#{k.to_s.underscore.pluralize}.delete",
               path: "#{k.to_s.underscore.pluralize}/{uuid}",
               httpMethod: "DELETE",
               description: "Delete an existing #{k.to_s}.",
@@ -281,7 +281,7 @@ class Orvos::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/orvos"
+                       "https://api.clinicalfuture.com/auth/arvados"
                       ]
             }
           }

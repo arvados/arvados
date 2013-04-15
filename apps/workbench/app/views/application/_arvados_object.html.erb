@@ -3,7 +3,7 @@
   </thead>
   <tbody>
     <% @object.attributes_for_display.each do |attr, attrvalue| %>
-    <%= render partial: 'application/orvos_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
+    <%= render partial: 'application/arvados_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
     <% end %>
   </tbody>
 </table>

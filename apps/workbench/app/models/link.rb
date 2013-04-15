@@ -1,4 +1,4 @@
-class Link < OrvosBase
+class Link < ArvadosBase
   attr_accessor :head
   attr_accessor :tail
   def self.by_tail(t, opts={})

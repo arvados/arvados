@@ -1,4 +1,4 @@
-class Link < OrvosModel
+class Link < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

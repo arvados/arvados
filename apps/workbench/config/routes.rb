@@ -1,4 +1,4 @@
-Vcffarm::Application.routes.draw do
+ArvadosWorkbench::Application.routes.draw do
   resources :job_tasks
 
 

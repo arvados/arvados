@@ -1,4 +1,4 @@
-class PipelineInstance < OrvosBase
+class PipelineInstance < ArvadosBase
   attr_accessor :pipeline_template
 
   def update_job_parameters(new_params)

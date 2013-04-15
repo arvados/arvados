@@ -20,7 +20,7 @@
   <% if attr == 'uuid' and (uuid = attrvalue.split('-')).size == 3 %>
   <td><%= uuid[0..-2].join('-') %>-<b><%= uuid[-1] %></b></td>
   <% else %>
-  <td><%= link_to_if_orvos_object attrvalue, {referring_attr: attr, referring_object: @object, with_prefixes: true, with_class_name: true} %></td>
+  <td><%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: @object, with_prefixes: true, with_class_name: true} %></td>
   <% end %>
 </tr>
 <% end %>

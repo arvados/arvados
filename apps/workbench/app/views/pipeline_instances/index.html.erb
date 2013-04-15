@@ -32,13 +32,13 @@
         <span class="label label-info">active</span>
         <% end %>
       </td><td>
-        <%= link_to_if_orvos_object ob %>
+        <%= link_to_if_arvados_object ob %>
       </td><td>
         <%= ob.name %>
       </td><td>
-        <%= link_to_if_orvos_object ob.pipeline_template_uuid %>
+        <%= link_to_if_arvados_object ob.pipeline_template_uuid %>
       </td><td>
-        <%= link_to_if_orvos_object ob.owner %>
+        <%= link_to_if_arvados_object ob.owner %>
       </td><td>
         <% ob.components.each do |cname, c| %>
         <% status = if !c[:job] then nil elsif c[:job][:success] then 'success' elsif c[:job][:running] then 'info' else 'warning' end %>

@@ -1,24 +1,24 @@
 development:
   adapter: mysql
   encoding: utf8
-  database: orvos_development
-  username: orvos
+  database: arvados_development
+  username: arvados
   password: ********
   host: localhost
 
 test:
   adapter: mysql
   encoding: utf8
-  database: orvos_test
-  username: orvos
+  database: arvados_test
+  username: arvados
   password: ********
   host: localhost
 
 production:
   adapter: mysql
   encoding: utf8
-  database: orvos_production
-  username: orvos
+  database: arvados_production
+  username: arvados
   password: ********
   host: localhost
 

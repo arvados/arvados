@@ -1,4 +1,4 @@
-class Specimen < OrvosModel
+class Specimen < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate

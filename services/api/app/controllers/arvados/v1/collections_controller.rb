@@ -1,4 +1,4 @@
-class Orvos::V1::CollectionsController < ApplicationController
+class Arvados::V1::CollectionsController < ApplicationController
   def create
     # It's not an error for a client to re-register a manifest that we
     # already know about.

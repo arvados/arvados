@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
   end
 
   def current_user
-    if Thread.current[:orvos_api_token]
+    if Thread.current[:arvados_api_token]
       @current_user ||= User.current
     else
       logger.error "No API token in Thread"
@@ -91,11 +91,11 @@ class ApplicationController < ActionController::Base
       try_redirect_to_login = true
       if params[:api_token]
         try_redirect_to_login = false
-        Thread.current[:orvos_api_token] = params[:api_token]
+        Thread.current[:arvados_api_token] = params[:api_token]
         # Before copying the token into session[], do a simple API
         # call to verify its authenticity.
         if verify_api_token
-          session[:orvos_api_token] = params[:api_token]
+          session[:arvados_api_token] = params[:api_token]
           if !request.format.json? and request.method == 'GET'
             # Repeat this request with api_token in the (new) session
             # cookie instead of the query string.  This prevents API
@@ -109,22 +109,22 @@ class ApplicationController < ActionController::Base
           @errors = ['Invalid API token']
           self.render_error status: 401
         end
-      elsif session[:orvos_api_token]
+      elsif session[:arvados_api_token]
         # In this case, the token must have already verified at some
         # point, but it might have been revoked since.  We'll try
         # using it, and catch the exception if it doesn't work.
         try_redirect_to_login = false
-        Thread.current[:orvos_api_token] = session[:orvos_api_token]
+        Thread.current[:arvados_api_token] = session[:arvados_api_token]
         begin
           yield
-        rescue OrvosApiClient::NotLoggedInException
+        rescue ArvadosApiClient::NotLoggedInException
           try_redirect_to_login = true
         end
       end
       if try_redirect_to_login
         respond_to do |f|
           f.html {
-            redirect_to $orvos_api_client.orvos_login_url(return_to: request.url)
+            redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
           }
           f.json {
             @errors = ['No API token supplied -- can\'t really do anything.']
@@ -134,7 +134,7 @@ class ApplicationController < ActionController::Base
       end
     ensure
       # Remove token in case this Thread is used for anything else.
-      Thread.current[:orvos_api_token] = nil
+      Thread.current[:arvados_api_token] = nil
     end
   end
 
@@ -142,7 +142,7 @@ class ApplicationController < ActionController::Base
     begin
       Link.where(uuid: 'just-verifying-my-api-token')
       true
-    rescue OrvosApiClient::NotLoggedInException
+    rescue ArvadosApiClient::NotLoggedInException
       false
     end
   end

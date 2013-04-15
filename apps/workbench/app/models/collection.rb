@@ -1,4 +1,4 @@
-class Collection < OrvosBase
+class Collection < ArvadosBase
   def total_bytes
     if files
       tot = 0

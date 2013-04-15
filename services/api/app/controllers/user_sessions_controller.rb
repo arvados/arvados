@@ -35,7 +35,7 @@ class UserSessionsController < ApplicationController
       user.last_name = omniauth['info']['last_name']
     end
 
-    # prevent OrvosModel#before_create and _update from throwing
+    # prevent ArvadosModel#before_create and _update from throwing
     # "unauthorized":
     Thread.current[:user] = user
 
