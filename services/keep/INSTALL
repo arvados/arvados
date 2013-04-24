@@ -1,6 +1,20 @@
-rvm use 1.9.3
-gem install sinatra
-gem install getopt
+Install dependencies
 
-mkdir -p /some-mount-point/keep
-./keepd
+ rvm use 1.9.3
+ gem install sinatra
+ gem install thin
+
+Set up Keep backing store directories
+
+ mount /dev/some-disk /mnt/point
+ mkdir -p /mnt/point/keep
+
+Start server
+
+ IP=0.0.0.0 PORT=25107 ./keep.rb
+
+Start server With SSL support
+
+ export SSL_CERT=/etc/ssl/certs/keep.crt
+ export SSL_KEY=/etc/ssl/private/keep.pem
+ IP=... PORT=... ./keep.rb
