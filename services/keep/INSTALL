@@ -1,0 +1,6 @@
+rvm use 1.9.3
+gem install sinatra
+gem install getopt
+
+mkdir -p /some-mount-point/keep
+./keepd
