@@ -76,6 +76,7 @@ Server::Application.routes.draw do
     namespace :v1 do
       match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
+      match '/keep_disks/:uuid/ping' => 'keep_disks#ping', :as => :ping_keep_disk
       match '/links/from/:tail_uuid' => 'links#index', :as => :arvados_v1_links_from
       match '/users/current' => 'users#current'
       resources :collections
