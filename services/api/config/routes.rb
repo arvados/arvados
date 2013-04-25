@@ -1,8 +1,7 @@
 Server::Application.routes.draw do
+  resources :keep_disks
   resources :commit_ancestors
-
   resources :commits
-
   resources :job_tasks
   resources :jobs
   resources :api_client_authorizations
@@ -90,6 +89,7 @@ Server::Application.routes.draw do
       resources :users
       resources :jobs
       resources :job_tasks
+      resources :keep_disks
     end
   end
 

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130415020241) do
+ActiveRecord::Schema.define(:version => 20130425024459) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -164,6 +164,31 @@ ActiveRecord::Schema.define(:version => 20130415020241) do
   add_index "jobs", ["started_at"], :name => "index_jobs_on_started_at"
   add_index "jobs", ["submit_id"], :name => "index_jobs_on_submit_id", :unique => true
   add_index "jobs", ["uuid"], :name => "index_jobs_on_uuid", :unique => true
+
+  create_table "keep_disks", :force => true do |t|
+    t.string   "uuid",                                 :null => false
+    t.string   "owner",                                :null => false
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "ping_secret",                          :null => false
+    t.string   "node_uuid"
+    t.string   "filesystem_uuid"
+    t.integer  "bytes_total"
+    t.integer  "bytes_free"
+    t.boolean  "is_readable",        :default => true, :null => false
+    t.boolean  "is_writable",        :default => true, :null => false
+    t.datetime "last_read_at"
+    t.datetime "last_write_at"
+    t.datetime "last_ping_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "keep_disks", ["filesystem_uuid"], :name => "index_keep_disks_on_filesystem_uuid"
+  add_index "keep_disks", ["last_ping_at"], :name => "index_keep_disks_on_last_ping_at"
+  add_index "keep_disks", ["node_uuid"], :name => "index_keep_disks_on_node_uuid"
+  add_index "keep_disks", ["uuid"], :name => "index_keep_disks_on_uuid", :unique => true
 
   create_table "links", :force => true do |t|
     t.string   "uuid"
