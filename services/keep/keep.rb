@@ -6,6 +6,11 @@ require 'digest/sha1'
 require 'arvados'
 
 class Keep < Sinatra::Base
+  @@ssl_flag = false
+  def self.ssl_flag
+    @@ssl_flag
+  end
+
   configure do
     mime_type :binary, 'application/octet-stream'
     enable :logging
@@ -43,7 +48,7 @@ class Keep < Sinatra::Base
   def self.keepdirs
     return @@keepdirs if defined? @@keepdirs
     # Configure backing store directories
-    keepdirs = []
+    @@keepdirs = []
     rootdir = (ENV['KEEP_ROOT'] || '/').sub /\/$/, ''
     `mount`.split("\n").each do |mountline|
       dev, on_txt, mountpoint, type_txt, fstype, opts = mountline.split
@@ -53,21 +58,24 @@ class Keep < Sinatra::Base
           debuglog 2, "dir #{mountpoint} is in #{rootdir}/"
           keepdir = "#{mountpoint.sub /\/$/, ''}/keep"
           if File.exists? "#{keepdir}/."
-            keepdirs << {
-              :root => "#{keepdir}",
+            kd = {
+              :root => keepdir,
+              :arvados => {},
+              :arvados_file => File.join(keepdir, 'arvados_keep_disk.json'),
               :readonly => false,
               :device => dev,
               :device_inode => File.stat(dev).ino
             }
             if opts.gsub(/[\(\)]/, '').split(',').index('ro')
-              keepdirs[-1][:readonly] = true
+              kd[:readonly] = true
             end
+            debuglog 2, "keepdir #{kd.inspect}"
             begin
-              keepdirs[:ping_secret] = File.read "#{keepdir}/ping_secret"
+              kd[:arvados] = JSON.parse(File.read(kd[:arvados_file]), symbolize_names: true)
             rescue
-              debuglog 0, "keepdir #{keepdirs[-1].inspect} has no ping_secret!"
+              debuglog 0, "keepdir #{kd.inspect} is new (no #{kd[:arvados_file]})"
             end
-            debuglog 2, "keepdir #{keepdirs[-1].inspect}"
+            @@keepdirs << kd
           end
         end
       end
@@ -75,14 +83,14 @@ class Keep < Sinatra::Base
     Dir.open('/dev/disk/by-uuid/').each do |fs_uuid|
       next if fs_uuid.match /^\./
       fs_root_inode = File.stat("/dev/disk/by-uuid/#{fs_uuid}").ino
-      keepdirs.each do |kd|
+      @@keepdirs.each do |kd|
         if kd[:device_inode] == fs_root_inode
           kd[:filesystem_uuid] = fs_uuid
-          debuglog 0, "keepdir #{kd.inspect}"
+          debuglog 0, "keepdir #{kd.reject { |k,v| k==:arvados }.inspect}"
         end
       end
     end
-    @@keepdirs = keepdirs
+    @@keepdirs
   end
   self.keepdirs
 
@@ -185,10 +193,27 @@ class Keep < Sinatra::Base
     begin
       @@arvados ||= Arvados.new(api_token: '')
       @@keepdirs.each do |kd|
-        ack = @@arvados.keep_disk.ping(ping_secret: kd[:ping_secret],
+        ack = @@arvados.keep_disk.ping(uuid: kd[:arvados][:uuid],
+                                       service_port: settings.port,
+                                       service_ssl_flag: Keep.ssl_flag,
+                                       ping_secret: kd[:arvados][:ping_secret],
+                                       is_readable: true,
+                                       is_writable: !kd[:readonly],
                                        filesystem_uuid: kd[:filesystem_uuid])
         if ack and ack[:last_ping_at]
           debuglog 0, "device #{kd[:device]} uuid #{ack[:uuid]} last_ping_at #{ack[:last_ping_at]}"
+          if kd[:arvados].empty?
+            File.open(kd[:arvados_file]+'.tmp', 'a+', 0600) do end
+            File.open(kd[:arvados_file]+'.tmp', 'r+', 0600) do |f|
+              if f.flock File::LOCK_EX
+                f.seek 0, File::SEEK_SET
+                f.truncate 0
+                f.write ack.to_json
+                File.rename kd[:arvados_file]+'.tmp', kd[:arvados_file]
+                kd[:arvados] = ack
+              end
+            end
+          end
         else
           debuglog 0, "device #{kd[:device]} ping fail"
         end
@@ -207,6 +232,7 @@ class Keep < Sinatra::Base
           :private_key_file => ENV['SSL_KEY'],
           :verify_peer => false
         }
+        @@ssl_flag = true
         server.ssl = true
         server.ssl_options = ssl_options
       end
