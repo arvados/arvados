@@ -14,6 +14,38 @@ class ApplicationController < ActionController::Base
 
   attr_accessor :resource_attrs
 
+  def index
+    @objects.uniq!(&:id)
+    if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
+      @objects.each(&:eager_load_associations)
+    end
+    render_list
+  end
+
+  def show
+    if @object
+      render json: @object.as_api_response(:superuser)
+    else
+      render_not_found("object not found")
+    end
+  end
+
+  def create
+    @object = model_class.new resource_attrs
+    @object.save
+    show
+  end
+
+  def update
+    @object.update_attributes resource_attrs
+    show
+  end
+
+  def destroy
+    @object.destroy
+    show
+  end
+
   def catch_redirect_hint
     if !current_user
       if params.has_key?('redirect_to') then
@@ -50,6 +82,8 @@ class ApplicationController < ActionController::Base
     logger.error e.inspect
     render json: { errors: ["Path not found"] }, status: 404
   end
+
+  protected
 
   def find_objects_for_index
     uuid_list = [current_user.uuid, *current_user.groups_i_can(:read)]
@@ -108,40 +142,6 @@ class ApplicationController < ActionController::Base
     end
     @objects = @objects.order("#{table_name}.modified_at desc")
   end
-
-  def index
-    @objects.uniq!(&:id)
-    if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
-      @objects.each(&:eager_load_associations)
-    end
-    render_list
-  end
-
-  def show
-    if @object
-      render json: @object.as_api_response(:superuser)
-    else
-      render_not_found("object not found")
-    end
-  end
-
-  def create
-    @object = model_class.new resource_attrs
-    @object.save
-    show
-  end
-
-  def update
-    @object.update_attributes resource_attrs
-    show
-  end
-
-  def destroy
-    @object.destroy
-    show
-  end
-
-  protected
 
   def resource_attrs
     return @attrs if @attrs
@@ -254,7 +254,6 @@ class ApplicationController < ActionController::Base
   def uncamelcase_params_hash_keys
     self.params = uncamelcase_hash_keys(params)
   end
-
   def uncamelcase_hash_keys(h, max_depth=-1)
     if h.is_a? Hash and max_depth != 0
       nh = Hash.new

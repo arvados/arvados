@@ -8,6 +8,9 @@ class Arvados::V1::NodesController < ApplicationController
     show
   end
 
+  def self._ping_requires_parameters
+    { ping_secret: true }
+  end
   def ping
     @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
                    ping_secret: params[:ping_secret],

@@ -89,6 +89,12 @@ class Arvados::V1::SchemaController < ApplicationController
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         next if k == ApiClientAuthorization
         next if k == ApiClient
+        begin
+          ctl_class = "Arvados::V1::#{k.to_s.pluralize}Controller".constantize
+        rescue
+          # No controller -> no discovery.
+          next
+        end
         object_properties = {}
         k.columns.
           select { |col| col.name != 'id' }.
@@ -286,6 +292,57 @@ class Arvados::V1::SchemaController < ApplicationController
             }
           }
         }
+        # Check for Rails routes that don't match the usual actions
+        # listed above
+        d_methods = discovery[:resources][k.to_s.underscore.pluralize][:methods]
+        Rails.application.routes.routes.each do |route|
+          action = route.defaults[:action]
+          httpMethod = (route.verb && route.verb.length > 0) ? route.verb : 'GET'
+          if route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
+              !d_methods[action.to_sym] and
+              ctl_class.action_methods.include? action
+            method = {
+              id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
+              path: route.path.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu?)id/,'{uuid}'),
+              httpMethod: httpMethod,
+              description: "#{route.defaults[:action]} #{k.to_s.underscore.pluralize}",
+              parameters: {},
+              response: {
+                "$ref" => k.to_s
+              },
+              scopes: [
+                       "https://api.clinicalfuture.com/auth/arvados"
+                      ]
+            }
+            route.segment_keys.each do |key|
+              if key != :format
+                key = :uuid if key == :id
+                method[:parameters][key] = {
+                  type: "string",
+                  description: "",
+                  required: true,
+                  location: "path"
+                }
+              end
+            end
+            if ctl_class.respond_to? "_#{action}_requires_parameters".to_sym
+              ctl_class.send("_#{action}_requires_parameters".to_sym).each do |k, v|
+                if v.is_a? Hash
+                  method[:parameters][k] = v
+                else
+                  method[:parameters][k] = {}
+                end
+                method[:parameters][k][:type] ||= 'string'
+                method[:parameters][k][:description] ||= ''
+                method[:parameters][k][:location] = (route.segment_keys.include?(k) ? 'path' : 'query')
+                if method[:parameters][k][:required].nil?
+                  method[:parameters][k][:required] = v != false
+                end
+              end
+            end
+            d_methods[route.defaults[:action].to_sym] = method
+          end
+        end
       end
       discovery
     end
