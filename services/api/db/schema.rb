@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130425024459) do
+ActiveRecord::Schema.define(:version => 20130425214427) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -183,11 +183,15 @@ ActiveRecord::Schema.define(:version => 20130425024459) do
     t.datetime "last_ping_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "service_host"
+    t.integer  "service_port"
+    t.boolean  "service_ssl_flag"
   end
 
   add_index "keep_disks", ["filesystem_uuid"], :name => "index_keep_disks_on_filesystem_uuid"
   add_index "keep_disks", ["last_ping_at"], :name => "index_keep_disks_on_last_ping_at"
   add_index "keep_disks", ["node_uuid"], :name => "index_keep_disks_on_node_uuid"
+  add_index "keep_disks", ["service_host", "service_port", "last_ping_at"], :name => "keep_disks_service_host_port_ping_at_index"
   add_index "keep_disks", ["uuid"], :name => "index_keep_disks_on_uuid", :unique => true
 
   create_table "links", :force => true do |t|

@@ -18,17 +18,26 @@ class KeepDisk < ArvadosModel
   end
 
   def ping(o)
-    raise "must have :ip and :ping_secret" unless o[:ip] and o[:ping_secret]
+    raise "must have :service_host and :ping_secret" unless o[:service_host] and o[:ping_secret]
 
     if o[:ping_secret] != self.ping_secret
-      logger.info "Ping: secret mismatch: received \"#{o[:ping_secret]}\" != \"#{self.info[:ping_secret]}\""
+      logger.info "Ping: secret mismatch: received \"#{o[:ping_secret]}\" != \"#{self.ping_secret}\""
       return nil
     end
-    self.last_ping_at = Time.now
 
     @bypass_arvados_authorization = true
-
-    save!
+    self.update_attributes(o.select { |k,v|
+                             [:service_host,
+                              :service_port,
+                              :service_ssl_flag,
+                              :bytes_total,
+                              :bytes_free,
+                              :is_readable,
+                              :is_writable,
+                              :last_read_at,
+                              :last_write_at
+                             ].collect(&:to_s).index k
+                           }.merge(last_ping_at: Time.now))
   end
 
   protected
