@@ -104,8 +104,8 @@ class Arvados::V1::SchemaController < ApplicationController
           end
         end
         discovery[:schemas][k.to_s + 'List'] = {
-          id: k.to_s,
-          description: k.to_s,
+          id: k.to_s + 'List',
+          description: k.to_s + ' list',
           type: "object",
           properties: {
             kind: {
