@@ -1,0 +1,13 @@
+# Example:
+
+ENV['ARVADOS_API_HOST'] = 'arvados.local'
+ENV['ARVADOS_API_TOKEN'] = 'qwertyuiopasdfghjklzxcvbnm1234567890abcdefghijklmn'
+
+require 'arvados'
+arv = Arvados.new
+
+pt_list = arv.pipeline_template.list(where:{})
+puts pt_list[:items].first.inspect
+
+pt = arv.pipeline_template.get(uuid:"9zb4a-p5p6p-fkkbrl98u3pk87m")
+puts pt.inspect
