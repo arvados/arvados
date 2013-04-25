@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
 require 'sinatra/base'
+require 'digest/md5'
+require 'digest/sha1'
 
 class Keep < Sinatra::Base
   configure do
@@ -8,6 +10,16 @@ class Keep < Sinatra::Base
     enable :logging
     set :port, (ENV['PORT'] || '25107').to_i
     set :bind, (ENV['IP'] || '0.0.0.0')
+  end
+
+  def verify_hash(data, hash)
+    if hash.length == 32
+      Digest::MD5.hexdigest(data) == hash && hash
+    elsif hash.length == 40
+      Digest::SHA1.hexdigest(data) == hash && hash
+    else
+      false
+    end
   end
 
   def self.debuglevel
@@ -57,35 +69,92 @@ class Keep < Sinatra::Base
   end
   self.keepdirs
 
+  def find_backfile(hash, opts)
+    subdir = hash[0..2]
+    keepdirs.each do |keepdir|
+      backfile = "#{keepdir[:root]}/#{subdir}/#{hash}"
+      if File.exists? backfile
+        data = nil
+        File.open("#{keepdir[:root]}/lock", "a+") do |f|
+          if f.flock File::LOCK_EX
+            data = File.read backfile
+          end
+        end
+        if data and (!opts[:verify_hash] or verify_hash data, hash)
+          return [backfile, data]
+        end
+      end
+    end
+    nil
+  end
+
   get '/:locator' do |locator|
     regs = locator.match /^([0-9a-f]{32,})/
     if regs
       hash = regs[1]
-      subdir = hash[0..2]
-      found = false
-      keepdirs.each do |keepdir|
-        backfile = "#{keepdir[:root]}/#{subdir}/#{hash}"
-        if File.exists? backfile
-          data = nil
-          File.open("#{keepdir[:root]}/lock", "a+") do |f|
-            if f.flock File::LOCK_EX
-              data = File.read backfile
-            end
-          end
-          if data
-            found = true
-            content_type :binary
-            body data
-            break
-          end
-        end
-      end
-      if not found
+      backfile, data = find_backfile hash, :verify_hash => false
+      if data
+        content_type :binary
+        body data
+      else
         status 404
         body 'not found'
       end
     else
       pass
+    end
+  end
+
+  put '/:locator' do |locator|
+    data = request.body.read
+    hash = verify_hash(data, locator)
+    if not hash
+      status 422
+      body "Checksum mismatch"
+      return
+    end
+    backfile, havedata = find_backfile hash, :verify_hash => true
+    if havedata
+      status 200
+      body 'OK'
+    else
+      wrote = nil
+      subdir = hash[0..2]
+      keepdirs.each do |keepdir|
+        next if keepdir[:readonly]
+        backdir = "#{keepdir[:root]}/#{subdir}"
+        if !File.exists? backdir
+          begin
+            Dir.mkdir backdir
+          rescue
+          end
+        end
+        backfile = "#{keepdir[:root]}/#{subdir}/#{hash}"
+        File.open("#{keepdir[:root]}/lock", "a+") do |lf|
+          if lf.flock File::LOCK_EX
+            File.open(backfile + ".tmp", "a+") do |wf|
+              if wf.flock File::LOCK_EX
+                wf.seek 0, File::SEEK_SET
+                wf.truncate 0
+                wrote = wf.write data
+              end
+              if wrote == data.length
+                File.rename backfile+".tmp", backfile
+                break
+              else
+                File.unlink backfile+".tmp"
+              end
+            end
+          end
+        end
+      end
+      if wrote == data.length
+        status 200
+        body 'OK'
+      else
+        status 500
+        body 'Fail'
+      end
     end
   end
 
