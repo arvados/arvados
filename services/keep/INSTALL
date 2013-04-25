@@ -11,10 +11,10 @@ Set up Keep backing store directories
 
 Start server
 
- RACK_ENV=production IP=0.0.0.0 PORT=25107 ./keep.rb
+ RUBYLIB=../../sdk/ruby RACK_ENV=production IP=0.0.0.0 PORT=25107 ./keep.rb
 
 Start server With SSL support
 
  export SSL_CERT=/etc/ssl/certs/keep.crt
  export SSL_KEY=/etc/ssl/private/keep.pem
- RACK_ENV=... IP=... PORT=... ./keep.rb
+ RUBYLIB=... RACK_ENV=... IP=... PORT=... ./keep.rb

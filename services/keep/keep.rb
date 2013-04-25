@@ -3,6 +3,7 @@
 require 'sinatra/base'
 require 'digest/md5'
 require 'digest/sha1'
+require 'arvados'
 
 class Keep < Sinatra::Base
   configure do
@@ -39,10 +40,6 @@ class Keep < Sinatra::Base
     self.class.debuglog *args
   end
 
-  def keepdirs
-    @@keepdirs
-  end
-
   def self.keepdirs
     return @@keepdirs if defined? @@keepdirs
     # Configure backing store directories
@@ -56,12 +53,27 @@ class Keep < Sinatra::Base
           debuglog 2, "dir #{mountpoint} is in #{rootdir}/"
           keepdir = "#{mountpoint.sub /\/$/, ''}/keep"
           if File.exists? "#{keepdir}/."
-            keepdirs << { :root => "#{keepdir}", :readonly => false }
+            keepdirs << {
+              :root => "#{keepdir}",
+              :readonly => false,
+              :device => dev,
+              :device_inode => File.stat(dev).ino
+            }
             if opts.gsub(/[\(\)]/, '').split(',').index('ro')
               keepdirs[-1][:readonly] = true
             end
-            debuglog 0, "keepdir #{keepdirs[-1].inspect}"
+            debuglog 2, "keepdir #{keepdirs[-1].inspect}"
           end
+        end
+      end
+    end
+    Dir.open('/dev/disk/by-uuid/').each do |fs_uuid|
+      next if fs_uuid.match /^\./
+      fs_root_inode = File.stat("/dev/disk/by-uuid/#{fs_uuid}").ino
+      keepdirs.each do |kd|
+        if kd[:device_inode] == fs_root_inode
+          kd[:filesystem_uuid] = fs_uuid
+          debuglog 0, "keepdir #{kd.inspect}"
         end
       end
     end
@@ -71,7 +83,7 @@ class Keep < Sinatra::Base
 
   def find_backfile(hash, opts)
     subdir = hash[0..2]
-    keepdirs.each do |keepdir|
+    @@keepdirs.each do |keepdir|
       backfile = "#{keepdir[:root]}/#{subdir}/#{hash}"
       if File.exists? backfile
         data = nil
@@ -103,6 +115,7 @@ class Keep < Sinatra::Base
     else
       pass
     end
+    self.class.ping_arvados
   end
 
   put '/:locator' do |locator|
@@ -120,7 +133,7 @@ class Keep < Sinatra::Base
     else
       wrote = nil
       subdir = hash[0..2]
-      keepdirs.each do |keepdir|
+      @@keepdirs.each do |keepdir|
         next if keepdir[:readonly]
         backdir = "#{keepdir[:root]}/#{subdir}"
         if !File.exists? backdir
@@ -156,7 +169,38 @@ class Keep < Sinatra::Base
         body 'Fail'
       end
     end
+    self.class.ping_arvados
   end
+
+  protected
+
+  def self.ping_arvados
+    return if defined? @@last_ping_at and @@last_ping_at > Time.now - 300
+    @@last_ping_at = Time.now
+    begin
+      @@arvados ||= Arvados.new
+      @@keepdirs.each do |kd|
+        found = false
+        @@arvados.keep_disk.list(where:{filesystem_uuid: kd[:filesystem_uuid]})[:items].each do |arv_disk|
+          ack = @@arvados.keep_disk.
+            update(uuid: arv_disk[:uuid],
+                   keep_disk: { last_ping_at: Time.now })
+          debuglog 0, "device #{kd[:device]} uuid #{ack[:uuid]} last_ping_at #{ack[:last_ping_at]}"
+          found = true
+          break
+        end
+        if not found
+          @@arvados.keep_disk.create keep_disk: {
+            filesystem_uuid: kd[:filesystem_uuid],
+            last_ping_at: Time.now
+          }
+        end
+      end
+    rescue Exception => e
+      debuglog 0, "ping_arvados: #{e.inspect}"
+    end
+  end
+  self.ping_arvados
 
   if app_file == $0
     run! do |server|
