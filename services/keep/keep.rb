@@ -62,6 +62,11 @@ class Keep < Sinatra::Base
             if opts.gsub(/[\(\)]/, '').split(',').index('ro')
               keepdirs[-1][:readonly] = true
             end
+            begin
+              keepdirs[:ping_secret] = File.read "#{keepdir}/ping_secret"
+            rescue
+              debuglog 0, "keepdir #{keepdirs[-1].inspect} has no ping_secret!"
+            end
             debuglog 2, "keepdir #{keepdirs[-1].inspect}"
           end
         end
@@ -178,22 +183,14 @@ class Keep < Sinatra::Base
     return if defined? @@last_ping_at and @@last_ping_at > Time.now - 300
     @@last_ping_at = Time.now
     begin
-      @@arvados ||= Arvados.new
+      @@arvados ||= Arvados.new(api_token: '')
       @@keepdirs.each do |kd|
-        found = false
-        @@arvados.keep_disk.list(where:{filesystem_uuid: kd[:filesystem_uuid]})[:items].each do |arv_disk|
-          ack = @@arvados.keep_disk.
-            update(uuid: arv_disk[:uuid],
-                   keep_disk: { last_ping_at: Time.now })
+        ack = @@arvados.keep_disk.ping(ping_secret: kd[:ping_secret],
+                                       filesystem_uuid: kd[:filesystem_uuid])
+        if ack and ack[:last_ping_at]
           debuglog 0, "device #{kd[:device]} uuid #{ack[:uuid]} last_ping_at #{ack[:last_ping_at]}"
-          found = true
-          break
-        end
-        if not found
-          @@arvados.keep_disk.create keep_disk: {
-            filesystem_uuid: kd[:filesystem_uuid],
-            last_ping_at: Time.now
-          }
+        else
+          debuglog 0, "device #{kd[:device]} ping fail"
         end
       end
     rescue Exception => e
