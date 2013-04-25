@@ -24,15 +24,19 @@ class Arvados
     attr_accessor :debuglevel
   end
 
-  def initialize
+  def initialize(opts={})
     @application_version ||= 0.0
     @application_name ||= File.split($0).last
 
-    @arvados_api_version = ENV['ARVADOS_API_VERSION'] || 'v1'
-    @arvados_api_host = ENV['ARVADOS_API_HOST'] or
-      abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
-    @arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
-      abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
+    @arvados_api_version = opts[:api_version] ||
+      ENV['ARVADOS_API_VERSION'] ||
+      'v1'
+    @arvados_api_host = opts[:api_host] ||
+      ENV['ARVADOS_API_HOST'] or
+      raise "#{$0}: no :api_host or ENV[ARVADOS_API_HOST] provided."
+    @arvados_api_token = opts[:api_token] ||
+      ENV['ARVADOS_API_TOKEN'] or
+      raise "#{$0}: no :api_token or ENV[ARVADOS_API_TOKEN] provided."
 
     if @arvados_api_host.match /\.local/
       suppress_warnings do
