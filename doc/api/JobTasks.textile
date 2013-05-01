@@ -1,0 +1,62 @@
+---
+layout: default
+navsection: api
+title: "Resource: JobTasks"
+navorder: 10
+---
+
+h1. JobTasks
+
+A Job Task is a well defined independently-computable portion of a "Job":Jobs.html.
+
+Job tasks are created two ways:
+* When a job starts, it is seeded with a job task with @sequence=0@ and an empty @parameters{}@ list.
+* Job task A can create additional job tasks B, C, D, which will belong to the same job. Tasks B, C, D will not be performed until job task A is complete. If job task A fails, tasks B, C, D will be deleted.
+
+Job tasks have particular update semantics:
+* Progress reporting: A job task should only be <code>PATCH</code>ed by a worker process which has been dispatched to work on that task and is reporting progress or completion status &mdash; and by the job manager itself.
+* Completion: When a job task process terminates, the task is considered complete only if its most recent @PATCH@ transaction had @progress=1.0@ and @success=true@.
+* Temporary failure: If a job task process terminates without updating @success@ to @true@ or @false@, it is assumed that the task failed but is worth re-attempting (at a different time, on a different node, etc).
+
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://xyzzy.arvados.org/arvados/v1/job_tasks@
+
+h2. Resource
+
+Each job has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Attribute*|*Type*|*Description*|
+|sequence|integer|Execution sequence.
+A step cannot be run until all steps with lower sequence numbers have completed.
+Job steps with the same sequence number can be run in any order.|
+|parameters{}|list||
+|resource_limits{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the task (see below).|
+|output|string||
+|progress|float||
+|success|boolean|Is null if the task has neither completed successfully nor failed permanently.|
+
+The following attributes should not be updated by anyone other than the job manager:
+
+table(table table-bordered table-condensed).
+|*Attribute*|*Type*|*Description*|*Notes*|
+|qsequence|integer|Order of arrival|0-based|
+|failed_count|number|Times this step has failed||
+|failed_at|number|Time of last failure|Is null if failed_count=0|
+|failed_log|string|stderr from last failure|Is null if failed_count=0|
+|log|string|stderr||
+
+
+h3. Resource limits
+
+table(table table-bordered table-condensed).
+|*Key*|*Type*|*Description*|*Implemented*|
+|min_nodes|integer|||
+|max_nodes|integer|||
+|max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#x2713;|
+|min_ram_per_task|integer|Minimum real memory (KiB) per task||
+|min_ram_per_node|integer|Minimum real memory (KiB) per node||

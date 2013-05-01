@@ -20,7 +20,8 @@ table(table table-bordered table-condensed).
 |@JOB_UUID@|UUID of the job|
 |@JOB_PARAMETER_X@|Value of the @x@ parameter supplied when the job was created|
 |@TASK_UUID@|UUID of the task|
-|@TASK_SEQUENCE@|Task execution sequence|
+|@TASK_QSEQUENCE@|Number of tasks added to this job before this one (in other words, 0-based queue entry order)|
+|@TASK_SEQUENCE@|Task execution sequence specified when task was created &mdash; generally not unique to this task|
 |@TASK_PARAMETER_X@|Value of the @x@ parameter supplied when the job task was created|
 |@ARVADOS_API_TOKEN@|Authentication token to use with API calls made by the job task|
 
