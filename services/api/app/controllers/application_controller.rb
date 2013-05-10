@@ -177,7 +177,10 @@ class ApplicationController < ActionController::Base
       user = nil
       api_client = nil
       api_client_auth = nil
-      supplied_token = params[:api_token] || params[:oauth_token]
+      supplied_token =
+        params[:api_token] ||
+        params[:oauth_token] ||
+        request.headers["Authorization"].andand.match(/OAuth2 ([a-z0-9]+)/).andand[1]
       if supplied_token
         api_client_auth = ApiClientAuthorization.
           includes(:api_client, :user).
