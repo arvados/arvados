@@ -2,6 +2,7 @@ class JobTask < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
+  serialize :parameters, Hash
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :job_uuid
