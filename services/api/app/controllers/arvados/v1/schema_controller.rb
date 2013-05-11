@@ -231,9 +231,6 @@ class Arvados::V1::SchemaController < ApplicationController
                   properties: object_properties
                 }
               },
-              request: {
-                "$ref" => k.to_s
-              },
               response: {
                 "$ref" => k.to_s
               },
@@ -259,9 +256,6 @@ class Arvados::V1::SchemaController < ApplicationController
                   location: "query",
                   properties: object_properties
                 }
-              },
-              request: {
-                "$ref" => k.to_s
               },
               response: {
                 "$ref" => k.to_s
