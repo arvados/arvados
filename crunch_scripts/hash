@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+import arvados
+import hashlib
+import re
+
+arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True)
+
+this_job = arvados.current_job()
+this_task = arvados.current_task()
+this_task_input = this_task['parameters']['input']
+
+if 'algorithm' in this_job['script_parameters']:
+    alg = this_job['script_parameters']
+else:
+    alg = 'md5'
+digestor = hashlib.new(alg)
+
+input_stream = arvados.DataReader(this_task_input)
+while True:
+    buf = input_stream.read(2**20)
+    if len(buf) == 0:
+        break
+    digestor.update(buf)
+
+hexdigest = digestor.hexdigest()
+file_name = re.sub(r'^[^/]+/', '', this_task_input)
+
+input_stream.close()
+
+this_task.set_output("%s %s\n" % (hexdigest, file_name))
+
