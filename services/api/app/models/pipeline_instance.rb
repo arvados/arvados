@@ -18,6 +18,7 @@ class PipelineInstance < ArvadosModel
     t.add :success
     t.add :active
     t.add :dependencies
+    t.add :properties
   end
 
   def dependencies
