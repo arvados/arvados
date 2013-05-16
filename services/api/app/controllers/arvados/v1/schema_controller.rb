@@ -302,7 +302,7 @@ class Arvados::V1::SchemaController < ApplicationController
               description: "#{route.defaults[:action]} #{k.to_s.underscore.pluralize}",
               parameters: {},
               response: {
-                "$ref" => k.to_s
+                "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
               },
               scopes: [
                        "https://api.clinicalfuture.com/auth/arvados"
