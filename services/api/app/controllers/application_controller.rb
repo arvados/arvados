@@ -37,8 +37,11 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    @object.update_attributes resource_attrs
-    show
+    if @object.update_attributes resource_attrs
+      show
+    else
+      render json: { errors: @object.errors.full_messages }, status: 422
+    end
   end
 
   def destroy
