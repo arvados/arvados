@@ -142,7 +142,7 @@ class ApplicationController < ActionController::Base
       begin
         @objects = @objects.limit(params[:limit].to_i)
       rescue
-        raise "invalid argument (limit)"
+        raise ArgumentError.new("Invalid value for limit parameter")
       end
     else
       @objects = @objects.limit(100)
@@ -157,7 +157,12 @@ class ApplicationController < ActionController::Base
       @attrs = uncamelcase_hash_keys(Oj.load @attrs)
     end
     unless @attrs.is_a? Hash
-      raise "no #{resource_name} (or #{resource_name.camelcase(:lower)}) hash provided with request #{params.inspect}"
+      message = "No #{resource_name}"
+      if resource_name.index('_')
+        message << " (or #{resource_name.camelcase(:lower)})"
+      end
+      message << " hash provided with request"
+      raise ArgumentError.new(message)
     end
     %w(created_at modified_by_client modified_by_user modified_at).each do |x|
       @attrs.delete x
