@@ -40,6 +40,12 @@ class Job < ArvadosModel
                       running: false)
   end
 
+  def self.queue
+    self.where('started_at is ? and is_locked_by is ? and cancelled_at is ?',
+               nil, nil, nil).
+      order('priority desc, created_at')
+  end
+
   protected
 
   def ensure_script_version_is_commit

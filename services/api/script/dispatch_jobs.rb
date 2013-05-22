@@ -18,39 +18,14 @@ require File.dirname(__FILE__) + '/../config/environment'
 require 'open3'
 
 class Dispatcher
+  include ApplicationHelper
 
   def sysuser
-    return @sysuser if @sysuser
-    Thread.current[:user] = User.new(is_admin: true)
-    sysuser_id = [Server::Application.config.uuid_prefix,
-                  User.uuid_prefix,
-                  '000000000000000'].join('-')
-    @sysuser = User.where('uuid=?', sysuser_id).first
-    if !@sysuser
-      @sysuser = User.new(uuid: sysuser_id,
-                          is_admin: true,
-                          email: 'root',
-                          first_name: 'root',
-                          last_name: '')
-      @sysuser.save!
-      @sysuser.reload
-    end
-    Thread.current[:user] = @sysuser
-
-    auth = ApiClientAuthorization.new(api_client_id: 0,
-                                      user_id: @sysuser.id)
-    auth.save!
-    auth_token = auth.api_token
-    $stderr.puts "dispatch: sysuser.uuid = #{@sysuser.uuid}"
-    $stderr.puts "dispatch: api_client_authorization.api_token = #{auth_token}"
-    @sysuser
+    return act_as_system_user
   end
 
   def refresh_todo
-    @todo = Job.
-      where('started_at is ? and is_locked_by is ? and cancelled_at is ?',
-            nil, nil, nil).
-      order('priority desc, created_at')
+    @todo = Job.queue
   end
 
   def start_jobs
@@ -311,7 +286,7 @@ class Dispatcher
   end
 
   def run
-    sysuser
+    act_as_system_user
     @running ||= {}
     $stderr.puts "dispatch: ready"
     while !$signal[:term] or @running.size > 0
