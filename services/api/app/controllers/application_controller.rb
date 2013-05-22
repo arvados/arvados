@@ -147,7 +147,22 @@ class ApplicationController < ActionController::Base
     else
       @objects = @objects.limit(100)
     end
-    @objects = @objects.order("#{table_name}.modified_at desc")
+    orders = []
+    if params[:order]
+      params[:order].split(',').each do |order|
+        attr, direction = order.strip.split " "
+        direction ||= 'asc'
+        if attr.match /^[a-z][_a-z0-9]+$/ and
+            model_class.columns.collect(&:name).index(attr) and
+            ['asc','desc'].index direction.downcase
+          orders << "#{table_name}.#{attr} #{direction.downcase}"
+        end
+      end
+    end
+    if orders.empty?
+      orders << "#{table_name}.modified_at desc"
+    end
+    @objects = @objects.order(orders.join ", ")
   end
 
   def resource_attrs
