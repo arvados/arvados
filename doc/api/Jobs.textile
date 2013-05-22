@@ -18,11 +18,25 @@ See "REST methods for working with Arvados resources":methods.html
 
 API endpoint base: @https://xyzzy.arvados.org/arvados/v1/jobs@
 
-h2. Additional parameters for "Create" method
+h3. Additional parameters for "Create" method
 
 table(table table-bordered table-condensed).
 |*Parameter name*|*Type*|*Description*|
 |allow_duplicate|boolean|If true, a new job is submitted even if an identical job has already been submitted (and has not failed). If false or not supplied, a new job will _not_ be submitted and the existing job will be returned in the API response.|
+
+h3. Queue
+
+<pre>
+GET https://xyzzy.arvados.org/arvados/v1/jobs/queue
+ 
+POST https://xyzzy.arvados.org/arvados/v1/jobs/queue
+_method=GET
+where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+</pre>
+
+&rarr; Job resource list
+
+This method is equivalent to the "index method":methods.html#index, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
 
 h2. Resource
 

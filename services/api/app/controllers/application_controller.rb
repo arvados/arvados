@@ -9,6 +9,7 @@ class ApplicationController < ActionController::Base
   before_filter :login_required, :except => :render_not_found
   before_filter :catch_redirect_hint
 
+  before_filter :load_where_param, :only => :index
   before_filter :find_objects_for_index, :only => :index
   before_filter :find_object_by_uuid, :except => [:index, :create]
 
@@ -88,6 +89,11 @@ class ApplicationController < ActionController::Base
 
   protected
 
+  def load_where_param
+    @where = params[:where] || {}
+    @where = Oj.load(@where) if @where.is_a?(String)
+  end
+
   def find_objects_for_index
     uuid_list = [current_user.uuid, *current_user.groups_i_can(:read)]
     sanitized_uuid_list = uuid_list.
@@ -98,9 +104,7 @@ class ApplicationController < ActionController::Base
             true, current_user.is_admin,
             uuid_list,
             current_user.uuid)
-    @where = params[:where] || {}
-    @where = Oj.load(@where) if @where.is_a?(String)
-    if params[:where]
+    if !@where.empty?
       conditions = ['1=1']
       @where.each do |attr,value|
         if attr == 'any'

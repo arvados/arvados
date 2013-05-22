@@ -9,7 +9,7 @@ h1. REST Methods
 
 (using Group as an example)
 
-h2. Index, list, search
+h2(#index). Index, list, search
 
 <pre>
 GET https://xyzzy.arvados.org/arvados/v1/groups?where[owner]=xyzzy-tpzed-a4lcehql0dv2u25

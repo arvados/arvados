@@ -79,6 +79,7 @@ Server::Application.routes.draw do
       match '/keep_disks/ping' => 'keep_disks#ping', :as => :ping_keep_disk
       match '/links/from/:tail_uuid' => 'links#index', :as => :arvados_v1_links_from
       match '/users/current' => 'users#current'
+      match '/jobs/queue' => 'jobs#queue'
       resources :collections
       resources :links
       resources :nodes

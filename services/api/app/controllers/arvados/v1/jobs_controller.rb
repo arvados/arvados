@@ -2,6 +2,7 @@ class Arvados::V1::JobsController < ApplicationController
   accept_attribute_as_json :script_parameters, Hash
   accept_attribute_as_json :resource_limits, Hash
   accept_attribute_as_json :tasks_summary, Hash
+  skip_before_filter :find_object_by_uuid, :only => :queue
 
   def index
     want_ancestor = @where[:script_version_descends_from]
@@ -37,5 +38,17 @@ class Arvados::V1::JobsController < ApplicationController
               want_ancestor, true)
     end
     super
+  end
+
+  def queue
+    load_where_param
+    @where.merge!({
+                    started_at: nil,
+                    is_locked_by: nil,
+                    cancelled_at: nil
+                  })
+    params[:order] ||= 'priority desc, created_at'
+    find_objects_for_index
+    index
   end
 end
