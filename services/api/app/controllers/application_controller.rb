@@ -103,10 +103,19 @@ class ApplicationController < ActionController::Base
     if params[:where]
       conditions = ['1=1']
       @where.each do |attr,value|
-        if (!value.nil? and
-            attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
-            model_class.columns.collect(&:name).index(attr))
-          if value.is_a? Array
+        if attr == 'any'
+          if value.is_a?(Array) and
+              value[0] == 'contains' and
+              model_class.columns.collect(&:name).index('name') then
+            conditions[0] << " and #{table_name}.name ilike ?"
+            conditions << "%#{value[1]}%"
+          end
+        elsif attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
+            model_class.columns.collect(&:name).index(attr)
+          if value.nil?
+            conditions[0] << " and #{table_name}.#{attr} is ?"
+            conditions << nil
+          elsif value.is_a? Array
             conditions[0] << " and #{table_name}.#{attr} in (?)"
             conditions << value
           elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
@@ -121,11 +130,6 @@ class ApplicationController < ActionController::Base
               end
             end
           end
-        elsif (!value.nil? and attr == 'any' and
-          value.is_a?(Array) and value[0] == 'contains' and
-          model_class.columns.collect(&:name).index('name')) then
-            conditions[0] << " and #{table_name}.name ilike ?"
-            conditions << "%#{value[1]}%"
         end
       end
       if conditions.length > 1
