@@ -38,7 +38,9 @@ class Arvados
       ENV['ARVADOS_API_TOKEN'] or
       raise "#{$0}: no :api_token or ENV[ARVADOS_API_TOKEN] provided."
 
-    if @arvados_api_host.match /\.local/
+    @suppress_ssl_warnings = opts[:suppress_ssl_warnings] || false
+
+    if @suppress_ssl_warnings
       suppress_warnings do
         OpenSSL::SSL.const_set 'VERIFY_PEER', OpenSSL::SSL::VERIFY_NONE
       end
