@@ -5,7 +5,7 @@ Arvados -- client library for Arvados services
 =head1 SYNOPSIS
 
   use Arvados;
-  $arv = Arvados->new()->build(apiHost => 'arvados.local');
+  $arv = Arvados->new(apiHost => 'arvados.local');
   
   my $instances = $arv->{'pipeline_instances'}->{'list'}->execute();
   print "UUID is ", $instances->{'items'}->[0]->{'uuid'}, "\n";

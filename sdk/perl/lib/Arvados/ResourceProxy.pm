@@ -21,6 +21,18 @@ sub save
     $self;
 }
 
+sub reload
+{
+    my $self = shift;
+    $response = $self->{'resourceAccessor'}->{'get'}->execute('uuid' => $self->{'uuid'});
+    foreach my $param (keys %$self) {
+        if (exists $response->{$param}) {
+            $self->{$param} = $response->{$param};
+        }
+    }
+    $self;
+}
+
 sub resource_parameter_name
 {
     my $self = shift;

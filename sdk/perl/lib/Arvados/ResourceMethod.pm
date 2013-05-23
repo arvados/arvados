@@ -44,6 +44,9 @@ sub execute
                 if (!exists $given_params{$param_name}->{$property_name}) {
                     ;
                 }
+                elsif ($given_params{$param_name}->{$property_name} eq undef) {
+                    $param_value{$property_name} = JSON::null;
+                }
                 elsif ($property->{'type'} eq 'boolean') {
                     $param_value{$property_name} = $given_params{$param_name}->{$property_name} ? JSON::true : JSON::false;
                 }
