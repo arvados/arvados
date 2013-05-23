@@ -107,7 +107,7 @@ class ApplicationController < ActionController::Base
     if !@where.empty?
       conditions = ['1=1']
       @where.each do |attr,value|
-        if attr == 'any'
+        if attr == 'any' or attr == :any
           if value.is_a?(Array) and
               value[0] == 'contains' and
               model_class.columns.collect(&:name).index('name') then
@@ -115,7 +115,7 @@ class ApplicationController < ActionController::Base
             conditions << "%#{value[1]}%"
           end
         elsif attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
-            model_class.columns.collect(&:name).index(attr)
+            model_class.columns.collect(&:name).index(attr.to_s)
           if value.nil?
             conditions[0] << " and #{table_name}.#{attr} is ?"
             conditions << nil
