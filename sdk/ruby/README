@@ -1,10 +1,25 @@
-# Example:
+
+This directory contains contains the Ruby SDK.
+
+## Installation instructions
+
+You can build the gem with the following command:
+
+  gem build arvados.gemspec
+
+and install it like this:
+
+  gem install ./arvados-0.1.0.gem
+
+## Code example
+
+#!/usr/bin/env ruby
 
 ENV['ARVADOS_API_HOST'] = 'arvados.local'
 ENV['ARVADOS_API_TOKEN'] = 'qwertyuiopasdfghjklzxcvbnm1234567890abcdefghijklmn'
 
 require 'arvados'
-arv = Arvados.new
+arv = Arvados.new( { :suppress_ssl_warnings => false } )
 
 pt_list = arv.pipeline_template.list(where:{})
 puts pt_list[:items].first.inspect
