@@ -61,3 +61,25 @@ You should use your own domain instead of orvosapi.com
 
 Set up Apache and Passenger. Point them to the services/api directory in the source tree.
 
+## Add an admin user
+
+Point browser to the API endpoint. Log in with a google account.
+
+In the rails console:
+
+    Thread.current[:user] = User.find(1)
+    Thread.current[:user].is_admin = true
+    User.find(1).update_attributes is_admin: true
+    User.find(1).is_admin
+
+This should be
+
+     => true
+
+## Create a token
+
+In rails console
+
+     a = ApiClient.new(owner:1); a.save!
+     x = ApiClientAuthorization.new(api_client_id:a.id, user_id:1); x.save; x.api_token
+
