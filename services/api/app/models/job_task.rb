@@ -21,7 +21,7 @@ class JobTask < ArvadosModel
 
   def delete_created_job_tasks_if_failed
     if self.success == false and self.success != self.success_was
-      JobTask.destroy_all('created_by_job_task = ?', self.uuid)
+      JobTask.delete_all ['created_by_job_task = ?', self.uuid]
     end
   end
 
@@ -29,7 +29,7 @@ class JobTask < ArvadosModel
     if self.success == false and self.success != self.success_was
       # xxx qsequence should be sequential as advertised; for now at
       # least it's non-decreasing.
-      JobTask.update_all(['qsequence = ?', Time.now.to_f*1000000],
+      JobTask.update_all(['qsequence = ?', (Time.now.to_f*10000000).to_i],
                          ['created_by_job_task = ?', self.uuid])
     end
   end

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130523060213) do
+ActiveRecord::Schema.define(:version => 20130524042319) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -121,7 +121,7 @@ ActiveRecord::Schema.define(:version => 20130523060213) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "created_by_job_task"
-    t.integer  "qsequence"
+    t.integer  "qsequence",           :limit => 8
   end
 
   add_index "job_tasks", ["created_at"], :name => "index_job_tasks_on_created_at"
