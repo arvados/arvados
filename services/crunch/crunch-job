@@ -564,6 +564,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
   croak ("assert failed: \$slot[$childslot]->{'pid'} exists") if exists $slot[$childslot]->{pid};
   $slot[$childslot]->{pid} = $childpid;
 
+  Log ($id, "job_task ".$Jobstep->{'arvados_task'}->{'uuid'});
   Log ($id, "child $childpid started on $childslotname");
   $Jobstep->{attempts} ++;
   $Jobstep->{starttime} = time;
@@ -737,14 +738,14 @@ sub reapchildren
   $Jobstep->{arvados_task}->reload;
   my $success = $Jobstep->{arvados_task}->{success};
 
+  Log ($jobstepid, "child $pid on $whatslot $exitinfo success=$success");
+
   if (!defined $success) {
     # task did not indicate one way or the other --> fail
     $Jobstep->{arvados_task}->{success} = 0;
     $Jobstep->{arvados_task}->save;
     $success = 0;
   }
-
-  Log ($jobstepid, "child $pid on $whatslot $exitinfo success=$success");
 
   if (!$success)
   {
@@ -790,7 +791,7 @@ sub reapchildren
   delete $proc{$pid};
 
   # Load new tasks
-  my $newtask_list = $arv->{'job_tasks'}->{'index'}->execute('where' => {
+  my $newtask_list = $arv->{'job_tasks'}->{'list'}->execute('where' => {
     'created_by_job_task' => $Jobstep->{arvados_task}->{uuid}
                                                              });
   foreach my $arvados_task (@{$newtask_list->{'items'}}) {
@@ -953,7 +954,7 @@ sub collate_output
   {
     next if !exists $_->{arvados_task}->{output} || $_->{exitcode} != 0;
     my $output = $_->{arvados_task}->{output};
-    if ($output !~ /^[0-9a-f]{32}/)
+    if ($output !~ /^[0-9a-f]{32}(\+\S+)*$/)
     {
       $output_in_keep ||= $output =~ / [0-9a-f]{32}\S*\+K/;
       $whc->write_data ($output);
@@ -1099,14 +1100,12 @@ sub croak
 
 sub cleanup
 {
-  return if !$job_has_uuid || !$dbh;
-
-  reconnect_database();
-  my $sth;
-  $sth = $dbh->prepare ("update mrjobmanager set finishtime=now() where id=?");
-  $sth->execute ($jobmanager_id);
-  $sth = $dbh->prepare ("update mrjob set success=0, finishtime=now() where id=? and jobmanager_id=? and finishtime is null");
-  $sth->execute ($job_id, $jobmanager_id);
+  return if !$job_has_uuid;
+  $Job->reload;
+  $Job->{'running'} = 0;
+  $Job->{'success'} = 0;
+  $Job->{'finished_at'} = time;
+  $Job->save;
 }
 
 
