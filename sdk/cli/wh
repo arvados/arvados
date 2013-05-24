@@ -85,11 +85,10 @@ def parse_arguments(discovery_document)
   
   # get the subcommand
   cmd = ARGV.shift
-  cmd = cmd.pluralize unless cmd.nil?
   if sub_commands.include?(cmd) and cmd != '--help' then
     # subcommand exists
     # Now see if the method supplied exists
-    method = ARGV.shift 
+    method = ARGV.shift
     if discovery_document["resources"][cmd]["methods"].include?(method) then
       # method exists. Collect arguments.
       discovered_params = discovery_document["resources"][cmd]["methods"][method]["parameters"]
