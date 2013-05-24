@@ -80,6 +80,7 @@ class job_setup:
                 task_input = job_input + '/' + re.sub(r'^\./', '', f)
                 new_task_attrs = {
                     'job_uuid': current_job()['uuid'],
+                    'created_by_job_task': current_task()['uuid'],
                     'sequence': if_sequence + 1,
                     'parameters': {
                         'input':task_input
