@@ -328,4 +328,10 @@ class ApplicationController < ActionController::Base
       @remote_ip = request.env['REMOTE_ADDR']
     end
   end
+
+  def self._index_requires_parameters
+    {
+      where: { type: 'object', required: false }
+    }
+  end
 end

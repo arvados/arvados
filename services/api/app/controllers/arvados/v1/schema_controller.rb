@@ -208,6 +208,11 @@ class Arvados::V1::SchemaController < ApplicationController
                   type: "string",
                   description: "Query string for searching #{k.to_s.underscore.pluralize}.",
                   location: "query"
+                },
+                where: {
+                  type: "object",
+                  description: "Conditions for filtering #{k.to_s.underscore.pluralize}.",
+                  location: "query"
                 }
               },
               response: {

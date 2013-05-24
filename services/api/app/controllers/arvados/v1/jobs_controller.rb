@@ -51,4 +51,8 @@ class Arvados::V1::JobsController < ApplicationController
     find_objects_for_index
     index
   end
+
+  def self._queue_requires_parameters
+    self._index_requires_parameters
+  end
 end
