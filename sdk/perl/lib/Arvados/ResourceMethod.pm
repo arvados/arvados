@@ -40,18 +40,31 @@ sub execute
         elsif ($param->{'type'} eq 'object') {
             my %param_value;
             my ($p, $v);
-            while (($property_name, $property) = each %{$param->{'properties'}}) {
-                if (!exists $given_params{$param_name}->{$property_name}) {
-                    ;
+            if (exists $param->{'properties'}) {
+                while (my ($property_name, $property) =
+                       each %{$param->{'properties'}}) {
+                    # if the discovery doc specifies object structure,
+                    # convert to true/false depending on supplied type
+                    if (!exists $given_params{$param_name}->{$property_name}) {
+                        ;
+                    }
+                    elsif ($given_params{$param_name}->{$property_name} eq undef) {
+                        $param_value{$property_name} = JSON::null;
+                    }
+                    elsif ($property->{'type'} eq 'boolean') {
+                        $param_value{$property_name} = $given_params{$param_name}->{$property_name} ? JSON::true : JSON::false;
+                    }
+                    else {
+                        $param_value{$property_name} = $given_params{$param_name}->{$property_name};
+                    }
                 }
-                elsif ($given_params{$param_name}->{$property_name} eq undef) {
-                    $param_value{$property_name} = JSON::null;
-                }
-                elsif ($property->{'type'} eq 'boolean') {
-                    $param_value{$property_name} = $given_params{$param_name}->{$property_name} ? JSON::true : JSON::false;
-                }
-                else {
-                    $param_value{$property_name} = $given_params{$param_name}->{$property_name};
+            }
+            else {
+                while (my ($property_name, $property) =
+                       each %{$given_params{$param_name}}) {
+                    if (ref $property eq '' || $property eq undef) {
+                        $param_value{$property_name} = $property;
+                    }
                 }
             }
             $body_params{$param_name} = \%param_value;
