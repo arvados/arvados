@@ -74,7 +74,7 @@ class ApplicationController < ActionController::Base
   def render_error(e)
     logger.error e.inspect
     logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
-    if @object and @object.errors and @object.errors.full_messages
+    if @object and @object.errors and @object.errors.full_messages and not @object.errors.full_messages.empty?
       errors = @object.errors.full_messages
     else
       errors = [e.inspect]
