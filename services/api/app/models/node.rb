@@ -25,6 +25,7 @@ class Node < ArvadosModel
     t.add :first_ping_at
     t.add :last_ping_at
     t.add :info
+    t.add :slot_number
     t.add :status
     t.add lambda { |x| @@nameservers }, :as => :nameservers
   end
