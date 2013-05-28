@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130524042319) do
+ActiveRecord::Schema.define(:version => 20130528134100) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -264,7 +264,7 @@ ActiveRecord::Schema.define(:version => 20130524042319) do
   end
 
   add_index "nodes", ["created_at"], :name => "index_nodes_on_created_at"
-  add_index "nodes", ["hostname"], :name => "index_nodes_on_hostname", :unique => true
+  add_index "nodes", ["hostname"], :name => "index_nodes_on_hostname"
   add_index "nodes", ["modified_at"], :name => "index_nodes_on_modified_at"
   add_index "nodes", ["slot_number"], :name => "index_nodes_on_slot_number", :unique => true
   add_index "nodes", ["uuid"], :name => "index_nodes_on_uuid", :unique => true
