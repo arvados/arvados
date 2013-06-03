@@ -89,7 +89,8 @@ class job_setup:
                 service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
         if and_end_task:
             service.job_tasks().update(uuid=current_task()['uuid'],
-                                       job_task=json.dumps({'success':True}))
+                                       job_task=json.dumps({'success':True})
+                                       ).execute()
             exit(0)
 
 class DataReader:
