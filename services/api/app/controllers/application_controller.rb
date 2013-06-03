@@ -38,7 +38,8 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    if @object.update_attributes resource_attrs
+    attrs_to_update = resource_attrs.reject { |k,v| [:kind,:etag].index k }
+    if @object.update_attributes attrs_to_update
       show
     else
       render json: { errors: @object.errors.full_messages }, status: 422
