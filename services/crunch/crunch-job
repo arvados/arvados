@@ -979,13 +979,13 @@ sub collate_output
   $joboutput = $whc->write_finish if !defined $joboutput;
   if ($joboutput)
   {
-    Log (undef, "outputkey $joboutput");
+    Log (undef, "output $joboutput");
     $Job->{'output'} = $joboutput;
     $Job->save;
   }
   else
   {
-    Log (undef, "outputkey undef");
+    Log (undef, "output undef");
   }
   return $joboutput;
 }
