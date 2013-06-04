@@ -27,7 +27,9 @@ sub execute
 
     my %body_params;
     my %given_params = @_;
+    my %extra_params = %given_params;
     while (my ($param_name, $param) = each %{$method->{'parameters'}}) {
+        delete $extra_params{$param_name};
         if ($param->{'required'} && !exists $given_params{$param_name}) {
             croak("Required parameter not supplied: $param_name");
         }
@@ -74,6 +76,9 @@ sub execute
             $body_params{$param_name} = $given_params{$param_name};
         }
     }
+    if (%extra_params) {
+        croak("Unsupported parameter(s) passed to API call /$path: \"" . join('", "', keys %extra_params) . '"');
+    }
     my $r = $self->{'resourceAccessor'}->{'api'}->new_request;
     $r->set_uri($self->{'resourceAccessor'}->{'api'}->{'discoveryDocument'}->{'baseUrl'} . "/" . $path);
     $r->set_method($method->{'httpMethod'});
@@ -83,7 +88,7 @@ sub execute
     my $data, $headers;
     my ($status_number, $status_phrase) = $r->get_status();
     if ($status_number != 200) {
-        croak("API call failed: $status_number $status_phrase\n". $r->get_body());
+        croak("API call /$path failed: $status_number $status_phrase\n". $r->get_body());
     }
     $data = $r->get_body();
     $headers = $r->get_headers();
