@@ -791,9 +791,12 @@ sub reapchildren
   delete $proc{$pid};
 
   # Load new tasks
-  my $newtask_list = $arv->{'job_tasks'}->{'list'}->execute('where' => {
-    'created_by_job_task' => $Jobstep->{arvados_task}->{uuid}
-                                                             });
+  my $newtask_list = $arv->{'job_tasks'}->{'list'}->execute(
+    'where' => {
+      'created_by_job_task' => $Jobstep->{arvados_task}->{uuid}
+    },
+    'order' => 'qsequence'
+  );
   foreach my $arvados_task (@{$newtask_list->{'items'}}) {
     my $jobstep = {
       'level' => $arvados_task->{'sequence'},
