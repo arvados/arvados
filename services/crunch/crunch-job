@@ -918,9 +918,6 @@ sub preprocess_stderr
 
   while ($jobstep[$job]->{stderr} =~ /^(.*?)\n/) {
     my $line = $1;
-    if ($line =~ /\+\+\+mr/) {
-      last;
-    }
     substr $jobstep[$job]->{stderr}, 0, 1+length($line), "";
     Log ($job, "stderr $line");
     if ($line =~ /srun: error: (SLURM job $ENV{SLURM_JOBID} has expired) /) {
