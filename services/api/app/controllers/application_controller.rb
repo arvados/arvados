@@ -332,7 +332,8 @@ class ApplicationController < ActionController::Base
 
   def self._index_requires_parameters
     {
-      where: { type: 'object', required: false }
+      where: { type: 'object', required: false },
+      order: { type: 'string', required: false }
     }
   end
 end
