@@ -16,10 +16,20 @@ from apiclient.discovery import build
 class CredentialsFromEnv:
     @staticmethod
     def http_request(self, uri, **kwargs):
+        from httplib import BadStatusLine
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
         kwargs['headers']['Authorization'] = 'OAuth2 %s' % os.environ['ARVADOS_API_TOKEN']
-        return self.orig_http_request(uri, **kwargs)
+        try:
+            return self.orig_http_request(uri, **kwargs)
+        except BadStatusLine:
+            # This is how httplib tells us that it tried to reuse an
+            # existing connection but it was already closed by the
+            # server. In that case, yes, we would like to retry.
+            # Unfortunately, we are not absolutely certain that the
+            # previous call did not succeed, so this is slightly
+            # risky.
+            return self.orig_http_request(uri, **kwargs)
     def authorize(self, http):
         http.orig_http_request = http.request
         http.request = types.MethodType(self.http_request, http)
