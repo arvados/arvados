@@ -628,7 +628,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     }
 
     # give up if no nodes are succeeding
-    if (!grep { $_->{node}->{losing_streak} == 0 } @slot) {
+    if (!grep { $_->{node}->{losing_streak} == 0 &&
+                    $_->{node}->{hold_count} < 4 } @slot) {
       my $message = "Every node has failed -- giving up on this round";
       Log (undef, $message);
       last THISROUND;
@@ -752,7 +753,9 @@ sub reapchildren
 
   if (!$success)
   {
-    --$Jobstep->{attempts} if $Jobstep->{node_fail};
+    my $no_incr_attempts;
+    $no_incr_attempts = 1 if $Jobstep->{node_fail};
+
     ++$thisround_failed;
     ++$thisround_failed_multiple if $Jobstep->{attempts} > 1;
 
@@ -765,6 +768,7 @@ sub reapchildren
 	  $elapsed < 5 &&
 	  $Jobstep->{attempts} > 1) {
 	Log ($jobstepid, "blaming failure on suspect node " . $slot[$proc{$pid}->{slot}]->{node}->{name} . " instead of incrementing jobstep attempts");
+        $no_incr_attempts = 1;
 	--$Jobstep->{attempts};
       }
       ban_node_by_slot($proc{$pid}->{slot});
@@ -772,6 +776,8 @@ sub reapchildren
 
     push @jobstep_todo, $jobstepid;
     Log ($jobstepid, "failure in $elapsed seconds");
+
+    --$Jobstep->{attempts} if $no_incr_attempts;
     $Job->{'tasks_summary'}->{'failed'}++;
   }
   else
@@ -923,7 +929,7 @@ sub preprocess_stderr
     my $line = $1;
     substr $jobstep[$job]->{stderr}, 0, 1+length($line), "";
     Log ($job, "stderr $line");
-    if ($line =~ /srun: error: (SLURM job $ENV{SLURM_JOBID} has expired) /) {
+    if ($line =~ /srun: error: (SLURM job $ENV{SLURM_JOBID} has expired|Unable to confirm allocation for job) /) {
       # whoa.
       $main::please_freeze = 1;
     }
@@ -1326,6 +1332,7 @@ sub ban_node_by_slot {
   # Don't start any new jobsteps on this node for 60 seconds
   my $slotid = shift;
   $slot[$slotid]->{node}->{hold_until} = 60 + scalar time;
+  $slot[$slotid]->{node}->{hold_count}++;
   Log (undef, "backing off node " . $slot[$slotid]->{node}->{name} . " for 60 seconds");
 }
 
