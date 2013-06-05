@@ -55,6 +55,7 @@ use Arvados;
 use Getopt::Long;
 use Warehouse;
 use Warehouse::Stream;
+use IPC::System::Simple qw(capturex);
 
 $ENV{"TMPDIR"} ||= "/tmp";
 $ENV{"CRUNCH_TMP"} = $ENV{"TMPDIR"} . "/crunch-job";
@@ -686,10 +687,16 @@ $Job->save;
 
 if ($Job->{'output'})
 {
-  $arv->{'collections'}->{'create'}->execute('collection' => {
-    'uuid' => $Job->{'output'},
-    'manifest_text' => system("whget", $Job->{'output'}),
-  });
+  eval {
+    my $manifest_text = capturex("whget", $Job->{'output'});
+    $arv->{'collections'}->{'create'}->execute('collection' => {
+      'uuid' => $Job->{'output'},
+      'manifest_text' => $manifest_text,
+    });
+  };
+  if ($@) {
+    Log (undef, "Failed to register output manifest: $@");
+  }
 }
 
 Log (undef, "finish");
