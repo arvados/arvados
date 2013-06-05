@@ -50,7 +50,7 @@ sub execute
                     if (!exists $given_params{$param_name}->{$property_name}) {
                         ;
                     }
-                    elsif ($given_params{$param_name}->{$property_name} eq undef) {
+                    elsif (!defined $given_params{$param_name}->{$property_name}) {
                         $param_value{$property_name} = JSON::null;
                     }
                     elsif ($property->{'type'} eq 'boolean') {
