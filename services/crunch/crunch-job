@@ -688,8 +688,8 @@ if ($Job->{'output'})
 {
   $arv->{'collections'}->{'create'}->execute('collection' => {
     'uuid' => $Job->{'output'},
-    'manifest_text' => system("whget", $Job->{arvados_task}->{output}),
-                                             });;
+    'manifest_text' => system("whget", $Job->{'output'}),
+  });
 }
 
 
