@@ -275,9 +275,9 @@ else
     'qsequence' => 0,
     'parameters' => {},
                                                           });
-  push @jobstep, { level => 0,
-		   attempts => 0,
-                   arvados_task => $first_task,
+  push @jobstep, { 'level' => 0,
+		   'attempts' => 0,
+                   'arvados_task' => $first_task,
 		 };
   push @jobstep_todo, 0;
 }
@@ -681,7 +681,7 @@ goto ONELEVEL if !defined $success;
 release_allocation();
 freeze();
 $Job->{'output'} = &collate_output();
-$Job->{'success'} = 0 if !$Job->{'output'};
+$Job->{'success'} = $Job->{'output'} && $success;
 $Job->save;
 
 if ($Job->{'output'})
@@ -692,11 +692,7 @@ if ($Job->{'output'})
   });
 }
 
-
 Log (undef, "finish");
-
-$Job->{'success'} = $Job->{'output'} && $success;
-$Job->save;
 
 save_meta();
 exit 0;
@@ -735,15 +731,15 @@ sub reapchildren
 
   my $exitcode = $?;
   my $exitinfo = "exit $exitcode";
-  $Jobstep->{arvados_task}->reload;
-  my $success = $Jobstep->{arvados_task}->{success};
+  $Jobstep->{'arvados_task'}->reload;
+  my $success = $Jobstep->{'arvados_task'}->{success};
 
   Log ($jobstepid, "child $pid on $whatslot $exitinfo success=$success");
 
   if (!defined $success) {
     # task did not indicate one way or the other --> fail
-    $Jobstep->{arvados_task}->{success} = 0;
-    $Jobstep->{arvados_task}->save;
+    $Jobstep->{'arvados_task'}->{success} = 0;
+    $Jobstep->{'arvados_task'}->save;
     $success = 0;
   }
 
@@ -782,7 +778,7 @@ sub reapchildren
   $Jobstep->{exitcode} = $exitcode;
   $Jobstep->{finishtime} = time;
   process_stderr ($jobstepid, $success);
-  Log ($jobstepid, "output " . $Jobstep->{arvados_task}->{output});
+  Log ($jobstepid, "output " . $Jobstep->{'arvados_task'}->{output});
 
   close $reader{$jobstepid};
   delete $reader{$jobstepid};
@@ -793,7 +789,7 @@ sub reapchildren
   # Load new tasks
   my $newtask_list = $arv->{'job_tasks'}->{'list'}->execute(
     'where' => {
-      'created_by_job_task' => $Jobstep->{arvados_task}->{uuid}
+      'created_by_job_task' => $Jobstep->{'arvados_task'}->{uuid}
     },
     'order' => 'qsequence'
   );
@@ -952,8 +948,10 @@ sub collate_output
   my $joboutput;
   for (@jobstep)
   {
-    next if !exists $_->{arvados_task}->{output} || $_->{exitcode} != 0;
-    my $output = $_->{arvados_task}->{output};
+    next if (!exists $_->{'arvados_task'}->{output} ||
+             !$_->{'arvados_task'}->{'success'} ||
+             $_->{'exitcode'} != 0);
+    my $output = $_->{'arvados_task'}->{output};
     if ($output !~ /^[0-9a-f]{32}(\+\S+)*$/)
     {
       $output_in_keep ||= $output =~ / [0-9a-f]{32}\S*\+K/;
