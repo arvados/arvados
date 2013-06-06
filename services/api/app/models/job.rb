@@ -7,6 +7,7 @@ class Job < ArvadosModel
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
   before_create :ensure_script_version_is_commit
+  before_update :ensure_script_version_is_commit
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
 
