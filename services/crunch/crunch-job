@@ -415,7 +415,9 @@ else
 
 foreach (qw (script script_version script_parameters resource_limits))
 {
-  Log (undef, $_ . " " . $Job->{$_});
+  Log (undef,
+       "$_ " .
+       (ref($Job->{$_}) ? JSON::encode_json($Job->{$_}) : $Job->{$_}));
 }
 foreach (split (/\n/, $Job->{knobs}))
 {
