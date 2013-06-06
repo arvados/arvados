@@ -1,0 +1,31 @@
+<%= form_for @object do |f| %>
+<table class="table">
+  <tr>
+    <td>
+      name
+    </td><td>
+      <%= f.text_field :name %>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      authorized user
+    </td><td>
+      <%= f.text_field :authorized_user %>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      public key
+    </td><td>
+      <%= f.text_area :public_key %>
+    </td>
+  </tr>
+  <tr>
+    <td></td>
+    <td>
+      <%= f.submit class: 'btn btn-primary' %>
+    </td>
+  </tr>
+</table>
+<% end %>

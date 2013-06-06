@@ -1,3 +1,4 @@
+<%= form_for @object do |f| %>
 <table class="table topalign">
   <thead>
   </thead>
@@ -7,6 +8,8 @@
     <% end %>
   </tbody>
 </table>
+<% end %>
+
 <pre>
 <%= JSON.pretty_generate(@object.attributes) rescue nil %>
 </pre>

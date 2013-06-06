@@ -187,6 +187,22 @@ class ArvadosBase < ActiveRecord::Base
     }
   end
 
+  def editable?
+    (current_user and
+     (current_user.is_admin or
+      current_user.uuid == self.owner))
+  end
+
+  def attribute_editable?(attr)
+    if "created_at modified_at modified_by_user modified_by_client updated_at".index(attr.to_s)
+      false
+    elsif "uuid owner".index(attr.to_s)
+      current_user and current_user.is_admin
+    else
+      true
+    end
+  end
+
   def self.resource_class_for_uuid(uuid, opts={})
     if uuid.is_a? ArvadosBase
       return uuid.class
@@ -222,5 +238,9 @@ class ArvadosBase < ActiveRecord::Base
     self.uuid = nil
     @etag = nil
     self
+  end
+
+  def current_user
+    Thread.current[:user]
   end
 end

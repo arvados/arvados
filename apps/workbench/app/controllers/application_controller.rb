@@ -65,6 +65,24 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def new
+    @object = model_class.new
+  end
+
+  def update
+    if @object.update_attributes params[@object.class.to_s.underscore.singularize.to_sym]
+      show
+    else
+      self.render_error status: 422
+    end
+  end
+
+  def create
+    @object = model_class.new params[model_class.to_s.singularize.to_sym]
+    @object.save!
+    redirect_to @object
+  end
+
   def current_user
     if Thread.current[:arvados_api_token]
       @current_user ||= User.current
@@ -121,6 +139,8 @@ class ApplicationController < ActionController::Base
         rescue ArvadosApiClient::NotLoggedInException
           try_redirect_to_login = true
         end
+      else
+        logger.debug "session is #{session.inspect}"
       end
       if try_redirect_to_login
         respond_to do |f|

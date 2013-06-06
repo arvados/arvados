@@ -16,4 +16,8 @@ class PipelineInstance < ArvadosBase
       end
     end
   end
+
+  def attribute_editable?(attr)
+    attr == 'name'
+  end
 end

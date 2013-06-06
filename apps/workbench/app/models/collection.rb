@@ -8,4 +8,8 @@ class Collection < ArvadosBase
       tot
     end
   end
+
+  def attribute_editable?(attr)
+    false
+  end
 end
