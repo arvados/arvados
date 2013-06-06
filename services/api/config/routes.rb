@@ -1,4 +1,5 @@
 Server::Application.routes.draw do
+  resources :authorized_keys
   resources :keep_disks
   resources :commit_ancestors
   resources :commits
@@ -92,6 +93,7 @@ Server::Application.routes.draw do
       resources :jobs
       resources :job_tasks
       resources :keep_disks
+      resources :authorized_keys
     end
   end
 

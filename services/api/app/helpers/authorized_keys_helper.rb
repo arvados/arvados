@@ -1,0 +1,2 @@
+module AuthorizedKeysHelper
+end

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130528134100) do
+ActiveRecord::Schema.define(:version => 20130606183519) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -46,6 +46,24 @@ ActiveRecord::Schema.define(:version => 20130528134100) do
   add_index "api_clients", ["created_at"], :name => "index_api_clients_on_created_at"
   add_index "api_clients", ["modified_at"], :name => "index_api_clients_on_modified_at"
   add_index "api_clients", ["uuid"], :name => "index_api_clients_on_uuid", :unique => true
+
+  create_table "authorized_keys", :force => true do |t|
+    t.string   "uuid",               :null => false
+    t.string   "owner",              :null => false
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "name"
+    t.string   "key_type"
+    t.string   "authorized_user"
+    t.text     "public_key"
+    t.datetime "expires_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "authorized_keys", ["authorized_user", "expires_at"], :name => "index_authorized_keys_on_authorized_user_and_expires_at"
+  add_index "authorized_keys", ["uuid"], :name => "index_authorized_keys_on_uuid", :unique => true
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
