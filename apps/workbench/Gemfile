@@ -24,7 +24,12 @@ group :assets do
 end
 
 gem 'jquery-rails'
+gem 'twitter-bootstrap-rails'
 gem 'anjlab-bootstrap-rails', '>= 2.2', :require => 'bootstrap-rails'
+gem 'bootstrap-rails'
+gem 'bootstrap-editable-rails'
+gem 'less'
+gem 'less-rails'
 
 # To use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.0.0'
@@ -44,4 +49,3 @@ gem 'anjlab-bootstrap-rails', '>= 2.2', :require => 'bootstrap-rails'
 gem 'rvm-capistrano', :group => :test
 
 gem 'passenger', :group => :production
-
