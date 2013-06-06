@@ -1,0 +1,2 @@
+class AuthorizedKeysController < ApplicationController
+end

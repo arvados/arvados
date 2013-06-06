@@ -1,4 +1,7 @@
 ArvadosWorkbench::Application.routes.draw do
+  resources :authorized_keys
+
+
   resources :job_tasks
 
 

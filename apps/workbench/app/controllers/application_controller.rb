@@ -51,6 +51,7 @@ class ApplicationController < ActionController::Base
     @objects ||= model_class.all
     respond_to do |f|
       f.json { render json: @objects }
+      f.html { render }
     end
   end
 

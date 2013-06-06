@@ -1,0 +1,49 @@
+<table class="table table-hover">
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+	id
+      </th><th>
+	owner
+      </th><th>
+	name
+      </th><th>
+	key_type
+      </th><th>
+	public_key
+      </th><th>
+	expires_at
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <% @objects.sort_by { |ak| ak[:created_at] }.reverse.each do |g| %>
+
+    <tr>
+      <td>
+        <%= link_to_if_arvados_object ak %>
+      </td><td>
+        <%= ak.owner %>
+      </td><td>
+        <%= ak.name %>
+      </td><td>
+        <%= ak.key_type %>
+      </td><td>
+        <%= ak.public_key %>
+      </td><td>
+        <%= ak.expires_at %>
+      </td>
+    </tr>
+
+    <% end %>
+    <% if @objects.count == 0 %>
+    <tr>
+      <td colspan="6">
+        (no authorized keys)
+      </td>
+    </tr>
+    <% end %>
+
+  </tbody>
+</table>
