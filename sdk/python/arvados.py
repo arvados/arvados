@@ -97,6 +97,10 @@ class job_setup:
                         }
                     }
                 service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
+        p.stdout.close()
+        p.wait()
+        if p.returncode != 0:
+            raise Exception("whls exited %d" % p.returncode)
         if and_end_task:
             service.job_tasks().update(uuid=current_task()['uuid'],
                                        job_task=json.dumps({'success':True})
