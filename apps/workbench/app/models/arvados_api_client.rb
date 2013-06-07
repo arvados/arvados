@@ -1,5 +1,7 @@
 class ArvadosApiClient
-  class NotLoggedInException < Exception
+  class NotLoggedInException < StandardError
+  end
+  class InvalidApiResponseException < StandardError
   end
   def api(resources_kind, action, data=nil)
     arvados_api_token = Thread.current[:arvados_api_token]
@@ -27,13 +29,17 @@ class ArvadosApiClient
     url = "#{self.arvados_v1_base}/#{resources_kind}#{action}"
     IO.popen([ENV,
               'curl',
-              '-s',
+              "-s#{'k' if Rails.configuration.arvados_insecure_https}",
               *dataargs,
               url],
              'r') do |io|
       json = io.read
     end
-    resp = Oj.load(json, :symbol_keys => true)
+    begin
+      resp = Oj.load(json, :symbol_keys => true)
+    rescue Oj::ParseError
+      raise InvalidApiResponseException.new json
+    end
     if resp[:errors]
       if resp[:errors][0] == 'Not logged in'
         raise NotLoggedInException.new

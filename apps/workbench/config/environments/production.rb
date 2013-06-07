@@ -67,6 +67,7 @@ ArvadosWorkbench::Application.configure do
 
   config.arvados_login_base = 'https://arvados.local/login'
   config.arvados_v1_base = 'https://arvados.local/arvados/v1'
+  config.arvados_insecure_https = false # true = do not check server certificate
 
   config.data_import_dir = '/data/arvados-workbench-upload/data'
   config.data_export_dir = '/data/arvados-workbench-download/data'
