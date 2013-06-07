@@ -8,11 +8,11 @@
       </th><th>
 	name
       </th><th>
-	key_type
+	key&nbsp;type
       </th><th>
-	public_key
+	public&nbsp;key
       </th><th>
-	expires_at
+	expires
       </th>
     </tr>
   </thead>
@@ -24,15 +24,15 @@
       <td>
         <%= link_to_if_arvados_object ak %>
       </td><td>
-        <%= ak.owner %>
+        <%= render_editable_attribute ak, 'owner' %>
       </td><td>
-        <%= ak.name %>
+        <%= render_editable_attribute ak, 'name' %>
       </td><td>
-        <%= ak.key_type %>
+        <%= render_editable_attribute ak, 'key_type' %>
       </td><td>
-        <%= ak.public_key %>
+        <%= render_editable_attribute ak, 'public_key' %>
       </td><td>
-        <%= ak.expires_at %>
+        <%= render_editable_attribute ak, 'expires_at' %>
       </td>
     </tr>
 

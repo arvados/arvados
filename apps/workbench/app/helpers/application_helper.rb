@@ -32,4 +32,17 @@ module ApplicationHelper
       attrvalue
     end
   end
+
+  def render_editable_attribute(object, attr)
+    attrvalue = object.send attr
+    return attrvalue if !object.attribute_editable? attr
+    link_to object.send(attr).to_s, '#', {
+      "data-type" => "text",
+      "data-resource" => object.class.to_s.underscore,
+      "data-name" => attr,
+      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
+      "data-original-title" => "Update #{attr.gsub '_', ' '}",
+      :class => "editable"
+    }
+  end
 end
