@@ -117,6 +117,17 @@ class ArvadosBase < ActiveRecord::Base
   def save!
     self.save or raise Exception.new("Save failed")
   end
+
+  def destroy
+    if etag || uuid
+      postdata = { '_method' => 'DELETE' }
+      resp = $arvados_api_client.api(self.class, '/' + uuid, postdata)
+      resp[:etag] && resp[:uuid] && resp
+    else
+      true
+    end
+  end
+      
   def links(*args)
     o = {}
     o.merge!(args.pop) if args[-1].is_a? Hash
