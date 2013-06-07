@@ -43,6 +43,7 @@ class ArvadosBase < ActiveRecord::Base
   def self.columns
     return @columns unless @columns.nil?
     @columns = []
+    @attribute_info ||= {}
     return @columns if $arvados_api_client.arvados_schema[self.to_s.to_sym].nil?
     $arvados_api_client.arvados_schema[self.to_s.to_sym].each do |coldef|
       k = coldef[:name].to_sym
@@ -53,6 +54,7 @@ class ArvadosBase < ActiveRecord::Base
         serialize k, coldef[:type].constantize
       end
       attr_accessible k
+      @attribute_info[k] = coldef
     end
     attr_reader :etag
     attr_reader :kind
@@ -60,6 +62,10 @@ class ArvadosBase < ActiveRecord::Base
   end
   def self.column(name, sql_type = nil, default = nil, null = true)
     ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
+  end
+  def self.attribute_info
+    self.columns
+    @attribute_info
   end
   def self.find(uuid)
     if uuid.class != String or uuid.length < 27 then

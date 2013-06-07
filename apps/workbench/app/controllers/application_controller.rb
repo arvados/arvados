@@ -78,9 +78,17 @@ class ApplicationController < ActionController::Base
   end
 
   def create
-    @object = model_class.new params[model_class.to_s.singularize.to_sym]
+    @object ||= model_class.new params[model_class.to_s.singularize.to_sym]
     @object.save!
     redirect_to @object
+  end
+
+  def destroy
+    if @object.destroy
+      redirect_to(params[:return_to] || :back)
+    else
+      self.render_error status: 422
+    end
   end
 
   def current_user

@@ -33,16 +33,19 @@ module ApplicationHelper
     end
   end
 
-  def render_editable_attribute(object, attr)
-    attrvalue = object.send attr
+  def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
+    attrvalue = object.send(attr) if attrvalue.nil?
     return attrvalue if !object.attribute_editable? attr
-    link_to object.send(attr).to_s, '#', {
-      "data-type" => "text",
+    link_to attrvalue.to_s, '#', {
+      "data-emptytext" => "none",
+      "data-placement" => "bottom",
+      "data-type" => (object.class.attribute_info[attr.to_sym][:type] == "text" ? "textarea" : "text"),
       "data-resource" => object.class.to_s.underscore,
       "data-name" => attr,
+      "data-value" => object.send(attr),
       "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
       "data-original-title" => "Update #{attr.gsub '_', ' '}",
       :class => "editable"
-    }
+    }.merge(htmloptions)
   end
 end

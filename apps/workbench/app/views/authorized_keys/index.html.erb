@@ -1,4 +1,4 @@
-<table class="table table-hover">
+<table class="table">
   <thead>
     <tr class="contain-align-left">
       <th>
@@ -18,7 +18,7 @@
   </thead>
   <tbody>
 
-    <% @objects.sort_by { |ak| ak[:created_at] }.reverse.each do |ak| %>
+    <% @objects.sort_by { |ak| ak[:created_at] }.each do |ak| %>
 
     <tr>
       <td>
@@ -28,18 +28,20 @@
       </td><td>
         <%= render_editable_attribute ak, 'name' %>
       </td><td>
-        <%= render_editable_attribute ak, 'key_type' %>
+        <%= render_editable_attribute ak, 'key_type', ak.key_type, "data-type" => "select", "data-source" => '[{value:"SSH",text:"SSH"}]' %>
       </td><td>
-        <%= render_editable_attribute ak, 'public_key' %>
+        <%= render_editable_attribute ak, 'public_key', ak.public_key.andand.sub(/^(.{12}).{16,}(.{16,})$/, '\1...\2') %>
       </td><td>
         <%= render_editable_attribute ak, 'expires_at' %>
+      </td><td>
+        <%= link_to raw('<i class="icon-trash"></i>'), { action: 'destroy', id: ak.uuid }, { confirm: 'Delete this key?', method: 'delete' } %>
       </td>
     </tr>
 
     <% end %>
     <% if @objects.count == 0 %>
     <tr>
-      <td colspan="6">
+      <td colspan="7">
         (no authorized keys)
       </td>
     </tr>
@@ -47,3 +49,5 @@
 
   </tbody>
 </table>
+
+<%= button_to "Add a new key", { action: 'create', return_to: './' }, { class: 'btn btn-primary' } %>

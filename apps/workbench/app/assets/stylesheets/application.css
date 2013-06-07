@@ -36,3 +36,9 @@ tr.cell-noborder>td {
 table .data-size, .table .data-size {
     text-align: right;
 }
+body .editable-empty {
+    color: #999;
+}
+body .editable-empty:hover {
+    color: #0088cc;
+}
