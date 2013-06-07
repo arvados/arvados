@@ -29,8 +29,8 @@
         <%= render_editable_attribute ak, 'name' %>
       </td><td>
         <%= render_editable_attribute ak, 'key_type', ak.key_type, "data-type" => "select", "data-source" => '[{value:"SSH",text:"SSH"}]' %>
-      </td><td>
-        <%= render_editable_attribute ak, 'public_key', ak.public_key.andand.sub(/^(.{12}).{16,}(.{16,})$/, '\1...\2') %>
+      </td><td style="max-width: 120px; overflow-x: hidden">
+        <%= render_editable_attribute ak, 'public_key' %>
       </td><td>
         <%= render_editable_attribute ak, 'expires_at' %>
       </td><td>

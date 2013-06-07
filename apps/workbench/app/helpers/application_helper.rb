@@ -36,10 +36,21 @@ module ApplicationHelper
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
     attrvalue = object.send(attr) if attrvalue.nil?
     return attrvalue if !object.attribute_editable? attr
+
+    input_type = 'text'
+    case object.class.attribute_info[attr.to_sym][:type]
+    when 'text'
+      input_type = 'textarea'
+    when 'datetime'
+      input_type = 'date'
+    else
+      input_type = 'text'
+    end
+
     link_to attrvalue.to_s, '#', {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
-      "data-type" => (object.class.attribute_info[attr.to_sym][:type] == "text" ? "textarea" : "text"),
+      "data-type" => input_type,
       "data-resource" => object.class.to_s.underscore,
       "data-name" => attr,
       "data-value" => object.send(attr),
