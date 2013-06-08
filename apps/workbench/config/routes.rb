@@ -1,4 +1,7 @@
 ArvadosWorkbench::Application.routes.draw do
+  resources :virtual_machines
+
+
   resources :authorized_keys
 
 

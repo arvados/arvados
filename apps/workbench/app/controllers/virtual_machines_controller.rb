@@ -1,0 +1,2 @@
+class VirtualMachinesController < ApplicationController
+end
