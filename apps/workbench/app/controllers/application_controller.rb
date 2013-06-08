@@ -153,10 +153,15 @@ class ApplicationController < ActionController::Base
       if try_redirect_to_login
         respond_to do |f|
           f.html {
-            redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+            if request.method == 'GET'
+              redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+            else
+              flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
+              redirect_to :back
+            end
           }
           f.json {
-            @errors = ['No API token supplied -- can\'t really do anything.']
+            @errors = ['You do not seem to be logged in. You did not supply an API token with this request, and your session (if any) has timed out.']
             self.render_error status: 422
           }
         end
