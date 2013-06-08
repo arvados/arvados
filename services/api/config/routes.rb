@@ -1,4 +1,5 @@
 Server::Application.routes.draw do
+  resources :virtual_machines
   resources :authorized_keys
   resources :keep_disks
   resources :commit_ancestors
@@ -94,6 +95,7 @@ Server::Application.routes.draw do
       resources :job_tasks
       resources :keep_disks
       resources :authorized_keys
+      resources :virtual_machines
     end
   end
 

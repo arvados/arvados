@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130606183519) do
+ActiveRecord::Schema.define(:version => 20130608053730) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -359,5 +359,19 @@ ActiveRecord::Schema.define(:version => 20130606183519) do
   add_index "users", ["created_at"], :name => "index_users_on_created_at"
   add_index "users", ["modified_at"], :name => "index_users_on_modified_at"
   add_index "users", ["uuid"], :name => "index_users_on_uuid", :unique => true
+
+  create_table "virtual_machines", :force => true do |t|
+    t.string   "uuid",               :null => false
+    t.string   "owner",              :null => false
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "hostname"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "virtual_machines", ["hostname"], :name => "index_virtual_machines_on_hostname"
+  add_index "virtual_machines", ["uuid"], :name => "index_virtual_machines_on_uuid", :unique => true
 
 end
