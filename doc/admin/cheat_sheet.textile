@@ -1,0 +1,52 @@
+---
+layout: default
+navsection: adminguide
+title: Cheat Sheet
+navorder: 1
+---
+
+h1. Cheat Sheet
+
+h3. CLI setup
+
+<pre>
+arv_base=https://9ujm1.arvados.org/arvados/v1
+arv_token=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
+# arv_curlopts=-k  # only if you want insecure http
+arv_curl="curl -H 'Authorization: OAuth2 $arv_token' $arv_curlopts"
+</pre>
+
+h3. Create VM
+
+<pre>
+vm_hostname=xxxxxxxchangeme
+
+eval $arv_curl -X POST --data-urlencode virtual_machine@/dev/stdin <<EOF $arv_base/virtual_machines
+{
+"hostname":"$vm_hostname"
+}
+EOF
+</pre>
+
+
+h3. User &rarr; VM
+
+Give @$user_uuid@ permission to log in to @$vm_uuid@ as @$target_username@
+
+<pre>
+user_uuid=xxxxxxxchangeme
+vm_uuid=xxxxxxxchangeme
+target_username=xxxxxxxchangeme
+
+eval $arv_curl -X POST --data-urlencode link@/dev/stdin <<EOF $arv_base/links
+{
+"tail_kind":"arvados#user",
+"tail_uuid":"$user_uuid",
+"head_kind":"arvados#virtual_machine",
+"head_uuid":"$vm_uuid",
+"link_class":"permission",
+"name":"can_login",
+"properties":{"username":"$target_username"}
+}
+EOF
+</pre>
