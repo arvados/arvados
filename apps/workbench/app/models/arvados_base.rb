@@ -258,6 +258,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def current_user
+    Thread.current[:user] ||= User.current if Thread.current[:arvados_api_token]
     Thread.current[:user]
   end
 end

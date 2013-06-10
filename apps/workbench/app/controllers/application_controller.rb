@@ -93,7 +93,7 @@ class ApplicationController < ActionController::Base
 
   def current_user
     if Thread.current[:arvados_api_token]
-      @current_user ||= User.current
+      Thread.current[:user] ||= User.current
     else
       logger.error "No API token in Thread"
       return nil
