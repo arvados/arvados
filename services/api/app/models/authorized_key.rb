@@ -5,6 +5,8 @@ class AuthorizedKey < ArvadosModel
   before_create :permission_to_set_authorized_user
   before_update :permission_to_set_authorized_user
 
+  belongs_to :authorized_user, :foreign_key => :authorized_user, :class_name => 'User', :primary_key => :uuid
+
   api_accessible :superuser, :extend => :common do |t|
     t.add :name
     t.add :key_type

@@ -208,6 +208,12 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def admin_required
+    unless current_user and current_user.is_admin
+      render :json => { errors: ['Forbidden'] }.to_json, status: 403
+    end
+  end
+
   def thread_with_auth_info
     begin
       user = nil

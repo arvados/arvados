@@ -3,6 +3,8 @@ class VirtualMachine < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  has_many :login_permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission' and name = 'can_login'"
+
   api_accessible :superuser, :extend => :common do |t|
     t.add :hostname
   end

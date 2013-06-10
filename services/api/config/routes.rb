@@ -82,6 +82,7 @@ Server::Application.routes.draw do
       match '/links/from/:tail_uuid' => 'links#index', :as => :arvados_v1_links_from
       match '/users/current' => 'users#current'
       match '/jobs/queue' => 'jobs#queue'
+      match '/authorized_keys/get_all_logins' => 'authorized_keys#get_all_logins'
       resources :collections
       resources :links
       resources :nodes
