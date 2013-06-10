@@ -216,7 +216,7 @@ class ArvadosBase < ActiveRecord::Base
     elsif "uuid owner".index(attr.to_s)
       current_user and current_user.is_admin
     else
-      true
+      current_user and current_user.uuid == owner
     end
   end
 
