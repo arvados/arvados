@@ -1,0 +1,58 @@
+<table class="table">
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+	id
+      </th><th>
+	name
+      </th><th>
+	email
+      </th><th>
+	admin?
+      </th><th>
+	owner
+      </th><th>
+	default group
+      </th><th>
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <% @objects.sort_by { |u| u[:created_at] }.each do |u| %>
+
+    <tr>
+      <td>
+        <%= link_to_if_arvados_object u %>
+      </td><td>
+        <%= render_editable_attribute u, 'first_name' %>
+        <%= render_editable_attribute u, 'last_name' %>
+      </td><td>
+        <%= render_editable_attribute u, 'email' %>
+      </td><td>
+        <%= render_editable_attribute u, 'is_admin', u.is_admin ? 'Admin' : '', "data-type" => "select", "data-source" => '[{value:1,text:"admin"},{value:0,text:"No"}]' %>
+      </td><td>
+        <%= render_editable_attribute u, 'owner' %>
+      </td><td>
+        <%= render_editable_attribute u, 'default_owner' %>
+      </td>
+
+      <td>
+        <% if current_user and current_user.is_admin %>
+        <%= link_to raw('<i class="icon-trash"></i>'), { action: 'destroy', id: u.uuid }, { confirm: 'Delete this user?', method: 'delete' } %>
+        <% end %>
+      </td>
+
+    </tr>
+
+    <% end %>
+    <% if @objects.count == 0 %>
+    <tr>
+      <td colspan="7">
+        (no users)
+      </td>
+    </tr>
+    <% end %>
+
+  </tbody>
+</table>
