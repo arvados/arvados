@@ -11,6 +11,6 @@ navorder: 0
 
 1. Set up a cluster, or use Amazon
 1. Create and mount Keep volumes
-1. Create a controller VM and install the Arvados REST API server
-1. Create an administrator account
+1. [Install the Arvados REST API server](install-api-server.html)
+1. [Install the Arvados workbench application](install-workbench-app.html)
 1. Set up the Job manager
