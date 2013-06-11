@@ -39,11 +39,21 @@ CUSTOM_PROVIDER_URL.
 Make sure your Omniauth provider knows about your APP_ID and APP_SECRET
 combination.
 
+You also need to update config/initializers/secret_token.rb. Generate a new secret with
+
+  rake secret
+
+and put it in config/initializers/secret_token.rb:
+
+  Server::Application.config.secret_token = 'your-new-secret-here'
+
 Finally, edit your
 
     environments/production.rb
 
-file. Specifically, you want to make sure that 
+file. 
+
+First, you want to make sure that 
 
     config.uuid_prefix
 
@@ -56,6 +66,15 @@ also serves as the first part of the hostname for your API server, for instance
     9ujm1.arvadosapi.com
 
 You should use your own domain instead of arvadosapi.com
+
+Second, unless you are running on AWS, you will want to change the definition of
+
+  config.compute_node_nameservers
+
+If you know your nameservers and they are fixed, you can hardcode them, and
+make sure to remove the code that tries to look them up from the AWS metadata:
+
+  config.compute_node_nameservers = ['1.2.3.4','2.3.4.5','3.4.5.6']
 
 ## Apache/Passenger
 
