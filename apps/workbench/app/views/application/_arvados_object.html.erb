@@ -10,6 +10,31 @@
 </table>
 <% end %>
 
-<pre>
-<%= JSON.pretty_generate(@object.attributes) rescue nil %>
-</pre>
+<div>
+  <ul class="nav nav-tabs">
+    <li class="active"><a href="#arvados-object-json" data-toggle="tab">JSON</a></li>
+    <% if @object.andand.uuid %>
+    <li><a href="#arvados-object-curl" data-toggle="tab">CLI update</a></li>
+    <% end %>
+  </ul>
+  <div class="tab-content">
+    <div id="arvados-object-json" class="tab-pane fade in active">
+      <pre>
+<%= JSON.pretty_generate(@object.attributes.reject { |k,v| k == 'id' }) rescue nil %>
+      </pre>
+    </div>
+    <% if @object.andand.uuid %>
+    <div id="arvados-object-curl" class="tab-pane fade">
+      <pre>
+curl -X PUT \
+ -H "Authorization: OAuth2 $arv_api_token" \
+ --data-urlencode <%= @object.class.to_s.singularize.underscore %>@/dev/stdin \
+ <%= Rails.configuration.arvados_v1_base %>/<%= @object.class.to_s.pluralize.underscore %>/<%= @object.uuid %> \
+ &lt;&lt;EOF
+<%= JSON.pretty_generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}) %>
+EOF
+      </pre>
+    </div>
+    <% end %>
+  </div>
+</div>
