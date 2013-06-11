@@ -69,12 +69,12 @@ You should use your own domain instead of arvadosapi.com
 
 Second, unless you are running on AWS, you will want to change the definition of
 
-  config.compute_node_nameservers
+    config.compute_node_nameservers
 
 If you know your nameservers and they are fixed, you can hardcode them, and
 make sure to remove the code that tries to look them up from the AWS metadata:
 
-  config.compute_node_nameservers = ['1.2.3.4','2.3.4.5','3.4.5.6']
+    config.compute_node_nameservers = ['1.2.3.4','2.3.4.5','3.4.5.6']
 
 ## Apache/Passenger
 
