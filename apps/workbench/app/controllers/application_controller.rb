@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
+  around_filter :thread_clear
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
 
@@ -113,6 +114,12 @@ class ApplicationController < ActionController::Base
     @object = model_class.where(uuid: params[:uuid]).first
   end
 
+  def thread_clear
+    Thread.current[:arvados_api_token] = nil
+    Thread.current[:user] = nil
+    yield
+  end
+
   def thread_with_api_token
     begin
       try_redirect_to_login = true
@@ -148,7 +155,7 @@ class ApplicationController < ActionController::Base
           try_redirect_to_login = true
         end
       else
-        logger.debug "session is #{session.inspect}"
+        logger.debug "No token received, session is #{session.inspect}"
       end
       if try_redirect_to_login
         respond_to do |f|
