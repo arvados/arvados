@@ -35,5 +35,5 @@
 
 # Capistrano files are coming from another repo
 /Capfile*
-
 /config/deploy*
+
