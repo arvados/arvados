@@ -41,11 +41,11 @@ combination.
 
 You also need to update config/initializers/secret_token.rb. Generate a new secret with
 
-  rake secret
+    rake secret
 
 and put it in config/initializers/secret_token.rb:
 
-  Server::Application.config.secret_token = 'your-new-secret-here'
+    Server::Application.config.secret_token = 'your-new-secret-here'
 
 Finally, edit your
 
