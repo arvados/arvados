@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: installguide
-title: Install the API server
+title: Install the Arvados workbench application
 navorder: 1
 ---
 
