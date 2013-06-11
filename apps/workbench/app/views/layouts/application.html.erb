@@ -35,6 +35,7 @@
 	    <% [
 	       [false, 'Keys', authorized_keys_path],
 	       [false, 'VMs', virtual_machines_path],
+	       [false, 'Repos', repositories_path],
 	       [true, 'Data', collections_path],
 	       [true, 'Groups', groups_path],
 	       [true, 'Pipeline Templates', pipeline_templates_path],
@@ -48,6 +49,7 @@
 	  </ul>
 	  <ul class="nav pull-right">
       <% if current_user -%>
+            <li><span class="badge badge-info" style="margin: 10px auto 10px; padding-top: 4px; padding-bottom: 4px"><%= current_user.email %></span></li>
             <li><a href="<%= logout_path %>">Log out</a></li>
       <% else -%>
             <li><a href="<%= root_path %>">Log in</a></li>

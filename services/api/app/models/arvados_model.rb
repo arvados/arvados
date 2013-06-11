@@ -13,6 +13,9 @@ class ArvadosModel < ActiveRecord::Base
   before_update :maybe_update_modified_by_fields
   validate :ensure_serialized_attribute_type
 
+  class PermissionDeniedError < StandardError
+  end
+
   def self.kind_class(kind)
     kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
   end
@@ -33,7 +36,7 @@ class ArvadosModel < ActiveRecord::Base
   protected
 
   def ensure_permission_to_create
-    raise "Permission denied" unless permission_to_create
+    raise PermissionDeniedError unless permission_to_create
   end
 
   def permission_to_create
@@ -41,7 +44,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def ensure_permission_to_update
-    raise "Permission denied" unless permission_to_update
+    raise PermissionDeniedError unless permission_to_update
   end
 
   def permission_to_update

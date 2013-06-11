@@ -1,4 +1,5 @@
 Server::Application.routes.draw do
+  resources :repositories
   resources :virtual_machines
   resources :authorized_keys
   resources :keep_disks
@@ -97,6 +98,7 @@ Server::Application.routes.draw do
       resources :keep_disks
       resources :authorized_keys
       resources :virtual_machines
+      resources :repositories
     end
   end
 

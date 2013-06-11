@@ -42,3 +42,7 @@ body .editable-empty {
 body .editable-empty:hover {
     color: #0088cc;
 }
+table.arv-index tbody td.arv-object-AuthorizedKey.arv-attr-public_key {
+    overflow-x: hidden;
+    max-width: 120px;
+}

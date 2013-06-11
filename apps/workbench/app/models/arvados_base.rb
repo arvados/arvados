@@ -204,6 +204,10 @@ class ArvadosBase < ActiveRecord::Base
     }
   end
 
+  def self.creatable?
+    current_user
+  end
+
   def editable?
     (current_user and
      (current_user.is_admin or
@@ -257,8 +261,11 @@ class ArvadosBase < ActiveRecord::Base
     self
   end
 
-  def current_user
+  def self.current_user
     Thread.current[:user] ||= User.current if Thread.current[:arvados_api_token]
     Thread.current[:user]
+  end
+  def current_user
+    self.class.current_user
   end
 end

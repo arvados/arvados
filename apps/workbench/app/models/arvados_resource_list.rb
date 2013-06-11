@@ -94,4 +94,8 @@ class ArvadosResourceList
   def to_hash
     Hash[results.collect { |x| [x.uuid, x] }]
   end
+
+  def empty?
+    results.empty?
+  end
 end

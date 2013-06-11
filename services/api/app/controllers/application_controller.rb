@@ -59,7 +59,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  unless Rails.application.config.consider_all_requests_local
+  begin
     rescue_from Exception,
     :with => :render_error
     rescue_from ActiveRecord::RecordNotFound,
@@ -70,6 +70,8 @@ class ApplicationController < ActionController::Base
     :with => :render_not_found
     rescue_from ActionController::UnknownAction,
     :with => :render_not_found
+    rescue_from ArvadosModel::PermissionDeniedError,
+    :with => :render_error
   end
 
   def render_error(e)

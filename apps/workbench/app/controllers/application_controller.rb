@@ -100,12 +100,12 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  protected
-    
   def model_class
     controller_name.classify.constantize
   end
 
+  protected
+    
   def find_object_by_uuid
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id

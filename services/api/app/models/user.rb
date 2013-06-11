@@ -6,7 +6,7 @@ class User < ArvadosModel
   has_many :api_client_authorizations
   before_update :prevent_privilege_escalation
 
-  has_many :authorized_keys, :foreign_key => :authorized_user, :primary_key => :uuid
+  has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :email

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130608053730) do
+ActiveRecord::Schema.define(:version => 20130611163736) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -48,21 +48,21 @@ ActiveRecord::Schema.define(:version => 20130608053730) do
   add_index "api_clients", ["uuid"], :name => "index_api_clients_on_uuid", :unique => true
 
   create_table "authorized_keys", :force => true do |t|
-    t.string   "uuid",               :null => false
-    t.string   "owner",              :null => false
+    t.string   "uuid",                 :null => false
+    t.string   "owner",                :null => false
     t.string   "modified_by_client"
     t.string   "modified_by_user"
     t.datetime "modified_at"
     t.string   "name"
     t.string   "key_type"
-    t.string   "authorized_user"
+    t.string   "authorized_user_uuid"
     t.text     "public_key"
     t.datetime "expires_at"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  add_index "authorized_keys", ["authorized_user", "expires_at"], :name => "index_authorized_keys_on_authorized_user_and_expires_at"
+  add_index "authorized_keys", ["authorized_user_uuid", "expires_at"], :name => "index_authorized_keys_on_authorized_user_uuid_and_expires_at"
   add_index "authorized_keys", ["uuid"], :name => "index_authorized_keys_on_uuid", :unique => true
 
   create_table "collections", :force => true do |t|
@@ -322,6 +322,22 @@ ActiveRecord::Schema.define(:version => 20130608053730) do
   add_index "pipeline_templates", ["created_at"], :name => "index_pipeline_templates_on_created_at"
   add_index "pipeline_templates", ["modified_at"], :name => "index_pipeline_templates_on_modified_at"
   add_index "pipeline_templates", ["uuid"], :name => "index_pipeline_templates_on_uuid", :unique => true
+
+  create_table "repositories", :force => true do |t|
+    t.string   "uuid",               :null => false
+    t.string   "owner",              :null => false
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "name"
+    t.string   "fetch_url"
+    t.string   "push_url"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "repositories", ["name"], :name => "index_repositories_on_name"
+  add_index "repositories", ["uuid"], :name => "index_repositories_on_uuid", :unique => true
 
   create_table "specimens", :force => true do |t|
     t.string   "uuid"

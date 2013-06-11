@@ -1,0 +1,9 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
+
+one:
+  fetch_url: MyString
+  push_url: MyString
+
+two:
+  fetch_url: MyString
+  push_url: MyString

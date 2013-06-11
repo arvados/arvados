@@ -3,7 +3,7 @@ class SessionsController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => [:destroy, :index]
   def destroy
     session.clear
-    redirect_to $arvados_api_client.orvos_logout_url(return_to: logged_out_url)
+    redirect_to $arvados_api_client.arvados_logout_url(return_to: logged_out_url)
   end
   def index
     redirect_to root_url if session[:arvados_api_token]
