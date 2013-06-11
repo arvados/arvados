@@ -33,10 +33,10 @@ Then set up omniauth:
 
     cp config/initializers/omniauth.rb.example config/initializers/omniauth.rb
 
-Edit config/initializers/omniauth.rb. Choose an APP_SECRET and APP_ID. Also set
-CUSTOM_PROVIDER_URL.
+Edit config/initializers/omniauth.rb. Choose an *APP_SECRET* and *APP_ID*. Also set
+*CUSTOM_PROVIDER_URL*.
 
-Make sure your Omniauth provider knows about your APP_ID and APP_SECRET
+Make sure your Omniauth provider knows about your *APP_ID* and *APP_SECRET*
 combination.
 
 You also need to update config/initializers/secret_token.rb. Generate a new secret with
@@ -60,7 +60,7 @@ First, you want to make sure that
 is set to a unique 5-digit hex string. You can replace the 'cfi-aws-0' string
 with a string of your choice to make that happen.
 
-The config.uuid_prefix string is a unique identifier for your API server. It
+The *config.uuid_prefix* string is a unique identifier for your API server. It
 also serves as the first part of the hostname for your API server, for instance
 
     9ujm1.arvadosapi.com
