@@ -25,6 +25,6 @@ class Arvados::V1::AuthorizedKeysController < ApplicationController
         end
       end
     end
-    render json: { authorized_keys: @response }
+    render json: { kind: "arvados#HashList", items: @response }
   end
 end
