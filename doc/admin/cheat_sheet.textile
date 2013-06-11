@@ -50,3 +50,25 @@ eval $arv_curl -X POST --data-urlencode link@/dev/stdin <<EOF $arv_base/links
 }
 EOF
 </pre>
+
+h3. User &rarr; repo
+
+Give @$user_uuid@ permission to commit to @$repo_uuid@ as @$repo_username@
+
+<pre>
+user_uuid=xxxxxxxchangeme
+repo_uuid=xxxxxxxchangeme
+repo_username=xxxxxxxchangeme
+
+eval $arv_curl -X POST --data-urlencode link@/dev/stdin <<EOF $arv_base/links
+{
+"tail_kind":"arvados#user",
+"tail_uuid":"$user_uuid",
+"head_kind":"arvados#repository",
+"head_uuid":"$repo_uuid",
+"link_class":"permission",
+"name":"can_write",
+"properties":{"username":"$repo_username"}
+}
+EOF
+</pre>
