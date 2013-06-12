@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
 
-  unless Rails.application.config.consider_all_requests_local
+  begin
     rescue_from Exception,
     :with => :render_exception
     rescue_from ActiveRecord::RecordNotFound,
@@ -33,7 +33,7 @@ class ApplicationController < ActionController::Base
   def render_exception(e)
     logger.error e.inspect
     logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
-    if @object and @object.errors and @object.errors.full_messages
+    if @object.andand.errors.andand.full_messages.andand.any?
       @errors = @object.errors.full_messages
     else
       @errors = [e.inspect]
