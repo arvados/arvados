@@ -9,6 +9,14 @@ class Repository < ArvadosModel
     t.add :push_url
   end
 
+  def push_url
+    super || self.name && "git@git.#{Rails.configuration.uuid_prefix}.arvadosapi.com:#{self.name}.git"
+  end
+
+  def fetch_url
+    super || self.name && "git://git.#{Rails.configuration.uuid_prefix}.arvadosapi.com/#{self.name}.git"
+  end
+
   protected
 
   def permission_to_create

@@ -84,6 +84,7 @@ Server::Application.routes.draw do
       match '/users/current' => 'users#current'
       match '/jobs/queue' => 'jobs#queue'
       match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
+      match '/repositories/get_all_permissions' => 'repositories#get_all_permissions'
       resources :collections
       resources :links
       resources :nodes

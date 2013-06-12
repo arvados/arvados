@@ -13,6 +13,8 @@ class ArvadosModel < ActiveRecord::Base
   before_update :maybe_update_modified_by_fields
   validate :ensure_serialized_attribute_type
 
+  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
+
   class PermissionDeniedError < StandardError
   end
 

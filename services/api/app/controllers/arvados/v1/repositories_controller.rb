@@ -1,2 +1,50 @@
 class Arvados::V1::RepositoriesController < ApplicationController
+  before_filter :admin_required, :only => :get_all_permissions
+  def get_all_permissions
+    @users = {}
+    User.includes(:authorized_keys).all.each do |u|
+      @users[u.uuid] = u
+    end
+    @user_aks = {}
+    @repo_info = {}
+    @repos = Repository.includes(:permissions).all
+    @repos.each do |repo|
+      gitolite_permissions = ''
+      repo.permissions.each do |perm|
+        user_uuid = perm.tail_uuid
+        @user_aks[user_uuid] = @users[user_uuid].andand.authorized_keys.collect do |ak|
+          {
+            public_key: ak.public_key,
+            authorized_key_uuid: ak.uuid
+          }
+        end || []
+        if @user_aks[user_uuid].any?
+          @repo_info[repo.uuid] ||= {
+            uuid: repo.uuid,
+            name: repo.name,
+            push_url: repo.push_url,
+            fetch_url: repo.fetch_url,
+            user_permissions: {}
+          }
+          @repo_info[repo.uuid][:user_permissions][user_uuid] ||= {}
+          @repo_info[repo.uuid][:user_permissions][user_uuid][perm.name] = true
+        end
+      end
+    end
+    @repo_info.values.each do |repo_users|
+      repo_users[:user_permissions].each do |user_uuid,perms|
+        if perms['can_write']
+          perms[:gitolite_permissions] = 'RW'
+          perms['can_read'] = true
+        elsif perms['can_read']
+          perms[:gitolite_permissions] = 'R'
+        end
+      end
+    end
+    render json: {
+      kind: 'arvados#RepositoryPermissionSnapshot',
+      repositories: @repo_info.values,
+      user_keys: @user_aks
+    }
+  end
 end
