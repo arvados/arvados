@@ -24,4 +24,5 @@ jQuery(function($){
         }
     });
     $('.editable').editable();
+    $('[data-toggle=tooltip]').tooltip();
 })(jQuery);
