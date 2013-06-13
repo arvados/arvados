@@ -1,7 +1,56 @@
+<% if @tutorial_links.any? %>
+<% content_for :tutorials do %>
+<h4>Tutorials</h4>
+<% @tutorial_links.each do |tut| %>
+<div class="well clearfix">
+  <div>
+    <strong><%= tut.properties[:page_title] %></strong>
+    <% if @tutorial_complete[tut.properties[:page_title]] %>
+    <span class="badge badge-success pull-right">&#x2714;</span>
+    <% else %>
+    <span class="badge pull-right">&#x270d;</span>
+    <% end %>
+  </div>
+  <%= render_content_from_database tut.properties[:page_subtitle] %>
+  <br />
+  <%= link_to raw('Tutorial: ' + tut.properties[:page_title] + ' &#x279c;'), link_path(tut.uuid), class: "pull-right btn btn-primary" %>
+</div>
+<% end %>
+<% end %>
+<% end %>
+
+<% content_for :references do %>
+<h4>References</h4>
+<div class="well clearfix">
+  <div>
+    <strong>API Reference</strong>
+  </div>
+  API calls for running jobs, building pipelines, and developing apps.
+  <br />
+  <%= link_to raw('API Reference &#x279c;'), 'http://doc.arvados.org/api/', class: "pull-right btn" %>
+</div>
+<div class="well clearfix">
+  <div>
+    <strong>User Guide</strong>
+  </div>
+  Getting acquainted with the Arvados platform.
+  <br />
+  <%= link_to raw('User Guide &#x279c;'), 'http://doc.arvados.org/user/', class: "pull-right btn" %>
+</div>
+<div class="well clearfix">
+  <div>
+    <strong>arvados.org</strong>
+  </div>
+  Project home page: developer docs, source code, background.
+  <br />
+  <%= link_to raw('arvados.org &#x279c;'), 'https://arvados.org/', class: "pull-right btn" %>
+</div>
+<% end %>
+
 <div class="row-fluid">
   <div class="col span4">
     <h4>Setup</h4>
-    <div class="well">
+    <div class="well clearfix">
       <div>
         <strong>SSH keys</strong>
         <span class="badge <%= 'badge-success' if @my_ssh_keys.any? %> pull-right"><%= @my_ssh_keys.count %></span>
@@ -9,9 +58,9 @@
       You&rsquo;ll use public key authentication when logging in to a
       VM or use a hosted git repository.
       <br />
-      <%= link_to raw('Add/edit keys &#x279c;'), authorized_keys_path, class: "btn #{'btn-primary' if @my_ssh_keys.empty?}" %>
+      <%= link_to raw('Add/edit keys &#x279c;'), authorized_keys_path, class: "pull-right btn #{'btn-primary' if @my_ssh_keys.empty?}" %>
     </div>
-    <div class="well">
+    <div class="well clearfix">
       <div>
         <strong>Virtual machines</strong>
         <span class="badge <%= 'badge-success' if @my_vm_perms.any? %> pull-right"><%= @my_vm_perms.collect(&:head_uuid).uniq.count %></span>
@@ -19,14 +68,14 @@
       Arvados includes virtual machines with SDKs installed and ready to use.
       <br />
       <% if @my_vm_perms.any? %>
-      <%= link_to raw('Show VMs &#x279c;'), virtual_machines_path, class: "btn" %>
+      <%= link_to raw('Show VMs &#x279c;'), virtual_machines_path, class: "pull-right btn" %>
       <% elsif @my_ssh_keys.any? %>
-      <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, class: "btn btn-primary" %>
+      <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, class: "pull-right btn btn-primary" %>
       <% else %>
-      <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, { :class => "btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
+      <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
       <% end %>
     </div>
-    <div class="well">
+    <div class="well clearfix">
       <div>
         <strong>Git repositories</strong>
         <span class="badge <%= 'badge-success' if @my_repo_perms.any? %> pull-right"><%= @my_repo_perms.collect(&:head_uuid).uniq.count %></span>
@@ -34,12 +83,22 @@
       In order to run jobs using your own code, you need to push your code to a git repository. We provide hosted git repositories to make this easy.
       <br />
       <% if @my_repo_perms.any? %>
-      <%= link_to raw('Show repositories &#x279c;'), repositories_path, class: "btn" %>
+      <%= link_to raw('Show repositories &#x279c;'), repositories_path, class: "pull-right btn" %>
       <% elsif @my_ssh_keys.any? %>
-      <%= link_to raw('Request a repository &#x279c;'), repositories_path, class: "btn btn-primary" %>
+      <%= link_to raw('Request a repository &#x279c;'), repositories_path, class: "pull-right btn btn-primary" %>
       <% else %>
-      <%= link_to raw('Request a repository &#x279c;'), repositories_path, { :class => "btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
+      <%= link_to raw('Request a repository &#x279c;'), repositories_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
       <% end %>
     </div>
+  </div>
+
+  <% if content_for? :tutorials %>
+  <div class="col span4">
+    <%= yield :tutorials %>
+  </div>
+  <% end %>
+
+  <div class="col span4">
+    <%= yield :references %>
   </div>
 </div>

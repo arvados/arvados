@@ -2,7 +2,13 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></title>
+  <title>
+    <% if content_for? :page_title %>
+    <%= yield :page_title %>
+    <% else %>
+    <%= Rails.configuration.site_name rescue Rails.application.class.parent_name %>
+    <% end %>
+  </title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="">
   <meta name="author" content="">

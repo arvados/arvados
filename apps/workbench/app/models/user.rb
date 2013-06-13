@@ -10,6 +10,13 @@ class User < ArvadosBase
     $arvados_api_client.unpack_api_response(res)
   end
 
+  def self.system
+    $arvados_system_user ||= begin
+                               res = $arvados_api_client.api self, '/system'
+                               $arvados_api_client.unpack_api_response(res)
+                             end
+  end
+
   def full_name
     (self.first_name || "") + " " + (self.last_name || "")
   end

@@ -3,4 +3,8 @@ class Arvados::V1::UsersController < ApplicationController
     @object = current_user
     show
   end
+  def system
+    @object = system_user
+    show
+  end
 end

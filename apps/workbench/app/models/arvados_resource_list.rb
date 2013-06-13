@@ -15,6 +15,11 @@ class ArvadosResourceList
     self
   end
 
+  def order(orderby_spec)
+    @orderby_spec = orderby_spec
+    self
+  end
+
   def where(cond)
     cond = cond.dup
     cond.keys.each do |uuid_key|
@@ -46,6 +51,7 @@ class ArvadosResourceList
     }
     api_params[:eager] = '1' if @eager
     api_params[:limit] = @limit if @limit
+    api_params[:order] = @orderby_spec if @orderby_spec
     res = $arvados_api_client.api @resource_class, '', api_params
     @results = $arvados_api_client.unpack_api_response res
     self

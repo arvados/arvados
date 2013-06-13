@@ -1,3 +1,4 @@
+<% content_for :arvados_object_table do %>
 <%= form_for @object do |f| %>
 <table class="table topalign">
   <thead>
@@ -9,15 +10,30 @@
   </tbody>
 </table>
 <% end %>
+<% end %>
+
+<% if content_for? :page_content %>
+<%= yield :page_content %>
+<% else %>
+<%= yield :arvados_object_table %>
+<% end %>
 
 <div>
   <ul class="nav nav-tabs">
+    <% if content_for? :page_content %>
+    <li><a href="#arvados-object-table" data-toggle="tab">Table</a></li>
+    <% end %>
     <li class="active"><a href="#arvados-object-json" data-toggle="tab">JSON</a></li>
     <% if @object.andand.uuid %>
     <li><a href="#arvados-object-curl" data-toggle="tab">CLI update</a></li>
     <% end %>
   </ul>
   <div class="tab-content">
+    <% if content_for? :page_content %>
+    <div id="arvados-object-table" class="tab-pane fade">
+      <%= yield :arvados_object_table %>
+    </div>
+    <% end %>
     <div id="arvados-object-json" class="tab-pane fade in active">
       <pre>
 <%= JSON.pretty_generate(@object.attributes.reject { |k,v| k == 'id' }) rescue nil %>

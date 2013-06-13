@@ -82,6 +82,7 @@ Server::Application.routes.draw do
       match '/keep_disks/ping' => 'keep_disks#ping', :as => :ping_keep_disk
       match '/links/from/:tail_uuid' => 'links#index', :as => :arvados_v1_links_from
       match '/users/current' => 'users#current'
+      match '/users/system' => 'users#system'
       match '/jobs/queue' => 'jobs#queue'
       match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
       match '/repositories/get_all_permissions' => 'repositories#get_all_permissions'

@@ -66,6 +66,12 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def render_content
+    if !@object
+      return render_not_found("object not found")
+    end
+  end
+
   def new
     @object = model_class.new
   end

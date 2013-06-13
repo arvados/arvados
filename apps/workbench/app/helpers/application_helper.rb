@@ -2,6 +2,11 @@ module ApplicationHelper
   def current_user
     controller.current_user
   end
+
+  def render_content_from_database(markup)
+    raw RedCloth.new(markup).to_html
+  end
+
   def human_readable_bytes_html(n)
     return h(n) unless n.is_a? Fixnum
     raw = n.to_s

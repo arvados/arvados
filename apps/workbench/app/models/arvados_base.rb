@@ -73,6 +73,9 @@ class ArvadosBase < ActiveRecord::Base
     end
     new.private_reload(uuid)
   end
+  def self.order(*args)
+    ArvadosResourceList.new(self).order(*args)
+  end
   def self.where(*args)
     ArvadosResourceList.new(self).where(*args)
   end
