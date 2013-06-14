@@ -93,8 +93,17 @@ class ApplicationController < ActionController::Base
   protected
 
   def load_where_param
-    @where = params[:where] || {}
-    @where = Oj.load(@where) if @where.is_a?(String)
+    if params[:where].nil? or params[:where] == ""
+      @where = {}
+    elsif params[:where].is_a? Hash
+      @where = params[:where]
+    elsif params[:where].is_a? String
+      begin
+        @where = Oj.load(params[:where])
+      rescue
+        raise ArgumentError.new("Could not parse \"where\" param as an object")
+      end
+    end
   end
 
   def find_objects_for_index
