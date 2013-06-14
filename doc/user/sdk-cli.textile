@@ -12,7 +12,7 @@ h1. Command line SDK
 If you are logged in to an Arvados VM, the command line SDK should be
 installed. Try:
 
-  arv --help
+@arv --help@
 
 h3. First...
 
