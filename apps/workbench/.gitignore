@@ -14,7 +14,8 @@
 /log/*.log
 /tmp
 
-config/.secret_token
+/config/.secret_token
+/config/initializers/secret_token.rb
 
 /public/assets
 
@@ -26,4 +27,3 @@ config/.secret_token
 # Capistrano files are coming from another repo
 /Capfile*
 /config/deploy*
-
