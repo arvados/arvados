@@ -24,6 +24,7 @@ begin
   require 'json'
   require 'pp'
   require 'trollop'
+  require 'andand'
 rescue LoadError
   abort <<-EOS
 
@@ -32,6 +33,7 @@ Please install all required gems:
   google-api-client
   json
   trollop
+  andand
 
   EOS
 end
@@ -71,27 +73,31 @@ def to_boolean(s)
 end
 
 def parse_arguments(discovery_document)
-  sub_commands = Array.new()
-  sub_commands << '--help'
+  resource_types = Array.new()
+  resource_types << '--help'
   discovery_document["resources"].each do |k,v|
-    sub_commands << k
+    resource_types << k.singularize
   end
 
   global_opts = Trollop::options do
     banner "arvados cli client"
     opt :dry_run, "Don't actually do anything", :short => "-n"
-    stop_on sub_commands
+    opt :verbose, "Print some things on stderr", :short => "-v"
+    opt :uuid, "Return the UUIDs of the objects in the response, one per line (default)", :short => nil
+    opt :json, "Return the raw json received from the API server", :short => "-j"
+    opt :jsonhuman, "Return the raw json received from the API server, formatted for human consumption", :short => "-h"
+    stop_on resource_types
   end
   
   # get the subcommand
-  cmd = ARGV.shift
-  if sub_commands.include?(cmd) and cmd != '--help' then
+  resource_arg = ARGV.shift
+  if resource_types.include?(resource_arg) and resource_arg != '--help' then
     # subcommand exists
     # Now see if the method supplied exists
     method = ARGV.shift
-    if discovery_document["resources"][cmd]["methods"].include?(method) then
+    if discovery_document["resources"][resource_arg.pluralize]["methods"].include?(method) then
       # method exists. Collect arguments.
-      discovered_params = discovery_document["resources"][cmd]["methods"][method]["parameters"]
+      discovered_params = discovery_document["resources"][resource_arg.pluralize]["methods"][method]["parameters"]
       method_opts = Trollop::options do
         discovered_params.each do |k,v|
           opts = Hash.new()
@@ -107,8 +113,6 @@ def parse_arguments(discovery_document)
           description = '  ' + v["description"] if v.include?("description")
           opt k.to_sym, description, opts
         end
-        opt :json, "Return the raw json received from the API server", :short => "-j"
-        opt :jsonhuman, "Return the raw json received from the API server, formatted for human consumption", :short => "-h"
       end
       discovered_params.each do |k,v|
         if v["type"] == "object" and method_opts.has_key? k
@@ -116,8 +120,8 @@ def parse_arguments(discovery_document)
         end
       end
     else
-      banner = "\nThis api command supports the following methods:\n\n"
-      discovery_document["resources"][cmd]["methods"].each do |k,v|
+      banner = "\nThis resource type supports the following methods:\n\n"
+      discovery_document["resources"][resource_arg.pluralize]["methods"].each do |k,v|
         description = ''
         description = '  ' + v["description"] if v.include?("description")
         banner += "   #{sprintf("%20s",k)}#{description}\n"
@@ -127,7 +131,7 @@ def parse_arguments(discovery_document)
       STDERR.puts banner
   
       if not method.nil? and method != '--help' then 
-        Trollop::die "Unknown method #{method.to_s} for command #{cmd.to_s}"
+        Trollop::die "Unknown method #{method.to_s} for command #{resource_arg.to_s}"
       else
         exit 255
       end
@@ -135,7 +139,7 @@ def parse_arguments(discovery_document)
     end
     
   else
-    banner = "\nThis Arvados cluster supports the following api commands:\n\n"
+    banner = "\nThis Arvados instance supports the following resource types:\n\n"
     discovery_document["resources"].each do |k,v|
       description = ''
       if discovery_document["schemas"].include?(k.singularize.capitalize) and 
@@ -148,32 +152,37 @@ def parse_arguments(discovery_document)
 
     STDERR.puts banner
 
-    if not cmd.nil? and cmd != '--help' then 
-      Trollop::die "Unknown command #{cmd.inspect}"
+    if not resource_arg.nil? and resource_arg != '--help' then 
+      Trollop::die "Unknown resource type #{resource_arg.inspect}"
     else
       exit 255
     end
   end
 
-  return cmd, method, method_opts, ARGV
+  return resource_arg.pluralize, method, method_opts, global_opts, ARGV
 end
 
-cmd, method, method_opts, remaining_opts = parse_arguments(arvados.discovery_document)
+controller, method, method_opts, global_opts, remaining_opts = parse_arguments(arvados.discovery_document)
 
-api_method = 'arvados.' + cmd + '.' + method
+api_method = 'arvados.' + controller + '.' + method
 
-m_o = method_opts.reject {|key,value| key =~ /_given$|^json$|^jsonhuman$|^help$/ or value == nil }
+if global_opts[:dry_run]
+  if global_opts[:verbose]
+    $stderr.puts "#{api_method} #{method_opts.inspect}"
+  end
+  exit
+end
 
-result = client.execute :api_method => eval(api_method), :parameters => { :api_token => ENV['ARVADOS_API_TOKEN'] }.merge(m_o), :authenticated => false
+result = client.execute :api_method => eval(api_method), :parameters => { :api_token => ENV['ARVADOS_API_TOKEN'] }.merge(method_opts), :authenticated => false
 results = JSON.parse result.body
 
 if results["errors"] then
   abort "Error: #{results["errors"][0]}"
 end
 
-if method_opts[:json] then
+if global_opts[:json] then
   puts results.to_s
-elsif method_opts[:jsonhuman] then
+elsif global_opts[:jsonhuman] then
   puts results.pretty_inspect()
 elsif results["items"] and results["kind"].match /list$/i
   results['items'].each do |i| puts i['uuid'] end
