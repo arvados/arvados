@@ -18,15 +18,11 @@ h3. First...
 
 Set the @ARVADOS_API_HOST@ environment variable.
 
-<pre>
-export ARVADOS_API_HOST=xyzzy.arvadosapi.com
-</pre>
+@export ARVADOS_API_HOST=xyzzy.arvadosapi.com@
 
 Log in to Workbench and get an API token for your account. Set the @ARVADOS_API_TOKEN@ environment variable.
 
-<code>
-export ARVADOS_API_TOKEN=c0vdbi8wp7f703lbthyadlvmaivgldxssy3l32isslmax93k9
-</code>
+@export ARVADOS_API_TOKEN=c0vdbi8wp7f703lbthyadlvmaivgldxssy3l32isslmax93k9@
 
 h3. Usage
 
