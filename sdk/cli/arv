@@ -65,7 +65,7 @@ class Google::APIClient
  end
 end
 
-client = Google::APIClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'wh-cli', :application_version => '1.0')
+client = Google::APIClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
 arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
 
 def to_boolean(s)
