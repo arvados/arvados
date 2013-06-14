@@ -25,6 +25,7 @@ begin
   require 'pp'
   require 'trollop'
   require 'andand'
+  require 'oj'
 rescue LoadError
   abort <<-EOS
 
@@ -34,6 +35,7 @@ Please install all required gems:
   json
   trollop
   andand
+  oj
 
   EOS
 end
@@ -49,7 +51,9 @@ module Kernel
 end
 
 # do this if you're testing with a dev server and you don't care about SSL certificate checks:
-suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+if ENV['ARVADOS_API_HOST_INSECURE']
+  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+end
 
 class Google::APIClient
  def discovery_document(api, version)
@@ -84,8 +88,9 @@ def parse_arguments(discovery_document)
     opt :dry_run, "Don't actually do anything", :short => "-n"
     opt :verbose, "Print some things on stderr", :short => "-v"
     opt :uuid, "Return the UUIDs of the objects in the response, one per line (default)", :short => nil
-    opt :json, "Return the raw json received from the API server", :short => "-j"
-    opt :jsonhuman, "Return the raw json received from the API server, formatted for human consumption", :short => "-h"
+    opt :json, "Return the entire response received from the API server, as a JSON object", :short => "-j"
+    opt :human, "Return the response received from the API server, as a JSON object with whitespace added for human consumption", :short => "-h"
+    opt :pretty, "Synonym of --human", :short => nil
     stop_on resource_types
   end
   
@@ -180,10 +185,10 @@ if results["errors"] then
   abort "Error: #{results["errors"][0]}"
 end
 
-if global_opts[:json] then
-  puts results.to_s
-elsif global_opts[:jsonhuman] then
-  puts results.pretty_inspect()
+if global_opts[:human] or global_opts[:pretty] then
+  puts Oj.dump(results, :indent => 1)
+elsif global_opts[:json] then
+  puts Oj.dump(results)
 elsif results["items"] and results["kind"].match /list$/i
   results['items'].each do |i| puts i['uuid'] end
 else
