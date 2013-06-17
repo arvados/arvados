@@ -35,11 +35,13 @@ Click on the checkmark button to save your public key.
 
 ### Unix-like systems: set up an ~/.ssh/config snippet for quick ssh access
 
+**Please make sure to replace 9ujm1.arvadosapi.com with your arvados hostname in the examples below.**
+
 On your workstation, add the following section to your `~/.ssh/config`
 file:
 
     Host *.arvados
-      ProxyCommand ssh turnout@9ujm1.arvados.org %h %p %u
+      ProxyCommand ssh turnout@switchyard.9ujm1.arvadosapi.com %h %p %u
       Port 2222
 
 If you have access to an account `foo` on a VM called `blurfl` then
@@ -52,7 +54,7 @@ If you want to shorten this and you always/usually have access to the
 `~/.ssh/config`:
 
     Host *.a
-      ProxyCommand ssh turnout@9ujm1.arvados.org %hrvados %p %u
+      ProxyCommand ssh turnout@switchyard.9ujm1.arvadosapi.com %hrvados %p %u
       Port 2222
       User foo
 
