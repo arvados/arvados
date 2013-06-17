@@ -95,6 +95,8 @@ Server::Application.routes.draw do
       resources :groups
       resources :logs
       resources :users
+      resources :api_clients
+      resources :api_client_authorizations
       resources :jobs
       resources :job_tasks
       resources :keep_disks

@@ -1,4 +1,5 @@
 ArvadosWorkbench::Application.routes.draw do
+  resources :api_client_authorizations
   resources :repositories
   resources :virtual_machines
   resources :authorized_keys

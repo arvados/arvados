@@ -112,7 +112,9 @@ class ArvadosBase < ActiveRecord::Base
     %w(uuid owner created_at
        modified_at modified_by_user modified_by_client
       ).each do |attr|
-      self.send(attr + '=', resp[attr.to_sym])
+      if self.respond_to? "#{attr}=".to_sym
+        self.send(attr + '=', resp[attr.to_sym])
+      end
     end
 
     self

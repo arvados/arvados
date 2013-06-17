@@ -25,12 +25,6 @@ module CurrentApiClient
     Thread.current[:api_client_ip_address]
   end
 
-  # Is the current client permitted to perform ALL actions on behalf
-  # of the authenticated user?
-  def current_api_client_trusted
-    Thread.current[:api_client_trusted]
-  end
-
   def system_user_uuid
     [Server::Application.config.uuid_prefix,
      User.uuid_prefix,

@@ -1,0 +1,2 @@
+class ApiClientAuthorizationsController < ApplicationController
+end

@@ -237,7 +237,7 @@ class ApplicationController < ActionController::Base
       if supplied_token
         api_client_auth = ApiClientAuthorization.
           includes(:api_client, :user).
-          where('api_token=?', supplied_token).
+          where('api_token=? and (expires_at is null or expires_at > now())', supplied_token).
           first
         if api_client_auth
           session[:user_id] = api_client_auth.user.id
@@ -256,15 +256,18 @@ class ApplicationController < ActionController::Base
             find session[:api_client_authorization_id]
         end
       end
-      Thread.current[:api_client_trusted] = session[:api_client_trusted]
       Thread.current[:api_client_ip_address] = remote_ip
       Thread.current[:api_client_authorization] = api_client_auth
       Thread.current[:api_client_uuid] = api_client && api_client.uuid
       Thread.current[:api_client] = api_client
       Thread.current[:user] = user
+      if api_client_auth
+        api_client_auth.last_used_at = Time.now
+        api_client_auth.last_used_by_ip_address = remote_ip
+        api_client_auth.save validate: false
+      end
       yield
     ensure
-      Thread.current[:api_client_trusted] = nil
       Thread.current[:api_client_ip_address] = nil
       Thread.current[:api_client_authorization] = nil
       Thread.current[:api_client_uuid] = nil

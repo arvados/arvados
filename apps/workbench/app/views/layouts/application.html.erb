@@ -42,6 +42,7 @@
 	       [false, 'Keys', authorized_keys_path],
 	       [false, 'VMs', virtual_machines_path],
 	       [false, 'Repos', repositories_path],
+	       [false, 'Tokens', api_client_authorizations_path],
 	       [false, 'Jobs', jobs_path]
 	       ].each do |admin_only, name, path| %>
 	    <% if !admin_only or (current_user and current_user.is_admin) %>
