@@ -80,7 +80,9 @@ sub execute
         croak("Unsupported parameter(s) passed to API call /$path: \"" . join('", "', keys %extra_params) . '"');
     }
     my $r = $self->{'resourceAccessor'}->{'api'}->new_request;
-    $r->set_uri($self->{'resourceAccessor'}->{'api'}->{'discoveryDocument'}->{'baseUrl'} . "/" . $path);
+    my $base_uri = $self->{'resourceAccessor'}->{'api'}->{'discoveryDocument'}->{'baseUrl'};
+    $base_uri =~ s:/$::;
+    $r->set_uri($base_uri . "/" . $path);
     $r->set_method($method->{'httpMethod'});
     $r->set_auth_token($self->{'resourceAccessor'}->{'api'}->{'authToken'});
     $r->set_query_params(\%body_params) if %body_params;

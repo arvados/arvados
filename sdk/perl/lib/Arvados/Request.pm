@@ -18,7 +18,7 @@ sub _init
 {
     my $self = shift;
     $self->{'ua'} = new LWP::UserAgent(@_);
-    $self->{'ua'}->agent ("libarvados-perl/".$Warehouse::VERSION);
+    $self->{'ua'}->agent ("libarvados-perl/".$Arvados::VERSION);
     $self;
 }
 
@@ -35,6 +35,7 @@ sub process_request
     $req{$self->{'method'}} = $self->{'uri'};
     $self->{'req'} = new HTTP::Request (%req);
     $self->{'req'}->header('Authorization' => ('OAuth2 ' . $self->{'authToken'})) if $self->{'authToken'};
+    $self->{'req'}->header('Accept' => 'application/json');
     my %content;
     my ($p, $v);
     while (($p, $v) = each %{$self->{'queryParams'}}) {

@@ -67,6 +67,8 @@ use Arvados::ResourceProxy;
 use Arvados::ResourceProxyList;
 use Arvados::Request;
 
+$Arvados::VERSION = 0.1;
+
 sub new
 {
     my $class = shift;

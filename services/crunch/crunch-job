@@ -10,12 +10,30 @@ crunch-job: Execute job steps, save snapshots as requested, collate output.
 Obtain job details from Arvados, run tasks on compute nodes (typically
 invoked by scheduler on controller):
 
- crunch-job --uuid x-y-z
+ crunch-job --job x-y-z
 
 Obtain job details from command line, run tasks on local machine
 (typically invoked by application or developer on VM):
 
  crunch-job --job '{"script_version":"/path/to/tree","script":"scriptname",...}'
+
+=head1 OPTIONS
+
+=over
+
+=item --force-unlock
+
+If the job is already locked, steal the lock and run it anyway.
+
+=item --git-dir
+
+Path to .git directory where the specified commit is found.
+
+=item --job-api-token
+
+Arvados API authorization token to use during the course of the job.
+
+=back
 
 =head1 RUNNING JOBS LOCALLY
 
@@ -48,7 +66,6 @@ or unallocated). Currently this is a no-op.
 
 
 use strict;
-use DBI;
 use POSIX ':sys_wait_h';
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use Arvados;
@@ -63,12 +80,20 @@ $ENV{"CRUNCH_WORK"} = $ENV{"CRUNCH_TMP"} . "/work";
 mkdir ($ENV{"CRUNCH_TMP"});
 
 my $force_unlock;
+my $git_dir;
 my $jobspec;
+my $job_api_token;
 my $resume_stash;
 GetOptions('force-unlock' => \$force_unlock,
+           'git-dir=s' => \$git_dir,
            'job=s' => \$jobspec,
+           'job-api-token=s' => \$job_api_token,
            'resume-stash=s' => \$resume_stash,
     );
+
+if (defined $job_api_token) {
+  $ENV{ARVADOS_API_TOKEN} = $job_api_token;
+}
 
 my $have_slurm = exists $ENV{SLURM_JOBID} && exists $ENV{SLURM_NODELIST};
 my $job_has_uuid = $jobspec =~ /^[-a-z\d]+$/;
@@ -333,8 +358,9 @@ else
 
   my $commit;
   my $treeish = $Job->{'script_version'};
-  my $repo = $ENV{'CRUNCH_DEFAULT_GIT_DIR'};
-  # Todo: let script_version specify alternate repo
+  my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'};
+  # Todo: let script_version specify repository instead of expecting
+  # parent process to figure it out.
   $ENV{"CRUNCH_SRC_URL"} = $repo;
 
   # Create/update our clone of the remote git repo
@@ -1070,34 +1096,6 @@ sub Log				# ($jobstep_id, $logmessage)
 }
 
 
-sub reconnect_database
-{
-  return if !$job_has_uuid;
-  return if ($dbh && $dbh->do ("select now()"));
-  for (1..16)
-  {
-    $dbh = DBI->connect(@$Warehouse::Server::DatabaseDSN);
-    if ($dbh) {
-      $dbh->{InactiveDestroy} = 1;
-      return;
-    }
-    warn ($DBI::errstr);
-    sleep $_;
-  }
-  croak ($DBI::errstr) if !$dbh;
-}
-
-
-sub dbh_do
-{
-  return 1 if !$job_has_uuid;
-  my $ret = $dbh->do (@_);
-  return $ret unless (!$ret && $DBI::errstr =~ /server has gone away/);
-  reconnect_database();
-  return $dbh->do (@_);
-}
-
-
 sub croak
 {
   my ($package, $file, $line) = caller;
@@ -1169,51 +1167,6 @@ sub freeze
 {
   Log (undef, "Freeze not implemented");
   return;
-
-  my $whc;                      # todo
-  Log (undef, "freeze");
-
-  my $freezer = new Warehouse::Stream (whc => $whc);
-  $freezer->clear;
-  $freezer->name (".");
-  $freezer->write_start ("state.txt");
-
-  $freezer->write_data (join ("\n",
-			      "job $Job->{uuid}",
-			      map
-			      {
-				$_ . "=" . freezequote($Job->{$_})
-			      } grep { $_ ne "id" } keys %$Job) . "\n\n");
-
-  foreach my $Jobstep (@jobstep)
-  {
-    my $str = join ("\n",
-		    map
-		    {
-		      $_ . "=" . freezequote ($Jobstep->{$_})
-		    } grep {
-                      $_ !~ /^stderr|slotindex|node_fail/
-                    } keys %$Jobstep);
-    $freezer->write_data ($str."\n\n");
-  }
-  if (@jobstep_tomerge)
-  {
-    $freezer->write_data
-	("merge $jobstep_tomerge_level "
-	 . freezequote (join ("\n",
-			      map { freezequote ($_) } @jobstep_tomerge))
-	 . "\n\n");
-  }
-
-  $freezer->write_finish;
-  my $frozentokey = $freezer->as_key;
-  undef $freezer;
-  Log (undef, "frozento key is $frozentokey");
-  dbh_do ("update mrjob set frozentokey=? where id=?", undef,
-	  $frozentokey, $job_id);
-  my $kfrozentokey = $whc->store_in_keep (hash => $frozentokey, nnodes => 3);
-  Log (undef, "frozento+K key is $kfrozentokey");
-  return $frozentokey;
 }
 
 

@@ -39,7 +39,7 @@ Server::Application.configure do
 
   config.git_repositories_dir = '/var/cache/git'
 
-  config.whjobmanager_wrapper = :slurm_immediate
+  config.crunch_job_wrapper = :slurm_immediate
 
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
