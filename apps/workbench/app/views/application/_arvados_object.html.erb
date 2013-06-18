@@ -59,7 +59,7 @@ EOF
 
     <div id="arvados-object-arv" class="tab-pane fade">
       <pre>
-ARVADOS_API_HOST=<%= Rails.configuration.arvados_v1_base.sub '/arvados/v1','' %>
+ARVADOS_API_HOST=<%= Rails.configuration.arvados_v1_base.sub /https?:\/\/|\/arvados\/v1/,'' %>
 ARVADOS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxx
 
 arv --json --pretty <%= @object.class.to_s.underscore %> get \
@@ -67,7 +67,7 @@ arv --json --pretty <%= @object.class.to_s.underscore %> get \
 
 arv <%= @object.class.to_s.underscore %> update \
  --uuid <%= @object.uuid %> \
- --<%= @object.class.to_s.underscore %> '<%= JSON.generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}).gsub("'","'\''") %>'
+ --<%= @object.class.to_s.underscore.gsub '_', '-' %> '<%= JSON.generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}).gsub("'","'\''") %>'
       </pre>
     </div>
 
