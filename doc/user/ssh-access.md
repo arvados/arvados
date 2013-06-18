@@ -23,13 +23,13 @@ tutorial](https://www.google.com/search?q=github+ssh+key+help)
 
 ### Associate your SSH public key with your Arvados Workbench account
 
-Go to the `Keys` tab in Arvados Workbench and click the
+Go to the `Keys` page in Arvados Workbench (under the `Access` tab) and click the
 
-  `Add a new authorized key`
+<p style="margin-left: 4em"><span class="btn btn-primary">Add a new authorized key</span></p>
 
 button. Then click on 'none' in the public_key column, and copy and paste your public key:
 
-  ![Screen shot of the ssh public key box]({{ site.baseurl }}/images/ssh-adding-public-key.png)
+![Screen shot of the ssh public key box]({{ site.baseurl }}/images/ssh-adding-public-key.png)
 
 Click on the checkmark button to save your public key.
 
