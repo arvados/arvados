@@ -10,24 +10,15 @@ h1. Cheat Sheet
 h3. CLI setup
 
 <pre>
-arv_base=https://9ujm1.arvados.org/arvados/v1
-arv_token=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
-# arv_curlopts=-k  # only if you want insecure http
-arv_curl="curl -H 'Authorization: OAuth2 $arv_token' $arv_curlopts"
+ARVADOS_API_HOST=xyzzy.arvadosapi.com
+ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
 </pre>
 
 h3. Create VM
 
 <pre>
-vm_hostname=xxxxxxxchangeme
-
-eval $arv_curl -X POST --data-urlencode virtual_machine@/dev/stdin <<EOF $arv_base/virtual_machines
-{
-"hostname":"$vm_hostname"
-}
-EOF
+arv virtual_machine create --virtual_machine '{"hostname":"xxxxxxxchangeme.example.com"}'
 </pre>
-
 
 h3. User &rarr; VM
 
@@ -38,7 +29,7 @@ user_uuid=xxxxxxxchangeme
 vm_uuid=xxxxxxxchangeme
 target_username=xxxxxxxchangeme
 
-eval $arv_curl -X POST --data-urlencode link@/dev/stdin <<EOF $arv_base/links
+read newlink <<EOF; arv link create --link "$newlink"
 {
 "tail_kind":"arvados#user",
 "tail_uuid":"$user_uuid",
@@ -60,7 +51,7 @@ user_uuid=xxxxxxxchangeme
 repo_uuid=xxxxxxxchangeme
 repo_username=xxxxxxxchangeme
 
-eval $arv_curl -X POST --data-urlencode link@/dev/stdin <<EOF $arv_base/links
+read newlink <<EOF; arv link create --link "$newlink"
 {
 "tail_kind":"arvados#user",
 "tail_uuid":"$user_uuid",
