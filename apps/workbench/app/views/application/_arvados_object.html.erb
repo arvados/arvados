@@ -23,9 +23,11 @@
     <% if content_for? :page_content %>
     <li><a href="#arvados-object-table" data-toggle="tab">Table</a></li>
     <% end %>
-    <li class="active"><a href="#arvados-object-json" data-toggle="tab">JSON</a></li>
+    <li class="active"><a href="#arvados-object-json" data-toggle="tab">API response JSON</a></li>
     <% if @object.andand.uuid %>
-    <li><a href="#arvados-object-curl" data-toggle="tab">CLI update</a></li>
+    <li><a href="#arvados-object-curl" data-toggle="tab">curl update example</a></li>
+    <li><a href="#arvados-object-arv" data-toggle="tab">&ldquo;arv&rdquo; CLI example</a></li>
+    <li><a href="#arvados-object-python" data-toggle="tab">Python example</a></li>
     <% end %>
   </ul>
   <div class="tab-content">
@@ -51,6 +53,29 @@ curl -X PUT \
 EOF
       </pre>
     </div>
+    <div id="arvados-object-arv" class="tab-pane fade">
+      <pre>
+ARVADOS_API_HOST=<%= Rails.configuration.arvados_v1_base.sub '/arvados/v1','' %>
+ARVADOS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxx
+
+arv --json --pretty <%= @object.class.to_s.singularize.underscore %> get \
+ --uuid <%= @object.uuid %>
+
+arv <%= @object.class.to_s.singularize.underscore %> update \
+ --uuid <%= @object.uuid %> \
+ --<%= @object.class.to_s.singularize.underscore %> '<%= JSON.generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}).gsub("'","'\''") %>'
+      </pre>
+    </div>
+    <div id="arvados-object-python" class="tab-pane fade">
+      <pre>
+import arvados
+
+x = arvados.api().<%= @object.class.to_s.underscore %>().get(uuid='<%= @object.uuid %>').execute()
+      </pre>
+    </div>
+
+
+
     <% end %>
   </div>
 </div>

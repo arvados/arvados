@@ -71,6 +71,9 @@ def current_job():
     _current_job = t
     return t
 
+def api():
+    return service
+
 class JobTask:
     def __init__(self, parameters=dict(), resource_limits=dict()):
         print "init jobtask %s %s" % (parameters, resource_limits)
