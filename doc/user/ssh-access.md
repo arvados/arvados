@@ -41,8 +41,7 @@ On your workstation, add the following section to your `~/.ssh/config`
 file:
 
     Host *.arvados
-      ProxyCommand ssh turnout@switchyard.9ujm1.arvadosapi.com %h %p %u
-      Port 2222
+      ProxyCommand ssh -p2222 turnout@switchyard.9ujm1.arvadosapi.com -x -a $SSH_PROXY_FLAGS %h
 
 If you have access to an account `foo` on a VM called `blurfl` then
 you can log in like this:
@@ -54,8 +53,7 @@ If you want to shorten this and you always/usually have access to the
 `~/.ssh/config`:
 
     Host *.a
-      ProxyCommand ssh turnout@switchyard.9ujm1.arvadosapi.com %hrvados %p %u
-      Port 2222
+      ProxyCommand ssh -p2222 turnout@switchyard.9ujm1.arvadosapi.com -x -a $SSH_PROXY_FLAGS %h
       User foo
 
 Then you can log in to the `blurfl` VM as `foo` like this:
