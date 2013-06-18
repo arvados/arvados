@@ -30,6 +30,7 @@
     <li><a href="#arvados-object-python" data-toggle="tab">Python example</a></li>
     <% end %>
   </ul>
+
   <div class="tab-content">
     <% if content_for? :page_content %>
     <div id="arvados-object-table" class="tab-pane fade">
@@ -41,7 +42,9 @@
 <%= JSON.pretty_generate(@object.attributes.reject { |k,v| k == 'id' }) rescue nil %>
       </pre>
     </div>
+
     <% if @object.andand.uuid %>
+
     <div id="arvados-object-curl" class="tab-pane fade">
       <pre>
 curl -X PUT \
@@ -53,6 +56,7 @@ curl -X PUT \
 EOF
       </pre>
     </div>
+
     <div id="arvados-object-arv" class="tab-pane fade">
       <pre>
 ARVADOS_API_HOST=<%= Rails.configuration.arvados_v1_base.sub '/arvados/v1','' %>
@@ -66,6 +70,7 @@ arv <%= @object.class.to_s.underscore %> update \
  --<%= @object.class.to_s.underscore %> '<%= JSON.generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}).gsub("'","'\''") %>'
       </pre>
     </div>
+
     <div id="arvados-object-python" class="tab-pane fade">
       <pre>
 import arvados
@@ -74,8 +79,7 @@ x = arvados.api().<%= @object.class.to_s.pluralize.underscore %>().get(uuid='<%=
       </pre>
     </div>
 
-
-
     <% end %>
+
   </div>
 </div>
