@@ -44,7 +44,7 @@ Save your job script (say, @foo@) in @{git-repo}/job_scripts/foo@
 Test your function:
 
 <pre>
-read newjob <<EOF; /path/to/arvados/services/crunch/crunch-job --job $newjob
+read -rd "\000" newjob <<EOF; /path/to/arvados/services/crunch/crunch-job --job $newjob
 {
  "script":"foo",
  "script_version":"/path/to/working-copy",
@@ -53,6 +53,7 @@ read newjob <<EOF; /path/to/arvados/services/crunch/crunch-job --job $newjob
   "input":"..."
  }
 }
+EOF
 </pre>
 
 The @--job@ argument to @crunch-job@ is the same as the @--job@ argument to @arv job create@ with these exceptions:
