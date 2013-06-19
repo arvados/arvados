@@ -241,7 +241,7 @@ class ApplicationController < ActionController::Base
           first
         if api_client_auth
           session[:user_id] = api_client_auth.user.id
-          session[:api_client_uuid] = api_client_auth.api_client.uuid
+          session[:api_client_uuid] = api_client_auth.api_client.andand.uuid
           session[:api_client_authorization_id] = api_client_auth.id
           user = api_client_auth.user
           api_client = api_client_auth.api_client
@@ -258,7 +258,7 @@ class ApplicationController < ActionController::Base
       end
       Thread.current[:api_client_ip_address] = remote_ip
       Thread.current[:api_client_authorization] = api_client_auth
-      Thread.current[:api_client_uuid] = api_client && api_client.uuid
+      Thread.current[:api_client_uuid] = api_client.andand.uuid
       Thread.current[:api_client] = api_client
       Thread.current[:user] = user
       if api_client_auth
