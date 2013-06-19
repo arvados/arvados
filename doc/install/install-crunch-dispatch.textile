@@ -5,8 +5,6 @@ title: Install the Crunch dispatcher
 navorder: 3
 ---
 
-{% include alert-stub.html %}
-
 h1. Crunch setup
 
 h4. Perl SDK dependencies
@@ -70,7 +68,6 @@ export ARVADOS_API_HOST=xyzzy.arvadosapi.com
 
 ## Only if your SSL cert is unverifiable:
 # export ARVADOS_API_HOST_INSECURE=yes
-
 
 cd /path/to/arvados/services/api
 RAILS_ENV=production bundle exec ./script/crunch-dispatch.rb
