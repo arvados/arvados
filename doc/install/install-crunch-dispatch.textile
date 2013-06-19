@@ -13,6 +13,11 @@ h4. Perl SDK dependencies
 
 * @apt-get install libjson-perl libwww-perl libio-socket-ssl-perl libipc-system-simple-perl@
 
+h4. Python SDK dependencies
+
+* @apt-get install python-pip@
+* @pip install --upgrade google-api-python-client@
+
 h4. Repositories
 
 Crunch scripts must be in git repositories in @/var/cache/git/*/.git@ (or whatever is configured in @services/api/config/environments/production.rb@).
@@ -52,14 +57,21 @@ h4. Running jobs
 * @services/api/script/crunch-dispatch.rb@ must be running.
 * @crunch-dispatch.rb@ needs @services/crunch/crunch-job@ in its @PATH@.
 * @crunch-job@ needs @sdk/perl/lib@ and @warehouse-apps/libwarehouse-perl/lib@ in its @PERLLIB@
+* @crunch-job@ needs @ARVADOS_API_HOST@ (and, if necessary in a development environment, @ARVADOS_API_HOST_INSECURE@)
 
 Example @/var/service/arvados_crunch_dispatch/run@ script:
 
 <pre>
 #!/bin/sh
 set -e
-PATH=$PATH:/path/to/arvados/services/crunch
+export PATH="$PATH":/path/to/arvados/services/crunch
 export PERLLIB=/path/to/arvados/sdk/perl/lib:/path/to/warehouse-apps/libwarehouse-perl/lib
+export ARVADOS_API_HOST=xyzzy.arvadosapi.com
+
+## Only if your SSL cert is unverifiable:
+# export ARVADOS_API_HOST_INSECURE=yes
+
+
 cd /path/to/arvados/services/api
 RAILS_ENV=production bundle exec ./script/crunch-dispatch.rb
 </pre>
