@@ -33,7 +33,7 @@ A single batch job program, or "mr-function", executes each task of a given job.
 
 When all job tasks have completed, the output fragments are assembled into a single output manifest.
 
-If a job task fails, it is automatically re-attempted.  If the same step fails 3 times, any tasks still running are allowed to complete, and the job is abandoned.
+If a job task fails, it is automatically re-attempted.  If a task fails repeatedly and running it on a different compute node doesn't help, any tasks still running are allowed to complete, and the job is abandoned.
 
 h3. Developing and testing job scripts
 
@@ -44,12 +44,20 @@ Save your job script (say, @foo@) in @{git-repo}/job_scripts/foo@
 Test your function:
 
 <pre>
-arv-jobmanager revision={git-repo} script=foo ...
+read newjob <<EOF; /path/to/arvados/services/crunch/crunch-job --job $newjob
+{
+ "script":"foo",
+ "script_version":"/path/to/working-copy",
+ "script_parameters":
+ {
+  "input":"..."
+ }
+}
 </pre>
 
-The arguments to arv-jobmanager(1) are the same as the arguments to "arv jobs create" (see arv(1)) with these exceptions:
+The @--job@ argument to @crunch-job@ is the same as the @--job@ argument to @arv job create@ with these exceptions:
 
-* script_version=/path/to/repo specifies the path to the working copy of a repository instead of a git commit or tag.
+* @script_version@ can specify the path to the working copy of a repository instead of a git commit or tag.
 
 * resource constraints like nodes and RAM are not required.
 
