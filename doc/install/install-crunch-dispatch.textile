@@ -30,7 +30,7 @@ set -e
 while sleep 60
 do
   cd /path/to/arvados/services/api
-  setuidgid www-data env RAILS_ENV=production bundle exec ./script/import_commits.rb 2>&1
+  setuidgid www-data env RAILS_ENV=production /usr/local/rvm/bin/rvm 2.0.0 do bundle exec ./script/import_commits.rb 2>&1
 done
 </pre>
 
@@ -70,5 +70,5 @@ export ARVADOS_API_HOST=xyzzy.arvadosapi.com
 # export ARVADOS_API_HOST_INSECURE=yes
 
 cd /path/to/arvados/services/api
-RAILS_ENV=production bundle exec ./script/crunch-dispatch.rb 2>&1
+RAILS_ENV=production /usr/local/rvm/bin/rvm 2.0.0 do bundle exec ./script/crunch-dispatch.rb 2>&1
 </pre>
