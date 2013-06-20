@@ -209,11 +209,11 @@ class ApplicationController < ActionController::Base
   def login_required
     if !current_user
       respond_to do |format|
-        format.html  {
-          redirect_to '/auth/joshid'
-        }
         format.json {
           render :json => { errors: ['Not logged in'] }.to_json, status: 401
+        }
+        format.html  {
+          redirect_to '/auth/joshid'
         }
       end
     end
