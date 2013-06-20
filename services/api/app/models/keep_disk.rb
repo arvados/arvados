@@ -15,6 +15,9 @@ class KeepDisk < ArvadosModel
     t.add :last_read_at
     t.add :last_write_at
     t.add :last_ping_at
+    t.add :service_host
+    t.add :service_port
+    t.add :service_ssl_flag
   end
 
   def ping(o)
