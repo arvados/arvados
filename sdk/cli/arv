@@ -31,11 +31,7 @@ rescue LoadError
 
 Please install all required gems: 
 
-  google-api-client
-  json
-  trollop
-  andand
-  oj
+  gem install google-api-client json trollop andand oj
 
   EOS
 end
