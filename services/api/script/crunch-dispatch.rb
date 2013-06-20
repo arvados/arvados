@@ -70,6 +70,11 @@ class Dispatcher
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
 
+      if Server::Application.config.crunch_job_user
+        cmd_args.unshift("sudo", "-u",
+                         Server::Application.config.crunch_job_user)
+      end
+
       job_auth = ApiClientAuthorization.
         new(user: User.where('uuid=?', job.modified_by_user).first,
             api_client_id: 0)
