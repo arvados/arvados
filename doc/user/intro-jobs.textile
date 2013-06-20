@@ -39,7 +39,7 @@ h3. Developing and testing job scripts
 
 Usually, it makes sense to test your job script locally on small data sets.  When you are satisfied that it works, commit it to the git repository and run it in Arvados.
 
-Save your job script (say, @foo@) in @{git-repo}/job_scripts/foo@
+Save your job script (say, @foo@) in @{git-repo}/crunch_scripts/foo@
 
 Test your function:
 
