@@ -115,7 +115,7 @@ $SIG{'USR2'} = sub
 
 
 my $arv = Arvados->new;
-my $metastream = Warehouse::Stream->new;
+my $metastream = Warehouse::Stream->new(whc => new Warehouse);
 $metastream->clear;
 $metastream->write_start('log.txt');
 
@@ -357,6 +357,7 @@ else
   $ENV{"CRUNCH_INSTALL"} = "$ENV{CRUNCH_TMP}/opt";
 
   my $commit;
+  my $git_archive;
   my $treeish = $Job->{'script_version'};
   my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'};
   # Todo: let script_version specify repository instead of expecting
@@ -417,6 +418,7 @@ else
     $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
     @execargs = ("sh", "-c",
 		 "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
+    $git_archive = `cd $ENV{CRUNCH_SRC} && git archive $commit`;
   }
   else {
     croak ("could not figure out commit id for $treeish");
@@ -425,7 +427,7 @@ else
   my $installpid = fork();
   if ($installpid == 0)
   {
-    srun (\@srunargs, \@execargs, {}, $build_script);
+    srun (\@srunargs, \@execargs, {}, $build_script . $git_archive);
     exit (1);
   }
   while (1)
@@ -1308,32 +1310,15 @@ if (readlink ("$destdir.commit") eq $commit) {
     exit 0;
 }
 
+unlink "$destdir.commit";
 open STDOUT, ">", "$destdir.log";
 open STDERR, ">&STDOUT";
 
-if (-d "$destdir/.git") {
-    chdir $destdir or die "chdir $destdir: $!";
-    if (0 != system (qw(git remote set-url origin), $repo)) {
-	# awful... for old versions of git that don't know "remote set-url"
-	shell_or_die (q(perl -pi~ -e '$_="\turl = ).$repo.q(\n" if /url = /' .git/config));
-    }
-}
-elsif ($repo && $commit)
-{
-    shell_or_die('git', 'clone', $repo, $destdir);
-    chdir $destdir or die "chdir $destdir: $!";
-    shell_or_die(qw(git config clean.requireForce false));
-}
-else {
-    die "$destdir does not exist, and no repo/commit specified -- giving up";
-}
-
-if ($commit) {
-    unlink "$destdir.commit";
-    shell_or_die (qw(git stash));
-    shell_or_die (qw(git clean -d -x));
-    shell_or_die (qw(git fetch origin));
-    shell_or_die (qw(git checkout), $commit);
+mkdir $destdir;
+open TARX, "|-", "tar", "-C", $destdir, "-xf", "-";
+print TARX <DATA>;
+if(!close(TARX)) {
+  die "'tar -C $destdir -xf -' exited $?: $!";
 }
 
 my $pwd;
@@ -1365,3 +1350,5 @@ sub shell_or_die
   system (@_) == 0
       or die "@_ failed: $! exit 0x".sprintf("%x",$?);
 }
+
+__DATA__
