@@ -71,8 +71,9 @@ class Dispatcher
       end
 
       if Server::Application.config.crunch_job_user
-        cmd_args.unshift("sudo", "-u",
-                         Server::Application.config.crunch_job_user)
+        cmd_args.unshift("sudo", "-E", "-u",
+                         Server::Application.config.crunch_job_user,
+                         "PERLLIB=#{ENV['PERLLIB']}")
       end
 
       job_auth = ApiClientAuthorization.
@@ -80,7 +81,7 @@ class Dispatcher
             api_client_id: 0)
       job_auth.save
 
-      cmd_args << 'crunch-job'
+      cmd_args << ENV['CRUNCH_JOB_BIN'] || 'crunch-job'
       cmd_args << '--job-api-token'
       cmd_args << job_auth.api_token
       cmd_args << '--job'
