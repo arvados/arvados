@@ -13,6 +13,8 @@ h4. Perl SDK dependencies
 
 h4. Python SDK dependencies
 
+On controller and all compute nodes:
+
 * @apt-get install python-pip@
 * @pip install --upgrade google-api-python-client@
 

@@ -33,7 +33,8 @@ Set up a client and retrieve the schema from the server.
 
 =item apiHost
 
-Hostname of API discovery service. Default: C<arvados.local>
+Hostname of API discovery service. Default: C<ARVADOS_API_HOST>
+environment variable, or C<arvados>
 
 =item apiProtocolScheme
 
