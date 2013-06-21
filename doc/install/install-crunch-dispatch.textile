@@ -18,6 +18,12 @@ On controller and all compute nodes:
 * @apt-get install python-pip@
 * @pip install --upgrade google-api-python-client@
 
+h4. Likely crunch job dependencies
+
+On compute nodes:
+
+* @pip install --upgrade pyvcf@
+
 h4. Repositories
 
 Crunch scripts must be in git repositories in @/var/cache/git/*/.git@ (or whatever is configured in @services/api/config/environments/production.rb@).
