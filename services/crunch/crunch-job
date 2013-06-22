@@ -320,16 +320,16 @@ do {
 };
 
 
-$ENV{"CRUNCH_SRC_COMMIT"} = $Job->{revision};
+$ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
 
-my $skip_install = (!$have_slurm && $Job->{revision} =~ m{^/});
+my $skip_install = (!$job_has_uuid && $Job->{script_version} =~ m{^/});
 if ($skip_install)
 {
-  $ENV{"CRUNCH_SRC"} = $Job->{revision};
+  $ENV{"CRUNCH_SRC"} = $Job->{script_version};
 }
 else
 {
-  Log (undef, "Install revision ".$Job->{revision});
+  Log (undef, "Install revision ".$Job->{script_version});
   my $nodelist = join(",", @node);
 
   # Clean out crunch_tmp/work and crunch_tmp/opt
@@ -384,7 +384,7 @@ else
     chomp $gitlog;
     if ($gitlog =~ /^[a-f0-9]{40}$/) {
       $commit = $gitlog;
-      Log (undef, "Using commit $commit for revision $treeish");
+      Log (undef, "Using commit $commit for script_version $treeish");
     }
   }
 
@@ -563,18 +563,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $build_script_to_send = $build_script;
       $command .=
 	  "&& perl -";
-    }
-    elsif (!$skip_install)
-    {
-      $command .=
-	  "&& "
-	  ."( "
-	  ."  [ -e '$ENV{CRUNCH_INSTALL}/.tested' ] "
-	  ."|| "
-	  ."  ( svn export --quiet '$ENV{INSTALL_REPOS}/installrevision' "
-	  ."    && ./installrevision "
-	  ."  ) "
-	  .") ";
     }
     $ENV{"PYTHONPATH"} = "$ENV{CRUNCH_SRC}/sdk/python"; # xxx hack
     $command .=
