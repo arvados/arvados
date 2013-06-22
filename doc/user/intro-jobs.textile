@@ -56,10 +56,12 @@ read -rd "\000" newjob <<EOF; /path/to/arvados/services/crunch/crunch-job --job 
 EOF
 </pre>
 
-The @--job@ argument to @crunch-job@ is the same as the @--job@ argument to @arv job create@ with these exceptions:
+The @--job@ argument to @crunch-job@ is the same as the @--job@ argument to @arv job create@, except:
 
-* @script_version@ can specify the path to the working copy of a repository instead of a git commit or tag.
+<notextile><!--
+* @script_version@ can use "/" to indicate the working copy of a repository instead of a git commit or tag.
+--></notextile>
 
-* resource constraints like nodes and RAM are not required.
+* node resource constraints are ignored.
 
 You will see the progress of the job in your terminal.  Press Control-C to create a checkpoint and stop the job.
