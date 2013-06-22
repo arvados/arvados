@@ -257,8 +257,10 @@ if ($job_has_uuid)
                               'todo' => 1,
                               'running' => 0,
                               'done' => 0 };
-  unless ($Job->save() && $Job->{'is_locked_by'} == $User->{'uuid'}) {
-    croak("Error while updating / locking job");
+  if ($job_has_uuid) {
+    unless ($Job->save() && $Job->{'is_locked_by'} == $User->{'uuid'}) {
+      croak("Error while updating / locking job");
+    }
   }
 }
 
@@ -410,7 +412,7 @@ else
 	Log (undef, "Using commit $commit for tree-ish $treeish");
         if ($commit ne $treeish) {
           $Job->{'script_version'} = $commit;
-          $Job->save() or croak("Error while updating job");
+          !$job_has_uuid or $Job->save() or croak("Error while updating job");
         }
       }
     }
@@ -716,7 +718,7 @@ release_allocation();
 freeze();
 $Job->{'output'} = &collate_output();
 $Job->{'success'} = $Job->{'output'} && $success;
-$Job->save;
+$Job->save if $job_has_uuid;
 
 if ($Job->{'output'})
 {
@@ -750,7 +752,7 @@ sub update_progress_stats
   $Job->{'tasks_summary'}->{'todo'} = $todo;
   $Job->{'tasks_summary'}->{'done'} = $done;
   $Job->{'tasks_summary'}->{'running'} = $running;
-  $Job->save;
+  $Job->save if $job_has_uuid;
   Log (undef, "status: $done done, $running running, $todo todo");
   $progress_is_dirty = 0;
 }
@@ -1024,7 +1026,7 @@ sub collate_output
   {
     Log (undef, "output $joboutput");
     $Job->{'output'} = $joboutput;
-    $Job->save;
+    $Job->save if $job_has_uuid;
   }
   else
   {
@@ -1116,11 +1118,11 @@ sub croak
 sub cleanup
 {
   return if !$job_has_uuid;
-  $Job->reload;
+  $Job->reload if $job_has_uuid;
   $Job->{'running'} = 0;
   $Job->{'success'} = 0;
   $Job->{'finished_at'} = gmtime;
-  $Job->save;
+  $Job->save if $job_has_uuid;
 }
 
 
@@ -1134,7 +1136,7 @@ sub save_meta
   undef $metastream if !$justcheckpoint; # otherwise Log() will try to use it
   Log (undef, "meta key is $loglocator");
   $Job->{'log'} = $loglocator;
-  $Job->save;
+  $Job->save if $job_has_uuid;
 }
 
 
@@ -1235,7 +1237,7 @@ sub thaw
   {
     $Job->{$_} = $frozenjob->{$_};
   }
-  $Job->save;
+  $Job->save if $job_has_uuid;
 }
 
 
