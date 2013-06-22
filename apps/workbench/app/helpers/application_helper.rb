@@ -24,9 +24,6 @@ module ApplicationHelper
       link_name = opts[:link_text]
       if !link_name
         link_name = link_uuid
-        if !opts[:with_prefixes]
-          link_name = link_name.sub /^.{5}-.{5}-/, ''
-        end
         if opts[:with_class_name]
           link_name = "#{resource_class.to_s} #{link_name}"
         end
