@@ -154,7 +154,9 @@ else
   }
 
   if (!defined $Job->{'uuid'}) {
-    chomp ($Job->{'uuid'} = sprintf ("%s-t%d-p%d", `hostname -s`, time, $$));
+    my $hostname = `hostname -s`;
+    chomp $hostname;
+    $Job->{'uuid'} = sprintf ("%s-t%d-p%d", $hostname, time, $$);
   }
 }
 $job_id = $Job->{'uuid'};
