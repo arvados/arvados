@@ -43,11 +43,8 @@ class Commit < ActiveRecord::Base
       IO.foreach("|git rev-list --format=oneline --all") do |line|
         sha1, message = line.strip.split " ", 2
         imported = false
-        begin
-          imported = Commit.new(repository_name: repo_name,
-                                sha1: sha1,
-                                message: message[0..254]).save
-        rescue ActiveRecord::RecordNotUnique
+        Commit.find_or_create_by_repository_name_and_sha1_and_message(repo_name, sha1, message[0..254]) do
+          imported = true
         end
         stat[!!imported] += 1
         if (stat[true] + stat[false]) % 100 == 0
