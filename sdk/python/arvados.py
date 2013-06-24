@@ -10,6 +10,7 @@ import json
 import UserDict
 import re
 import hashlib
+import string
 
 from apiclient import errors
 from apiclient.discovery import build
@@ -85,13 +86,10 @@ class job_setup:
         if if_sequence != current_task()['sequence']:
             return
         job_input = current_job()['script_parameters']['input']
-        p = subprocess.Popen(["whls", job_input],
-                             stdout=subprocess.PIPE,
-                             stdin=None, stderr=None,
-                             shell=False, close_fds=True)
-        for f in p.stdout.read().split("\n"):
-            if f != '':
-                task_input = job_input + '/' + re.sub(r'^\./', '', f)
+        cr = CollectionReader(job_input)
+        for s in cr.all_streams():
+            for f in s.all_files():
+                task_input = f.as_manifest()
                 new_task_attrs = {
                     'job_uuid': current_job()['uuid'],
                     'created_by_job_task': current_task()['uuid'],
@@ -101,10 +99,6 @@ class job_setup:
                         }
                     }
                 service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
-        p.stdout.close()
-        p.wait()
-        if p.returncode != 0:
-            raise Exception("whls exited %d" % p.returncode)
         if and_end_task:
             service.job_tasks().update(uuid=current_task()['uuid'],
                                        job_task=json.dumps({'success':True})
@@ -134,72 +128,248 @@ class DataReader:
         if self.p.returncode != 0:
             raise Exception("whget subprocess exited %d" % self.p.returncode)
 
-class CollectionWriter:
-    KEEP_BLOCK_SIZE = 2**26
-    def __init__(self):
-        self.data_buffer = ''
-        self.current_stream_files = []
-        self.current_stream_length = 0
-        self.current_stream_locators = []
-        self.current_stream_name = '.'
-        self.current_file_name = None
-        self.current_file_pos = 0
-        self.finished_streams = []
+class StreamFileReader:
+    def __init__(self, stream, pos, size, name):
+        self._stream = stream
+        self._pos = pos
+        self._size = size
+        self._name = name
+        self._filepos = 0
+    def name(self):
+        return self._name
+    def size(self):
+        return self._size
+    def stream_name(self):
+        return self._stream.name()
+    def read(self, size, **kwargs):
+        self._stream.seek(self._pos + self._filepos)
+        data = self._stream.read(min(size, self._size - self._filepos))
+        self._filepos += len(data)
+        return data
+    def readlines(self):
+        data = ''
+        sol = 0
+        while True:
+            newdata = self.read(2**10)
+            if 0 == len(newdata):
+                break
+            data += newdata
+            while True:
+                eol = string.find(data, "\n", sol)
+                if eol < 0:
+                    break
+                yield data[sol:eol+1]
+                sol = eol+1
+            data = data[sol:]
+        if data != '':
+            yield data
+    def as_manifest(self):
+        return string.join(self._stream.tokens_for_range(self._pos, self._size),
+                           " ")
+
+class StreamReader:
+    def __init__(self, tokens):
+        self._tokens = tokens
+        self._current_datablock_data = None
+        self._current_datablock_pos = 0
+        self._current_datablock_index = -1
+        self._pos = 0
+
+        self._stream_name = None
+        self.data_locators = []
+        self.files = []
+
+        for tok in self._tokens:
+            if self._stream_name == None:
+                self._stream_name = tok
+            elif re.search(r'^[0-9a-f]{32}(\+\S+)*$', tok):
+                self.data_locators += [tok]
+            elif re.search(r'^\d+:\d+:\S+', tok):
+                pos, size, name = tok.split(':',2)
+                self.files += [[int(pos), int(size), name]]
+            else:
+                raise Exception("Invalid manifest format")
+    def tokens_for_range(self, range_start, range_size):
+        resp = [self._stream_name]
+        return_all_tokens = False
+        block_start = 0
+        token_bytes_skipped = 0
+        for locator in self.data_locators:
+            sizehint = re.search(r'\+(\d+)', locator)
+            if not sizehint:
+                return_all_tokens = True
+            if return_all_tokens:
+                resp += [locator]
+                next
+            blocksize = int(sizehint.group(0))
+            if range_start + range_size <= block_start:
+                break
+            if range_start < block_start + blocksize:
+                resp += [locator]
+            block_start += int(blocksize)
+        for f in self.files:
+            if ((f[0] < range_start + range_size)
+                and
+                (f[0] + f[1] > range_start)):
+                resp += ["%d:%d:%s" % (f[0], f[1], f[2])]
+        return resp
+    def name(self):
+        return self._stream_name
+    def all_files(self):
+        for f in self.files:
+            pos, size, name = f
+            yield StreamFileReader(self, pos, size, name)
+    def nextdatablock(self):
+        if self._current_datablock_index < 0:
+            self._current_datablock_pos = 0
+            self._current_datablock_index = 0
+        else:
+            self._current_datablock_pos += self.current_datablock_size()
+            self._current_datablock_index += 1
+        self._current_datablock = None
+    def current_datablock_data(self):
+        if self._current_datablock_data == None:
+            self._current_datablock_data = Keep.get(self.data_locators[self._current_datablock_index])
+        return self._current_datablock_data
+    def current_datablock_size(self):
+        sizehint = re.search('\+(\d+)', self.data_locators[self._current_datablock_index])
+        if sizehint:
+            return int(sizehint.group(0))
+        return len(self.current_datablock_data())
+    def seek(self, pos):
+        self._pos = pos
+    def really_seek(self):
+        if self._pos == self._current_datablock_pos:
+            return True
+        if (self._current_datablock_pos != None and
+            self._pos >= self._current_datablock_pos and
+            self._pos <= self._current_datablock_pos + self.current_datablock_size()):
+            return True
+        if self._pos < self._current_datablock_pos:
+            self._current_datablock_index = -1
+            self.nextdatablock()
+        while (self._pos > self._current_datablock_pos and
+               self._pos > self._current_datablock_pos + self.current_datablock_size()):
+            self.nextdatablock()
+    def read(self, size):
+        if size == 0:
+            return ''
+        self.really_seek()
+        while self._pos >= self._current_datablock_pos + self.current_datablock_size():
+            self.nextdatablock()
+            if self._current_datablock_index >= len(self.data_locators):
+                return None
+        data = self.current_datablock_data()[self._pos:self._pos+size]
+        self._pos += len(data)
+        return data
+
+class CollectionReader:
+    def __init__(self, manifest_locator_or_text):
+        if re.search(r'^\S+( [a-f0-9]{32,}(\+\S+)*)+( \d+:\d+:\S+)+\n', manifest_locator_or_text):
+            self._manifest_text = manifest_locator_or_text
+            self._manifest_locator = None
+        else:
+            self._manifest_locator = manifest_locator_or_text
+            self._manifest_text = None
+        self._streams = None
     def __enter__(self):
         pass
     def __exit__(self):
-        self.commit()
+        pass
+    def _populate(self):
+        if self._streams != None:
+            return
+        if not self._manifest_text:
+            self._manifest_text = Keep.get(self._manifest_locator)
+        self._streams = []
+        for stream_line in self._manifest_text.split("\n"):
+            stream_tokens = stream_line.split()
+            self._streams += [stream_tokens]
+    def all_streams(self):
+        self._populate()
+        resp = []
+        for s in self._streams:
+            resp += [StreamReader(s)]
+        return resp
+    def all_files(self):
+        for s in self.all_streams():
+            for f in s.all_files():
+                yield f
+
+class CollectionWriter:
+    KEEP_BLOCK_SIZE = 2**26
+    def __init__(self):
+        self._data_buffer = ''
+        self._current_stream_files = []
+        self._current_stream_length = 0
+        self._current_stream_locators = []
+        self._current_stream_name = '.'
+        self._current_file_name = None
+        self._current_file_pos = 0
+        self._finished_streams = []
+    def __enter__(self):
+        pass
+    def __exit__(self):
+        self.finish()
     def write(self, newdata):
-        self.data_buffer += newdata
-        self.current_stream_length += len(newdata)
-        while len(self.data_buffer) >= self.KEEP_BLOCK_SIZE:
+        self._data_buffer += newdata
+        self._current_stream_length += len(newdata)
+        while len(self._data_buffer) >= self.KEEP_BLOCK_SIZE:
             self.flush_data()
     def flush_data(self):
-        if self.data_buffer != '':
-            self.current_stream_locators += [Keep.put(self.data_buffer[0:self.KEEP_BLOCK_SIZE])]
-            self.data_buffer = self.data_buffer[self.KEEP_BLOCK_SIZE:]
+        if self._data_buffer != '':
+            self._current_stream_locators += [Keep.put(self._data_buffer[0:self.KEEP_BLOCK_SIZE])]
+            self._data_buffer = self._data_buffer[self.KEEP_BLOCK_SIZE:]
     def start_new_file(self, newfilename=None):
         self.finish_current_file()
-        self.current_file_name = newfilename
+        self.set_current_file_name(newfilename)
     def set_current_file_name(self, newfilename):
-        self.current_file_name = newfilename
+        if re.search(r'[ \t\n]', newfilename):
+            raise AssertionError("Manifest filenames cannot contain whitespace")
+        self._current_file_name = newfilename
+    def current_file_name(self):
+        return self._current_file_name
     def finish_current_file(self):
-        if self.current_file_name == None:
-            if self.current_file_pos == self.current_stream_length:
+        if self._current_file_name == None:
+            if self._current_file_pos == self._current_stream_length:
                 return
-            raise Exception("cannot finish an unnamed file (%d bytes at offset %d in '%s' stream)" % (self.current_stream_length - self.current_file_pos, self.current_file_pos, self.current_stream_name))
-        self.current_stream_files += [[self.current_file_pos,
-                                       self.current_stream_length - self.current_file_pos,
-                                       self.current_file_name]]
-        self.current_file_pos = self.current_stream_length
+            raise Exception("Cannot finish an unnamed file (%d bytes at offset %d in '%s' stream)" % (self._current_stream_length - self._current_file_pos, self._current_file_pos, self._current_stream_name))
+        self._current_stream_files += [[self._current_file_pos,
+                                       self._current_stream_length - self._current_file_pos,
+                                       self._current_file_name]]
+        self._current_file_pos = self._current_stream_length
     def start_new_stream(self, newstreamname=None):
         self.finish_current_stream()
-        self.current_stream_name = newstreamname
+        self.set_current_stream_name(newstreamname)
     def set_current_stream_name(self, newstreamname):
-        self.current_stream_name = newstreamname
+        if re.search(r'[ \t\n]', newstreamname):
+            raise AssertionError("Manifest stream names cannot contain whitespace")
+        self._current_stream_name = newstreamname
+    def current_stream_name(self):
+        return self._current_stream_name
     def finish_current_stream(self):
         self.finish_current_file()
         self.flush_data()
-        if len(self.current_stream_files) == 0:
+        if len(self._current_stream_files) == 0:
             pass
-        elif self.current_stream_name == None:
-            raise Exception("cannot finish an unnamed stream (%d bytes in %d files)" % (self.current_stream_length, len(self.current_stream_files)))
+        elif self._current_stream_name == None:
+            raise Exception("Cannot finish an unnamed stream (%d bytes in %d files)" % (self._current_stream_length, len(self._current_stream_files)))
         else:
-            self.finished_streams += [[self.current_stream_name,
-                                       self.current_stream_locators,
-                                       self.current_stream_files]]
-        self.current_stream_files = []
-        self.current_stream_length = 0
-        self.current_stream_locators = []
-        self.current_stream_name = None
-        self.current_file_pos = 0
-        self.current_file_name = None
+            self._finished_streams += [[self._current_stream_name,
+                                       self._current_stream_locators,
+                                       self._current_stream_files]]
+        self._current_stream_files = []
+        self._current_stream_length = 0
+        self._current_stream_locators = []
+        self._current_stream_name = None
+        self._current_file_pos = 0
+        self._current_file_name = None
     def finish(self):
         return Keep.put(self.manifest_text())
     def manifest_text(self):
         self.finish_current_stream()
         manifest = ''
-        for stream in self.finished_streams:
+        for stream in self._finished_streams:
             manifest += stream[0]
             if len(stream[1]) == 0:
                 manifest += " d41d8cd98f00b204e9800998ecf8427e+0"
@@ -214,6 +384,8 @@ class CollectionWriter:
 class Keep:
     @staticmethod
     def put(data):
+        if os.environ['KEEP_LOCAL_STORE']:
+            return Keep.local_store_put(data)
         p = subprocess.Popen(["whput", "-"],
                              stdout=subprocess.PIPE,
                              stdin=subprocess.PIPE,
@@ -225,6 +397,8 @@ class Keep:
         return stdoutdata.rstrip()
     @staticmethod
     def get(locator):
+        if os.environ['KEEP_LOCAL_STORE']:
+            return Keep.local_store_get(locator)
         p = subprocess.Popen(["whget", locator, "-"],
                              stdout=subprocess.PIPE,
                              stdin=None,
@@ -241,3 +415,19 @@ class Keep:
         except ValueError:
             pass
         raise Exception("md5 checksum mismatch: md5(get(%s)) == %s" % (locator, m.hexdigest()))
+    @staticmethod
+    def local_store_put(data):
+        m = hashlib.new('md5')
+        m.update(data)
+        md5 = m.hexdigest()
+        locator = '%s+%d' % (md5, len(data))
+        with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], md5 + '.tmp'), 'w') as f:
+            f.write(data)
+        os.rename(os.path.join(os.environ['KEEP_LOCAL_STORE'], md5 + '.tmp'),
+                  os.path.join(os.environ['KEEP_LOCAL_STORE'], md5))
+        return locator
+    @staticmethod
+    def local_store_get(locator):
+        r = re.search('^([0-9a-f]{32,})', locator)
+        with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], r.group(0)), 'r') as f:
+            return f.read()
