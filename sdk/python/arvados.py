@@ -11,6 +11,7 @@ import UserDict
 import re
 import hashlib
 import string
+import bz2
 
 from apiclient import errors
 from apiclient.discovery import build
@@ -146,15 +147,28 @@ class StreamFileReader:
         data = self._stream.read(min(size, self._size - self._filepos))
         self._filepos += len(data)
         return data
-    def readlines(self):
-        self._stream.seek(self._pos + self._filepos)
-        data = ''
-        sol = 0
+    def readall(self, size, **kwargs):
         while True:
-            newdata = self.read(2**10)
-            if 0 == len(newdata):
+            data = self.read(size, **kwargs)
+            if data == '':
                 break
+            yield data
+    def bunzip2(self, size):
+        decompressor = bz2.BZ2Decompressor()
+        for chunk in self.readall(size):
+            data = decompressor.decompress(chunk)
+            if data and data != '':
+                yield data
+    def readlines(self, decompress=True):
+        self._stream.seek(self._pos + self._filepos)
+        if decompress and re.search('\.bz2$', self._name):
+            datasource = self.bunzip2(2**10)
+        else:
+            datasource = self.readall(2**10)
+        data = ''
+        for newdata in datasource:
             data += newdata
+            sol = 0
             while True:
                 eol = string.find(data, "\n", sol)
                 if eol < 0:
@@ -165,6 +179,9 @@ class StreamFileReader:
         if data != '':
             yield data
     def as_manifest(self):
+        if self.size() == 0:
+            return ("%s d41d8cd98f00b204e9800998ecf8427e+0 0:0:%s\n"
+                    % (self._stream.name(), self.name()))
         return string.join(self._stream.tokens_for_range(self._pos, self._size),
                            " ") + "\n"
 
@@ -207,12 +224,16 @@ class StreamReader:
                 break
             if range_start < block_start + blocksize:
                 resp += [locator]
-            block_start += int(blocksize)
+            else:
+                token_bytes_skipped += blocksize
+            block_start += blocksize
         for f in self.files:
             if ((f[0] < range_start + range_size)
                 and
-                (f[0] + f[1] > range_start)):
-                resp += ["%d:%d:%s" % (f[0], f[1], f[2])]
+                (f[0] + f[1] > range_start)
+                and
+                f[1] > 0):
+                resp += ["%d:%d:%s" % (f[0] - token_bytes_skipped, f[1], f[2])]
         return resp
     def name(self):
         return self._stream_name
@@ -439,5 +460,9 @@ class Keep:
     @staticmethod
     def local_store_get(locator):
         r = re.search('^([0-9a-f]{32,})', locator)
+        if not r:
+            raise Exception("Keep.get: invalid data locator '%s'" % locator)
+        if r.group(0) == 'd41d8cd98f00b204e9800998ecf8427e':
+            return ''
         with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], r.group(0)), 'r') as f:
             return f.read()
