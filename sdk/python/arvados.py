@@ -384,7 +384,7 @@ class CollectionWriter:
 class Keep:
     @staticmethod
     def put(data):
-        if os.environ['KEEP_LOCAL_STORE']:
+        if 'KEEP_LOCAL_STORE' in os.environ:
             return Keep.local_store_put(data)
         p = subprocess.Popen(["whput", "-"],
                              stdout=subprocess.PIPE,
@@ -397,7 +397,7 @@ class Keep:
         return stdoutdata.rstrip()
     @staticmethod
     def get(locator):
-        if os.environ['KEEP_LOCAL_STORE']:
+        if 'KEEP_LOCAL_STORE' in os.environ:
             return Keep.local_store_get(locator)
         p = subprocess.Popen(["whget", locator, "-"],
                              stdout=subprocess.PIPE,
