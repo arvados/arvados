@@ -7,6 +7,7 @@ import arvados
 import os
 import bz2
 import sys
+import subprocess
 
 class KeepLocalStoreTest(unittest.TestCase):
     def setUp(self):
@@ -168,6 +169,35 @@ class LocalCollectionBZ2DecompressionTest(unittest.TestCase):
         bz2_manifest = cw.manifest_text()
 
         cr = arvados.CollectionReader(bz2_manifest)
+        got = 0
+        for x in list(cr.all_files())[0].readlines():
+            self.assertEqual(x, "abc\n", "decompression returned wrong data: %s" % x)
+            got += 1
+        self.assertEqual(got,
+                         n_lines_in,
+                         "decompression returned %d lines instead of %d" % (got, n_lines_in))
+
+class LocalCollectionGzipDecompressionTest(unittest.TestCase):
+    def setUp(self):
+        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
+    def runTest(self):
+        n_lines_in = 2**18
+        data_in = "abc\n"
+        for x in xrange(0, 18):
+            data_in += data_in
+        p = subprocess.Popen(["gzip", "-1cn"],
+                             stdout=subprocess.PIPE,
+                             stdin=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             shell=False, close_fds=True)
+        compressed_data_in, stderrdata = p.communicate(data_in)
+
+        cw = arvados.CollectionWriter()
+        cw.start_new_file('test.gz')
+        cw.write(compressed_data_in)
+        gzip_manifest = cw.manifest_text()
+
+        cr = arvados.CollectionReader(gzip_manifest)
         got = 0
         for x in list(cr.all_files())[0].readlines():
             self.assertEqual(x, "abc\n", "decompression returned wrong data: %s" % x)

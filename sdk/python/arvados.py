@@ -12,6 +12,7 @@ import re
 import hashlib
 import string
 import bz2
+import zlib
 
 from apiclient import errors
 from apiclient.discovery import build
@@ -138,6 +139,8 @@ class StreamFileReader:
         self._filepos = 0
     def name(self):
         return self._name
+    def decompressed_name(self):
+        return re.sub('\.(bz2|gz)$', '', self._name)
     def size(self):
         return self._size
     def stream_name(self):
@@ -159,10 +162,18 @@ class StreamFileReader:
             data = decompressor.decompress(chunk)
             if data and data != '':
                 yield data
+    def gunzip(self, size):
+        decompressor = zlib.decompressobj(16+zlib.MAX_WBITS)
+        for chunk in self.readall(size):
+            data = decompressor.decompress(decompressor.unconsumed_tail + chunk)
+            if data and data != '':
+                yield data
     def readlines(self, decompress=True):
         self._stream.seek(self._pos + self._filepos)
         if decompress and re.search('\.bz2$', self._name):
             datasource = self.bunzip2(2**10)
+        elif decompress and re.search('\.gz$', self._name):
+            datasource = self.gunzip(2**10)
         else:
             datasource = self.readall(2**10)
         data = ''
@@ -330,7 +341,8 @@ class CollectionReader:
 class CollectionWriter:
     KEEP_BLOCK_SIZE = 2**26
     def __init__(self):
-        self._data_buffer = ''
+        self._data_buffer = []
+        self._data_buffer_len = 0
         self._current_stream_files = []
         self._current_stream_length = 0
         self._current_stream_locators = []
@@ -343,14 +355,16 @@ class CollectionWriter:
     def __exit__(self):
         self.finish()
     def write(self, newdata):
-        self._data_buffer += newdata
+        self._data_buffer += [newdata]
+        self._data_buffer_len += len(newdata)
         self._current_stream_length += len(newdata)
-        while len(self._data_buffer) >= self.KEEP_BLOCK_SIZE:
+        while self._data_buffer_len >= self.KEEP_BLOCK_SIZE:
             self.flush_data()
     def flush_data(self):
-        if self._data_buffer != '':
-            self._current_stream_locators += [Keep.put(self._data_buffer[0:self.KEEP_BLOCK_SIZE])]
-            self._data_buffer = self._data_buffer[self.KEEP_BLOCK_SIZE:]
+        data_buffer = ''.join(self._data_buffer)
+        if data_buffer != '':
+            self._current_stream_locators += [Keep.put(data_buffer[0:self.KEEP_BLOCK_SIZE])]
+            self._data_buffer = [data_buffer[self.KEEP_BLOCK_SIZE:]]
     def start_new_file(self, newfilename=None):
         self.finish_current_file()
         self.set_current_file_name(newfilename)
