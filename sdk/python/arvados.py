@@ -147,6 +147,7 @@ class StreamFileReader:
         self._filepos += len(data)
         return data
     def readlines(self):
+        self._stream.seek(self._pos + self._filepos)
         data = ''
         sol = 0
         while True:
@@ -232,13 +233,19 @@ class StreamReader:
             self._current_datablock_data = Keep.get(self.data_locators[self._current_datablock_index])
         return self._current_datablock_data
     def current_datablock_size(self):
+        if self._current_datablock_index < 0:
+            self.nextdatablock()
         sizehint = re.search('\+(\d+)', self.data_locators[self._current_datablock_index])
         if sizehint:
             return int(sizehint.group(0))
         return len(self.current_datablock_data())
     def seek(self, pos):
+        """Set the position of the next read operation."""
         self._pos = pos
     def really_seek(self):
+        """Find and load the appropriate data block, so the byte at
+        _pos is in memory.
+        """
         if self._pos == self._current_datablock_pos:
             return True
         if (self._current_datablock_pos != None and
@@ -252,6 +259,9 @@ class StreamReader:
                self._pos > self._current_datablock_pos + self.current_datablock_size()):
             self.nextdatablock()
     def read(self, size):
+        """Read no more than size bytes -- but at least one byte,
+        unless _pos is already at the end of the stream.
+        """
         if size == 0:
             return ''
         self.really_seek()
