@@ -226,7 +226,7 @@ class StreamReader:
         else:
             self._current_datablock_pos += self.current_datablock_size()
             self._current_datablock_index += 1
-        self._current_datablock = None
+        self._current_datablock_data = None
     def current_datablock_data(self):
         if self._current_datablock_data == None:
             self._current_datablock_data = Keep.get(self.data_locators[self._current_datablock_index])
@@ -259,7 +259,7 @@ class StreamReader:
             self.nextdatablock()
             if self._current_datablock_index >= len(self.data_locators):
                 return None
-        data = self.current_datablock_data()[self._pos:self._pos+size]
+        data = self.current_datablock_data()[self._pos - self._current_datablock_pos : self._pos - self._current_datablock_pos + size]
         self._pos += len(data)
         return data
 
