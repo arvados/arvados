@@ -90,10 +90,17 @@ class Dispatcher
       commit = Commit.where(sha1: job.script_version).first
       if commit
         cmd_args << '--git-dir'
-        cmd_args << File.
-          join(Rails.configuration.git_repositories_dir,
-               commit.repository_name,
-               '.git')
+        if File.exists?(File.
+                        join(Rails.configuration.git_repositories_dir,
+                             commit.repository_name + '.git'))
+          cmd_args << File.
+            join(Rails.configuration.git_repositories_dir,
+                 commit.repository_name + '.git')
+        else
+          cmd_args << File.
+            join(Rails.configuration.git_repositories_dir,
+                 commit.repository_name, '.git')
+        end
       end
 
       $stderr.puts "dispatch: #{cmd_args.join ' '}"
