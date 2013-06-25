@@ -165,7 +165,7 @@ class StreamFileReader:
             yield data
     def as_manifest(self):
         return string.join(self._stream.tokens_for_range(self._pos, self._size),
-                           " ")
+                           " ") + "\n"
 
 class StreamReader:
     def __init__(self, tokens):
