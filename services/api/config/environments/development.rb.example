@@ -15,6 +15,7 @@ Server::Application.configure do
 
   # Don't care if the mailer can't send
   config.action_mailer.raise_delivery_errors = false
+  config.action_mailer.perform_deliveries = false
 
   # Print deprecation notices to the Rails logger
   config.active_support.deprecation = :log
@@ -53,4 +54,5 @@ Server::Application.configure do
   config.accept_api_token = {}
 
   config.new_users_are_active = false
+  config.admin_notifier_email_from = 'arvados@example.com'
 end

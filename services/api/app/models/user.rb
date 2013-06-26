@@ -6,6 +6,7 @@ class User < ArvadosModel
   has_many :api_client_authorizations
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
+  after_create AdminNotifier
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
