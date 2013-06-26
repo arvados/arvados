@@ -34,10 +34,11 @@ module CurrentApiClient
   def system_user
     if not $system_user
       real_current_user = Thread.current[:user]
-      Thread.current[:user] = User.new(is_admin: true)
+      Thread.current[:user] = User.new(is_admin: true, is_active: true)
       $system_user = User.where('uuid=?', system_user_uuid).first
       if !$system_user
         $system_user = User.new(uuid: system_user_uuid,
+                                is_active: true,
                                 is_admin: true,
                                 email: 'root',
                                 first_name: 'root',
