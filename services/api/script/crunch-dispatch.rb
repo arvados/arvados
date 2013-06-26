@@ -17,6 +17,8 @@ require File.dirname(__FILE__) + '/../config/boot'
 require File.dirname(__FILE__) + '/../config/environment'
 require 'open3'
 
+$redis ||= Redis.new
+
 class Dispatcher
   include ApplicationHelper
 
@@ -169,6 +171,7 @@ class Dispatcher
           lines.each do |line|
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
+            $redis.publish job_uuid, "#{Time.now.ctime.to_s} #{line}"
           end
         end
       end
@@ -213,6 +216,7 @@ class Dispatcher
     job_done = j_done[:job]
     $stderr.puts "dispatch: child #{pid_done} exit"
     $stderr.puts "dispatch: job #{job_done.uuid} end"
+    $redis.publish job_done.uuid, "end"
 
     # Ensure every last drop of stdout and stderr is consumed
     read_pipes

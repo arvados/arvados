@@ -40,6 +40,36 @@ class Arvados::V1::JobsController < ApplicationController
     super
   end
 
+  class LogStreamer
+    def initialize(job)
+      @job = job
+    end
+    def each
+      if @job.finished_at
+        yield "#{@job.uuid} finished at #{@job.finished_at}\n"
+        return
+      end
+      @redis = Redis.new(:timeout => 0)
+      @redis.subscribe(@job.uuid) do |event|
+        event.message do |channel, msg|
+          if msg == "end"
+            @redis.unsubscribe @job.uuid
+          else
+            yield "#{msg}\n"
+          end
+        end
+      end
+    end
+  end
+
+  def log_tail_follow
+    if !@object.andand.uuid
+      return render_not_found
+    end
+    self.response.headers['Last-Modified'] = Time.now.ctime.to_s
+    self.response_body = LogStreamer.new @object
+  end
+
   def queue
     load_where_param
     @where.merge!({

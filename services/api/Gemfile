@@ -50,3 +50,4 @@ gem 'omniauth', '1.1.1'
 gem 'omniauth-oauth2', '1.1.1'
 
 gem 'andand'
+gem 'redis'
