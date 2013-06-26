@@ -84,6 +84,11 @@ make sure to remove the code that tries to look them up from the AWS metadata:
 
 Set up Apache and Passenger. Point them to the services/api directory in the source tree.
 
+To enable streaming so users can monitor crunch jobs in real time, add
+to your Apache configuration:
+
+    PassengerBufferResponse off
+
 ## Add an admin user
 
 Point browser to the API endpoint. Log in with a google account.
