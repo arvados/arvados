@@ -45,4 +45,5 @@ ArvadosWorkbench::Application.configure do
   config.secret_token = File.read('config/.secret_token') if File.exist? 'config/.secret_token'
 
   config.site_name = 'arvados-workbench.example.com'
+  config.activation_contact_link = 'mailto:info@arvados.org'
 end

@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130617150007) do
+ActiveRecord::Schema.define(:version => 20130626002829) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -371,6 +371,7 @@ ActiveRecord::Schema.define(:version => 20130617150007) do
     t.text     "prefs"
     t.datetime "updated_at"
     t.string   "default_owner"
+    t.boolean  "is_active",          :default => false
   end
 
   add_index "users", ["created_at"], :name => "index_users_on_created_at"

@@ -47,49 +47,59 @@
 </div>
 <% end %>
 
+<% if current_user.andand.is_active %>
+<% content_for :manage_access do %>
+<h4>Setup</h4>
+<div class="well clearfix">
+  <div>
+    <strong>SSH keys</strong>
+    <span class="badge <%= 'badge-success' if @my_ssh_keys.any? %> pull-right"><%= @my_ssh_keys.count %></span>
+  </div>
+  You&rsquo;ll use public key authentication when logging in to a
+  VM or use a hosted git repository.
+  <br />
+  <%= link_to raw('Add/edit keys &#x279c;'), authorized_keys_path, class: "pull-right btn #{'btn-primary' if @my_ssh_keys.empty?}" %>
+</div>
+<div class="well clearfix">
+  <div>
+    <strong>Virtual machines</strong>
+    <span class="badge <%= 'badge-success' if @my_vm_perms.any? %> pull-right"><%= @my_vm_perms.collect(&:head_uuid).uniq.count %></span>
+  </div>
+  Arvados includes virtual machines with SDKs installed and ready to use.
+  <br />
+  <% if @my_vm_perms.any? %>
+  <%= link_to raw('Show VMs &#x279c;'), virtual_machines_path, class: "pull-right btn" %>
+  <% elsif @my_ssh_keys.any? %>
+  <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, class: "pull-right btn btn-primary" %>
+  <% else %>
+  <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
+  <% end %>
+</div>
+<div class="well clearfix">
+  <div>
+    <strong>Git repositories</strong>
+    <span class="badge <%= 'badge-success' if @my_repo_perms.any? %> pull-right"><%= @my_repo_perms.collect(&:head_uuid).uniq.count %></span>
+  </div>
+  In order to run jobs using your own code, you need to push your code to a git repository. We provide hosted git repositories to make this easy.
+  <br />
+  <% if @my_repo_perms.any? %>
+  <%= link_to raw('Show repositories &#x279c;'), repositories_path, class: "pull-right btn" %>
+  <% elsif @my_ssh_keys.any? %>
+  <%= link_to raw('Request a repository &#x279c;'), repositories_path, class: "pull-right btn btn-primary" %>
+  <% else %>
+  <%= link_to raw('Request a repository &#x279c;'), repositories_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
+  <% end %>
+</div>
+<% end %>
+<% end %>
+
 <div class="row-fluid">
   <div class="col span4">
-    <h4>Setup</h4>
-    <div class="well clearfix">
-      <div>
-        <strong>SSH keys</strong>
-        <span class="badge <%= 'badge-success' if @my_ssh_keys.any? %> pull-right"><%= @my_ssh_keys.count %></span>
-      </div>
-      You&rsquo;ll use public key authentication when logging in to a
-      VM or use a hosted git repository.
-      <br />
-      <%= link_to raw('Add/edit keys &#x279c;'), authorized_keys_path, class: "pull-right btn #{'btn-primary' if @my_ssh_keys.empty?}" %>
-    </div>
-    <div class="well clearfix">
-      <div>
-        <strong>Virtual machines</strong>
-        <span class="badge <%= 'badge-success' if @my_vm_perms.any? %> pull-right"><%= @my_vm_perms.collect(&:head_uuid).uniq.count %></span>
-      </div>
-      Arvados includes virtual machines with SDKs installed and ready to use.
-      <br />
-      <% if @my_vm_perms.any? %>
-      <%= link_to raw('Show VMs &#x279c;'), virtual_machines_path, class: "pull-right btn" %>
-      <% elsif @my_ssh_keys.any? %>
-      <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, class: "pull-right btn btn-primary" %>
-      <% else %>
-      <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
-      <% end %>
-    </div>
-    <div class="well clearfix">
-      <div>
-        <strong>Git repositories</strong>
-        <span class="badge <%= 'badge-success' if @my_repo_perms.any? %> pull-right"><%= @my_repo_perms.collect(&:head_uuid).uniq.count %></span>
-      </div>
-      In order to run jobs using your own code, you need to push your code to a git repository. We provide hosted git repositories to make this easy.
-      <br />
-      <% if @my_repo_perms.any? %>
-      <%= link_to raw('Show repositories &#x279c;'), repositories_path, class: "pull-right btn" %>
-      <% elsif @my_ssh_keys.any? %>
-      <%= link_to raw('Request a repository &#x279c;'), repositories_path, class: "pull-right btn btn-primary" %>
-      <% else %>
-      <%= link_to raw('Request a repository &#x279c;'), repositories_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
-      <% end %>
-    </div>
+    <% if content_for? :manage_access %>
+    <%= yield :manage_access %>
+    <% else %>
+    <%= render partial: 'request_activation' %>
+    <% end %>
   </div>
 
   <% if content_for? :tutorials %>

@@ -57,4 +57,16 @@ class ApiClientAuthorization < ArvadosModel
     nil
   end
   def modified_at=(x) end
+
+  protected
+
+  def permission_to_create
+    current_user.andand.is_admin or (current_user.andand.id == self.user_id)
+  end
+
+  def permission_to_update
+    (permission_to_create and
+     not self.user_id_changed? and
+     not self.owner_changed?)
+  end
 end

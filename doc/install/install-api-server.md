@@ -97,7 +97,7 @@ In the rails console:
 
     Thread.current[:user] = User.find(1)
     Thread.current[:user].is_admin = true
-    User.find(1).update_attributes is_admin: true
+    User.find(1).update_attributes is_admin: true, is_active: true
     User.find(1).is_admin
 
 This should be

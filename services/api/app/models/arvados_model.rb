@@ -42,7 +42,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def permission_to_create
-    current_user
+    current_user.andand.is_active
   end
 
   def ensure_permission_to_update
@@ -52,6 +52,10 @@ class ArvadosModel < ActiveRecord::Base
   def permission_to_update
     if !current_user
       logger.warn "Anonymous user tried to update #{self.class.to_s} #{self.uuid_was}"
+      return false
+    end
+    if !current_user.is_active
+      logger.warn "Inactive user #{current_user.uuid} tried to update #{self.class.to_s} #{self.uuid_was}"
       return false
     end
     if self.uuid_changed?

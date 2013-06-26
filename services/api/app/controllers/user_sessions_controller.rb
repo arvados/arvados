@@ -28,7 +28,8 @@ class UserSessionsController < ApplicationController
       user = User.new(:email => omniauth['info']['email'],
                       :first_name => omniauth['info']['first_name'],
                       :last_name => omniauth['info']['last_name'],
-                      :identity_url => omniauth['info']['identity_url'])
+                      :identity_url => omniauth['info']['identity_url'],
+                      :is_active => Rails.configuration.new_users_are_active)
     else
       user.email = omniauth['info']['email']
       user.first_name = omniauth['info']['first_name']

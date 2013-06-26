@@ -79,4 +79,5 @@ ArvadosWorkbench::Application.configure do
   config.vcf_pipeline_uuid = '9ujm1-mxsvm-o62u4mdoxvs0ckp'
 
   config.site_name = 'arvados-workbench.example.com'
+  config.activation_contact_link = 'mailto:info@arvados.org'
 end

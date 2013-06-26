@@ -5,6 +5,7 @@ class User < ArvadosModel
   serialize :prefs, Hash
   has_many :api_client_authorizations
   before_update :prevent_privilege_escalation
+  before_update :prevent_inactive_admin
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
@@ -14,6 +15,7 @@ class User < ArvadosModel
     t.add :first_name
     t.add :last_name
     t.add :identity_url
+    t.add :is_active
     t.add :is_admin
     t.add :prefs
   end
@@ -53,19 +55,43 @@ class User < ArvadosModel
 
   protected
 
+  def permission_to_update
+    # users must be able to update themselves (even if they are
+    # inactive) in order to create sessions
+    self == current_user or super
+  end
+
   def permission_to_create
-    Thread.current[:user] == self or
-      (Thread.current[:user] and Thread.current[:user].is_admin)
+    current_user.andand.is_admin or
+      (self == current_user and
+       self.is_active == Rails.configuration.new_users_are_active)
   end
 
   def prevent_privilege_escalation
-    if self.is_admin_changed? and !current_user.is_admin
-      if current_user.uuid == self.uuid
-        if self.is_admin != self.is_admin_was
-          logger.warn "User #{self.uuid} tried to change is_admin from #{self.is_admin_was} to #{self.is_admin}"
-          self.is_admin = self.is_admin_was
-        end
+    if current_user.andand.is_admin
+      return true
+    end
+    if self.is_active_changed?
+      if self.is_active != self.is_active_was
+        logger.warn "User #{current_user.uuid} tried to change is_active from #{self.is_admin_was} to #{self.is_admin} for #{self.uuid}"
+        self.is_active = self.is_active_was
       end
+    end
+    if self.is_admin_changed?
+      if self.is_admin != self.is_admin_was
+        logger.warn "User #{current_user.uuid} tried to change is_admin from #{self.is_admin_was} to #{self.is_admin} for #{self.uuid}"
+        self.is_admin = self.is_admin_was
+      end
+    end
+    true
+  end
+
+  def prevent_inactive_admin
+    if self.is_admin and not self.is_active
+      # There is no known use case for the strange set of permissions
+      # that would result from this change. It's safest to assume it's
+      # a mistake and disallow it outright.
+      raise "Admin users cannot be inactive"
     end
     true
   end

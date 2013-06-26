@@ -51,4 +51,6 @@ Server::Application.configure do
   # Authentication stub: hard code pre-approved API tokens.
   # config.accept_api_token = { rand(2**256).to_s(36) => true }
   config.accept_api_token = {}
+
+  config.new_users_are_active = false
 end

@@ -20,6 +20,14 @@ h3. Create VM
 arv virtual_machine create --virtual_machine '{"hostname":"xxxxxxxchangeme.example.com"}'
 </pre>
 
+h3. Activate user
+
+<pre>
+user_uuid=xxxxxxxchangeme
+
+arv user update --uuid "$user_uuid" --user '{"is_active":true}'
+</pre>
+
 h3. User &rarr; VM
 
 Give @$user_uuid@ permission to log in to @$vm_uuid@ as @$target_username@
