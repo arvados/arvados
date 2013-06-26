@@ -22,7 +22,7 @@ navorder: 0
 * [Collections](Collections.html)
 * Files
 * [Jobs](Jobs.html)
-* JobTasks
+* [JobTasks](JobTasks.html)
 * [Links](Links.html)
 * Logs
 * People
