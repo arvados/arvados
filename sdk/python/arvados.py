@@ -63,6 +63,7 @@ def current_task():
     t = service.job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
     t = UserDict.UserDict(t)
     t.set_output = types.MethodType(task_set_output, t)
+    t.tmpdir = os.environ['TASK_TMPDIR']
     _current_task = t
     return t
 
@@ -72,6 +73,8 @@ def current_job():
     if _current_job:
         return _current_job
     t = service.jobs().get(uuid=os.environ['JOB_UUID']).execute()
+    t = UserDict.UserDict(t)
+    t.tmpdir = os.environ['CRUNCH_WORK']
     _current_job = t
     return t
 
@@ -106,6 +109,31 @@ class job_setup:
                                        job_task=json.dumps({'success':True})
                                        ).execute()
             exit(0)
+
+class util:
+    @staticmethod
+    def run_command(execargs, **kwargs):
+        p = subprocess.Popen(execargs, close_fds=True, shell=False,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             **kwargs)
+        stdoutdata, stderrdata = p.communicate(None)
+        if p.returncode != 0:
+            raise Exception("run_command %s exit %d:\n%s" %
+                            (execargs, p.returncode, stderrdata))
+        return stdoutdata, stderrdata
+
+    @staticmethod
+    def git_checkout(url, version, path):
+        if not re.search('^/', path):
+            path = os.path.join(current_job().tmpdir, path)
+        if not os.path.exists(path):
+            util.run_command(["git", "clone", url, path],
+                             cwd=os.path.dirname(parser_path))
+        util.run_command(["git", "checkout", version],
+                         cwd=parser_path)
+        return path
 
 class DataReader:
     def __init__(self, data_locator):
