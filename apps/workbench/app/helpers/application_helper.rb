@@ -49,13 +49,14 @@ module ApplicationHelper
       input_type = 'text'
     end
 
+    attrvalue = attrvalue.to_json if attrvalue.is_a? Hash
+
     link_to attrvalue.to_s, '#', {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => input_type,
       "data-resource" => object.class.to_s.underscore,
       "data-name" => attr,
-      "data-value" => object.send(attr),
       "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
       "data-original-title" => "Update #{attr.gsub '_', ' '}",
       :class => "editable"

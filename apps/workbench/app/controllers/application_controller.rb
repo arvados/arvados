@@ -77,7 +77,13 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    if @object.update_attributes params[@object.class.to_s.underscore.singularize.to_sym]
+    updates = params[@object.class.to_s.underscore.singularize.to_sym]
+    updates.keys.each do |attr|
+      if @object.send(attr).is_a? Hash and updates[attr].is_a? String
+        updates[attr] = Oj.load updates[attr]
+      end
+    end
+    if @object.update_attributes updates
       show
     else
       self.render_error status: 422
