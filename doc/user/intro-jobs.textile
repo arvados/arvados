@@ -39,15 +39,21 @@ h3. Developing and testing job scripts
 
 Usually, it makes sense to test your job script locally on small data sets.  When you are satisfied that it works, commit it to the git repository and run it in Arvados.
 
-Save your job script (say, @foo@) in @{git-repo}/crunch_scripts/foo@
+Save your job script (say, @foo@) in @{git-repo}/crunch_scripts/foo@.
+
+Make sure you have @ARVADOS_API_TOKEN@ and @ARVADOS_API_HOST@ set correctly ("more info":api-tokens.html).
 
 Test your function:
 
 <pre>
-read -rd "\000" newjob <<EOF; /path/to/arvados/services/crunch/crunch-job --job $newjob
+arvados=/path/to/arvados
+script_name=foo
+repo_path=/path/to/repo
+
+read -rd "\000" newjob <<EOF; $arvados/services/crunch/crunch-job --job "$newjob"
 {
- "script":"foo",
- "script_version":"/path/to/working-copy",
+ "script":"$script_name",
+ "script_version":"$repo_path",
  "script_parameters":
  {
   "input":"..."
@@ -65,3 +71,17 @@ The @--job@ argument to @crunch-job@ is the same as the @--job@ argument to @arv
 * node resource constraints are ignored.
 
 You will see the progress of the job in your terminal.  Press Control-C to create a checkpoint and stop the job.
+
+h3. Testing job scripts without SDKs and Keep access
+
+Read and write data to /tmp/ instead of Keep. This only works with the Python SDK.
+
+<pre>
+export KEEP_LOCAL_STORE=/tmp
+</pre>
+
+Use the Perl SDK libraries directly from the arvados source tree.
+
+<pre>
+export PERLLIB=/path/to/arvados/sdk/perl/lib
+</pre>

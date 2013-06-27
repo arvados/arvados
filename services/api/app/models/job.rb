@@ -50,6 +50,12 @@ class Job < ArvadosModel
   protected
 
   def ensure_script_version_is_commit
+    if self.is_locked_by and self.started_at
+      # Apparently client has already decided to go for it. This is
+      # needed to run a local job using a local working directory
+      # instead of a commit-ish.
+      return true
+    end
     sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
     if sha1
       self.script_version = sha1

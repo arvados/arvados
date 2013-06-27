@@ -130,9 +130,9 @@ class util:
             path = os.path.join(current_job().tmpdir, path)
         if not os.path.exists(path):
             util.run_command(["git", "clone", url, path],
-                             cwd=os.path.dirname(parser_path))
+                             cwd=os.path.dirname(path))
         util.run_command(["git", "checkout", version],
-                         cwd=parser_path)
+                         cwd=path)
         return path
 
 class DataReader:
