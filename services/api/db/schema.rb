@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130627154537) do
+ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -124,6 +124,19 @@ ActiveRecord::Schema.define(:version => 20130627154537) do
   add_index "groups", ["created_at"], :name => "index_groups_on_created_at"
   add_index "groups", ["modified_at"], :name => "index_groups_on_modified_at"
   add_index "groups", ["uuid"], :name => "index_groups_on_uuid", :unique => true
+
+  create_table "humans", :force => true do |t|
+    t.string   "uuid",               :null => false
+    t.string   "owner",              :null => false
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.text     "properties"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "humans", ["uuid"], :name => "index_humans_on_uuid", :unique => true
 
   create_table "job_tasks", :force => true do |t|
     t.string   "uuid"

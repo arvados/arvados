@@ -1,4 +1,5 @@
 Server::Application.routes.draw do
+  resources :humans
   resources :traits
   resources :repositories
   resources :virtual_machines
@@ -106,6 +107,7 @@ Server::Application.routes.draw do
       resources :virtual_machines
       resources :repositories
       resources :traits
+      resources :humans
     end
   end
 

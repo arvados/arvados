@@ -1,4 +1,7 @@
 ArvadosWorkbench::Application.routes.draw do
+  resources :humans
+
+
   resources :traits
 
 

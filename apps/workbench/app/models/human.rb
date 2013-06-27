@@ -1,0 +1,2 @@
+class Human < ArvadosBase
+end
