@@ -1,0 +1,2 @@
+class TraitsController < ApplicationController
+end

@@ -30,6 +30,7 @@ navorder: 0
 * PipelineInstances
 * Groups
 * Specimens
+* Traits
 * Users
 * Variants
 * VariantAnnotations

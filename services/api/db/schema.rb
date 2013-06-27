@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130626022810) do
+ActiveRecord::Schema.define(:version => 20130627154537) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -355,6 +355,21 @@ ActiveRecord::Schema.define(:version => 20130626022810) do
   add_index "specimens", ["created_at"], :name => "index_specimens_on_created_at"
   add_index "specimens", ["modified_at"], :name => "index_specimens_on_modified_at"
   add_index "specimens", ["uuid"], :name => "index_specimens_on_uuid", :unique => true
+
+  create_table "traits", :force => true do |t|
+    t.string   "uuid",               :null => false
+    t.string   "owner",              :null => false
+    t.string   "modified_by_client"
+    t.string   "modified_by_user"
+    t.datetime "modified_at"
+    t.string   "name"
+    t.text     "properties"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "traits", ["name"], :name => "index_traits_on_name"
+  add_index "traits", ["uuid"], :name => "index_traits_on_uuid", :unique => true
 
   create_table "users", :force => true do |t|
     t.string   "uuid"

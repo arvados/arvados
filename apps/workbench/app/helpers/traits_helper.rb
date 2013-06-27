@@ -1,0 +1,2 @@
+module TraitsHelper
+end

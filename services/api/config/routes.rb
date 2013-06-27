@@ -1,4 +1,5 @@
 Server::Application.routes.draw do
+  resources :traits
   resources :repositories
   resources :virtual_machines
   resources :authorized_keys
@@ -104,6 +105,7 @@ Server::Application.routes.draw do
       resources :authorized_keys
       resources :virtual_machines
       resources :repositories
+      resources :traits
     end
   end
 

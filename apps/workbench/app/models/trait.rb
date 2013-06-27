@@ -1,0 +1,2 @@
+class Trait < ArvadosBase
+end
