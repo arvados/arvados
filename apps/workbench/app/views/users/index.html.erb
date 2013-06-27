@@ -32,9 +32,9 @@
       </td><td>
         <%= render_editable_attribute u, 'email' %>
       </td><td>
-        <%= render_editable_attribute u, 'is_active', u.is_active ? 'Active' : '', "data-type" => "select", "data-source" => '[{value:1,text:"Active"},{value:0,text:"No"}]' %>
+        <%= render_editable_attribute u, 'is_active', u.is_active ? 'Active' : 'No', "data-type" => "select", "data-source" => '[{value:1,text:"Active"},{value:0,text:"No"}]' %>
       </td><td>
-        <%= render_editable_attribute u, 'is_admin', u.is_admin ? 'Admin' : '', "data-type" => "select", "data-source" => '[{value:1,text:"admin"},{value:0,text:"No"}]' %>
+        <%= render_editable_attribute u, 'is_admin', u.is_admin ? 'Admin' : 'No', "data-type" => "select", "data-source" => '[{value:1,text:"admin"},{value:0,text:"No"}]' %>
       </td><td>
         <%= render_editable_attribute u, 'owner' %>
       </td><td>

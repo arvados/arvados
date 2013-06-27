@@ -214,7 +214,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def editable?
-    (current_user and
+    (current_user and current_user.is_active and
      (current_user.is_admin or
       current_user.uuid == self.owner))
   end
@@ -222,10 +222,12 @@ class ArvadosBase < ActiveRecord::Base
   def attribute_editable?(attr)
     if "created_at modified_at modified_by_user modified_by_client updated_at".index(attr.to_s)
       false
-    elsif "uuid owner".index(attr.to_s)
-      current_user and current_user.is_admin
+    elsif not (current_user.andand.is_active)
+      false
+    elsif "uuid owner".index(attr.to_s) or current_user.is_admin
+      current_user.is_admin
     else
-      current_user and current_user.uuid == owner
+      current_user.uuid == self.owner or current_user.uuid == self.uuid
     end
   end
 
