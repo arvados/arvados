@@ -5,6 +5,7 @@ require 'json'
 
 ActiveSupport::Inflector.inflections do |inflect|
   inflect.irregular 'specimen', 'specimens'
+  inflect.irregular 'human', 'humans'
 end
 
 module Kernel
