@@ -6,7 +6,7 @@
     <% if content_for? :page_title %>
     <%= yield :page_title %>
     <% else %>
-    <%= Rails.configuration.site_name rescue Rails.application.class.parent_name %>
+    <%= Rails.configuration.site_name %>
     <% end %>
   </title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">

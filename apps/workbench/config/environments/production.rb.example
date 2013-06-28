@@ -76,8 +76,6 @@ ArvadosWorkbench::Application.configure do
   # config.accept_api_token = { rand(2**256).to_s(36) => true }
   config.accept_api_token = {}
 
-  config.vcf_pipeline_uuid = '9ujm1-mxsvm-o62u4mdoxvs0ckp'
-
-  config.site_name = 'arvados-workbench.example.com'
+  config.site_name = 'Arvados Workbench'
   config.activation_contact_link = 'mailto:info@arvados.org'
 end
