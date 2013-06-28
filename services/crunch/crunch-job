@@ -706,8 +706,11 @@ goto ONELEVEL if !defined $success;
 
 release_allocation();
 freeze();
+$Job->reload;
 $Job->{'output'} = &collate_output();
+$Job->{'running'} = 0;
 $Job->{'success'} = $Job->{'output'} && $success;
+$Job->{'finished_at'} = gmtime;
 $Job->save if $job_has_uuid;
 
 if ($Job->{'output'})
@@ -1108,11 +1111,11 @@ sub croak
 sub cleanup
 {
   return if !$job_has_uuid;
-  $Job->reload if $job_has_uuid;
+  $Job->reload;
   $Job->{'running'} = 0;
   $Job->{'success'} = 0;
   $Job->{'finished_at'} = gmtime;
-  $Job->save if $job_has_uuid;
+  $Job->save;
 }
 
 
