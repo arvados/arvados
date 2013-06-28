@@ -63,6 +63,7 @@ class Dispatcher
         cmd_args = []
       when :slurm_immediate
         cmd_args = ["salloc",
+                    "--chdir=/",
                     "--immediate",
                     "--exclusive",
                     "--no-kill",
