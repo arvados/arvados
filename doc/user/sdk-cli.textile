@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: Command line SDK
+title: Intro: Command line SDK
 navorder: 10
 ---
 
