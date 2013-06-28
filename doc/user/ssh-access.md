@@ -60,8 +60,9 @@ Then you can log in to the `blurfl` VM as `foo` like this:
 
     ssh blurfl.a
 
-(Arvados Workbench will show you a list of VMs you have access to and
-what your account name is for each one.)
+Arvados Workbench will show you a list of VMs you have access to and
+what your account name is for each one: click "VMs" in the "Access"
+menu.
 
 ### Windows: Setup instructions for PuTTY
 
