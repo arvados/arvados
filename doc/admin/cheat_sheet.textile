@@ -10,7 +10,7 @@ h1. Cheat Sheet
 h3. CLI setup
 
 <pre>
-ARVADOS_API_HOST=xyzzy.arvadosapi.com
+ARVADOS_API_HOST={{ site.arvados_api_host }}
 ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
 </pre>
 

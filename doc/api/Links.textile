@@ -18,7 +18,7 @@ h2. Methods
 
 See "REST methods for working with Arvados resources":methods.html
 
-API endpoint base: @https://xyzzy.arvados.org/arvados/v1/links@
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/links@
 
 h2. Resource
 

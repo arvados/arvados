@@ -12,9 +12,9 @@ h1. REST Methods
 h2(#index). Index, list, search
 
 <pre>
-GET https://xyzzy.arvados.org/arvados/v1/groups?where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+GET https://{{ site.arvados_api_host }}/arvados/v1/groups?where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
  
-POST https://xyzzy.arvados.org/arvados/v1/groups
+POST https://{{ site.arvados_api_host }}/arvados/v1/groups
 _method=GET
 where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
 </pre>
@@ -30,7 +30,7 @@ table(table table-bordered table-condensed).
 h2. Create
 
 <pre>
-POST https://xyzzy.arvados.org/arvados/v1/groups
+POST https://{{ site.arvados_api_host }}/arvados/v1/groups
 group={"name":"fresh new group"}
 </pre>
 
@@ -39,7 +39,7 @@ group={"name":"fresh new group"}
 h2. Delete
 
 <pre>
-DELETE https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+DELETE https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 </pre>
 
 &rarr; Group resource
@@ -47,7 +47,7 @@ DELETE https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 h2. Show
 
 <pre>
-GET https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+GET https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 </pre>
 
 &rarr; Group resource
@@ -55,14 +55,14 @@ GET https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 h2. Update
 
 <pre>
-PUT https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+PUT https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 group={"uuid":"xyzzy-ldvyl-vyydjeplwaa6emg", "name":"Important group"}
 </pre>
 
 &rarr; Group resource
 
 <pre>
-PUT https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+PUT https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 group[uuid]=xyzzy-ldvyl-vyydjeplwaa6emg
 group[name]=Important group
 </pre>
@@ -72,7 +72,7 @@ group[name]=Important group
 More appropriate (but not yet implemented):
 
 <pre>
-PATCH https://xyzzy.arvados.org/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
+PATCH https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 group={"uuid":"xyzzy-ldvyl-vyydjeplwaa6emg", "name":"Important group"}
 </pre>
 

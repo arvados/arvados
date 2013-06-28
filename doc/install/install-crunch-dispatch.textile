@@ -78,7 +78,7 @@ Example @/var/service/arvados_crunch_dispatch/run@ script:
 set -e
 export PATH="$PATH":/path/to/arvados/services/crunch
 export PERLLIB=/path/to/arvados/sdk/perl/lib:/path/to/warehouse-apps/libwarehouse-perl/lib
-export ARVADOS_API_HOST=xyzzy.arvadosapi.com
+export ARVADOS_API_HOST={{ site.arvados_api_host }}
 
 ## Only if your SSL cert is unverifiable:
 # export ARVADOS_API_HOST_INSECURE=yes

@@ -63,7 +63,7 @@ with a string of your choice to make that happen.
 The *config.uuid_prefix* string is a unique identifier for your API server. It
 also serves as the first part of the hostname for your API server, for instance
 
-    9ujm1.arvadosapi.com
+    {{ site.arvados_api_host }}
 
 You should use your own domain instead of arvadosapi.com
 

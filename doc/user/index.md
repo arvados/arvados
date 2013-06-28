@@ -15,7 +15,7 @@ As a new user, you should take a quick tour of Arvados environment.
 Open a browser and point it to the Workbench URL for your site. It
 will look something like this:
 
-`https://workbench.a123z.arvados.org/`
+`https://workbench.{{ site.arvados_api_host }}/`
 
 Depending on site policy, a site administrator might have to activate
 your account before you see any more good stuff.
