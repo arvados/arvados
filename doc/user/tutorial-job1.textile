@@ -53,14 +53,12 @@ EOF
 Submit the job.
 
 <pre>
-arv -h job new --job "$newjob"
+arv -h job create --job "$the_job"
 </pre>
 
-Go to Workbench, drop down the Compute menu, and click Jobs.
+Go to Workbench, drop down the Compute menu, and click Jobs. The job you submitted should appear at the top of the list.
 
-The job you submitted should appear at the top of the list.
-
-Hit Refresh until it finishes.
+Hit "Refresh" until it finishes.
 
 You can also watch the log messages while the job runs:
 
