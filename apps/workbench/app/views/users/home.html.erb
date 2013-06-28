@@ -1,4 +1,3 @@
-<% if @tutorial_links.any? %>
 <% content_for :tutorials do %>
 <h4>Tutorials</h4>
 <% @tutorial_links.each do |tut| %>
@@ -16,6 +15,20 @@
   <%= link_to raw('Tutorial: ' + tut.properties[:page_title] + ' &#x279c;'), link_path(tut.uuid), class: "pull-right btn btn-primary" %>
 </div>
 <% end %>
+<% if not @tutorial_links.any? %>
+<div class="well clearfix">
+  <div>
+    <strong>Your first job</strong>
+    <% if @my_last_job %>
+    <span class="badge badge-success pull-right">&#x2714;</span>
+    <% else %>
+    <span class="badge pull-right">&#x270d;</span>
+    <% end %>
+  </div>
+  Run your first Crunch job.
+  <br />
+  <%= link_to raw('Tutorial: Your first job &#x279c;'), 'http://doc.arvados.org/doc/user/tutorial-job1.html', class: "pull-right btn btn-primary" %>
+</div>
 <% end %>
 <% end %>
 
