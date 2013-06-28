@@ -1,0 +1,72 @@
+---
+layout: default
+navsection: userguide
+title: "Tutorial: Your first job"
+navorder: 20
+---
+
+h1. Tutorial: Your first job
+
+Here you will use the "arv" command line tool to run a simple Crunch script on some sample data.
+
+h3. Prerequisites
+
+* Log in to a VM "using SSH":ssh-access.html
+* Put an "API token":api-tokens.html in your @ARVADOS_API_TOKEN@ environment variable
+* Put the API host name in your @ARVADOS_API_HOST@ environment variable
+
+If everything is set up correctly, the command @arv -h user current@ will display your account information.
+
+h3. Submit a job
+
+We will run the "hash" program, which computes the MD5 hash of each file in a collection.
+
+Pick a data collection. We'll use @f815ec01d5d2f11cb12874ab2ed50daa@ here.
+
+<pre>
+the_collection=f815ec01d5d2f11cb12874ab2ed50daa
+</pre>
+
+Pick a code version. We'll use @cdde7f246fec59bc99da86145fd4cf4efcf37a68@ here.
+
+<pre>
+the_version=cdde7f246fec59bc99da86145fd4cf4efcf37a68
+</pre>
+
+Make a JSON object describing the job.
+
+<pre>
+read -rd "\000" the_job <<EOF
+{
+ "script":"hash",
+ "script_version":"$the_version",
+ "script_parameters":
+ {
+  "input":"$the_collection"
+ }
+}
+EOF
+</pre>
+
+(The @read -rd "\000"@ stuff just helps us get a multi-line string with lots of double quotation marks into a shell variable.)
+
+Submit the job.
+
+<pre>
+arv -h job new --job "$newjob"
+</pre>
+
+Go to Workbench, drop down the Compute menu, and click Jobs.
+
+The job you submitted should appear at the top of the list.
+
+Hit Refresh until it finishes.
+
+You can also watch the log messages while the job runs:
+
+<pre>
+curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
+  https://{{ site.arvados_api_host }}/arvados/v1/jobs/JOB_UUID_HERE/log_tail_follow
+</pre>
+
+Great. You ran a job!
