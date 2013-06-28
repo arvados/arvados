@@ -26,6 +26,10 @@ On compute nodes:
 
 * @pip install --upgrade pyvcf@
 
+h4. Redis
+
+* @apt-get install redis-server@
+
 h4. Repositories
 
 Crunch scripts must be in git repositories in @/var/cache/git/*/.git@ (or whatever is configured in @services/api/config/environments/production.rb@).
