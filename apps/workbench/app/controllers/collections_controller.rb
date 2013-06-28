@@ -1,5 +1,4 @@
 class CollectionsController < ApplicationController
-  before_filter :ensure_current_user_is_admin
   skip_before_filter :find_object_by_uuid, :only => [:graph]
 
   def graph
