@@ -112,7 +112,7 @@ class ApplicationController < ActionController::Base
       collect { |uuid| model_class.sanitize(uuid) }.join(', ')
     or_references_me = ''
     if model_class == Link and current_user
-      or_references_me = "OR #{model_class.sanitize current_user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid)"
+      or_references_me = "OR (#{table_name}.link_class in (#{model_class.sanitize 'permission'}, #{model_class.sanitize 'resources'}) AND #{model_class.sanitize current_user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
     end
     @objects ||= model_class.
       joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
