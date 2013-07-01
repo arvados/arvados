@@ -26,14 +26,20 @@ begin
   require 'trollop'
   require 'andand'
   require 'oj'
+  require 'active_support/inflector'
 rescue LoadError
   abort <<-EOS
 
 Please install all required gems: 
 
-  gem install google-api-client json trollop andand oj
+  gem install google-api-client json trollop andand oj activesupport
 
   EOS
+end
+
+ActiveSupport::Inflector.inflections do |inflect|
+  inflect.irregular 'specimen', 'specimens'
+  inflect.irregular 'human', 'humans'
 end
 
 module Kernel
