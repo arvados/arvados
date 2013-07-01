@@ -1,0 +1,26 @@
+<%= render partial: 'application/index' %>
+
+<p>
+Sample <code>~/.ssh/config</code> section:
+</p>
+
+<pre>
+Host *.arvados
+  ProxyCommand ssh -p2222 turnout@switchyard.<%= Rails.configuration.arvados_v1_base.match(/\/\/(.*?)\//).andand[1] || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
+<% if @objects.first.current_user_logins.andand.first %>
+  User <%= @objects.first.current_user_logins.andand.first %>
+<% end %>
+</pre>
+
+<p>
+Sample login command:
+</p>
+
+<pre>
+ssh <%= @objects.first.andand.hostname.sub(/\..*/,'') or 'vm-hostname' %>.arvados
+</pre>
+
+<p>
+  See also:
+  <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'), 'http://doc.arvados.org/user/ssh-access.html' %>.
+</p>

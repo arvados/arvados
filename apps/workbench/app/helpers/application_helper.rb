@@ -40,7 +40,7 @@ module ApplicationHelper
     return attrvalue if !object.attribute_editable? attr
 
     input_type = 'text'
-    case object.class.attribute_info[attr.to_sym][:type]
+    case object.class.attribute_info[attr.to_sym].andand[:type]
     when 'text'
       input_type = 'textarea'
     when 'datetime'
@@ -49,7 +49,7 @@ module ApplicationHelper
       input_type = 'text'
     end
 
-    attrvalue = attrvalue.to_json if attrvalue.is_a? Hash
+    attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
 
     link_to attrvalue.to_s, '#', {
       "data-emptytext" => "none",
