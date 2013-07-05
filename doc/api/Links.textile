@@ -44,6 +44,7 @@ table(table table-bordered table-condensed).
 |data_origin|Collection&rarr;Job     |output_of &rarr; _job uuid_||
 |data_origin|Collection&rarr;Specimen|derived_from &rarr; 4ly9q-2g125-fbzfbavpo4gwpw0||
 |human_trait|Human&rarr;Trait  |measured &rarr; _trait uuid_ {value&rarr;1.83, unit&rarr;metre, measured_at&rarr;1352616640.000}||
+|identifier|&rarr;Human        |hu123456 &rarr; _human uuid_ {}||
 |permission|User&rarr;Group  |can_manage &rarr; _group uuid_|Writable only by a user who can_manage this group|
 |permission|User&rarr;Group  |can_read &rarr; _group uuid_  |Writable only by a user who can_manage this group.
 Gives permission to read any object owned by this group.|
