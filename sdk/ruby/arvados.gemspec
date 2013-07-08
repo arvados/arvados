@@ -1,8 +1,13 @@
+if not File.exists?('/usr/bin/git') then
+  STDERR.puts "\nGit binary not found, aborting. Please install git and run gem build from a checked out copy of the git repository.\n\n"
+  exit
+end
+
 Gem::Specification.new do |s|
   s.name        = 'arvados'
-  s.version     = '0.1.0'
+  s.version     = '0.1.pre.' + `/usr/bin/git log --pretty=format:'%ci' -n 1`[0..18].gsub(/[ \-:]/,'')
   s.date        = `/usr/bin/git log --pretty=format:'%ci' -n 1`[0..9]
-  s.summary     = "Arvados SDK"
+  s.summary     = "Arvados SDK Ruby"
   s.description = "This is the Arvados SDK gem, git revision " + `/usr/bin/git log --pretty=format:'%H' -n 1`
   s.authors     = ["Arvados Authors"]
   s.email       = 'gem-dev@clinicalfuture.com'
