@@ -74,7 +74,7 @@ class Arvados::V1::JobsController < ApplicationController
     load_where_param
     @where.merge!({
                     started_at: nil,
-                    is_locked_by: nil,
+                    is_locked_by_uuid: nil,
                     cancelled_at: nil
                   })
     params[:order] ||= 'priority desc, created_at'

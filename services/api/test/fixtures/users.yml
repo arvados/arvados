@@ -5,8 +5,8 @@ one:
   created_by_client: MyString
   created_by_user: MyString
   created_at: 2013-01-21 21:00:42
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   modified_at: 2013-01-21 21:00:42
   email: MyString
   first_name: MyString
@@ -20,8 +20,8 @@ two:
   created_by_client: MyString
   created_by_user: MyString
   created_at: 2013-01-21 21:00:42
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   modified_at: 2013-01-21 21:00:42
   email: MyString
   first_name: MyString

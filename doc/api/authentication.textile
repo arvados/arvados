@@ -17,8 +17,8 @@ Many resources contain "actor" attributes like @modified_by@.  An @access_token@
 
 table(table table-bordered table-condensed).
 |Name|Type|Description|
-|modified_by_client|string|ID of API client|
-|modified_by_user|string|ID of authenticated user|
+|modified_by_client_uuid|string|ID of API client|
+|modified_by_user_uuid|string|ID of authenticated user|
 
 h2. Authorizing a client application
 

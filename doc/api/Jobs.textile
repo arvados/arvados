@@ -31,7 +31,7 @@ GET https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
  
 POST https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
 _method=GET
-where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
 </pre>
 
 &rarr; Job resource list
@@ -50,14 +50,14 @@ table(table table-bordered table-condensed).
 |script_name|string|Name of MapReduce script||
 |script_parameters{}|list|Parameters passed to MapReduce script||
 |script_version|string|git commit/tree used when running the job|If the job has not started, this can be a tag/branch instead of an unambiguous commit id.|
-|cancelled_by_client|string|API client ID|Is null if job has not been cancelled|
-|cancelled_by_user|string|Authenticated user ID|Is null if job has not been cancelled|
+|cancelled_by_client_uuid|string|API client ID|Is null if job has not been cancelled|
+|cancelled_by_user_uuid|string|Authenticated user ID|Is null if job has not been cancelled|
 |cancelled_at|string|When job was cancelled|Is null if job has not been cancelled|
 |started_at|datetime|When job started running|Is null if job has not [yet] started|
 |finished_at|datetime|When job finished running|Is null if job has not [yet] finished|
 |running|boolean|Whether the job is running||
 |success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
-|is_locked_by|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
+|is_locked_by_uuid|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
 
 h3. Resource limits
 

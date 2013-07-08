@@ -6,8 +6,8 @@ one:
   created_by_client: MyString
   created_by_user: MyString
   modified_at: 2013-01-15 18:42:33
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   material: MyString
 
 two:
@@ -16,6 +16,6 @@ two:
   created_by_client: MyString
   created_by_user: MyString
   modified_at: 2013-01-15 18:42:33
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   material: MyString

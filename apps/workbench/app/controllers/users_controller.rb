@@ -22,7 +22,7 @@ class UsersController < ApplicationController
     # A Tutorial is a Link which has link_class "resources" and name
     # "wants", and is owned by the Tutorials Group (i.e., named
     # "Arvados Tutorials" and owned by the system user).
-    @tutorial_group = Group.where(owner: User.system.uuid,
+    @tutorial_group = Group.where(owner_uuid: User.system.uuid,
                                   name: 'Arvados Tutorials').first
     if @tutorial_group
       @tutorial_links = Link.where(tail_uuid: @tutorial_group.uuid,

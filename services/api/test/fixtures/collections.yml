@@ -5,13 +5,13 @@ one:
   created_by_client: MyString
   created_by_user: MyString
   created_at: 2012-10-15 20:50:09
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   modified_at: 2012-10-15 20:50:09
   portable_data_hash: MyString
   name: MyString
   redundancy: 1
-  redundancy_confirmed_by_client: MyString
+  redundancy_confirmed_by_client_uuid: MyString
   redundancy_confirmed_at: 2012-10-15 20:50:09
   redundancy_confirmed_as: 1
 
@@ -20,12 +20,12 @@ two:
   created_by_client: MyString
   created_by_user: MyString
   created_at: 2012-10-15 20:50:09
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   modified_at: 2012-10-15 20:50:09
   portable_data_hash: MyString
   name: MyString
   redundancy: 1
-  redundancy_confirmed_by_client: MyString
+  redundancy_confirmed_by_client_uuid: MyString
   redundancy_confirmed_at: 2012-10-15 20:50:09
   redundancy_confirmed_as: 1

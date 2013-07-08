@@ -4,8 +4,8 @@ class ArvadosModel < ActiveRecord::Base
   include CurrentApiClient      # current_user, current_api_client, etc.
 
   attr_protected :created_at
-  attr_protected :modified_by_user
-  attr_protected :modified_by_client
+  attr_protected :modified_by_user_uuid
+  attr_protected :modified_by_client_uuid
   attr_protected :modified_at
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
@@ -63,22 +63,22 @@ class ArvadosModel < ActiveRecord::Base
       return false
     end
     return true if current_user.is_admin
-    if self.owner_changed?
-      if current_user.uuid == self.owner or
-          current_user.can? write: self.owner
+    if self.owner_uuid_changed?
+      if current_user.uuid == self.owner_uuid or
+          current_user.can? write: self.owner_uuid
         # current_user is, or has :write permission on, the new owner
       else
-        logger.warn "User #{current_user.uuid} tried to change owner of #{self.class.to_s} #{self.uuid} to #{self.owner} but does not have permission to write to #{self.owner}"
+        logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
         return false
       end
     end
-    if current_user.uuid == self.owner_was or
+    if current_user.uuid == self.owner_uuid_was or
         current_user.uuid == self.uuid or
-        current_user.can? write: self.owner_was
+        current_user.can? write: self.owner_uuid_was
       # current user is, or has :write permission on, the previous owner
       return true
     else
-      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_was}"
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
       return false
     end
   end
@@ -89,10 +89,10 @@ class ArvadosModel < ActiveRecord::Base
 
   def update_modified_by_fields
     self.created_at ||= Time.now
-    self.owner ||= current_default_owner
+    self.owner_uuid ||= current_default_owner
     self.modified_at = Time.now
-    self.modified_by_user = current_user ? current_user.uuid : nil
-    self.modified_by_client = current_api_client ? current_api_client.uuid : nil
+    self.modified_by_user_uuid = current_user ? current_user.uuid : nil
+    self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
   end
 
   def ensure_serialized_attribute_type

@@ -28,7 +28,17 @@ On compute nodes:
 
 h4. Redis
 
+On controller:
+
 * @apt-get install redis-server@
+
+h4. Crunch user account
+
+On compute nodes and controller:
+
+* @adduser crunch@
+
+The crunch user should have the same UID, GID, and home directory on all compute nodes and on the controller.
 
 h4. Repositories
 

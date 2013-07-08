@@ -130,8 +130,8 @@ if ($job_has_uuid)
 {
   $Job = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
   if (!$force_unlock) {
-    if ($Job->{'is_locked_by'}) {
-      croak("Job is locked: " . $Job->{'is_locked_by'});
+    if ($Job->{'is_locked_by_uuid'}) {
+      croak("Job is locked: " . $Job->{'is_locked_by_uuid'});
     }
     if ($Job->{'success'} ne undef) {
       croak("Job 'success' flag (" . $Job->{'success'} . ") is not null");
@@ -154,7 +154,7 @@ else
     qw(script script_version script_parameters);
   }
 
-  $Job->{'is_locked_by'} = $User->{'uuid'};
+  $Job->{'is_locked_by_uuid'} = $User->{'uuid'};
   $Job->{'started_at'} = gmtime;
 
   $Job = $arv->{'jobs'}->{'create'}->execute('job' => $Job);
@@ -251,7 +251,7 @@ if ($job_has_uuid)
 {
   # Claim this job, and make sure nobody else does
 
-  $Job->{'is_locked_by'} = $User->{'uuid'};
+  $Job->{'is_locked_by_uuid'} = $User->{'uuid'};
   $Job->{'started_at'} = gmtime;
   $Job->{'running'} = 1;
   $Job->{'success'} = undef;
@@ -260,7 +260,7 @@ if ($job_has_uuid)
                               'running' => 0,
                               'done' => 0 };
   if ($job_has_uuid) {
-    unless ($Job->save() && $Job->{'is_locked_by'} == $User->{'uuid'}) {
+    unless ($Job->save() && $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
       croak("Error while updating / locking job");
     }
   }
@@ -829,7 +829,7 @@ sub reapchildren
   # Load new tasks
   my $newtask_list = $arv->{'job_tasks'}->{'list'}->execute(
     'where' => {
-      'created_by_job_task' => $Jobstep->{'arvados_task'}->{uuid}
+      'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
     },
     'order' => 'qsequence'
   );

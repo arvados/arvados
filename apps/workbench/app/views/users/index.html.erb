@@ -36,9 +36,9 @@
       </td><td>
         <%= render_editable_attribute u, 'is_admin', u.is_admin ? 'Admin' : 'No', "data-type" => "select", "data-source" => '[{value:1,text:"admin"},{value:0,text:"No"}]', "data-value" => u.is_admin ? "1" : "0" %>
       </td><td>
-        <%= render_editable_attribute u, 'owner' %>
+        <%= render_editable_attribute u, 'owner_uuid' %>
       </td><td>
-        <%= render_editable_attribute u, 'default_owner' %>
+        <%= render_editable_attribute u, 'default_owner_uuid' %>
       </td>
 
       <td>

@@ -47,7 +47,7 @@ class Link < ArvadosModel
       where('uuid=?',head_uuid).
       first
     if head_obj
-      return true if head_obj.owner == current_user.uuid
+      return true if head_obj.owner_uuid == current_user.uuid
     end
 
     # Users with "can_grant" permission on an object can grant

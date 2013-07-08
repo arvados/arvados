@@ -6,10 +6,10 @@ module CommonApiTemplate
       t.add :kind
       t.add :etag
       t.add :uuid
-      t.add :owner
+      t.add :owner_uuid
       t.add :created_at
-      t.add :modified_by_client
-      t.add :modified_by_user
+      t.add :modified_by_client_uuid
+      t.add :modified_by_user_uuid
       t.add :modified_at
       t.add :updated_at
     end

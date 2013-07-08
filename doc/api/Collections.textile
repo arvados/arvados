@@ -36,6 +36,6 @@ table(table table-bordered table-condensed).
 |*Property name*|*Value*|*Description*|
 |portable_data_hash|string||
 |redundancy|number||
-|redundancy_confirmed_by_client|string|API client|
+|redundancy_confirmed_by_client_uuid|string|API client|
 |redundancy_confirmed_at|datetime||
 |redundancy_confirmed_as|number||
