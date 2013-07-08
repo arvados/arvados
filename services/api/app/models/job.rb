@@ -21,8 +21,8 @@ class Job < ArvadosModel
     t.add :script_parameters
     t.add :script_version
     t.add :cancelled_at
-    t.add :cancelled_by_client
-    t.add :cancelled_by_user
+    t.add :cancelled_by_client_uuid
+    t.add :cancelled_by_user_uuid
     t.add :started_at
     t.add :finished_at
     t.add :output

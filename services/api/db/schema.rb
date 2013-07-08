@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130708163414) do
+ActiveRecord::Schema.define(:version => 20130708182912) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -173,8 +173,8 @@ ActiveRecord::Schema.define(:version => 20130708163414) do
     t.string   "script"
     t.string   "script_version"
     t.text     "script_parameters"
-    t.string   "cancelled_by_client"
-    t.string   "cancelled_by_user"
+    t.string   "cancelled_by_client_uuid"
+    t.string   "cancelled_by_user_uuid"
     t.datetime "cancelled_at"
     t.datetime "started_at"
     t.datetime "finished_at"
