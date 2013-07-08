@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130708182912) do
+ActiveRecord::Schema.define(:version => 20130708185153) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -398,7 +398,7 @@ ActiveRecord::Schema.define(:version => 20130708182912) do
     t.boolean  "is_admin"
     t.text     "prefs"
     t.datetime "updated_at"
-    t.string   "default_owner"
+    t.string   "default_owner_uuid"
     t.boolean  "is_active",               :default => false
   end
 

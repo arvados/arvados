@@ -14,8 +14,8 @@ module CurrentApiClient
   def current_default_owner
     # owner_uuid for newly created objects
     ((current_api_client_authorization &&
-      current_api_client_authorization.default_owner) ||
-     (current_user && current_user.default_owner) ||
+      current_api_client_authorization.default_owner_uuid) ||
+     (current_user && current_user.default_owner_uuid) ||
      (current_user && current_user.uuid) ||
      nil)
   end
