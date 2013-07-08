@@ -15,7 +15,7 @@
 </tr>
 <% end %>
 <% elsif attrvalue.is_a? String or attrvalue.respond_to? :to_s %>
-<tr class="<%= 'info' if %w(uuid owner created_at modified_at modified_by_user modified_by_client updated_at).index(attr.to_s).nil? %>">
+<tr class="<%= 'info' if %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).index(attr.to_s).nil? %>">
   <td><%= attr %></td>
   <% if attr == 'uuid' and (uuid = attrvalue.split('-')).size == 3 %>
   <td><%= uuid[0..-2].join('-') %>-<b><%= uuid[-1] %></b></td>

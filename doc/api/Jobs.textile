@@ -31,7 +31,7 @@ GET https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
  
 POST https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
 _method=GET
-where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
 </pre>
 
 &rarr; Job resource list
@@ -57,7 +57,7 @@ table(table table-bordered table-condensed).
 |finished_at|datetime|When job finished running|Is null if job has not [yet] finished|
 |running|boolean|Whether the job is running||
 |success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
-|is_locked_by|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
+|is_locked_by_uuid|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
 
 h3. Resource limits
 

@@ -115,8 +115,8 @@ class ApplicationController < ActionController::Base
       or_references_me = "OR (#{table_name}.link_class in (#{model_class.sanitize 'permission'}, #{model_class.sanitize 'resources'}) AND #{model_class.sanitize current_user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
     end
     @objects ||= model_class.
-      joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("?=? OR #{table_name}.owner in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
+      joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
+      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
             true, current_user.is_admin,
             uuid_list,
             current_user.uuid)
@@ -199,7 +199,7 @@ class ApplicationController < ActionController::Base
       message << " hash provided with request"
       raise ArgumentError.new(message)
     end
-    %w(created_at modified_by_client modified_by_user modified_at).each do |x|
+    %w(created_at modified_by_client_uuid modified_by_user_uuid modified_at).each do |x|
       @attrs.delete x
     end
     @attrs

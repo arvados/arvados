@@ -108,6 +108,6 @@ This should be
 
 In rails console
 
-     a = ApiClient.new(owner:1); a.save!
+     a = ApiClient.new(owner_uuid:'0'); a.save!
      x = ApiClientAuthorization.new(api_client_id:a.id, user_id:1); x.save; x.api_token
 

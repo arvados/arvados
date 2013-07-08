@@ -7,12 +7,12 @@ class ApiClientAuthorization < ArvadosModel
   after_initialize :assign_random_api_token
 
   api_accessible :superuser, :extend => :common do |t|
-    t.add :owner
+    t.add :owner_uuid
     t.add :user_id
     t.add :api_client_id
     t.add :api_token
     t.add :created_by_ip_address
-    t.add :default_owner
+    t.add :default_owner_uuid
     t.add :expires_at
     t.add :last_used_at
     t.add :last_used_by_ip_address
@@ -22,13 +22,13 @@ class ApiClientAuthorization < ArvadosModel
     self.api_token ||= rand(2**256).to_s(36)
   end
 
-  def owner
+  def owner_uuid
     self.user.andand.uuid
   end
-  def owner_was
+  def owner_uuid_was
     self.user_id_changed? ? User.find(self.user_id_was).andand.uuid : self.user.andand.uuid
   end
-  def owner_changed?
+  def owner_uuid_changed?
     self.user_id_changed?
   end
 
@@ -43,15 +43,15 @@ class ApiClientAuthorization < ArvadosModel
     self.api_token_changed?
   end
 
-  def modified_by_client
+  def modified_by_client_uuid
     nil
   end
-  def modified_by_client=(x) end
+  def modified_by_client_uuid=(x) end
 
-  def modified_by_user
+  def modified_by_user_uuid
     nil
   end
-  def modified_by_user=(x) end
+  def modified_by_user_uuid=(x) end
 
   def modified_at
     nil
@@ -67,6 +67,6 @@ class ApiClientAuthorization < ArvadosModel
   def permission_to_update
     (permission_to_create and
      not self.user_id_changed? and
-     not self.owner_changed?)
+     not self.owner_uuid_changed?)
   end
 end

@@ -12,11 +12,11 @@ h1. REST Methods
 h2(#index). Index, list, search
 
 <pre>
-GET https://{{ site.arvados_api_host }}/arvados/v1/groups?where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+GET https://{{ site.arvados_api_host }}/arvados/v1/groups?where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
  
 POST https://{{ site.arvados_api_host }}/arvados/v1/groups
 _method=GET
-where[owner]=xyzzy-tpzed-a4lcehql0dv2u25
+where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
 </pre>
 
 &rarr; Group resource list

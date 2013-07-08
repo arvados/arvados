@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130627184333) do
+ActiveRecord::Schema.define(:version => 20130708163414) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",               :null => false
@@ -23,7 +23,7 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
     t.datetime "expires_at"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "default_owner"
+    t.string   "default_owner_uuid"
   end
 
   add_index "api_client_authorizations", ["api_client_id"], :name => "index_api_client_authorizations_on_api_client_id"
@@ -33,15 +33,15 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "api_clients", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "owner_uuid"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "name"
     t.string   "url_prefix"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.boolean  "is_trusted",         :default => false
+    t.boolean  "is_trusted",              :default => false
   end
 
   add_index "api_clients", ["created_at"], :name => "index_api_clients_on_created_at"
@@ -49,10 +49,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
   add_index "api_clients", ["uuid"], :name => "index_api_clients_on_uuid", :unique => true
 
   create_table "authorized_keys", :force => true do |t|
-    t.string   "uuid",                 :null => false
-    t.string   "owner",                :null => false
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "uuid",                    :null => false
+    t.string   "owner_uuid",              :null => false
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "name"
     t.string   "key_type"
@@ -68,15 +68,15 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "portable_data_hash"
     t.string   "name"
     t.integer  "redundancy"
-    t.string   "redundancy_confirmed_by_client"
+    t.string   "redundancy_confirmed_by_client_uuid"
     t.datetime "redundancy_confirmed_at"
     t.integer  "redundancy_confirmed_as"
     t.datetime "updated_at"
@@ -111,10 +111,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "groups", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "name"
     t.text     "description"
@@ -126,10 +126,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
   add_index "groups", ["uuid"], :name => "index_groups_on_uuid", :unique => true
 
   create_table "humans", :force => true do |t|
-    t.string   "uuid",               :null => false
-    t.string   "owner",              :null => false
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "uuid",                    :null => false
+    t.string   "owner_uuid",              :null => false
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.text     "properties"
     t.datetime "created_at"
@@ -140,9 +140,9 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "job_tasks", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "owner_uuid"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "job_uuid"
     t.integer  "sequence"
@@ -152,8 +152,8 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
     t.boolean  "success"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "created_by_job_task"
-    t.integer  "qsequence",           :limit => 8
+    t.string   "created_by_job_task_uuid"
+    t.integer  "qsequence",                :limit => 8
   end
 
   add_index "job_tasks", ["created_at"], :name => "index_job_tasks_on_created_at"
@@ -165,9 +165,9 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "jobs", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "owner_uuid"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "submit_id"
     t.string   "script"
@@ -184,7 +184,7 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "priority"
-    t.string   "is_locked_by"
+    t.string   "is_locked_by_uuid"
     t.string   "log"
     t.text     "tasks_summary"
     t.text     "resource_limits"
@@ -200,18 +200,18 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
   add_index "jobs", ["uuid"], :name => "index_jobs_on_uuid", :unique => true
 
   create_table "keep_disks", :force => true do |t|
-    t.string   "uuid",                                 :null => false
-    t.string   "owner",                                :null => false
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "uuid",                                      :null => false
+    t.string   "owner_uuid",                                :null => false
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
-    t.string   "ping_secret",                          :null => false
+    t.string   "ping_secret",                               :null => false
     t.string   "node_uuid"
     t.string   "filesystem_uuid"
     t.integer  "bytes_total"
     t.integer  "bytes_free"
-    t.boolean  "is_readable",        :default => true, :null => false
-    t.boolean  "is_writable",        :default => true, :null => false
+    t.boolean  "is_readable",             :default => true, :null => false
+    t.boolean  "is_writable",             :default => true, :null => false
     t.datetime "last_read_at"
     t.datetime "last_write_at"
     t.datetime "last_ping_at"
@@ -230,10 +230,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "links", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "tail_uuid"
     t.string   "tail_kind"
@@ -255,9 +255,9 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "logs", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "owner_uuid"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.string   "object_kind"
     t.string   "object_uuid"
     t.datetime "event_at"
@@ -280,10 +280,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "nodes", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.integer  "slot_number"
     t.string   "hostname"
@@ -303,16 +303,16 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "pipeline_instances", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "pipeline_template_uuid"
     t.string   "name"
     t.text     "components"
     t.boolean  "success"
-    t.boolean  "active",                 :default => false
+    t.boolean  "active",                  :default => false
     t.datetime "updated_at"
     t.text     "properties"
   end
@@ -323,10 +323,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "pipeline_templates", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "name"
     t.text     "components"
@@ -338,10 +338,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
   add_index "pipeline_templates", ["uuid"], :name => "index_pipeline_templates_on_uuid", :unique => true
 
   create_table "repositories", :force => true do |t|
-    t.string   "uuid",               :null => false
-    t.string   "owner",              :null => false
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "uuid",                    :null => false
+    t.string   "owner_uuid",              :null => false
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "name"
     t.string   "fetch_url"
@@ -355,10 +355,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "specimens", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "material"
     t.datetime "updated_at"
@@ -370,10 +370,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
   add_index "specimens", ["uuid"], :name => "index_specimens_on_uuid", :unique => true
 
   create_table "traits", :force => true do |t|
-    t.string   "uuid",               :null => false
-    t.string   "owner",              :null => false
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "uuid",                    :null => false
+    t.string   "owner_uuid",              :null => false
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "name"
     t.text     "properties"
@@ -386,10 +386,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
 
   create_table "users", :force => true do |t|
     t.string   "uuid"
-    t.string   "owner"
+    t.string   "owner_uuid"
     t.datetime "created_at"
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "email"
     t.string   "first_name"
@@ -399,7 +399,7 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
     t.text     "prefs"
     t.datetime "updated_at"
     t.string   "default_owner"
-    t.boolean  "is_active",          :default => false
+    t.boolean  "is_active",               :default => false
   end
 
   add_index "users", ["created_at"], :name => "index_users_on_created_at"
@@ -407,10 +407,10 @@ ActiveRecord::Schema.define(:version => 20130627184333) do
   add_index "users", ["uuid"], :name => "index_users_on_uuid", :unique => true
 
   create_table "virtual_machines", :force => true do |t|
-    t.string   "uuid",               :null => false
-    t.string   "owner",              :null => false
-    t.string   "modified_by_client"
-    t.string   "modified_by_user"
+    t.string   "uuid",                    :null => false
+    t.string   "owner_uuid",              :null => false
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "hostname"
     t.datetime "created_at"

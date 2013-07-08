@@ -8,7 +8,7 @@ class JobTask < ArvadosModel
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :job_uuid
-    t.add :created_by_job_task
+    t.add :created_by_job_task_uuid
     t.add :sequence
     t.add :qsequence
     t.add :parameters
@@ -21,7 +21,7 @@ class JobTask < ArvadosModel
 
   def delete_created_job_tasks_if_failed
     if self.success == false and self.success != self.success_was
-      JobTask.delete_all ['created_by_job_task = ?', self.uuid]
+      JobTask.delete_all ['created_by_job_task_uuid = ?', self.uuid]
     end
   end
 
@@ -30,7 +30,7 @@ class JobTask < ArvadosModel
       # xxx qsequence should be sequential as advertised; for now at
       # least it's non-decreasing.
       JobTask.update_all(['qsequence = ?', (Time.now.to_f*10000000).to_i],
-                         ['created_by_job_task = ?', self.uuid])
+                         ['created_by_job_task_uuid = ?', self.uuid])
     end
   end
 end

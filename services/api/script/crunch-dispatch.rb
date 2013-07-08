@@ -80,7 +80,7 @@ class Dispatcher
       end
 
       job_auth = ApiClientAuthorization.
-        new(user: User.where('uuid=?', job.modified_by_user).first,
+        new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
             api_client_id: 0)
       job_auth.save
 

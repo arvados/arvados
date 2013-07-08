@@ -4,8 +4,8 @@ one:
   uuid: MyString
   created_by_client: MyString
   created_by_user: MyString
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   modified_at: 2013-01-23 10:02:24
   name: MyString
   url_prefix: MyString
@@ -14,8 +14,8 @@ two:
   uuid: MyString
   created_by_client: MyString
   created_by_user: MyString
-  modified_by_client: MyString
-  modified_by_user: MyString
+  modified_by_client_uuid: MyString
+  modified_by_user_uuid: MyString
   modified_at: 2013-01-23 10:02:24
   name: MyString
   url_prefix: MyString

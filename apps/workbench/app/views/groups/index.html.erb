@@ -26,13 +26,13 @@
       </td><td>
         <%= g.name %>
       </td><td>
-        <%= g.owner %>
+        <%= g.owner_uuid %>
       </td><td>
         <%= @links_to.select { |x| x.head_uuid == g.uuid }.collect(&:tail_uuid).uniq.count %>
       </td><td>
         <%= @links_from.select { |x| x.tail_uuid == g.uuid }.collect(&:head_uuid).uniq.count %>
       </td><td>
-        <%= @owned_users.select { |x| x.owner == g.uuid }.count %> users<br />
+        <%= @owned_users.select { |x| x.owner_uuid == g.uuid }.count %> users<br />
       </td>
     </tr>
 

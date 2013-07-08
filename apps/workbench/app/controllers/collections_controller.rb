@@ -27,7 +27,7 @@ class CollectionsController < ApplicationController
             c[:created_at] = l.head.created_at
           end
           c[:wanted] = true
-          if l.owner == current_user.uuid
+          if l.owner_uuid == current_user.uuid
             c[:wanted_by_me] = true
           end
         end

@@ -25,11 +25,11 @@ class ArvadosBase < ActiveRecord::Base
     @attribute_sortkey ||= {
       'id' => nil,
       'uuid' => '000',
-      'owner' => '001',
+      'owner_uuid' => '001',
       'created_at' => '002',
       'modified_at' => '003',
-      'modified_by_user' => '004',
-      'modified_by_client' => '005',
+      'modified_by_user_uuid' => '004',
+      'modified_by_client_uuid' => '005',
       'name' => '050',
       'tail_kind' => '100',
       'tail_uuid' => '100',
@@ -109,8 +109,8 @@ class ArvadosBase < ActiveRecord::Base
     @kind = resp[:kind]
 
     # these attrs can be modified by "save" -- we should update our copies
-    %w(uuid owner created_at
-       modified_at modified_by_user modified_by_client
+    %w(uuid owner_uuid created_at
+       modified_at modified_by_user_uuid modified_by_client_uuid
       ).each do |attr|
       if self.respond_to? "#{attr}=".to_sym
         self.send(attr + '=', resp[attr.to_sym])
@@ -216,18 +216,18 @@ class ArvadosBase < ActiveRecord::Base
   def editable?
     (current_user and current_user.is_active and
      (current_user.is_admin or
-      current_user.uuid == self.owner))
+      current_user.uuid == self.owner_uuid))
   end
 
   def attribute_editable?(attr)
-    if "created_at modified_at modified_by_user modified_by_client updated_at".index(attr.to_s)
+    if "created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at".index(attr.to_s)
       false
     elsif not (current_user.andand.is_active)
       false
-    elsif "uuid owner".index(attr.to_s) or current_user.is_admin
+    elsif "uuid owner_uuid".index(attr.to_s) or current_user.is_admin
       current_user.is_admin
     else
-      current_user.uuid == self.owner or current_user.uuid == self.uuid
+      current_user.uuid == self.owner_uuid or current_user.uuid == self.uuid
     end
   end
 

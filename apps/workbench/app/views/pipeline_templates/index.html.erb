@@ -22,7 +22,7 @@
       </td><td>
         <%= ob.name %>
       </td><td>
-        <%= link_to_if_arvados_object ob.owner %>
+        <%= link_to_if_arvados_object ob.owner_uuid %>
       </td><td>
         <%= ob.components.collect { |k,v| k.to_s }.join(", ") %>
       </td>

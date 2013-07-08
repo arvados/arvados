@@ -40,10 +40,10 @@ class User < ArvadosModel
       next if target_uuid == self.uuid
       next if (group_permissions[target_uuid] and
                group_permissions[target_uuid][action])
-      if target.respond_to? :owner
-        next if target.owner == self.uuid
-        next if (group_permissions[target.owner] and
-                 group_permissions[target.owner][action])
+      if target.respond_to? :owner_uuid
+        next if target.owner_uuid == self.uuid
+        next if (group_permissions[target.owner_uuid] and
+                 group_permissions[target.owner_uuid][action])
       end
       return false
     end

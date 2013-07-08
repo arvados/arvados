@@ -37,7 +37,7 @@
       </td>
 
       <td>
-        <% if current_user and (current_user.is_admin or current_user.uuid == link.owner) %>
+        <% if current_user and (current_user.is_admin or current_user.uuid == link.owner_uuid) %>
         <%= link_to raw('<i class="icon-trash"></i>'), { action: 'destroy', id: link.uuid }, { confirm: 'Delete this link?', method: 'delete' } %>
         <% end %>
       </td>

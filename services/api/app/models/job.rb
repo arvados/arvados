@@ -28,7 +28,7 @@ class Job < ArvadosModel
     t.add :output
     t.add :success
     t.add :running
-    t.add :is_locked_by
+    t.add :is_locked_by_uuid
     t.add :log
     t.add :resource_limits
     t.add :tasks_summary
@@ -42,7 +42,7 @@ class Job < ArvadosModel
   end
 
   def self.queue
-    self.where('started_at is ? and is_locked_by is ? and cancelled_at is ?',
+    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ?',
                nil, nil, nil).
       order('priority desc, created_at')
   end
@@ -50,7 +50,7 @@ class Job < ArvadosModel
   protected
 
   def ensure_script_version_is_commit
-    if self.is_locked_by and self.started_at
+    if self.is_locked_by_uuid and self.started_at
       # Apparently client has already decided to go for it. This is
       # needed to run a local job using a local working directory
       # instead of a commit-ish.
@@ -114,8 +114,8 @@ class Job < ArvadosModel
       elsif is_locked_by_was and is_locked_by_was != current_user.uuid
         logger.warn "User #{current_user.uuid} tried to steal lock on #{self.class.to_s} #{uuid_was} from #{is_locked_by_was}"
         false
-      elsif !is_locked_by.nil? and is_locked_by != current_user.uuid
-        logger.warn "User #{current_user.uuid} tried to lock #{self.class.to_s} #{uuid_was} with uuid #{is_locked_by}"
+      elsif !is_locked_by_uuid.nil? and is_locked_by_uuid != current_user.uuid
+        logger.warn "User #{current_user.uuid} tried to lock #{self.class.to_s} #{uuid_was} with uuid #{is_locked_by_uuid}"
         false
       else
         super
