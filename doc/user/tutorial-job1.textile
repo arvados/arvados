@@ -27,10 +27,10 @@ h3. Submit a job
 
 We will run the "hash" program, which computes the MD5 hash of each file in a collection.
 
-Pick a data collection. We'll use @f815ec01d5d2f11cb12874ab2ed50daa@ here.
+Pick a data collection. We'll use @33a9f3842b01ea3fdf27cc582f5ea2af@ here.
 
 <pre>
-the_collection=f815ec01d5d2f11cb12874ab2ed50daa
+the_collection=33a9f3842b01ea3fdf27cc582f5ea2af
 </pre>
 
 Pick a code version. We'll use @cdde7f246fec59bc99da86145fd4cf4efcf37a68@ here.
