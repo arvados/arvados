@@ -17,6 +17,12 @@ h3. Prerequisites
 
 If everything is set up correctly, the command @arv -h user current@ will display your account information.
 
+Arv depends on a few gems. It will tell you which ones to install, if they are not present yet. If you need to install the dependencies and are doing so as a non-root user, make sure you set GEM_HOME before you run gem install:
+
+<pre>
+    export GEM_HOME=~/.gem
+</pre>
+
 h3. Submit a job
 
 We will run the "hash" program, which computes the MD5 hash of each file in a collection.
