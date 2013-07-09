@@ -33,9 +33,13 @@ button. Then click on 'none' in the public_key column, and copy and paste your p
 
 Click on the checkmark button to save your public key.
 
-### Unix-like systems: set up an ~/.ssh/config snippet for quick ssh access
+### Set up your ssh client (Unix-like systems only)
 
-**Please make sure to replace {{ site.arvados_api_host }} with your arvados hostname in the examples below.**
+{% include notebox-begin.html %}
+
+If you are using an Arvados site other than {{ site.arvados_api_host }}, replace "{{ site.arvados_api_host }}" with the appropriate Arvados API hostname in these examples.
+
+{% include notebox-end.html %}
 
 On your workstation, add the following section to your `~/.ssh/config`
 file:
