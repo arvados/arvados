@@ -78,8 +78,7 @@ class Job < ArvadosModel
     self.script_parameters.values.each do |v|
       next unless v.is_a? String
       v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
-        bare_locator = locator[0].gsub(/\+[^,]+/,'')
-        deps[bare_locator] = true
+        deps[locator] = true
       end
     end
     deps.keys

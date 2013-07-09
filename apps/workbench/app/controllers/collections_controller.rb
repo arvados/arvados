@@ -49,7 +49,25 @@ class CollectionsController < ApplicationController
     @sourcedata = {params[:uuid] => {uuid: params[:uuid]}}
     @protected = {}
 
-    # TODO: compile provenance data using Job.where(...)
+    colorindex = -1
+    any_hope_left = true
+    while any_hope_left
+      any_hope_left = false
+      Job.where(output: @sourcedata.keys).sort_by { |a| a.finished_at || a.created_at }.reverse.each do |job|
+        if !@output2colorindex[job.output]
+          any_hope_left = true
+          @output2colorindex[job.output] = (colorindex += 1) % 10
+          @provenance << {job: job, output: job.output}
+          @sourcedata.delete job.output
+          @output2job[job.output] = job
+          job.dependencies.each do |new_source_data|
+            unless @output2colorindex[new_source_data]
+              @sourcedata[new_source_data] = {uuid: new_source_data}
+            end
+          end
+        end
+      end
+    end
 
     Link.where(head_uuid: @sourcedata.keys | @output2job.keys).each do |link|
       if link.link_class == 'resources' and link.name == 'wants'

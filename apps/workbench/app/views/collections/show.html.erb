@@ -60,18 +60,16 @@
 	      <% j.script_parameters.each do |k,v| %>
               <tr>
                 <td style="width: 60%">
-                  <% re = v.match(/^([0-9a-f]+)/) %>
-                  <% justhash = (re and re[1].length == 32) ? re[1] : nil %>
-	          <% if justhash and @output2job.has_key? justhash %>
+	          <% if v and @output2job.has_key? v %>
 	          <tt class="label colorseries-10-<%= @output2colorindex[v] %>"><%= v %></tt>
-                  <% elsif justhash %>
-	          <tt class="label colorseries-nil"><%= justhash %></tt><br /><span class="deemphasize"><%= v %></span>
+                  <% elsif v %>
+	          <tt class="label colorseries-nil"><%= v %></tt><br /><span class="deemphasize"><%= v %></span>
                   <% else %>
 	          <span class="deemphasize"><%= v %></span>
                   <% end %>
                 </td><td style="text-align: center; width: 20%">
-                  <% if justhash
-                       if @protected[justhash]
+                  <% if v
+                       if @protected[v]
                          labelclass = 'success'
                          labeltext = 'keep'
                        else
