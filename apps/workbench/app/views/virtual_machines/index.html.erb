@@ -1,5 +1,7 @@
 <%= render partial: 'application/index' %>
 
+<hr />
+
 <p>
 Sample <code>~/.ssh/config</code> section:
 </p>
@@ -7,7 +9,7 @@ Sample <code>~/.ssh/config</code> section:
 <pre>
 Host *.arvados
   ProxyCommand ssh -p2222 turnout@switchyard.<%= Rails.configuration.arvados_v1_base.match(/\/\/(.*?)\//).andand[1] || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
-<% if @objects.first.current_user_logins.andand.first %>
+<% if @objects.first.andand.current_user_logins.andand.first %>
   User <%= @objects.first.current_user_logins.andand.first %>
 <% end %>
 </pre>
@@ -17,7 +19,7 @@ Sample login command:
 </p>
 
 <pre>
-ssh <%= @objects.first.andand.hostname.sub(/\..*/,'') or 'vm-hostname' %>.arvados
+ssh <%= @objects.first.andand.hostname.andand.sub(/\..*/,'') or 'vm-hostname' %>.arvados
 </pre>
 
 <p>
