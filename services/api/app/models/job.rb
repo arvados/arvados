@@ -104,7 +104,7 @@ class Job < ArvadosModel
         return false
       end
     end
-    if !is_locked_by_changed?
+    if !is_locked_by_uuid_changed?
       super
     else
       if !current_user
