@@ -211,7 +211,7 @@ huD09534 qr1hi-8i9sb-bt9389e9g3ff0m1
 hu599905 qr1hi-8i9sb-ocg0i8r75luvke3
 </pre>
 
-Check job progress:
+Monitor job progress by refreshing the Jobs page in Workbench, or by using the API:
 
 <pre>
 map(lambda j: arvados.service.jobs().get(uuid=j['uuid']).execute()['success'], job.values())
@@ -222,6 +222,8 @@ map(lambda j: arvados.service.jobs().get(uuid=j['uuid']).execute()['success'], j
 <pre>
 [True, True, True, True, True, True, True]
 </pre>
+
+(Unfinished jobs will appear as None, failed jobs as False, and completed jobs as True.)
 
 After the jobs have completed, check output file sizes.
 
