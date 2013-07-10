@@ -6,13 +6,13 @@
 
 <% else %>
 
-<% attr_blacklist = 'created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at' %>
+<% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at' %>
 
 <table class="table arv-index">
   <thead>
     <tr>
       <% @objects.first.attributes_for_display.each do |attr, attrvalue| %>
-      <% next if attr_blacklist.index attr %>
+      <% next if attr_blacklist.index(" "+attr) %>
       <th class="arv-attr-<%= attr %>">
         <%= controller.model_class.attribute_info[attr.to_sym].andand[:column_heading] or attr.sub /_uuid/, '' %>
       </th>
@@ -24,7 +24,7 @@
     <% @objects.each do |object| %>
     <tr>
       <% object.attributes_for_display.each do |attr, attrvalue| %>
-      <% next if attr_blacklist.index attr %>
+      <% next if attr_blacklist.index(" "+attr) %>
       <td class="arv-object-<%= object.class.to_s %> arv-attr-<%= attr %>">
         <% if attr == 'uuid' %>
         <%= link_to_if_arvados_object object %>
