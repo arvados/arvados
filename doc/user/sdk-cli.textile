@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: Intro: Command line SDK
+title: "Intro: Command line SDK"
 navorder: 10
 ---
 
@@ -9,8 +9,7 @@ navorder: 10
 
 h1. Command line SDK
 
-If you are logged in to an Arvados VM, the command line SDK should be
-installed. Try:
+If you are logged in to an Arvados VM, the command line SDK should be installed. Try:
 
 @arv --help@
 
