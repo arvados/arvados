@@ -85,8 +85,8 @@ class Job < ArvadosModel
   end
 
   def permission_to_update
-    if is_locked_by_was and !(current_user and
-                              current_user.uuid == is_locked_by_was)
+    if is_locked_by_uuid_was and !(current_user and
+                                   current_user.uuid == is_locked_by_uuid_was)
       if script_changed? or
           script_parameters_changed? or
           script_version_changed? or
@@ -110,8 +110,8 @@ class Job < ArvadosModel
       if !current_user
         logger.warn "Anonymous user tried to change lock on #{self.class.to_s} #{uuid_was}"
         false
-      elsif is_locked_by_was and is_locked_by_was != current_user.uuid
-        logger.warn "User #{current_user.uuid} tried to steal lock on #{self.class.to_s} #{uuid_was} from #{is_locked_by_was}"
+      elsif is_locked_by_uuid_was and is_locked_by_uuid_was != current_user.uuid
+        logger.warn "User #{current_user.uuid} tried to steal lock on #{self.class.to_s} #{uuid_was} from #{is_locked_by_uuid_was}"
         false
       elsif !is_locked_by_uuid.nil? and is_locked_by_uuid != current_user.uuid
         logger.warn "User #{current_user.uuid} tried to lock #{self.class.to_s} #{uuid_was} with uuid #{is_locked_by_uuid}"
