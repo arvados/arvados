@@ -40,11 +40,14 @@ Some classes are pre-defined by convention and have standard meanings attached t
 
 table(table table-bordered table-condensed).
 |*link_class*|*tail_type&rarr;head_type*|*name&rarr;head_uuid {properties}*|*Notes*|
-|data_origin|Collection&rarr;string  |retrieved_by &rarr; _user uuid_ {url&rarr;http://example.com/foo.tgz, retrieved_at&rarr;1352616640.000}||
-|data_origin|Collection&rarr;Job     |output_of &rarr; _job uuid_||
-|data_origin|Collection&rarr;Specimen|derived_from &rarr; 4ly9q-2g125-fbzfbavpo4gwpw0||
+|provenance|&rarr;Collection  |provided &rarr; _collection uuid_
+{url&rarr;http://example.com/foo.tgz, retrieved_at&rarr;1352616640.000}||
+|provenance|Job&rarr;Collection     |provided &rarr; _collection uuid_||
+|provenance|Specimen&rarr;Collection|provided &rarr; _collection uuid_||
+|provenance|Human&rarr;Specimen     |provided &rarr; _specimen uuid_||
+|provenance|Human&rarr;Collection   |provided &rarr; _collection uuid_||
 |human_trait|Human&rarr;Trait  |measured &rarr; _trait uuid_ {value&rarr;1.83, unit&rarr;metre, measured_at&rarr;1352616640.000}||
-|identifier|&rarr;Human        |hu123456 &rarr; _human uuid_ {}||
+|identifier|&rarr;Human        |hu123456 &rarr; _human uuid_||
 |permission|User&rarr;Group  |can_manage &rarr; _group uuid_|Writable only by a user who can_manage this group|
 |permission|User&rarr;Group  |can_read &rarr; _group uuid_  |Writable only by a user who can_manage this group.
 Gives permission to read any object owned by this group.|
