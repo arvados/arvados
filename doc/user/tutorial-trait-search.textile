@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Tutorial: Search PGP data by trait"
-navorder: 20
+navorder: 22
 ---
 
 h1. Tutorial: Search PGP data by trait
@@ -43,22 +43,23 @@ List traits containing the term "cancer":
 for t in filter(lambda t: re.search('cancer', t['name']),
                 arvados.service.traits().list(limit=1000).execute()['items']):
   print t['uuid'], t['name']
+
 </pre>
 
 &darr;
 
 <pre>
 ...
-1h9kt-q1cn2-nu86efg57kzus5z Cervical cancer
-1h9kt-q1cn2-0tl6w82sog50hlz Breast cancer
-1h9kt-q1cn2-zkdn8edncaagqui Non-melanoma skin cancer
+qr1hi-q1cn2-8q57g2diohwnzm0 Cervical cancer
+qr1hi-q1cn2-vqp4243janpjbyj Breast cancer
+qr1hi-q1cn2-v6usijujcpwqrn1 Non-melanoma skin cancer
 ...
 </pre>
 
-We will use the "Non-melanoma skin cancer" trait with uuid @1h9kt-q1cn2-zkdn8edncaagqui@.
+We will use the "Non-melanoma skin cancer" trait with uuid @qr1hi-q1cn2-v6usijujcpwqrn1@.
 
 <pre>
-trait_uuid = '1h9kt-q1cn2-zkdn8edncaagqui'
+trait_uuid = 'qr1hi-q1cn2-v6usijujcpwqrn1'
 </pre>
 
 h3. Find humans.
@@ -116,12 +117,12 @@ map(lambda l: l['name'], huid_links)
 &darr;
 
 <pre>
-[u'huE2E371', u'huDF04CC', u'huD3A569', u'huD09534', u'huD09050', u'huB4883B',
- u'huB1FD55', u'huAB8707', u'hu9E356F', u'hu94040B', u'hu7A2F1D', u'hu7260DD',
- u'hu6C3F34', u'hu68F245', u'hu633787', u'hu602487', u'hu5E55F5', u'hu599905',
- u'hu5917F3', u'hu56B3B6', u'hu553620', u'hu474789', u'hu43860C', u'hu414115',
- u'hu397733', u'hu34A921', u'hu237A50', u'hu1BD549', u'hu174334', u'hu15402B',
- u'hu11603C', u'hu01024B']
+[u'hu01024B', u'hu11603C', u'hu15402B', u'hu174334', u'hu1BD549', u'hu237A50',
+ u'hu34A921', u'hu397733', u'hu414115', u'hu43860C', u'hu474789', u'hu553620',
+ u'hu56B3B6', u'hu5917F3', u'hu599905', u'hu5E55F5', u'hu602487', u'hu633787',
+ u'hu68F245', u'hu6C3F34', u'hu7260DD', u'hu7A2F1D', u'hu94040B', u'hu9E356F',
+ u'huAB8707', u'huB1FD55', u'huB4883B', u'huD09050', u'huD09534', u'huD3A569',
+ u'huDF04CC', u'huE2E371']
 </pre>
 
 These huIDs let us find public profiles:
