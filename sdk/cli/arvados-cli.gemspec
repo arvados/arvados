@@ -5,7 +5,7 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados-cli'
-  s.version     = '0.1.pre.' + `/usr/bin/git log --pretty=format:'%ci' -n 1`[0..18].gsub(/[ \-:]/,'')
+  s.version     = '0.1.' + `/usr/bin/git log --pretty=format:'%ci' -n 1`[0..18].gsub(/[ \-:]/,'')
   s.date        = `/usr/bin/git log --pretty=format:'%ci' -n 1`[0..9]
   s.summary     = "Arvados SDK CLI"
   s.description = "This is the Arvados SDK CLI gem, git revision " + `/usr/bin/git log --pretty=format:'%H' -n 1`
