@@ -7,13 +7,13 @@ navorder: 8
 
 h1. Intro: Jobs
 
-You can run MapReduce jobs by storing a job script in a git repository and creating a [job](api-Jobs.html).
+You can run MapReduce jobs by storing a job script in a git repository and creating a "job":../api/Jobs.html.
 
-Batch jobs offer several advantages over running programs on your own local machine:
+Crunch jobs offer several advantages over running programs on your own local machine:
 
 * Increase concurrency by running tasks asynchronously, using many CPUs and network interfaces at once (especially beneficial for CPU-bound and I/O-bound tasks respectively).
 
-* Track inputs, outputs, and settings so you can verify that the inputs, settings, and sequence of programs you used to arrive at an output is really what you think it was. See [provenance](provenance.html).
+* Track inputs, outputs, and settings so you can verify that the inputs, settings, and sequence of programs you used to arrive at an output is really what you think it was.
 
 * Ensure that your programs and workflows are repeatable with different versions of your code, OS updates, etc.
 
@@ -25,9 +25,9 @@ h3. Structure of a job
 
 A job consists of a number of tasks which can be executed asynchronously.
 
-A single batch job program, or "mr-function", executes each task of a given job.  The logic of a typical mr-function looks like this:
+A single job program, or "crunch script", executes each task of a given job. The logic of a typical crunch script looks like this:
 
-* If this is the first task: examine the input, divide it into a number of asynchronous tasks, instruct the Job Manager to queue these tasks, output nothing, and indicate successful completion.
+* If this is the first task: examine the input, divide it into a number of asynchronous tasks, instruct Arvados to queue these tasks, output nothing, and indicate successful completion.
 
 * Otherwise, fetch a portion of the input from the cloud storage system, do some computation, store some output in the cloud, output a fragment of the output manifest, and indicate successful completion.
 
@@ -35,9 +35,9 @@ When all job tasks have completed, the output fragments are assembled into a sin
 
 If a job task fails, it is automatically re-attempted.  If a task fails repeatedly and running it on a different compute node doesn't help, any tasks still running are allowed to complete, and the job is abandoned.
 
-h3. Developing and testing job scripts
+h3. Developing and testing crunch scripts
 
-Usually, it makes sense to test your job script locally on small data sets.  When you are satisfied that it works, commit it to the git repository and run it in Arvados.
+Usually, it makes sense to test your script locally on small data sets.  When you are satisfied that it works, commit it to the git repository and run it in Arvados.
 
 Save your job script (say, @foo@) in @{git-repo}/crunch_scripts/foo@.
 
@@ -74,7 +74,7 @@ You will see the progress of the job in your terminal.  Press Control-C to creat
 
 h3. Testing job scripts without SDKs and Keep access
 
-Read and write data to /tmp/ instead of Keep. This only works with the Python SDK.
+Read and write data to @/tmp/@ instead of Keep. This only works with the Python SDK.
 
 <pre>
 export KEEP_LOCAL_STORE=/tmp
