@@ -1,6 +1,4 @@
 class GroupsController < ApplicationController
-  before_filter :ensure_current_user_is_admin
-
   def index
     @groups = Group.limit(10000).all
     @group_uuids = @groups.collect &:uuid
