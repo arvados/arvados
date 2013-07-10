@@ -20,7 +20,7 @@
       <td>
         <%= link_to_if_arvados_object ob %>
       </td><td>
-        <%= ob.name %>
+        <%= render_editable_attribute ob, 'name' %>
       </td><td>
         <%= link_to_if_arvados_object ob.owner_uuid %>
       </td><td>
