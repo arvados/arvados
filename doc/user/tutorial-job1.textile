@@ -33,10 +33,10 @@ Pick a data collection. We'll use @33a9f3842b01ea3fdf27cc582f5ea2af@ here.
 the_collection=33a9f3842b01ea3fdf27cc582f5ea2af
 </pre>
 
-Pick a code version. We'll use @cdde7f246fec59bc99da86145fd4cf4efcf37a68@ here.
+Pick a code version. We'll use @5565778cf15ae9af22ad392053430213e9016631@ here.
 
 <pre>
-the_version=cdde7f246fec59bc99da86145fd4cf4efcf37a68
+the_version=5565778cf15ae9af22ad392053430213e9016631
 </pre>
 
 Make a JSON object describing the job.
@@ -62,6 +62,25 @@ Submit the job.
 arv -h job create --job "$the_job"
 </pre>
 
+&darr;
+
+<pre>
+{
+ "kind":"arvados#job",
+ "etag":"dwbrasqcozpjsqtfshzdjfiii",
+ "uuid":"qr1hi-8i9sb-3i0yi357k0mauwz",
+...
+ "script":"hash",
+ "script_parameters":{
+  "input":"33a9f3842b01ea3fdf27cc582f5ea2af"
+ },
+ "script_version":"5565778cf15ae9af22ad392053430213e9016631",
+...
+}
+</pre>
+
+h3. Monitor job progress
+
 Go to Workbench, drop down the Compute menu, and click Jobs. The job you submitted should appear at the top of the list.
 
 Hit "Refresh" until it finishes.
@@ -73,4 +92,44 @@ curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
   https://{{ site.arvados_api_host }}/arvados/v1/jobs/JOB_UUID_HERE/log_tail_follow
 </pre>
 
-Great. You ran a job!
+h3. Inspect the job output
+
+Find the output of the job by looking at the Jobs page (in the Compute menu) in Workbench, or by using the API:
+
+<pre>
+arv -h job get --uuid JOB_UUID_HERE
+</pre>
+
+The output locator will look like <code>5894dfae5d6d8edf135f0ea3dba849c2+62+K@qr1hi</code>.
+
+List the files in the collection:
+
+<pre>
+arv keep ls 5894dfae5d6d8edf135f0ea3dba849c2+62+K@qr1hi
+</pre>
+
+&darr;
+
+<pre>
+md5sum.txt
+</pre>
+
+Show the contents of the md5sum.txt file:
+
+<pre>
+arv keep less 5894dfae5d6d8edf135f0ea3dba849c2+62+K@qr1hi/md5sum.txt
+</pre>
+
+h3. Inspect the code
+
+The @script@ and @script_version@ attributes of a Job allow you to confirm the code that was used to run the job. Specifically, @script@ refers to a file in the @/crunch_scripts@ directory in the tree indicated by the commit hash @script_version@.
+
+Example:
+
+<pre>
+cd
+git clone git://github.com/clinicalfuture/arvados.git
+cd arvados
+git checkout $the_version
+less crunch_scripts/hash
+</pre>
