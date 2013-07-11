@@ -21,6 +21,8 @@
 
 /config/environments/development.rb
 
+/config/piwik.yml
+
 # editor backup files
 *~
 

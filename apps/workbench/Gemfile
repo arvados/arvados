@@ -51,3 +51,5 @@ gem 'rvm-capistrano', :group => :test
 gem 'passenger', :group => :production
 gem 'andand'
 gem 'RedCloth'
+
+gem 'piwik_analytics'

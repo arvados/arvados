@@ -90,6 +90,10 @@ GEM
       rack
       rake (>= 0.8.1)
     pg (0.15.1)
+    piwik_analytics (1.0.2)
+      actionpack
+      activesupport
+      rails (>= 3.0.0)
     polyglot (0.3.3)
     rack (1.4.5)
     rack-cache (1.2)
@@ -165,6 +169,7 @@ DEPENDENCIES
   oj
   passenger
   pg
+  piwik_analytics
   rails (= 3.2.11)
   rvm-capistrano
   sass-rails (~> 3.2.3)
