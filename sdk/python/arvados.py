@@ -13,6 +13,7 @@ import hashlib
 import string
 import bz2
 import zlib
+import fcntl
 
 from apiclient import errors
 from apiclient.discovery import build
@@ -63,7 +64,7 @@ def current_task():
     t = service.job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
     t = UserDict.UserDict(t)
     t.set_output = types.MethodType(task_set_output, t)
-    t.tmpdir = os.environ['TASK_TMPDIR']
+    t.tmpdir = os.environ['TASK_WORK']
     _current_task = t
     return t
 
@@ -74,7 +75,7 @@ def current_job():
         return _current_job
     t = service.jobs().get(uuid=os.environ['JOB_UUID']).execute()
     t = UserDict.UserDict(t)
-    t.tmpdir = os.environ['CRUNCH_WORK']
+    t.tmpdir = os.environ['JOB_WORK']
     _current_job = t
     return t
 
@@ -133,6 +134,114 @@ class util:
                              cwd=os.path.dirname(path))
         util.run_command(["git", "checkout", version],
                          cwd=path)
+        return path
+
+    @staticmethod
+    def tarball_extract(tarball, path):
+        """Retrieve a tarball from Keep and extract it to a local
+        directory.  Return the absolute path where the tarball was
+        extracted. If the top level of the tarball contained just one
+        file or directory, return the absolute path of that single
+        item.
+
+        tarball -- collection locator
+        path -- where to extract the tarball: absolute, or relative to job tmp
+        """
+        if not re.search('^/', path):
+            path = os.path.join(current_job().tmpdir, path)
+        lockfile = open(path + '.lock', 'w')
+        fcntl.flock(lockfile, fcntl.LOCK_EX)
+        try:
+            os.stat(path)
+        except OSError:
+            os.mkdir(path)
+        already_have_it = False
+        try:
+            if os.readlink(os.path.join(path, '.locator')) == tarball:
+                already_have_it = True
+        except OSError:
+            pass
+        if not already_have_it:
+
+            # emulate "rm -f" (i.e., if the file does not exist, we win)
+            try:
+                os.unlink(os.path.join(path, '.locator'))
+            except OSError:
+                if os.path.exists(os.path.join(path, '.locator')):
+                    os.unlink(os.path.join(path, '.locator'))
+
+            for f in CollectionReader(tarball).all_files():
+                decompress_flag = ''
+                if re.search('\.(tbz|tar.bz2)$', f.name()):
+                    decompress_flag = 'j'
+                elif re.search('\.(tgz|tar.gz)$', f.name()):
+                    decompress_flag = 'z'
+                p = subprocess.Popen(["tar",
+                                      "-C", path,
+                                      ("-x%sf" % decompress_flag),
+                                      "-"],
+                                     stdout=None,
+                                     stdin=subprocess.PIPE, stderr=sys.stderr,
+                                     shell=False, close_fds=True)
+                while True:
+                    buf = f.read(2**20)
+                    if len(buf) == 0:
+                        break
+                    p.stdin.write(buf)
+                p.stdin.close()
+                p.wait()
+                if p.returncode != 0:
+                    lockfile.close()
+                    raise Exception("tar exited %d" % p.returncode)
+            os.symlink(tarball, os.path.join(path, '.locator'))
+        tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
+        lockfile.close()
+        if len(tld_extracts) == 1:
+            return os.path.join(path, tld_extracts[0])
+        return path
+
+    @staticmethod
+    def collection_extract(collection, path, files=[]):
+        """Retrieve a collection from Keep and extract it to a local
+        directory.  Return the absolute path where the collection was
+        extracted.
+
+        collection -- collection locator
+        path -- where to extract: absolute, or relative to job tmp
+        """
+        if not re.search('^/', path):
+            path = os.path.join(current_job().tmpdir, path)
+        lockfile = open(path + '.lock', 'w')
+        fcntl.flock(lockfile, fcntl.LOCK_EX)
+        try:
+            os.stat(path)
+        except OSError:
+            os.mkdir(path)
+        already_have_it = False
+        try:
+            if os.readlink(os.path.join(path, '.locator')) == collection:
+                already_have_it = True
+        except OSError:
+            pass
+        if not already_have_it:
+            # emulate "rm -f" (i.e., if the file does not exist, we win)
+            try:
+                os.unlink(os.path.join(path, '.locator'))
+            except OSError:
+                if os.path.exists(os.path.join(path, '.locator')):
+                    os.unlink(os.path.join(path, '.locator'))
+
+            for f in CollectionReader(collection).all_files():
+                if files == [] or f.name() in files:
+                    outfile = open(os.path.join(path, f.name()), 'w')
+                    while True:
+                        buf = f.read(2**20)
+                        if len(buf) == 0:
+                            break
+                        outfile.write(buf)
+                    outfile.close()
+            os.symlink(collection, os.path.join(path, '.locator'))
+        lockfile.close()
         return path
 
 class DataReader:
