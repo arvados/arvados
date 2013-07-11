@@ -18,6 +18,8 @@ navorder: 2
 
 Please follow the instructions on the [Download page](https://arvados.org/projects/arvados/wiki/Download) in the wiki.
 
+The workbench application is in `apps/workbench`.
+
 ## Configure the Workbench application
 
 You need to update config/initializers/secret_token.rb. Generate a new secret with
@@ -35,6 +37,8 @@ Adjust the following fields in your `environments/production.rb` file.
 your API server. Use the example values as a guide.
 * If you choose not to use https, make sure to also set
 `config.force_ssl = false` in the API server's `production.rb` file.
+
+Copy `config/piwik.yml.example` to `config/piwik.yml` and edit to suit.
 
 ## Apache/Passenger
 
