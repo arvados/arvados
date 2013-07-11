@@ -201,7 +201,7 @@ class util:
         return path
 
     @staticmethod
-    def collection_extract(collection, path, files=[]):
+    def collection_extract(collection, path, files=[], decompress=True):
         """Retrieve a collection from Keep and extract it to a local
         directory.  Return the absolute path where the collection was
         extracted.
@@ -223,29 +223,33 @@ class util:
                 already_have_it = True
         except OSError:
             pass
-        if not already_have_it:
-            # emulate "rm -f" (i.e., if the file does not exist, we win)
-            files_got = []
-            try:
-                os.unlink(os.path.join(path, '.locator'))
-            except OSError:
-                if os.path.exists(os.path.join(path, '.locator')):
-                    os.unlink(os.path.join(path, '.locator'))
 
-            for f in CollectionReader(collection).all_files():
-                if (files == [] or
-                    (f.name() in files and f.name() not in files_got)):
-                    outfile = open(os.path.join(path, f.name()), 'w')
-                    while True:
-                        buf = f.read(2**20)
-                        if len(buf) == 0:
-                            break
-                        outfile.write(buf)
-                    outfile.close()
-                    files_got += [f.name()]
-            if len(files_got) < len(files):
-                raise Exception("Wanted files %s but only got %s from %s" % (files, files_got, map(lambda z: z.name(), list(CollectionReader(collection).all_files()))))
-            os.symlink(collection, os.path.join(path, '.locator'))
+        # emulate "rm -f" (i.e., if the file does not exist, we win)
+        files_got = []
+        try:
+            os.unlink(os.path.join(path, '.locator'))
+        except OSError:
+            if os.path.exists(os.path.join(path, '.locator')):
+                os.unlink(os.path.join(path, '.locator'))
+
+        for f in CollectionReader(collection).all_files():
+            if (files == [] or
+                ((f.name() not in files_got) and
+                 (f.name() in files or
+                  (decompress and f.decompressed_name() in files)))):
+                outname = f.decompressed_name() if decompress else f.name()
+                files_got += [outname]
+                if os.path.exists(os.path.join(path, outname)):
+                    continue
+                outfile = open(os.path.join(path, outname), 'w')
+                for buf in (f.readall_decompressed() if decompress
+                            else f.readall()):
+                    outfile.write(buf)
+                outfile.close()
+        if len(files_got) < len(files):
+            raise Exception("Wanted files %s but only got %s from %s" % (files, files_got, map(lambda z: z.name(), list(CollectionReader(collection).all_files()))))
+        os.symlink(collection, os.path.join(path, '.locator'))
+
         lockfile.close()
         return path
 
@@ -292,7 +296,7 @@ class StreamFileReader:
         data = self._stream.read(min(size, self._size - self._filepos))
         self._filepos += len(data)
         return data
-    def readall(self, size, **kwargs):
+    def readall(self, size=2**20, **kwargs):
         while True:
             data = self.read(size, **kwargs)
             if data == '':
@@ -310,14 +314,20 @@ class StreamFileReader:
             data = decompressor.decompress(decompressor.unconsumed_tail + chunk)
             if data and data != '':
                 yield data
-    def readlines(self, decompress=True):
+    def readall_decompressed(self, size=2**20):
         self._stream.seek(self._pos + self._filepos)
-        if decompress and re.search('\.bz2$', self._name):
-            datasource = self.bunzip2(2**10)
-        elif decompress and re.search('\.gz$', self._name):
-            datasource = self.gunzip(2**10)
+        if re.search('\.bz2$', self._name):
+            return self.bunzip2(size)
+        elif re.search('\.gz$', self._name):
+            return self.gunzip(size)
         else:
-            datasource = self.readall(2**10)
+            return self.readall(size)
+    def readlines(self, decompress=True):
+        if decompress:
+            datasource = self.readall_decompressed()
+        else:
+            self._stream.seek(self._pos + self._filepos)
+            datasource = self.readall()
         data = ''
         for newdata in datasource:
             data += newdata
