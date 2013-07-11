@@ -11,17 +11,16 @@ if RUBY_VERSION < '1.9.3' then
 end
 
 if ARGV[0] == 'keep'
-  if ARGV[1] == 'ls' then
-    ARGV.shift
-    ARGV.shift
-    @cmd_args = []
-    @cmd_args << `which whls`.strip
-    @cmd_args << ARGV
-
-    @output = `#{@cmd_args.join(' ')} 2>&1`
-    puts @output.gsub(/\/usr\/bin\/whls/,"#{$0} keep ls").gsub(/ whls /," #{$0} keep ls ")
+  ARGV.shift
+  @sub = ARGV.shift
+  if @sub == 'ls' or @sub == 'get' or @sub == 'put' or @sub == 'less' then
+    exec(`which wh#{@sub}`.strip + ' ' + ARGV.join(' '))
   else
-    puts "Usage: #{$0} keep ls [--help] [options] HASH"
+    puts "Usage: \n" +
+      "#{$0} keep ls\n" +
+      "#{$0} keep get\n" +
+      "#{$0} keep put\n" +
+      "#{$0} keep less\n"
   end
   exit
 end
