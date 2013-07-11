@@ -225,6 +225,7 @@ class util:
             pass
         if not already_have_it:
             # emulate "rm -f" (i.e., if the file does not exist, we win)
+            files_got = []
             try:
                 os.unlink(os.path.join(path, '.locator'))
             except OSError:
@@ -232,7 +233,8 @@ class util:
                     os.unlink(os.path.join(path, '.locator'))
 
             for f in CollectionReader(collection).all_files():
-                if files == [] or f.name() in files:
+                if (files == [] or
+                    (f.name() in files and f.name() not in files_got)):
                     outfile = open(os.path.join(path, f.name()), 'w')
                     while True:
                         buf = f.read(2**20)
@@ -240,6 +242,9 @@ class util:
                             break
                         outfile.write(buf)
                     outfile.close()
+                    files_got += [f.name()]
+            if len(files_got) < len(files):
+                raise Exception("Wanted files %s but only got %s from %s" % (files, files_got, map(lambda z: z.name(), list(CollectionReader(collection).all_files()))))
             os.symlink(collection, os.path.join(path, '.locator'))
         lockfile.close()
         return path
