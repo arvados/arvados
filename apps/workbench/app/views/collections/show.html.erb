@@ -88,7 +88,7 @@
             <div style="text-align: center">
               &darr;
               <br />
-	      <span class="label"><%= j.script %><br /><tt><%= link_to_if j.script_version.match(/[0-9a-f]{40}/), j.script_version, "https://redmine.clinicalfuture.com/projects/freefactories/repository/revisions/#{j.script_version}/entry/mapreduce/mr-#{j.script}" if j.script_version %></tt></span>
+	      <span class="label"><%= j.script %><br /><tt><%= link_to_if j.script_version.match(/[0-9a-f]{40}/), j.script_version, "https://arvados.org/projects/arvados/repository/revisions/#{j.script_version}/entry/crunch_scripts/#{j.script}" if j.script_version %></tt></span>
               <br />
               &darr;
               <br />
