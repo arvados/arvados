@@ -13,14 +13,15 @@ end
 if ARGV[0] == 'keep'
   ARGV.shift
   @sub = ARGV.shift
-  if @sub == 'ls' or @sub == 'get' or @sub == 'put' or @sub == 'less' then
-    exec(`which wh#{@sub}`.strip + ' ' + ARGV.join(' '))
+  if ['ls', 'get', 'put', 'less', 'check'].index @sub then
+    exec `which wh#{@sub}`.strip, *ARGV
   else
     puts "Usage: \n" +
       "#{$0} keep ls\n" +
       "#{$0} keep get\n" +
       "#{$0} keep put\n" +
-      "#{$0} keep less\n"
+      "#{$0} keep less\n" +
+      "#{$0} keep check\n"
   end
   exit
 end
