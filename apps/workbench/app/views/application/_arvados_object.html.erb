@@ -26,7 +26,7 @@
     <li class="active"><a href="#arvados-object-json" data-toggle="tab">API response JSON</a></li>
     <% if @object.andand.uuid %>
     <li><a href="#arvados-object-curl" data-toggle="tab">curl update example</a></li>
-    <li><a href="#arvados-object-arv" data-toggle="tab">&ldquo;arv&rdquo; CLI example</a></li>
+    <li><a href="#arvados-object-arv" data-toggle="tab">&ldquo;arv&rdquo; CLI examples</a></li>
     <li><a href="#arvados-object-python" data-toggle="tab">Python example</a></li>
     <% end %>
   </ul>
@@ -59,10 +59,10 @@ EOF
 
     <div id="arvados-object-arv" class="tab-pane fade">
       <pre>
-ARVADOS_API_HOST=<%= Rails.configuration.arvados_v1_base.sub /https?:\/\/|\/arvados\/v1/,'' %>
+ARVADOS_API_HOST=<%= Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,'' %>
 ARVADOS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxx
 
-arv --json --pretty <%= @object.class.to_s.underscore %> get \
+arv --pretty <%= @object.class.to_s.underscore %> get \
  --uuid <%= @object.uuid %>
 
 arv <%= @object.class.to_s.underscore %> update \
