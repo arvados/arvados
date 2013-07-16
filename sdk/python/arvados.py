@@ -489,6 +489,9 @@ class CollectionReader:
         for s in self.all_streams():
             for f in s.all_files():
                 yield f
+    def manifest_text(self):
+        self._populate()
+        return self._manifest_text
 
 class CollectionWriter:
     KEEP_BLOCK_SIZE = 2**26
