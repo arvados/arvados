@@ -75,10 +75,17 @@ class Job < ArvadosModel
 
   def dependencies
     deps = {}
-    self.script_parameters.values.each do |v|
-      next unless v.is_a? String
-      v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
-        deps[locator] = true
+    queue = self.script_parameters.values
+    while not queue.empty?
+      queue = queue.flatten.compact.collect do |v|
+        if v.is_a? Hash
+          v.values
+        elsif v.is_a? String
+          v.match(/^(([0-9a-f]{32})\b(\+[^,]+)?,?)*$/) do |locator|
+            deps[locator.to_s] = true
+          end
+          nil
+        end
       end
     end
     deps.keys
