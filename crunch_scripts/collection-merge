@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+import arvados
+
+inputs = arvados.current_job()['script_parameters']['input']
+if not isinstance(inputs, (list,tuple)):
+    inputs = [inputs]
+
+out_manifest = ''
+for locator in inputs:
+    out_manifest += arvados.CollectionReader(locator).manifest_text()
+
+arvados.current_task().set_output(Keep.put(out_manifest))
