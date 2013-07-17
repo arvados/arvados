@@ -280,7 +280,7 @@ class JobCache
     if j.is_a? Hash and j[:uuid]
       @cache[j[:uuid]] = j
     else
-      debuglog "create job: #{j[:errors] rescue nil}"
+      debuglog "create job: #{j[:errors] rescue nil}", 0
       nil
     end
   end
@@ -429,7 +429,7 @@ class WhRunPipelineInstance
                 debuglog "component #{cname} new job #{job[:uuid]}"
                 c[:job] = job
               else
-                debuglog "component #{cname} new job failed: #{job[:errors]}"
+                debuglog "component #{cname} new job failed"
               end
             end
           end

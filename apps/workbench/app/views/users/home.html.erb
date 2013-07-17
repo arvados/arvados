@@ -28,19 +28,19 @@
     <div class="clearfix">
       <h4>Account summary</h4>
       <div class="well clearfix">
-        <% [Human, Specimen, Trait, Collection, PipelineTemplate, PipelineInstance].each do |aclass| %>
+        <% [Human, Trait, Collection, 'File', PipelineTemplate, PipelineInstance].each do |aclass| %>
         <div class="col span2 centerme">
           <span class="bigfatnumber">
-            <% if [Human, Specimen, Trait, Collection].index aclass  %>
-            <%= aclass.limit(4000).where({}).count %>
+            <% if aclass == 'File' %>
+            <%= Collection.limit(4000).where({}).collect(&:files).flatten(1).count %>
             <% else %>
-            <%= aclass.limit(1000).where({owner_uuid:current_user.uuid}).count %>
+            <%= aclass.limit(4000).where({}).count %>
             <% end %>
           </span>
           <br />
           <%= raw(aclass.to_s.pluralize.underscore.gsub '_', '&nbsp;') %>
         </div>
-<% end %>
+        <% end %>
       </div>
     </div>
   </div>
