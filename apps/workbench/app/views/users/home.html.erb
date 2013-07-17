@@ -23,6 +23,7 @@
     </style>
 <% end %>
 
+<% if current_user.andand.is_active %>
 <div class="row-fluid">
   <div class="col span12">
     <div class="clearfix">
@@ -45,6 +46,7 @@
     </div>
   </div>
 </div>
+<% end %>
 
 <div class="row-fluid">
   <div class="col span3">
