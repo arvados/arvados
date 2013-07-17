@@ -30,7 +30,13 @@
       <div class="well clearfix">
         <% [Human, Specimen, Trait, Collection, PipelineTemplate, PipelineInstance].each do |aclass| %>
         <div class="col span2 centerme">
-          <span class="bigfatnumber"><%= aclass.limit(1000).where({owner_uuid:current_user.uuid}).count %></span>
+          <span class="bigfatnumber">
+            <% if [Human, Specimen, Trait, Collection].index aclass  %>
+            <%= aclass.limit(4000).where({}).count %>
+            <% else %>
+            <%= aclass.limit(1000).where({owner_uuid:current_user.uuid}).count %>
+            <% end %>
+          </span>
           <br />
           <%= raw(aclass.to_s.pluralize.underscore.gsub '_', '&nbsp;') %>
         </div>
