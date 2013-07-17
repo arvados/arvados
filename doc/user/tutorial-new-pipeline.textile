@@ -317,7 +317,7 @@ h3. Run the pipeline again using different parameters
 We can use the same pipeline template to run the jobs again, this time overriding the "trait_name" parameter with a different value:
 
 <pre>
-wh-run-pipeline-instance --template qr1hi-p5p6p-uf9gi9nolgakm85 create_collection::trait_name=cancer
+arv pipeline run --template qr1hi-p5p6p-uf9gi9nolgakm85 create_collection::trait_name=cancer
 </pre>
 
 When this template instance finishes, run the same Python script on the new output collection to summarize the results.
