@@ -172,7 +172,7 @@ class Dispatcher
           lines.each do |line|
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
-            $redis.publish job_uuid, "#{Time.now.ctime.to_s} #{line}"
+            $redis.publish job_uuid, "#{Time.now.ctime.to_s} #{line.strip}"
           end
         end
       end
