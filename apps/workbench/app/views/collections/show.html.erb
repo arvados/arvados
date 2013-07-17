@@ -59,13 +59,13 @@
             <table class="table" style="margin-bottom: 0; background: #f0f0ff">
 	      <% j.script_parameters.each do |k,v| %>
               <tr>
-                <td style="width: 60%">
+                <td style="width: 20%">
+                  <%= k.to_s %>
+                </td><td style="width: 60%">
 	          <% if v and @output2job.has_key? v %>
-	          <tt class="label colorseries-10-<%= @output2colorindex[v] %>"><%= v %></tt>
-                  <% elsif v %>
-	          <tt class="label colorseries-nil"><%= v %></tt><br /><span class="deemphasize"><%= v %></span>
+	          <tt class="label colorseries-10-<%= @output2colorindex[v] %>"><%= link_to_if_arvados_object v %></tt>
                   <% else %>
-	          <span class="deemphasize"><%= v %></span>
+	          <span class="deemphasize"><%= link_to_if_arvados_object v %></span>
                   <% end %>
                 </td><td style="text-align: center; width: 20%">
                   <% if v
@@ -79,8 +79,6 @@
 
 	          <tt class="label label-<%= labelclass %>"><%= labeltext %></tt>
                   <% end %>
-                </td><td style="width: 20%">
-                  <%= k.to_s %>
                 </td>
               </tr>
 	      <% end %>
@@ -92,11 +90,11 @@
               <br />
               &darr;
               <br />
-	      <tt class="label colorseries-10-<%= @output2colorindex[p[:output]] %>"><%= p[:output] %></tt>
+	      <tt class="label colorseries-10-<%= @output2colorindex[p[:output]] %>"><%= link_to_if_arvados_object p[:output] %></tt>
             </div>
 	  </td>
           <td>
-	    <tt><span class="deemphasize">job:</span><br /><%= j.uuid %><br /><span class="deemphasize"><%= j.submit_id %></span></tt>
+	    <tt><span class="deemphasize">job:</span><br /><%= link_to_if_arvados_object j %><br /><span class="deemphasize"><%= j.submit_id %></span></tt>
           </td>
 	</tr>
 
