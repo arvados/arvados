@@ -123,7 +123,11 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    @object = model_class.where(uuid: params[:uuid]).first
+    if params[:uuid].is_a? String
+      @object = model_class.find(params[:uuid])
+    else
+      @object = model_class.where(uuid: params[:uuid]).first
+    end
   end
 
   def thread_clear
