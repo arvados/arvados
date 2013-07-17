@@ -96,7 +96,7 @@ h3. Write the create-collection-by-trait script
 mkdir -p crunch_scripts
 touch crunch_scripts/create-collection-by-trait
 chmod +x crunch_scripts/create-collection-by-trait
-edit crunch_scripts/create-collection-by-trait
+nano crunch_scripts/create-collection-by-trait
 </pre>
 
 Here is the script:
@@ -147,7 +147,7 @@ h3. Write the find-dbsnp-id script
 <pre>
 touch crunch_scripts/find-dbsnp-id
 chmod +x crunch_scripts/find-dbsnp-id
-edit crunch_scripts/find-dbsnp-id
+nano crunch_scripts/find-dbsnp-id
 </pre>
 
 Here is the script:
@@ -215,7 +215,7 @@ Make a directory called @pipeline_templates@ and create a file called @find-dbsn
 
 <pre>
 mkdir pipeline_templates
-edit pipeline_templates/find-dbsnp-by-trait.json
+nano pipeline_templates/find-dbsnp-by-trait.json
 </pre>
 
 Copy the following pipeline template.
