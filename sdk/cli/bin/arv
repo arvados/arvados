@@ -23,7 +23,20 @@ if ARGV[0] == 'keep'
       "#{$0} keep less\n" +
       "#{$0} keep check\n"
   end
-  exit
+  abort
+end
+
+if ARGV[0] == 'pipeline'
+  ARGV.shift
+  @sub = ARGV.shift
+  if ['run'].index @sub then
+    exec `which arv-run-pipeline-instance`.strip, *ARGV
+  else
+    puts "Usage: \n" +
+      "#{$0} pipeline run [...]\n" +
+      "(see arv-run-pipeline-instance --help for details)\n"
+  end
+  abort
 end
 
 ENV['ARVADOS_API_VERSION'] ||= 'v1'
