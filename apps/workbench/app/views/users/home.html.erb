@@ -1,135 +1,140 @@
-<% content_for :tutorials do %>
-<h4>Tutorials</h4>
-<% @tutorial_links.each do |tut| %>
-<div class="well clearfix">
-  <div>
-    <strong><%= tut.properties[:page_title] %></strong>
-    <% if @tutorial_complete[tut.properties[:page_title]] %>
-    <span class="badge badge-success pull-right">&#x2714;</span>
-    <% else %>
-    <span class="badge pull-right">&#x270d;</span>
-    <% end %>
-  </div>
-  <%= render_content_from_database tut.properties[:page_subtitle] %>
-  <br />
-  <%= link_to raw('Tutorial: ' + tut.properties[:page_title] + ' &#x279c;'), link_path(tut.uuid), class: "pull-right btn btn-primary" %>
-</div>
-<% end %>
-<% if not @tutorial_links.any? %>
-<div class="well clearfix">
-  <div>
-    <strong>Your first job</strong>
-    <% if @my_last_job %>
-    <span class="badge badge-success pull-right">&#x2714;</span>
-    <% else %>
-    <span class="badge pull-right">&#x270d;</span>
-    <% end %>
-  </div>
-  Run your first Crunch job.
-  <br />
-  <%= link_to raw('Tutorial: Your first job &#x279c;'), 'http://doc.arvados.org/user/tutorial-job1.html', class: "pull-right btn btn-primary" %>
-</div>
-<div class="well clearfix">
-  <div>
-    <strong>Search PGP data by trait</strong>
-  </div>
-  Find PGP participants who reported a medical condition, and find WGS data for them.
-  <br />
-  <%= link_to raw('Tutorial: Search PGP data &#x279c;'), 'http://doc.arvados.org/user/tutorial-trait-search.html', class: "pull-right btn btn-primary" %>
-</div>
-<% end %>
-<% end %>
-
-<% content_for :references do %>
-<h4>References</h4>
-<div class="well clearfix">
-  <div>
-    <strong>API Reference</strong>
-  </div>
-  API calls for running jobs, building pipelines, and developing apps.
-  <br />
-  <%= link_to raw('API Reference &#x279c;'), 'http://doc.arvados.org/api/', class: "pull-right btn" %>
-</div>
-<div class="well clearfix">
-  <div>
-    <strong>User Guide</strong>
-  </div>
-  Getting acquainted with the Arvados platform.
-  <br />
-  <%= link_to raw('User Guide &#x279c;'), 'http://doc.arvados.org/user/', class: "pull-right btn" %>
-</div>
-<div class="well clearfix">
-  <div>
-    <strong>arvados.org</strong>
-  </div>
-  Project home page: developer docs, source code, background.
-  <br />
-  <%= link_to raw('arvados.org &#x279c;'), 'https://arvados.org/', class: "pull-right btn" %>
-</div>
-<% end %>
-
-<% if current_user.andand.is_active %>
-<% content_for :manage_access do %>
-<h4>Setup</h4>
-<div class="well clearfix">
-  <div>
-    <strong>SSH keys</strong>
-    <span class="badge <%= 'badge-success' if @my_ssh_keys.any? %> pull-right"><%= @my_ssh_keys.count %></span>
-  </div>
-  You&rsquo;ll use public key authentication for logging in to
-  VMs and using hosted git repositories.
-  <br />
-  <%= link_to raw('Add/edit keys &#x279c;'), authorized_keys_path, class: "pull-right btn #{'btn-primary' if @my_ssh_keys.empty?}" %>
-</div>
-<div class="well clearfix">
-  <div>
-    <strong>Virtual machines</strong>
-    <span class="badge <%= 'badge-success' if @my_vm_perms.any? %> pull-right"><%= @my_vm_perms.collect(&:head_uuid).uniq.count %></span>
-  </div>
-  Arvados includes virtual machines with SDKs installed and ready to use.
-  <br />
-  <% if @my_vm_perms.any? %>
-  <%= link_to raw('Show VMs &#x279c;'), virtual_machines_path, class: "pull-right btn" %>
-  <% elsif @my_ssh_keys.any? %>
-  <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, class: "pull-right btn btn-primary" %>
-  <% else %>
-  <%= link_to raw('Request a VM &#x279c;'), virtual_machines_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
-  <% end %>
-</div>
-<div class="well clearfix">
-  <div>
-    <strong>Git repositories</strong>
-    <span class="badge <%= 'badge-success' if @my_repo_perms.any? %> pull-right"><%= @my_repo_perms.collect(&:head_uuid).uniq.count %></span>
-  </div>
-  In order to run jobs using your own code, you need to push your code to a git repository. We provide hosted git repositories to make this easy.
-  <br />
-  <% if @my_repo_perms.any? %>
-  <%= link_to raw('Show repositories &#x279c;'), repositories_path, class: "pull-right btn" %>
-  <% elsif @my_ssh_keys.any? %>
-  <%= link_to raw('Request a repository &#x279c;'), repositories_path, class: "pull-right btn btn-primary" %>
-  <% else %>
-  <%= link_to raw('Request a repository &#x279c;'), repositories_path, { :class => "pull-right btn disabled", :"data-toggle" => "tooltip", :"data-placement" => "bottom", :title => "Add an SSH public key first!" } %>
-  <% end %>
-</div>
-<% end %>
+<% content_for :head do %>
+    <style>
+      .dash-list {
+        padding: 9px 0;
+      }
+      .dash-list>ul>li>a>span {
+      min-width: 1.5em;
+      margin-left: auto;
+      margin-right: auto;
+      }
+      .job-table td {
+      overflow-x: hidden;
+      }
+      .centerme {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      }
+      .bigfatnumber {
+      font-size: 4em;
+      font-weight: bold;
+      }
+    </style>
 <% end %>
 
 <div class="row-fluid">
-  <div class="col span4">
-    <% if content_for? :manage_access %>
-    <%= yield :manage_access %>
-    <% else %>
-    <%= render partial: 'request_activation' %>
-    <% end %>
+  <div class="col span12">
+    <div class="clearfix">
+      <h4>Account summary</h4>
+      <div class="well clearfix">
+        <% [Human, Specimen, Trait, Collection, PipelineTemplate, PipelineInstance].each do |aclass| %>
+        <div class="col span2 centerme">
+          <span class="bigfatnumber"><%= aclass.limit(1000).where({owner_uuid:current_user.uuid}).count %></span>
+          <br />
+          <%= raw(aclass.to_s.pluralize.underscore.gsub '_', '&nbsp;') %>
+        </div>
+<% end %>
+      </div>
+    </div>
   </div>
+</div>
 
-  <% if content_for? :tutorials %>
-  <div class="col span4">
-    <%= yield :tutorials %>
+<div class="row-fluid">
+  <div class="col span3">
+    <div class="clearfix">
+      <% if not current_user.andand.is_active %>
+      <%= render partial: 'request_activation' %>
+      <% else %>
+      <h4>Configuration</h4>
+      <div class="well dash-list">
+        <ul class="nav nav-list">
+          <li class="clearfix">
+            <a href="<%= authorized_keys_path %>">
+              <span class="pull-left"><%= raw '&#x2714;' if @my_ssh_keys.any? %>&nbsp;</span>
+              SSH keys
+              <span class="pull-right"><%= @my_ssh_keys.count %></span>
+            </a>
+          </li>
+          <li class="clearfix">
+            <a href="<%= virtual_machines_path %>">
+              <span class="pull-left"><%= raw '&#x2714;' if @my_vm_perms.any? %>&nbsp;</span>
+              Virtual machines
+              <span class="pull-right"><%= @my_vm_perms.collect(&:head_uuid).uniq.count %></span>
+            </a>
+          </li>
+          <li class="clearfix">
+            <a href="<%= repositories_path %>">
+              <span class="pull-left"><%= raw '&#x2714;' if @my_repo_perms.any? %>&nbsp;</span>
+              Repositories
+              <span class="pull-right"><%= @my_repo_perms.collect(&:head_uuid).uniq.count %></span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <% end %>
+    </div>
   </div>
-  <% end %>
-
   <div class="col span4">
-    <%= yield :references %>
+    <div class="clearfix">
+      <h4>Quick links</h4>
+      <div class="well dash-list">
+        <ul class="nav nav-list">
+          <li><%= link_to "Introduction to Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %></li>
+          <li><%= link_to "API Reference", "http://doc.arvados.org/api/" %></li>
+          <li><%= link_to "User Guide", "http://doc.arvados.org/api/" %></li>
+          <li><%= link_to "Tutorial 1: Your first job", "http://doc.arvados.org/user/tutorial-job1.html" %></li>
+          <li><%= link_to "Tutorial 2: Search PGP data by trait", "http://doc.arvados.org/user/tutorial-trait-search.html" %></li>
+          <li><%= link_to "Tutorial 3: GATK VariantFiltration", "http://doc.arvados.org/user/tutorial-gatk-variantfiltration.html" %></li>
+          <li><%= link_to "Tutorial 3: Create a new pipeline", "http://doc.arvados.org/user/tutorial-new-pipeline.html" %></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col span5">
+    <div class="clearfix">
+      <h4>Recent jobs</h4>
+      <% if not current_user.andand.is_active or @my_jobs.empty? %>
+      (None)
+      <% else %>
+      <table class="table table-bordered table-condensed job-table">
+        <% @my_jobs[0..8].each do |j| %>
+        <tr>
+          <td>
+            <small>
+              <%= link_to j.script[0..31], job_path(j.uuid) %>
+            </small>
+          </td>
+          <td>
+            <small>
+              <%= j.script_version[0..7] %>
+            </small>
+          </td>
+          <td>
+            <small>
+              <%= j.script_parameters.andand[:input].andand.to_s.andand[0..7] %>
+            </small>
+          </td>
+          <td>
+            <% if j.success %>
+            <span class="label label-success">finished</span>
+            <% elsif j.success == false %>
+            <span class="label label-danger">failed</span>
+            <% elsif j.running and j.started_at and not j.finished_at %>
+            <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
+            <div class="progress" style="margin-bottom: 0">
+              <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
+              <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
+            </div>
+            <% else %>
+            <span class="label">queued</span>
+            <% end %>
+          </td>
+        </tr>
+        <% end %>
+      </table>
+      <%= link_to raw("Show more jobs / details &rarr;"), jobs_path, class: 'pull-right' %>
+      <% end %>
+    </div>
   </div>
 </div>
