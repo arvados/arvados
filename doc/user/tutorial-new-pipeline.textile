@@ -222,20 +222,20 @@ Copy the following pipeline template.
 
 <pre>
 {
-  "name":"find-dbsnp-by-trait",
+  "name":"find_dbsnp_by_trait",
   "components":{
-    "create-collection":{
+    "create_collection":{
       "script":"create-collection-by-trait",
       "script_parameters":{
         "trait_name":"Non-melanoma skin cancer"
       },
       "script_version":"YOUR_GIT_COMMIT_SHA1_HERE"
     },
-    "find-variant":{
+    "find_variant":{
       "script":"find-dbsnp-id",
       "script_parameters":{
         "input":{
-          "output_of":"create-collection"
+          "output_of":"create_collection"
         },
         "dbsnp_id":"rs1126809"
       },
