@@ -317,7 +317,7 @@ class WhRunPipelineInstance
     params_args.shift if params_args[0] == '--'
     params = {}
     while !params_args.empty?
-      if (re = params_args[0].match /^(--)?([^-].*?)=(.)/)
+      if (re = params_args[0].match /^(--)?([^-].*?)=(.+)/)
         params[re[2]] = re[3]
         params_args.shift
       elsif params_args.size > 1
