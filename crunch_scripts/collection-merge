@@ -10,4 +10,4 @@ out_manifest = ''
 for locator in inputs:
     out_manifest += arvados.CollectionReader(locator).manifest_text()
 
-arvados.current_task().set_output(Keep.put(out_manifest))
+arvados.current_task().set_output(arvados.Keep.put(out_manifest))
