@@ -18,11 +18,20 @@
 #                 to finish. Just find out whether jobs are finished,
 #                 queued, or running for each component
 #
-# [--create-only] Do not try to satisfy any components. Just create an
-#                 instance, print its UUID to stdout, and exit.
+# [--create-instance-only] Do not try to satisfy any components. Just
+#                          create an instance, print its UUID to
+#                          stdout, and exit.
 #
 # [--no-wait] Make only as much progress as possible without entering
 #             a sleep/poll loop.
+#
+# [--no-reuse-finished] Do not reuse existing outputs to satisfy
+#                       pipeline components. Always submit a new job
+#                       or use an existing job which has not yet
+#                       finished.
+#
+# [--no-reuse] Do not reuse existing jobs to satisfy pipeline
+#              components. Submit a new job for every component.
 #
 # [--debug] Print extra debugging information on stderr.
 #
@@ -137,6 +146,14 @@ p = Trollop::Parser.new do
       "Do not wait for jobs to finish. Just look up status, submit new jobs if needed, and exit.",
       :short => :none,
       :type => :boolean)
+  opt(:no_reuse_finished,
+      "Do not reuse existing outputs to satisfy pipeline components. Always submit a new job or use an existing job which has not yet finished.",
+      :short => :none,
+      :type => :boolean)
+  opt(:no_reuse,
+      "Do not reuse existing jobs to satisfy pipeline components. Submit a new job for every component.",
+      :short => :none,
+      :type => :boolean)
   opt(:debug,
       "Print extra debugging information on stderr.",
       :type => :boolean)
@@ -152,7 +169,7 @@ p = Trollop::Parser.new do
       "UUID of pipeline instance.",
       :short => :none,
       :type => :string)
-  opt(:create_only,
+  opt(:create_instance_only,
       "Do not try to satisfy any components. Just create a pipeline instance and output its UUID.",
       :short => :none,
       :type => :boolean)
@@ -164,8 +181,8 @@ end
 $debuglevel = $options[:debug_level] || ($options[:debug] && 1) || 0
 
 if $options[:instance]
-  if $options[:template] or $options[:create_only]
-    abort "#{$0}: syntax error: --instance cannot be combined with --template or --create-only."
+  if $options[:template] or $options[:create_instance_only]
+    abort "#{$0}: syntax error: --instance cannot be combined with --template or --create-instance-only."
   end
 elsif not $options[:template]
   abort "#{$0}: syntax error: you must supply a --template or --instance."
@@ -382,10 +399,12 @@ class WhRunPipelineInstance
 
           c.delete :wait
           second_place_job = nil # satisfies component, but not finished yet
-          JobCache.where(:script => c[:script],
-                         :script_parameters => c[:script_parameters],
-                         :script_version_descends_from => c[:script_version_descends_from]).
-            each do |candidate_job|
+
+          (@options[:no_reuse] ? [] : JobCache.
+           where(script: c[:script],
+                 script_parameters: c[:script_parameters],
+                 script_version_descends_from: c[:script_version_descends_from])
+           ).each do |candidate_job|
             candidate_params_downcase = Hash[candidate_job[:script_parameters].
                                              map { |k,v| [k.downcase,v] }]
             c_params_downcase = Hash[c[:script_parameters].
@@ -404,9 +423,11 @@ class WhRunPipelineInstance
             end
 
             if candidate_job[:success]
-              job = candidate_job
-              debuglog "component #{cname} satisfied by job #{job[:uuid]} version #{job[:script_version]}"
-              c[:job] = job
+              unless @options[:no_reuse_finished]
+                job = candidate_job
+                debuglog "component #{cname} satisfied by job #{job[:uuid]} version #{job[:script_version]}"
+                c[:job] = job
+              end
             else
               second_place_job ||= candidate_job
             end
@@ -526,7 +547,7 @@ begin
   end
   runner.apply_parameters(p.leftovers)
   runner.setup_instance
-  if $options[:create_only]
+  if $options[:create_instance_only]
     runner.instance.save
     puts runner.instance[:uuid]
   else
