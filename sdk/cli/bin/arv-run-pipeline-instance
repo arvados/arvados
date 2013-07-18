@@ -483,7 +483,14 @@ class WhRunPipelineInstance
       @instance[:components] = @components
       @instance[:active] = moretodo
       report_status
-      sleep 10 if moretodo
+      if moretodo
+        begin
+          sleep 10
+        rescue Interrupt
+          debuglog "interrupt", 0
+          abort
+        end
+      end
     end
     @instance[:success] = @components.reject { |cname,c| c[:job] and c[:job][:success] }.empty?
     @instance.save
