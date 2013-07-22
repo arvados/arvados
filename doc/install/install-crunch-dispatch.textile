@@ -61,7 +61,7 @@ done
 Once you have imported some commits, you should be able to create a new job:
 
 <pre>
-read -rd "\000" newjob <<EOF; arv job create --job "$newjob"
+read -rd $'\000' newjob <<EOF; arv job create --job "$newjob"
 {"script_parameters":{"input":"f815ec01d5d2f11cb12874ab2ed50daa"},
  "script_version":"master",
  "script":"hash"}

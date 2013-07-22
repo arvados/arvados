@@ -42,7 +42,7 @@ the_version=5565778cf15ae9af22ad392053430213e9016631
 Make a JSON object describing the job.
 
 <pre>
-read -rd "\000" the_job <<EOF
+read -rd $'\000' the_job <<EOF
 {
  "script":"hash",
  "script_version":"$the_version",
@@ -54,7 +54,7 @@ read -rd "\000" the_job <<EOF
 EOF
 </pre>
 
-(The @read -rd "\000"@ stuff just helps us get a multi-line string with lots of double quotation marks into a shell variable.)
+(The @read -rd $'\000'@ part uses a bash feature to help us get a multi-line string with lots of double quotation marks into a shell variable.)
 
 Submit the job.
 

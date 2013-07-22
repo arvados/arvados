@@ -248,7 +248,7 @@ Copy the following pipeline template.
 h3. Store the pipeline template in Arvados
 
 <pre>
-read -rd "\000" the_pipeline < pipeline_templates/find-dbsnp-by-trait.json
+read -rd $'\000' the_pipeline < pipeline_templates/find-dbsnp-by-trait.json
 
 arv pipeline_template create --pipeline-template "$the_pipeline"
 </pre>

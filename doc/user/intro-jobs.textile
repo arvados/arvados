@@ -50,7 +50,7 @@ arvados=/path/to/arvados
 script_name=foo
 repo_path=/path/to/repo
 
-read -rd "\000" newjob <<EOF; $arvados/services/crunch/crunch-job --job "$newjob"
+read -rd $'\000' newjob <<EOF; $arvados/services/crunch/crunch-job --job "$newjob"
 {
  "script":"$script_name",
  "script_version":"$repo_path",

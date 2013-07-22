@@ -68,7 +68,7 @@ vcf_input=5ee633fe2569d2a42dd81b07490d5d13+82+K@qr1hi
 gatk_binary=c905c8d8443a9c44274d98b7c6cfaa32+94+K@qr1hi
 gatk_bundle=d237a90bae3870b3b033aea1e99de4a9+10820+K@qr1hi
 
-read -rd "\000" the_job <<EOF
+read -rd $'\000' the_job <<EOF
 {
  "script":"GATK2-VariantFiltration",
  "script_version":"$src_version",
