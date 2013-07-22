@@ -81,7 +81,7 @@ if ($ENV{"USER"} ne "crunch" && $< != 0) {
   $ENV{"CRUNCH_TMP"} .= "-$<";
 }
 $ENV{"JOB_WORK"} = $ENV{"CRUNCH_TMP"} . "/work";
-$ENV{"CRUNCH_TMP"} = $ENV{"JOB_WORK"}; # deprecated
+$ENV{"CRUNCH_WORK"} = $ENV{"JOB_WORK"}; # deprecated
 mkdir ($ENV{"JOB_WORK"});
 
 my $force_unlock;
