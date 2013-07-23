@@ -3,6 +3,10 @@ module ApplicationHelper
     controller.current_user
   end
 
+  def current_api_host
+    Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
+  end
+
   def render_content_from_database(markup)
     raw RedCloth.new(markup).to_html
   end

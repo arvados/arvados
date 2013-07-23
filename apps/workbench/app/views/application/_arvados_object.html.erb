@@ -48,9 +48,9 @@
     <div id="arvados-object-curl" class="tab-pane fade">
       <pre>
 curl -X PUT \
- -H "Authorization: OAuth2 $arv_api_token" \
+ -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
  --data-urlencode <%= @object.class.to_s.underscore %>@/dev/stdin \
- <%= Rails.configuration.arvados_v1_base.sub 'http://', 'https://' %>/<%= @object.class.to_s.pluralize.underscore %>/<%= @object.uuid %> \
+ https://$ARVADOS_API_HOST/arvados/v1/<%= @object.class.to_s.pluralize.underscore %>/<%= @object.uuid %> \
  &lt;&lt;EOF
 <%= JSON.pretty_generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}) %>
 EOF
@@ -59,9 +59,6 @@ EOF
 
     <div id="arvados-object-arv" class="tab-pane fade">
       <pre>
-ARVADOS_API_HOST=<%= Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,'' %>
-ARVADOS_API_TOKEN=xxxxxxxxxxxxxxxxxxxxx
-
 arv --pretty <%= @object.class.to_s.underscore %> get \
  --uuid <%= @object.uuid %>
 
