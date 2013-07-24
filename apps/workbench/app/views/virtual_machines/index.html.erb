@@ -8,7 +8,7 @@ Sample <code>~/.ssh/config</code> section:
 
 <pre>
 Host *.arvados
-  ProxyCommand ssh -p2222 turnout@switchyard.<%= Rails.configuration.arvados_v1_base.match(/\/\/(.*?)\//).andand[1] || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
+  ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
 <% if @objects.first.andand.current_user_logins.andand.first %>
   User <%= @objects.first.current_user_logins.andand.first %>
 <% end %>
@@ -19,7 +19,7 @@ Sample login command:
 </p>
 
 <pre>
-ssh <%= @objects.first.andand.hostname.andand.sub(/\..*/,'') or 'vm-hostname' %>.arvados
+ssh <%= @objects.first.andand.hostname.andand.sub('.'+current_api_host,'') or 'vm-hostname' %>.arvados
 </pre>
 
 <p>
