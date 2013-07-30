@@ -11,12 +11,12 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130708185153) do
+ActiveRecord::Schema.define(:version => 20130724153034) do
 
   create_table "api_client_authorizations", :force => true do |t|
-    t.string   "api_token",               :null => false
-    t.integer  "api_client_id",           :null => false
-    t.integer  "user_id",                 :null => false
+    t.string   "api_token",                                           :null => false
+    t.integer  "api_client_id",                                       :null => false
+    t.integer  "user_id",                                             :null => false
     t.string   "created_by_ip_address"
     t.string   "last_used_by_ip_address"
     t.datetime "last_used_at"
@@ -24,6 +24,7 @@ ActiveRecord::Schema.define(:version => 20130708185153) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "default_owner_uuid"
+    t.text     "scopes",                  :default => "---\n- all\n", :null => false
   end
 
   add_index "api_client_authorizations", ["api_client_id"], :name => "index_api_client_authorizations_on_api_client_id"

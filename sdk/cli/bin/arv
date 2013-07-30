@@ -138,7 +138,7 @@ def parse_arguments(discovery_document)
         discovered_params.each do |k,v|
           opts = Hash.new()
           opts[:type] = v["type"].to_sym if v.include?("type")
-          if [:datetime, :text, :object].index opts[:type]
+          if [:datetime, :text, :object, :array].index opts[:type]
             opts[:type] = :string                       # else trollop bork
           end
           opts[:default] = v["default"] if v.include?("default")
@@ -151,7 +151,7 @@ def parse_arguments(discovery_document)
         end
       end
       discovered_params.each do |k,v|
-        if v["type"] == "object" and method_opts.has_key? k
+        if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
           method_opts[k] = JSON.parse method_opts[k]
         end
       end

@@ -6,7 +6,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
   before_filter :remote_ip
-  before_filter :login_required, :except => :render_not_found
+  before_filter :require_auth_scope_all, :except => :render_not_found
   before_filter :catch_redirect_hint
 
   before_filter :load_where_param, :only => :index
@@ -206,8 +206,10 @@ class ApplicationController < ActionController::Base
   end
 
   # Authentication
-  def login_required
-    if !current_user
+  def require_login
+    if current_user
+      true
+    else
       respond_to do |format|
         format.json {
           render :json => { errors: ['Not logged in'] }.to_json, status: 401
@@ -216,11 +218,22 @@ class ApplicationController < ActionController::Base
           redirect_to '/auth/joshid'
         }
       end
+      false
     end
   end
 
   def admin_required
     unless current_user and current_user.is_admin
+      render :json => { errors: ['Forbidden'] }.to_json, status: 403
+    end
+  end
+
+  def require_auth_scope_all
+    require_login and require_auth_scope(['all'])
+  end
+
+  def require_auth_scope(ok_scopes)
+    unless current_api_client_auth_has_scope(ok_scopes)
       render :json => { errors: ['Forbidden'] }.to_json, status: 403
     end
   end

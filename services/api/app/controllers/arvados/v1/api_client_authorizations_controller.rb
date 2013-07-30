@@ -1,12 +1,30 @@
 class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
+  accept_attribute_as_json :scopes, Array
   before_filter :current_api_client_is_trusted
+  before_filter :admin_required, :only => :create_system_auth
+
+  def self._create_system_auth_requires_parameters
+    {
+      api_client_id: {type: 'integer', required: false},
+      scopes: {type: 'array', required: false}
+    }
+  end
+  def create_system_auth
+    api_client_auth = ApiClientAuthorization.
+      new(user_id: system_user.id,
+          api_client_id: params[:api_client_id] || current_api_client.andand.id,
+          created_by_ip_address: remote_ip,
+          scopes: Oj.load(params[:scopes] || '["all"]'))
+    api_client_auth.save!
+    render :json => api_client_auth.as_api_response(:superuser)
+  end
 
   protected
 
   def find_objects_for_index
     # Here we are deliberately less helpful about searching for client
     # authorizations. Rather than use the generic index/where/order
-    # featuers, we look up tokens belonging to the current user and
+    # features, we look up tokens belonging to the current user and
     # filter by exact match on api_token (which we expect in the form
     # of a where[uuid] parameter to make things easier for API client
     # libraries).

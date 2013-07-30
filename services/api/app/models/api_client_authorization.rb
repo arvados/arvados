@@ -5,6 +5,7 @@ class ApiClientAuthorization < ArvadosModel
   belongs_to :api_client
   belongs_to :user
   after_initialize :assign_random_api_token
+  serialize :scopes, Array
 
   api_accessible :superuser, :extend => :common do |t|
     t.add :owner_uuid
@@ -16,6 +17,7 @@ class ApiClientAuthorization < ArvadosModel
     t.add :expires_at
     t.add :last_used_at
     t.add :last_used_by_ip_address
+    t.add :scopes
   end
 
   def assign_random_api_token

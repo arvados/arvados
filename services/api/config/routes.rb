@@ -88,6 +88,8 @@ Server::Application.routes.draw do
       match '/jobs/queue' => 'jobs#queue'
       match '/jobs/:uuid/log_tail_follow' => 'jobs#log_tail_follow'
       match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
+      match '/virtual_machines/:uuid/logins' => 'virtual_machines#logins'
+      post '/api_client_authorizations/create_system_auth' => 'api_client_authorizations#create_system_auth'
       match '/repositories/get_all_permissions' => 'repositories#get_all_permissions'
       resources :collections
       resources :links

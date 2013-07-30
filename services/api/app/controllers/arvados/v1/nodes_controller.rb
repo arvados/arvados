@@ -1,5 +1,5 @@
 class Arvados::V1::NodesController < ApplicationController
-  skip_before_filter :login_required, :only => :ping
+  skip_before_filter :require_auth_scope_all, :only => :ping
 
   def create
     @object = Node.new

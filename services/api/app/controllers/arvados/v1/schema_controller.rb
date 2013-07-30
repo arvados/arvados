@@ -1,6 +1,6 @@
 class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :find_object_by_uuid
-  skip_before_filter :login_required
+  skip_before_filter :require_auth_scope_all
 
   def show
     classes = Rails.cache.fetch 'arvados_v1_schema' do
@@ -87,8 +87,6 @@ class Arvados::V1::SchemaController < ApplicationController
       }
       
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
-        next if k == ApiClientAuthorization
-        next if k == ApiClient
         begin
           ctl_class = "Arvados::V1::#{k.to_s.pluralize}Controller".constantize
         rescue
