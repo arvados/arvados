@@ -26,7 +26,7 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
     @vms.each do |vm|
       vm.login_permissions.each do |perm|
         user_uuid = perm.tail_uuid
-        @users[user_uuid].andand.authorized_keys.each do |ak|
+        @users[user_uuid].andand.authorized_keys.andand.each do |ak|
           username = perm.properties.andand['username']
           if username
             @response << {
