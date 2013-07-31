@@ -17,12 +17,15 @@
 <% elsif attrvalue.is_a? String or attrvalue.respond_to? :to_s %>
 <tr class="<%= 'info' if %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).index(attr.to_s).nil? %>">
   <td><%= attr %></td>
-  <% if attr == 'uuid' and (uuid = attrvalue.split('-')).size == 3 %>
-  <td><%= uuid[0..-2].join('-') %>-<b><%= uuid[-1] %></b></td>
-  <% elsif @object.attribute_editable?(attr) %>
-  <td><%= render_editable_attribute @object, attr %></td>
-  <% else %>
-  <td><%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: @object, with_class_name: true} %></td>
-  <% end %>
+  <td>
+    <% if attr == 'uuid' and (uuid = attrvalue.split('-')).size == 3 %>
+    <%= uuid[0..-2].join('-') %>-<b><%= uuid[-1] %></b>
+    <% elsif @object.attribute_editable?(attr) %>
+    <%= render_editable_attribute @object, attr %>
+    <% else %>
+    <%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: @object, with_class_name: true} %>
+    <% end %>
+    <%= link_to_if_arvados_object(attrvalue, { referring_object: @object, link_text: raw('<i class="icon-hand-right"></i>') }) if resource_class_for_uuid(attrvalue, {referring_object: @object}) %>
+  </td>
 </tr>
 <% end %>
