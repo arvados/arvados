@@ -1,9 +1,9 @@
 class Arvados::V1::VirtualMachinesController < ApplicationController
+  skip_before_filter :find_object_by_uuid, :only => :get_all_logins
   skip_before_filter(:require_auth_scope_all,
                      :only => [:logins, :get_all_logins])
   before_filter(:admin_required,
                 :only => [:logins, :get_all_logins])
-  before_filter(:find_object_by_uuid, :only => :logins)
   before_filter(:require_auth_scope_for_get_all_logins,
                 :only => [:logins, :get_all_logins])
 
