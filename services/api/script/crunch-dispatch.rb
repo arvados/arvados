@@ -11,6 +11,14 @@ $signal = {}
   end
 end
 
+if ENV["CRUNCH_DISPATCH_LOCKFILE"]
+  lockfilename = ENV.delete "CRUNCH_DISPATCH_LOCKFILE"
+  lockfile = File.open(lockfilename, File::RDWR|File::CREAT, 0644)
+  unless lockfile.flock File::LOCK_EX|File::LOCK_NB
+    abort "Lock unavailable on #{lockfilename} - exit"
+  end
+end
+
 ENV["RAILS_ENV"] = ARGV[0] || ENV["RAILS_ENV"] || "development"
 
 require File.dirname(__FILE__) + '/../config/boot'
