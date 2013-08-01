@@ -25,9 +25,9 @@
 
     <% @jobs.sort_by { |j| j[:created_at] }.reverse.each do |j| %>
 
-    <tr class="<%= 'error' if j.success == false %>">
+    <tr>
       <td>
-        <table class="table table-condensed table-hover">
+        <table class="table table-condensed">
           <tr>
             <td colspan="2">
               <% if j.success == false %>
@@ -86,7 +86,7 @@
           <% end %>
         </table>
       </td><td>
-        <table class="table table-condensed table-hover">
+        <table class="table table-condensed">
           <tr class="info"><td colspan="2">
               <%= j.script %> <%= j.script_version %>
           </td></tr>
@@ -100,7 +100,7 @@
           </tr>
         </table>
       </td><td>
-        <table class="table table-condensed table-hover">
+        <table class="table table-condensed">
         <% j.resource_limits.sort.each do |k,v| %>
         <tr><td><%= v %></td><td><%= k %></td></tr>
         <% end %>
