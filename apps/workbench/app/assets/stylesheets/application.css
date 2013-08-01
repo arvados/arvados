@@ -26,8 +26,19 @@ table.topalign>thead>tr>td {
 tr.cell-valign-center>td {
     vertical-align: middle;
 }
-tr.cell-noborder>td {
+tr.cell-noborder>td,tr.cell-noborder>th {
     border: none;
+}
+table.table-justforlayout>tr>td,
+table.table-justforlayout>tr>th,
+table.table-justforlayout>thead>tr>td,
+table.table-justforlayout>thead>tr>th,
+table.table-justforlayout>tbody>tr>td,
+table.table-justforlayout>tbody>tr>th{
+    border: none;
+}
+table.table-justforlayout {
+    margin-bottom: 0;
 }
 .deemphasize {
     font-size: .8em;

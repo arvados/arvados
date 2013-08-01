@@ -25,4 +25,16 @@ jQuery(function($){
     });
     $('.editable').editable();
     $('[data-toggle=tooltip]').tooltip();
+
+    $('.expand-collapse-row').on('click', function(event) {
+        var targets = $('#' + $(this).attr('data-id'));
+        if (targets.css('display') == 'none') {
+            $(this).addClass('icon-minus-sign');
+            $(this).removeClass('icon-plus-sign');
+        } else {
+            $(this).addClass('icon-plus-sign');
+            $(this).removeClass('icon-minus-sign');
+        }
+        targets.fadeToggle(200);
+    });
 })(jQuery);

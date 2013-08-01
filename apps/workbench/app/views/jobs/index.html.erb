@@ -13,11 +13,18 @@
   <thead>
     <tr class="contain-align-left">
       <th>
-	uuid, result, schedule
       </th><th>
-	script, parameters, input, output
+	status
       </th><th>
-	resource_limits
+	progress
+      </th><th>
+	uuid
+      </th><th>
+	script
+      </th><th>
+	version
+      </th><th>
+	output
       </th>
     </tr>
   </thead>
@@ -25,32 +32,47 @@
 
     <% @jobs.sort_by { |j| j[:created_at] }.reverse.each do |j| %>
 
-    <tr>
+    <tr class="cell-noborder">
       <td>
+        <i class="icon-plus-sign expand-collapse-row" data-id="<%= j.uuid %>" style="cursor: pointer"></i>
+      </td>
+      <td>
+        <% if j.success == false %>
+        <span class="badge badge-warning" title="fail">&#x2716;</span>
+        <% elsif j.success %>
+        <span class="badge badge-success" title="success">&#x2714;</span>
+        <% elsif j.running %>
+        <span class="badge badge-info" title="running">&#x2708;</span>
+        <% else %>
+        <span class="badge" title="queued">&#x2709;</span>
+        <% end %>
+      </td>
+      <td>
+        <% if j.started_at and not j.finished_at %>
+        <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
+        <div class="progress" style="margin-bottom: 0">
+          <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
+          <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
+        </div>
+        <% end %>
+      </td>
+      <td>
+        <%= link_to_if_arvados_object j.uuid %>
+      </td>
+      <td>
+        <%= j.script %>
+      </td>
+      <td>
+        <%= j.script_version[0..8] %>
+      </td>
+      <td>
+        <%= link_to_if_arvados_object j.output %>
+      </td>
+    </tr>
+    <tr class="cell-noborder" id="<%= j.uuid %>" style="display:none">
+      <td colspan="7"><table class="table table-justforlayout"><tr>
+      <td style="border-left: 1px solid black">
         <table class="table table-condensed">
-          <tr>
-            <td colspan="2">
-              <% if j.success == false %>
-              <span class="badge badge-warning" title="fail">&#x2716;</span>
-              <% elsif j.success %>
-              <span class="badge badge-success" title="success">&#x2714;</span>
-              <% elsif j.running %>
-              <span class="badge badge-info" title="running">&#x2708;</span>
-              <% else %>
-              <span class="badge" title="queued">&#x2709;</span>
-              <% end %>
-	      <%= link_to_if_arvados_object j.uuid %>
-            </td>
-            <td>
-              <% if j.started_at and not j.finished_at %>
-              <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
-              <div class="progress" style="margin-bottom: 0">
-                <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
-                <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
-              </div>
-              <% end %>
-            </td>
-          </tr>
           <tr>
             <td>
               queued
@@ -87,7 +109,7 @@
         </table>
       </td><td>
         <table class="table table-condensed">
-          <tr class="info"><td colspan="2">
+          <tr><td colspan="2">
               <%= j.script %> <%= j.script_version %>
           </td></tr>
           <% j.script_parameters.sort.each do |k,v| %>
@@ -106,6 +128,7 @@
         <% end %>
         </table>
       </td>
+      </tr></table></td>
     </tr>
 
     <% end %>
