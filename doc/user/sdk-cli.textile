@@ -43,7 +43,7 @@ Get entire record for identified user
 @arv -h user get --uuid 6dnxa-tpzed-iimd25zhzh84gbk@
 
 Update user record
-@arv user update --uuid 6dnxa-tpzed-iimd25zhzh84gbk --first_name "Bob"@
+@arv user update --uuid 6dnxa-tpzed-iimd25zhzh84gbk --first-name "Bob"@
 
 Get list of groups (showing just UUIDs)
 @arv group list@
