@@ -58,7 +58,7 @@ git push arvados master:master  #(update arvados hosted copy)
 Whichever setup you choose, if everything is working correctly, this command should give you a list of repositories you can access:
 
 <pre>
-ssh git@git.{{ site.arvados_api_host }}
+ssh -T git@git.{{ site.arvados_api_host }}
 </pre>
 
 &darr;
