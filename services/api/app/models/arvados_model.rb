@@ -58,11 +58,11 @@ class ArvadosModel < ActiveRecord::Base
       logger.warn "Inactive user #{current_user.uuid} tried to update #{self.class.to_s} #{self.uuid_was}"
       return false
     end
+    return true if current_user.is_admin
     if self.uuid_changed?
       logger.warn "User #{current_user.uuid} tried to change uuid of #{self.class.to_s} #{self.uuid_was} to #{self.uuid}"
       return false
     end
-    return true if current_user.is_admin
     if self.owner_uuid_changed?
       if current_user.uuid == self.owner_uuid or
           current_user.can? write: self.owner_uuid
