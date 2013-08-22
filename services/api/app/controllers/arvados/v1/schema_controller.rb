@@ -305,7 +305,7 @@ class Arvados::V1::SchemaController < ApplicationController
               ctl_class.action_methods.include? action
             method = {
               id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
-              path: route.path.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu?)id/,'{uuid}'),
+              path: route.path.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
               httpMethod: httpMethod,
               description: "#{route.defaults[:action]} #{k.to_s.underscore.pluralize}",
               parameters: {},
