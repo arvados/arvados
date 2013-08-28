@@ -17,7 +17,7 @@ ARVADOS_API_TOKEN=1234567890qwertyuiopasdfghjklzxcvbnm1234567890zzzz
 h3. Create VM
 
 <pre>
-arv virtual_machine create --virtual_machine '{"hostname":"xxxxxxxchangeme.example.com"}'
+arv virtual_machine create --virtual-machine '{"hostname":"xxxxxxxchangeme.example.com"}'
 </pre>
 
 h3. Activate user
