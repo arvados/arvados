@@ -109,7 +109,7 @@ class Node < ArvadosModel
     ping_url = ping_url_method.call({ uuid: self.uuid, ping_secret: self.info[:ping_secret] })
     ec2_args = ["--user-data '#{ping_url}'",
                 "-t c1.xlarge -n 1",
-                "-g", Rails.configuration.compute_node_security_group,
+                Rails.configuration.compute_node_ec2run_args,
                 Rails.configuration.compute_node_ami
                ]
     ec2run_cmd = ["ec2-run-instances",
