@@ -55,7 +55,7 @@ class Arvados::V1::JobsController < ApplicationController
           if msg == "end"
             @redis.unsubscribe @job.uuid
           else
-            yield msg
+            yield "#{msg}\n"
           end
         end
       end
