@@ -137,6 +137,16 @@ class util:
         return path
 
     @staticmethod
+    def tar_extractor(path, decompress_flag):
+        return subprocess.Popen(["tar",
+                                 "-C", path,
+                                 ("-x%sf" % decompress_flag),
+                                 "-"],
+                                stdout=None,
+                                stdin=subprocess.PIPE, stderr=sys.stderr,
+                                shell=False, close_fds=True)
+
+    @staticmethod
     def tarball_extract(tarball, path):
         """Retrieve a tarball from Keep and extract it to a local
         directory.  Return the absolute path where the tarball was
@@ -171,18 +181,15 @@ class util:
                     os.unlink(os.path.join(path, '.locator'))
 
             for f in CollectionReader(tarball).all_files():
-                decompress_flag = ''
                 if re.search('\.(tbz|tar.bz2)$', f.name()):
-                    decompress_flag = 'j'
+                    p = tar_extractor(path, 'j')
                 elif re.search('\.(tgz|tar.gz)$', f.name()):
-                    decompress_flag = 'z'
-                p = subprocess.Popen(["tar",
-                                      "-C", path,
-                                      ("-x%sf" % decompress_flag),
-                                      "-"],
-                                     stdout=None,
-                                     stdin=subprocess.PIPE, stderr=sys.stderr,
-                                     shell=False, close_fds=True)
+                    p = tar_extractor(path, 'z')
+                elif re.search('\.tar$', f.name()):
+                    p = tar_extractor(path, '')
+                else:
+                    raise Exception("tarball_extract cannot handle filename %s"
+                                    % f.name())
                 while True:
                     buf = f.read(2**20)
                     if len(buf) == 0:
@@ -194,6 +201,72 @@ class util:
                     lockfile.close()
                     raise Exception("tar exited %d" % p.returncode)
             os.symlink(tarball, os.path.join(path, '.locator'))
+        tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
+        lockfile.close()
+        if len(tld_extracts) == 1:
+            return os.path.join(path, tld_extracts[0])
+        return path
+
+    @staticmethod
+    def zipball_extract(zipball, path):
+        """Retrieve a zip archive from Keep and extract it to a local
+        directory.  Return the absolute path where the archive was
+        extracted. If the top level of the archive contained just one
+        file or directory, return the absolute path of that single
+        item.
+
+        zipball -- collection locator
+        path -- where to extract the archive: absolute, or relative to job tmp
+        """
+        if not re.search('^/', path):
+            path = os.path.join(current_job().tmpdir, path)
+        lockfile = open(path + '.lock', 'w')
+        fcntl.flock(lockfile, fcntl.LOCK_EX)
+        try:
+            os.stat(path)
+        except OSError:
+            os.mkdir(path)
+        already_have_it = False
+        try:
+            if os.readlink(os.path.join(path, '.locator')) == zipball:
+                already_have_it = True
+        except OSError:
+            pass
+        if not already_have_it:
+
+            # emulate "rm -f" (i.e., if the file does not exist, we win)
+            try:
+                os.unlink(os.path.join(path, '.locator'))
+            except OSError:
+                if os.path.exists(os.path.join(path, '.locator')):
+                    os.unlink(os.path.join(path, '.locator'))
+
+            for f in CollectionReader(zipball).all_files():
+                if not re.search('\.zip$', f.name()):
+                    raise Exception("zipball_extract cannot handle filename %s"
+                                    % f.name())
+                zip_filename = os.path.join(path, os.path.basename(f.name()))
+                zip_file = open(zip_filename, 'wb')
+                while True:
+                    buf = f.read(2**20)
+                    if len(buf) == 0:
+                        break
+                    zip_file.write(buf)
+                zip_file.close()
+                
+                p = subprocess.Popen(["unzip",
+                                      "-q", "-o",
+                                      "-d", path,
+                                      zip_filename],
+                                     stdout=None,
+                                     stdin=None, stderr=sys.stderr,
+                                     shell=False, close_fds=True)
+                p.wait()
+                if p.returncode != 0:
+                    lockfile.close()
+                    raise Exception("unzip exited %d" % p.returncode)
+                os.unlink(zip_filename)
+            os.symlink(zipball, os.path.join(path, '.locator'))
         tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
         lockfile.close()
         if len(tld_extracts) == 1:
