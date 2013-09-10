@@ -647,6 +647,8 @@ class CollectionWriter:
         self.finish_current_stream()
         manifest = ''
         for stream in self._finished_streams:
+            if not re.search(r'^\.(/.*)?$', stream[0]):
+                manifest += './'
             manifest += stream[0]
             if len(stream[1]) == 0:
                 manifest += " d41d8cd98f00b204e9800998ecf8427e+0"
