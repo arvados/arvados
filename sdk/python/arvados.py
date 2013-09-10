@@ -111,6 +111,29 @@ class job_setup:
                                        ).execute()
             exit(0)
 
+    @staticmethod
+    def one_task_per_input_stream(if_sequence=0, and_end_task=True):
+        if if_sequence != current_task()['sequence']:
+            return
+        job_input = current_job()['script_parameters']['input']
+        cr = CollectionReader(job_input)
+        for s in cr.all_streams():
+            task_input = s.tokens()
+            new_task_attrs = {
+                'job_uuid': current_job()['uuid'],
+                'created_by_job_task_uuid': current_task()['uuid'],
+                'sequence': if_sequence + 1,
+                'parameters': {
+                    'input':task_input
+                    }
+                }
+            service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
+        if and_end_task:
+            service.job_tasks().update(uuid=current_task()['uuid'],
+                                       job_task=json.dumps({'success':True})
+                                       ).execute()
+            exit(0)
+
 class util:
     @staticmethod
     def run_command(execargs, **kwargs):
@@ -301,13 +324,13 @@ class util:
             pass
 
         # emulate "rm -f" (i.e., if the file does not exist, we win)
-        files_got = []
         try:
             os.unlink(os.path.join(path, '.locator'))
         except OSError:
             if os.path.exists(os.path.join(path, '.locator')):
                 os.unlink(os.path.join(path, '.locator'))
 
+        files_got = []
         for f in CollectionReader(collection).all_files():
             if (files == [] or
                 ((f.name() not in files_got) and
@@ -317,7 +340,7 @@ class util:
                 files_got += [outname]
                 if os.path.exists(os.path.join(path, outname)):
                     continue
-                outfile = open(os.path.join(path, outname), 'w')
+                outfile = open(os.path.join(path, outname), 'wb')
                 for buf in (f.readall_decompressed() if decompress
                             else f.readall()):
                     outfile.write(buf)
@@ -326,6 +349,57 @@ class util:
             raise Exception("Wanted files %s but only got %s from %s" % (files, files_got, map(lambda z: z.name(), list(CollectionReader(collection).all_files()))))
         os.symlink(collection, os.path.join(path, '.locator'))
 
+        lockfile.close()
+        return path
+
+    @staticmethod
+    def mkdir_dash_p(path):
+        if not os.path.exists(path):
+            mkdir_dash_p(os.dirname(path))
+            try:
+                os.mkdir(path)
+            except OSError:
+                if not os.path.exists(path):
+                    os.mkdir(path)
+
+    @staticmethod
+    def stream_extract(stream, path, files=[], decompress=True):
+        """Retrieve a stream from Keep and extract it to a local
+        directory.  Return the absolute path where the stream was
+        extracted.
+
+        stream -- StreamReader object
+        path -- where to extract: absolute, or relative to job tmp
+        """
+        if not re.search('^/', path):
+            path = os.path.join(current_job().tmpdir, path)
+        lockfile = open(path + '.lock', 'w')
+        fcntl.flock(lockfile, fcntl.LOCK_EX)
+        try:
+            os.stat(path)
+        except OSError:
+            os.mkdir(path)
+
+        files_got = []
+        for f in stream.all_files():
+            if (files == [] or
+                ((f.name() not in files_got) and
+                 (f.name() in files or
+                  (decompress and f.decompressed_name() in files)))):
+                outname = f.decompressed_name() if decompress else f.name()
+                files_got += [outname]
+                if os.path.exists(os.path.join(path, outname)):
+                    continue
+                mkdir_dash_p(os.path.dirname(os.path.join(path, outname)))
+                outfile = open(os.path.join(path, outname), 'wb')
+                for buf in (f.readall_decompressed() if decompress
+                            else f.readall()):
+                    outfile.write(buf)
+                outfile.close()
+        if len(files_got) < len(files):
+            raise Exception("Wanted files %s but only got %s from %s" %
+                            (files, files_got, map(lambda z: z.name(),
+                                                   list(stream.all_files()))))
         lockfile.close()
         return path
 
@@ -446,6 +520,9 @@ class StreamReader:
                 self.files += [[int(pos), int(size), name]]
             else:
                 raise Exception("Invalid manifest format")
+
+    def tokens(self):
+        return self._tokens
     def tokens_for_range(self, range_start, range_size):
         resp = [self._stream_name]
         return_all_tokens = False
