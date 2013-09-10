@@ -596,6 +596,7 @@ class CollectionWriter:
         if data_buffer != '':
             self._current_stream_locators += [Keep.put(data_buffer[0:self.KEEP_BLOCK_SIZE])]
             self._data_buffer = [data_buffer[self.KEEP_BLOCK_SIZE:]]
+            self._data_buffer_len = len(self._data_buffer[0])
     def start_new_file(self, newfilename=None):
         self.finish_current_file()
         self.set_current_file_name(newfilename)
