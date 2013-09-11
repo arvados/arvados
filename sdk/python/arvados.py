@@ -404,6 +404,18 @@ class util:
         lockfile.close()
         return path
 
+    @staticmethod
+    def listdir_recursive(dirname, base=None):
+        allfiles = []
+        for ent in sorted(os.listdir(dirname)):
+            ent_path = os.path.join(dirname, ent)
+            ent_base = os.path.join(base, ent) if base else ent
+            if os.path.isdir(ent_path):
+                allfiles += util.listdir_recursive(ent_path, ent_base)
+            else:
+                allfiles += [ent_base]
+        return allfiles
+
 class DataReader:
     def __init__(self, data_locator):
         self.data_locator = data_locator
