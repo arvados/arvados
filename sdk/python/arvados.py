@@ -208,11 +208,11 @@ class util:
 
             for f in CollectionReader(tarball).all_files():
                 if re.search('\.(tbz|tar.bz2)$', f.name()):
-                    p = tar_extractor(path, 'j')
+                    p = util.tar_extractor(path, 'j')
                 elif re.search('\.(tgz|tar.gz)$', f.name()):
-                    p = tar_extractor(path, 'z')
+                    p = util.tar_extractor(path, 'z')
                 elif re.search('\.tar$', f.name()):
-                    p = tar_extractor(path, '')
+                    p = util.tar_extractor(path, '')
                 else:
                     raise Exception("tarball_extract cannot handle filename %s"
                                     % f.name())
@@ -356,7 +356,7 @@ class util:
     @staticmethod
     def mkdir_dash_p(path):
         if not os.path.exists(path):
-            mkdir_dash_p(os.dirname(path))
+            util.mkdir_dash_p(os.dirname(path))
             try:
                 os.mkdir(path)
             except OSError:
@@ -391,7 +391,7 @@ class util:
                 files_got += [outname]
                 if os.path.exists(os.path.join(path, outname)):
                     continue
-                mkdir_dash_p(os.path.dirname(os.path.join(path, outname)))
+                util.mkdir_dash_p(os.path.dirname(os.path.join(path, outname)))
                 outfile = open(os.path.join(path, outname), 'wb')
                 for buf in (f.readall_decompressed() if decompress
                             else f.readall()):
