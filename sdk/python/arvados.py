@@ -643,8 +643,9 @@ class CollectionReader:
             self._manifest_text = Keep.get(self._manifest_locator)
         self._streams = []
         for stream_line in self._manifest_text.split("\n"):
-            stream_tokens = stream_line.split()
-            self._streams += [stream_tokens]
+            if stream_line != '':
+                stream_tokens = stream_line.split()
+                self._streams += [stream_tokens]
     def all_streams(self):
         self._populate()
         resp = []
