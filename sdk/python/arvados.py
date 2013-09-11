@@ -356,7 +356,7 @@ class util:
     @staticmethod
     def mkdir_dash_p(path):
         if not os.path.exists(path):
-            util.mkdir_dash_p(os.dirname(path))
+            util.mkdir_dash_p(os.path.dirname(path))
             try:
                 os.mkdir(path)
             except OSError:
