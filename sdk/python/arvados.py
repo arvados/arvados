@@ -390,7 +390,7 @@ class util:
                 outname = f.decompressed_name() if decompress else f.name()
                 files_got += [outname]
                 if os.path.exists(os.path.join(path, outname)):
-                    continue
+                    os.unlink(os.path.join(path, outname))
                 util.mkdir_dash_p(os.path.dirname(os.path.join(path, outname)))
                 outfile = open(os.path.join(path, outname), 'wb')
                 for buf in (f.readall_decompressed() if decompress
