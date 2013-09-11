@@ -331,21 +331,23 @@ class util:
                 os.unlink(os.path.join(path, '.locator'))
 
         files_got = []
-        for f in CollectionReader(collection).all_files():
-            if (files == [] or
-                ((f.name() not in files_got) and
-                 (f.name() in files or
-                  (decompress and f.decompressed_name() in files)))):
-                outname = f.decompressed_name() if decompress else f.name()
-                files_got += [outname]
-                if os.path.exists(os.path.join(path, outname)):
-                    continue
-                util.mkdir_dash_p(os.path.dirname(os.path.join(path, outname)))
-                outfile = open(os.path.join(path, outname), 'wb')
-                for buf in (f.readall_decompressed() if decompress
-                            else f.readall()):
-                    outfile.write(buf)
-                outfile.close()
+        for s in CollectionReader(collection).all_streams():
+            stream_name = s.name()
+            for f in s.all_files():
+                if (files == [] or
+                    ((f.name() not in files_got) and
+                     (f.name() in files or
+                      (decompress and f.decompressed_name() in files)))):
+                    outname = f.decompressed_name() if decompress else f.name()
+                    files_got += [outname]
+                    if os.path.exists(os.path.join(path, stream_name, outname)):
+                        continue
+                    util.mkdir_dash_p(os.path.dirname(os.path.join(path, stream_name, outname)))
+                    outfile = open(os.path.join(path, stream_name, outname), 'wb')
+                    for buf in (f.readall_decompressed() if decompress
+                                else f.readall()):
+                        outfile.write(buf)
+                    outfile.close()
         if len(files_got) < len(files):
             raise Exception("Wanted files %s but only got %s from %s" % (files, files_got, map(lambda z: z.name(), list(CollectionReader(collection).all_files()))))
         os.symlink(collection, os.path.join(path, '.locator'))
