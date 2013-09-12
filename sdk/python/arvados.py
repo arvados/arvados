@@ -678,6 +678,31 @@ class CollectionWriter:
         pass
     def __exit__(self):
         self.finish()
+    def write_directory_tree(self,
+                             path, stream_name='.', max_manifest_depth=-1):
+        self.start_new_stream(stream_name)
+        todo = []
+        if max_manifest_depth == 0:
+            dirents = util.listdir_recursive(path)
+        else:
+            dirents = sorted(os.listdir(path))
+        for dirent in dirents:
+            target = os.path.join(path, dirent)
+            if os.path.isdir(target):
+                todo += [[target,
+                          os.path.join(stream_name, dirent),
+                          max_manifest_depth-1]]
+            else:
+                self.start_new_file(dirent)
+                with open(target, 'rb') as f:
+                    while True:
+                        buf = f.read(2**26)
+                        if len(buf) == 0:
+                            break
+                        self.write(buf)
+        self.finish_current_stream()
+        map(lambda x: self.write_directory_tree(*x), todo)
+
     def write(self, newdata):
         self._data_buffer += [newdata]
         self._data_buffer_len += len(newdata)
