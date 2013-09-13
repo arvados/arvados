@@ -719,6 +719,7 @@ class CollectionWriter:
         self.finish_current_file()
         self.set_current_file_name(newfilename)
     def set_current_file_name(self, newfilename):
+        newfilename = re.sub(r' ', '\\\\040', newfilename)
         if re.search(r'[ \t\n]', newfilename):
             raise AssertionError("Manifest filenames cannot contain whitespace")
         self._current_file_name = newfilename
