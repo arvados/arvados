@@ -201,8 +201,10 @@ class PipelineInstance
   def self.find(uuid)
     result = $client.execute(:api_method => $arvados.pipeline_instances.get,
                              :parameters => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :uuid => uuid
+                             },
+                             :body => {
+                               :api_token => ENV['ARVADOS_API_TOKEN']
                              },
                              :authenticated => false)
     j = JSON.parse result.body, :symbolize_names => true
@@ -216,9 +218,9 @@ class PipelineInstance
   end
   def self.create(attributes)
     result = $client.execute(:api_method => $arvados.pipeline_instances.create,
-                             :parameters => {
+                             :body => {
                                :api_token => ENV['ARVADOS_API_TOKEN'],
-                               :pipeline_instance => attributes.to_json
+                               :pipeline_instance => attributes
                              },
                              :authenticated => false)
     j = JSON.parse result.body, :symbolize_names => true
@@ -231,8 +233,10 @@ class PipelineInstance
   def save
     result = $client.execute(:api_method => $arvados.pipeline_instances.update,
                              :parameters => {
+                               :uuid => @pi[:uuid]
+                             },
+                             :body => {
                                :api_token => ENV['ARVADOS_API_TOKEN'],
-                               :uuid => @pi[:uuid],
                                :pipeline_instance => @attributes_to_update.to_json
                              },
                              :authenticated => false)
