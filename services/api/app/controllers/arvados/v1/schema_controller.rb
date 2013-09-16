@@ -234,9 +234,17 @@ class Arvados::V1::SchemaController < ApplicationController
               parameters: {
                 k.to_s.underscore => {
                   type: "object",
-                  required: true,
+                  required: false,
                   location: "query",
                   properties: object_properties
+                }
+              },
+              request: {
+                required: false,
+                properties: {
+                  k.to_s => {
+                    "$ref" => k.to_s
+                  }
                 }
               },
               response: {
@@ -260,9 +268,17 @@ class Arvados::V1::SchemaController < ApplicationController
                 },
                 k.to_s.underscore => {
                   type: "object",
-                  required: true,
+                  required: false,
                   location: "query",
                   properties: object_properties
+                }
+              },
+              request: {
+                required: false,
+                properties: {
+                  k.to_s => {
+                    "$ref" => k.to_s
+                  }
                 }
               },
               response: {

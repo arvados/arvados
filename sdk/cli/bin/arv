@@ -149,6 +149,14 @@ def parse_arguments(discovery_document)
           description = '  ' + v["description"] if v.include?("description")
           opt k.to_sym, description, opts
         end
+        body_object = discovery_document["resources"][resource_arg.pluralize]["methods"][method]["request"]
+        if body_object and discovered_params[resource_arg].nil?
+          is_required = true
+          if body_object["required"] == false
+            is_required = false
+          end
+          opt resource_arg.to_sym, "#{resource_arg} (request body)", required: is_required, type: :string
+        end
       end
       discovered_params.each do |k,v|
         if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
@@ -195,10 +203,11 @@ def parse_arguments(discovery_document)
     end
   end
 
-  return resource_arg.pluralize, method, method_opts, global_opts, ARGV
+  return resource_arg, method, method_opts, global_opts, ARGV
 end
 
-controller, method, method_opts, global_opts, remaining_opts = parse_arguments(arvados.discovery_document)
+resource_schema, method, method_opts, global_opts, remaining_opts = parse_arguments(arvados.discovery_document)
+controller = resource_schema.pluralize
 
 api_method = 'arvados.' + controller + '.' + method
 
@@ -209,7 +218,20 @@ if global_opts[:dry_run]
   exit
 end
 
-result = client.execute :api_method => eval(api_method), :parameters => { :api_token => ENV['ARVADOS_API_TOKEN'] }.merge(method_opts), :authenticated => false
+request_parameters = {}.merge(method_opts)
+resource_body = request_parameters.delete(resource_schema.to_sym)
+if resource_body
+  request_body = {
+    resource_schema => JSON.parse(resource_body)
+  }
+else
+  request_body = {}
+end
+request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+result = client.execute(:api_method => eval(api_method),
+                        :parameters => request_parameters,
+                        :body => request_body,
+                        :authenticated => false)
 results = JSON.parse result.body
 
 if results["errors"] then
