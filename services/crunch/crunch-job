@@ -1330,7 +1330,9 @@ my $pwd;
 chomp ($pwd = `pwd`);
 my $install_dir = $ENV{"CRUNCH_INSTALL"} || "$pwd/opt";
 mkdir $install_dir;
-if (!-e "./install.sh" && -e "./tests/autotests.sh") {
+if (-e "$destdir/crunch_scripts/install") {
+    shell_or_die ("$destdir/crunch_scripts/install", $install_dir);
+} elsif (!-e "./install.sh" && -e "./tests/autotests.sh") {
     # Old version
     shell_or_die ("./tests/autotests.sh", $install_dir);
 } elsif (-e "./install.sh") {
