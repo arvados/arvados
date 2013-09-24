@@ -2,7 +2,6 @@ class ApplicationController < ActionController::Base
   include CurrentApiClient
 
   protect_from_forgery
-  before_filter :uncamelcase_params_hash_keys
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
   before_filter :remote_ip
@@ -189,7 +188,7 @@ class ApplicationController < ActionController::Base
     return @attrs if @attrs
     @attrs = params[resource_name]
     if @attrs.is_a? String
-      @attrs = uncamelcase_hash_keys(Oj.load @attrs)
+      @attrs = Oj.load @attrs
     end
     unless @attrs.is_a? Hash
       message = "No #{resource_name}"
@@ -321,27 +320,6 @@ class ApplicationController < ActionController::Base
         end
       end
     end
-  end
-
-  def uncamelcase_params_hash_keys
-    self.params = uncamelcase_hash_keys(params)
-  end
-  def uncamelcase_hash_keys(h, max_depth=-1)
-    if h.is_a? Hash and max_depth != 0
-      nh = Hash.new
-      h.each do |k,v|
-        if k.class == String
-          nk = k.underscore
-        elsif k.class == Symbol
-          nk = k.to_s.underscore.to_sym
-        else
-          nk = k
-        end
-        nh[nk] = uncamelcase_hash_keys(v, max_depth-1)
-      end
-      h.replace(nh)
-    end
-    h
   end
 
   def render_list
