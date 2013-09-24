@@ -34,7 +34,7 @@ class LocalCollectionWriterTest(unittest.TestCase):
         cw.set_current_file_name('baz.txt')
         hash = cw.finish()
         self.assertEqual(hash,
-                         'a4d26dddc10ad8b5eb39347c916de16c+112',
+                         '23ca013983d6239e98931cc779e68426+114',
                          'resulting manifest hash is not what I expected')
 
 class LocalCollectionReaderTest(unittest.TestCase):
@@ -42,14 +42,14 @@ class LocalCollectionReaderTest(unittest.TestCase):
         os.environ['KEEP_LOCAL_STORE'] = '/tmp'
         LocalCollectionWriterTest().runTest()
     def runTest(self):
-        cr = arvados.CollectionReader('a4d26dddc10ad8b5eb39347c916de16c+112')
+        cr = arvados.CollectionReader('23ca013983d6239e98931cc779e68426+114')
         got = []
         for s in cr.all_streams():
             for f in s.all_files():
                 got += [[f.size(), f.stream_name(), f.name(), f.read(2**26)]]
         expected = [[3, '.', 'foo.txt', 'foo'],
                     [3, '.', 'bar.txt', 'bar'],
-                    [3, 'baz', 'baz.txt', 'baz']]
+                    [3, './baz', 'baz.txt', 'baz']]
         self.assertEqual(got,
                          expected,
                          'resulting file list is not what I expected')
@@ -72,10 +72,10 @@ class LocalCollectionManifestSubsetTest(unittest.TestCase):
         os.environ['KEEP_LOCAL_STORE'] = '/tmp'
         LocalCollectionWriterTest().runTest()
     def runTest(self):
-        self._runTest('a4d26dddc10ad8b5eb39347c916de16c+112',
+        self._runTest('23ca013983d6239e98931cc779e68426+114',
                       [[3, '.', 'foo.txt', 'foo'],
                        [3, '.', 'bar.txt', 'bar'],
-                       [3, 'baz', 'baz.txt', 'baz']])
+                       [3, './baz', 'baz.txt', 'baz']])
         self._runTest((". %s %s 0:3:foo.txt 3:3:bar.txt\n" %
                        (arvados.Keep.put("foo"),
                         arvados.Keep.put("bar"))),
