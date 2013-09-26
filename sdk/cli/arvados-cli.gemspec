@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.email       = 'gem-dev@clinicalfuture.com'
   #s.bindir      = '.'
   s.licenses    = ['Apache License, Version 2.0']
-  s.files       = ["bin/arv","bin/arv-run-pipeline-instance","bin/arv-crunch-job"]
+  s.files       = ["bin/arv","bin/arv-run-pipeline-instance","bin/arv-crunch-job","bin/crunch-job"]
   s.executables << "arv"
   s.executables << "arv-run-pipeline-instance"
   s.executables << "arv-crunch-job"
