@@ -63,7 +63,7 @@
         <%= j.script %>
       </td>
       <td>
-        <%= j.script_version[0..8] %>
+        <%= j.script_version.andand[0..8] %>
       </td>
       <td>
         <%= link_to_if_arvados_object j.output %>
