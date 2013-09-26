@@ -1,0 +1,153 @@
+---
+layout: default
+navsection: userguide
+title: "Tutorial: Debug a crunch script"
+navorder: 25
+---
+
+h1. Tutorial: Debug a crunch script
+
+The commit-push-submit cycle is too slow for developing and debugging crunch scripts.
+
+Get quicker turnaround times by running jobs in your VM (rather than submitting to the job queue) using your working git tree (rather than committing and pushing every little change).
+
+h3. Prerequisites
+
+* Log in to a VM (see "Setting up SSH access":ssh-access.html)
+* Check out your git tree (see "Intro: git":intro-git.html)
+* Set up your API token environment variables (see "Getting an API token":api-tokens.html)
+
+If everything is set up correctly, the command @arv -h user current@ will display your account information.
+
+h3. Create a script
+
+Change to your git repository working tree and make sure the @crunch_scripts@ directory exists.
+
+<pre>
+yourname@shell:~$ cd yourrepo
+yourname@shell:~/yourrepo$ mkdir -p crunch_scripts
+</pre>
+
+Create a new crunch script called @hello-world@ (say, @edit crunch_scripts/hello-world@).
+
+<pre>
+#!/usr/bin/env python
+
+import arvados
+
+print "hello world"
+</pre>
+
+Save it.
+
+h3. Run the job in your VM.
+
+Instead of a git commit hash, we provide the path to the working copy in the _script_version_ parameter.
+
+<pre>
+read -rd $'\000' the_job <<'EOF'; arv-crunch-job --job "$the_job"
+{
+ "script":"bug-factory",
+ "script_version":"/home/yourname/yourrepo"
+}
+EOF
+</pre>
+
+You should see:
+
+<pre>
+No script_parameters specified at arv-crunch-job line 156
+</pre>
+
+Let's try again.
+
+<pre>
+read -rd $'\000' the_job <<'EOF'; arv-crunch-job --job "$the_job"
+{
+ "script":"hello-world",
+ "script_version":"/home/yourname/yourrepo",
+ "script_parameters":{}
+}
+EOF
+</pre>
+
+You should see several attempts to run your script, each ending in tragedy:
+
+<pre>
+2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 stderr bash: /home/yourname/yourrepo/crunch_scripts/hello-world: Permission denied
+2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 stderr bash: line 0: exec: /home/yourname/yourrepo/crunch_scripts/hello-world: cannot execute: Permission denied
+2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 child 12323 on localhost.1 exit 32256 success=false
+2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 failure in 1 seconds
+</pre>
+
+Indeed, @hello-world@ is not executable. Fix it:
+
+<pre>
+chmod +x crunch_scripts/hello-world
+</pre>
+
+Try again.
+
+This time, the job will still fail, but "hello world" will appear in the log.
+
+<pre>
+2013-09-26_02:15:35 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 job_task qr1hi-ot0gb-c3x9vcztahzdcol
+2013-09-26_02:15:35 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 child 16249 started on localhost.1
+2013-09-26_02:15:36 qr1hi-8i9sb-fbpcg2conrhnlxv 16179  status: 0 done, 1 running, 0 todo
+2013-09-26_02:15:36 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 stderr hello world
+2013-09-26_02:15:37 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 child 16249 on localhost.1 exit 0 success=false
+2013-09-26_02:15:37 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 failure in 1 seconds
+</pre>
+
+There are two problems here:
+
+1. The string "hello world" should be stored as the job's output instead of noted in the job log as "stderr".
+2. The task exited 0, but was recorded as a failure.
+
+The job should work properly after we fix these two problems.
+
+h3. Store output as a collection
+
+Replace the @print "hello world"@ line with the following code.
+
+<pre>
+out = arvados.CollectionWriter()
+out.set_current_file_name('hello.txt')
+out.write('hello world')
+out_collection = out.finish()
+</pre>
+
+The return value of @out.finish()@ is the content address (hash) of a collection stored in Keep.
+
+h3. Record successful completion
+
+Append the following line.
+
+<pre>
+arvados.current_task().set_output(out_collection)
+</pre>
+
+The @set_output()@ method tells Arvados that
+* The hash specified by the @out_collection@ parameter is the output of this task, and
+* This task completed successfully.
+
+h3. Run the working script.
+
+<pre>
+read -rd $'\000' the_job <<'EOF'; arv-crunch-job --job "$the_job"
+{
+ "script":"hello-world",
+ "script_version":"/home/yourname/yourrepo",
+ "script_parameters":{}
+}
+EOF
+</pre>
+
+If everything worked correctly, the end of the log in your terminal should look like this.
+
+<pre>
+2013-09-26_02:27:07 qr1hi-8i9sb-xsgms0qsf4ztm3l 17149  output dd202dc7b1297aa221c9160455ba43ac+61+K@qr1hi
+2013-09-26_02:27:08 qr1hi-8i9sb-xsgms0qsf4ztm3l 17149  finish
+2013-09-26_02:27:09 qr1hi-8i9sb-xsgms0qsf4ztm3l 17149  meta key is c186e6555b51ac6974d951cd2f387722+1764+K@qr1hi
+</pre>
+
