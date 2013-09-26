@@ -46,11 +46,10 @@ Make sure you have @ARVADOS_API_TOKEN@ and @ARVADOS_API_HOST@ set correctly ("mo
 Test your function:
 
 <pre>
-arvados=/path/to/arvados
 script_name=foo
 repo_path=/path/to/repo
 
-read -rd $'\000' newjob <<EOF; $arvados/services/crunch/crunch-job --job "$newjob"
+read -rd $'\000' newjob <<EOF; arv-crunch-job --job "$newjob"
 {
  "script":"$script_name",
  "script_version":"$repo_path",
@@ -62,7 +61,7 @@ read -rd $'\000' newjob <<EOF; $arvados/services/crunch/crunch-job --job "$newjo
 EOF
 </pre>
 
-The @--job@ argument to @crunch-job@ is the same as the @--job@ argument to @arv job create@, except:
+The @--job@ argument to @arv-crunch-job@ is the same as the @--job@ argument to @arv job create@, except:
 
 <notextile><!--
 * @script_version@ can use "/" to indicate the working copy of a repository instead of a git commit or tag.
