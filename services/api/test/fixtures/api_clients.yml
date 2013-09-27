@@ -1,21 +1,11 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
-one:
-  uuid: MyString
-  created_by_client: MyString
-  created_by_user: MyString
-  modified_by_client_uuid: MyString
-  modified_by_user_uuid: MyString
-  modified_at: 2013-01-23 10:02:24
-  name: MyString
-  url_prefix: MyString
+trusted_workbench:
+  name: Official Workbench
+  url_prefix: https://official-workbench.local/
+  is_trusted: true
 
-two:
-  uuid: MyString
-  created_by_client: MyString
-  created_by_user: MyString
-  modified_by_client_uuid: MyString
-  modified_by_user_uuid: MyString
-  modified_at: 2013-01-23 10:02:24
-  name: MyString
-  url_prefix: MyString
+untrusted:
+  name: Untrusted
+  url_prefix: https://untrusted.local/
+  is_trusted: false

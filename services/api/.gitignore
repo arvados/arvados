@@ -29,6 +29,8 @@
 /config/initializers/hardcoded_api_tokens.rb
 
 /config/environments/development.rb
+/config/environments/production.rb
+/config/environments/test.rb
 
 # editor backup files
 *~

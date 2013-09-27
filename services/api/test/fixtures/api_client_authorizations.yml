@@ -1,11 +1,43 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
-one:
-  api_token: MyString
-  api_client: 
-  user: 
+admin:
+  api_client: untrusted
+  user: admin
+  api_token: 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h
+  expires_at: 2038-01-01 00:00:00
 
-two:
-  api_token: MyString
-  api_client: 
-  user: 
+admin_trustedclient:
+  api_client: trusted_workbench
+  user: admin
+  api_token: 1a9ffdcga2o7cw8q12dndskomgs1ygli3ns9k2o9hgzgmktc78
+  expires_at: 2038-01-01 00:00:00
+
+active:
+  api_client: untrusted
+  user: active
+  api_token: 3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi
+  expires_at: 2038-01-01 00:00:00
+
+active_trustedclient:
+  api_client: trusted_workbench
+  user: active
+  api_token: 27bnddk6x2nmq00a1e3gq43n9tsl5v87a3faqar2ijj8tud5en
+  expires_at: 2038-01-01 00:00:00
+
+inactive:
+  api_client: untrusted
+  user: inactive
+  api_token: 5s29oj2hzmcmpq80hx9cta0rl5wuf3xfd6r7disusaptz7h9m0
+  expires_at: 2038-01-01 00:00:00
+
+expired:
+  api_client: untrusted
+  user: active
+  api_token: 2ym314ysp27sk7h943q6vtc378srb06se3pq6ghurylyf3pdmx
+  expires_at: 1970-01-01 00:00:00
+
+expired_trustedclient:
+  api_client: trusted_workbench
+  user: active
+  api_token: 5hpni7izokzcatku2896xxwqdbt5ptomn04r6auc7fohnli82v
+  expires_at: 1970-01-01 00:00:00

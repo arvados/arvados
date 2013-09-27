@@ -1,31 +1,32 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
-one:
-  uuid: MyString
-  created_by_client: MyString
-  created_by_user: MyString
-  created_at: 2013-01-21 21:00:42
-  modified_by_client_uuid: MyString
-  modified_by_user_uuid: MyString
-  modified_at: 2013-01-21 21:00:42
-  email: MyString
-  first_name: MyString
-  last_name: MyString
-  identity_url: MyString
-  is_admin: false
-  prefs: MyText
+admin:
+  uuid: zzzzz-tpzed-d9tiejq69daie8f
+  email: admin@arvados.local
+  first_name: TestCase
+  last_name: Administrator
+  identity_url: https://admin.openid.local
+  is_active: true
+  is_admin: true
+  prefs: {}
 
-two:
-  uuid: MyString
-  created_by_client: MyString
-  created_by_user: MyString
-  created_at: 2013-01-21 21:00:42
-  modified_by_client_uuid: MyString
-  modified_by_user_uuid: MyString
-  modified_at: 2013-01-21 21:00:42
-  email: MyString
-  first_name: MyString
-  last_name: MyString
-  identity_url: MyString
+active:
+  uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  email: active-user@arvados.local
+  first_name: Active
+  last_name: User
+  identity_url: https://active-user.openid.local
+  is_active: true
   is_admin: false
-  prefs: MyText
+  prefs: {}
+
+inactive:
+  uuid: zzzzz-tpzed-x9kqpd79egh49c7
+  email: active-user@arvados.local
+  first_name: Inactive
+  last_name: User
+  identity_url: https://inactive-user.openid.local
+  is_active: false
+  is_admin: false
+  prefs: {}
+

@@ -9,5 +9,13 @@ class ActiveSupport::TestCase
   # -- they do not yet inherit this setting
   fixtures :all
 
+  def expect_json
+    self.request.headers["Accept"] = "text/json"
+  end
+
+  def authorize_with(api_client_auth_name)
+    self.request.env['HTTP_AUTHORIZATION'] = "OAuth2 #{api_client_authorizations(api_client_auth_name).api_token}"
+  end
+
   # Add more helper methods to be used by all tests here...
 end
