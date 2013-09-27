@@ -251,7 +251,7 @@ class ApplicationController < ActionController::Base
           includes(:api_client, :user).
           where('api_token=? and (expires_at is null or expires_at > now())', supplied_token).
           first
-        if api_client_auth
+        if api_client_auth.andand.user
           session[:user_id] = api_client_auth.user.id
           session[:api_client_uuid] = api_client_auth.api_client.andand.uuid
           session[:api_client_authorization_id] = api_client_auth.id
