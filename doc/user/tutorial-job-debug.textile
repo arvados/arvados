@@ -28,6 +28,13 @@ yourname@shell:~$ cd yourrepo
 yourname@shell:~/yourrepo$ mkdir -p crunch_scripts
 </pre>
 
+{% include notebox-begin.html %}
+
+The process described here should work regardless of whether @yourrepo@ contains a git repository. But normally you would only ever edit code in a git tree -- especially crunch scripts, which can't be used to run regular Arvados jobs until they're committed and pushed.
+
+{% include notebox-end.html %}
+
+
 Create a new crunch script called @hello-world@ (say, @edit crunch_scripts/hello-world@).
 
 <pre>
