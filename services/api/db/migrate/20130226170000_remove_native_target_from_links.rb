@@ -4,7 +4,7 @@ class RemoveNativeTargetFromLinks < ActiveRecord::Migration
     remove_column :links, :native_target_type
   end
   def down
-    remove_column :links, :native_target_id, :integer
-    remove_column :links, :native_target_type, :string
+    add_column :links, :native_target_id, :integer
+    add_column :links, :native_target_type, :string
   end
 end
