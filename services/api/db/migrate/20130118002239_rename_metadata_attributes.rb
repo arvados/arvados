@@ -9,18 +9,24 @@ class RenameMetadataAttributes < ActiveRecord::Migration
     add_index :metadata, :head_kind
     add_index :metadata, :tail
     add_index :metadata, :tail_kind
-    Metadatum.where('head like ?', 'orvos#%').each do |m|
-      kind_uuid = m.head.match /^(orvos\#.*)\#([-0-9a-z]+)$/
-      if kind_uuid
-        m.update_attributes(head_kind: kind_uuid[1],
-                            head: kind_uuid[2])
+    begin
+      Metadatum.where('head like ?', 'orvos#%').each do |m|
+        kind_uuid = m.head.match /^(orvos\#.*)\#([-0-9a-z]+)$/
+        if kind_uuid
+          m.update_attributes(head_kind: kind_uuid[1],
+                              head: kind_uuid[2])
+        end
       end
+    rescue
     end
   end
 
   def down
-    Metadatum.where('head_kind is not null and head_kind <> ? and head is not null', '').each do |m|
-      m.update_attributes(head: m.head_kind + '#' + m.head)
+    begin
+      Metadatum.where('head_kind is not null and head_kind <> ? and head is not null', '').each do |m|
+        m.update_attributes(head: m.head_kind + '#' + m.head)
+      end
+    rescue
     end
     remove_index :metadata, :tail_kind
     remove_index :metadata, :tail
