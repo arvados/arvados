@@ -6,6 +6,11 @@ read ARVADOS_API_TOKEN &lt;&lt;EOF
 <%= Thread.current[:arvados_api_token] %>
 EOF
 export ARVADOS_API_TOKEN ARVADOS_API_HOST=<%= current_api_host %>
+<% if Rails.configuration.arvados_insecure_https %>
+export ARVADOS_API_HOST_INSECURE=true
+<% else %>
+unset ARVADOS_API_HOST_INSECURE
+<% end %>
 </pre>
 
 <%= render partial: 'index' %>
