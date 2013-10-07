@@ -56,8 +56,8 @@ class Dispatcher
 
       min_nodes = 1
       begin
-        if job.resource_limits['min_nodes']
-          min_nodes = begin job.resource_limits['min_nodes'].to_i rescue 1 end
+        if job.runtime_constraints['min_nodes']
+          min_nodes = begin job.runtime_constraints['min_nodes'].to_i rescue 1 end
         end
       end
       next if @idle_slurm_nodes and @idle_slurm_nodes < min_nodes

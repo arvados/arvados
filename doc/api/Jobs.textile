@@ -46,7 +46,7 @@ table(table table-bordered table-condensed).
 |*Property name*|*Type*|*Description*|*Notes*|
 |submit_id|string|Unique ID provided by client when job was submitted|Optional. Can be used by client to ensure idempotence|
 |priority|string|||
-|resource_limits{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
+|runtime_constraints{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
 |script_name|string|Name of MapReduce script||
 |script_parameters{}|list|Parameters passed to MapReduce script||
 |script_version|string|git commit/tree used when running the job|If the job has not started, this can be a tag/branch instead of an unambiguous commit id.|
@@ -59,12 +59,21 @@ table(table table-bordered table-condensed).
 |success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
 |is_locked_by_uuid|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
 
-h3. Resource limits
+h3. Runtime constraints
 
 table(table table-bordered table-condensed).
 |*Key*|*Type*|*Description*|*Implemented*|
-|min_nodes|integer||&#x2713;|
+|dependencies{}|list|[
+ {
+  "name": "freebayes",
+  "package_type": "git",
+  "origin": "https://github.com/ekg/freebayes.git",
+  "version": "011561f4a96619125d4388b66b2e82b173f3de7a"
+ },
+ ...
+]||
+|min_nodes|integer||&#10003;|
 |max_nodes|integer|||
-|max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#x2713;|
+|max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#10003;|
 |min_ram_per_task|integer|Minimum real memory (KiB) per task||
 |min_ram_per_node|integer|Minimum real memory (KiB) per node||

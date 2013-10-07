@@ -170,9 +170,9 @@ $job_id = $Job->{'uuid'};
 
 
 
-$Job->{'resource_limits'} ||= {};
-$Job->{'resource_limits'}->{'max_tasks_per_node'} ||= 0;
-my $max_ncpus = $Job->{'resource_limits'}->{'max_tasks_per_node'};
+$Job->{'runtime_constraints'} ||= {};
+$Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
+my $max_ncpus = $Job->{'runtime_constraints'}->{'max_tasks_per_node'};
 
 
 Log (undef, "check slurm allocation");
@@ -452,7 +452,7 @@ else
 
 
 
-foreach (qw (script script_version script_parameters resource_limits))
+foreach (qw (script script_version script_parameters runtime_constraints))
 {
   Log (undef,
        "$_ " .

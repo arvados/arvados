@@ -35,7 +35,7 @@ table(table table-bordered table-condensed).
 A step cannot be run until all steps with lower sequence numbers have completed.
 Job steps with the same sequence number can be run in any order.|
 |parameters{}|list||
-|resource_limits{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the task (see below).|
+|runtime_constraints{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the task (see "Jobs":Jobs.html).|
 |output|string||
 |progress|float||
 |success|boolean|Is null if the task has neither completed successfully nor failed permanently.|

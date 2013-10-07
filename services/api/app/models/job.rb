@@ -3,7 +3,7 @@ class Job < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   serialize :script_parameters, Hash
-  serialize :resource_limits, Hash
+  serialize :runtime_constraints, Hash
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
   before_create :ensure_script_version_is_commit
@@ -30,7 +30,7 @@ class Job < ArvadosModel
     t.add :running
     t.add :is_locked_by_uuid
     t.add :log
-    t.add :resource_limits
+    t.add :runtime_constraints
     t.add :tasks_summary
     t.add :dependencies
   end

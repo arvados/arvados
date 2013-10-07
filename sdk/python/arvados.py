@@ -83,8 +83,8 @@ def api():
     return service
 
 class JobTask:
-    def __init__(self, parameters=dict(), resource_limits=dict()):
-        print "init jobtask %s %s" % (parameters, resource_limits)
+    def __init__(self, parameters=dict(), runtime_constraints=dict()):
+        print "init jobtask %s %s" % (parameters, runtime_constraints)
 
 class job_setup:
     @staticmethod

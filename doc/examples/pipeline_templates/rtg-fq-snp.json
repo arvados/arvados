@@ -52,7 +52,7 @@
      "optional":false
     }
    },
-   "resource_limits":{
+   "runtime_constraints":{
     "max_tasks_per_node":1
    }
   },
