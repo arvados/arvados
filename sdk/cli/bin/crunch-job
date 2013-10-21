@@ -494,9 +494,9 @@ update_progress_stats();
 
 
 THISROUND:
+$main::please_continue = 0;
 for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 {
-  $main::please_continue = 0;
 
   my $id = $jobstep_todo[$todo_ptr];
   my $Jobstep = $jobstep[$id];
