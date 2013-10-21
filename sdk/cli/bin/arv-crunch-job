@@ -1,2 +1,2 @@
 #!/usr/bin/env ruby
-exec File.join(File.dirname(__FILE__), 'crunch-job'), *ARGV
+exec File.join(File.dirname(File.realpath(__FILE__)), 'crunch-job'), *ARGV
