@@ -71,6 +71,14 @@ The @--job@ argument to @arv-crunch-job@ is the same as the @--job@ argument to 
 
 You will see the progress of the job in your terminal.  Press Control-C to create a checkpoint and stop the job.
 
+h3. Location of temporary files
+
+Crunch job tasks are supplied with @TASK_WORK@ and @JOB_WORK@ environment variables, to be used as scratch space. When running in local development mode, Crunch puts these in a directory called @crunch-job-{USERID}@ in @TMPDIR@ (or @/tmp@ if @TMPDIR@ is not set).
+
+* Set @TMPDIR@ to @/scratch@ to make Crunch use a directory like @/scratch/crunch-job-{USERID}/@ for temporary space.
+
+* Set @CRUNCH_TMP@ to @/scratch/foo@ to make Crunch use @/scratch/foo/@ for temporary space (omitting its customary @crunch-job-{USERID}@ part)
+
 h3. Testing job scripts without SDKs and Keep access
 
 Read and write data to @/tmp/@ instead of Keep. This only works with the Python SDK.

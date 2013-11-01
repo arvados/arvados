@@ -75,10 +75,12 @@ use Warehouse::Stream;
 use IPC::System::Simple qw(capturex);
 
 $ENV{"TMPDIR"} ||= "/tmp";
-$ENV{"CRUNCH_TMP"} = $ENV{"TMPDIR"} . "/crunch-job";
-if ($ENV{"USER"} ne "crunch" && $< != 0) {
-  # use a tmp dir unique for my uid
-  $ENV{"CRUNCH_TMP"} .= "-$<";
+unless (defined $ENV{"CRUNCH_TMP"}) {
+  $ENV{"CRUNCH_TMP"} = $ENV{"TMPDIR"} . "/crunch-job";
+  if ($ENV{"USER"} ne "crunch" && $< != 0) {
+    # use a tmp dir unique for my uid
+    $ENV{"CRUNCH_TMP"} .= "-$<";
+  }
 }
 $ENV{"JOB_WORK"} = $ENV{"CRUNCH_TMP"} . "/work";
 $ENV{"CRUNCH_WORK"} = $ENV{"JOB_WORK"}; # deprecated
