@@ -41,6 +41,7 @@ class Arvados::V1::JobsController < ApplicationController
   end
 
   class LogStreamer
+    Q_UPDATE_INTERVAL = 12
     def initialize(job)
       @job = job
     end
@@ -48,6 +49,35 @@ class Arvados::V1::JobsController < ApplicationController
       if @job.finished_at
         yield "#{@job.uuid} finished at #{@job.finished_at}\n"
         return
+      end
+      while not @job.started_at
+        # send a summary (job queue + available nodes) to the client
+        # every few seconds while waiting for the job to start
+        last_ack_at ||= Time.now - Q_UPDATE_INTERVAL - 1
+        if Time.now - last_ack_at >= Q_UPDATE_INTERVAL
+          nodes_in_state = {idle: 0, alloc: 0}
+          Node.where('hostname is not ?', nil).collect do |n|
+            if n.info[:slurm_state]
+              nodes_in_state[n.info[:slurm_state]] ||= 0
+              nodes_in_state[n.info[:slurm_state]] += 1
+            end
+          end
+          job_queue = Job.queue
+          n_queued_before_me = 0
+          job_queue.each do |j|
+            break if j.uuid == @job.uuid
+            n_queued_before_me += 1
+          end
+          yield "#{Time.now}" \
+            " job #{@job.uuid}" \
+            " queue_position #{n_queued_before_me}" \
+            " queue_size #{job_queue.size}" \
+            " nodes_idle #{nodes_in_state[:idle]}" \
+            " nodes_alloc #{nodes_in_state[:alloc]}\n"
+          last_ack_at = Time.now
+        end
+        sleep 3
+        @job.reload
       end
       @redis = Redis.new(:timeout => 0)
       @redis.subscribe(@job.uuid) do |event|
