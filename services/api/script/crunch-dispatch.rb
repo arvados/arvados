@@ -38,20 +38,44 @@ class Dispatcher
     @todo = Job.queue
   end
 
-  def start_jobs
+  def update_node_status
     if Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
-      @idle_slurm_nodes = 0
+      @nodes_in_state = {idle: 0, alloc: 0, down: 0}
+      @node_state ||= {}
+      node_seen = {}
       begin
-        `sinfo`.
+        `sinfo --noheader -o '%n:%t'`.
           split("\n").
-          collect { |line| line.match /(\d+) +idle/ }.
-          each do |re|
-          @idle_slurm_nodes = re[1].to_i if re
+          each do |line|
+          re = line.match /(\S+?):+(idle|alloc|down)/
+          next if !re
+
+          # sinfo tells us about a node N times if it is shared by N partitions
+          next if node_seen[re[1]]
+          node_seen[re[1]] = true
+
+          # count nodes in each state
+          @nodes_in_state[re[2].to_sym] += 1
+
+          # update our database (and cache) when a node's state changes
+          if @node_state[re[1]] != re[2]
+            @node_state[re[1]] = re[2]
+            node = Node.where('hostname=?', re[1]).first
+            if node
+              $stderr.puts "dispatch: update #{re[1]} state to #{re[2]}"
+              node.info[:slurm_state] = re[2]
+              node.save
+            elsif re[2] != 'down'
+              $stderr.puts "dispatch: sinfo reports '#{re[1]}' is not down, but no node has that name"
+            end
+          end
         end
       rescue
       end
     end
+  end
 
+  def start_jobs
     @todo.each do |job|
 
       min_nodes = 1
@@ -60,7 +84,11 @@ class Dispatcher
           min_nodes = begin job.runtime_constraints['min_nodes'].to_i rescue 1 end
         end
       end
-      next if @idle_slurm_nodes and @idle_slurm_nodes < min_nodes
+
+      begin
+        next if @nodes_in_state[:idle] < min_nodes
+      rescue
+      end
 
       next if @running[job.uuid]
       next if !take(job)
@@ -262,6 +290,7 @@ class Dispatcher
         end
       else
         refresh_todo unless did_recently(:refresh_todo, 1.0)
+        update_node_status
         start_jobs unless @todo.empty? or did_recently(:start_jobs, 1.0)
       end
       reap_children
