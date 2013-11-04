@@ -126,6 +126,10 @@ class Dispatcher
       cmd_args << '--job'
       cmd_args << job.uuid
 
+      if cmd_args[0] == ''
+        raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
+      end
+
       commit = Commit.where(sha1: job.script_version).first
       if commit
         cmd_args << '--git-dir'
