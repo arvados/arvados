@@ -1,0 +1,24 @@
+development:
+  adapter: mysql
+  encoding: utf8
+  database: arvados_development
+  username: arvados
+  password: dummy_pw
+  host: localhost
+
+test:
+  adapter: mysql
+  encoding: utf8
+  database: arvados_test
+  username: arvados
+  password: dummy_pw
+  host: localhost
+
+production:
+  adapter: mysql
+  encoding: utf8
+  database: arvados_production
+  username: arvados
+  password: dummy_pw
+  host: localhost
+
