@@ -22,6 +22,10 @@ class ArvadosModel < ActiveRecord::Base
     kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
   end
 
+  def href
+    "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
+  end
+
   def eager_load_associations
     self.class.columns.each do |col|
       re = col.name.match /^(.*)_kind$/

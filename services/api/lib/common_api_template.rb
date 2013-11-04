@@ -3,6 +3,7 @@ module CommonApiTemplate
     base.extend(ClassMethods)
     base.acts_as_api
     base.api_accessible :common do |t|
+      t.add :href
       t.add :kind
       t.add :etag
       t.add :uuid

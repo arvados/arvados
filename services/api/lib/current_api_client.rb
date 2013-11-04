@@ -11,6 +11,10 @@ module CurrentApiClient
     Thread.current[:api_client_authorization]
   end
 
+  def current_api_base
+    Thread.current[:api_url_base]
+  end
+
   def current_default_owner
     # owner_uuid for newly created objects
     ((current_api_client_authorization &&

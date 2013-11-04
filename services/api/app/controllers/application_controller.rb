@@ -37,7 +37,9 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    attrs_to_update = resource_attrs.reject { |k,v| [:kind,:etag].index k }
+    attrs_to_update = resource_attrs.reject { |k,v|
+      [:kind, :etag, :href].index k
+    }
     if @object.update_attributes attrs_to_update
       show
     else
@@ -238,6 +240,7 @@ class ApplicationController < ActionController::Base
   end
 
   def thread_with_auth_info
+    Thread.current[:api_url_base] = root_url.sub(/\/$/,'') + '/arvados/v1'
     begin
       user = nil
       api_client = nil
