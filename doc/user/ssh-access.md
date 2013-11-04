@@ -52,13 +52,19 @@ you can log in like this:
 
     ssh foo@blurfl.arvados
 
-If you want to shorten this and you always/usually have access to the
-`foo` account on VMs, you can add a section like this to
-`~/.ssh/config`:
+Some other convenient configuration options are `User` and
+`ForwardAgent`:
 
     Host *.a
       ProxyCommand ssh -p2222 turnout@switchyard.{{ site.arvados_api_host }} -x -a $SSH_PROXY_FLAGS %h
       User foo
+	  ForwardAgent yes
+
+Adding `User foo` will log you in to the VM as user `foo` by default,
+so you can just `ssh blurfl.a`. The `ForwardAgent yes` option turns on
+the `ssh -A` option to forward your SSH credentials (if you are
+using ssh-agent), which becomes important if you use git to
+synchronize files between your workstation and the VM.
 
 Then you can log in to the `blurfl` VM as `foo` like this:
 

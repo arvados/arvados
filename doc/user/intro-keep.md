@@ -45,6 +45,14 @@ in bytes (encoded as a decimal number).
 
 `acbd18db4cc2f85cedef654fccc4a4d8+3`
 
+A locator may include additional "hints" to help the Keep store find a
+data block more quickly. For example, in the locator
+`acbd18db4cc2f85cedef654fccc4a4d8+3+K@{{ site.arvados_api_host }}` the
+hint "+K@{{ site.arvados_api_host }}" indicates that the data block is
+stored in the Keep instance called *{{ site.arvados_api_host }}*. The
+hints are not necessary for Keep to locate a data block -- only the
+MD5 hash is -- but they help improve performance.
+
 Keep distributes data blocks among the available disks. It also stores
 multiple copies of each block, so a single disk or node failure does
 not cause any data to become unreachable.
@@ -63,7 +71,7 @@ collection.
 
 Use the arv(1) program to create a collection. For example:
 
-    arv collections create --uuid "acbd18db4cc2f85cedef654fccc4a4d8+3"
+    arv collection create --uuid "acbd18db4cc2f85cedef654fccc4a4d8+3"
 
 ## Getting started
 
@@ -73,11 +81,11 @@ Write three bytes of data to Keep.
 
 Output:
 
-    acbd18db4cc2f85cedef654fccc4a4d8+3
+    acbd18db4cc2f85cedef654fccc4a4d8+3+K@arv01
 
 Retrieve the data.
 
-    whget acbd18db4cc2f85cedef654fccc4a4d8+3
+    whget acbd18db4cc2f85cedef654fccc4a4d8+3+K@arv01
 
 Output:
 

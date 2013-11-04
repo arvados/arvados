@@ -22,6 +22,7 @@ Please follow the instructions on the [Download page](https://arvados.org/projec
 
 First configure the database:
 
+    cd arvados/services/api
     cp config/database.yml.sample config/database.yml
 
 Edit database.yml to your liking and make sure the database and db user exist.

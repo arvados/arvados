@@ -63,5 +63,5 @@ This part works just like any other git tree.
 
 From within your source tree, type:
 
-    git push
+    git push origin master
 
