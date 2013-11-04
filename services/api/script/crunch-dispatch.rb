@@ -26,6 +26,7 @@ require File.dirname(__FILE__) + '/../config/environment'
 require 'open3'
 
 $redis ||= Redis.new
+LOG_BUFFER_SIZE = 2**20
 
 class Dispatcher
   include ApplicationHelper
@@ -156,8 +157,13 @@ class Dispatcher
         untake(job)
         next
       end
-      $stderr.puts "dispatch: job #{job.uuid} start"
-      $stderr.puts "dispatch: child #{t.pid} start"
+
+      $stderr.puts "dispatch: job #{job.uuid}"
+      start_banner = "dispatch: child #{t.pid} start #{Time.now.ctime.to_s}"
+      $stderr.puts start_banner
+      $redis.set job.uuid, start_banner + "\n"
+      $redis.publish job.uuid, start_banner
+
       @running[job.uuid] = {
         stdin: i,
         stdout: o,
@@ -213,6 +219,13 @@ class Dispatcher
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
             $redis.publish job_uuid, "#{Time.now.ctime.to_s} #{line.strip}"
+            $redis.append job_uuid, "#{Time.now.ctime.to_s} #{line}"
+            if LOG_BUFFER_SIZE < $redis.strlen(job_uuid)
+              $redis.set(job_uuid,
+                         $redis
+                           .getrange(job_uuid, (LOG_BUFFER_SIZE >> 1), -1)
+                           .sub(/^.*?\n/, ''))
+            end
           end
         end
       end
