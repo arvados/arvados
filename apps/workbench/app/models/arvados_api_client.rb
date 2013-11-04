@@ -40,6 +40,9 @@ class ArvadosApiClient
     rescue Oj::ParseError
       raise InvalidApiResponseException.new json
     end
+    if not resp.is_a? Hash
+      raise InvalidApiResponseException.new json
+    end
     if resp[:errors]
       if resp[:errors][0] == 'Not logged in'
         raise NotLoggedInException.new
