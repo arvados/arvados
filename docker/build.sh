@@ -1,7 +1,7 @@
 #! /bin/sh
 
-# create a cfi/debian base image
-./mkimage-debootstrap.sh cfi/debian wheezy http://debian.lcs.mit.edu/debian/
+# create a arvados/debian base image
+./mkimage-debootstrap.sh arvados/debian wheezy http://debian.lcs.mit.edu/debian/
 
 # build the Docker base image
-docker build -t cfi/base base
+docker build -t arvados/base base

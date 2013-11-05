@@ -1,3 +1,5 @@
+# TODO(twp): parameterize usernames, database names, passwords
+
 development:
   adapter: postgresql
   encoding: utf8

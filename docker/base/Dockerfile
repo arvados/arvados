@@ -1,7 +1,7 @@
 # Arvados base image (wheezy+rvm+rails+Arvados source) in Docker
 
 # Based on Debian Wheezy
-FROM cfi/debian:wheezy
+FROM arvados/debian:wheezy
 MAINTAINER Tim Pierce <twp@clinicalfuture.com>
 
 # TODO(twp): parameterize variables via autoconf or similar.
@@ -23,7 +23,7 @@ ENV ARVADOS_PROD_PW    dummy_pw
 # Install prerequisite packages for Arvados
 RUN apt-get update
 RUN apt-get -q -y install -q -y apt-utils
-RUN apt-get -q -y install git curl procps postgresql apache2
+RUN apt-get -q -y install git curl procps postgresql postgresql-server-dev-9.1 apache2
 RUN curl -L https://get.rvm.io | bash -s stable --ruby=${RUBY_VERSION_NUM}
 
 # Set up RVM environment. These are just the env variables created by
@@ -41,13 +41,20 @@ ENV rvm_version 1.23.13 (stable)
 ENV rvm_ruby_string ruby-2.0.0-p247
 ENV PATH /usr/local/rvm/gems/ruby-2.0.0-p247/bin:/usr/local/rvm/gems/ruby-2.0.0-p247@global/bin:/usr/local/rvm/rubies/ruby-2.0.0-p247/bin:/usr/local/rvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Install Rails
-RUN gem install rdoc
-RUN gem install rails
-
 # Download Arvados source.
 RUN git clone git://github.com/clinicalfuture/arvados.git /usr/src/arvados
+
+# Install gems
+RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile
 
 # Configure databases and users.
 ADD postgresql_config.sh /tmp/postgresql_config.sh
 RUN /tmp/postgresql_config.sh
+
+# Finish configuration. The remaining steps need PostgreSQL to be running,
+# so they are done in a single step.
+ENV RAILS_ENV production
+ADD database.yml /usr/src/arvados/services/api/config/database.yml
+ADD config_rake.sh /tmp/config_rake.sh
+RUN /tmp/config_rake.sh
+

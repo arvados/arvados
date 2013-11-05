@@ -192,7 +192,7 @@ if [ "$justTar" ]; then
 	sudo tar --numeric-owner -caf "$repo" .
 else
 	# create the image (and tag $repo:$suite)
-	sudo tar --numeric-owner -c . | $docker import - $repo $suite
+	sudo tar --numeric-owner -c . | $docker import - $repo:$suite
 	
 	# test the image
 	$docker run -i -t $repo:$suite echo success
