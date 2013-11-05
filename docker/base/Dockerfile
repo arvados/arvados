@@ -6,7 +6,7 @@ MAINTAINER Tim Pierce <twp@clinicalfuture.com>
 
 # TODO(twp): parameterize variables via autoconf or similar.
 ENV RUBY_VERSION_NUM   2.0.0
-ENV MYSQL_ROOT_PW      dummy_pw
+ENV POSTGRES_ROOT_PW   dummy_pw
 
 ENV ARVADOS_DEV_DB     arvados_development
 ENV ARVADOS_DEV_USER   arvados
@@ -20,17 +20,10 @@ ENV ARVADOS_PROD_DB    arvados_production
 ENV ARVADOS_PROD_USER  arvados
 ENV ARVADOS_PROD_PW    dummy_pw
 
-# Need to set the mysql passwords before installing mysql-server
-ENV MYSQL_ROOT_PW dummy_pw
-ENV DEBIAN_FRONTEND noninteractive
-RUN (echo mysql-server mysql-server/root_password password ${MYSQL_ROOT_PW} ; \
-     echo mysql-server mysql-server/root_password_again password ${MYSQL_ROOT_PW}) \
-    | debconf-set-selections
-
 # Install prerequisite packages for Arvados
 RUN apt-get update
-RUN apt-get install -q -y apt-utils
-RUN apt-get install -q -y git curl procps mysql-server
+RUN apt-get -q -y install -q -y apt-utils
+RUN apt-get -q -y install git curl procps postgresql apache2
 RUN curl -L https://get.rvm.io | bash -s stable --ruby=${RUBY_VERSION_NUM}
 
 # Set up RVM environment. These are just the env variables created by
@@ -54,3 +47,7 @@ RUN gem install rails
 
 # Download Arvados source.
 RUN git clone git://github.com/clinicalfuture/arvados.git /usr/src/arvados
+
+# Configure databases and users.
+ADD postgresql_config.sh /tmp/postgresql_config.sh
+RUN /tmp/postgresql_config.sh
