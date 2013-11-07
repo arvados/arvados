@@ -1,0 +1,12 @@
+
+ServerName doc.arvados.org
+
+<VirtualHost *:80>
+  ServerAdmin sysadmin@clinicalfuture.com
+
+  ServerName doc.arvados.org
+
+  DocumentRoot /usr/src/arvados/doc/_site/
+
+</VirtualHost>
+
