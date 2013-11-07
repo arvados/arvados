@@ -1,0 +1,43 @@
+Deploying Arvados in Docker Containers
+======================================
+
+This file explains how to build and deploy Arvados servers in Docker
+containers, so that they can be run easily in different environments
+(a dedicated server, a developer's laptop, a virtual machine,
+etc).
+
+This is a work in progress; instructions will almost certainly be
+incomplete and possibly out of date.
+
+PREREQUISITES
+-------------
+
+* Docker
+
+  Docker is a Linux container management system based on LXC. It is a
+  very young system but is being developed rapidly.  See
+  http://www.docker.io/gettingstarted/#h_installation for an
+  installation package for your platform.
+
+* Ruby (any version)
+
+BUILDING
+--------
+
+1. Before building, edit config.yml with settings for your
+   installation.
+
+2. Run `./config.rb' to generate configuration files.
+
+3. Add a DNS entry for your API_HOSTNAME which resolves to the machine
+   that the API container will be deployed to.
+
+4. Provision your Omniauth server with the APP_ID and
+   APP_SECRET from api/omniauth.rb.
+
+5. Run `./build.sh' to build the following Docker images:
+
+     arvados/api    - the Arvados API server
+     arvados/keep   - Keep, the Arvados content-addressable filesystem
+     arvados/crunch - Crunch, a compute node for Arvados
+

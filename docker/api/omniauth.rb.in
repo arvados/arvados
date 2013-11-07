@@ -1,0 +1,11 @@
+# Change this omniauth configuration to point to your registered provider
+# Since this is a registered application, add the app id and secret here
+APP_ID = '@@OMNIAUTH_APP_ID@@'
+APP_SECRET = '@@OMNIAUTH_APP_SECRET@@'
+
+# Update your custom Omniauth provider URL here
+CUSTOM_PROVIDER_URL = '@@OMNIAUTH_URL@@'
+
+Rails.application.config.middleware.use OmniAuth::Builder do
+  provider :josh_id, APP_ID, APP_SECRET, CUSTOM_PROVIDER_URL
+end

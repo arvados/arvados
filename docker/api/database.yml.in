@@ -1,0 +1,24 @@
+development:
+  adapter: postgresql
+  encoding: utf8
+  database: @@ARVADOS_DEV_DB@@
+  username: @@ARVADOS_DEV_USER@@
+  password: @@ARVADOS_DEV_PW@@
+  host: localhost
+
+test:
+  adapter: postgresql
+  encoding: utf8
+  database: @@ARVADOS_TEST_DB@@
+  username: @@ARVADOS_TEST_USER@@
+  password: @@ARVADOS_TEST_PW@@
+  host: localhost
+
+production:
+  adapter: postgresql
+  encoding: utf8
+  database: @@ARVADOS_PROD_DB@@
+  username: @@ARVADOS_TEST_USER@@
+  password: @@ARVADOS_TEST_PW@@
+  host: localhost
+

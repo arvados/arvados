@@ -1,0 +1,31 @@
+# Configuration for the Rails databases (database names,
+# usernames and passwords).
+#
+# If a _PW variable is set to an empty string, a password
+# will be chosen randomly at build time. This is the
+# recommended setting.
+ARVADOS_DEV_DB: arvados_development
+ARVADOS_DEV_USER: arvados_dev
+ARVADOS_DEV_PW:
+ARVADOS_TEST_DB: arvados_test
+ARVADOS_TEST_USER: arvados_test
+ARVADOS_TEST_PW:
+ARVADOS_PROD_DB: arvados_production
+ARVADOS_PROD_USER: arvados_prod
+ARVADOS_PROD_PW:
+
+# More than anything this should be auto-generated, but
+# we don't presently have a good place to store it. So just
+# change it and don't be dumb.
+POSTGRES_ROOT_PW: dummy_pw
+
+# The API server hostname. Must be a 5-character
+# string unique within this installation. This string
+# will also be used as config.uuid_prefix.
+API_HOSTNAME: xxxxx
+
+# The APP_ID this application presents to Omniauth.
+OMNIAUTH_APP_ID: arvados-server
+
+# The URL for this installation's Omniauth server.
+OMNIAUTH_URL: http://auth.clinicalfuture.com

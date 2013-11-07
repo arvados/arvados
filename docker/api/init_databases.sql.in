@@ -1,0 +1,10 @@
+alter role postgres with encrypted password '@@POSTGRES_ROOT_PW@@';
+
+create user @@ARVADOS_DEV_USER@@ with encrypted password '@@ARVADOS_DEV_PW@@';
+create database @@ARVADOS_DEV_DB@@ with owner @@ARVADOS_DEV_USER@@;
+
+create user @@ARVADOS_TEST_USER@@ with encrypted password '@@ARVADOS_TEST_PW@@';
+create database @@ARVADOS_TEST_DB@@ with owner @@ARVADOS_TEST_USER@@;
+
+create user @@ARVADOS_PROD_USER@@ with encrypted password '@@ARVADOS_PROD_PW@@';
+create database @@ARVADOS_PROD_DB@@ with owner @@ARVADOS_PROD_USER@@;
