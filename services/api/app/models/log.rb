@@ -6,7 +6,7 @@ class Log < ArvadosModel
   before_validation :set_default_event_at
   attr_accessor :object
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :object_kind
     t.add :object_uuid
     t.add :object, :if => :object

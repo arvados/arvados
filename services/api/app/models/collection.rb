@@ -3,7 +3,7 @@ class Collection < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :data_size
     t.add :files
   end

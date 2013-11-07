@@ -12,7 +12,7 @@ class Link < ArvadosModel
   attr_accessor :head
   attr_accessor :tail
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :tail_kind
     t.add :tail_uuid
     t.add :link_class

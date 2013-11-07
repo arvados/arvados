@@ -7,7 +7,7 @@ class AuthorizedKey < ArvadosModel
 
   belongs_to :authorized_user, :foreign_key => :authorized_user_uuid, :class_name => 'User', :primary_key => :uuid
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :name
     t.add :key_type
     t.add :authorized_user_uuid

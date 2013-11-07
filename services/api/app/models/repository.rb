@@ -3,7 +3,7 @@ class Repository < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :name
     t.add :fetch_url
     t.add :push_url

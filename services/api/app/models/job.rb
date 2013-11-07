@@ -14,7 +14,7 @@ class Job < ArvadosModel
   class SubmitIdReused < StandardError
   end
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :submit_id
     t.add :priority
     t.add :script

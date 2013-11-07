@@ -17,4 +17,13 @@ class Arvados::V1::NodesController < ApplicationController
                    ec2_instance_id: params[:instance_id] })
     show
   end
+
+  def index
+    if current_user.andand.is_admin
+      super
+    else
+      @objects = model_class.where('last_ping_at >= ?', Time.now - 1.hours)
+      render_list
+    end
+  end
 end

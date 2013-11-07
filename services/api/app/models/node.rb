@@ -18,15 +18,17 @@ class Node < ArvadosModel
   @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
   @@nameservers = Rails.configuration.compute_node_nameservers
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, :extend => :common do |t|
     t.add :hostname
     t.add :domain
     t.add :ip_address
-    t.add :first_ping_at
     t.add :last_ping_at
-    t.add :info
     t.add :slot_number
     t.add :status
+  end
+  api_accessible :superuser, :extend => :user do |t|
+    t.add :first_ping_at
+    t.add :info
     t.add lambda { |x| @@nameservers }, :as => :nameservers
   end
 

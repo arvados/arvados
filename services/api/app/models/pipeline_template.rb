@@ -4,7 +4,7 @@ class PipelineTemplate < ArvadosModel
   include CommonApiTemplate
   serialize :components, Hash
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :name
     t.add :components
   end

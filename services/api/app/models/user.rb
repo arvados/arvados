@@ -10,7 +10,7 @@ class User < ArvadosModel
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :email
     t.add :full_name
     t.add :first_name

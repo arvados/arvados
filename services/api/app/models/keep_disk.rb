@@ -4,7 +4,7 @@ class KeepDisk < ArvadosModel
   include CommonApiTemplate
   before_validation :ensure_ping_secret
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :node_uuid
     t.add :filesystem_uuid
     t.add :ping_secret

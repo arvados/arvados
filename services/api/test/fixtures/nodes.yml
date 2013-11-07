@@ -1,0 +1,19 @@
+running:
+  uuid: zzzzz-7ekkf-53y36l1lu5ijveb
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  hostname: compute0
+  domain: ""
+  ip_address: 172.17.2.172
+  last_ping_at: <%= 1.minute.ago.to_s(:db) %>
+  first_ping_at: <%= 23.hour.ago.to_s(:db) %>
+  info: {ping_secret: "48dpm3b8ijyj3jkr2yczxw0844dqd2752bhll7klodvgz9bg80"}
+
+down:
+  uuid: zzzzz-7ekkf-2vbompg3ecc6e2s
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  hostname: compute1
+  domain: ""
+  ip_address: 172.17.2.173
+  last_ping_at: <%= 1.hour.ago.to_s(:db) %>
+  first_ping_at: <%= 23.hour.ago.to_s(:db) %>
+  info: {ping_secret: "2k3i71depad36ugwmlgzilbi4e8n0illb2r8l4efg9mzkb3a1k"}

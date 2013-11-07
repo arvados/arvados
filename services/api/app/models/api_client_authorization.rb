@@ -7,7 +7,7 @@ class ApiClientAuthorization < ArvadosModel
   after_initialize :assign_random_api_token
   serialize :scopes, Array
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :owner_uuid
     t.add :user_id
     t.add :api_client_id

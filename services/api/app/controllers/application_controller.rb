@@ -24,7 +24,7 @@ class ApplicationController < ActionController::Base
 
   def show
     if @object
-      render json: @object.as_api_response(:superuser)
+      render json: @object.as_api_response
     else
       render_not_found("object not found")
     end
@@ -332,7 +332,7 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :next_page_token => "",
       :next_link => "",
-      :items => @objects.as_api_response(:superuser)
+      :items => @objects.as_api_response(nil)
     }
     render json: @object_list
   end

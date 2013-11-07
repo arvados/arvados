@@ -10,7 +10,7 @@ class PipelineInstance < ArvadosModel
   before_validation :bootstrap_components
   before_validation :update_success
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
     t.add :pipeline_template, :if => :pipeline_template
     t.add :name

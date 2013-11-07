@@ -6,7 +6,7 @@ class JobTask < ArvadosModel
   after_update :delete_created_job_tasks_if_failed
   after_update :assign_created_job_tasks_qsequence_if_succeeded
 
-  api_accessible :superuser, :extend => :common do |t|
+  api_accessible :user, extend: :common do |t|
     t.add :job_uuid
     t.add :created_by_job_task_uuid
     t.add :sequence
