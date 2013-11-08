@@ -18,12 +18,13 @@ class Arvados::V1::NodesController < ApplicationController
     show
   end
 
-  def index
-    if current_user.andand.is_admin
+  def find_objects_for_index
+    if current_user.andand.is_admin || !current_user.andand.is_active
       super
     else
+      # active non-admin users can list nodes that are (or were
+      # recently) working
       @objects = model_class.where('last_ping_at >= ?', Time.now - 1.hours)
-      render_list
     end
   end
 end
