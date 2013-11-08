@@ -1,4 +1,4 @@
-running:
+busy:
   uuid: zzzzz-7ekkf-53y36l1lu5ijveb
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   hostname: compute0
@@ -6,7 +6,9 @@ running:
   ip_address: 172.17.2.172
   last_ping_at: <%= 1.minute.ago.to_s(:db) %>
   first_ping_at: <%= 23.hour.ago.to_s(:db) %>
-  info: {ping_secret: "48dpm3b8ijyj3jkr2yczxw0844dqd2752bhll7klodvgz9bg80"}
+  info:
+    :ping_secret: "48dpm3b8ijyj3jkr2yczxw0844dqd2752bhll7klodvgz9bg80"
+    :slurm_state: "alloc"
 
 down:
   uuid: zzzzz-7ekkf-2vbompg3ecc6e2s
@@ -16,4 +18,17 @@ down:
   ip_address: 172.17.2.173
   last_ping_at: <%= 1.hour.ago.to_s(:db) %>
   first_ping_at: <%= 23.hour.ago.to_s(:db) %>
-  info: {ping_secret: "2k3i71depad36ugwmlgzilbi4e8n0illb2r8l4efg9mzkb3a1k"}
+  info:
+    :ping_secret: "2k3i71depad36ugwmlgzilbi4e8n0illb2r8l4efg9mzkb3a1k"
+
+idle:
+  uuid: zzzzz-7ekkf-2z3mc76g2q73aio
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  hostname: compute2
+  domain: ""
+  ip_address: 172.17.2.174
+  last_ping_at: <%= 2.minute.ago.to_s(:db) %>
+  first_ping_at: <%= 23.hour.ago.to_s(:db) %>
+  info:
+    :ping_secret: "69udawxvn3zzj45hs8bumvndricrha4lcpi23pd69e44soanc0"
+    :slurm_state: "idle"

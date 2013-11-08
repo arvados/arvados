@@ -25,6 +25,7 @@ class Node < ArvadosModel
     t.add :last_ping_at
     t.add :slot_number
     t.add :status
+    t.add :crunch_worker_state
   end
   api_accessible :superuser, :extend => :user do |t|
     t.add :first_ping_at
@@ -39,6 +40,17 @@ class Node < ArvadosModel
 
   def domain
     super || @@domain
+  end
+
+  def crunch_worker_state
+    case self.info.andand[:slurm_state]
+    when 'alloc', 'comp'
+      'busy'
+    when 'idle'
+      'idle'
+    else
+      'down'
+    end
   end
 
   def status
