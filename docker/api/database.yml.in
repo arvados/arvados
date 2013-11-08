@@ -18,7 +18,7 @@ production:
   adapter: postgresql
   encoding: utf8
   database: @@ARVADOS_PROD_DB@@
-  username: @@ARVADOS_TEST_USER@@
-  password: @@ARVADOS_TEST_PW@@
+  username: @@ARVADOS_PROD_USER@@
+  password: @@ARVADOS_PROD_PW@@
   host: localhost
 
