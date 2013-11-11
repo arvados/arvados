@@ -34,3 +34,15 @@ OMNIAUTH_APP_ID: arvados-server
 
 # The URL for this installation's Omniauth server.
 OMNIAUTH_URL: http://auth.clinicalfuture.com
+
+# Workbench settings
+WORKBENCH_RAILS_MODE: production
+WORKBENCH_DATA_IMPORT_DIR: /data/arvados-workbench-upload/data
+WORKBENCH_DATA_EXPORT_DIR: /data/arvados-workbench-download/data
+WORKBENCH_VCF_PIPELINE_UUID:
+WORKBENCH_SITE_NAME: Arvados Workbench
+WORKBENCH_INSECURE_HTTPS: false
+WORKBENCH_ACTIVATION_CONTACT_LINK: mailto:arvados@clinicalfuture.com
+WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.arvadosapi.com/login
+WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.arvadosapi.com/arvados/v1
+# /Workbench settings
