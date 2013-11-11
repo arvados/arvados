@@ -17,6 +17,7 @@ config['OMNIAUTH_APP_SECRET'] = rand(2**512).to_s(36)
 
 # The secret token in services/api/config/initializers/secret_token.rb.
 config['API_SECRET'] = rand(2**256).to_s(36)
+config['WORKER_SECRET'] = rand(2**256).to_s(36)
 
 # Any _PW config settings represent a database password.  If it
 # is blank, choose a password randomly.
@@ -40,7 +41,11 @@ Dir.glob('*/*.in') do |template_file|
       @count = 0
       while @count < 10
         @out = line.gsub!(/@@(.*?)@@/) do |var|
-          config[Regexp.last_match[1]] || var.gsub!(/@@/, '@_NOT_FOUND_@')
+          if config.key?(Regexp.last_match[1])
+            config[Regexp.last_match[1]]
+          else
+            var.gsub!(/@@/, '@_NOT_FOUND_@')
+          end
         end
         break if @out.nil?
         @count += 1
