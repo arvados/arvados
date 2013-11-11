@@ -165,6 +165,7 @@ DEPENDENCIES
   piwik_analytics
   rails (~> 3.2.0)
   rvm-capistrano
+  sass
   sass-rails (~> 3.2.0)
   sqlite3
   therubyracer
