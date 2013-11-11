@@ -1,6 +1,16 @@
 # Configuration for the Rails databases (database names,
 # usernames and passwords).
-#
+
+# ARVADOS_DOMAIN: the Internet domain of this installation.
+# ARVADOS_DNS_SERVER: the authoritative nameserver for ARVADOS_DOMAIN.
+ARVADOS_DOMAIN:         # e.g. arvados.internal
+ARVADOS_DNS_SERVER:     # e.g. 192.168.0.1
+
+# The API server hostname. Must be a 5-character
+# string unique within this installation. This string
+# will also be used as config.uuid_prefix.
+API_HOSTNAME:           # e.g. qr1hi
+
 # If a _PW variable is set to an empty string, a password
 # will be chosen randomly at build time. This is the
 # recommended setting.
@@ -18,11 +28,6 @@ ARVADOS_PROD_PW:
 # we don't presently have a good place to store it. So just
 # change it and don't be dumb.
 POSTGRES_ROOT_PW: dummy_pw
-
-# The API server hostname. Must be a 5-character
-# string unique within this installation. This string
-# will also be used as config.uuid_prefix.
-API_HOSTNAME: xxxxx
 
 # The APP_ID this application presents to Omniauth.
 OMNIAUTH_APP_ID: arvados-server

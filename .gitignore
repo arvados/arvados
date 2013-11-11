@@ -1,3 +1,4 @@
 *~
 *.pyc
 docker/api/generated/*
+docker/config.yml

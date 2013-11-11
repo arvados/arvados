@@ -24,13 +24,21 @@ PREREQUISITES
 BUILDING
 --------
 
-1. Before building, edit config.yml with settings for your
-   installation.
+1. Copy `config.yml.example' to `config.yml' and edit it with settings
+   for your installation.
 
 2. Run `./config.rb' to generate configuration files.
 
-3. Add a DNS entry for your API_HOSTNAME which resolves to the machine
-   that the API container will be deployed to.
+3. Make sure the ARVADOS_DNS_SERVER has been provisioned with the
+   following DNS entries, resolving to the appropriate IP addresses
+   where each service will be deployed.
+
+   $API_HOSTNAME
+   keep0
+   compute0
+   controller
+   git
+   shell
 
 4. Provision your Omniauth server with the APP_ID and
    APP_SECRET from api/omniauth.rb.
