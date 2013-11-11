@@ -85,7 +85,6 @@ GEM
       daemon_controller (>= 1.1.0)
       rack
       rake (>= 0.8.1)
-    pg (0.17.0)
     piwik_analytics (1.0.2)
       actionpack
       activesupport
@@ -163,7 +162,6 @@ DEPENDENCIES
   multi_json
   oj
   passenger
-  pg
   piwik_analytics
   rails (~> 3.2.0)
   rvm-capistrano
