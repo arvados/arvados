@@ -17,11 +17,12 @@ config['OMNIAUTH_APP_SECRET'] = rand(2**512).to_s(36)
 
 # The secret token in services/api/config/initializers/secret_token.rb.
 config['API_SECRET'] = rand(2**256).to_s(36)
+config['WORKER_SECRET'] = rand(2**256).to_s(36)
 
 # Any _PW config settings represent a database password.  If it
 # is blank, choose a password randomly.
 config.each_key do |var|
-  if var.end_with?('_PW') and (config[var].nil? or config[var].empty?)
+  if var.end_with?('_PW') && (config[var].nil? || config[var].empty?)
     config[var] = rand(2**256).to_s(36)
   end
 end
@@ -29,7 +30,7 @@ end
 # ============================================================
 # For each *.in file in the docker directories, substitute any
 # @@variables@@ found in the file with the appropriate config
-# variable.
+# variable. Support up to 10 levels of nesting.
 # 
 # TODO(twp): add the *.in files directory to the source tree, and
 # when expanding them, add them to the "generated" directory with
@@ -47,7 +48,21 @@ Dir.glob('*/*.in') do |template_file|
   output = File.open(output_path, "w")
   File.open(template_file) do |input|
     input.each_line do |line|
-      output.write(line.gsub(/@@(.*?)@@/) { |var| config[$1] || var })
+
+      @count = 0
+      while @count < 10
+        @out = line.gsub!(/@@(.*?)@@/) do |var|
+          if config.key?(Regexp.last_match[1])
+            config[Regexp.last_match[1]]
+          else
+            var.gsub!(/@@/, '@_NOT_FOUND_@')
+          end
+        end
+        break if @out.nil?
+        @count += 1
+      end
+
+      output.write(line)
     end
   end
   output.close

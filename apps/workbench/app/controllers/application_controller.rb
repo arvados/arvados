@@ -13,7 +13,7 @@ class ApplicationController < ActionController::Base
     :with => :render_not_found
     rescue_from ActionController::UnknownController,
     :with => :render_not_found
-    rescue_from ActionController::UnknownAction,
+    rescue_from ::AbstractController::ActionNotFound,
     :with => :render_not_found
   end
 

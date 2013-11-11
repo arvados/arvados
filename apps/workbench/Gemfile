@@ -26,7 +26,6 @@ end
 gem 'jquery-rails'
 gem 'twitter-bootstrap-rails'
 gem 'anjlab-bootstrap-rails', '>= 2.2', :require => 'bootstrap-rails'
-gem 'bootstrap-rails'
 gem 'bootstrap-editable-rails'
 gem 'less'
 gem 'less-rails'
