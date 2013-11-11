@@ -1,2 +1,3 @@
 *~
 *.pyc
+docker/api/generated/*

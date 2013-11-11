@@ -30,9 +30,16 @@ end
 # For each *.in file in the docker directories, substitute any
 # @@variables@@ found in the file with the appropriate config
 # variable.
+# 
+# TODO(twp): add the *.in files directory to the source tree, and
+# when expanding them, add them to the "generated" directory with
+# the same tree structure as in the original source. Then all
+# the files can be added to the docker container with a single ADD.
 
 Dir.glob('*/*.in') do |template_file|
-  output_path = template_file.sub(/\.in$/, '')
+  generated_dir = File.join(File.dirname(template_file), 'generated')
+  Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
+  output_path = File.join(generated_dir, File.basename(template_file, '.in'))
   output = File.open(output_path, "w")
   File.open(template_file) do |input|
     input.each_line do |line|
