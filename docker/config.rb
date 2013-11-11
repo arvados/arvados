@@ -29,14 +29,24 @@ end
 # ============================================================
 # For each *.in file in the docker directories, substitute any
 # @@variables@@ found in the file with the appropriate config
-# variable.
+# variable. Support up to 10 levels of nesting.
 
 Dir.glob('*/*.in') do |template_file|
   output_path = template_file.sub(/\.in$/, '')
   output = File.open(output_path, "w")
   File.open(template_file) do |input|
     input.each_line do |line|
-      output.write(line.gsub(/@@(.*?)@@/) { |var| config[$1] || var })
+
+      @count = 0
+      while @count < 10
+        @out = line.gsub!(/@@(.*?)@@/) do |var|
+          config[Regexp.last_match[1]] || var.gsub!(/@@/, '@_NOT_FOUND_@')
+        end
+        break if @out.nil?
+        @count += 1
+      end
+
+      output.write(line)
     end
   end
   output.close
