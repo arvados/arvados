@@ -1,0 +1,26 @@
+<VirtualHost *:80>
+
+  ServerName workbench.@@API_HOSTNAME@@.arvadosapi.com
+  ServerAdmin sysadmin@clinicalfuture.com
+
+  RailsEnv @@WORKBENCH_RAILS_MODE@@
+  RackBaseURI /
+  RailsAppSpawnerIdleTime 1200
+
+  # Index file and Document Root (where the public files are located)
+  DirectoryIndex index.html
+  DocumentRoot /usr/src/arvados/apps/workbench/public
+
+  LogLevel warn
+  ErrorLog  ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+  <Directory /usr/src/arvados/apps/workbench>
+    Options Indexes FollowSymLinks MultiViews IncludesNoExec
+    AllowOverride None
+    Order allow,deny
+    allow from all
+  </Directory>
+
+</VirtualHost>
+
