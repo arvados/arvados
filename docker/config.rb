@@ -21,7 +21,7 @@ config['API_SECRET'] = rand(2**256).to_s(36)
 # Any _PW config settings represent a database password.  If it
 # is blank, choose a password randomly.
 config.each_key do |var|
-  if var.end_with?('_PW') and (config[var].nil? or config[var].empty?)
+  if var.end_with?('_PW') && (config[var].nil? || config[var].empty?)
     config[var] = rand(2**256).to_s(36)
   end
 end
@@ -33,7 +33,7 @@ end
 
 Dir.glob('*/*.in') do |template_file|
   output_path = template_file.sub(/\.in$/, '')
-  output = File.open(output_path, "w")
+  output = File.open(output_path, 'w')
   File.open(template_file) do |input|
     input.each_line do |line|
 
