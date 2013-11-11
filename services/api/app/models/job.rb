@@ -33,12 +33,19 @@ class Job < ArvadosModel
     t.add :runtime_constraints
     t.add :tasks_summary
     t.add :dependencies
+    t.add :log_stream_href
   end
 
   def assert_finished
     update_attributes(finished_at: finished_at || Time.now,
                       success: success.nil? ? false : success,
                       running: false)
+  end
+
+  def log_stream_href
+    unless self.finished_at
+      "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}/log_tail_follow"
+    end
   end
 
   def self.queue
