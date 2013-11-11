@@ -16,6 +16,7 @@ ADD generated/database.yml /usr/src/arvados/services/api/config/database.yml
 ADD generated/secret_token.rb /usr/src/arvados/services/api/config/initializers/secret_token.rb
 ADD generated/omniauth.rb /usr/src/arvados/services/api/config/initializers/omniauth.rb
 ADD generated/production.rb /usr/src/arvados/services/api/config/environments/production.rb
+ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 
 # Configure databases and users.
 ADD generated/config_databases.sh /tmp/config_databases.sh
@@ -30,7 +31,6 @@ RUN sh /tmp/config_rake.sh ; \
     rm /tmp/config_rake.sh
 
 # Configure Apache and Passenger.
-ADD apache2_vhost /etc/apache2/sites-available/arvados
 ADD passenger.conf /etc/apache2/conf.d/passenger
 RUN a2dissite default ; \
     a2ensite arvados ; \

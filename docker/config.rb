@@ -36,6 +36,10 @@ end
 # the same tree structure as in the original source. Then all
 # the files can be added to the docker container with a single ADD.
 
+Dir.glob('*/generated/*') do |stale_file|
+  File.delete(stale_file)
+end
+
 Dir.glob('*/*.in') do |template_file|
   generated_dir = File.join(File.dirname(template_file), 'generated')
   Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
