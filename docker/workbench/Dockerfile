@@ -1,9 +1,8 @@
-# Arvados API server Docker container.
+# Arvados Workbench Docker container.
 
 FROM arvados/base
 MAINTAINER Ward Vandewege <ward@clinicalfuture.com>
 
-# Need to set the mysql passwords before installing mysql-server
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install packages
@@ -26,7 +25,6 @@ RUN \
     a2enmod rewrite
 
 # Configure Apache
-# Install gems needed for workbench
 ADD apache2_vhost /etc/apache2/sites-available/workbench
 RUN \
   a2dissite default ;\

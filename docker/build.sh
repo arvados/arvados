@@ -8,3 +8,4 @@
 docker build -t arvados/base base
 docker build -t arvados/api api
 docker build -t arvados/docserver docserver
+docker build -t arvados/workbench workbench
