@@ -18,23 +18,21 @@ ADD generated/omniauth.rb /usr/src/arvados/services/api/config/initializers/omni
 ADD generated/production.rb /usr/src/arvados/services/api/config/environments/production.rb
 ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 
-# Configure databases and users.
+# Configure Rails databases.
 ADD generated/config_databases.sh /tmp/config_databases.sh
-RUN sh /tmp/config_databases.sh ; \
-    rm /tmp/config_databases.sh
-
-# Set up the Rails database. This has to be done in a script so that
-# postgres can run in the background while running rake db:setup.
-ENV RAILS_ENV production
 ADD config_rake.sh /tmp/config_rake.sh
-RUN sh /tmp/config_rake.sh ; \
-    rm /tmp/config_rake.sh
+ENV RAILS_ENV production
+RUN sh /tmp/config_databases.sh ; \
+    sh /tmp/config_rake.sh ; \
+    rm /tmp/config_databases.sh /tmp/config_rake.sh
 
 # Configure Apache and Passenger.
 ADD passenger.conf /etc/apache2/conf.d/passenger
 RUN a2dissite default ; \
     a2ensite arvados ; \
     a2enmod rewrite ; \
+    a2enmod ssl ; \
+    /bin/mkdir /var/run/apache2 ; \
     passenger-install-apache2-module --auto
 
 # Supervisor.
