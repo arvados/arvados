@@ -316,13 +316,16 @@ class Arvados::V1::SchemaController < ApplicationController
         d_methods = discovery[:resources][k.to_s.underscore.pluralize][:methods]
         Rails.application.routes.routes.each do |route|
           action = route.defaults[:action]
-          httpMethod = (route.verb && route.verb.length > 0) ? route.verb : 'GET'
-          if route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
+          httpMethod = ['GET', 'POST', 'PUT', 'DELETE'].map { |method|
+            method if route.verb.match(method)
+          }.compact.first
+          if httpMethod and
+              route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
               !d_methods[action.to_sym] and
               ctl_class.action_methods.include? action
             method = {
               id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
-              path: route.path.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
+              path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
               httpMethod: httpMethod,
               description: "#{route.defaults[:action]} #{k.to_s.underscore.pluralize}",
               parameters: {},
