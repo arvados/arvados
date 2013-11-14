@@ -8,6 +8,9 @@ RUN apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
     libcurl4-openssl-dev apache2-threaded-dev libapr1-dev libaprutil1-dev \
     supervisor
 
+RUN /bin/mkdir -p /usr/src/arvados/services
+ADD generated/api.tar.gz /usr/src/arvados/services/
+
 # Install gems needed for API server
 RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile
 
@@ -19,20 +22,22 @@ ADD generated/production.rb /usr/src/arvados/services/api/config/environments/pr
 ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 
 # Configure Rails databases.
-ADD generated/config_databases.sh /tmp/config_databases.sh
-ADD config_rake.sh /tmp/config_rake.sh
 ENV RAILS_ENV production
-RUN sh /tmp/config_databases.sh ; \
-    sh /tmp/config_rake.sh ; \
-    rm /tmp/config_databases.sh /tmp/config_rake.sh
+ADD generated/config_databases.sh /tmp/config_databases.sh
+RUN sh /tmp/config_databases.sh && \
+    rm /tmp/config_databases.sh && \
+    /etc/init.d/postgresql start && \
+    cd /usr/src/arvados/services/api && \
+    rake db:setup && \
+    rake assets:precompile
 
 # Configure Apache and Passenger.
 ADD passenger.conf /etc/apache2/conf.d/passenger
-RUN a2dissite default ; \
-    a2ensite arvados ; \
-    a2enmod rewrite ; \
-    a2enmod ssl ; \
-    /bin/mkdir /var/run/apache2 ; \
+RUN a2dissite default && \
+    a2ensite arvados && \
+    a2enmod rewrite && \
+    a2enmod ssl && \
+    /bin/mkdir /var/run/apache2 && \
     passenger-install-apache2-module --auto
 
 # Supervisor.

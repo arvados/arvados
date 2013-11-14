@@ -8,6 +8,8 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install packages
 # Fix Locale
 # Update Arvados source
+RUN /bin/mkdir -p /usr/src/arvados/apps
+ADD generated/workbench.tar.gz /usr/src/arvados/apps/
 RUN \
     apt-get update ;\
     apt-get install -q -y apt-utils git curl procps apache2-mpm-worker locales \
@@ -15,7 +17,6 @@ RUN \
     curl -L https://get.rvm.io | bash -s stable --ruby=${RUBY_VERSION_NUM} ;\
     /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen ;\
     /usr/sbin/locale-gen ;\
-    cd /usr/src/arvados; git pull ;\
     touch /usr/src/arvados/apps/workbench/log/production.log ;\
     chmod 666 /usr/src/arvados/apps/workbench/log/production.log ;\
     touch /usr/src/arvados/apps/workbench/db/production.sqlite3 ;\
@@ -25,14 +26,14 @@ RUN \
     a2enmod rewrite
 
 # Configure Apache
-ADD apache2_vhost /etc/apache2/sites-available/workbench
+ADD generated/apache2_vhost /etc/apache2/sites-available/workbench
 RUN \
   a2dissite default ;\
   a2ensite workbench 
 
 # Set up the production environment
-ADD secret_token.rb /usr/src/arvados/apps/workbench/config/initializers/secret_token.rb
-ADD production.rb /usr/src/arvados/apps/workbench/config/environments/production.rb
+ADD generated/secret_token.rb /usr/src/arvados/apps/workbench/config/initializers/secret_token.rb
+ADD generated/production.rb /usr/src/arvados/apps/workbench/config/environments/production.rb
 ADD passenger.conf /etc/apache2/conf.d/passenger
 
 # Finally, start Apache
