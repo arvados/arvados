@@ -1,6 +1,6 @@
 <VirtualHost *:80>
 
-  ServerName workbench.@@API_HOSTNAME@@.arvadosapi.com
+  ServerName workbench.@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@
   ServerAdmin sysadmin@clinicalfuture.com
 
   RailsEnv @@WORKBENCH_RAILS_MODE@@

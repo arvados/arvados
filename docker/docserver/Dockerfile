@@ -8,7 +8,9 @@ env DEBIAN_FRONTEND noninteractive
 # Install packages
 # Fix Locale
 # Build static site
-# Update Arvados source
+
+RUN /bin/mkdir -p /usr/src/arvados
+ADD generated/doc.tar.gz /usr/src/arvados/
 RUN \
     apt-get update ;\
     apt-get install -q -y curl procps apache2-mpm-worker locales ;\
@@ -16,9 +18,7 @@ RUN \
     /usr/sbin/locale-gen ;\
     gem install jekyll RedCloth ;\
     /bin/sed -ri 's/^baseurl: .*$/baseurl: /' /usr/src/arvados/doc/_config.yml ;\
-    cd /usr/src/arvados/doc; LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" jekyll build ;\
-    cd /usr/src/arvados ;\
-    git pull
+    cd /usr/src/arvados/doc; LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" jekyll build
 
 # Configure Apache
 ADD apache2_vhost /etc/apache2/sites-available/doc

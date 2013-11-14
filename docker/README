@@ -44,11 +44,10 @@ DEPLOYING
    where each service will be deployed.
 
    $API_HOSTNAME
-   keep0
-   compute0
-   controller
-   git
-   shell
+   keep0.$API_HOSTNAME
+   compute0.$API_HOSTNAME
+   controller.$API_HOSTNAME
+   workbench.$API_HOSTNAME
 
 2. Provision your Omniauth server with the APP_ID and
    APP_SECRET from api/omniauth.rb.

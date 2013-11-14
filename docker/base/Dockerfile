@@ -11,7 +11,6 @@ MAINTAINER Tim Pierce <twp@clinicalfuture.com>
 RUN apt-get update && \
     apt-get -q -y install -q -y apt-utils && \
     apt-get -q -y install git curl && \
-    git clone git://github.com/clinicalfuture/arvados.git /usr/src/arvados && \
     curl -L https://get.rvm.io | bash -s stable --ruby=2.0.0
 
 # Set up RVM environment. These are just the env variables created by
