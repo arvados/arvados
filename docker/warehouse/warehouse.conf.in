@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+$Warehouse::warehouses = [
+    {'name'=>'@@API_HOSTNAME@@',
+     'keep_name'=>'@@API_HOSTNAME@@',
+     'keeps' => [
+      'keep0.@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@:25107',
+      'keep0.@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@:25108',
+     ],
+    },
+];
