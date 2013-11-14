@@ -52,4 +52,11 @@ DEPLOYING
 2. Provision your Omniauth server with the APP_ID and
    APP_SECRET from api/omniauth.rb.
 
-3. docker run -p 80:80 -p 443:443 arvados/api
+3. Deploying API:
+   docker run -p 80:80 -p 443:443 arvados/api
+
+4. Deploying Keep:
+   mkdir /tmp/keepfs
+   mount -t tmpfs -o size=512M tmpfs /tmp/keepfs
+   docker run -p 25107:25107 -v /tmp/keepfs:/dev/keep-0 arvados/warehouse
+
