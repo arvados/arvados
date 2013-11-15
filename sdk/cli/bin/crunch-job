@@ -966,7 +966,7 @@ sub preprocess_stderr
     my $line = $1;
     substr $jobstep[$job]->{stderr}, 0, 1+length($line), "";
     Log ($job, "stderr $line");
-    if ($line =~ /srun: error: (SLURM job $ENV{SLURM_JOBID} has expired|Unable to confirm allocation for job) /) {
+    if ($line =~ /srun: error: (SLURM job $ENV{SLURM_JOB_ID} has expired|Unable to confirm allocation for job) /) {
       # whoa.
       $main::please_freeze = 1;
     }
