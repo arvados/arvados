@@ -43,9 +43,17 @@ class CredentialsFromEnv:
 url = ('https://%s/discovery/v1/apis/'
        '{api}/{apiVersion}/rest' % os.environ['ARVADOS_API_HOST'])
 credentials = CredentialsFromEnv()
-http = httplib2.Http()
+
+# Use system's CA certificates (if we find them) instead of httplib2's
+ca_certs = '/etc/ssl/certs/ca-certificates.crt'
+if not os.path.exists(ca_certs):
+    ca_certs = None             # use httplib2 default
+
+http = httplib2.Http(ca_certs=ca_certs)
 http = credentials.authorize(http)
-http.disable_ssl_certificate_validation=True
+if re.match(r'(?i)^(true|1|yes)$',
+            os.environ.get('ARVADOS_API_HOST_INSECURE', '')):
+    http.disable_ssl_certificate_validation=True
 service = build("arvados", "v1", http=http, discoveryServiceUrl=url)
 
 def task_set_output(self,s):
