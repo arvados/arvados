@@ -807,7 +807,6 @@ sub reapchildren
 	  $Jobstep->{attempts} > 1) {
 	Log ($jobstepid, "blaming failure on suspect node " . $slot[$proc{$pid}->{slot}]->{node}->{name} . " instead of incrementing jobstep attempts");
         $no_incr_attempts = 1;
-	--$Jobstep->{attempts};
       }
       ban_node_by_slot($proc{$pid}->{slot});
     }
