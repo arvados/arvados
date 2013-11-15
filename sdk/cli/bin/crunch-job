@@ -496,10 +496,8 @@ update_progress_stats();
 
 
 THISROUND:
-$main::please_continue = 0;
 for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 {
-
   my $id = $jobstep_todo[$todo_ptr];
   my $Jobstep = $jobstep[$id];
   if ($Jobstep->{level} != $level)
@@ -679,7 +677,10 @@ map { $slot[$freeslot[$_]]->{node}->{losing_streak} = 0 } (0..$#freeslot);
 Log (undef, "wait for last ".(scalar keys %proc)." children to finish");
 while (%proc)
 {
-  goto THISROUND if $main::please_continue;
+  if ($main::please_continue) {
+    $main::please_continue = 0;
+    goto THISROUND;
+  }
   $main::please_info = 0, freeze(), collate_output(), save_meta(1) if $main::please_info;
   readfrompipes ();
   if (!reapchildren())
