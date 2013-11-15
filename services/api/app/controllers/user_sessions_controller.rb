@@ -13,12 +13,10 @@ class UserSessionsController < ApplicationController
     identity_url_ok = (omniauth['info']['identity_url'].length > 0) rescue false
     unless identity_url_ok
       # Whoa. This should never happen.
+      logger.error "UserSessionsController.create: omniauth object missing/invalid"
+      logger.error "omniauth.pretty_inspect():\n\n#{omniauth.pretty_inspect()}"
 
-      @title = "UserSessionsController.create: omniauth object missing/invalid"
-      @body = "omniauth.pretty_inspect():\n\n#{omniauth.pretty_inspect()}"
-
-      view_context.fatal_error(@title,@body)
-      return redirect_to openid_login_error_url
+      return redirect_to login_failure_url
     end
 
     user = User.find_by_identity_url(omniauth['info']['identity_url'])

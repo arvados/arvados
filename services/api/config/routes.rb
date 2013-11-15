@@ -123,6 +123,8 @@ Server::Application.routes.draw do
 
   match '/discovery/v1/apis/arvados/v1/rest', :to => 'arvados/v1/schema#discovery_rest_description'
 
+  match '/static/login_failure', :to => 'static#login_failure', :as => :login_failure
+
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
   match '*a', :to => 'arvados/v1/links#render_not_found'

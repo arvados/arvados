@@ -1,0 +1,22 @@
+<% content_for :js do %>
+$(function(){
+  $('button.login').button().click(function(){window.location=$(this).attr('href')});
+});
+<% end %>
+
+
+<div id="intropage">
+  <img class="clinicalfuture-logo" src="<%= asset_path('logo.png') %>" style="display:block; margin:2em auto"/>
+  <div style="width:30em; margin:2em auto 0 auto">
+
+    <h1>Error</h1>
+
+    <p>Sorry, something went wrong logging you in. Please try again.</p>
+
+    <p style="float:right;margin-top:1em">
+      <a href="/auth/joshid">Log in here.</a>
+    </p>
+
+    <div style="clear:both;height:8em"></div>
+  </div>
+</div>

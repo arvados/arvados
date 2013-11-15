@@ -9,3 +9,5 @@ CUSTOM_PROVIDER_URL = 'http://auth.clinicalfuture.com'
 Rails.application.config.middleware.use OmniAuth::Builder do
   provider :josh_id, APP_ID, APP_SECRET, CUSTOM_PROVIDER_URL
 end
+
+OmniAuth.config.on_failure = StaticController.action(:login_failure)
