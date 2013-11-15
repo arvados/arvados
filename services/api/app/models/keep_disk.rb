@@ -7,7 +7,6 @@ class KeepDisk < ArvadosModel
   api_accessible :user, extend: :common do |t|
     t.add :node_uuid
     t.add :filesystem_uuid
-    t.add :ping_secret
     t.add :bytes_total
     t.add :bytes_free
     t.add :is_readable
@@ -18,6 +17,9 @@ class KeepDisk < ArvadosModel
     t.add :service_host
     t.add :service_port
     t.add :service_ssl_flag
+  end
+  api_accessible :superuser, :extend => :user do |t|
+    t.add :ping_secret
   end
 
   def ping(o)
