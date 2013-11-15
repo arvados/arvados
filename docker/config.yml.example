@@ -6,6 +6,10 @@
 ARVADOS_DOMAIN:         # e.g. arvados.internal
 ARVADOS_DNS_SERVER:     # e.g. 192.168.0.1
 
+# ==============================
+# API server settings
+# ==============================
+
 # The API server hostname. Must be a 5-character
 # string unique within this installation. This string
 # will also be used as config.uuid_prefix.
@@ -35,7 +39,9 @@ OMNIAUTH_APP_ID: arvados-server
 # The URL for this installation's Omniauth server.
 OMNIAUTH_URL: http://auth.clinicalfuture.com
 
+# ==============================
 # Workbench settings
+# ==============================
 WORKBENCH_RAILS_MODE: production
 WORKBENCH_DATA_IMPORT_DIR: /data/arvados-workbench-upload/data
 WORKBENCH_DATA_EXPORT_DIR: /data/arvados-workbench-download/data
@@ -46,3 +52,12 @@ WORKBENCH_ACTIVATION_CONTACT_LINK: mailto:arvados@clinicalfuture.com
 WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/login
 WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/arvados/v1
 # /Workbench settings
+
+# ==============================
+# Warehouse settings
+# ==============================
+
+# The password for the MySQL `warehouse' user. Automatically
+# generated if blank.
+WAREHOUSE_MYSQL_PW:
+
