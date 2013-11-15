@@ -504,7 +504,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
   {
     next;
   }
-  if ($Jobstep->{attempts} > 9)
+  if ($Jobstep->{attempts} > 2)
   {
     Log ($id, "jobstep $id failed $$Jobstep{attempts} times -- giving up");
     $success = 0;
