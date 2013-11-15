@@ -32,4 +32,13 @@ class Arvados::V1::KeepDisksController < ApplicationController
     @object.ping params
     show
   end
+
+  def find_objects_for_index
+    if current_user.andand.is_admin || !current_user.andand.is_active
+      super
+    else
+      # active non-admin users can list all keep disks
+      @objects = model_class.all
+    end
+  end
 end
