@@ -19,6 +19,5 @@ mkdir -p workbench/generated
 tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
 docker build -t arvados/workbench workbench
 
-mkdir -p warehouse/generated
-tar -c -z -f warehouse/generated/warehouse.tar.gz -C ../.. warehouse-apps
 docker build -t arvados/warehouse warehouse
+

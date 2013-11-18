@@ -1,9 +1,0 @@
-#! /bin/sh
-
-/etc/init.d/mysql start
-mysql <<EOF
-create database warehouse;
-grant all privileges on warehouse.* to warehouse@'%';
-set password for warehouse@'%' = password('@@WAREHOUSE_MYSQL_PW@@');
-EOF
-/etc/init.d/mysql stop
