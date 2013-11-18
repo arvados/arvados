@@ -57,10 +57,12 @@ class Arvados::V1::JobsController < ApplicationController
         last_ack_at ||= Time.now - Q_UPDATE_INTERVAL - 1
         if Time.now - last_ack_at >= Q_UPDATE_INTERVAL
           nodes_in_state = {idle: 0, alloc: 0}
-          Node.where('hostname is not ?', nil).collect do |n|
-            if n.info[:slurm_state]
-              nodes_in_state[n.info[:slurm_state]] ||= 0
-              nodes_in_state[n.info[:slurm_state]] += 1
+          ActiveRecord::Base.uncached do
+            Node.where('hostname is not ?', nil).collect do |n|
+              if n.info[:slurm_state]
+                nodes_in_state[n.info[:slurm_state]] ||= 0
+                nodes_in_state[n.info[:slurm_state]] += 1
+              end
             end
           end
           job_queue = Job.queue
@@ -78,23 +80,24 @@ class Arvados::V1::JobsController < ApplicationController
           last_ack_at = Time.now
         end
         sleep 3
-        @job.reload
+        ActiveRecord::Base.uncached do
+          @job.reload
+        end
       end
       @redis = Redis.new(:timeout => 0)
-      @redis.subscribe(@job.uuid) do |event|
-        if @redis.exists @job.uuid
-          # A log buffer exists. Start by showing the last few KB.
-          @redis.
-            getrange(@job.uuid, 0 - [@opts[:buffer_size], 1].max, -1).
-            sub(/^[^\n]*\n?/, '').
-            split("\n").
-            each do |line|
-            yield "#{line}\n"
-          end
+      if @redis.exists @job.uuid
+        # A log buffer exists. Start by showing the last few KB.
+        @redis.
+          getrange(@job.uuid, 0 - [@opts[:buffer_size], 1].max, -1).
+          sub(/^[^\n]*\n?/, '').
+          split("\n").
+          each do |line|
+          yield "#{line}\n"
         end
-        # TODO: avoid duplicating the last few lines of the log
-        # file. Use the fact that timestamps are lexicographically
-        # ordered.
+      end
+      # TODO: avoid missing log entries between getrange() above and
+      # subscribe() below.
+      @redis.subscribe(@job.uuid) do |event|
         event.message do |channel, msg|
           if msg == "end"
             @redis.unsubscribe @job.uuid

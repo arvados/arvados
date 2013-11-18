@@ -31,9 +31,9 @@ BUILDING
 
 3. Run `./build.sh' to build the following Docker images:
 
-     arvados/api    - the Arvados API server
-     arvados/keep   - Keep, the Arvados content-addressable filesystem
-     arvados/crunch - Crunch, a compute node for Arvados
+     arvados/api       - the Arvados API server
+     arvados/docserver - Arvados documentation
+     arvados/warehouse - Keep, the Arvados content-addressable filesystem
      arvados/workbench - the Arvados console
 
 DEPLOYING
@@ -44,13 +44,19 @@ DEPLOYING
    where each service will be deployed.
 
    $API_HOSTNAME
-   keep0
-   compute0
-   controller
-   git
-   shell
+   keep0.$API_HOSTNAME
+   compute0.$API_HOSTNAME
+   controller.$API_HOSTNAME
+   workbench.$API_HOSTNAME
 
 2. Provision your Omniauth server with the APP_ID and
    APP_SECRET from api/omniauth.rb.
 
-3. docker run -p 80:80 -p 443:443 arvados/api
+3. Deploying API:
+   docker run -p 80:80 -p 443:443 arvados/api
+
+4. Deploying Keep:
+   mkdir /tmp/keepfs
+   mount -t tmpfs -o size=512M tmpfs /tmp/keepfs
+   docker run -p 25107:25107 -v /tmp/keepfs:/dev/keep-0 arvados/warehouse
+
