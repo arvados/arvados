@@ -53,11 +53,3 @@ WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/login
 WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/arvados/v1
 # /Workbench settings
 
-# ==============================
-# Warehouse settings
-# ==============================
-
-# The password for the MySQL `warehouse' user. Automatically
-# generated if blank.
-WAREHOUSE_MYSQL_PW:
-

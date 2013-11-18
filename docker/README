@@ -31,9 +31,9 @@ BUILDING
 
 3. Run `./build.sh' to build the following Docker images:
 
-     arvados/api    - the Arvados API server
-     arvados/keep   - Keep, the Arvados content-addressable filesystem
-     arvados/crunch - Crunch, a compute node for Arvados
+     arvados/api       - the Arvados API server
+     arvados/docserver - Arvados documentation
+     arvados/warehouse - Keep, the Arvados content-addressable filesystem
      arvados/workbench - the Arvados console
 
 DEPLOYING
