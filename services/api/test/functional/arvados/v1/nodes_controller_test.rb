@@ -50,6 +50,10 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_response :success
     response = JSON.parse(@response.body)
     assert_equal 'zzzzz-7ekkf-2z3mc76g2q73aio', response['uuid']
+    # Ensure we are getting the "superuser" attributes, too
+    assert_not_nil response['first_ping_at'], '"first_ping_at" attr missing'
+    assert_not_nil response['info'], '"info" attr missing'
+    assert_not_nil response['nameservers'], '"nameservers" attr missing'
   end
 
   test "node should fail ping with invalid ping_secret" do
