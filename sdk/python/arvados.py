@@ -821,7 +821,21 @@ class KeepClient:
                      for f in keep_disks)
             self.service_roots = sorted(set(roots))
             logging.debug(str(self.service_roots))
-        return self.service_roots
+        seed = hash
+        pool = self.service_roots[:]
+        pseq = []
+        while len(pool) > 0:
+            if len(seed) < 8:
+                if len(pseq) < len(hash) / 4: # first time around
+                    seed = hash[-4:] + hash
+                else:
+                    seed += hash
+            probe = int(seed[0:8], 16) % len(pool)
+            pseq += [pool[probe]]
+            pool = pool[:probe] + pool[probe+1:]
+            seed = seed[8:]
+        logging.debug(str(pseq))
+        return pseq
 
     def get(self, locator):
         if 'KEEP_LOCAL_STORE' in os.environ:
