@@ -20,6 +20,9 @@ import time
 from apiclient import errors
 from apiclient.discovery import build
 
+if 'ARVADOS_DEBUG' in os.environ:
+    logging.basicConfig(level=logging.DEBUG)
+
 class CredentialsFromEnv:
     @staticmethod
     def http_request(self, uri, **kwargs):
