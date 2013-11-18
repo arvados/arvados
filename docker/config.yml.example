@@ -52,3 +52,9 @@ WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.arvadosapi.com/login
 WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.arvadosapi.com/arvados/v1
 WORKBENCH_SECRET:
 # /Workbench settings
+
+# SSO settings
+SSO_HOSTNAME: sso
+SSO_SECRET:
+SSO_CLIENT_SECRET:
+# /SSO settings

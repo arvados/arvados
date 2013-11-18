@@ -1,0 +1,10 @@
+
+Client.delete_all
+
+Client.create(
+  :name => "devsandbox",
+  :app_id => "devsandbox",
+  :app_secret => "@@SSO_CLIENT_SECRET@@"
+)
+
+

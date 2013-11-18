@@ -6,3 +6,6 @@ docker run -d -i -t -p 9898:80 arvados/docserver
 
 echo "Starting workbench server:     http://localhost:9899"
 docker run -d -i -t -p 9899:80 arvados/workbench
+
+echo "Starting sso server:     https://localhost:9900"
+docker run -d -i -t -p 9900:443 arvados/sso
