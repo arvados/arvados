@@ -57,10 +57,12 @@ class Arvados::V1::JobsController < ApplicationController
         last_ack_at ||= Time.now - Q_UPDATE_INTERVAL - 1
         if Time.now - last_ack_at >= Q_UPDATE_INTERVAL
           nodes_in_state = {idle: 0, alloc: 0}
-          Node.where('hostname is not ?', nil).collect do |n|
-            if n.info[:slurm_state]
-              nodes_in_state[n.info[:slurm_state]] ||= 0
-              nodes_in_state[n.info[:slurm_state]] += 1
+          ActiveRecord::Base.uncached do
+            Node.where('hostname is not ?', nil).collect do |n|
+              if n.info[:slurm_state]
+                nodes_in_state[n.info[:slurm_state]] ||= 0
+                nodes_in_state[n.info[:slurm_state]] += 1
+              end
             end
           end
           job_queue = Job.queue
@@ -78,7 +80,9 @@ class Arvados::V1::JobsController < ApplicationController
           last_ack_at = Time.now
         end
         sleep 3
-        @job.reload
+        ActiveRecord::Base.uncached do
+          @job.reload
+        end
       end
       @redis = Redis.new(:timeout => 0)
       @redis.subscribe(@job.uuid) do |event|
