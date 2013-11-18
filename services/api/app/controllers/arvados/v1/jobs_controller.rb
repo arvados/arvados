@@ -85,20 +85,19 @@ class Arvados::V1::JobsController < ApplicationController
         end
       end
       @redis = Redis.new(:timeout => 0)
-      @redis.subscribe(@job.uuid) do |event|
-        if @redis.exists @job.uuid
-          # A log buffer exists. Start by showing the last few KB.
-          @redis.
-            getrange(@job.uuid, 0 - [@opts[:buffer_size], 1].max, -1).
-            sub(/^[^\n]*\n?/, '').
-            split("\n").
-            each do |line|
-            yield "#{line}\n"
-          end
+      if @redis.exists @job.uuid
+        # A log buffer exists. Start by showing the last few KB.
+        @redis.
+          getrange(@job.uuid, 0 - [@opts[:buffer_size], 1].max, -1).
+          sub(/^[^\n]*\n?/, '').
+          split("\n").
+          each do |line|
+          yield "#{line}\n"
         end
-        # TODO: avoid duplicating the last few lines of the log
-        # file. Use the fact that timestamps are lexicographically
-        # ordered.
+      end
+      # TODO: avoid missing log entries between getrange() above and
+      # subscribe() below.
+      @redis.subscribe(@job.uuid) do |event|
         event.message do |channel, msg|
           if msg == "end"
             @redis.unsubscribe @job.uuid
