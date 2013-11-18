@@ -72,7 +72,7 @@ class Node < ArvadosModel
 
     if o[:ping_secret] != self.info[:ping_secret]
       logger.info "Ping: secret mismatch: received \"#{o[:ping_secret]}\" != \"#{self.info[:ping_secret]}\""
-      return nil
+      raise ArvadosModel::PermissionDeniedError.new("Incorrect ping_secret")
     end
     self.last_ping_at = Time.now
 
@@ -89,7 +89,9 @@ class Node < ArvadosModel
     if o[:ec2_instance_id]
       if !self.info[:ec2_instance_id] 
         self.info[:ec2_instance_id] = o[:ec2_instance_id]
-        `ec2-create-tags #{o[:ec2_instance_id]} --tag 'Name=#{self.uuid}'`
+        tag_cmd = ("ec2-create-tags #{o[:ec2_instance_id]} " +
+                   "--tag 'Name=#{self.uuid}'")
+        `#{tag_cmd}`
       elsif self.info[:ec2_instance_id] != o[:ec2_instance_id]
         logger.debug "Multiple nodes have credentials for #{self.uuid}"
         raise "#{self.uuid} is already running at #{self.info[:ec2_instance_id]} so rejecting ping from #{o[:ec2_instance_id]}"
