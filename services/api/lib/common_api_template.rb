@@ -25,7 +25,7 @@ module CommonApiTemplate
     def as_api_response(template=nil, opts={})
       if template.nil?
         user = opts[:for_user] || current_user
-        if user.is_admin and self.respond_to? :api_accessible_superuser
+        if user.andand.is_admin and self.respond_to? :api_accessible_superuser
           template = :superuser
         else
           template = :user
