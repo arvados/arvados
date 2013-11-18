@@ -24,6 +24,11 @@ ARVADOS_PROD_DB: arvados_production
 ARVADOS_PROD_USER: arvados_prod
 ARVADOS_PROD_PW:
 
+# If a _SECRET variable is set to an empty string, a password
+# will be chosen randomly at build time. This is the
+# recommended setting.
+API_SECRET:
+
 # More than anything this should be auto-generated, but
 # we don't presently have a good place to store it. So just
 # change it and don't be dumb.
@@ -45,4 +50,5 @@ WORKBENCH_INSECURE_HTTPS: false
 WORKBENCH_ACTIVATION_CONTACT_LINK: mailto:arvados@clinicalfuture.com
 WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.arvadosapi.com/login
 WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.arvadosapi.com/arvados/v1
+WORKBENCH_SECRET:
 # /Workbench settings
