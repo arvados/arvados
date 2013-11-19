@@ -431,29 +431,6 @@ class util:
                 allfiles += [ent_base]
         return allfiles
 
-class DataReader:
-    def __init__(self, data_locator):
-        self.data_locator = data_locator
-        self.p = subprocess.Popen(["whget", "-r", self.data_locator, "-"],
-                                  stdout=subprocess.PIPE,
-                                  stdin=None, stderr=subprocess.PIPE,
-                                  shell=False, close_fds=True)
-    def __enter__(self):
-        pass
-    def __exit__(self):
-        self.close()
-    def read(self, size, **kwargs):
-        return self.p.stdout.read(size, **kwargs)
-    def close(self):
-        self.p.stdout.close()
-        if not self.p.stderr.closed:
-            for err in self.p.stderr:
-                print >> sys.stderr, err
-            self.p.stderr.close()
-        self.p.wait()
-        if self.p.returncode != 0:
-            raise Exception("whget subprocess exited %d" % self.p.returncode)
-
 class StreamFileReader:
     def __init__(self, stream, pos, size, name):
         self._stream = stream
