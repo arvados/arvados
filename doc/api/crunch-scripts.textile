@@ -1,0 +1,29 @@
+---
+layout: default
+navsection: api
+title: Crunch scripts
+navorder: 5
+---
+
+h2. Crunch scripts
+
+A crunch script is responsible for completing a single JobTask. In doing so, it will:
+
+* (optionally) read some input from Keep
+* (optionally) store some output in Keep
+* (optionally) create some new JobTasks and add them to the current Job
+* (optionally) update the current JobTask record with the "output" attribute set to a Keep locator or a fragment of a manifest
+* update the current JobTask record with the "success" attribute set to True
+
+A task's context is provided in environment variables.
+
+table(table table-bordered table-condensed).
+|Environment variable|Description|
+|@JOB_UUID@|UUID of the current "Job":Jobs.html|
+|@TASK_UUID@|UUID of the current "JobTask":JobTasks.html|
+|@TASK_QSEQUENCE@|Number of tasks added to this job before this one (in other words, 0-based queue entry order)|
+|@TASK_SEQUENCE@|Task execution sequence specified when task was created &mdash; generally not unique to this task|
+|@ARVADOS_API_HOST@|Hostname and port number of API server|
+|@ARVADOS_API_TOKEN@|Authentication token to use with API calls made by the current task|
+
+The crunch script typically uses the Python SDK (or another suitable client library / SDK) to connect to the Arvados service and retrieve the rest of the details about the current job and task.
