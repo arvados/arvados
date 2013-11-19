@@ -2,7 +2,7 @@
 layout: default
 navsection: api
 title: "Resource: Links"
-navorder: 10
+navorder: 17
 ---
 
 h1. Links
