@@ -29,7 +29,15 @@ class Arvados::V1::UsersController < ApplicationController
     if current_user.andand.is_admin
       channel = params[:uuid] || channel
     end
-    self.response.headers['Last-Modified'] = Time.now.ctime.to_s
-    self.response_body = ChannelStreamer.new(channel: channel)
+    if client_accepts_plain_text_stream
+      self.response.headers['Last-Modified'] = Time.now.ctime.to_s
+      self.response_body = ChannelStreamer.new(channel: channel)
+    else
+      render json: {
+        href: url_for(uuid: channel),
+        comment: ('To retrieve the event stream as plain text, ' +
+                  'use a request header like "Accept: text/plain"')
+      }
+    end
   end
 end

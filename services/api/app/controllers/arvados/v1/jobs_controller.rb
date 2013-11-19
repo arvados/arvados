@@ -118,10 +118,18 @@ class Arvados::V1::JobsController < ApplicationController
     if !@object.andand.uuid
       return render_not_found
     end
-    self.response.headers['Last-Modified'] = Time.now.ctime.to_s
-    self.response_body = LogStreamer.new @object, {
-      buffer_size: (params[:buffer_size] || 2**13)
-    }
+    if client_accepts_plain_text_stream
+      self.response.headers['Last-Modified'] = Time.now.ctime.to_s
+      self.response_body = LogStreamer.new @object, {
+        buffer_size: (params[:buffer_size] || 2**13)
+      }
+    else
+      render json: {
+        href: url_for(uuid: @object.uuid),
+        comment: ('To retrieve the log stream as plain text, ' +
+                  'use a request header like "Accept: text/plain"')
+      }
+    end
   end
 
   def queue
