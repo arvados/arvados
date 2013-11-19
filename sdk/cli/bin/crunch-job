@@ -315,7 +315,7 @@ else
     'parameters' => {},
                                                           });
   push @jobstep, { 'level' => 0,
-		   'attempts' => 0,
+		   'failures' => 0,
                    'arvados_task' => $first_task,
 		 };
   push @jobstep_todo, 0;
@@ -467,7 +467,7 @@ foreach (split (/\n/, $Job->{knobs}))
 
 
 
-my $success;
+$main::success = undef;
 
 
 
@@ -503,12 +503,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
   if ($Jobstep->{level} != $level)
   {
     next;
-  }
-  if ($Jobstep->{attempts} > 2)
-  {
-    Log ($id, "jobstep $id failed $$Jobstep{attempts} times -- giving up");
-    $success = 0;
-    last THISROUND;
   }
 
   pipe $reader{$id}, "writer" or croak ($!);
@@ -579,7 +573,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         "&& exec $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
-    exit (1);
+    exit (111);
   }
   close("writer");
   if (!defined $childpid)
@@ -599,7 +593,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 
   Log ($id, "job_task ".$Jobstep->{'arvados_task'}->{'uuid'});
   Log ($id, "child $childpid started on $childslotname");
-  $Jobstep->{attempts} ++;
   $Jobstep->{starttime} = time;
   $Jobstep->{node} = $childnode->{name};
   $Jobstep->{slotindex} = $childslot;
@@ -696,7 +689,7 @@ update_progress_stats();
 freeze_if_want_freeze();
 
 
-if (!defined $success)
+if (!defined $main::success)
 {
   if (@jobstep_todo &&
       $thisround_succeeded == 0 &&
@@ -704,15 +697,15 @@ if (!defined $success)
   {
     my $message = "stop because $thisround_failed tasks failed and none succeeded";
     Log (undef, $message);
-    $success = 0;
+    $main::success = 0;
   }
   if (!@jobstep_todo)
   {
-    $success = 1;
+    $main::success = 1;
   }
 }
 
-goto ONELEVEL if !defined $success;
+goto ONELEVEL if !defined $main::success;
 
 
 release_allocation();
@@ -720,7 +713,7 @@ freeze();
 $Job->reload;
 $Job->{'output'} = &collate_output();
 $Job->{'running'} = 0;
-$Job->{'success'} = $Job->{'output'} && $success;
+$Job->{'success'} = $Job->{'output'} && $main::success;
 $Job->{'finished_at'} = gmtime;
 $Job->save if $job_has_uuid;
 
@@ -775,27 +768,32 @@ sub reapchildren
   my $elapsed = time - $proc{$pid}->{time};
   my $Jobstep = $jobstep[$jobstepid];
 
-  my $exitcode = $?;
-  my $exitinfo = "exit $exitcode";
+  my $childstatus = $?;
+  my $exitvalue = $childstatus >> 8;
+  my $exitinfo = sprintf("exit %d signal %d%s",
+                         $exitvalue,
+                         $childstatus & 127,
+                         ($childstatus & 128 ? ' core dump' : ''));
   $Jobstep->{'arvados_task'}->reload;
-  my $success = $Jobstep->{'arvados_task'}->{success};
+  my $task_success = $Jobstep->{'arvados_task'}->{success};
 
-  Log ($jobstepid, "child $pid on $whatslot $exitinfo success=$success");
+  Log ($jobstepid, "child $pid on $whatslot $exitinfo success=$task_success");
 
-  if (!defined $success) {
+  if (!defined $task_success) {
     # task did not indicate one way or the other --> fail
     $Jobstep->{'arvados_task'}->{success} = 0;
     $Jobstep->{'arvados_task'}->save;
-    $success = 0;
+    $task_success = 0;
   }
 
-  if (!$success)
+  if (!$task_success)
   {
-    my $no_incr_attempts;
-    $no_incr_attempts = 1 if $Jobstep->{node_fail};
+    my $temporary_fail;
+    $temporary_fail ||= $Jobstep->{node_fail};
+    $temporary_fail ||= ($exitvalue == 111);
 
     ++$thisround_failed;
-    ++$thisround_failed_multiple if $Jobstep->{attempts} > 1;
+    ++$thisround_failed_multiple if $Jobstep->{'failures'} >= 1;
 
     # Check for signs of a failed or misconfigured node
     if (++$slot[$proc{$pid}->{slot}]->{node}->{losing_streak} >=
@@ -803,18 +801,28 @@ sub reapchildren
       # Don't count this against jobstep failure thresholds if this
       # node is already suspected faulty and srun exited quickly
       if ($slot[$proc{$pid}->{slot}]->{node}->{hold_until} &&
-	  $elapsed < 5 &&
-	  $Jobstep->{attempts} > 1) {
-	Log ($jobstepid, "blaming failure on suspect node " . $slot[$proc{$pid}->{slot}]->{node}->{name} . " instead of incrementing jobstep attempts");
-        $no_incr_attempts = 1;
+	  $elapsed < 5) {
+	Log ($jobstepid, "blaming failure on suspect node " .
+             $slot[$proc{$pid}->{slot}]->{node}->{name});
+        $temporary_fail ||= 1;
       }
       ban_node_by_slot($proc{$pid}->{slot});
     }
 
-    push @jobstep_todo, $jobstepid;
-    Log ($jobstepid, "failure in $elapsed seconds");
+    Log ($jobstepid, sprintf('failure (#%d, %s) after %d seconds',
+                             ++$Jobstep->{'failures'},
+                             $temporary_fail ? 'temporary ' : 'permanent',
+                             $elapsed));
 
-    --$Jobstep->{attempts} if $no_incr_attempts;
+    if (!$temporary_fail || $Jobstep->{'failures'} >= 3) {
+      # Give up on this task, and the whole job
+      $main::success = 0;
+      $main::please_freeze = 1;
+    }
+    else {
+      # Put this task back on the todo queue
+      push @jobstep_todo, $jobstepid;
+    }
     $Job->{'tasks_summary'}->{'failed'}++;
   }
   else
@@ -825,9 +833,9 @@ sub reapchildren
     push @jobstep_done, $jobstepid;
     Log ($jobstepid, "success in $elapsed seconds");
   }
-  $Jobstep->{exitcode} = $exitcode;
+  $Jobstep->{exitcode} = $childstatus;
   $Jobstep->{finishtime} = time;
-  process_stderr ($jobstepid, $success);
+  process_stderr ($jobstepid, $task_success);
   Log ($jobstepid, "output " . $Jobstep->{'arvados_task'}->{output});
 
   close $reader{$jobstepid};
@@ -846,7 +854,7 @@ sub reapchildren
   foreach my $arvados_task (@{$newtask_list->{'items'}}) {
     my $jobstep = {
       'level' => $arvados_task->{'sequence'},
-      'attempts' => 0,
+      'failures' => 0,
       'arvados_task' => $arvados_task
     };
     push @jobstep, $jobstep;
@@ -981,7 +989,7 @@ sub preprocess_stderr
 sub process_stderr
 {
   my $job = shift;
-  my $success = shift;
+  my $task_success = shift;
   preprocess_stderr ($job);
 
   map {
@@ -1021,7 +1029,7 @@ sub collate_output
     {
       my $errstr = $whc->errstr;
       $whc->write_data ("XXX fetch_block($output) failed: $errstr XXX\n");
-      $success = 0;
+      $main::success = 0;
     }
   }
   $joboutput = $whc->write_finish if !defined $joboutput;
@@ -1223,7 +1231,7 @@ sub thaw
       my ($k, $v) = split ("=", $_, 2);
       $Jobstep->{$k} = freezeunquote ($v) if $k;
     }
-    $Jobstep->{attempts} = 0;
+    $Jobstep->{'failures'} = 0;
     push @jobstep, $Jobstep;
 
     if ($Jobstep->{exitcode} eq "0")
