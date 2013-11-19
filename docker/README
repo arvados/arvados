@@ -27,14 +27,15 @@ BUILDING
 1. Copy `config.yml.example' to `config.yml' and edit it with settings
    for your installation.
 
-2. Run `./config.rb' to generate configuration files.
-
-3. Run `./build.sh' to build the following Docker images:
+2. Run `make' to build the following Docker images:
 
      arvados/api       - the Arvados API server
      arvados/docserver - Arvados documentation
      arvados/warehouse - Keep, the Arvados content-addressable filesystem
      arvados/workbench - the Arvados console
+
+   You may also run `make api', `make docserver', etc. to make
+   images for individual Arvados services.
 
 DEPLOYING
 ---------
