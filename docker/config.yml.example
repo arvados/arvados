@@ -28,16 +28,18 @@ ARVADOS_PROD_DB: arvados_production
 ARVADOS_PROD_USER: arvados_prod
 ARVADOS_PROD_PW:
 
+# If a _SECRET variable is set to an empty string, a password
+# will be chosen randomly at build time. This is the
+# recommended setting.
+API_SECRET:
+
 # More than anything this should be auto-generated, but
 # we don't presently have a good place to store it. So just
 # change it and don't be dumb.
 POSTGRES_ROOT_PW: dummy_pw
 
-# The APP_ID this application presents to Omniauth.
-OMNIAUTH_APP_ID: arvados-server
-
 # The URL for this installation's Omniauth server.
-OMNIAUTH_URL: http://auth.clinicalfuture.com
+OMNIAUTH_URL: https://@@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@
 
 # ==============================
 # Workbench settings
@@ -51,5 +53,13 @@ WORKBENCH_INSECURE_HTTPS: false
 WORKBENCH_ACTIVATION_CONTACT_LINK: mailto:arvados@clinicalfuture.com
 WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/login
 WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/arvados/v1
-# /Workbench settings
+WORKBENCH_SECRET:
 
+# ==============================
+# SSO settings
+# ==============================
+SSO_HOSTNAME: sso
+SSO_SECRET:
+SSO_CLIENT_NAME: devsandbox
+SSO_CLIENT_APP_ID: devsandbox
+SSO_CLIENT_SECRET:

@@ -12,6 +12,9 @@
 #
 # [--template uuid] Use the specified pipeline template.
 #
+# [--template path] Load the pipeline template from the specified
+#                   local file.
+#
 # [--instance uuid] Use the specified pipeline instance.
 #
 # [-n, --dry-run] Do not start any new jobs or wait for existing jobs
@@ -162,7 +165,7 @@ p = Trollop::Parser.new do
       :short => :none,
       :type => :integer)
   opt(:template,
-      "UUID of pipeline template.",
+      "UUID of pipeline template, or path to local pipeline template file.",
       :short => :none,
       :type => :string)
   opt(:instance,
@@ -314,16 +317,25 @@ class WhRunPipelineInstance
     @options = _options
   end
 
-  def fetch_template(template_uuid)
-    result = $client.execute(:api_method => $arvados.pipeline_templates.get,
-                             :parameters => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
-                               :uuid => template_uuid
-                             },
-                             :authenticated => false)
-    @template = JSON.parse result.body, :symbolize_names => true
-    if !@template[:uuid]
-      abort "#{$0}: fatal: failed to retrieve pipeline template #{template_uuid} #{@template[:errors].inspect rescue nil}"
+  def fetch_template(template)
+    if template.match /[^-0-9a-z]/
+      # Doesn't look like a uuid -- use it as a filename.
+      @template = JSON.parse File.read(template), :symbolize_names => true
+      if !@template[:components]
+        abort ("#{$0}: Template loaded from #{template} " +
+               "does not have a \"components\" key")
+      end
+    else
+      result = $client.execute(:api_method => $arvados.pipeline_templates.get,
+                               :parameters => {
+                                 :api_token => ENV['ARVADOS_API_TOKEN'],
+                                 :uuid => template
+                               },
+                               :authenticated => false)
+      @template = JSON.parse result.body, :symbolize_names => true
+      if !@template[:uuid]
+        abort "#{$0}: fatal: failed to retrieve pipeline template #{template} #{@template[:errors].inspect rescue nil}"
+      end
     end
     self
   end
@@ -407,7 +419,7 @@ class WhRunPipelineInstance
           (@options[:no_reuse] ? [] : JobCache.
            where(script: c[:script],
                  script_parameters: c[:script_parameters],
-                 script_version_descends_from: c[:script_version_descends_from])
+                 script_version_descends_from: c[:script_version])
            ).each do |candidate_job|
             candidate_params_downcase = Hash[candidate_job[:script_parameters].
                                              map { |k,v| [k.downcase,v] }]
@@ -417,6 +429,12 @@ class WhRunPipelineInstance
             debuglog "component #{cname} considering job #{candidate_job[:uuid]} version #{candidate_job[:script_version]} parameters #{candidate_params_downcase.inspect}", 3
 
             unless candidate_params_downcase == c_params_downcase
+              next
+            end
+
+            if c[:script_version] !=
+                candidate_job[:script_version][0,c[:script_version].length]
+              debuglog "component #{cname} would be satisfied by job #{candidate_job[:uuid]} if script_version matched.", 2
               next
             end
 

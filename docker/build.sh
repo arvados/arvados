@@ -21,3 +21,5 @@ docker build -t arvados/workbench workbench
 
 docker build -t arvados/warehouse warehouse
 
+mkdir -p sso/generated
+docker build -t arvados/sso sso

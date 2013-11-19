@@ -3,20 +3,15 @@
 FROM arvados/base
 maintainer Ward Vandewege <ward@clinicalfuture.com>
 
-env DEBIAN_FRONTEND noninteractive
-
 # Install packages
 # Fix Locale
 # Build static site
-
 RUN /bin/mkdir -p /usr/src/arvados
 ADD generated/doc.tar.gz /usr/src/arvados/
 RUN \
     apt-get update ;\
-    apt-get install -q -y curl procps apache2-mpm-worker locales ;\
-    /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen ;\
-    /usr/sbin/locale-gen ;\
-    gem install jekyll RedCloth ;\
+    apt-get install -q -y curl procps apache2-mpm-worker ;\
+    bundle install --gemfile=/usr/src/arvados/doc/Gemfile ;\
     /bin/sed -ri 's/^baseurl: .*$/baseurl: /' /usr/src/arvados/doc/_config.yml ;\
     cd /usr/src/arvados/doc; LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" jekyll build
 
@@ -26,13 +21,7 @@ RUN \
   a2dissite default ;\
   a2ensite doc
 
-# Finally, start Apache
-env APACHE_RUN_USER    www-data
-env APACHE_RUN_GROUP   www-data
-env APACHE_PID_FILE    /var/run/apache2.pid
-env APACHE_RUN_DIR     /var/run/apache2
-env APACHE_LOCK_DIR    /var/lock/apache2
-env APACHE_LOG_DIR     /var/log/apache2
-env LANG               C
+ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
-cmd ["/usr/sbin/apache2", "-D", "FOREGROUND"]
+# Start Apache
+CMD ["/etc/apache2/foreground.sh"]

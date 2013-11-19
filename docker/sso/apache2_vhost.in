@@ -1,0 +1,52 @@
+# VirtualHost definition for the Arvados API server
+
+<VirtualHost *:80>
+  ServerName @@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@
+  ServerAdmin sysadmin@clinicalfuture.com
+
+  RedirectPermanent / https://@@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@/
+
+  LogLevel warn
+  ErrorLog  ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+</VirtualHost>
+
+<VirtualHost *:443>
+  ServerName @@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@
+  ServerAdmin sysadmin@clinicalfuture.com
+
+  RailsEnv production
+  RackBaseURI /
+  RailsAppSpawnerIdleTime 1200
+
+  # Enable streaming
+  PassengerBufferResponse off
+
+  # Index file and Document Root (where the public files are located)
+  DirectoryIndex index.html
+  DocumentRoot /usr/src/sso-provider/public
+
+  LogLevel warn
+  ErrorLog  ${APACHE_LOG_DIR}/ssl_error.log
+  CustomLog ${APACHE_LOG_DIR}/ssl_access.log combined
+
+  <Directory /usr/src/sso-provider/public>
+    Options Indexes FollowSymLinks MultiViews IncludesNoExec
+    AllowOverride None
+    Order allow,deny
+    allow from all
+  </Directory>
+
+  <IfModule mod_ssl.c>
+    SSLEngine on
+    # SSLCertificateChainFile /etc/ssl/certs/startcom.sub.class1.server.ca.pem
+    # SSLCACertificateFile    /etc/ssl/certs/startcom.ca.pem
+    # SSLCertificateFile      /etc/ssl/certs/qr1hi.arvadosapi.com.crt.pem
+    # SSLCertificateKeyFile   /etc/ssl/private/qr1hi.arvadosapi.com.key.pem
+    SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
+    SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+    SetEnvIf User-Agent ".*MSIE.*" nokeepalive ssl-unclean-shutdown
+  </IfModule>
+
+</VirtualHost>

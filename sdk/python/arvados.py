@@ -16,6 +16,7 @@ import bz2
 import zlib
 import fcntl
 import time
+import threading
 
 from apiclient import errors
 from apiclient.discovery import build
@@ -431,29 +432,6 @@ class util:
                 allfiles += [ent_base]
         return allfiles
 
-class DataReader:
-    def __init__(self, data_locator):
-        self.data_locator = data_locator
-        self.p = subprocess.Popen(["whget", "-r", self.data_locator, "-"],
-                                  stdout=subprocess.PIPE,
-                                  stdin=None, stderr=subprocess.PIPE,
-                                  shell=False, close_fds=True)
-    def __enter__(self):
-        pass
-    def __exit__(self):
-        self.close()
-    def read(self, size, **kwargs):
-        return self.p.stdout.read(size, **kwargs)
-    def close(self):
-        self.p.stdout.close()
-        if not self.p.stderr.closed:
-            for err in self.p.stderr:
-                print >> sys.stderr, err
-            self.p.stderr.close()
-        self.p.wait()
-        if self.p.returncode != 0:
-            raise Exception("whget subprocess exited %d" % self.p.returncode)
-
 class StreamFileReader:
     def __init__(self, stream, pos, size, name):
         self._stream = stream
@@ -812,10 +790,12 @@ class Keep:
 
 class KeepClient:
     def __init__(self):
+        self.lock = threading.Lock()
         self.service_roots = None
 
     def shuffled_service_roots(self, hash):
         if self.service_roots == None:
+            self.lock.acquire()
             keep_disks = api().keep_disks().list().execute()['items']
             roots = (("http%s://%s:%d/" %
                       ('s' if f['service_ssl_flag'] else '',
@@ -824,6 +804,7 @@ class KeepClient:
                      for f in keep_disks)
             self.service_roots = sorted(set(roots))
             logging.debug(str(self.service_roots))
+            self.lock.release()
         seed = hash
         pool = self.service_roots[:]
         pseq = []

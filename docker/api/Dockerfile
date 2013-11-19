@@ -12,7 +12,8 @@ RUN /bin/mkdir -p /usr/src/arvados/services
 ADD generated/api.tar.gz /usr/src/arvados/services/
 
 # Install gems needed for API server
-RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile
+RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile ; \
+    passenger-install-apache2-module --auto
 
 # Install generated config files
 ADD generated/database.yml /usr/src/arvados/services/api/config/database.yml
@@ -29,16 +30,17 @@ RUN sh /tmp/config_databases.sh && \
     /etc/init.d/postgresql start && \
     cd /usr/src/arvados/services/api && \
     rake db:setup && \
-    rake assets:precompile
+    rake assets:precompile ; \
+    chown www-data:www-data config.ru ; \
+    chown www-data:www-data log -R
 
 # Configure Apache and Passenger.
 ADD passenger.conf /etc/apache2/conf.d/passenger
-RUN a2dissite default && \
-    a2ensite arvados && \
-    a2enmod rewrite && \
-    a2enmod ssl && \
-    /bin/mkdir /var/run/apache2 && \
-    passenger-install-apache2-module --auto
+RUN a2dissite default ; \
+    a2ensite arvados ; \
+    a2enmod rewrite ; \
+    a2enmod ssl ; \
+    /bin/mkdir /var/run/apache2
 
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf

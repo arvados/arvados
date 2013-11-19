@@ -63,11 +63,9 @@ EOF
 
 The @--job@ argument to @arv-crunch-job@ is the same as the @--job@ argument to @arv job create@, except:
 
-<notextile><!--
-* @script_version@ can use "/" to indicate the working copy of a repository instead of a git commit or tag.
---></notextile>
+* @script_version@ can be the full path to a local working tree, instead of a git commit/branch/tag.
 
-* node resource constraints are ignored.
+* @runtime_constraints@ are ignored.
 
 You will see the progress of the job in your terminal.  Press Control-C to create a checkpoint and stop the job.
 

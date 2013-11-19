@@ -89,8 +89,20 @@ You can also watch the log messages while the job runs:
 
 <pre>
 curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
-  https://{{ site.arvados_api_host }}/arvados/v1/jobs/JOB_UUID_HERE/log_tail_follow
+  "https://$ARVADOS_API_HOST/arvados/v1/jobs/JOB_UUID_HERE/log_tail_follow"
 </pre>
+
+This will run until the job finishes or you hit control-C.
+
+If you're running more than one job today, you can watch log messages from all of them in one stream:
+
+<pre>
+my_user_uuid=`arv user current`
+curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
+  "https://$ARVADOS_API_HOST/arvados/v1/users/$my_user_uuid/event_stream"
+</pre>
+
+This will run until you hit control-C.
 
 h3. Inspect the job output
 

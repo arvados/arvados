@@ -8,9 +8,10 @@ MAINTAINER Tim Pierce <twp@clinicalfuture.com>
 #   * git, curl, rvm
 #   * Arvados source code
 #
-RUN apt-get update && \
-    apt-get -q -y install -q -y apt-utils && \
-    apt-get -q -y install git curl && \
+RUN apt-get update ;\
+    apt-get -q -y install -q -y apt-utils git curl locales ;\
+    /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen ;\
+    /usr/sbin/locale-gen ;\
     curl -L https://get.rvm.io | bash -s stable --ruby=2.0.0
 
 # Set up RVM environment. These are just the env variables created by
@@ -20,5 +21,9 @@ ENV GEM_HOME /usr/local/rvm/gems/ruby-2.0.0-p247
 ENV GEM_PATH /usr/local/rvm/gems/ruby-2.0.0-p247:/usr/local/rvm/gems/ruby-2.0.0-p247@global
 ENV PATH /usr/local/rvm/gems/ruby-2.0.0-p247/bin:/usr/local/rvm/gems/ruby-2.0.0-p247@global/bin:/usr/local/rvm/rubies/ruby-2.0.0-p247/bin:/usr/local/rvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+# Update gem. This (hopefully) fixes
+# https://github.com/rubygems/rubygems.org/issues/613.
 RUN gem update --system 
+
+ENV DEBIAN_FRONTEND noninteractive
 
