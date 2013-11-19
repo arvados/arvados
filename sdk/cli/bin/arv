@@ -100,7 +100,17 @@ class Google::APIClient
  end
 end
 
-client = Google::APIClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
+class ArvadosClient < Google::APIClient
+  def execute(*args)
+    if args.last.is_a? Hash
+      args.last[:headers] ||= {}
+      args.last[:headers]['Accept'] ||= 'application/json'
+    end
+    super(*args)
+  end
+end
+
+client = ArvadosClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
 arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
 
 def to_boolean(s)
