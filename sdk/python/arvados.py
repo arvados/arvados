@@ -832,7 +832,8 @@ class KeepClient:
             headers = {'Authorization': "OAuth2 %s" % api_token,
                        'Accept': 'application/octet-stream'}
             try:
-                resp, content = h.request(url, 'GET', headers=headers)
+                resp, content = h.request(url.encode('utf-8'), 'GET',
+                                          headers=headers)
                 if re.match(r'^2\d\d$', resp['status']):
                     m = hashlib.new('md5')
                     m.update(content)
@@ -859,14 +860,14 @@ class KeepClient:
             api_token = os.environ['ARVADOS_API_TOKEN']
             headers = {'Authorization': "OAuth2 %s" % api_token}
             try:
-                resp, content = h.request(url, 'PUT',
+                resp, content = h.request(url.encode('utf-8'), 'PUT',
                                           headers=headers,
                                           body=data)
                 if (resp['status'] == '401' and
                     re.match(r'Timestamp verification failed', content)):
                     body = self.sign_for_old_server(data_hash, data)
                     h = httplib2.Http()
-                    resp, content = h.request(url, 'PUT',
+                    resp, content = h.request(url.encode('utf-8'), 'PUT',
                                               headers=headers,
                                               body=body)
                 if re.match(r'^2\d\d$', resp['status']):

@@ -20,3 +20,11 @@ class KeepRWTest(unittest.TestCase):
         self.assertEqual(arvados.Keep.get(foo_locator),
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
+        blob_str = '\xff\xfe\xf7\x00\x01\x02'
+        blob_locator = arvados.Keep.put(blob_str)
+        self.assertEqual(blob_locator,
+                         '7fc7c53b45e53926ba52821140fef396+6',
+                         'wrong md5 hash from Keep.put(<binarydata>)')
+        self.assertEqual(arvados.Keep.get(blob_locator),
+                         blob_str,
+                         'wrong content from Keep.get(md5(<binarydata>))')
