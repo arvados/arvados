@@ -1,56 +1,53 @@
-all: api docserver workbench warehouse
+all: api-image docserver-image workbench-image warehouse-image
 
 # ============================================================
 # The main Arvados servers: api, docserver, workbench, warehouse
 
-api: .built-api
+api-image: base-image $(API_DEPS)
+	tar -c -z -f api/generated/api.tar.gz -C ../services api
+	docker build -t arvados/api api
+	echo -n "Built at $(date)" > api-image
 
-.built-api: base $(API_DEPS)
-	docker build -t arvados/api api && touch .built-api
+docserver-image: base-image $(DOCSERVER_DEPS) 
+	tar -c -z -f docserver/generated/doc.tar.gz -C .. doc
+	docker build -t arvados/docserver docserver
+	echo -n "Built at $(date)" > docserver-image
 
-docserver: .built-docserver
+workbench-image: base-image $(WORKBENCH_DEPS)
+	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
+	docker build -t arvados/workbench workbench
+	echo -n "Built at $(date)" > workbench-image
 
-.built-docserver: base $(DOCSERVER_DEPS) 
-	docker build -t arvados/docserver docserver && touch .built-docserver
-
-workbench: .built-workbench
-
-.built-workbench: base $(WORKBENCH_DEPS)
-	docker build -t arvados/workbench workbench && touch .built-workbench
-
-warehouse: .built-warehouse
-
-.built-warehouse: base $(WAREHOUSE_DEPS)
-	docker build -t arvados/warehouse warehouse && touch .built-warehouse
+warehouse-image: base-image $(WAREHOUSE_DEPS)
+	tar -c -z -f warehouse/generated/warehouse.tar.gz -C ../.. warehouse-apps
+	docker build -t arvados/warehouse warehouse
+	echo -n "Built at $(date)" > warehouse-image
 
 # ============================================================
 # The arvados/base image is the base Debian image plus packages
 # that are dependencies for every Arvados service.
 
-base:	.built-base
+base-image: debian-image
+	docker build -t arvados/base base
+	echo -n "Built at $(date)" > base-image
 
-.built-base:	debian
-	docker build -t arvados/base base && touch .built-base
-
-debian:		.built-debian
-
-.built-debian:
-	./mkimage-debootstrap.sh arvados/debian wheezy http://debian.lcs.mit.edu/debian/ \
-	&& touch .built-debian
+debian-image:
+	./mkimage-debootstrap.sh arvados/debian wheezy http://debian.lcs.mit.edu/debian/
+	echo -n "Built at $(date)" > debian-image
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
 # for building docker images.
 
-API_DEPS = api/generated/api.tar.gz $(API_GENERATED)
+API_DEPS = api/Dockerfile $(API_GENERATED)
 
-DOCSERVER_DEPS = docserver/generated/doc.tar.gz docserver/apache2_vhost
+DOCSERVER_DEPS = docserver/Dockerfile docserver/apache2_vhost
 
-WORKBENCH_DEPS = workbench/generated/workbench.tar.gz \
+WORKBENCH_DEPS = workbench/Dockerfile \
                  workbench/passenger.conf \
                  $(WORKBENCH_GENERATED)
 
-WAREHOUSE_DEPS = warehouse/generated/warehouse.tar.gz \
+WAREHOUSE_DEPS = warehouse/Dockerfile \
                  warehouse/supervisor.conf \
                  $(WAREHOUSE_GENERATED)
 
@@ -84,17 +81,6 @@ WAREHOUSE_GENERATED = warehouse/generated/warehouse.conf
 
 WAREHOUSE_GENERATED_IN = warehouse/warehouse.conf.in
 
-api/generated/api.tar.gz:
-	tar -c -z -f api/generated/api.tar.gz -C ../services api
-
-docserver/generated/doc.tar.gz:
-	tar -c -z -f docserver/generated/doc.tar.gz -C .. doc
-
-workbench/generated/workbench.tar.gz:
-	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
-
-warehouse/generated/warehouse.tar.gz:
-	tar -c -z -f warehouse/generated/warehouse.tar.gz -C ../.. warehouse-apps
 $(API_GENERATED): $(API_GENERATED_IN)
 	./config.rb
 
