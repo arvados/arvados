@@ -4,15 +4,18 @@
 FROM arvados/debian:wheezy
 MAINTAINER Tim Pierce <twp@clinicalfuture.com>
 
+ENV DEBIAN_FRONTEND noninteractive
+
 # Install prerequisite packages for Arvados
 #   * git, curl, rvm
-#   * Arvados source code
-#
+#   * Arvados source code in /usr/src/arvados-upstream, for preseeding gem installation
+
 RUN apt-get update ;\
-    apt-get -q -y install -q -y apt-utils git curl locales ;\
+    apt-get -q -y install -q -y apt-utils git curl locales postgresql-server-dev-9.1 ;\
     /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen ;\
     /usr/sbin/locale-gen ;\
-    curl -L https://get.rvm.io | bash -s stable --ruby=2.0.0
+    curl -L https://get.rvm.io | bash -s stable --ruby=2.0.0 ;\
+    git clone https://github.com/clinicalfuture/arvados.git /usr/src/arvados-upstream
 
 # Set up RVM environment. These are just the env variables created by
 # /usr/local/rvm/scripts/rvm, which can't be run from a non-login shell.
@@ -25,5 +28,8 @@ ENV PATH /usr/local/rvm/gems/ruby-2.0.0-p247/bin:/usr/local/rvm/gems/ruby-2.0.0-
 # https://github.com/rubygems/rubygems.org/issues/613.
 RUN gem update --system 
 
-ENV DEBIAN_FRONTEND noninteractive
+RUN gem install bundler ;\
+    bundle install --gemfile=/usr/src/arvados-upstream/apps/workbench/Gemfile ;\
+    bundle install --gemfile=/usr/src/arvados-upstream/services/api/Gemfile ;\
+    bundle install --gemfile=/usr/src/arvados-upstream/doc/Gemfile
 

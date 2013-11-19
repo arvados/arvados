@@ -1,19 +1,14 @@
 # Arvados API server Docker container.
 
-FROM arvados/base
+FROM arvados/passenger
 MAINTAINER Tim Pierce <twp@clinicalfuture.com>
 
 # Install postgres and apache
 RUN apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
-    libcurl4-openssl-dev apache2-threaded-dev libapr1-dev libaprutil1-dev \
-    supervisor
+                          supervisor
 
 RUN /bin/mkdir -p /usr/src/arvados/services
 ADD generated/api.tar.gz /usr/src/arvados/services/
-
-# Install gems needed for API server
-RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile ; \
-    passenger-install-apache2-module --auto
 
 # Install generated config files
 ADD generated/database.yml /usr/src/arvados/services/api/config/database.yml

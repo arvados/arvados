@@ -1,9 +1,9 @@
-all: api-image docserver-image workbench-image warehouse-image
+all: api-image docserver-image workbench-image warehouse-image sso-image
 
 # ============================================================
 # The main Arvados servers: api, docserver, workbench, warehouse
 
-api-image: base-image $(API_DEPS)
+api-image: passenger-image $(API_DEPS)
 	tar -c -z -f api/generated/api.tar.gz -C ../services api
 	docker build -t arvados/api api
 	echo -n "Built at $(date)" > api-image
@@ -13,7 +13,7 @@ docserver-image: base-image $(DOCSERVER_DEPS)
 	docker build -t arvados/docserver docserver
 	echo -n "Built at $(date)" > docserver-image
 
-workbench-image: base-image $(WORKBENCH_DEPS)
+workbench-image: passenger-image $(WORKBENCH_DEPS)
 	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
 	docker build -t arvados/workbench workbench
 	echo -n "Built at $(date)" > workbench-image
@@ -22,9 +22,17 @@ warehouse-image: base-image $(WAREHOUSE_DEPS)
 	docker build -t arvados/warehouse warehouse
 	echo -n "Built at $(date)" > warehouse-image
 
+sso-image: passenger-image $(WORKBENCH_DEPS)
+	docker build -t arvados/sso sso
+	echo -n "Built at $(date)" > sso-image
+
 # ============================================================
 # The arvados/base image is the base Debian image plus packages
 # that are dependencies for every Arvados service.
+
+passenger-image: base-image
+	docker build -t arvados/passenger passenger
+	echo -n "Built at $(date)" > passenger-image
 
 base-image: debian-image
 	docker build -t arvados/base base
@@ -80,6 +88,16 @@ WAREHOUSE_GENERATED = warehouse/generated/warehouse.conf
 
 WAREHOUSE_GENERATED_IN = warehouse/warehouse.conf.in
 
+SSO_GENERATED = \
+        sso/generated/apache_vhost \
+        sso/generated/seeds.rb \
+        sso/generated/secret_token.rb
+
+SSO_GENERATED_IN = \
+        sso/apache_vhost.in \
+        sso/seeds.rb.in \
+        sso/secret_token.rb.in
+
 $(API_GENERATED): $(API_GENERATED_IN)
 	./config.rb
 
@@ -87,4 +105,7 @@ $(WORKBENCH_GENERATED): $(WORKBENCH_GENERATED_IN)
 	./config.rb
 
 $(WAREHOUSE_GENERATED): $(WAREHOUSE_GENERATED_IN)
+	./config.rb
+
+$(SSO_GENERATED): $(SSO_GENERATED_IN)
 	./config.rb
