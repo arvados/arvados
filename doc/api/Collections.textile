@@ -2,7 +2,7 @@
 layout: default
 navsection: api
 title: "Resource: Collections"
-navorder: 10
+navorder: 13
 ---
 
 h1. Collections

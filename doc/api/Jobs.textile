@@ -2,7 +2,7 @@
 layout: default
 navsection: api
 title: "Resource: Jobs"
-navorder: 10
+navorder: 15
 ---
 
 h1. Jobs
