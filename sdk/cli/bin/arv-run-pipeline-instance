@@ -12,6 +12,9 @@
 #
 # [--template uuid] Use the specified pipeline template.
 #
+# [--template path] Load the pipeline template from the specified
+#                   local file.
+#
 # [--instance uuid] Use the specified pipeline instance.
 #
 # [-n, --dry-run] Do not start any new jobs or wait for existing jobs
@@ -162,7 +165,7 @@ p = Trollop::Parser.new do
       :short => :none,
       :type => :integer)
   opt(:template,
-      "UUID of pipeline template.",
+      "UUID of pipeline template, or path to local pipeline template file.",
       :short => :none,
       :type => :string)
   opt(:instance,
@@ -314,16 +317,25 @@ class WhRunPipelineInstance
     @options = _options
   end
 
-  def fetch_template(template_uuid)
-    result = $client.execute(:api_method => $arvados.pipeline_templates.get,
-                             :parameters => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
-                               :uuid => template_uuid
-                             },
-                             :authenticated => false)
-    @template = JSON.parse result.body, :symbolize_names => true
-    if !@template[:uuid]
-      abort "#{$0}: fatal: failed to retrieve pipeline template #{template_uuid} #{@template[:errors].inspect rescue nil}"
+  def fetch_template(template)
+    if template.match /[^-0-9a-z]/
+      # Doesn't look like a uuid -- use it as a filename.
+      @template = JSON.parse File.read(template), :symbolize_names => true
+      if !@template[:components]
+        abort ("#{$0}: Template loaded from #{template} " +
+               "does not have a \"components\" key")
+      end
+    else
+      result = $client.execute(:api_method => $arvados.pipeline_templates.get,
+                               :parameters => {
+                                 :api_token => ENV['ARVADOS_API_TOKEN'],
+                                 :uuid => template
+                               },
+                               :authenticated => false)
+      @template = JSON.parse result.body, :symbolize_names => true
+      if !@template[:uuid]
+        abort "#{$0}: fatal: failed to retrieve pipeline template #{template} #{@template[:errors].inspect rescue nil}"
+      end
     end
     self
   end
