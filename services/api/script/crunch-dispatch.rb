@@ -163,6 +163,7 @@ class Dispatcher
       $stderr.puts start_banner
       $redis.set job.uuid, start_banner + "\n"
       $redis.publish job.uuid, start_banner
+      $redis.publish job.owner_uuid, start_banner
 
       @running[job.uuid] = {
         stdin: i,
@@ -218,8 +219,10 @@ class Dispatcher
           lines.each do |line|
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
-            $redis.publish job_uuid, "#{Time.now.ctime.to_s} #{line.strip}"
-            $redis.append job_uuid, "#{Time.now.ctime.to_s} #{line}"
+            pub_msg = "#{Time.now.ctime.to_s} #{line.strip}"
+            $redis.publish job.owner_uuid, pub_msg
+            $redis.publish job_uuid, pub_msg
+            $redis.append job_uuid, pub_msg + "\n"
             if LOG_BUFFER_SIZE < $redis.strlen(job_uuid)
               $redis.set(job_uuid,
                          $redis
