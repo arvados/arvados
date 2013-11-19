@@ -9,12 +9,6 @@ config = YAML.load_file('config.yml')
 # Add dynamically chosen config settings. These settings should
 # be suitable for any installation.
 
-# The APP_SECRET the application uses (with OMNIAUTH_APP_ID) to
-# authenticate itself to Omniauth. By default this is generated
-# randomly when the application is built; you can instead
-# substitute a hardcoded string.
-config['OMNIAUTH_APP_SECRET'] = rand(2**512).to_s(36)
-
 # Any _PW/_SECRET config settings represent passwords/secrets. If they
 # are blank, choose a password randomly.
 config.each_key do |var|
