@@ -9,7 +9,7 @@ RUN apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
     supervisor
 
 RUN /bin/mkdir -p /usr/src/arvados/services
-#ADD generated/api.tar.gz /usr/src/arvados/services/
+ADD generated/api.tar.gz /usr/src/arvados/services/
 
 # Install gems needed for API server
 RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile ; \
