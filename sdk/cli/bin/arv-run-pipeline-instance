@@ -419,7 +419,7 @@ class WhRunPipelineInstance
           (@options[:no_reuse] ? [] : JobCache.
            where(script: c[:script],
                  script_parameters: c[:script_parameters],
-                 script_version_descends_from: c[:script_version_descends_from])
+                 script_version_descends_from: c[:script_version])
            ).each do |candidate_job|
             candidate_params_downcase = Hash[candidate_job[:script_parameters].
                                              map { |k,v| [k.downcase,v] }]
@@ -429,6 +429,12 @@ class WhRunPipelineInstance
             debuglog "component #{cname} considering job #{candidate_job[:uuid]} version #{candidate_job[:script_version]} parameters #{candidate_params_downcase.inspect}", 3
 
             unless candidate_params_downcase == c_params_downcase
+              next
+            end
+
+            if c[:script_version] !=
+                candidate_job[:script_version][0,c[:script_version].length]
+              debuglog "component #{cname} would be satisfied by job #{candidate_job[:uuid]} if script_version matched.", 2
               next
             end
 
