@@ -2,8 +2,8 @@
 Client.delete_all
 
 Client.create(
-  :name => "devsandbox",
-  :app_id => "devsandbox",
+  :name => "@@SSO_CLIENT_NAME@@",
+  :app_id => "@@SSO_CLIENT_APP_ID@@",
   :app_secret => "@@SSO_CLIENT_SECRET@@"
 )
 

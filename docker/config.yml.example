@@ -38,11 +38,8 @@ API_SECRET:
 # change it and don't be dumb.
 POSTGRES_ROOT_PW: dummy_pw
 
-# The APP_ID this application presents to Omniauth.
-OMNIAUTH_APP_ID: arvados-server
-
 # The URL for this installation's Omniauth server.
-OMNIAUTH_URL: http://auth.clinicalfuture.com
+OMNIAUTH_URL: https://@@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@
 
 # ==============================
 # Workbench settings
@@ -63,4 +60,6 @@ WORKBENCH_SECRET:
 # ==============================
 SSO_HOSTNAME: sso
 SSO_SECRET:
+SSO_CLIENT_NAME: devsandbox
+SSO_CLIENT_APP_ID: devsandbox
 SSO_CLIENT_SECRET:
