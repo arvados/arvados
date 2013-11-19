@@ -4,14 +4,14 @@ FROM arvados/base
 maintainer Ward Vandewege <ward@clinicalfuture.com>
 
 # Install packages
-# Fix Locale
-# Build static site
-RUN /bin/mkdir -p /usr/src/arvados
-ADD generated/doc.tar.gz /usr/src/arvados/
-RUN \
+RUN /bin/mkdir -p /usr/src/arvados ;\
     apt-get update ;\
-    apt-get install -q -y curl procps apache2-mpm-worker ;\
-    /bin/sed -ri 's/^baseurl: .*$/baseurl: /' /usr/src/arvados/doc/_config.yml ;\
+    apt-get install -q -y curl procps apache2-mpm-worker
+
+ADD generated/doc.tar.gz /usr/src/arvados/
+
+# Build static site
+RUN /bin/sed -ri 's/^baseurl: .*$/baseurl: /' /usr/src/arvados/doc/_config.yml ;\
     cd /usr/src/arvados/doc; LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" jekyll build
 
 # Configure Apache
