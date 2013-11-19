@@ -19,7 +19,6 @@ workbench-image: base-image $(WORKBENCH_DEPS)
 	echo -n "Built at $(date)" > workbench-image
 
 warehouse-image: base-image $(WAREHOUSE_DEPS)
-	tar -c -z -f warehouse/generated/warehouse.tar.gz -C ../.. warehouse-apps
 	docker build -t arvados/warehouse warehouse
 	echo -n "Built at $(date)" > warehouse-image
 

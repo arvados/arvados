@@ -34,8 +34,12 @@ BUILDING
      arvados/warehouse - Keep, the Arvados content-addressable filesystem
      arvados/workbench - the Arvados console
 
-   You may also run `make api', `make docserver', etc. to make
-   images for individual Arvados services.
+   You may also build Docker images for individual Arvados services:
+
+     make api-image
+     make docserver-image
+     make warehouse-image
+     make workbench-image
 
 DEPLOYING
 ---------
