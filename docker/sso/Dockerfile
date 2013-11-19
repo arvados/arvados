@@ -24,7 +24,8 @@ RUN a2dissite default ; \
     a2enmod rewrite ; \
     a2enmod ssl ; \
     cd /usr/src/sso-provider; RAILS_ENV=production rake db:setup ; rake assets:precompile ; \
-    chown www-data:www-data /usr/src/sso-provider/tmp_omniauth /usr/src/sso-provider/log -R ; \
+    chown www-data:www-data tmp_omniauth log config.ru -R ; \
+    chown www-data:www-data db db/production.sqlite3 ; \
     /bin/mkdir /var/run/apache2
 
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
