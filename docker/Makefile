@@ -1,7 +1,7 @@
 all: api-image docserver-image workbench-image warehouse-image sso-image
 
 clean:
-	rm *-image */generated/*
+	-rm *-image */generated/*
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
@@ -77,16 +77,19 @@ $(SSO_GENERATED): $(SSO_GENERATED_IN)
 # The main Arvados servers: api, docserver, workbench, warehouse
 
 api-image: passenger-image $(API_DEPS)
+	mkdir -p api/generated
 	tar -c -z -f api/generated/api.tar.gz -C ../services api
 	./docker_build -t arvados/api api
 	echo -n "Built at $(date)" > api-image
 
-docserver-image: base-image $(DOCSERVER_DEPS) 
+docserver-image: base-image $(DOCSERVER_DEPS)
+	mkdir -p docserver/generated
 	tar -c -z -f docserver/generated/doc.tar.gz -C .. doc
 	./docker_build -t arvados/docserver docserver
 	echo -n "Built at $(date)" > docserver-image
 
 workbench-image: passenger-image $(WORKBENCH_DEPS)
+	mkdir -p workbench/generated
 	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
 	./docker_build -t arvados/workbench workbench
 	echo -n "Built at $(date)" > workbench-image
