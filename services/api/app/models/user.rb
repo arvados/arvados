@@ -6,6 +6,7 @@ class User < ArvadosModel
   has_many :api_client_authorizations
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
+  before_create :check_auto_admin
   after_create AdminNotifier
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
@@ -66,6 +67,15 @@ class User < ArvadosModel
     current_user.andand.is_admin or
       (self == current_user and
        self.is_active == Rails.configuration.new_users_are_active)
+  end
+
+  def check_auto_admin
+    if not Rails.configuration.auto_admin_user.nil?
+      if current_user.email == Rails.configuration.auto_admin_user
+        self.is_admin = true
+        self.is_active = true
+      end
+    end
   end
 
   def prevent_privilege_escalation
