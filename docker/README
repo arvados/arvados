@@ -35,6 +35,7 @@ BUILDING
      arvados/docserver - Arvados documentation
      arvados/warehouse - Keep, the Arvados content-addressable filesystem
      arvados/workbench - the Arvados console
+     arvados/sso       - the Arvados single-signon authentication server
 
    You may also build Docker images for individual Arvados services:
 
@@ -42,6 +43,7 @@ BUILDING
      make docserver-image
      make warehouse-image
      make workbench-image
+     make sso-image
 
 DEPLOYING
 ---------

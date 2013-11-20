@@ -4,7 +4,10 @@ APP_ID = '@@SSO_CLIENT_APP_ID@@'
 APP_SECRET = '@@SSO_CLIENT_SECRET@@'
 
 # Update your custom Omniauth provider URL here
-CUSTOM_PROVIDER_URL = '@@OMNIAUTH_URL@@'
+CUSTOM_PROVIDER_URL = 'https://' + ENV['SSO_PORT_443_TCP_ADDR'].to_s
+
+# This is a development sandbox, we use self-signed certificates
+OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
 
 Rails.application.config.middleware.use OmniAuth::Builder do
   provider :josh_id, APP_ID, APP_SECRET, CUSTOM_PROVIDER_URL
