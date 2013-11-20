@@ -61,16 +61,16 @@ SSO_GENERATED_IN = \
         sso/seeds.rb.in \
         sso/secret_token.rb.in
 
-$(API_GENERATED): $(API_GENERATED_IN)
+$(API_GENERATED): config.yml $(API_GENERATED_IN)
 	./config.rb
 
-$(WORKBENCH_GENERATED): $(WORKBENCH_GENERATED_IN)
+$(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
 	./config.rb
 
-$(WAREHOUSE_GENERATED): $(WAREHOUSE_GENERATED_IN)
+$(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
 	./config.rb
 
-$(SSO_GENERATED): $(SSO_GENERATED_IN)
+$(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 	./config.rb
 
 # ============================================================
