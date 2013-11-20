@@ -27,7 +27,8 @@ RUN sh /tmp/config_databases.sh && \
     rake db:setup && \
     rake assets:precompile ; \
     chown www-data:www-data config.ru ; \
-    chown www-data:www-data log -R
+    chown www-data:www-data log -R ; \
+    chown www-data:www-data tmp -R
 
 # Configure Apache and Passenger.
 ADD passenger.conf /etc/apache2/conf.d/passenger
