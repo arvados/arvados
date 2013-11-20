@@ -21,6 +21,8 @@ PREREQUISITES
 
 * Ruby (any version)
 
+* sudo privileges to run `debootstrap'
+
 BUILDING
 --------
 
