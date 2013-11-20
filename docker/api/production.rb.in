@@ -86,4 +86,11 @@ Server::Application.configure do
   config.new_users_are_active = false
   config.admin_notifier_email_from = 'arvados@example.com'
   config.email_subject_prefix = '[ARVADOS] '
+
+  # The e-mail address of the user you would like to become marked as an admin
+  # user on their first login.
+  # In the default configuration, authentication happens through the Arvados SSO
+  # server, which uses openid against Google's servers, so in that case this
+  # should be an address associated with a Google account.
+  config.auto_admin_user = '@@API_AUTO_ADMIN_USER@@'
 end

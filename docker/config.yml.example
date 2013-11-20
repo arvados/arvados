@@ -15,6 +15,13 @@ ARVADOS_DNS_SERVER:     # e.g. 192.168.0.1
 # will also be used as config.uuid_prefix.
 API_HOSTNAME:           # e.g. qr1hi
 
+# The e-mail address of the user you would like to become marked as an admin
+# user on their first login.
+# In the default configuration, authentication happens through the Arvados SSO
+# server, which uses openid against Google's servers, so in that case this
+# should be an address associated with a Google account.
+API_AUTO_ADMIN_USER:
+
 # If a _PW variable is set to an empty string, a password
 # will be chosen randomly at build time. This is the
 # recommended setting.
@@ -49,7 +56,7 @@ WORKBENCH_DATA_IMPORT_DIR: /data/arvados-workbench-upload/data
 WORKBENCH_DATA_EXPORT_DIR: /data/arvados-workbench-download/data
 WORKBENCH_VCF_PIPELINE_UUID:
 WORKBENCH_SITE_NAME: Arvados Workbench
-WORKBENCH_INSECURE_HTTPS: false
+WORKBENCH_INSECURE_HTTPS: true
 WORKBENCH_ACTIVATION_CONTACT_LINK: mailto:arvados@clinicalfuture.com
 WORKBENCH_ARVADOS_LOGIN_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/login
 WORKBENCH_ARVADOS_V1_BASE: https://@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@/arvados/v1
