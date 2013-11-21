@@ -70,7 +70,7 @@ class User < ArvadosModel
   end
 
   def check_auto_admin
-    if not Rails.configuration.auto_admin_user.nil?
+    if User.where(:is_admin => true).count == 0 and not Rails.configuration.auto_admin_user.nil?
       if current_user.email == Rails.configuration.auto_admin_user
         self.is_admin = true
         self.is_active = true
