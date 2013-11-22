@@ -2,6 +2,60 @@ require 'test_helper'
 
 class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
 
+  test "add keep node with admin token" do
+    authorize_with :admin
+    post :ping, {
+      ping_secret: '',          # required by discovery doc, but ignored
+      service_host: '::1',
+      service_port: 55555,
+      service_ssl_flag: false,
+      filesystem_uuid: 'eb1e77a1-db84-4193-b6e6-ca2894f67d5f'
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_keep_node = JSON.parse(@response.body)
+    assert_not_nil new_keep_node['uuid']
+    assert_not_nil new_keep_node['ping_secret']
+    assert_not_equal '', new_keep_node['ping_secret']
+  end
+
+  test "refuse to add keep node with no filesystem_uuid" do
+    authorize_with :admin
+    opts = {
+      ping_secret: '',
+      service_host: '::1',
+      service_port: 55555,
+      service_ssl_flag: false
+    }
+    post :ping, opts
+    assert_response 404
+    post :ping, opts.merge(filesystem_uuid: '')
+    assert_response 404
+  end
+
+  test "refuse to add keep node without admin token" do
+    post :ping, {
+      ping_secret: '',
+      service_host: '::1',
+      service_port: 55555,
+      service_ssl_flag: false
+    }
+    assert_response 404
+  end
+
+  test "ping from keep node" do
+    post :ping, {
+      uuid: keep_disks(:nonfull).uuid,
+      ping_secret: keep_disks(:nonfull).ping_secret,
+      filesystem_uuid: keep_disks(:nonfull).filesystem_uuid
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    keep_node = JSON.parse(@response.body)
+    assert_not_nil keep_node['uuid']
+    assert_not_nil keep_node['ping_secret']
+  end
+
   test "should get index with ping_secret" do
     authorize_with :admin
     get :index

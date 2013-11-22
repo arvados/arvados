@@ -5,32 +5,40 @@ class Arvados::V1::KeepDisksController < ApplicationController
     {
       uuid: false,
       ping_secret: true,
-      ec2_instance_id: false,
-      local_ipv4: false,
+      node_uuid: false,
       filesystem_uuid: false,
+      service_host: false,
       service_port: true,
       service_ssl_flag: true
     }
   end
   def ping
-    if !@object and params[:filesystem_uuid] and current_user and current_user.is_admin
-      if KeepDisk.where('filesystem_uuid=?', params[:filesystem_uuid]).empty?
-        @object = KeepDisk.new filesystem_uuid: params[:filesystem_uuid]
+    if !@object
+      if params[:filesystem_uuid].andand.length.andand > 0 and
+          current_user.andand.is_admin
+        @object = KeepDisk.
+          find_or_initialize_by_filesystem_uuid params[:filesystem_uuid]
+        if not @object.new_record?
+          raise "ping from keep_disk with existing filesystem_uuid #{params[:filesystem_uuid]} but wrong uuid #{params[:uuid]}"
+        end
         @object.save!
+
+        # In the first ping from this new filesystem_uuid, we can't
+        # expect the keep node to know the ping_secret so we made sure
+        # we got an admin token. Here we add ping_secret to params so
+        # KeepNode.ping() understands this update is properly
+        # authenticated.
         params[:ping_secret] = @object.ping_secret
       else
-        raise "ping from keep_disk with existing filesystem_uuid #{params[:filesystem_uuid]} but wrong uuid #{params[:uuid]}"
+        return render_not_found "object not found"
       end
     end
 
-    if !@object
+    params[:service_host] ||= request.env['REMOTE_ADDR']
+    if not @object.ping params
       return render_not_found "object not found"
     end
-
-    params.merge!(service_host:
-                  params[:local_ipv4] || request.env['REMOTE_ADDR'])
-    @object.ping params
-    show
+    render json: @object.as_api_response(:superuser)
   end
 
   def find_objects_for_index
