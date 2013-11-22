@@ -612,7 +612,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       $main::please_refresh = 0;
       if ($job_has_uuid) {
-        $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
+        my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
         for my $attr ('cancelled_at',
                       'cancelled_by_user_uuid',
                       'cancelled_by_client_uuid') {
