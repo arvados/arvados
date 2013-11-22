@@ -1,0 +1,41 @@
+running:
+  uuid: zzzzz-8i9sb-pshmckwoma9plh7
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  running: true
+  success: ~
+  output: ~
+  priority: ~
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+
+running_cancelled:
+  uuid: zzzzz-8i9sb-4cf0nhn6xte809j
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: <%= 1.minute.ago.to_s(:db) %>
+  cancelled_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  running: true
+  success: ~
+  output: ~
+  priority: ~
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}

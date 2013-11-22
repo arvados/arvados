@@ -21,6 +21,19 @@ sub save
     $self;
 }
 
+sub update_attributes
+{
+    my $self = shift;
+    my %updates = @_;
+    $response = $self->{'resourceAccessor'}->{'update'}->execute('uuid' => $self->{'uuid'}, $self->resource_parameter_name() => \%updates);
+    foreach my $param (keys %updates) {
+        if (exists $response->{$param}) {
+            $self->{$param} = $response->{$param};
+        }
+    }
+    $self;
+}
+
 sub reload
 {
     my $self = shift;

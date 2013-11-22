@@ -8,6 +8,7 @@ class Job < ArvadosModel
   before_create :ensure_unique_submit_id
   before_create :ensure_script_version_is_commit
   before_update :ensure_script_version_is_commit
+  after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
 
@@ -104,9 +105,10 @@ class Job < ArvadosModel
       if script_changed? or
           script_parameters_changed? or
           script_version_changed? or
-          cancelled_by_client_changed? or
-          cancelled_by_user_changed? or
-          cancelled_at_changed? or
+          (!cancelled_at_was.nil? and
+           (cancelled_by_client_changed? or
+            cancelled_by_user_changed? or
+            cancelled_at_changed?)) or
           started_at_changed? or
           finished_at_changed? or
           running_changed? or
@@ -135,4 +137,31 @@ class Job < ArvadosModel
       end
     end
   end
+
+  def update_modified_by_fields
+    if self.cancelled_at_changed?
+      # Ensure cancelled_at cannot be set to arbitrary non-now times,
+      # or changed once it is set.
+      if self.cancelled_at and not self.cancelled_at_was
+        self.cancelled_at = Time.now
+        self.cancelled_by_user_uuid = current_user.uuid
+        self.cancelled_by_client_uuid = current_api_client.uuid
+        @need_crunch_dispatch_trigger = true
+      else
+        self.cancelled_at = self.cancelled_at_was
+        self.cancelled_by_user_uuid = self.cancelled_by_user_uuid_was
+        self.cancelled_by_client_uuid = self.cancelled_by_client_uuid_was
+      end
+    end
+    super
+  end
+
+  def trigger_crunch_dispatch_if_cancelled
+    if @need_crunch_dispatch_trigger
+      File.open(Rails.configuration.crunch_dispatch_hup_trigger, 'wb') do
+        # That's all, just create a file for crunch-dispatch to see.
+      end
+    end
+  end
+
 end

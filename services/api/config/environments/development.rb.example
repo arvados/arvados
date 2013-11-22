@@ -43,6 +43,10 @@ Server::Application.configure do
   config.crunch_job_wrapper = :none
   config.crunch_job_user = 'crunch' # if false, do not set uid when running jobs
 
+  # The web service must be able to create this file, and
+  # crunch_dispatch.rb must be able to unlink it.
+  config.crunch_dispatch_hup_trigger = '/tmp/crunch_dispatch_hup_trigger'
+
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
   # config.compute_node_ami = 'ami-cbca41a2'

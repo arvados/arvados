@@ -1,11 +1,13 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
 trusted_workbench:
+  uuid: zzzzz-ozdt8-teyxzyd8qllg11h
   name: Official Workbench
   url_prefix: https://official-workbench.local/
   is_trusted: true
 
 untrusted:
+  uuid: zzzzz-ozdt8-obw7foaks3qjyej
   name: Untrusted
   url_prefix: https://untrusted.local/
   is_trusted: false

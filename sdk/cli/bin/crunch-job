@@ -58,7 +58,8 @@ Save a checkpoint and continue.
 =item SIGHUP
 
 Refresh node allocation (i.e., check whether any nodes have been added
-or unallocated). Currently this is a no-op.
+or unallocated) and attributes of the Job record that should affect
+behavior (e.g., cancel job if cancelled_at becomes non-nil).
 
 =back
 
@@ -107,10 +108,6 @@ my $job_has_uuid = $jobspec =~ /^[-a-z\d]+$/;
 my $local_job = !$job_has_uuid;
 
 
-$SIG{'HUP'} = sub
-{
-  1;
-};
 $SIG{'USR1'} = sub
 {
   $main::ENV{CRUNCH_DEBUG} = 1;
@@ -257,20 +254,17 @@ my $jobmanager_id;
 if ($job_has_uuid)
 {
   # Claim this job, and make sure nobody else does
-
-  $Job->{'is_locked_by_uuid'} = $User->{'uuid'};
-  $Job->{'started_at'} = gmtime;
-  $Job->{'running'} = 1;
-  $Job->{'success'} = undef;
-  $Job->{'tasks_summary'} = { 'failed' => 0,
-                              'todo' => 1,
-                              'running' => 0,
-                              'done' => 0 };
-  if ($job_has_uuid) {
-    unless ($Job->save() && $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
-      croak("Error while updating / locking job");
-    }
+  unless ($Job->update_attributes('is_locked_by_uuid' => $User->{'uuid'}) &&
+          $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
+    croak("Error while updating / locking job");
   }
+  $Job->update_attributes('started_at' => gmtime,
+                          'running' => 1,
+                          'success' => undef,
+                          'tasks_summary' => { 'failed' => 0,
+                                               'todo' => 1,
+                                               'running' => 0,
+                                               'done' => 0 });
 }
 
 
@@ -281,9 +275,12 @@ $SIG{'TERM'} = \&croak;
 $SIG{'TSTP'} = sub { $main::please_freeze = 1; };
 $SIG{'ALRM'} = sub { $main::please_info = 1; };
 $SIG{'CONT'} = sub { $main::please_continue = 1; };
+$SIG{'HUP'} = sub { $main::please_refresh = 1; };
+
 $main::please_freeze = 0;
 $main::please_info = 0;
 $main::please_continue = 0;
+$main::please_refresh = 0;
 my $jobsteps_must_output_keys = 0;	# becomes 1 when any task outputs a key
 
 grep { $ENV{$1} = $2 if /^(NOCACHE.*?)=(.*)/ } split ("\n", $$Job{knobs});
@@ -421,7 +418,9 @@ else
 	Log (undef, "Using commit $commit for tree-ish $treeish");
         if ($commit ne $treeish) {
           $Job->{'script_version'} = $commit;
-          !$job_has_uuid or $Job->save() or croak("Error while updating job");
+          !$job_has_uuid or
+              $Job->update_attributes('script_version' => $commit) or
+              croak("Error while updating job");
         }
       }
     }
@@ -609,6 +608,24 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	 (@slot > @freeslot && $todo_ptr+1 > $#jobstep_todo))
   {
     last THISROUND if $main::please_freeze;
+    if ($main::please_refresh)
+    {
+      $main::please_refresh = 0;
+      if ($job_has_uuid) {
+        $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
+        for my $attr ('cancelled_at',
+                      'cancelled_by_user_uuid',
+                      'cancelled_by_client_uuid') {
+          $Job->{$attr} = $Job2->{$attr};
+        }
+        if ($Job->{'cancelled_at'}) {
+          Log (undef, "Job cancelled at " . $Job->{cancelled_at} .
+               " by user " . $Job->{cancelled_by_user_uuid});
+          $main::success = 0;
+          $main::please_freeze = 1;
+        }
+      }
+    }
     if ($main::please_info)
     {
       $main::please_info = 0;
@@ -710,12 +727,12 @@ goto ONELEVEL if !defined $main::success;
 
 release_allocation();
 freeze();
-$Job->reload;
-$Job->{'output'} = &collate_output();
-$Job->{'running'} = 0;
-$Job->{'success'} = $Job->{'output'} && $main::success;
-$Job->{'finished_at'} = gmtime;
-$Job->save if $job_has_uuid;
+if ($job_has_uuid) {
+  $Job->update_attributes('output' => &collate_output(),
+                          'running' => 0,
+                          'success' => $Job->{'output'} && $main::success,
+                          'finished_at' => gmtime)
+}
 
 if ($Job->{'output'})
 {
@@ -749,7 +766,9 @@ sub update_progress_stats
   $Job->{'tasks_summary'}->{'todo'} = $todo;
   $Job->{'tasks_summary'}->{'done'} = $done;
   $Job->{'tasks_summary'}->{'running'} = $running;
-  $Job->save if $job_has_uuid;
+  if ($job_has_uuid) {
+    $Job->update_attributes('tasks_summary' => $Job->{'tasks_summary'});
+  }
   Log (undef, "status: $done done, $running running, $todo todo");
   $progress_is_dirty = 0;
 }
@@ -1036,8 +1055,7 @@ sub collate_output
   if ($joboutput)
   {
     Log (undef, "output $joboutput");
-    $Job->{'output'} = $joboutput;
-    $Job->save if $job_has_uuid;
+    $Job->update_attributes('output' => $joboutput) if $job_has_uuid;
   }
   else
   {
@@ -1129,11 +1147,9 @@ sub croak
 sub cleanup
 {
   return if !$job_has_uuid;
-  $Job->reload;
-  $Job->{'running'} = 0;
-  $Job->{'success'} = 0;
-  $Job->{'finished_at'} = gmtime;
-  $Job->save;
+  $Job->update_attributes('running' => 0,
+                          'success' => 0,
+                          'finished_at' => gmtime);
 }
 
 
@@ -1147,7 +1163,7 @@ sub save_meta
   undef $metastream if !$justcheckpoint; # otherwise Log() will try to use it
   Log (undef, "meta key is $loglocator");
   $Job->{'log'} = $loglocator;
-  $Job->save if $job_has_uuid;
+  $Job->update_attributes('log', $loglocator) if $job_has_uuid;
 }
 
 
