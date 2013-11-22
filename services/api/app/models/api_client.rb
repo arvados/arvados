@@ -1,4 +1,4 @@
-class ApiClient < ActiveRecord::Base
+class ApiClient < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
