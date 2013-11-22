@@ -258,7 +258,7 @@ if ($job_has_uuid)
           $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
     croak("Error while updating / locking job");
   }
-  $Job->update_attributes('started_at' => gmtime,
+  $Job->update_attributes('started_at' => scalar gmtime,
                           'running' => 1,
                           'success' => undef,
                           'tasks_summary' => { 'failed' => 0,
@@ -731,7 +731,7 @@ if ($job_has_uuid) {
   $Job->update_attributes('output' => &collate_output(),
                           'running' => 0,
                           'success' => $Job->{'output'} && $main::success,
-                          'finished_at' => gmtime)
+                          'finished_at' => scalar gmtime)
 }
 
 if ($Job->{'output'})
@@ -1149,7 +1149,7 @@ sub cleanup
   return if !$job_has_uuid;
   $Job->update_attributes('running' => 0,
                           'success' => 0,
-                          'finished_at' => gmtime);
+                          'finished_at' => scalar gmtime);
 }
 
 
