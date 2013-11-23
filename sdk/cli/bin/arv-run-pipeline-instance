@@ -480,7 +480,8 @@ class WhRunPipelineInstance
           c[:wait] = true
         end
         if c[:job] and c[:job][:uuid]
-          if not c[:job][:finished_at] and not c[:job][:cancelled_at]
+          if (c[:job][:running] or
+              not (c[:job][:finished_at] or c[:job][:cancelled_at]))
             c[:job] = JobCache.get(c[:job][:uuid])
           end
           if c[:job][:success]
