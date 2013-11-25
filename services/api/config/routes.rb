@@ -87,6 +87,7 @@ Server::Application.routes.draw do
       match '/users/system' => 'users#system'
       match '/jobs/queue' => 'jobs#queue'
       match '/jobs/:uuid/log_tail_follow' => 'jobs#log_tail_follow'
+      post '/jobs/:uuid/cancel' => 'jobs#cancel'
       match '/users/:uuid/event_stream' => 'users#event_stream'
       match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
       match '/virtual_machines/:uuid/logins' => 'virtual_machines#logins'

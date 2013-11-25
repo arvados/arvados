@@ -40,6 +40,11 @@ class Arvados::V1::JobsController < ApplicationController
     super
   end
 
+  def cancel
+    @object.update_attributes cancelled_at: Time.now
+    show
+  end
+
   class LogStreamer
     Q_UPDATE_INTERVAL = 12
     def initialize(job, opts={})
