@@ -158,8 +158,8 @@ class Job < ArvadosModel
 
   def trigger_crunch_dispatch_if_cancelled
     if @need_crunch_dispatch_trigger
-      File.open(Rails.configuration.crunch_dispatch_hup_trigger, 'wb') do
-        # That's all, just create a file for crunch-dispatch to see.
+      File.open(Rails.configuration.crunch_refresh_trigger, 'wb') do
+        # That's all, just create/touch a file for crunch-job to see.
       end
     end
   end

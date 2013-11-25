@@ -67,7 +67,7 @@ Server::Application.configure do
 
   # The web service must be able to create this file, and
   # crunch_dispatch.rb must be able to unlink it.
-  config.crunch_dispatch_hup_trigger = '/tmp/crunch_dispatch_hup_trigger'
+  config.crunch_refresh_trigger = '/tmp/crunch_refresh_trigger'
 
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 

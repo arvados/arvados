@@ -11,10 +11,6 @@ $signal = {}
     $signal[:term] = true
   end
 end
-Signal.trap('HUP') do
-  $stderr.puts "Received HUP signal"
-  $signal[:hup] = true
-end
 
 if ENV["CRUNCH_DISPATCH_LOCKFILE"]
   lockfilename = ENV.delete "CRUNCH_DISPATCH_LOCKFILE"
@@ -314,30 +310,6 @@ class Dispatcher
           end
         end
       else
-        if File.exists?(Rails.configuration.crunch_dispatch_hup_trigger)
-          begin
-            File.unlink(Rails.configuration.crunch_dispatch_hup_trigger)
-            $signal[:hup] = true
-          rescue Errno::ENOENT
-            $stderr.puts "Weird, hup_trigger file was deleted by someone else."
-          rescue Errno::EPERM
-            if not $warned[:hup_trigger_perm]
-              $warned[:hup_trigger_perm] = true
-              $stderr.puts "Install problem: I see the hup_trigger file but cannot delete it."
-            end
-          end
-        end
-        if $signal[:hup]
-          # Pass HUP through to all crunch-job processes.
-          @running.each do |uuid, j|
-            begin
-              Process.kill 'HUP', j[:wait_thr].pid
-            rescue Errno::ESRCH
-              # Process ended but hasn't been reaped. Nothing to do.
-            end
-          end
-          $signal.delete :hup
-        end
         refresh_todo unless did_recently(:refresh_todo, 1.0)
         update_node_status
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
@@ -362,5 +334,8 @@ class Dispatcher
     end
   end
 end
+
+# This is how crunch-job child procs know where the "refresh" trigger file is
+ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.crunch_dispatch_hup_trigger
 
 Dispatcher.new.run

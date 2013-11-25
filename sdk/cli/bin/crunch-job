@@ -296,6 +296,7 @@ my $jobstep_tomerge_level = 0;
 my $squeue_checked;
 my $squeue_kill_checked;
 my $output_in_keep = 0;
+my $latest_refresh = scalar time;
 
 
 
@@ -608,24 +609,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	 (@slot > @freeslot && $todo_ptr+1 > $#jobstep_todo))
   {
     last THISROUND if $main::please_freeze;
-    if ($main::please_refresh)
-    {
-      $main::please_refresh = 0;
-      if ($job_has_uuid) {
-        my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
-        for my $attr ('cancelled_at',
-                      'cancelled_by_user_uuid',
-                      'cancelled_by_client_uuid') {
-          $Job->{$attr} = $Job2->{$attr};
-        }
-        if ($Job->{'cancelled_at'}) {
-          Log (undef, "Job cancelled at " . $Job->{cancelled_at} .
-               " by user " . $Job->{cancelled_by_user_uuid});
-          $main::success = 0;
-          $main::please_freeze = 1;
-        }
-      }
-    }
     if ($main::please_info)
     {
       $main::please_info = 0;
@@ -639,6 +622,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	+ reapchildren ();
     if (!$gotsome)
     {
+      check_refresh_wanted();
       check_squeue();
       update_progress_stats();
       select (undef, undef, undef, 0.1);
@@ -695,6 +679,7 @@ while (%proc)
   readfrompipes ();
   if (!reapchildren())
   {
+    check_refresh_wanted();
     check_squeue();
     update_progress_stats();
     select (undef, undef, undef, 0.1);
@@ -884,6 +869,27 @@ sub reapchildren
   1;
 }
 
+sub check_refresh_wanted
+{
+  my @stat = stat $ENV{"CRUNCH_REFRESH_TRIGGER"};
+  if (@stat && $stat[9] > $latest_refresh) {
+    $latest_refresh = scalar time;
+    if ($job_has_uuid) {
+      my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
+      for my $attr ('cancelled_at',
+                    'cancelled_by_user_uuid',
+                    'cancelled_by_client_uuid') {
+        $Job->{$attr} = $Job2->{$attr};
+      }
+      if ($Job->{'cancelled_at'}) {
+        Log (undef, "Job cancelled at " . $Job->{cancelled_at} .
+             " by user " . $Job->{cancelled_by_user_uuid});
+        $main::success = 0;
+        $main::please_freeze = 1;
+      }
+    }
+  }
+}
 
 sub check_squeue
 {
