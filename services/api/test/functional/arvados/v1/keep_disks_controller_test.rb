@@ -19,7 +19,7 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     assert_not_equal '', new_keep_node['ping_secret']
   end
 
-  test "refuse to add keep node with no filesystem_uuid" do
+  test "add keep node with no filesystem_uuid" do
     authorize_with :admin
     opts = {
       ping_secret: '',
@@ -28,9 +28,12 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
       service_ssl_flag: false
     }
     post :ping, opts
-    assert_response 404
+    assert_response :success
+    assert_not_nil JSON.parse(@response.body)['uuid']
+
     post :ping, opts.merge(filesystem_uuid: '')
-    assert_response 404
+    assert_response :success
+    assert_not_nil JSON.parse(@response.body)['uuid']
   end
 
   test "refuse to add keep node without admin token" do

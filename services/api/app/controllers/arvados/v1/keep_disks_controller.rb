@@ -14,13 +14,8 @@ class Arvados::V1::KeepDisksController < ApplicationController
   end
   def ping
     if !@object
-      if params[:filesystem_uuid].andand.length.andand > 0 and
-          current_user.andand.is_admin
-        @object = KeepDisk.
-          find_or_initialize_by_filesystem_uuid params[:filesystem_uuid]
-        if not @object.new_record?
-          raise "ping from keep_disk with existing filesystem_uuid #{params[:filesystem_uuid]} but wrong uuid #{params[:uuid]}"
-        end
+      if current_user.andand.is_admin
+        @object = KeepDisk.new(filesystem_uuid: params[:filesystem_uuid])
         @object.save!
 
         # In the first ping from this new filesystem_uuid, we can't
