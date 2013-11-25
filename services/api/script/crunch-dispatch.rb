@@ -336,6 +336,6 @@ class Dispatcher
 end
 
 # This is how crunch-job child procs know where the "refresh" trigger file is
-ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.crunch_dispatch_hup_trigger
+ENV["CRUNCH_REFRESH_TRIGGER"] = Rails.configuration.crunch_refresh_trigger
 
 Dispatcher.new.run
