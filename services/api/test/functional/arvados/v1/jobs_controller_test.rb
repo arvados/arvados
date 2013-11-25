@@ -19,7 +19,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     # We need to verify that "cancel" creates a trigger file, so first
     # let's make sure there is no stale trigger file.
     begin
-      File.unlink(Rails.configuration.crunch_dispatch_hup_trigger)
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
     rescue Errno::ENOENT
     end
 
@@ -40,7 +40,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_equal(true, job['cancelled_at'] > 1.minute.ago,
                  'bogus cancelled_at corrected by server')
     assert_equal(true,
-                 File.exists?(Rails.configuration.crunch_dispatch_hup_trigger),
+                 File.exists?(Rails.configuration.crunch_refresh_trigger),
                  'trigger file should be created when job is cancelled')
 
     put :update, {
