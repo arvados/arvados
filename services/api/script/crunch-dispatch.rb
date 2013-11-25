@@ -340,7 +340,9 @@ class Dispatcher
         end
         refresh_todo unless did_recently(:refresh_todo, 1.0)
         update_node_status
-        start_jobs unless @todo.empty? or did_recently(:start_jobs, 1.0)
+        unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
+          start_jobs
+        end
       end
       reap_children
       select(@running.values.collect { |j| [j[:stdout], j[:stderr]] }.flatten,
