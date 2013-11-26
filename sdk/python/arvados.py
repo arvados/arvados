@@ -151,14 +151,12 @@ class job_setup:
 class util:
     @staticmethod
     def run_command(execargs, **kwargs):
-        if 'stdin' not in kwargs:
-            kwargs['stdin'] = subprocess.PIPE
-        if 'stdout' not in kwargs:
-            kwargs['stdout'] = subprocess.PIPE
-        if 'stderr' not in kwargs:
-            kwargs['stderr'] = subprocess.PIPE
-        p = subprocess.Popen(execargs, close_fds=True, shell=False,
-                             **kwargs)
+        kwargs.setdefault('stdin', subprocess.PIPE)
+        kwargs.setdefault('stdout', subprocess.PIPE)
+        kwargs.setdefault('stderr', subprocess.PIPE)
+        kwargs.setdefault('close_fds', True)
+        kwargs.setdefault('shell', False)
+        p = subprocess.Popen(execargs, **kwargs)
         stdoutdata, stderrdata = p.communicate(None)
         if p.returncode != 0:
             raise Exception("run_command %s exit %d:\n%s" %
