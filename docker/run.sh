@@ -1,9 +1,58 @@
 #!/bin/bash
 
+function usage {
+  echo >&2 "usage: $0 [--doc] [--sso] [--api] [--workbench] [--keep]"
+  echo >&2 "If no switches are given, the default is to start all servers."
+}
+
 if [[ "$ENABLE_SSH" != "" ]]; then
   EXTRA=" -e ENABLE_SSH=$ENABLE_SSH"
 else
   EXTRA=''
+fi
+
+start_doc=false
+start_sso=false
+start_api=false
+start_workbench=false
+start_keep=false
+
+while [ $# -ge 1 ]
+do
+    case $1 in
+	--doc)
+	    start_doc=true
+	    ;;
+	--sso)
+	    start_sso=true
+	    ;;
+	--api)
+	    start_api=true
+	    ;;
+	--workbench)
+	    start_workbench=true
+	    ;;
+	--keep)
+	    start_keep=true
+	    ;;
+	*)
+	    usage
+	    exit 1
+	    ;;
+    esac
+    shift
+done
+
+# If no options were selected, then start all servers.
+if $start_doc || $start_sso || $start_api || $start_workbench || $start_keep
+then
+    :
+else
+    start_doc=true
+    start_sso=true
+    start_api=true
+    start_workbench=true
+    start_keep=true
 fi
 
 function ip_address {
@@ -65,11 +114,11 @@ function make_keep_volume {
   echo "$keepvolume"
 }
 
-start_container "9898:80" "doc_server" '' '' "arvados/doc"
-start_container "9901:443" "sso_server" '' '' "arvados/sso"
-start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
-start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
+$start_doc && start_container "9898:80" "doc_server" '' '' "arvados/doc"
+$start_sso && start_container "9901:443" "sso_server" '' '' "arvados/sso"
+$start_api && start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
+$start_workbench && start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
 
 keepvolume=$(make_keep_volume)
-start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
-start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
+$start_keep && start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
+$start_keep && start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
