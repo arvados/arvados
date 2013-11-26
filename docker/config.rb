@@ -1,6 +1,7 @@
 #! /usr/bin/env ruby
 
 require 'yaml'
+require 'fileutils'
 
 # Initialize config settings from config.yml
 config = YAML.load_file('config.yml')
@@ -56,4 +57,14 @@ Dir.glob('*/*.in') do |template_file|
     end
   end
   output.close
+end
+
+# Copy the ssh public key file to base/generated (if a path is given)
+generated_dir = File.join('base/generated')
+Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
+if config.key?('PUBLIC_KEY_PATH') &&
+    ! (config['PUBLIC_KEY_PATH'] == '') &&
+    File.readable?(config['PUBLIC_KEY_PATH'])
+  FileUtils.cp(config['PUBLIC_KEY_PATH'],
+               File.join(generated_dir, 'id_rsa.pub'))
 end
