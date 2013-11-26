@@ -153,7 +153,7 @@ class util:
     def run_command(execargs, **kwargs):
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
-        kwargs.setdefault('stderr', subprocess.PIPE)
+        kwargs.setdefault('stderr', sys.stderr)
         kwargs.setdefault('close_fds', True)
         kwargs.setdefault('shell', False)
         p = subprocess.Popen(execargs, **kwargs)
