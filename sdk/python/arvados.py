@@ -150,6 +150,21 @@ class job_setup:
 
 class util:
     @staticmethod
+    def clear_tmpdir(path=None):
+        """
+        Ensure the given directory (or TASK_TMPDIR if none given)
+        exists and is empty.
+        """
+        if path == None:
+            path = current_task().tmpdir
+        if os.path.exists(path):
+            p = subprocess.Popen(['rm', '-rf', path])
+            stdout, stderr = p.communicate(None)
+            if p.returncode != 0:
+                raise Exception('rm -rf %s: %s' % (path, stderr))
+        os.mkdir(path)
+
+    @staticmethod
     def run_command(execargs, **kwargs):
         kwargs.setdefault('stdin', subprocess.PIPE)
         kwargs.setdefault('stdout', subprocess.PIPE)
