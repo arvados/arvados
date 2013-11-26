@@ -1,36 +1,75 @@
-#!/bin/sh
+#!/bin/bash
 
+if [[ "$ENABLE_SSH" != "" ]]; then
+  EXTRA=" -e ENABLE_SSH=$ENABLE_SSH"
+else
+  EXTRA=''
+fi
 
-echo "Starting documentation server: http://localhost:9898"
-docker run -d -i -t -p 9898:80 arvados/docserver
+function ip_address {
+  local container=$1
+  echo `docker inspect $container  |grep IPAddress |cut -f4 -d\"`
+}
 
-echo "Starting sso server:     https://localhost:9901"
-docker run -d -i -t -p 9901:443 -name sso_server arvados/sso
+function start_container {
+  local port="-p $1"
+  if [[ "$2" != '' ]]; then
+    local name="-name $2"
+  fi
+  if [[ "$3" != '' ]]; then
+    local volume="-v $3"
+  fi
+  if [[ "$4" != '' ]]; then
+    local link="-link $4"
+  fi
+  local image=$5
 
-echo "Starting api server:     https://localhost:9900"
-docker run -d -i -t -p 9900:443 -name api_server -link sso_server:sso arvados/api
+  `docker ps |grep -P "$2[^/]" -q`
+  if [[ "$?" == "0" ]]; then
+    echo "You have a running container with name $2 -- skipping."
+    return
+  fi
 
-echo "Starting workbench server:     http://localhost:9899"
-docker run -d -i -t -p 9899:80 -link api_server:api arvados/workbench
+  echo "Starting container:"
+  echo "  docker run -d -i -t$EXTRA $port $name $volume $link $image"
+  container=`docker run -d -i -t$EXTRA $port $name $volume $link $image`
+  if [[ "$?" != "0" ]]; then
+    echo "Unable to start container"
+    exit 1
+  fi
+  if [[ $EXTRA ]]; then
+    ip=$(ip_address $container )
+    echo
+    echo "You can ssh into the container with:"
+    echo
+    echo "    ssh root@$ip"
+    echo
+  fi
+}
 
-echo "Starting keep server:        http://localhost:25107"
-
-# Mount a keep volume if we don't already have one
-keepvolume=""
-for mountpoint in $(cut -d ' ' -f 2 /proc/mounts)
-do
-    if [ -d "$mountpoint/keep" ]
-    then
-	keepvolume=$mountpoint
+function make_keep_volume {
+  # Mount a keep volume if we don't already have one
+  local keepvolume=""
+  for mountpoint in $(cut -d ' ' -f 2 /proc/mounts); do
+    if [[ -d "$mountpoint/keep" && "$mountpoint" != "/" ]]; then
+      keepvolume=$mountpoint
     fi
-done
+  done
 
-if [ ! "$keepvolume" ]
-then
+  if [[ "$keepvolume" == '' ]]; then
     keepvolume=$(mktemp -d)
     echo "mounting 512M tmpfs keep volume in $keepvolume"
     sudo mount -t tmpfs -o size=512M tmpfs $keepvolume
     mkdir $keepvolume/keep
-fi
+  fi
+  echo "$keepvolume"
+}
 
-docker run -d -i -t -p 25107:25107 -v $keepvolume:/dev/keep-0 arvados/warehouse
+start_container "9898:80" "doc_server" '' '' "arvados/doc"
+start_container "9901:443" "sso_server" '' '' "arvados/sso"
+start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
+start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
+
+keepvolume=$(make_keep_volume)
+start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
+start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
