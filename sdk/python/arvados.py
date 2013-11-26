@@ -322,6 +322,11 @@ class util:
         collection -- collection locator
         path -- where to extract: absolute, or relative to job tmp
         """
+        matches = re.search(r'^([0-9a-f]+)(\+[\w@]+)*$', collection)
+        if matches:
+            collection_hash = matches.group(1)
+        else:
+            collection_hash = hashlib.md5(collection).hexdigest()
         if not re.search('^/', path):
             path = os.path.join(current_job().tmpdir, path)
         lockfile = open(path + '.lock', 'w')
@@ -332,7 +337,7 @@ class util:
             os.mkdir(path)
         already_have_it = False
         try:
-            if os.readlink(os.path.join(path, '.locator')) == collection:
+            if os.readlink(os.path.join(path, '.locator')) == collection_hash:
                 already_have_it = True
         except OSError:
             pass
@@ -364,7 +369,7 @@ class util:
                     outfile.close()
         if len(files_got) < len(files):
             raise Exception("Wanted files %s but only got %s from %s" % (files, files_got, map(lambda z: z.name(), list(CollectionReader(collection).all_files()))))
-        os.symlink(collection, os.path.join(path, '.locator'))
+        os.symlink(collection_hash, os.path.join(path, '.locator'))
 
         lockfile.close()
         return path
