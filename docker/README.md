@@ -31,7 +31,7 @@ Building
 2. Run `make` to build the following Docker images:
 
    * arvados/api       - the Arvados API server
-   * arvados/docserver - Arvados documentation
+   * arvados/doc       - Arvados documentation
    * arvados/warehouse - Keep, the Arvados content-addressable filesystem
    * arvados/workbench - the Arvados console
    * arvados/sso       - the Arvados single-signon authentication server
@@ -39,7 +39,7 @@ Building
    You may also build Docker images for individual Arvados services:
 
         $ make api-image
-        $ make docserver-image
+        $ make doc-image
         $ make warehouse-image
         $ make workbench-image
         $ make sso-image

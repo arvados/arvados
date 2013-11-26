@@ -1,4 +1,4 @@
-all: api-image docserver-image workbench-image warehouse-image sso-image
+all: api-image doc-image workbench-image warehouse-image sso-image
 
 clean:
 	-rm *-image */generated/*
@@ -9,7 +9,7 @@ clean:
 
 API_DEPS = api/Dockerfile $(API_GENERATED)
 
-DOCSERVER_DEPS = docserver/Dockerfile docserver/apache2_vhost
+DOC_DEPS = doc/Dockerfile doc/apache2_vhost
 
 WORKBENCH_DEPS = workbench/Dockerfile \
                  workbench/passenger.conf \
@@ -74,7 +74,7 @@ $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 	./config.rb
 
 # ============================================================
-# The main Arvados servers: api, docserver, workbench, warehouse
+# The main Arvados servers: api, doc, workbench, warehouse
 
 api-image: passenger-image $(API_DEPS)
 	mkdir -p api/generated
@@ -82,11 +82,11 @@ api-image: passenger-image $(API_DEPS)
 	./docker_build -t arvados/api api
 	echo -n "Built at $(date)" > api-image
 
-docserver-image: base-image $(DOCSERVER_DEPS)
-	mkdir -p docserver/generated
-	tar -c -z -f docserver/generated/doc.tar.gz -C .. doc
-	./docker_build -t arvados/docserver docserver
-	echo -n "Built at $(date)" > docserver-image
+doc-image: base-image $(DOC_DEPS)
+	mkdir -p doc/generated
+	tar -c -z -f doc/generated/doc.tar.gz -C .. doc
+	./docker_build -t arvados/doc doc
+	echo -n "Built at $(date)" > doc-image
 
 workbench-image: passenger-image $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated
