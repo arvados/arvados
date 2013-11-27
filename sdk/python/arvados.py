@@ -692,7 +692,7 @@ class CollectionWriter(object):
         self.start_new_stream(stream_name)
         todo = []
         if max_manifest_depth == 0:
-            dirents = util.listdir_recursive(path)
+            dirents = sorted(util.listdir_recursive(path))
         else:
             dirents = sorted(os.listdir(path))
         for dirent in dirents:
