@@ -24,7 +24,7 @@ from apiclient.discovery import build
 if 'ARVADOS_DEBUG' in os.environ:
     logging.basicConfig(level=logging.DEBUG)
 
-class CredentialsFromEnv:
+class CredentialsFromEnv(object):
     @staticmethod
     def http_request(self, uri, **kwargs):
         from httplib import BadStatusLine
@@ -96,7 +96,7 @@ def current_job():
 def api():
     return service
 
-class JobTask:
+class JobTask(object):
     def __init__(self, parameters=dict(), runtime_constraints=dict()):
         print "init jobtask %s %s" % (parameters, runtime_constraints)
 
@@ -432,7 +432,7 @@ class util:
                 allfiles += [ent_base]
         return allfiles
 
-class StreamFileReader:
+class StreamFileReader(object):
     def __init__(self, stream, pos, size, name):
         self._stream = stream
         self._pos = pos
@@ -504,7 +504,7 @@ class StreamFileReader:
         return string.join(self._stream.tokens_for_range(self._pos, self._size),
                            " ") + "\n"
 
-class StreamReader:
+class StreamReader(object):
     def __init__(self, tokens):
         self._tokens = tokens
         self._current_datablock_data = None
@@ -616,7 +616,7 @@ class StreamReader:
         self._pos += len(data)
         return data
 
-class CollectionReader:
+class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
         if re.search(r'^\S+( [a-f0-9]{32,}(\+\S+)*)+( \d+:\d+:\S+)+\n', manifest_locator_or_text):
             self._manifest_text = manifest_locator_or_text
@@ -653,7 +653,7 @@ class CollectionReader:
         self._populate()
         return self._manifest_text
 
-class CollectionWriter:
+class CollectionWriter(object):
     KEEP_BLOCK_SIZE = 2**26
     def __init__(self):
         self._data_buffer = []
@@ -788,9 +788,9 @@ class Keep:
     def put(data, **kwargs):
         return Keep.global_client_object().put(data, **kwargs)
 
-class KeepClient:
+class KeepClient(object):
 
-    class ThreadLimiter:
+    class ThreadLimiter(object):
         """
         Limit the number of threads running at a given time to
         {desired successes} minus {successes reported}. When successes
