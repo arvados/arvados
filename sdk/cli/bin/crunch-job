@@ -558,7 +558,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     my @execargs = qw(sh);
     my $build_script_to_send = "";
     my $command =
-	"mkdir -p $ENV{JOB_WORK} $ENV{CRUNCH_TMP} $ENV{TASK_WORK} "
+	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
+        ."mkdir -p $ENV{JOB_WORK} $ENV{CRUNCH_TMP} $ENV{TASK_WORK} "
 	."&& cd $ENV{CRUNCH_TMP} ";
     if ($build_script)
     {
