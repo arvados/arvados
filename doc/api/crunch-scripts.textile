@@ -21,9 +21,25 @@ table(table table-bordered table-condensed).
 |Environment variable|Description|
 |@JOB_UUID@|UUID of the current "Job":Jobs.html|
 |@TASK_UUID@|UUID of the current "JobTask":JobTasks.html|
-|@TASK_QSEQUENCE@|Number of tasks added to this job before this one (in other words, 0-based queue entry order)|
-|@TASK_SEQUENCE@|Task execution sequence specified when task was created &mdash; generally not unique to this task|
 |@ARVADOS_API_HOST@|Hostname and port number of API server|
 |@ARVADOS_API_TOKEN@|Authentication token to use with API calls made by the current task|
 
 The crunch script typically uses the Python SDK (or another suitable client library / SDK) to connect to the Arvados service and retrieve the rest of the details about the current job and task.
+
+The Python SDK has some shortcuts for common operations.
+
+In general, a crunch script can access information about the current job and task like this:
+
+<pre>
+import arvados
+import os
+
+job = arvados.api().jobs().get(uuid=os.environ['JOB_UUID']).execute()
+$sys.stderr.write("script_parameters['foo'] == %s"
+                  % job['script_parameters']['foo'])
+
+task = arvados.api().job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
+$sys.stderr.write("current task sequence number is %d"
+                  % task['sequence'])
+</pre>
+
