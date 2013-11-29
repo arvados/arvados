@@ -93,6 +93,9 @@ def current_job():
     _current_job = t
     return t
 
+def getjobparam(*args):
+    return current_job()['script_parameters'].get(*args)
+
 def api():
     return service
 
