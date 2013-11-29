@@ -29,6 +29,7 @@ class TestArvPut < Minitest::Test
       assert_equal(true, arv_put('-h'),
                    'arv-put -h exits zero')
     end
+    $stderr.write err
     assert_equal '', err
     assert_match /^usage:/, out
   end
@@ -62,12 +63,21 @@ class TestArvPut < Minitest::Test
     assert_equal "aa4f15cbf013142a7d98b1e273f9c661+45\n", out
   end
 
+  def test_as_stream
+    out, err = capture_subprocess_io do
+      assert_equal true, arv_put('--as-stream', './tmp/foo')
+    end
+    $stderr.write err
+    assert_match '', err
+    assert_equal foo_manifest, out
+  end
+
   def test_progress
     out, err = capture_subprocess_io do
       assert_equal true, arv_put('--progress', './tmp/foo')
     end
     assert_match /%/, err
-    expect_foo_manifest(out)
+    assert_equal foo_manifest_locator+"\n", out
   end
 
   def test_batch_progress
@@ -76,7 +86,7 @@ class TestArvPut < Minitest::Test
     end
     assert_match /: 0 written 3 total/, err
     assert_match /: 3 written 3 total/, err
-    expect_foo_manifest(out)
+    assert_equal foo_manifest_locator+"\n", out
   end
 
   def test_progress_and_batch_progress
@@ -108,7 +118,7 @@ class TestArvPut < Minitest::Test
     end
     $stderr.write err
     assert_match '', err
-    expect_foo_manifest(out)
+    assert_equal foo_manifest_locator+"\n", out
   end
 
   protected
@@ -116,10 +126,11 @@ class TestArvPut < Minitest::Test
     system ['./bin/arv-put', 'arv-put'], *args
   end
 
-  def expect_foo_manifest(out)
-    expect_manifest = ". #{Digest::MD5.hexdigest('foo')}+3 0:3:foo\n"
-    assert_equal(Digest::MD5.hexdigest(expect_manifest) +
-                 "+#{expect_manifest.length}\n",
-                 out)
+  def foo_manifest
+    ". #{Digest::MD5.hexdigest('foo')}+3 0:3:foo\n"
+  end
+
+  def foo_manifest_locator
+    Digest::MD5.hexdigest(foo_manifest) + "+#{foo_manifest.length}"
   end
 end
