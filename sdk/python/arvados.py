@@ -713,6 +713,10 @@ class CollectionWriter(object):
         map(lambda x: self.write_directory_tree(*x), todo)
 
     def write(self, newdata):
+        if hasattr(newdata, '__iter__'):
+            for s in newdata:
+                self.write(s)
+            return
         self._data_buffer += [newdata]
         self._data_buffer_len += len(newdata)
         self._current_stream_length += len(newdata)
