@@ -753,7 +753,7 @@ class CollectionWriter(object):
     def set_current_stream_name(self, newstreamname):
         if re.search(r'[ \t\n]', newstreamname):
             raise AssertionError("Manifest stream names cannot contain whitespace")
-        self._current_stream_name = newstreamname
+        self._current_stream_name = '.' if newstreamname=='' else newstreamname
     def current_stream_name(self):
         return self._current_stream_name
     def finish_current_stream(self):
