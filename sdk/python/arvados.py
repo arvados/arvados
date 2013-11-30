@@ -769,6 +769,11 @@ class CollectionWriter(object):
                 manifest += " %d:%d:%s" % (sfile[0], sfile[1], sfile[2])
             manifest += "\n"
         return manifest
+    def data_locators(self):
+        ret = []
+        for name, locators, files in self._finished_streams:
+            ret += locators
+        return ret
 
 global_client_object = None
 
