@@ -32,6 +32,11 @@ Store the file data and resulting manifest in Keep, save a Collection
 object in Arvados, and display the manifest locator (Collection uuid)
 on stdout. This is the default behavior.
 """)
+parser.add_argument('--as-raw', action='store_true',
+                    help="""
+Store the file content and display the data block locators on stdout,
+separated by spaces, with a trailing newline. Do not store a manifest.
+""")
 parser.add_argument('--filename', type=str, default=None,
                     help="""
 Use the given filename in the manifest, instead of the name of the
@@ -71,8 +76,9 @@ if (not (args.batch_progress or args.no_progress)
     args.progress = True
 
 
-import re
 import arvados
+import re
+import string
 
 class CollectionWriterWithProgress(arvados.CollectionWriter):
     def flush_data(self, *args, **kwargs):
@@ -147,6 +153,9 @@ for path in args.paths:
 
 if args.as_stream:
     print writer.manifest_text(),
+elif args.as_raw:
+    writer.finish_current_stream()
+    print string.join(writer.data_locators(), ' ') + '\n'
 else:
     # Register the resulting collection in Arvados.
     arvados.api().collections().create(
