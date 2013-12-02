@@ -25,7 +25,7 @@ tutorial](https://www.google.com/search?q=github+ssh+key+help)
 
 Go to the `Keys` page in Arvados Workbench (under the `Access` tab) and click the
 
-<p style="margin-left: 4em"><span class="btn btn-primary">Add a new authorized key</span></p>
+<p style="margin-left: 4em"><span class="btn btn-primary disabled">Add a new authorized key</span></p>
 
 button. Then click on 'none' in the public_key column, and copy and paste your public key:
 
