@@ -36,11 +36,17 @@ group.add_argument('--as-manifest', action='store_true', dest='manifest',
                    help="""
 Synonym for --manifest.
 """)
+group.add_argument('--in-manifest', action='store_true', dest='manifest',
+                   help="""
+Synonym for --manifest.
+""")
 group.add_argument('--manifest', action='store_true',
                    help="""
 Store the file data and resulting manifest in Keep, save a Collection
 object in Arvados, and display the manifest locator (Collection uuid)
-on stdout. This is the default behavior.
+on stdout. This is the default behavior if more than one path argument
+is given, or the path given is a directory, or a --filename argument
+is given.
 """)
 group.add_argument('--as-raw', action='store_true', dest='raw',
                    help="""
@@ -49,14 +55,20 @@ Synonym for --raw.
 group.add_argument('--raw', action='store_true',
                    help="""
 Store the file content and display the data block locators on stdout,
-separated by spaces, with a trailing newline. Do not store a manifest.
+separated by spaces, with a trailing newline. Do not store a
+manifest. This is the default behavior when reading data from a single
+file or standard input.
+""")
+parser.add_argument('--use-filename', type=str, default=None, dest='filename',
+                    help="""
+Synonym for --filename.
 """)
 parser.add_argument('--filename', type=str, default=None,
                     help="""
 Use the given filename in the manifest, instead of the name of the
 local file. This is useful when "-" or "/dev/stdin" is given as an
 input file. It can be used only if there is exactly one path given and
-it is not a directory.
+it is not a directory. Implies --manifest.
 """)
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--progress', action='store_true',
@@ -81,11 +93,16 @@ args = parser.parse_args()
 if len(args.paths) == 0:
     args.paths += ['/dev/stdin']
 
-if args.filename and (len(args.paths) != 1 or os.path.isdir(args.paths[0])):
-    parser.error("""
+if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
+    if args.filename:
+        parser.error("""
 --filename argument cannot be used when storing a directory or
 multiple files.
 """)
+elif not args.filename and not args.stream and not args.manifest:
+    # When reading from a single non-directory, and no --filename is
+    # given, default to writing raw blocks rather than a manifest.
+    args.raw = True
 
 # Turn on --progress by default if stderr is a tty.
 if (not (args.batch_progress or args.no_progress)
@@ -172,7 +189,7 @@ if args.stream:
     print writer.manifest_text(),
 elif args.raw:
     writer.finish_current_stream()
-    print string.join(writer.data_locators(), ' ') + '\n'
+    print string.join(writer.data_locators(), ',') + '\n'
 else:
     # Register the resulting collection in Arvados.
     arvados.api().collections().create(

@@ -65,7 +65,7 @@ class TestArvPut < Minitest::Test
 
   def test_progress
     out, err = capture_subprocess_io do
-      assert_equal true, arv_put('--progress', './tmp/foo')
+      assert_equal true, arv_put('--manifest', '--progress', './tmp/foo')
     end
     assert_match /%/, err
     assert_equal foo_manifest_locator+"\n", out
@@ -73,7 +73,7 @@ class TestArvPut < Minitest::Test
 
   def test_batch_progress
     out, err = capture_subprocess_io do
-      assert_equal true, arv_put('--batch-progress', './tmp/foo')
+      assert_equal true, arv_put('--manifest', '--batch-progress', './tmp/foo')
     end
     assert_match /: 0 written 3 total/, err
     assert_match /: 3 written 3 total/, err
