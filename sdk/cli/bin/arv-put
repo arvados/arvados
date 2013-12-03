@@ -9,8 +9,10 @@ import sys
 
 parser = argparse.ArgumentParser(
     description='Copy data from the local filesystem to Keep.')
-parser.add_argument('paths', metavar='path', type=str, nargs='+',
-                    help='Local file or directory.')
+parser.add_argument('paths', metavar='path', type=str, nargs='*',
+                    help="""
+Local file or directory. Default: read from standard input.
+""")
 parser.add_argument('--max-manifest-depth', type=int, metavar='N', default=-1,
                     help="""
 Maximum depth of directory tree to represent in the manifest
@@ -19,21 +21,33 @@ as a single stream in the manifest. If N=0, the manifest will contain
 a single stream. Default: -1 (unlimited), i.e., exactly one manifest
 stream per filesystem directory that contains files.
 """)
-parser.add_argument('--as-stream', action='store_true',
-                    help="""
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--as-stream', action='store_true', dest='stream',
+                   help="""
+Synonym for --stream.
+""")
+group.add_argument('--stream', action='store_true',
+                   help="""
 Store the file content and display the resulting manifest on
 stdout. Do not write the manifest to Keep or save a Collection object
 in Arvados.
 """)
-parser.add_argument('--as-manifest', action='store_const',
-                    dest='as_stream', const=False, default=False,
-                    help="""
+group.add_argument('--as-manifest', action='store_true', dest='manifest',
+                   help="""
+Synonym for --manifest.
+""")
+group.add_argument('--manifest', action='store_true',
+                   help="""
 Store the file data and resulting manifest in Keep, save a Collection
 object in Arvados, and display the manifest locator (Collection uuid)
 on stdout. This is the default behavior.
 """)
-parser.add_argument('--as-raw', action='store_true',
-                    help="""
+group.add_argument('--as-raw', action='store_true', dest='raw',
+                   help="""
+Synonym for --raw.
+""")
+group.add_argument('--raw', action='store_true',
+                   help="""
 Store the file content and display the data block locators on stdout,
 separated by spaces, with a trailing newline. Do not store a manifest.
 """)
@@ -63,6 +77,9 @@ total data size).
 """)
 
 args = parser.parse_args()
+
+if len(args.paths) == 0:
+    args.paths += ['/dev/stdin']
 
 if args.filename and (len(args.paths) != 1 or os.path.isdir(args.paths[0])):
     parser.error("""
@@ -151,9 +168,9 @@ for path in args.paths:
                     break
                 writer.write(buf)
 
-if args.as_stream:
+if args.stream:
     print writer.manifest_text(),
-elif args.as_raw:
+elif args.raw:
     writer.finish_current_stream()
     print string.join(writer.data_locators(), ' ') + '\n'
 else:

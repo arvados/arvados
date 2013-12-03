@@ -15,15 +15,6 @@ class TestArvPut < Minitest::Test
     end
   end
 
-  def test_no_args
-    out, err = capture_subprocess_io do
-      assert_equal(false, arv_put,
-                   'arv-put without args exits non-zero')
-    end
-    assert_equal '', out
-    assert_match /^usage:/, err
-  end
-
   def test_help
     out, err = capture_subprocess_io do
       assert_equal(true, arv_put('-h'),
@@ -97,6 +88,10 @@ class TestArvPut < Minitest::Test
     end
     assert_match /^usage:.*error:/m, err
     assert_equal '', out
+  end
+
+  def test_read_from_implicit_stdin
+    test_read_from_stdin(specify_stdin_as='--manifest')
   end
 
   def test_read_from_dev_stdin
