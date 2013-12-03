@@ -42,10 +42,7 @@ class TestArvGet < Minitest::Test
   end
 
   def test_file_to_file
-    begin
-      File.unlink('tmp/foo')
-    rescue Errno::ENOENT
-    end
+    remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get @@foo_manifest_locator + '/foo', 'tmp/foo'
     end
@@ -55,10 +52,7 @@ class TestArvGet < Minitest::Test
   end
 
   def test_manifest_root_to_dir
-    begin
-      File.unlink('tmp/foo')
-    rescue Errno::ENOENT
-    end
+    remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-r', @@foo_manifest_locator + '/', 'tmp/'
     end
@@ -68,10 +62,7 @@ class TestArvGet < Minitest::Test
   end
 
   def test_display_md5sum
-    begin
-      File.unlink('tmp/foo')
-    rescue Errno::ENOENT
-    end
+    remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-r', '--md5sum', @@foo_manifest_locator + '/', 'tmp/'
     end
@@ -81,10 +72,7 @@ class TestArvGet < Minitest::Test
   end
 
   def test_md5sum_nowrite
-    begin
-      File.unlink('tmp/foo')
-    rescue Errno::ENOENT
-    end
+    remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-n', '--md5sum', @@foo_manifest_locator + '/', 'tmp/'
     end
@@ -94,6 +82,7 @@ class TestArvGet < Minitest::Test
   end
 
   def test_sha1_nowrite
+    remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-n', '-r', '--hash', 'sha1', @@foo_manifest_locator+'/', 'tmp/'
     end
@@ -103,10 +92,7 @@ class TestArvGet < Minitest::Test
   end
 
   def test_block_to_file
-    begin
-      File.unlink('tmp/foo')
-    rescue Errno::ENOENT
-    end
+    remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get @@foo_manifest_locator, 'tmp/foo'
     end
@@ -154,5 +140,12 @@ class TestArvGet < Minitest::Test
 
   def foo_manifest
     ". #{Digest::MD5.hexdigest('foo')}+3 0:3:foo\n"
+  end
+
+  def remove_tmp_foo
+    begin
+      File.unlink('tmp/foo')
+    rescue Errno::ENOENT
+    end
   end
 end
