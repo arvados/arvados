@@ -7,5 +7,6 @@ $Warehouse::warehouses = [
       'keep0.@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@:25107',
       'keep0.@@API_HOSTNAME@@.@@ARVADOS_DOMAIN@@:25108',
      ],
+     'api_auth_token'=>'@@API_SUPERUSER_TOKEN@@',
     },
 ];

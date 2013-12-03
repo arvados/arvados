@@ -20,14 +20,16 @@ ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 # Configure Rails databases.
 ENV RAILS_ENV production
 ADD generated/config_databases.sh /tmp/config_databases.sh
+ADD generated/superuser_token /tmp/superuser_token
 RUN sh /tmp/config_databases.sh && \
     rm /tmp/config_databases.sh && \
     /etc/init.d/postgresql start && \
     cd /usr/src/arvados/services/api && \
     rake db:setup && \
-    rake assets:precompile ; \
-    chown www-data:www-data config.ru ; \
-    chown www-data:www-data log -R ; \
+    rake assets:precompile && \
+    script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
+    chown www-data:www-data config.ru && \
+    chown www-data:www-data log -R && \
     chown www-data:www-data tmp -R
 
 # Configure Apache and Passenger.

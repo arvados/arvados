@@ -107,7 +107,7 @@ function make_keep_volume {
 
   if [[ "$keepvolume" == '' ]]; then
     keepvolume=$(mktemp -d)
-    echo "mounting 512M tmpfs keep volume in $keepvolume"
+    echo >&2 "mounting 512M tmpfs keep volume in $keepvolume"
     sudo mount -t tmpfs -o size=512M tmpfs $keepvolume
     mkdir $keepvolume/keep
   fi
@@ -120,5 +120,5 @@ $start_api && start_container "9900:443" "api_server" '' "sso_server:sso" "arvad
 $start_workbench && start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
 
 keepvolume=$(make_keep_volume)
-$start_keep && start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
-$start_keep && start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
+$start_keep && start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" "api_server:api" "arvados/warehouse"
+$start_keep && start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" "api_server:api" "arvados/warehouse"
