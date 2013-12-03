@@ -119,6 +119,9 @@ $start_sso && start_container "9901:443" "sso_server" '' '' "arvados/sso"
 $start_api && start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
 $start_workbench && start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
 
-keepvolume=$(make_keep_volume)
-$start_keep && start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
-$start_keep && start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
+
+if [[ $start_keep == true ]]; then
+  keepvolume=$(make_keep_volume)
+  start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
+  start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" '' "arvados/warehouse"
+fi
