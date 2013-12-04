@@ -46,8 +46,10 @@ class CredentialsFromEnv(object):
         http.request = types.MethodType(self.http_request, http)
         return http
 
-url = ('https://%s/discovery/v1/apis/'
-       '{api}/{apiVersion}/rest' % os.environ['ARVADOS_API_HOST'])
+url = ('https://%s:%s/discovery/v1/apis/'
+       '{api}/{apiVersion}/rest' %
+           (os.environ['ARVADOS_API_HOST'],
+            os.environ.get('ARVADOS_API_PORT') or "443"))
 credentials = CredentialsFromEnv()
 
 # Use system's CA certificates (if we find them) instead of httplib2's
