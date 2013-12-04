@@ -1,8 +1,18 @@
 #!/bin/bash
 
 function usage {
-  echo >&2 "usage: $0 [--doc] [--sso] [--api] [--workbench] [--keep]"
-  echo >&2 "If no switches are given, the default is to start all servers."
+  echo >&2
+  echo >&2 "usage: $0 [options]"
+  echo >&2 "  -d [port], --doc[=port]        Start documentation server (default port 9898)"
+  echo >&2 "  -w [port], --workbench[=port]  Start workbench server (default port 9899)"
+  echo >&2 "  -s [port], --sso[=port]        Start SSO server (default port 9901)"
+  echo >&2 "  -a [port], --api[=port]        Start API server (default port 9900)"
+  echo >&2 "  -k, --keep                     Start Keep servers"
+  echo >&2 "  -h, --help                     Display this help and exit"
+  echo >&2
+  echo >&2 "If no switches are given, the default is to start all servers on the default"
+  echo >&2 "ports."
+  echo >&2
 }
 
 if [[ "$ENABLE_SSH" != "" ]]; then
@@ -17,41 +27,55 @@ start_api=false
 start_workbench=false
 start_keep=false
 
-while [ $# -ge 1 ]
-do
-    case $1 in
-	--doc)
-	    start_doc=true
-	    ;;
-	--sso)
-	    start_sso=true
-	    ;;
-	--api)
-	    start_api=true
-	    ;;
-	--workbench)
-	    start_workbench=true
-	    ;;
-	--keep)
-	    start_keep=true
-	    ;;
-	*)
-	    usage
-	    exit 1
-	    ;;
-    esac
-    shift
+# NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
+TEMP=`getopt -o d::s::a::w::kh --long doc::,sso::,api::,workbench::,keep,help \
+             -n "$0" -- "$@"`
+
+if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
+
+# Note the quotes around `$TEMP': they are essential!
+eval set -- "$TEMP"
+
+# For optional argument, as we are in quoted mode,
+# an empty parameter will be generated if its optional
+# argument is not found.
+while true; do
+  case "$1" in
+    -k | --keep ) start_keep=true; shift ;;
+    -h | --help ) usage; exit ;;
+    -d | --doc)
+      case "$2" in
+        "") start_doc=9898; shift 2 ;;
+        *)  start_doc=$2; shift 2 ;;
+      esac ;;
+    -s | --sso)
+      case "$2" in
+        "") start_sso=9901; shift 2 ;;
+        *)  start_sso=$2; shift 2 ;;
+      esac ;;
+    -a | --api)
+      case "$2" in
+        "") start_api=9900; shift 2 ;;
+        *)  start_api=$2; shift 2 ;;
+      esac ;;
+    -a | --workbench)
+      case "$2" in
+        "") start_workbench=9899; shift 2 ;;
+        *)  start_workbench=$2; shift 2 ;;
+      esac ;;
+    -- ) shift; break ;;
+    * ) usage; exit ;;
+  esac
 done
 
 # If no options were selected, then start all servers.
-if $start_doc || $start_sso || $start_api || $start_workbench || $start_keep
-then
+if [[ $start_doc != false || $start_sso != false || $start_api != false || $start_workbench != false || $start_keep != false ]]; then
     :
 else
-    start_doc=true
-    start_sso=true
-    start_api=true
-    start_workbench=true
+    start_doc=9898
+    start_sso=9901
+    start_api=9900
+    start_workbench=9899
     start_keep=true
 fi
 
@@ -114,11 +138,18 @@ function make_keep_volume {
   echo "$keepvolume"
 }
 
-$start_doc && start_container "9898:80" "doc_server" '' '' "arvados/doc"
-$start_sso && start_container "9901:443" "sso_server" '' '' "arvados/sso"
-$start_api && start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
-$start_workbench && start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
-
+if [[ $start_doc != false ]]; then
+  start_container "$start_doc:80" "doc_server" '' '' "arvados/doc"
+fi
+if [[ $start_sso != false ]]; then
+  start_container "$start_sso:443" "sso_server" '' '' "arvados/sso"
+fi
+if [[ $start_api != false ]]; then
+  start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
+fi
+if [[ $start_workbench != false ]]; then
+  start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
+fi
 
 if [[ $start_keep == true ]]; then
   keepvolume=$(make_keep_volume)
