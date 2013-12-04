@@ -96,22 +96,29 @@ function start_container {
   fi
 }
 
-function make_keep_volume {
+declare -a keep_volumes
+
+# Initialize the global `keep_volumes' array. If any keep volumes
+# already appear to exist (mounted volumes with a top-level "keep"
+# directory), use them; create temporary volumes if necessary.
+#
+function make_keep_volumes () {
   # Mount a keep volume if we don't already have one
-  local keepvolume=""
   for mountpoint in $(cut -d ' ' -f 2 /proc/mounts); do
     if [[ -d "$mountpoint/keep" && "$mountpoint" != "/" ]]; then
-      keepvolume=$mountpoint
+      keep_volumes+=($mountpoint)
     fi
   done
 
-  if [[ "$keepvolume" == '' ]]; then
-    keepvolume=$(mktemp -d)
-    echo >&2 "mounting 512M tmpfs keep volume in $keepvolume"
-    sudo mount -t tmpfs -o size=512M tmpfs $keepvolume
-    mkdir $keepvolume/keep
+  # Create any keep volumes that do not yet exist.
+  while [ ${#keep_volumes[*]} -lt 2 ]
+  do
+    new_keep=$(mktemp -d)
+    echo >&2 "mounting 512M tmpfs keep volume in $new_keep"
+    sudo mount -t tmpfs -o size=512M tmpfs $new_keep
+    mkdir $new_keep/keep
+    keep_volumes+=($new_keep)
   fi
-  echo "$keepvolume"
 }
 
 $start_doc && start_container "9898:80" "doc_server" '' '' "arvados/doc"
@@ -119,6 +126,7 @@ $start_sso && start_container "9901:443" "sso_server" '' '' "arvados/sso"
 $start_api && start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
 $start_workbench && start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
 
-keepvolume=$(make_keep_volume)
-$start_keep && start_container "25107:25107" "keep_server_0" "$keepvolume:/dev/keep-0" "api_server:api" "arvados/warehouse"
-$start_keep && start_container "25108:25107" "keep_server_1" "$keepvolume:/dev/keep-0" "api_server:api" "arvados/warehouse"
+declare -a keep_volumes
+make_keep_volumes
+$start_keep && start_container "25107:25107" "keep_server_0" "${keepvolume[0]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
+$start_keep && start_container "25108:25107" "keep_server_1" "${keepvolume[1]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
