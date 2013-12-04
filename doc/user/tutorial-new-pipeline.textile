@@ -9,6 +9,9 @@ h1. Tutorial: Construct a new pipeline
 
 Here you will write two new crunch scripts, incorporate them into a new pipeline template, run the new pipeline a couple of times using different parameters, and compare the results. One of the new scripts will use the Arvados API to look up trait&rarr;human&rarr;data relations and use this information to compile a collection of data to analyze.
 
+_Like the previous tutorial, this needs more of a basis in some actual
+clinical/research question to motivate it_
+
 h3. Prerequisites
 
 * Log in to a VM "using SSH":ssh-access.html
@@ -30,6 +33,8 @@ ssh-add          # (this adds your private key to the agent)
 ssh -A my_vm.arvados
 ssh-add -l       # (run this in your VM account to confirm forwarding works)
 </pre>
+
+_This discussion about ssh should probably go under the "ssh" section_
 
 With PuTTY under Windows, run "pageant", add your key to the agent, and turn on agent forwarding in your PuTTY settings.
 
@@ -69,6 +74,10 @@ the gitolite config gives you the following access:
      R   W      your_repo_name
 </pre>
 
+_You need to have a git repository set up already, which is not
+necessarily the case for new users, so this should link to the git
+section about setting up a new repo_
+
 h3. Set some variables
 
 Adjust these to match your login account name and the URL of your Arvados repository. The Access&rarr;VMs and Access&rarr;Repositories pages on Workbench will show the specifics.
@@ -90,6 +99,14 @@ git checkout -b pipeline-tutorial
 git remote add origin $repo_url
 </pre>
 
+_Should explain each step_
+_Creating an empty branch in an empty repository makes git do weird
+things, need to fix using
+<pre>
+git branch --set-upstream pipeline_tutorial origin/pipeline_tutorial
+</pre>
+but I don't know what this means._
+
 h3. Write the create-collection-by-trait script
 
 <pre>
@@ -98,6 +115,8 @@ touch crunch_scripts/create-collection-by-trait
 chmod +x crunch_scripts/create-collection-by-trait
 nano crunch_scripts/create-collection-by-trait
 </pre>
+
+_the -p to mkdir isn't necessary here_
 
 Here is the script:
 
@@ -178,6 +197,11 @@ for line in input_file.readlines():
 this_task.set_output(out.finish())
 </pre>
 
+_This should probably match the code we ran the user through in the
+previous tutorial, with the only difference being that the prior
+tutorial is interactive, and this tutorial is demonstrating how to
+create a job.
+
 h3. Commit your new code
 
 <pre>
@@ -245,6 +269,9 @@ Copy the following pipeline template.
 }
 </pre>
 
+_This desparately needs to be explained, since this is the actual
+pipeline definition_
+
 h3. Store the pipeline template in Arvados
 
 <pre>
@@ -260,6 +287,8 @@ qr1hi-p5p6p-uf9gi9nolgakm85
 </pre>
 
 The new pipeline template will also appear on the Workbench&rarr;Compute&rarr;Pipeline&nbsp;templates page.
+
+_Storing the pipeline in arvados as well as in git seems redundant_
 
 h3. Invoke the pipeline using "arv pipeline run"
 
@@ -289,6 +318,8 @@ The output of the "find_variant" component is shown in your terminal with the la
 
 It is also displayed on the pipeline instance detail page: go to Workbench&rarr;Compute&rarr;Pipeline&nbsp;instances and click the UUID of your pipeline instance.
 
+_There needs to be an easier way to get the output from the workbench_
+
 h3. Compute a summary statistic from the output collection
 
 For this step we will use python to read the output manifest and count how many of the inputs produced hits.
@@ -312,7 +343,9 @@ print "%d had the variant, %d did not." % (hits, misses)
 4 had the variant, 3 did not.
 </pre>
 
-h3. Run the pipeline again using different parameters
+_Explain each step_
+
+_h3. Run the pipeline again using different parameters
 
 We can use the same pipeline template to run the jobs again, this time overriding the "trait_name" parameter with a different value:
 

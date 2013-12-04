@@ -23,6 +23,9 @@ tutorial](https://www.google.com/search?q=github+ssh+key+help)
 
 ### Associate your SSH public key with your Arvados Workbench account
 
+> Maybe mention that the "Add a new authorized key" button will be at the bottom of the page
+
+
 Go to the `Keys` page in Arvados Workbench (under the `Access` tab) and click the
 
 <p style="margin-left: 4em"><span class="btn btn-primary disabled">Add a new authorized key</span></p>
@@ -47,6 +50,11 @@ file:
     Host *.arvados
       ProxyCommand ssh -p2222 turnout@switchyard.{{ site.arvados_api_host }} -x -a $SSH_PROXY_FLAGS %h
 
+> This needs to be explained that it is adding an alias to make it easier to log into an
+> arvados server on port 2222.  This is not actually necessary if the user doesn't mind some typing.
+> Actually, it might make sense to show the regular command line first, and then mention later that
+> it can be shortened using ~/.ssh/config. 
+
 If you have access to an account `foo` on a VM called `blurfl` then
 you can log in like this:
 
@@ -59,6 +67,9 @@ Some other convenient configuration options are `User` and
       ProxyCommand ssh -p2222 turnout@switchyard.{{ site.arvados_api_host }} -x -a $SSH_PROXY_FLAGS %h
       User foo
 	  ForwardAgent yes
+
+> This shortened *.arvados to *.a
+> This should be consistent
 
 Adding `User foo` will log you in to the VM as user `foo` by default,
 so you can just `ssh blurfl.a`. The `ForwardAgent yes` option turns on

@@ -28,6 +28,8 @@ yourname@shell:~$ cd yourrepo
 yourname@shell:~/yourrepo$ mkdir -p crunch_scripts
 </pre>
 
+_Should mention somewhere that it *must* be in a directory called crunch_scripts_
+
 {% include notebox-begin.html %}
 
 The process described here should work regardless of whether @yourrepo@ contains a git repository. But normally you would only ever edit code in a git tree -- especially crunch scripts, which can't be used to run regular Arvados jobs until they're committed and pushed.
@@ -124,6 +126,8 @@ out.write('hello world')
 out_collection = out.finish()
 </pre>
 
+_Explain better_
+
 The return value of @out.finish()@ is the content address (hash) of a collection stored in Keep.
 
 h3. Record successful completion
@@ -137,6 +141,8 @@ arvados.current_task().set_output(out_collection)
 The @set_output()@ method tells Arvados that
 * The hash specified by the @out_collection@ parameter is the output of this task, and
 * This task completed successfully.
+
+_Putting this in a separate section from the code blob above is confusing!_
 
 h3. Run the working script.
 

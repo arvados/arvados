@@ -11,11 +11,17 @@ Here you will use the "arv" command line tool to run a simple Crunch script on s
 
 h3. Prerequisites
 
+_Needs a mention of going to Access->VMs on the workbench_
+
 * Log in to a VM "using SSH":ssh-access.html
 * Put an "API token":api-tokens.html in your @ARVADOS_API_TOKEN@ environment variable
 * Put the API host name in your @ARVADOS_API_HOST@ environment variable
 
 If everything is set up correctly, the command @arv -h user current@ will display your account information.
+
+
+_If you are logged in to a fully provisioned VM, presumably the gems
+are already installed.  This discussion should go somewhere else._
 
 Arv depends on a few gems. It will tell you which ones to install, if they are not present yet. If you need to install the dependencies and are doing so as a non-root user, make sure you set GEM_HOME before you run gem install:
 
@@ -29,11 +35,18 @@ We will run the "hash" program, which computes the MD5 hash of each file in a co
 
 Pick a data collection. We'll use @33a9f3842b01ea3fdf27cc582f5ea2af@ here.
 
+_How do I know if I have this data?  Does it come as example data with
+the arvados distribution?  Is there something notable about it, like
+it is very large and spans multiple keep blocks?_
+
 <pre>
 the_collection=33a9f3842b01ea3fdf27cc582f5ea2af
 </pre>
 
 Pick a code version. We'll use @5565778cf15ae9af22ad392053430213e9016631@ here.
+
+_How do I know if I have this code version?  What does this refer to?
+A git revision?  Or a keep id?  In what repository?_
 
 <pre>
 the_version=5565778cf15ae9af22ad392053430213e9016631
@@ -54,7 +67,12 @@ read -rd $'\000' the_job <<EOF
 EOF
 </pre>
 
-(The @read -rd $'\000'@ part uses a bash feature to help us get a multi-line string with lots of double quotation marks into a shell variable.)
+_Need to explain what the json fields mean, it is explained later but
+there should be some mention up here._
+
+(The @read -rd $'\000'@ part uses a bash feature to help us get a
+multi-line string with lots of double quotation marks into a shell
+variable.)
 
 Submit the job.
 
@@ -79,11 +97,18 @@ arv -h job create --job "$the_job"
 }
 </pre>
 
+_What is this?  An example of what "arv" returns?  What do the fields mean?_
+
 h3. Monitor job progress
+
+_And then the magic happens.  There should be some more discussion of what
+is going on in the background once the job is submitted from the
+user's perspective.  It is queued, running, etc?._
 
 Go to Workbench, drop down the Compute menu, and click Jobs. The job you submitted should appear at the top of the list.
 
-Hit "Refresh" until it finishes.
+Hit "Refresh" until it finishes.  _We should really make the page
+autorefresh or use a streamed-update framework_
 
 You can also watch the log messages while the job runs:
 
@@ -145,3 +170,9 @@ cd arvados
 git checkout $the_version
 less crunch_scripts/hash
 </pre>
+
+_If we're going to direct the user to open up the code, some
+discussion of the python API is probably in order.  If the hash
+job is going to be the canonical first crunch map reduce program
+for everybody, than we should break down the program line-by-line and
+explain every step in detail._

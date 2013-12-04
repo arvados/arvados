@@ -13,7 +13,11 @@ Tutorials for
 Beginners](http://sixrevisions.com/resources/git-tutorials-beginners/)). Here
 we just cover the specifics of using git in the Arvados environment.
 
+> "git is used in arvados for ..."
+
 ### Find your repository
+
+_This needs to have a section on creating repositories_
 
 Go to Workbench &rarr; Access &rarr; Repositories.
 
@@ -34,6 +38,9 @@ like this:
 
     ssh -A shell.q
 
+> The .q is inconsistent with the earlier tutorial which sets up
+> the .arvados configuration shortcut
+
 At the shell prompt in the VM, type `ssh-add -l` to display a list of
 keys that can be used. You should see something like this:
 
@@ -50,6 +57,8 @@ Log in to your VM (using `ssh -A`!) and type:
 
 (Replace "EXAMPLE" with your own repository's name, or just copy the
 usage example shown on the Repositories page.)
+
+> The repositories page on the workbench under "access"
 
 ### Commit to your repository
 

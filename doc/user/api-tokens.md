@@ -7,6 +7,10 @@ navorder: 1
 
 # Getting an API token
 
+> Needs a line or two to the effect of "an API token is a secret key that 
+> enables the command line client to access arvados with the proper
+> permissions".
+
 Open a browser and point it to the Workbench URL for your site. It
 will look something like this:
 
@@ -15,6 +19,8 @@ will look something like this:
 Log in, if you haven't done that already.
 
 Click the "API tokens" link.
+
+> Need to indicate that "API Tokens" is underneath "Access"
 
 At the top of the "API tokens" page, you will see a few lines like this.
 
@@ -33,13 +39,18 @@ to your terminal session.
 Now, `arv -h user current` will display your account info in JSON
 format.
 
+> What does `-h` mean?
+
 Optionally, copy those lines to your .bashrc file so you don't have to
 repeat this process each time you log in.
 
 ### SSL + development mode
+
+> This section should go somewhere else, it is confusing to a new user.
 
 If you are using a local development server with a self-signed
 certificate, you might need to bypass certificate verification. Don't
 do this if you are using a production service.
 
     export ARVADOS_API_HOST_INSECURE=yes
+

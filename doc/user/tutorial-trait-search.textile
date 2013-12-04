@@ -9,6 +9,16 @@ h1. Tutorial: Search PGP data by trait
 
 Here you will use the Python SDK to find public WGS data for people who have a certain medical condition.
 
+_Define WGS_
+
+_Explain the motivation in this example a little better.  If I'm
+reading this right, the workflow is 
+traits -> people with those traits -> presense of a specific genetic
+variant in the people with the reported traits_
+
+_Rather than having the user do this through the Python command line,
+it might be easier to write a file that is going to do each step_
+
 h3. Prerequisites
 
 * Log in to a VM "using SSH":ssh-access.html
@@ -46,6 +56,9 @@ for t in filter(lambda t: re.search('cancer', t['name']),
 
 </pre>
 
+_Should break this down into steps instead of being clever and making
+it a python one-liner_
+
 &darr;
 
 <pre>
@@ -73,6 +86,8 @@ trait_links = arvados.service.links().list(limit=1000,where=json.dumps({
     'head_uuid': trait_uuid
   })).execute()['items']
 </pre>
+
+_Same comment, break this out and describe each step_
 
 The "tail_uuid" attribute of each of these Links refers to a Human.
 

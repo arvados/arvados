@@ -10,6 +10,9 @@ navorder: 3
 Keep is a content-addressable storage system. Its semantics are
 inherently different from the POSIX-like file systems you're used to.
 
+> Explain what "content-addressable" means more specifically.
+> Define "locator"
+
 Using Keep looks like this:
 
 1. Write data.
@@ -39,11 +42,19 @@ filesystem. It contains subdirectories and filenames, and indicates
 where to find the data blocks which comprise the files. It is encoded
 in plain text.
 
+> Can a collection contain sub-collections?
+> The "plain text" encoding is JSON, right?  Either be specific or
+> remove it because the user doesn't really need to know about the encoding
+> at this level.
+
 A data block contains between 1 byte and 64 MiB of data. Its locator
 is the MD5 checksum of the data, followed by a plus sign and its size
 in bytes (encoded as a decimal number).
 
 `acbd18db4cc2f85cedef654fccc4a4d8+3`
+
+> What does this locator encode?  Give an example so the astute
+> reader could use "md5" herself to construct the id.
 
 A locator may include additional "hints" to help the Keep store find a
 data block more quickly. For example, in the locator
@@ -65,6 +76,9 @@ delete unneeded data blocks.
 
 ### Tagging valuable data
 
+> Now this goes from background introduction to tutorial,
+> so this should probably be split up
+
 Valuable data must be marked explicitly by creating a Collection in
 Arvados. Otherwise, the data blocks will be deleted during garbage
 collection.
@@ -73,15 +87,21 @@ Use the arv(1) program to create a collection. For example:
 
     arv collection create --uuid "acbd18db4cc2f85cedef654fccc4a4d8+3"
 
+> What does this actually do?
+
 ## Getting started
 
 Write three bytes of data to Keep.
 
     echo -n foo | whput -
 
+> What does "wh" stand for in the program name?
+
 Output:
 
     acbd18db4cc2f85cedef654fccc4a4d8+3+K@arv01
+
+> Explain that this is the locator that Keep has stored the data under
 
 Retrieve the data.
 
@@ -106,3 +126,4 @@ Output:
 
 ### Mounting a single collection as a POSIX filesystem
 
+> Needs a yellow "this web page under construction" sign with a guy shoveling dirt.
