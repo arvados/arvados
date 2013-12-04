@@ -27,7 +27,7 @@ RUN sh /tmp/config_databases.sh && \
     cd /usr/src/arvados/services/api && \
     rake db:setup && \
     rake assets:precompile && \
-    script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
+    ./script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
     chown www-data:www-data config.ru && \
     chown www-data:www-data log -R && \
     chown www-data:www-data tmp -R
