@@ -50,7 +50,7 @@ API_SECRET:
 # the API server, before an administrative user has been created.
 # Necessary for bootstrapping, e.g. so Keep can register with
 # the API server before any users have been added.
-API_SUPERUSER_TOKEN: 
+API_SUPERUSER_SECRET:
 
 # More than anything this should be auto-generated, but
 # we don't presently have a good place to store it. So just
