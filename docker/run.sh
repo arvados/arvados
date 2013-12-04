@@ -118,7 +118,7 @@ function make_keep_volumes () {
     sudo mount -t tmpfs -o size=512M tmpfs $new_keep
     mkdir $new_keep/keep
     keep_volumes+=($new_keep)
-  fi
+  done
 }
 
 $start_doc && start_container "9898:80" "doc_server" '' '' "arvados/doc"
@@ -128,5 +128,5 @@ $start_workbench && start_container "9899:80" "workbench_server" '' "api_server:
 
 declare -a keep_volumes
 make_keep_volumes
-$start_keep && start_container "25107:25107" "keep_server_0" "${keepvolume[0]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
-$start_keep && start_container "25108:25107" "keep_server_1" "${keepvolume[1]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
+$start_keep && start_container "25107:25107" "keep_server_0" "${keep_volumes[0]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
+$start_keep && start_container "25108:25107" "keep_server_1" "${keep_volumes[1]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
