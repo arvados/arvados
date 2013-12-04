@@ -130,3 +130,14 @@ declare -a keep_volumes
 make_keep_volumes
 $start_keep && start_container "25107:25107" "keep_server_0" "${keep_volumes[0]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
 $start_keep && start_container "25108:25107" "keep_server_1" "${keep_volumes[1]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
+
+ARVADOS_API_HOST=$(ip_address "api_server")
+ARVADOS_API_HOST_INSECURE=yes
+ARVADOS_API_TOKEN=$(grep '^\w' api/generated/secret_token.rb | cut -d "'" -f 2)
+
+echo "To run a test suite:"
+
+echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST"
+echo "export ARVADOS_API_HOST_INSECURE=$ARVADOS_API_HOST_INSECURE"
+echo "export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN"
+echo "python -m unittest discover ../sdk/python"
