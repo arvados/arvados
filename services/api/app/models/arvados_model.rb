@@ -9,6 +9,7 @@ class ArvadosModel < ActiveRecord::Base
   attr_protected :modified_at
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
+  before_destroy :ensure_permission_to_destroy
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
   validate :ensure_serialized_attribute_type
@@ -85,6 +86,14 @@ class ArvadosModel < ActiveRecord::Base
       logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
       return false
     end
+  end
+
+  def ensure_permission_to_destroy
+    raise PermissionDeniedError unless permission_to_destroy
+  end
+
+  def permission_to_destroy
+    permission_to_update
   end
 
   def maybe_update_modified_by_fields
