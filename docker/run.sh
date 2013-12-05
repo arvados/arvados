@@ -1,7 +1,6 @@
 #!/bin/bash
 
 ENABLE_SSH=false
-DOCKER_ARGS="-d -i -t"
 
 function usage {
     echo >&2 "usage:"
@@ -17,24 +16,28 @@ function ip_address {
 }
 
 function start_container {
-    local port="-p $1"
+    local args="-d -i -t"
+    if [[ "$1" != '' ]]; then
+      local port="$1"
+      args="$args -p $port"
+    fi
     if [[ "$2" != '' ]]; then
       local name="$2"
-      DOCKER_ARGS="$DOCKER_ARGS -name $name"
+      args="$args -name $name"
     fi
     if [[ "$3" != '' ]]; then
       local volume="$3"
-      DOCKER_ARGS="$DOCKER_ARGS -v $volume"
+      args="$args -v $volume"
     fi
     if [[ "$4" != '' ]]; then
       local link="$4"
-      DOCKER_ARGS="$DOCKER_ARGS -link $link"
+      args="$args -link $link"
     fi
     local image=$5
 
     if $ENABLE_SSH
     then
-      DOCKER_ARGS="$DOCKER_ARGS -e ENABLE_SSH=$ENABLE_SSH"
+      args="$args -e ENABLE_SSH=$ENABLE_SSH"
     fi
 
     `docker ps |grep -P "$name[^/]" -q`
@@ -43,12 +46,12 @@ function start_container {
       return
     fi
 
-    # If a container by this name already exists, remove it before
-    # starting a new one.
-    
+    # Remove any existing container by this name.
+    docker rm "$name" 2>/dev/null
+
     echo "Starting container:"
-    echo "  docker run $DOCKER_ARGS $image"
-    container=`docker run $DOCKER_ARGS $image`
+    echo "  docker run $args $image"
+    container=`docker run $args $image`
     if [[ "$?" != "0" ]]; then
       echo "Unable to start container"
       exit 1
@@ -142,9 +145,24 @@ function do_start {
     $start_api && start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
     $start_workbench && start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
 
-    make_keep_volumes
-    $start_keep && start_container "25107:25107" "keep_server_0" "${keep_volumes[0]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
-    $start_keep && start_container "25108:25107" "keep_server_1" "${keep_volumes[1]}:/dev/keep-0" "api_server:api" "arvados/warehouse"
+    if $start_keep
+    then
+	# create `keep_volumes' array with a list of keep mount points
+	# remove any stale metadata from those volumes before starting them
+	make_keep_volumes
+	for v in ${keep_volumes[*]}
+	do
+	    [ -f $v/.metadata.yml ] && rm $v/.metadata.yml
+	done
+	start_container "25107:25107" "keep_server_0" \
+	    "${keep_volumes[0]}:/dev/keep-0" \
+	    "api_server:api" \
+	    "arvados/warehouse"
+	start_container "25108:25107" "keep_server_1" \
+	    "${keep_volumes[1]}:/dev/keep-0" \
+	    "api_server:api" \
+	    "arvados/warehouse"
+    fi
 
     ARVADOS_API_HOST=$(ip_address "api_server")
     ARVADOS_API_HOST_INSECURE=yes
@@ -157,6 +175,14 @@ function do_start {
     echo "python -m unittest discover ../sdk/python"
 }
 
+function do_stop {
+    docker stop api_server \
+	sso_server \
+	workbench_server \
+	keep_server_0 \
+	keep_server_1 2>/dev/null
+}
+
 if [ $# -lt 1 ]
 then
   usage
@@ -167,6 +193,10 @@ case $1 in
     start)
 	shift
 	do_start $@
+	;;
+    stop)
+	shift
+	do_stop $@
 	;;
     *)
 	usage
