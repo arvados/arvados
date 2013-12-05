@@ -152,7 +152,7 @@ function do_start {
 	make_keep_volumes
 	for v in ${keep_volumes[*]}
 	do
-	    [ -f $v/.metadata.yml ] && rm $v/.metadata.yml
+	    [ -f $v/keep/.metadata.yml ] && rm $v/keep/.metadata.yml
 	done
 	start_container "25107:25107" "keep_server_0" \
 	    "${keep_volumes[0]}:/dev/keep-0" \
@@ -176,7 +176,8 @@ function do_start {
 }
 
 function do_stop {
-    docker stop api_server \
+    docker stop doc_server \
+	api_server \
 	sso_server \
 	workbench_server \
 	keep_server_0 \
