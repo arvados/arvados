@@ -17,6 +17,15 @@ class ArvadosModel < ActiveRecord::Base
   has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
 
   class PermissionDeniedError < StandardError
+    def http_status
+      403
+    end
+  end
+
+  class UnauthorizedError < StandardError
+    def http_status
+      401
+    end
   end
 
   def self.kind_class(kind)
