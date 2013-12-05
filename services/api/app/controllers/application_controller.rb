@@ -83,7 +83,7 @@ class ApplicationController < ActionController::Base
     else
       errors = [e.inspect]
     end
-    status = if e.respond_to?(:http_status) ? e.http_status : 422
+    status = e.respond_to?(:http_status) ? e.http_status : 422
     render json: { errors: errors }, status: status
   end
 
