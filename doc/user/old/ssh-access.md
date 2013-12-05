@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: Setting up SSH access
+title: Setting up SSH access (old)
 navorder: 2
 ---
 
