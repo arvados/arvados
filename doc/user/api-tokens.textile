@@ -1,0 +1,48 @@
+---
+layout: default
+navsection: userguide
+title: Getting an API token
+navorder: 1
+---
+
+h1. Getting an API token
+
+The Arvados API token is a secret key that enables the @arv@ command line
+client to access Arvados with the proper permissions.
+
+Access the Arvados workbench using this link:
+
+"https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/
+
+(Replace {{ site.arvados_api_host }} with the hostname of your local Arvados instance if necessary.)
+
+Use the menu to navigate to _Access %(rarr)&rarr;% API Tokens_.  There should be one or more rows.  The column *api_token* contains the actual token string that you will use.  Copy the value of *api_token* for the first row onto the clipboard.
+
+Next, open a shell on the system on which you intend to use the Arvados client (refer to "Accessing Arvados over ssh":ssh-access.html ) and enter the following:
+
+<pre>
+ $ export ARVADOS_API_HOST={{ site.arvados_api_host }}
+ $ export ARVADOS_API_TOKEN=2jv9kd1o39t0pcfu7aueem7a1zjxhak73w90tzq3gx0es7j1ld
+</pre>
+
+* @ARVADOS_API_HOST@ tells @arv@ which host to connect to
+* @ARVADOS_API_TOKEN@ is the secret key used by the Arvados API server to authenticate access.
+
+For your convenience, the "API Tokens" Workbench page provides a section at the top of the  page that you may copy and paste directly into the shell.
+
+<pre>
+### Pasting the following lines at a shell prompt will allow Arvados SDKs
+### to authenticate to your account, youraddress@example.com
+    
+read ARVADOS_API_TOKEN <<EOF
+2jv9kd1o39t0pcfu7aueem7a1zjxhak73w90tzq3gx0es7j1ld
+EOF
+export ARVADOS_API_TOKEN ARVADOS_API_HOST=qr1hi.arvadosapi.com
+</pre>
+
+* The @read@ command takes the contents of stdin and puts it into the shell variable named on the command line.
+* The @<<EOF@ notation means read each line on stdin and pipe it to the command, terminating on reading the line @EOF@.
+* The @export@ command puts a local shell variable into the environment that will be inherited by child processes (e.g. the @arv@ client).
+
+Additionally for your convenience you may add the declarations of @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ to your @~/.bashrc@ file.
+

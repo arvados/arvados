@@ -1,35 +1,59 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: Your first job"
+title: "Tutorial 1: Using the arv command"
 navorder: 20
 ---
 
-h1. Tutorial: Your first job
+h1. Tutorial 1: Using the "arv" command
 
-Here you will use the "arv" command line tool to run a simple Crunch script on some sample data.
+This tutorial introduces the @arv@ command line tool and demonstrates how to run a simple script.
 
-h3. Prerequisites
+This tutorial assumes that you are logged into an Arvados VM instance, as described in "accessing arvados over ssh":#login
 
-_Needs a mention of going to Access->VMs on the workbench_
+h2. Checking your environment
 
-* Log in to a VM "using SSH":ssh-access.html
-* Put an "API token":api-tokens.html in your @ARVADOS_API_TOKEN@ environment variable
-* Put the API host name in your @ARVADOS_API_HOST@ environment variable
-
-If everything is set up correctly, the command @arv -h user current@ will display your account information.
-
-
-_If you are logged in to a fully provisioned VM, presumably the gems
-are already installed.  This discussion should go somewhere else._
-
-Arv depends on a few gems. It will tell you which ones to install, if they are not present yet. If you need to install the dependencies and are doing so as a non-root user, make sure you set GEM_HOME before you run gem install:
+Check that you are able to access the Arvados API server using the following command:
 
 <pre>
-    export GEM_HOME=~/.gem
+$ arv user current
 </pre>
 
-h3. Submit a job
+If you receive the message "ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables", follow the instructions "Getting an API token":api-tokens.html , then return to this document.
+
+If @arv user current@ is able to access the API server, it will print out the unique identifier associated with your account:
+
+<pre>
+qr1hi-xioed-9z2p3pn12yqdaem
+</pre>
+
+This unique identifier represents your identity in the Arvados system and is similar to the concept of a pointer or a foreign key.  You may de-reference any identifier returned by the "arv" command using the @-h@ command line option.  For example:
+
+<pre>
+$ arv -h user current
+{
+ "href":"https://qr1hi.arvadosapi.com/arvados/v1/users/qr1hi-xioed-9z2p3pn12yqdaem",
+ "kind":"arvados#user",
+ "etag":"8u0xwb9f3otb2xx9hto4wyo03",
+ "uuid":"qr1hi-tpzed-92d3kxnimy3d4e8",
+ "owner_uuid":"qr1hi-tpqed-23iddeohxta2r59",
+ "created_at":"2013-12-02T17:05:47Z",
+ "modified_by_client_uuid":"qr1hi-xxfg8-owxa2oa2s33jyej",
+ "modified_by_user_uuid":"qr1hi-tpqed-23iddeohxta2r59",
+ "modified_at":"2013-12-02T17:07:08Z",
+ "updated_at":"2013-12-05T19:51:08Z",
+ "email":"you@example.com",
+ "full_name":"Example User",
+ "first_name":"Example",
+ "last_name":"User",
+ "identity_url":"https://www.google.com/accounts/o8/id?id=AItOawnhlZr-pQ_Ic2f2W22XaO02oL3avJ322k1",
+ "is_active": true,
+ "is_admin": false,
+ "prefs":{}
+}
+</pre>
+
+h2. Submitting your first job
 
 We will run the "hash" program, which computes the MD5 hash of each file in a collection.
 

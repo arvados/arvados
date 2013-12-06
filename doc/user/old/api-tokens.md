@@ -5,11 +5,10 @@ title: Getting an API token
 navorder: 1
 ---
 
-# Getting an API token
+h1. Getting an API token
 
-> Needs a line or two to the effect of "an API token is a secret key that 
-> enables the command line client to access arvados with the proper
-> permissions".
+The Arvados API token is a secret key that enables the command line
+client to access arvados with the proper permissions.
 
 Open a browser and point it to the Workbench URL for your site. It
 will look something like this:

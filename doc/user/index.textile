@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: Getting started
+title: Welcome to Arvados!
 navorder: 0
 ---
 
@@ -13,17 +13,18 @@ h2. Prerequisites
 
 To get the most value out of this guide, you should be comfortable with the following:
 
+# Using a secure shell client such as @ssh@ or @putty@ to log on to a remote server 
 # Using the unix command line shell @bash@
-# Using secure shell (@ssh@) to log on to a remote server 
+# Viewing and editing files using a unix text editor such as @vi@, @emacs@, or @nano@
 # Programming in @python@
 
 It will also be helpful (but not essential) if you are familiar with revision control using @git@.
 
 The examples in this guide uses the public Arvados instance located at "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ .  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@clinicalfuture.com":mailto:arvados@clinicalfuture.com .
 
-If you are using a different Arvados instance, get your user name and password from your local administrator, and replace @{{ site.arvados_api_host }}@ with your private instance in all of the examples in this guide.
+If you are using a different Arvados instance replace @{{ site.arvados_api_host }}@ with your private instance in all of the examples in this guide.
 
-h1. Arvados Workbench 
+h1. Arvados Workbench
 
 You may access the Arvados workbench using this link:
 
@@ -33,15 +34,6 @@ If you are accessing Arvados for the first time, you will be asked to log in usi
 
 Once your account is active, logging in to the Workbench will present you with a system status dashboard.  This gives a summary of data, configuration, and activity in the Arvados instance.
 
-Next, we will configure your account to enable @ssh@ access to an Arvados virtual machine (VM) instance.
+Next, we will "configure your account for ssh access to an Arvados virtual machine (VM) instance.":ssh-access.html
 
-h2(#settingupssh). Setting up ssh keys
-
-Open the Workbench dashboard and look at the *Configuration* box.  It should show:
-
-@ SSH keys   0 @
-
-This indicates that you have not yet provided Arvados with a public @ssh@ key.  Arvados requires a public @ssh@ key in order to securely log in to an Arvados VM instance, or to access an Arvados @git@ repository.  Refer to "Getting your ssh key":ssh-access.html and then copy the contents of the public key file (@id_rsa.pub@) to the clipboard.
-
-Access %(rarr)&rarr;% Keys
 
