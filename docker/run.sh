@@ -191,7 +191,7 @@ function do_test {
     local alltests
     if [ $# -lt 1 ]
     then
-	alltests="python-sdk"
+	alltests="python-sdk api"
     else
 	alltests="$@"
     fi
@@ -201,10 +201,15 @@ function do_test {
 	echo "testing $testname..."
 	case $testname in
 	    python-sdk)
-		ARVADOS_API_HOST=$(ip_address "api_server")
-		ARVADOS_API_HOST_INSECURE=yes
-		ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
+		do_start --api --keep --sso
+		export ARVADOS_API_HOST=$(ip_address "api_server")
+		export ARVADOS_API_HOST_INSECURE=yes
+		export ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 		python -m unittest discover ../sdk/python
+		;;
+	    api)
+		docker run -t -i arvados/api \
+		    /usr/src/arvados/services/api/script/rake_test.sh
 		;;
 	    *)
 		echo >&2 "unknown test $testname"
