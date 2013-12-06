@@ -4,10 +4,13 @@ ENABLE_SSH=false
 
 function usage {
     echo >&2 "usage:"
+    echo >&2 "$0 (start|stop|test)"
+    echo >&2 ""
     echo >&2 "$0 start [--ssh] [--doc] [--sso] [--api] [--workbench] [--keep]"
+    echo >&2 "  If no switches are given, the default is to start all servers."
     echo >&2 "$0 stop"
-    echo >&2 "$0 test"
-    echo >&2 "If no switches are given, the default is to start all servers."
+    echo >&2 "$0 test [testname] [testname] ..."
+    echo >&2 "  By default, all tests are run."
 }
 
 function ip_address {
@@ -166,7 +169,7 @@ function do_start {
 
     ARVADOS_API_HOST=$(ip_address "api_server")
     ARVADOS_API_HOST_INSECURE=yes
-    ARVADOS_API_TOKEN=$(grep '^\w' api/generated/secret_token.rb | cut -d "'" -f 2)
+    ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 
     echo "To run a test suite:"
     echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST"
@@ -184,6 +187,32 @@ function do_stop {
 	keep_server_1 2>/dev/null
 }
 
+function do_test {
+    local alltests
+    if [ $# -lt 1 ]
+    then
+	alltests="python-sdk"
+    else
+	alltests="$@"
+    fi
+
+    for testname in $alltests
+    do
+	echo "testing $testname..."
+	case $testname in
+	    python-sdk)
+		ARVADOS_API_HOST=$(ip_address "api_server")
+		ARVADOS_API_HOST_INSECURE=yes
+		ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
+		python -m unittest discover ../sdk/python
+		;;
+	    *)
+		echo >&2 "unknown test $testname"
+		;;
+	esac
+    done
+}
+
 if [ $# -lt 1 ]
 then
   usage
@@ -198,6 +227,10 @@ case $1 in
     stop)
 	shift
 	do_stop $@
+	;;
+    test)
+	shift
+	do_test $@
 	;;
     *)
 	usage
