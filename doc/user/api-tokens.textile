@@ -18,7 +18,7 @@ Access the Arvados workbench using this link:
 
 Use the menu to navigate to _Access %(rarr)&rarr;% API Tokens_.  There should be one or more rows.  The column *api_token* contains the actual token string that you will use.  Copy the value of *api_token* for the first row onto the clipboard.
 
-Next, open a shell on the system on which you intend to use the Arvados client (refer to "Accessing Arvados over ssh":ssh-access.html ) and enter the following:
+Next, open a shell on the system on which you intend to use the Arvados client (refer to "Accessing Arvados over ssh":ssh-access.html ) and enter the following (replace the value of @ARVADOS_API_TOKEN@ with the value you copied from the Workbench):
 
 <pre>
  $ export ARVADOS_API_HOST={{ site.arvados_api_host }}
@@ -28,7 +28,7 @@ Next, open a shell on the system on which you intend to use the Arvados client (
 * @ARVADOS_API_HOST@ tells @arv@ which host to connect to
 * @ARVADOS_API_TOKEN@ is the secret key used by the Arvados API server to authenticate access.
 
-For your convenience, the "API Tokens" Workbench page provides a section at the top of the  page that you may copy and paste directly into the shell.
+For your convenience, the "API Tokens" Workbench page provides a section at the top of the  page that you may copy and paste directly into the shell.  It will look something like this:
 
 <pre>
 ### Pasting the following lines at a shell prompt will allow Arvados SDKs
@@ -44,5 +44,11 @@ export ARVADOS_API_TOKEN ARVADOS_API_HOST=qr1hi.arvadosapi.com
 * The @<<EOF@ notation means read each line on stdin and pipe it to the command, terminating on reading the line @EOF@.
 * The @export@ command puts a local shell variable into the environment that will be inherited by child processes (e.g. the @arv@ client).
 
-Additionally for your convenience you may add the declarations of @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ to your @~/.bashrc@ file.
+For your convenience you may add the declarations of @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ to the @~/.bashrc@ file on the system on which you intend to use the Arvados client.  If you have already put the variables into the environment with instructions above, you can use these commands to append the environment variables to your @~/.bashrc@:
 
+<pre>
+ $ echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST" >> ~/.bashrc
+ $ echo "export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN" >> ~/.bashrc
+<pre>
+
+You are now ready to "return to Tutorial 1"#tutorial-job1.html .

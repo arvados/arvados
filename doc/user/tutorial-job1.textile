@@ -21,7 +21,7 @@ $ arv user current
 
 If you receive the message "ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables", follow the instructions "Getting an API token":api-tokens.html , then return to this document.
 
-If @arv user current@ is able to access the API server, it will print out the unique identifier associated with your account:
+If @arv user current@ is able to access the API server, it will print out the unique identifier associated with your account, for example (you will receive a different identifier than shown in this example):
 
 <pre>
 qr1hi-xioed-9z2p3pn12yqdaem
