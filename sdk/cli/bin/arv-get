@@ -6,6 +6,9 @@ import os
 import re
 import string
 import sys
+import logging
+
+logger = logging.getLogger(os.path.basename(sys.argv[0]))
 
 parser = argparse.ArgumentParser(
     description='Copy data from Keep to a local file or pipe.')
@@ -102,21 +105,25 @@ reader = arvados.CollectionReader(collection)
 # Scan the collection. Make an array of (stream, file, local
 # destination filename) tuples, and add up total size to extract.
 
-for s in reader.all_streams():
-    for f in s.all_files():
-        if get_prefix and get_prefix[-1] == os.sep:
-            if 0 != string.find(os.path.join(s.name(), f.name()),
-                                '.' + get_prefix):
-                continue
-            dest_path = os.path.join(
-                args.destination,
-                os.path.join(s.name(), f.name())[len(get_prefix)+1:])
-        else:
-            if os.path.join(s.name(), f.name()) != '.' + get_prefix:
-                continue
-            dest_path = args.destination
-        todo += [(s, f, dest_path)]
-        todo_bytes += f.size()
+try:
+    for s in reader.all_streams():
+        for f in s.all_files():
+            if get_prefix and get_prefix[-1] == os.sep:
+                if 0 != string.find(os.path.join(s.name(), f.name()),
+                                    '.' + get_prefix):
+                    continue
+                dest_path = os.path.join(
+                    args.destination,
+                    os.path.join(s.name(), f.name())[len(get_prefix)+1:])
+            else:
+                if os.path.join(s.name(), f.name()) != '.' + get_prefix:
+                    continue
+                dest_path = args.destination
+            todo += [(s, f, dest_path)]
+            todo_bytes += f.size()
+except arvados.errors.NotFoundError as e:
+    logger.error(e)
+    sys.exit(1)
 
 # Read data, and (if not -n) write to local file(s) or pipe.
 
@@ -127,7 +134,10 @@ for s,f,outfilename in todo:
     if not args.n:
         if args.r:
             arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
-        outfile = open(outfilename, 'wb')
+        try:
+            outfile = open(outfilename, 'wb')
+        except Exception as e:
+            logger.error('Open(%s) failed: %s' % (outfilename, e))
     if args.hash:
         digestor = hashlib.new(args.hash)
     try:
