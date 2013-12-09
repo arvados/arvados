@@ -51,6 +51,56 @@ class TestArvGet < Minitest::Test
     assert_equal 'foo', IO.read('tmp/foo')
   end
 
+  def test_file_to_file_no_overwrite_file
+    File.open './tmp/foo', 'wb' do |f|
+      f.write 'baz'
+    end
+    out, err = capture_subprocess_io do
+      assert_arv_get false, @@foo_manifest_locator + '/foo', 'tmp/foo'
+    end
+    assert_match /^ERROR:/, err
+    assert_equal '', out
+    assert_equal 'baz', IO.read('tmp/foo')
+  end
+
+  def test_file_to_file_no_overwrite_file_in_dir
+    File.open './tmp/foo', 'wb' do |f|
+      f.write 'baz'
+    end
+    out, err = capture_subprocess_io do
+      assert_arv_get false, @@foo_manifest_locator + '/', 'tmp/'
+    end
+    assert_match /^ERROR:/, err
+    assert_equal '', out
+    assert_equal 'baz', IO.read('tmp/foo')
+  end
+
+  def test_file_to_file_force_overwrite
+    File.open './tmp/foo', 'wb' do |f|
+      f.write 'baz'
+    end
+    assert_equal 'baz', IO.read('tmp/foo')
+    out, err = capture_subprocess_io do
+      assert_arv_get '-f', @@foo_manifest_locator + '/', 'tmp/'
+    end
+    assert_match '', err
+    assert_equal '', out
+    assert_equal 'foo', IO.read('tmp/foo')
+  end
+
+  def test_file_to_file_skip_existing
+    File.open './tmp/foo', 'wb' do |f|
+      f.write 'baz'
+    end
+    assert_equal 'baz', IO.read('tmp/foo')
+    out, err = capture_subprocess_io do
+      assert_arv_get '--skip-existing', @@foo_manifest_locator + '/', 'tmp/'
+    end
+    assert_match '', err
+    assert_equal '', out
+    assert_equal 'baz', IO.read('tmp/foo')
+  end
+
   def test_file_to_dir
     remove_tmp_foo
     out, err = capture_subprocess_io do
