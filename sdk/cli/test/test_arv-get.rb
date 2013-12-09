@@ -75,6 +75,14 @@ class TestArvGet < Minitest::Test
     assert_match /^usage:/, err
   end
 
+  def test_nonexistent_block
+    out, err = capture_subprocess_io do
+      assert_arv_get false, 'f1554a91e925d6213ce7c3103c5110c6'
+    end
+    assert_equal '', out
+    assert_match /^ERROR:/, err
+  end
+
   def test_nonexistent_manifest
     out, err = capture_subprocess_io do
       assert_arv_get false, 'f1554a91e925d6213ce7c3103c5110c6/', 'tmp/'
