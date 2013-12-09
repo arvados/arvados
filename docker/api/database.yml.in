@@ -9,6 +9,7 @@ development:
 test:
   adapter: postgresql
   encoding: utf8
+  template: template0
   database: @@ARVADOS_TEST_DB@@
   username: @@ARVADOS_TEST_USER@@
   password: @@ARVADOS_TEST_PW@@

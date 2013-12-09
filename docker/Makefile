@@ -7,6 +7,8 @@ clean:
 # Dependencies for */generated files which are prerequisites
 # for building docker images.
 
+BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
+
 API_DEPS = api/Dockerfile $(API_GENERATED)
 
 DOC_DEPS = doc/Dockerfile doc/apache2_vhost
@@ -21,13 +23,16 @@ WAREHOUSE_DEPS = warehouse/Dockerfile \
 
 SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
 
+BASE_GENERATED = base/generated
+
 API_GENERATED = \
         api/generated/apache2_vhost \
         api/generated/config_databases.sh \
         api/generated/database.yml \
         api/generated/omniauth.rb \
         api/generated/production.rb \
-        api/generated/secret_token.rb
+        api/generated/secret_token.rb \
+        api/generated/superuser_token
 
 API_GENERATED_IN = \
         api/apache2_vhost.in \
@@ -35,7 +40,8 @@ API_GENERATED_IN = \
         api/database.yml.in \
         api/omniauth.rb.in \
         api/production.rb.in \
-        api/secret_token.rb.in
+        api/secret_token.rb.in \
+        api/superuser_token.in
 
 WORKBENCH_GENERATED = \
         workbench/generated/apache2_vhost \
@@ -60,6 +66,9 @@ SSO_GENERATED_IN = \
         sso/apache2_vhost.in \
         sso/seeds.rb.in \
         sso/secret_token.rb.in
+
+$(BASE_GENERATED): config.yml
+	./config.rb
 
 $(API_GENERATED): config.yml $(API_GENERATED_IN)
 	./config.rb
@@ -110,7 +119,7 @@ passenger-image: base-image
 	./docker_build -t arvados/passenger passenger
 	echo -n "Built at $(date)" > passenger-image
 
-base-image: debian-image
+base-image: debian-image $(BASE_DEPS)
 	./docker_build -t arvados/base base
 	echo -n "Built at $(date)" > base-image
 
