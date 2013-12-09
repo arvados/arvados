@@ -24,6 +24,20 @@ from apiclient.discovery import build
 if 'ARVADOS_DEBUG' in os.environ:
     logging.basicConfig(level=logging.DEBUG)
 
+class errors:
+    class SyntaxError(Exception):
+        pass
+    class AssertionError(Exception):
+        pass
+    class NotFoundError(Exception):
+        pass
+    class CommandFailedError(Exception):
+        pass
+    class KeepWriteError(Exception):
+        pass
+    class NotImplementedError(Exception):
+        pass
+
 class CredentialsFromEnv(object):
     @staticmethod
     def http_request(self, uri, **kwargs):
@@ -161,8 +175,9 @@ class util:
                              **kwargs)
         stdoutdata, stderrdata = p.communicate(None)
         if p.returncode != 0:
-            raise Exception("run_command %s exit %d:\n%s" %
-                            (execargs, p.returncode, stderrdata))
+            raise errors.CommandFailedError(
+                "run_command %s exit %d:\n%s" %
+                (execargs, p.returncode, stderrdata))
         return stdoutdata, stderrdata
 
     @staticmethod
@@ -228,8 +243,8 @@ class util:
                 elif re.search('\.tar$', f.name()):
                     p = util.tar_extractor(path, '')
                 else:
-                    raise Exception("tarball_extract cannot handle filename %s"
-                                    % f.name())
+                    raise errors.AssertionError(
+                        "tarball_extract cannot handle filename %s" % f.name())
                 while True:
                     buf = f.read(2**20)
                     if len(buf) == 0:
@@ -239,7 +254,8 @@ class util:
                 p.wait()
                 if p.returncode != 0:
                     lockfile.close()
-                    raise Exception("tar exited %d" % p.returncode)
+                    raise errors.CommandFailedError(
+                        "tar exited %d" % p.returncode)
             os.symlink(tarball, os.path.join(path, '.locator'))
         tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
         lockfile.close()
@@ -283,8 +299,8 @@ class util:
 
             for f in CollectionReader(zipball).all_files():
                 if not re.search('\.zip$', f.name()):
-                    raise Exception("zipball_extract cannot handle filename %s"
-                                    % f.name())
+                    raise errors.NotImplementedError(
+                        "zipball_extract cannot handle filename %s" % f.name())
                 zip_filename = os.path.join(path, os.path.basename(f.name()))
                 zip_file = open(zip_filename, 'wb')
                 while True:
@@ -304,7 +320,8 @@ class util:
                 p.wait()
                 if p.returncode != 0:
                     lockfile.close()
-                    raise Exception("unzip exited %d" % p.returncode)
+                    raise errors.CommandFailedError(
+                        "unzip exited %d" % p.returncode)
                 os.unlink(zip_filename)
             os.symlink(zipball, os.path.join(path, '.locator'))
         tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
@@ -363,7 +380,10 @@ class util:
                         outfile.write(buf)
                     outfile.close()
         if len(files_got) < len(files):
-            raise Exception("Wanted files %s but only got %s from %s" % (files, files_got, map(lambda z: z.name(), list(CollectionReader(collection).all_files()))))
+            raise errors.AssertionError(
+                "Wanted files %s but only got %s from %s" %
+                (files, files_got,
+                 [z.name() for z in CollectionReader(collection).all_files()]))
         os.symlink(collection, os.path.join(path, '.locator'))
 
         lockfile.close()
@@ -414,9 +434,9 @@ class util:
                     outfile.write(buf)
                 outfile.close()
         if len(files_got) < len(files):
-            raise Exception("Wanted files %s but only got %s from %s" %
-                            (files, files_got, map(lambda z: z.name(),
-                                                   list(stream.all_files()))))
+            raise errors.AssertionError(
+                "Wanted files %s but only got %s from %s" %
+                (files, files_got, [z.name() for z in stream.all_files()]))
         lockfile.close()
         return path
 
@@ -525,7 +545,7 @@ class StreamReader(object):
                 pos, size, name = tok.split(':',2)
                 self.files += [[int(pos), int(size), name]]
             else:
-                raise Exception("Invalid manifest format")
+                raise errors.SyntaxError("Invalid manifest format")
 
     def tokens(self):
         return self._tokens
@@ -712,7 +732,9 @@ class CollectionWriter(object):
     def set_current_file_name(self, newfilename):
         newfilename = re.sub(r' ', '\\\\040', newfilename)
         if re.search(r'[ \t\n]', newfilename):
-            raise AssertionError("Manifest filenames cannot contain whitespace")
+            raise errors.AssertionError(
+                "Manifest filenames cannot contain whitespace: %s" %
+                newfilename)
         self._current_file_name = newfilename
     def current_file_name(self):
         return self._current_file_name
@@ -720,7 +742,12 @@ class CollectionWriter(object):
         if self._current_file_name == None:
             if self._current_file_pos == self._current_stream_length:
                 return
-            raise Exception("Cannot finish an unnamed file (%d bytes at offset %d in '%s' stream)" % (self._current_stream_length - self._current_file_pos, self._current_file_pos, self._current_stream_name))
+            raise errors.AssertionError(
+                "Cannot finish an unnamed file " +
+                "(%d bytes at offset %d in '%s' stream)" %
+                (self._current_stream_length - self._current_file_pos,
+                 self._current_file_pos,
+                 self._current_stream_name))
         self._current_stream_files += [[self._current_file_pos,
                                        self._current_stream_length - self._current_file_pos,
                                        self._current_file_name]]
@@ -730,7 +757,8 @@ class CollectionWriter(object):
         self.set_current_stream_name(newstreamname)
     def set_current_stream_name(self, newstreamname):
         if re.search(r'[ \t\n]', newstreamname):
-            raise AssertionError("Manifest stream names cannot contain whitespace")
+            raise errors.AssertionError(
+                "Manifest stream names cannot contain whitespace")
         self._current_stream_name = newstreamname
     def current_stream_name(self):
         return self._current_stream_name
@@ -740,7 +768,9 @@ class CollectionWriter(object):
         if len(self._current_stream_files) == 0:
             pass
         elif self._current_stream_name == None:
-            raise Exception("Cannot finish an unnamed stream (%d bytes in %d files)" % (self._current_stream_length, len(self._current_stream_files)))
+            raise errors.AssertionError(
+                "Cannot finish an unnamed stream (%d bytes in %d files)" %
+                (self._current_stream_length, len(self._current_stream_files)))
         else:
             self._finished_streams += [[self._current_stream_name,
                                        self._current_stream_locators,
@@ -937,7 +967,7 @@ class KeepClient(object):
             except (httplib2.HttpLib2Error, httplib.ResponseNotReady) as e:
                 logging.info("Request fail: GET %s => %s: %s" %
                              (url, type(e), str(e)))
-        raise Exception("Not found: %s" % expect_hash)
+        raise errors.NotFoundError("Block not found: %s" % expect_hash)
 
     def put(self, data, **kwargs):
         if 'KEEP_LOCAL_STORE' in os.environ:
@@ -963,8 +993,9 @@ class KeepClient(object):
         have_copies = thread_limiter.done()
         if have_copies == want_copies:
             return (data_hash + '+' + str(len(data)))
-        raise Exception("Write fail for %s: wanted %d but wrote %d" %
-                        (data_hash, want_copies, have_copies))
+        raise errors.KeepWriteError(
+            "Write fail for %s: wanted %d but wrote %d" %
+            (data_hash, want_copies, have_copies))
 
     @staticmethod
     def sign_for_old_server(data_hash, data):
@@ -986,7 +1017,8 @@ class KeepClient(object):
     def local_store_get(locator):
         r = re.search('^([0-9a-f]{32,})', locator)
         if not r:
-            raise Exception("Keep.get: invalid data locator '%s'" % locator)
+            raise errors.NotFoundError(
+                "Invalid data locator: '%s'" % locator)
         if r.group(0) == 'd41d8cd98f00b204e9800998ecf8427e':
             return ''
         with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], r.group(0)), 'r') as f:
