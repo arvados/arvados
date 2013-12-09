@@ -52,11 +52,13 @@ class TestArvGet < Minitest::Test
   end
 
   def test_file_to_dir
+    remove_tmp_foo
     out, err = capture_subprocess_io do
-      assert_arv_get false, @@foo_manifest_locator + '/foo', 'tmp/'
+      assert_arv_get @@foo_manifest_locator + '/foo', 'tmp/'
     end
+    assert_equal '', err
     assert_equal '', out
-    assert_match /^usage:/, err
+    assert_equal 'foo', IO.read('tmp/foo')
   end
 
   def test_dir_to_file

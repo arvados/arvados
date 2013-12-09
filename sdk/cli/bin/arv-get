@@ -71,7 +71,10 @@ if (args.r and
     parser.error('Destination is not a directory.')
 if not args.r and (os.path.isdir(args.destination) or
                    args.destination[-1] == os.path.sep):
-    parser.error('Destination is a directory.')
+    args.destination = os.path.join(args.destination,
+                                    os.path.basename(args.locator))
+    logger.debug("Appended source file name to destination directory: %s" %
+                 args.destination)
 
 # Turn on --progress by default if stderr is a tty and stdout isn't.
 if (not (args.batch_progress or args.no_progress)
