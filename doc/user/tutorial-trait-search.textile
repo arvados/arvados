@@ -190,11 +190,11 @@ Look for variant rs1126809 in each of the "var" files (these contain variant cal
 job = {}
 for c in collections:
   if [] != filter(lambda f: re.search('^var-.*\.tsv\.bz2', f[1]), c['files']):
-    job[c['uuid']] = arvados.service.jobs().create(job=json.dumps({
+    job[c['uuid']] = arvados.service.jobs().create(body={
       'script': 'grep',
       'script_parameters': {'input': c['uuid'], 'pattern': "rs1126809\\b"},
       'script_version': 'e7aeb42'
-    })).execute()
+    }).execute()
     print "%s %s" % (pgpid[c['uuid']], job[c['uuid']]['uuid'])
 
 </pre>

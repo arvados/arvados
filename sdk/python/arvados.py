@@ -64,11 +64,11 @@ service = build("arvados", "v1", http=http, discoveryServiceUrl=url)
 
 def task_set_output(self,s):
     service.job_tasks().update(uuid=self['uuid'],
-                               job_task=json.dumps({
-                'output':s,
-                'success':True,
-                'progress':1.0
-                })).execute()
+                               body={
+            'output':s,
+            'success':True,
+            'progress':1.0
+            }).execute()
 
 _current_task = None
 def current_task():
@@ -121,10 +121,10 @@ class job_setup:
                         'input':task_input
                         }
                     }
-                service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
+                service.job_tasks().create(body=new_task_attrs).execute()
         if and_end_task:
             service.job_tasks().update(uuid=current_task()['uuid'],
-                                       job_task=json.dumps({'success':True})
+                                       body={'success':True}
                                        ).execute()
             exit(0)
 
@@ -144,10 +144,10 @@ class job_setup:
                     'input':task_input
                     }
                 }
-            service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
+            service.job_tasks().create(body=new_task_attrs).execute()
         if and_end_task:
             service.job_tasks().update(uuid=current_task()['uuid'],
-                                       job_task=json.dumps({'success':True})
+                                       body={'success':True}
                                        ).execute()
             exit(0)
 
