@@ -51,10 +51,44 @@ class TestArvGet < Minitest::Test
     assert_equal 'foo', IO.read('tmp/foo')
   end
 
+  def test_file_to_dir
+    out, err = capture_subprocess_io do
+      assert_arv_get false, @@foo_manifest_locator + '/foo', 'tmp/'
+    end
+    assert_equal '', out
+    assert_match /^usage:/, err
+  end
+
+  def test_dir_to_file
+    out, err = capture_subprocess_io do
+      assert_arv_get false, @@foo_manifest_locator + '/', 'tmp/foo'
+    end
+    assert_equal '', out
+    assert_match /^usage:/, err
+  end
+
+  def test_dir_to_empty_string
+    out, err = capture_subprocess_io do
+      assert_arv_get false, @@foo_manifest_locator + '/', ''
+    end
+    assert_equal '', out
+    assert_match /^usage:/, err
+  end
+
   def test_manifest_root_to_dir
     remove_tmp_foo
     out, err = capture_subprocess_io do
       assert_arv_get '-r', @@foo_manifest_locator + '/', 'tmp/'
+    end
+    assert_equal '', err
+    assert_equal '', out
+    assert_equal 'foo', IO.read('tmp/foo')
+  end
+
+  def test_manifest_root_to_dir_noslash
+    remove_tmp_foo
+    out, err = capture_subprocess_io do
+      assert_arv_get '-r', @@foo_manifest_locator + '/', 'tmp'
     end
     assert_equal '', err
     assert_equal '', out

@@ -59,15 +59,16 @@ default behavior if the "locator" argument ends with a forward slash.
 
 args = parser.parse_args()
 
-if args.locator[-1] == '/':
+if args.locator[-1] == os.sep:
     args.r = True
 if (args.r and
     not args.n and
     not (args.destination and
          os.path.isdir(args.destination))):
-    parser.error("""
-Destination is not a directory.
-""")
+    parser.error('Destination is not a directory.')
+if not args.r and (os.path.isdir(args.destination) or
+                   args.destination[-1] == os.path.sep):
+    parser.error('Destination is a directory.')
 
 # Turn on --progress by default if stderr is a tty and stdout isn't.
 if (not (args.batch_progress or args.no_progress)
@@ -77,6 +78,7 @@ if (not (args.batch_progress or args.no_progress)
 
 if args.destination == '-':
     args.destination = '/dev/stdout'
+args.destination = args.destination.rstrip(os.sep)
 
 
 import arvados
@@ -85,7 +87,7 @@ r = re.search(r'^(.*?)(/.*)?$', args.locator)
 collection = r.group(1)
 get_prefix = r.group(2)
 if args.r and not get_prefix:
-    get_prefix = '/'
+    get_prefix = os.sep
 
 todo = []
 todo_bytes = 0
@@ -102,12 +104,15 @@ reader = arvados.CollectionReader(collection)
 
 for s in reader.all_streams():
     for f in s.all_files():
-        if get_prefix and get_prefix[-1] == '/':
-            if 0 != string.find(s.name() + '/' + f.name(), '.' + get_prefix):
+        if get_prefix and get_prefix[-1] == os.sep:
+            if 0 != string.find(os.path.join(s.name(), f.name()),
+                                '.' + get_prefix):
                 continue
-            dest_path = args.destination + (s.name() + '/' + f.name())[len(get_prefix)+1:]
+            dest_path = os.path.join(
+                args.destination,
+                os.path.join(s.name(), f.name())[len(get_prefix)+1:])
         else:
-            if s.name() + '/' + f.name() != '.' + get_prefix:
+            if os.path.join(s.name(), f.name()) != '.' + get_prefix:
                 continue
             dest_path = args.destination
         todo += [(s, f, dest_path)]
