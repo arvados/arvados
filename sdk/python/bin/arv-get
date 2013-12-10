@@ -1,0 +1,214 @@
+#!/usr/bin/env python
+
+import argparse
+import hashlib
+import os
+import re
+import string
+import sys
+import logging
+
+logger = logging.getLogger(os.path.basename(sys.argv[0]))
+
+parser = argparse.ArgumentParser(
+    description='Copy data from Keep to a local file or pipe.')
+parser.add_argument('locator', type=str,
+                    help="""
+Collection locator, optionally with a file path or prefix.
+""")
+parser.add_argument('destination', type=str, nargs='?', default='/dev/stdout',
+                    help="""
+Local file or directory where the data is to be written. Default:
+/dev/stdout.
+""")
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--progress', action='store_true',
+                   help="""
+Display human-readable progress on stderr (bytes and, if possible,
+percentage of total data size). This is the default behavior when
+stderr is a tty and stdout is not a tty.
+""")
+group.add_argument('--no-progress', action='store_true',
+                   help="""
+Do not display human-readable progress on stderr.
+""")
+group.add_argument('--batch-progress', action='store_true',
+                   help="""
+Display machine-readable progress on stderr (bytes and, if known,
+total data size).
+""")
+group = parser.add_mutually_exclusive_group()
+group.add_argument('--hash',
+                    help="""
+Display the hash of each file as it is read from Keep, using the given
+hash algorithm. Supported algorithms include md5, sha1, sha224,
+sha256, sha384, and sha512.
+""")
+group.add_argument('--md5sum', action='store_const',
+                    dest='hash', const='md5',
+                    help="""
+Display the MD5 hash of each file as it is read from Keep.
+""")
+parser.add_argument('-n', action='store_true',
+                    help="""
+Do not write any data -- just read from Keep, and report md5sums if
+requested.
+""")
+parser.add_argument('-r', action='store_true',
+                    help="""
+Retrieve all files in the specified collection/prefix. This is the
+default behavior if the "locator" argument ends with a forward slash.
+""")
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-f', action='store_true',
+                   help="""
+Overwrite existing files while writing. The default behavior is to
+refuse to write *anything* if any of the output files already
+exist. As a special case, -f is not needed to write to /dev/stdout.
+""")
+group.add_argument('--skip-existing', action='store_true',
+                   help="""
+Skip files that already exist. The default behavior is to refuse to
+write *anything* if any files exist that would have to be
+overwritten. This option causes even devices, sockets, and fifos to be
+skipped.
+""")
+
+args = parser.parse_args()
+
+if args.locator[-1] == os.sep:
+    args.r = True
+if (args.r and
+    not args.n and
+    not (args.destination and
+         os.path.isdir(args.destination))):
+    parser.error('Destination is not a directory.')
+if not args.r and (os.path.isdir(args.destination) or
+                   args.destination[-1] == os.path.sep):
+    args.destination = os.path.join(args.destination,
+                                    os.path.basename(args.locator))
+    logger.debug("Appended source file name to destination directory: %s" %
+                 args.destination)
+
+# Turn on --progress by default if stderr is a tty and stdout isn't.
+if (not (args.batch_progress or args.no_progress)
+    and os.isatty(sys.stderr.fileno())
+    and not os.isatty(sys.stdout.fileno())):
+    args.progress = True
+
+if args.destination == '-':
+    args.destination = '/dev/stdout'
+if args.destination == '/dev/stdout':
+    # Normally you have to use -f to write to a file (or device) that
+    # already exists, but "-" and "/dev/stdout" are common enough to
+    # merit a special exception.
+    args.f = True
+else:
+    args.destination = args.destination.rstrip(os.sep)
+
+
+import arvados
+
+r = re.search(r'^(.*?)(/.*)?$', args.locator)
+collection = r.group(1)
+get_prefix = r.group(2)
+if args.r and not get_prefix:
+    get_prefix = os.sep
+
+todo = []
+todo_bytes = 0
+if not get_prefix:
+    try:
+        if not args.n:
+            if not args.f and os.path.exists(args.destination):
+                logger.error('Local file %s already exists' % args.destination)
+                sys.exit(1)
+            with open(args.destination, 'wb') as f:
+                f.write(arvados.Keep.get(collection))
+        sys.exit(0)
+    except arvados.errors.NotFoundError as e:
+        logger.error(e)
+        sys.exit(1)
+
+reader = arvados.CollectionReader(collection)
+
+# Scan the collection. Make an array of (stream, file, local
+# destination filename) tuples, and add up total size to extract.
+
+try:
+    for s in reader.all_streams():
+        for f in s.all_files():
+            if get_prefix and get_prefix[-1] == os.sep:
+                if 0 != string.find(os.path.join(s.name(), f.name()),
+                                    '.' + get_prefix):
+                    continue
+                dest_path = os.path.join(
+                    args.destination,
+                    os.path.join(s.name(), f.name())[len(get_prefix)+1:])
+                if (not (args.f or args.skip_existing) and
+                    os.path.exists(dest_path)):
+                    logger.error('Local file %s already exists' % dest_path)
+                    sys.exit(1)
+            else:
+                if os.path.join(s.name(), f.name()) != '.' + get_prefix:
+                    continue
+                dest_path = args.destination
+            todo += [(s, f, dest_path)]
+            todo_bytes += f.size()
+except arvados.errors.NotFoundError as e:
+    logger.error(e)
+    sys.exit(1)
+
+# Read data, and (if not -n) write to local file(s) or pipe.
+
+out_bytes = 0
+for s,f,outfilename in todo:
+    outfile = None
+    digestor = None
+    if not args.n:
+        if args.skip_existing and os.path.exists(outfilename):
+            logger.debug('Local file %s exists. Skipping.' % outfilename)
+            continue
+        elif not args.f and (os.path.isfile(outfilename) or
+                           os.path.isdir(outfilename)):
+            # Good thing we looked again: apparently this file wasn't
+            # here yet when we checked earlier.
+            logger.error('Local file %s already exists' % outfilename)
+            sys.exit(1)
+        if args.r:
+            arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
+        try:
+            outfile = open(outfilename, 'wb')
+        except Exception as e:
+            logger.error('Open(%s) failed: %s' % (outfilename, e))
+            sys.exit(1)
+    if args.hash:
+        digestor = hashlib.new(args.hash)
+    try:
+        for data in f.readall():
+            if outfile:
+                outfile.write(data)
+            if digestor:
+                digestor.update(data)
+            out_bytes += len(data)
+            if args.progress:
+                sys.stderr.write('\r%d MiB / %d MiB %.1f%%' %
+                                 (out_bytes >> 20,
+                                  todo_bytes >> 20,
+                                  (100
+                                   if todo_bytes==0
+                                   else 100.0*out_bytes/todo_bytes)))
+            elif args.batch_progress:
+                sys.stderr.write('%s %d read %d total\n' %
+                                 (sys.argv[0], os.getpid(),
+                                  out_bytes, todo_bytes))
+        if digestor:
+            sys.stderr.write("%s  %s/%s\n"
+                             % (digestor.hexdigest(), s.name(), f.name()))
+    except KeyboardInterrupt:
+        if outfile:
+            os.unlink(outfilename)
+        break
+
+if args.progress:
+    sys.stderr.write('\n')
