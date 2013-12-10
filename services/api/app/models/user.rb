@@ -55,6 +55,45 @@ class User < ArvadosModel
     Rails.cache.delete_matched(/^groups_for_user_/)
   end
 
+  # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
+  # and perm_hash[:write] are true if this user can read and write
+  # objects owned by group_uuid.
+  def group_permissions
+    Rails.cache.fetch "groups_for_user_#{self.uuid}" do
+      permissions_from = {}
+      todo = {self.uuid => true}
+      done = {}
+      while !todo.empty?
+        lookup_uuids = todo.keys
+        lookup_uuids.each do |uuid| done[uuid] = true end
+        todo = {}
+        Link.where('tail_uuid in (?) and link_class = ? and head_kind = ?',
+                   lookup_uuids,
+                   'permission',
+                   'arvados#group').each do |link|
+          unless done.has_key? link.head_uuid
+            todo[link.head_uuid] = true
+          end
+          link_permissions = {}
+          case link.name
+          when 'can_read'
+            link_permissions = {read:true}
+          when 'can_write'
+            link_permissions = {read:true,write:true}
+          when 'can_manage'
+            link_permissions = ALL_PERMISSIONS
+          end
+          permissions_from[link.tail_uuid] ||= {}
+          permissions_from[link.tail_uuid][link.head_uuid] ||= {}
+          link_permissions.each do |k,v|
+            permissions_from[link.tail_uuid][link.head_uuid][k] ||= v
+          end
+        end
+      end
+      search_permissions(self.uuid, permissions_from)
+    end
+  end
+
   protected
 
   def permission_to_update
@@ -105,42 +144,6 @@ class User < ArvadosModel
       raise "Admin users cannot be inactive"
     end
     true
-  end
-
-  def group_permissions
-    Rails.cache.fetch "groups_for_user_#{self.uuid}" do
-      permissions_from = {}
-      todo = {self.uuid => true}
-      done = {}
-      while !todo.empty?
-        lookup_uuids = todo.keys
-        lookup_uuids.each do |uuid| done[uuid] = true end
-        todo = {}
-        Link.where('tail_uuid in (?) and link_class = ? and head_kind = ?',
-                   lookup_uuids,
-                   'permission',
-                   'arvados#group').each do |link|
-          unless done.has_key? link.head_uuid
-            todo[link.head_uuid] = true
-          end
-          link_permissions = {}
-          case link.name
-          when 'can_read'
-            link_permissions = {read:true}
-          when 'can_write'
-            link_permissions = {read:true,write:true}
-          when 'can_manage'
-            link_permissions = ALL_PERMISSIONS
-          end
-          permissions_from[link.tail_uuid] ||= {}
-          permissions_from[link.tail_uuid][link.head_uuid] ||= {}
-          link_permissions.each do |k,v|
-            permissions_from[link.tail_uuid][link.head_uuid][k] ||= v
-          end
-        end
-      end
-      search_permissions(self.uuid, permissions_from)
-    end
   end
 
   def search_permissions(start, graph, merged={}, upstream_mask=nil, upstream_path={})

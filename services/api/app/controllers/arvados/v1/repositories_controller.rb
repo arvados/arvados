@@ -10,9 +10,26 @@ class Arvados::V1::RepositoriesController < ApplicationController
     @repos = Repository.includes(:permissions).all
     @repos.each do |repo|
       gitolite_permissions = ''
+      perms = []
       repo.permissions.each do |perm|
-        user_uuid = perm.tail_uuid
-        @user_aks[user_uuid] = @users[user_uuid].andand.authorized_keys.collect do |ak|
+        if perm.tail_kind == 'arvados#group'
+          @users.each do |user_uuid, user|
+            user.group_permissions.each do |group_uuid, perm_mask|
+              if perm_mask[:write]
+                perms << {name: 'can_write', user_uuid: user_uuid}
+              elsif perm_mask[:read]
+                perms << {name: 'can_read', user_uuid: user_uuid}
+              end
+            end
+          end
+        else
+          perms << {name: perm.name, user_uuid: perm.tail_uuid}
+        end
+      end
+      perms.each do |perm|
+        user_uuid = perm[:user_uuid]
+        @user_aks[user_uuid] = @users[user_uuid].andand.authorized_keys.andand.
+          collect do |ak|
           {
             public_key: ak.public_key,
             authorized_key_uuid: ak.uuid
@@ -26,8 +43,8 @@ class Arvados::V1::RepositoriesController < ApplicationController
             fetch_url: repo.fetch_url,
             user_permissions: {}
           }
-          @repo_info[repo.uuid][:user_permissions][user_uuid] ||= {}
-          @repo_info[repo.uuid][:user_permissions][user_uuid][perm.name] = true
+          ri = (@repo_info[repo.uuid][:user_permissions][user_uuid] ||= {})
+          ri[perm[:name]] = true
         end
       end
     end
