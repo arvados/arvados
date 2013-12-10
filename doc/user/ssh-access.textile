@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: Accessing Arvados over ssh
-navorder: 2
+navorder: 1
 ---
 
 h1. Accessing Arvados over ssh

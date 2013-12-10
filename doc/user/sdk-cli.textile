@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Intro: Command line SDK"
-navorder: 10
+title: "Reference: Command line SDK"
+navorder: 21
 ---
 
 {% include alert-stub.html %}

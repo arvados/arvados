@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: Debug a crunch script"
-navorder: 25
+title: "Tutorial 3: Debug a crunch script"
+navorder: 13
 ---
 
-h1. Tutorial: Debug a crunch script
+h1. Tutorial 3: Debug a crunch script
 
 The commit-push-submit cycle is too slow for developing and debugging crunch scripts.
 

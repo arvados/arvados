@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: GATK VariantFiltration"
-navorder: 22
+title: "Tutorial 6: GATK VariantFiltration"
+navorder: 16
 ---
 
-h1. Tutorial: GATK VariantFiltration
+h1. Tutorial 6: GATK VariantFiltration
 
 Here you will use the GATK VariantFiltration program to assign pass/fail scores to variants in a VCF file.
 

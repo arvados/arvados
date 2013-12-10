@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Intro: git"
-navorder: 4
+title: "Reference: git"
+navorder: 23
 ---
 
 # Intro: git

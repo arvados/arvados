@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Tutorial 1: Introduction to Keep and your first Crunch job"
-navorder: 20
+navorder: 11
 ---
 
 h1. Tutorial 1: Introduction to Keep and your first crunch job
@@ -65,19 +65,19 @@ In Keep, information is stored in *data blocks*.  Data blocks are normally betwe
 
 In order to reassemble the file, Keep stores a *collection* data block which lists in sequence the data blocks that make up the original file.  A collection data block may store the information for multiple files, including a directory structure.
 
-In this example we will use @33a9f3842b01ea3fdf27cc582f5ea2af@ which is already available on {{ site.arvados_api_host }}.  First let us examine the contents of this collection using @arv-get@:
+In this example we will use @33a9f3842b01ea3fdf27cc582f5ea2af@ which is already available on {{ site.arvados_api_host }}.  First let us examine the contents of this collection using @arv keep get@:
 
 <pre>
-$ arv-get 33a9f3842b01ea3fdf27cc582f5ea2af
+$ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af
 . 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi 323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi 0:227212247:var-GS000016015-ASM.tsv.bz2
 </pre>
 
-@arv-get@ fetches the contents of the locator @33a9f3842b01ea3fdf27cc582f5ea2af@.  This is a locator for a collection data block, so it fetches the contents of the collection.  In this example, this collection consists of a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, @204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi@ , @b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi@ , @fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi@ , @323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi@ .
+@arv keep get@ fetches the contents of the locator @33a9f3842b01ea3fdf27cc582f5ea2af@.  This is a locator for a collection data block, so it fetches the contents of the collection.  In this example, this collection consists of a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code>, <code>b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi</code>, <code>fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi</code>, <code>323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi</code>.
 
-Let's use @arv-get@ to download the first datablock:
+Let's use @arv keep get@ to download the first datablock:
 
 <pre>
- $ arv-get 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi > block1
+ $ arv keep get 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi > block1
 </pre>
 
 Let's look at the size and compute the md5 hash of @block1@:
@@ -89,17 +89,17 @@ Let's look at the size and compute the md5 hash of @block1@:
  204e43b8a1185621ca55a94839582e6f  block1
 </pre>
 
-Notice that the block identifer @204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi@ consists of:
+Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code> consists of:
 * the md5 hash @204e43b8a1185621ca55a94839582e6f@
 * a size hint @67108864@
-* a location hint @K@qr1hi@
+* a location hint <code>K@qr1hi</code>
 
 In fact, _only_ the md5 hash is required to find the block.
 
-Next, let's use @arv-get@ to download and reassemble @var-GS000016015-ASM.tsv.bz2@ using the following command:
+Next, let's use @arv keep get@ to download and reassemble @var-GS000016015-ASM.tsv.bz2@ using the following command:
 
 <pre>
- $ arv-get 33a9f3842b01ea3fdf27cc582f5ea2af/var-GS000016015-ASM.tsv.bz2 .
+ $ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af/var-GS000016015-ASM.tsv.bz2 .
 </pre>
 
 This downloads the file @var-GS000016015-ASM.tsv.bz2@ described by collection @33a9f3842b01ea3fdf27cc582f5ea2af@ from Keep and places it into the local directory.  Now that we have the file, we can compute the md5 hash of the complete file:
@@ -116,10 +116,12 @@ In the previous section, we downloaded a file from Keep and computed the md5 has
 * Very large files may exceed the scratch space of the local disk.
 * We are only able to use the local CPU to process the file.
 
-The Arvados "crunch" framework is designed to support processing very large data batches (gigabytes to terabytes) efficiently, based on the following techniques:
-* Computation is preferentially sent to nodes that store the files locally, to avoid network and disk bottlenecks in sending files around.
-* Computation acts on file streams, avoiding the need to store the entire file contents in one place.
-* Computation can be distributed among many nodes in a cluster by acting on many files or parts of a single file in parallel.
+The Arvados "crunch" framework is designed to support processing very large data batches (gigabytes to terabytes) efficiently, and provides the following benefits:
+* Increase concurrency by running tasks asynchronously, using many CPUs and network interfaces at once (especially beneficial for CPU-bound and I/O-bound tasks respectively).
+* Track inputs, outputs, and settings so you can verify that the inputs, settings, and sequence of programs you used to arrive at an output is really what you think it was.
+* Ensure that your programs and workflows are repeatable with different versions of your code, OS updates, etc.
+* Interrupt and resume long-running jobs consisting of many short tasks.
+* Maintain timing statistics automatically, so they're there when you want them.
 
 For your first job, you will run the "hash" crunch script using the Arvados system.  The "hash" script computes the md5 hash of each file in a collection.
 
@@ -138,13 +140,13 @@ $ read -d $'\000' the_job <<EOF
 EOF
 </pre>
 
-* @read@ is a bash builtin that stores the first line of standard input into the local shell variable @the_job@
+* @read@ is a shell builtin that stores the first line of standard input into the local shell variable @the_job@
 * @-d $'\000'@ changes the line delimiter character from newline to null so that the entire input will be considered a single line.
 * @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
 * @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench through _Access %(rarr)&rarr;% Repositories_.
 * @"script_parameters"@ are provided to the script.  In this case, the input is the locator for the collection that we inspected in the previous section.
 
-Use the @arv@ command to actually submit the job.  It should print out a JSON object which describes the newly created job:
+Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
 
 <pre>
 $ arv -h job create --job "$the_job"
@@ -210,7 +212,7 @@ This will run until the job finishes or is @curl@ is canceled with control-C.
 
 h3. Inspect the job output
 
-You can access the job output under the *output* column of the _Compute %(rarr)&rarr;% Jobs_ page.  Alternately, you can use the command line to access a JSON object describing the output:
+You can access the job output under the *output* column of the _Compute %(rarr)&rarr;% Jobs_ page.  Alternately, you can use @arv job get@ to access a JSON object describing the output:
 
 <pre>
 $ arv -h job get --uuid _value_of_uuid_from_arv_job_create_
@@ -258,20 +260,20 @@ $ arv -h job get --uuid _value_of_uuid_from_arv_job_create_
 
 * @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.
 
-List the files in the collection:
+Now you can list the files in the collection:
 
 <pre>
-$ arv-get _value_of_output_from_arv_job_get_
+$ arv keep get _value_of_output_from_arv_job_get_
 . 78b268d1e03d87f8270bdee9d5d427c5+61 0:61:md5sum.txt
 </pre>
 
-This collection consists of the md5sum.txt file.  Use @arv-get@ to show the contents of the md5sum.txt file:
+This collection consists of the md5sum.txt file.  Use @arv keep get@ to show the contents of the md5sum.txt file:
 
 <pre>
-$ arv-get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt
+$ arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
 </pre>
 
-This md5 hash value should match the md5 hash which we computed by hand.
+This md5 hash matches the md5 hash which we computed earlier.
 
 This concludes the first tutorial.  In the next tutorial, "we will inspect how the hash script works.":tutorial-firstscript.html
