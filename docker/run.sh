@@ -179,19 +179,34 @@ function do_start {
 	  $start_workbench == false &&
 	  $start_keep == false ]]
     then
-      start_doc=true
-      start_sso=true
-      start_api=true
-      start_workbench=true
-      start_keep=true
+	start_doc=9898
+	start_sso=9901
+	start_api=9900
+	start_workbench=9899
+	start_keep=true
     fi
 
-    $start_doc && start_container "9898:80" "doc_server" '' '' "arvados/doc"
-    $start_sso && start_container "9901:443" "sso_server" '' '' "arvados/sso"
-    $start_api && start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
-    $start_workbench && start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
+    if [[ $start_doc != false ]]
+    then
+	start_container "9898:80" "doc_server" '' '' "arvados/doc"
+    fi
 
-    if $start_keep
+    if [[ $start_sso != false ]]
+    then
+	start_container "9901:443" "sso_server" '' '' "arvados/sso"
+    fi
+
+    if [[ $start_api != false ]]
+    then
+	start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
+    fi
+
+    if [[ $start_workbench != false ]]
+    then
+	start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
+    fi
+
+    if [[ $start_keep != false ]]
     then
 	# create `keep_volumes' array with a list of keep mount points
 	# remove any stale metadata from those volumes before starting them
