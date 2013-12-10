@@ -10,10 +10,15 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
-if ARGV[0] == 'keep'
+case ARGV[0]
+when 'keep'
   ARGV.shift
   @sub = ARGV.shift
-  if ['ls', 'get', 'put', 'less', 'check'].index @sub then
+  if ['get', 'put'].index @sub then
+    # Native Arvados
+    exec `which arv-#{@sub}`.strip, *ARGV
+  elsif ['ls', 'less', 'check'].index @sub then
+    # wh* shims
     exec `which wh#{@sub}`.strip, *ARGV
   else
     puts "Usage: \n" +
@@ -24,9 +29,7 @@ if ARGV[0] == 'keep'
       "#{$0} keep check\n"
   end
   abort
-end
-
-if ARGV[0] == 'pipeline'
+when 'pipeline'
   ARGV.shift
   @sub = ARGV.shift
   if ['run'].index @sub then
