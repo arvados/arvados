@@ -57,15 +57,15 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
                 human_uuid = huID_links_match[0]['head_uuid']
             else:
                 human = arvados.service.humans().create(
-                    human=json.dumps({})
+                    body={}
                     ).execute()
                 huID_link = arvados.service.links().create(
-                    link=json.dumps({
-                            'link_class':'identifier',
-                            'name':words[0],
-                            'head_kind':'arvados#human',
-                            'head_uuid':human['uuid']
-                            })
+                    body={
+                        'link_class':'identifier',
+                        'name':words[0],
+                        'head_kind':'arvados#human',
+                        'head_uuid':human['uuid']
+                        }
                     ).execute()
                 human_uuid = human['uuid']
             human_trait = {}
@@ -89,7 +89,7 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
                         trait_link['properties']['value'] = trait_value
                         arvados.service.links().update(
                             uuid=trait_link['uuid'],
-                            link=json.dumps({'properties':trait_link['properties']})
+                            body={'properties':trait_link['properties']}
                             ).execute()
                     out.write(",\n")
                     out.write(json.dumps(trait_link))
@@ -107,7 +107,7 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
                         'properties': { 'value': trait_value }
                         }
                     arvados.service.links().create(
-                        link=json.dumps(trait_link)
+                        body=trait_link
                         ).execute()
                     out.write(",\n")
                     out.write(json.dumps(trait_link))

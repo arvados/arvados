@@ -78,11 +78,11 @@ service = build("arvados", "v1", http=http, discoveryServiceUrl=url)
 
 def task_set_output(self,s):
     service.job_tasks().update(uuid=self['uuid'],
-                               job_task=json.dumps({
-                'output':s,
-                'success':True,
-                'progress':1.0
-                })).execute()
+                               body={
+            'output':s,
+            'success':True,
+            'progress':1.0
+            }).execute()
 
 _current_task = None
 def current_task():
@@ -106,6 +106,9 @@ def current_job():
     t.tmpdir = os.environ['JOB_WORK']
     _current_job = t
     return t
+
+def getjobparam(*args):
+    return current_job()['script_parameters'].get(*args)
 
 def api():
     return service
@@ -132,10 +135,10 @@ class job_setup:
                         'input':task_input
                         }
                     }
-                service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
+                service.job_tasks().create(body=new_task_attrs).execute()
         if and_end_task:
             service.job_tasks().update(uuid=current_task()['uuid'],
-                                       job_task=json.dumps({'success':True})
+                                       body={'success':True}
                                        ).execute()
             exit(0)
 
@@ -155,24 +158,37 @@ class job_setup:
                     'input':task_input
                     }
                 }
-            service.job_tasks().create(job_task=json.dumps(new_task_attrs)).execute()
+            service.job_tasks().create(body=new_task_attrs).execute()
         if and_end_task:
             service.job_tasks().update(uuid=current_task()['uuid'],
-                                       job_task=json.dumps({'success':True})
+                                       body={'success':True}
                                        ).execute()
             exit(0)
 
 class util:
     @staticmethod
+    def clear_tmpdir(path=None):
+        """
+        Ensure the given directory (or TASK_TMPDIR if none given)
+        exists and is empty.
+        """
+        if path == None:
+            path = current_task().tmpdir
+        if os.path.exists(path):
+            p = subprocess.Popen(['rm', '-rf', path])
+            stdout, stderr = p.communicate(None)
+            if p.returncode != 0:
+                raise Exception('rm -rf %s: %s' % (path, stderr))
+        os.mkdir(path)
+
+    @staticmethod
     def run_command(execargs, **kwargs):
-        if 'stdin' not in kwargs:
-            kwargs['stdin'] = subprocess.PIPE
-        if 'stdout' not in kwargs:
-            kwargs['stdout'] = subprocess.PIPE
-        if 'stderr' not in kwargs:
-            kwargs['stderr'] = subprocess.PIPE
-        p = subprocess.Popen(execargs, close_fds=True, shell=False,
-                             **kwargs)
+        kwargs.setdefault('stdin', subprocess.PIPE)
+        kwargs.setdefault('stdout', subprocess.PIPE)
+        kwargs.setdefault('stderr', sys.stderr)
+        kwargs.setdefault('close_fds', True)
+        kwargs.setdefault('shell', False)
+        p = subprocess.Popen(execargs, **kwargs)
         stdoutdata, stderrdata = p.communicate(None)
         if p.returncode != 0:
             raise errors.CommandFailedError(
@@ -339,6 +355,11 @@ class util:
         collection -- collection locator
         path -- where to extract: absolute, or relative to job tmp
         """
+        matches = re.search(r'^([0-9a-f]+)(\+[\w@]+)*$', collection)
+        if matches:
+            collection_hash = matches.group(1)
+        else:
+            collection_hash = hashlib.md5(collection).hexdigest()
         if not re.search('^/', path):
             path = os.path.join(current_job().tmpdir, path)
         lockfile = open(path + '.lock', 'w')
@@ -349,7 +370,7 @@ class util:
             os.mkdir(path)
         already_have_it = False
         try:
-            if os.readlink(os.path.join(path, '.locator')) == collection:
+            if os.readlink(os.path.join(path, '.locator')) == collection_hash:
                 already_have_it = True
         except OSError:
             pass
@@ -384,7 +405,7 @@ class util:
                 "Wanted files %s but only got %s from %s" %
                 (files, files_got,
                  [z.name() for z in CollectionReader(collection).all_files()]))
-        os.symlink(collection, os.path.join(path, '.locator'))
+        os.symlink(collection_hash, os.path.join(path, '.locator'))
 
         lockfile.close()
         return path
@@ -694,7 +715,7 @@ class CollectionWriter(object):
         self.start_new_stream(stream_name)
         todo = []
         if max_manifest_depth == 0:
-            dirents = util.listdir_recursive(path)
+            dirents = sorted(util.listdir_recursive(path))
         else:
             dirents = sorted(os.listdir(path))
         for dirent in dirents:
@@ -715,6 +736,10 @@ class CollectionWriter(object):
         map(lambda x: self.write_directory_tree(*x), todo)
 
     def write(self, newdata):
+        if hasattr(newdata, '__iter__'):
+            for s in newdata:
+                self.write(s)
+            return
         self._data_buffer += [newdata]
         self._data_buffer_len += len(newdata)
         self._current_stream_length += len(newdata)
@@ -759,7 +784,7 @@ class CollectionWriter(object):
         if re.search(r'[ \t\n]', newstreamname):
             raise errors.AssertionError(
                 "Manifest stream names cannot contain whitespace")
-        self._current_stream_name = newstreamname
+        self._current_stream_name = '.' if newstreamname=='' else newstreamname
     def current_stream_name(self):
         return self._current_stream_name
     def finish_current_stream(self):

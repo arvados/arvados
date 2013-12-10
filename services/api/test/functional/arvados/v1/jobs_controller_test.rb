@@ -37,8 +37,9 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_not_nil job['cancelled_at']
     assert_not_nil job['cancelled_by_user_uuid']
     assert_not_nil job['cancelled_by_client_uuid']
-    assert_equal(true, job['cancelled_at'] > 1.minute.ago,
-                 'bogus cancelled_at corrected by server')
+    assert_equal(true, Time.parse(job['cancelled_at']) > 1.minute.ago,
+                 'server should correct bogus cancelled_at ' +
+                 job['cancelled_at'])
     assert_equal(true,
                  File.exists?(Rails.configuration.crunch_refresh_trigger),
                  'trigger file should be created when job is cancelled')

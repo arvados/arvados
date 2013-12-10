@@ -72,7 +72,7 @@ class Node < ArvadosModel
 
     if o[:ping_secret] != self.info[:ping_secret]
       logger.info "Ping: secret mismatch: received \"#{o[:ping_secret]}\" != \"#{self.info[:ping_secret]}\""
-      raise ArvadosModel::PermissionDeniedError.new("Incorrect ping_secret")
+      raise ArvadosModel::UnauthorizedError.new("Incorrect ping_secret")
     end
     self.last_ping_at = Time.now
 

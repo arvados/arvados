@@ -17,6 +17,9 @@
         <%= controller.model_class.attribute_info[attr.to_sym].andand[:column_heading] or attr.sub /_uuid/, '' %>
       </th>
       <% end %>
+      <th>
+        <!-- a column for delete buttons -->
+      </th>
     </tr>
   </thead>
       
@@ -40,6 +43,14 @@
         <% end %>
       </td>
       <% end %>
+      <td>
+        <% if object.editable? %>
+        <%= link_to({action: 'destroy', id: object.uuid}, method: :delete, data: {confirm: "You are about to delete #{controller.model_class} #{object.uuid}.\n\nAre you sure?"}) do %>
+        <i class="icon-trash"></i>
+        <!-- <%= object.inspect %> -->
+        <% end %>
+        <% end %>
+      </td>
     </tr>
     <% end %>
   </tbody>

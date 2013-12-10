@@ -63,7 +63,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
       local_ipv4: '172.17.2.174',
       ping_secret: 'dricrha4lcpi23pd69e44soanc069udawxvn3zzj45hs8bumvn'
     }
-    assert_response :unprocessable_entity
+    assert_response 401
   end
 
 end
