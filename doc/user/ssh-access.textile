@@ -151,7 +151,7 @@ h3(#unixvm). Connecting to the VM
 Use the following command to connect to the "shell" VM instance as "you":
 
 <pre>
- $ ssh -o "ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} shell" -a -x you@shell 
+ $ ssh -o "ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} shell" -A -x you@shell 
 </pre>
 
 There are several things going on here:
@@ -159,12 +159,13 @@ There are several things going on here:
 The VMs typically have addresses that are not globally routable, so you cannot log in directly.  Instead, you log into a "switchyard" server and then tell it what VM you want to connect to.
 
 * @-o "ProxyCommand ..."@ option instructs ssh to run the specified command and then tunnel your ssh connection over the proxy.
-* @-a@ tells ssh not to forward your ssh-agent credentials (otherwise the switchyard could have access to your private ssh key)
-* @-x@ tells ssh not to forward your X session (otherwise the switchyard could have access to your desktop X session)
+* @-a@ tells ssh not to forward your ssh-agent credentials to the switchyard
+* @-x@ tells ssh not to forward your X session to the switchyard
 * @-p2222@ specifies that the switchyard is running on non-standard port 2222
 * <code>turnout@switchyard.{{ site.arvados_api_host }}</code> specifies the user (@turnout@) and hostname (@switchyard.{{ site.arvados_api_host }}@) of the switchboard server that will proxy our connection to the VM.
 * @shell@ is the name of the VM that we want to connect to.  This is sent to the switchyard server as if it were an ssh command, and the switchyard server connects to the VM on our behalf.
-* After the ProxyCommand section, the @-a@ and @-x@ must be repeated because they apply to the connection to VM instead of the switchyard.
+* After the ProxyCommand section, the @-x@ must be repeated because it applies to the connection to VM instead of the switchyard.
+* @-A@ specifies that we want to forward access to @ssh-agent@ to the VM.
 * Finally, <code>you@shell</code> specifies your username and repeats the hostname of the VM.  The username can be found in the *logins* column in the VMs Workbench page, discussed above.
 
 You should now be able to log into the Arvados VM and start working on the "first Arvados tutorial":tutorial-job1.html .
@@ -177,7 +178,7 @@ Since the above command line is cumbersome, it can be greatly simplfied by addin
 Host *.qr1hi
   ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} $SSH_PROXY_FLAGS %h
   User you
-  ForwardAgent no
+  ForwardAgent yes
   ForwardX11 no
 </pre>
 

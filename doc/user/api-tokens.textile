@@ -14,9 +14,9 @@ Access the Arvados workbench using this link:
 
 "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/
 
-(Replace {{ site.arvados_api_host }} with the hostname of your local Arvados instance if necessary.)
+(Replace @{{ site.arvados_api_host }}@ with the hostname of your local Arvados instance if necessary.)
 
-Use the menu to navigate to _Access %(rarr)&rarr;% API Tokens_.  There should be one or more rows.  The column *api_token* contains the actual token string that you will use.  Copy the value of *api_token* for the first row onto the clipboard.
+Use the menu to navigate to _Access %(rarr)&rarr;% API Tokens._  There should be one or more rows.  The column *api_token* contains the actual token string that you will use.  Copy the value of *api_token* for the first row onto the clipboard.
 
 Next, open a shell on the system on which you intend to use the Arvados client (refer to "Accessing Arvados over ssh":ssh-access.html ) and enter the following (replace the value of @ARVADOS_API_TOKEN@ with the value you copied from the Workbench):
 
@@ -49,6 +49,6 @@ For your convenience you may add the declarations of @ARVADOS_API_HOST@ and @ARV
 <pre>
  $ echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST" >> ~/.bashrc
  $ echo "export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN" >> ~/.bashrc
-<pre>
+</pre>
 
-You are now ready to "return to Tutorial 1"#tutorial-job1.html .
+You are now ready to go through "Tutorial 1":tutorial-job1.html .
