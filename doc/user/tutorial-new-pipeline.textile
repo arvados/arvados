@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial 5: Construct a new pipeline"
+title: "Tutorial: Construct a new pipeline"
 navorder: 15
 ---
 
-h1. Tutorial 5: Construct a new pipeline
+h1. Tutorial: Construct a new pipeline
 
 Here you will write two new crunch scripts, incorporate them into a new pipeline template, run the new pipeline a couple of times using different parameters, and compare the results. One of the new scripts will use the Arvados API to look up trait&rarr;human&rarr;data relations and use this information to compile a collection of data to analyze.
 

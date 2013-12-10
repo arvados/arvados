@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial 2: Writing a Crunch script"
-navorder: 12
+title: "Tutorial: Writing a Crunch script"
+navorder: 102
 ---
 
 {% include alert-stub.html %}

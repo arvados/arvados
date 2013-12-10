@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial 1: Introduction to Keep and your first Crunch job"
+title: "Tutorial: Introduction to Keep and your first Crunch job"
 navorder: 11
 ---
 
-h1. Tutorial 1: Introduction to Keep and your first crunch job
+h1. Tutorial: Introduction to Keep and your first crunch job
 
 This tutorial introduces the concepts and use of the Arvados Keep storage and Crunch job system using the @arv@ command line tool and Arvados Workbench.
 
@@ -276,4 +276,5 @@ $ arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt
 
 This md5 hash matches the md5 hash which we computed earlier.
 
-This concludes the first tutorial.  In the next tutorial, "we will inspect how the hash script works.":tutorial-firstscript.html
+This concludes the first tutorial.  
+<!-- In the next tutorial, we will inspect how the hash script works. -->

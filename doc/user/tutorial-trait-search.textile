@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial 4: Search PGP data by trait"
+title: "Tutorial: Search PGP data by trait"
 navorder: 14
 ---
 
-h1. Tutorial 4: Search PGP data by trait
+h1. Tutorial: Search PGP data by trait
 
 Here you will use the Python SDK to find public WGS data for people who have a certain medical condition.
 
