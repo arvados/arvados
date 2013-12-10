@@ -9,15 +9,16 @@ h1. Tutorial 4: Search PGP data by trait
 
 Here you will use the Python SDK to find public WGS data for people who have a certain medical condition.
 
-_Define WGS_
+<!-- _Define WGS_ -->
 
-_Explain the motivation in this example a little better.  If I'm
+<!-- _Explain the motivation in this example a little better.  If I'm
 reading this right, the workflow is 
 traits -> people with those traits -> presense of a specific genetic
-variant in the people with the reported traits_
+variant in the people with the reported traits_ -->
 
-_Rather than having the user do this through the Python command line,
-it might be easier to write a file that is going to do each step_
+<!-- _Rather than having the user do this through the Python command line,
+it might be easier to write a file that is going to do each step_ -->
+
 
 h3. Prerequisites
 
@@ -56,10 +57,10 @@ for t in filter(lambda t: re.search('cancer', t['name']),
 
 </pre>
 
-_Should break this down into steps instead of being clever and making
-it a python one-liner_
+<!-- _Should break this down into steps instead of being clever and making
+it a python one-liner_ -->
 
-&darr;
+%(darr)&darr;%
 
 <pre>
 ...
@@ -87,7 +88,7 @@ trait_links = arvados.service.links().list(limit=1000,where=json.dumps({
   })).execute()['items']
 </pre>
 
-_Same comment, break this out and describe each step_
+<!-- _Same comment, break this out and describe each step_ -->
 
 The "tail_uuid" attribute of each of these Links refers to a Human.
 
@@ -95,7 +96,7 @@ The "tail_uuid" attribute of each of these Links refers to a Human.
 map(lambda l: l['tail_uuid'], trait_links)
 </pre>
 
-&darr;
+%(darr)&darr;%
 
 <pre>
 [u'1h9kt-7a9it-c0uqa4kcdh29wdf', u'1h9kt-7a9it-x4tru6mn40hc6ah',
@@ -131,7 +132,7 @@ pgpid_links = arvados.service.links().list(limit=1000,where=json.dumps({
 map(lambda l: l['name'], pgpid_links)
 </pre>
 
-&darr;
+%(darr)&darr;%
 
 <pre>
 [u'hu01024B', u'hu11603C', u'hu15402B', u'hu174334', u'hu1BD549', u'hu237A50',
@@ -181,7 +182,7 @@ for c in collections:
 
 </pre>
 
-&darr;
+%(darr)&darr;%
 
 <pre>
 https://my.personalgenomes.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc+302+K@qr1hi var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
@@ -232,7 +233,7 @@ Monitor job progress by refreshing the Jobs page in Workbench, or by using the A
 map(lambda j: arvados.service.jobs().get(uuid=j['uuid']).execute()['success'], job.values())
 </pre>
 
-&darr;
+%(darr)&darr;%
 
 <pre>
 [True, True, True, True, True, True, True]
@@ -251,7 +252,7 @@ for collection_uuid in job:
 
 </pre>
 
-&darr;
+%(darr)&darr;%
 
 <pre>
 hu599905  80 5644238bfb2a1925d423f2c264819cfb+75+K@qr1hi

@@ -5,7 +5,7 @@ title: "Reference: Getting an API token"
 navorder: 20
 ---
 
-h1. Getting an API token
+h1. Reference: Getting an API token
 
 The Arvados API token is a secret key that enables the @arv@ command line
 client to access Arvados with the proper permissions.

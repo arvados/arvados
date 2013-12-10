@@ -5,16 +5,16 @@ title: "Reference: Jobs"
 navorder: 22
 ---
 
-h1. Intro: Jobs
+h1. Reference: Jobs
 
 You can run MapReduce jobs by storing a job script in a git repository and creating a "job":../api/Jobs.html.
 
-_Need to define MapReduce_
+<!-- _Need to define MapReduce_ -->
 
 Crunch jobs offer several advantages over running programs on your own local machine:
 
-_This underplays it a bit, I would say it offers many, significanty
-advantages, not just "several"_
+<!-- _This underplays it a bit, I would say it offers many, significanty
+advantages, not just "several"_ -->
 
 * Increase concurrency by running tasks asynchronously, using many CPUs and network interfaces at once (especially beneficial for CPU-bound and I/O-bound tasks respectively).
 
@@ -32,9 +32,9 @@ A job consists of a number of tasks which can be executed asynchronously.
 
 A single job program, or "crunch script", executes each task of a given job. The logic of a typical crunch script looks like this:
 
-_This discussion of the structure of a job seems to miss the mark,
+<!-- _This discussion of the structure of a job seems to miss the mark,
 it's both too detailed for an introdction but not detailed enough to
-be able to make use of the knowledge_
+be able to make use of the knowledge_ -->
 
 * If this is the first task: examine the input, divide it into a number of asynchronous tasks, instruct Arvados to queue these tasks, output nothing, and indicate successful completion.
 
@@ -46,12 +46,12 @@ If a job task fails, it is automatically re-attempted.  If a task fails repeated
 
 h3. Developing and testing crunch scripts
 
-_This seems like it should go in the tutorial section_
+<!-- _This seems like it should go in the tutorial section_ -->
 
 Usually, it makes sense to test your script locally on small data sets.  When you are satisfied that it works, commit it to the git repository and run it in Arvados.
 
-_I'm confused.  Is this example for running locally or running
-remotely on arvados?_
+<!-- _I'm confused.  Is this example for running locally or running
+remotely on arvados?_ -->
 
 Save your job script (say, @foo@) in @{git-repo}/crunch_scripts/foo@.
 

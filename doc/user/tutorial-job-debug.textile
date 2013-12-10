@@ -28,7 +28,8 @@ yourname@shell:~$ cd yourrepo
 yourname@shell:~/yourrepo$ mkdir -p crunch_scripts
 </pre>
 
-_Should mention somewhere that it *must* be in a directory called crunch_scripts_
+<!-- _Should mention somewhere that it *must* be in a directory called
+crunch_scripts_ -->
 
 {% include notebox-begin.html %}
 
@@ -126,7 +127,7 @@ out.write('hello world')
 out_collection = out.finish()
 </pre>
 
-_Explain better_
+<!-- _Explain better_ -->
 
 The return value of @out.finish()@ is the content address (hash) of a collection stored in Keep.
 
@@ -142,7 +143,8 @@ The @set_output()@ method tells Arvados that
 * The hash specified by the @out_collection@ parameter is the output of this task, and
 * This task completed successfully.
 
-_Putting this in a separate section from the code blob above is confusing!_
+<!-- _Putting this in a separate section from the code blob above is
+confusing!_ -->
 
 h3. Run the working script.
 
