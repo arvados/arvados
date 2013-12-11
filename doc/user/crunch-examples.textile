@@ -1,0 +1,35 @@
+---
+layout: default
+navsection: userguide
+title: "Crunch examples"
+navorder: 30
+---
+
+h1. Crunch examples
+
+Several crunch scripts are included with Arvados in the @/crunch_scripts@ directory. They are intended to provide examples and starting points for writing your own scripts.
+
+h4. bwa-aln
+
+Run the bwa aligner on a set of paired-end fastq files, producing a BAM file for each pair.
+
+h4. bwa-index
+
+Generate an index of a fasta reference genome suitable for use by bwa-aln.
+
+h4. picard-gatk2-prep
+
+Using the FixMateInformation, SortSam, ReorderSam, AddOrReplaceReadGroups, and BuildBamIndex modules from picard, prepare a BAM file for use with the GATK2 tools. Additionally, run picard's CollectAlignmentSummaryMetrics module to produce a @*.casm.tsv@ statistics file for each BAM file.
+
+h4. GATK2-bqsr
+
+Run GATK's BaseQualityScoreRecalibration module on a set of BAM files.
+
+h4. GATK2-merge-call
+
+Merge a set of BAM files using picard, and run GATK's UnifiedGenotyper module on the merged set to produce a VCF file.
+
+h4. GATK2-realign
+
+Run GATK's RealignerTargetCreator and IndelRealigner modules on a set of BAM files.
+
