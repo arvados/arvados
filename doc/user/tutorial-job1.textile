@@ -15,22 +15,17 @@ h2. Checking your environment
 
 Check that you are able to access the Arvados API server using the following command:
 
-<pre>
-$ arv user current
-</pre>
+bc. $ arv user current
 
 If you receive the message @ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables@, follow the instructions for "getting an API token,":api-tokens.html then return to this document.
 
 When @arv user current@ is able to access the API server, it will print out the unique identifier associated with your account.  Here is an example (you will receive a different identifier):
 
-<pre>
-qr1hi-xioed-9z2p3pn12yqdaem
-</pre>
+bc. qr1hi-xioed-9z2p3pn12yqdaem
 
 This unique identifier represents your identity in the Arvados system and is similar to the concept of a pointer or a foreign key.  You may de-reference (get the contents of) any identifier returned by the "arv" command using the @-h@ command line option.  For example:
 
-<pre>
-$ arv -h user current
+bc. $ arv -h user current
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/users/qr1hi-xioed-9z2p3pn12yqdaem",
  "kind":"arvados#user",
@@ -51,7 +46,6 @@ $ arv -h user current
  "is_admin": false,
  "prefs":{}
 }
-</pre>
 
 h2. Managing data in Arvados using Keep
 
@@ -67,27 +61,21 @@ In order to reassemble the file, Keep stores a *collection* data block which lis
 
 In this example we will use @33a9f3842b01ea3fdf27cc582f5ea2af@ which is already available on {{ site.arvados_api_host }}.  First let us examine the contents of this collection using @arv keep get@:
 
-<pre>
-$ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af
+bc. $ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af
 . 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi 323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi 0:227212247:var-GS000016015-ASM.tsv.bz2
-</pre>
 
 @arv keep get@ fetches the contents of the locator @33a9f3842b01ea3fdf27cc582f5ea2af@.  This is a locator for a collection data block, so it fetches the contents of the collection.  In this example, this collection consists of a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code>, <code>b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi</code>, <code>fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi</code>, <code>323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi</code>.
 
 Let's use @arv keep get@ to download the first datablock:
 
-<pre>
- $ arv keep get 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi > block1
-</pre>
+bc. $ arv keep get 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi > block1
 
 Let's look at the size and compute the md5 hash of @block1@:
 
-<pre>
- $ ls -l block1
- -rw-r--r-- 1 you group 67108864 Dec  9 20:14 block1
- $ md5sum block1
- 204e43b8a1185621ca55a94839582e6f  block1
-</pre>
+bc. $ ls -l block1
+-rw-r--r-- 1 you group 67108864 Dec  9 20:14 block1
+$ md5sum block1
+204e43b8a1185621ca55a94839582e6f  block1
 
 Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code> consists of:
 * the md5 hash @204e43b8a1185621ca55a94839582e6f@
@@ -98,16 +86,12 @@ In fact, _only_ the md5 hash is required to find the block.
 
 Next, let's use @arv keep get@ to download and reassemble @var-GS000016015-ASM.tsv.bz2@ using the following command:
 
-<pre>
- $ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af/var-GS000016015-ASM.tsv.bz2 .
-</pre>
+bc. $ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af/var-GS000016015-ASM.tsv.bz2 .
 
 This downloads the file @var-GS000016015-ASM.tsv.bz2@ described by collection @33a9f3842b01ea3fdf27cc582f5ea2af@ from Keep and places it into the local directory.  Now that we have the file, we can compute the md5 hash of the complete file:
 
-<pre>
- $ md5sum var-GS000016015-ASM.tsv.bz2 
- 44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
-</pre>
+bc. $ md5sum var-GS000016015-ASM.tsv.bz2 
+44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
 
 h2. Submitting your first job
 
@@ -127,8 +111,7 @@ For your first job, you will run the "hash" crunch script using the Arvados syst
 
 Crunch jobs are described using JSON objects.  For example:
 
-<pre>
-$ read -d $'\000' the_job <<EOF
+bc. $ read -d $'\000' the_job <<EOF
 {
  "script": "hash",
  "script_version": "arvados:master",
@@ -138,7 +121,6 @@ $ read -d $'\000' the_job <<EOF
  }
 }
 EOF
-</pre>
 
 * @read@ is a shell builtin that stores the first line of standard input into the local shell variable @the_job@
 * @-d $'\000'@ changes the line delimiter character from newline to null so that the entire input will be considered a single line.
@@ -148,8 +130,7 @@ EOF
 
 Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
 
-<pre>
-$ arv -h job create --job "$the_job"
+bc. $ arv -h job create --job "$the_job"
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-j5dr6107mxzp3no",
  "kind":"arvados#job",
@@ -185,7 +166,6 @@ $ arv -h job create --job "$the_job"
  ],
  "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-j5dr6107mxzp3no/log_tail_follow"
 }
-</pre>
 
 The job is new queued and will start running as soon as it reaches the front of the queue.  Fields to pay attention to include:
 
@@ -201,9 +181,7 @@ Hit "Refresh" until it finishes.  Successful completion is indicated by a green 
 
 You can watch the log messages while the job runs using @curl@:
 
-<pre>
-$ curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" _value_of_log_stream_href_from_arv_job_create_
-</pre>
+bc. $ curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" _value_of_log_stream_href_from_arv_job_create_
 
 * @-s@ suppress status messages from @curl@ itself
 * @-H@ addes a required HTTP header with your Arvados API token
@@ -214,8 +192,7 @@ h3. Inspect the job output
 
 You can access the job output under the *output* column of the _Compute %(rarr)&rarr;% Jobs_ page.  Alternately, you can use @arv job get@ to access a JSON object describing the output:
 
-<pre>
-$ arv -h job get --uuid _value_of_uuid_from_arv_job_create_
+bc. $ arv -h job get --uuid _value_of_uuid_from_arv_job_create_
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-zs6d9pxkr0vk175",
  "kind":"arvados#job",
@@ -256,23 +233,18 @@ $ arv -h job get --uuid _value_of_uuid_from_arv_job_create_
  ],
  "log_stream_href":null
 }
-</pre>
 
 * @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.
 
 Now you can list the files in the collection:
 
-<pre>
-$ arv keep get _value_of_output_from_arv_job_get_
+bc. $ arv keep get _value_of_output_from_arv_job_get_
 . 78b268d1e03d87f8270bdee9d5d427c5+61 0:61:md5sum.txt
-</pre>
 
 This collection consists of the md5sum.txt file.  Use @arv keep get@ to show the contents of the md5sum.txt file:
 
-<pre>
-$ arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt
+bc. $ arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
-</pre>
 
 This md5 hash matches the md5 hash which we computed earlier.
 
