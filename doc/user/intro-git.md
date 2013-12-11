@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: "Intro: git"
-navorder: 4
+title: "Reference: git"
+navorder: 23
 ---
 
-# Intro: git
+# Reference: git
 
 Git is a revision control system. There are lots of resources for
 learning about git (try [Try Git](http://try.git.io) or [Top 10 Git

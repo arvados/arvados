@@ -2,12 +2,16 @@
 layout: default
 navsection: userguide
 title: "Tutorial: GATK VariantFiltration"
-navorder: 22
+navorder: 16
 ---
 
 h1. Tutorial: GATK VariantFiltration
 
 Here you will use the GATK VariantFiltration program to assign pass/fail scores to variants in a VCF file.
+
+<!-- _This should be motivated better using a specific biomedical research or diagnostic question that involves this analysis_ -->
+
+<!-- From conversation with Ward:  We should link to a discussion of the personal genome project and explain that it a freely available dataset that any researcher can use, which makes it appropriate to be used in these examples._ -->
 
 h3. Prerequisites
 
@@ -19,7 +23,15 @@ If everything is set up correctly, the command @arv -h user current@ will displa
 
 h3. Get the GATK binary distribution.
 
+<!-- _Perhaps separate out this and the next sections and link to it so the user only
+has to do this if they really don't have GATK installed.  Also provide
+a way to determine if they do have it._ -->
+
 Download the GATK binary tarball[1] -- e.g., @GenomeAnalysisTK-2.6-4.tar.bz2@ -- and copy it to your Arvados VM.
+
+<!-- _Is it necessary to copy it to the Arvados VM first, you could put it into
+keep from your desktop and/or use the workbench?  Also if we are
+telling them to copy it to the VM, maybe we should mention scp?_ -->
 
 Store it in Keep.
 
@@ -28,6 +40,8 @@ arv keep put --in-manifest GenomeAnalysisTK-2.6-4.tar.bz2
 </pre>
 
 &darr;
+
+<!-- _Make the itty bitty down arrows bigger, and maybe center them_ -->
 
 <pre>
 c905c8d8443a9c44274d98b7c6cfaa32+94+K@qr1hi
@@ -88,6 +102,8 @@ Note the job UUID in the API response.
 
 h3. Monitor job progress
 
+<!-- _This was already covered in tutorial1_ -->
+
 There are three ways to monitor job progress:
 
 # Go to Workbench, drop down the Compute menu, and click Jobs. The job you submitted should appear at the top of the list. Hit "Refresh" until it finishes.
@@ -98,6 +114,9 @@ There are three ways to monitor job progress:
 curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
   https://{{ site.arvados_api_host }}/arvados/v1/jobs/JOB_UUID_HERE/log_tail_follow
 </pre>
+
+
+<!-- _That's it?  Say something about the output we're going to get_ -->
 
 h3. Notes
 

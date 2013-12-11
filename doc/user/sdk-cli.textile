@@ -1,17 +1,17 @@
 ---
 layout: default
 navsection: userguide
-title: "Intro: Command line SDK"
-navorder: 10
+title: "Reference: Command line SDK"
+navorder: 21
 ---
 
-{% include alert-stub.html %}
-
-h1. Command line SDK
+h1. Reference: Command line SDK
 
 If you are logged in to an Arvados VM, the command line SDK should be installed. Try:
 
 @arv --help@
+
+<!-- _Help is not helpful.  See bug #1667_ -->
 
 h3. First...
 
@@ -21,15 +21,21 @@ Set the ARVADOS_API_HOST environment variable.
 
 Log in to Workbench and get an API token for your account. Set the ARVADOS_API_TOKEN environment variable.
 
-@export ARVADOS_API_TOKEN=c0vdbi8wp7f703lbthyadlvmaivgldxssy3l32isslmax93k9@
+@export
+ARVADOS_API_TOKEN=c0vdbi8wp7f703lbthyadlvmaivgldxssy3l32isslmax93k9@
 
 If you are using a development instance with an unverifiable SSL certificate, set the ARVADOS_API_HOST_INSECURE environment variable.
 
 @export ARVADOS_API_HOST_INSECURE=1@
 
+<!-- _This should link back to "api-tokens":api-tokens.html instead of
+re-explaining it__ -->
+
 h3. Usage
 
 @arv [global_options] resource_type resource_method [method_parameters]@
+
+<!-- _This is what arv --help really ought to print out_ -->
 
 h3. Basic examples
 
@@ -52,6 +58,9 @@ Get list of groups (showing entire records)
 @arv -h group list@
 
 h3. Global options
+
+<!-- _Move these up to before "basic examples", and give examples of what
+these options do and how they might be useful._ -->
 
 - @--json@, @-j@ := Output entire response as compact JSON.
 
