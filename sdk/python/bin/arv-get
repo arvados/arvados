@@ -145,7 +145,7 @@ try:
                 dest_path = os.path.join(
                     args.destination,
                     os.path.join(s.name(), f.name())[len(get_prefix)+1:])
-                if (not (args.f or args.skip_existing) and
+                if (not (args.n or args.f or args.skip_existing) and
                     os.path.exists(dest_path)):
                     logger.error('Local file %s already exists' % dest_path)
                     sys.exit(1)
