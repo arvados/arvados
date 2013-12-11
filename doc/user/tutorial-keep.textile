@@ -1,0 +1,52 @@
+---
+layout: default
+navsection: userguide
+title: "Tutorial: Adding Data to Keep"
+navorder: 101
+---
+
+h1. Tutorial: Adding Data to Keep
+
+Now that you've run a Crunch job on sample data, we'll walk you through the process of uploading your own research data into Keep, the distributed storage service.
+
+h2. Prerequisites
+
+You should have already "run your first job":tutorial-job1.html using sample data on an Arvados shell VM.  If you haven't, go do that first.
+
+h2. Adding Data to Keep
+
+The first step is to copy your data to the shell VM where you have command-line access to Arvados tools.
+
+Let's suppose you have a VCF file, @MyData.vcf@ and want to run an Arvados pipeline on this data.  Copy it to the Arvados shell VM with @rsync@:
+
+bc.
+    rsync MyData.vcf shell.arvados:MyData.vcf
+
+If you don't already have VCF data ready to go, you can download a free VCF exome from https://my.personalgenomes.org/user_file/download/825:
+
+bc..
+    $ *ssh shell.arvados*
+
+    shell.arvados$ *wget -o LF5713.vcf  https://my.personalgenomes.org/user_file/download/825*
+    --2013-12-10 21:25:18--  https://my.personalgenomes.org/user_file/download/825
+    Resolving my.personalgenomes.org (my.personalgenomes.org)... 134.174.150.6
+    Connecting to my.personalgenomes.org (my.personalgenomes.org)|134.174.150.6|:443... connected.
+    ...
+    HTTP request sent, awaiting response... 200 OK
+    Length: 39814813 (38M) [text/x-vcard]
+    Saving to: ‘LF5713.vcf’
+
+    100% [=================================>] 39,814,813   193KB/s  in 4m 42s
+
+    2013-12-10 21:33:54 (138 KB/s) - ‘LF5713.vcf’ saved [39814813/39814813]
+p.
+
+# On the shell VM, Make sure that your Arvados environment includes @ARVADOS_API_TOKEN@ and @ARVADOS_API_HOST@ as described in "Tutorial: Your first job":tutorial-job1.html.
+
+# Use the @arv keep@ command to add your VCF data to Keep:
+bc.
+    arv keep put MyData.vcf
+    9845d870ebe27036ba101a3bee10fb3f+234+K@ant
+
+  The string returned by @arv keep@ is a _locator._ It is essentially a filename for data stored in Keep.
+
