@@ -14,7 +14,7 @@ class Repository < ArvadosModel
   end
 
   def fetch_url
-    super || self.name && "git://git.#{Rails.configuration.uuid_prefix}.arvadosapi.com/#{self.name}.git"
+    super || push_url
   end
 
   protected
