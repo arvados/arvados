@@ -51,6 +51,7 @@ ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variabl
 end
 
 begin
+  require 'curb'
   require 'rubygems'
   require 'google/api_client'
   require 'json'
@@ -64,7 +65,7 @@ rescue LoadError
 
 Please install all required gems: 
 
-  gem install google-api-client json trollop andand oj activesupport
+  gem install activesupport andand curb google-api-client json oj trollop
 
   EOS
 end
@@ -246,11 +247,38 @@ if resource_body
 else
   request_body = {}
 end
-request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
-result = client.execute(:api_method => eval(api_method),
-                        :parameters => request_parameters,
-                        :body => request_body,
-                        :authenticated => false)
+
+case api_method
+when
+  'arvados.users.event_stream',
+  'arvados.jobs.log_stream',
+  'arvados.jobs.log_tail_follow'
+
+  # Special case for methods that respond with data streams rather
+  # than JSON (TODO: use the discovery document instead of a static
+  # list of methods)
+  uri_s = eval(api_method).generate_uri(request_parameters)
+  Curl::Easy.perform(uri_s) do |curl|
+    curl.headers['Accept'] = 'text/plain'
+    curl.headers['Authorization'] = "OAuth2 #{ENV['ARVADOS_API_TOKEN']}"
+    if ENV['ARVADOS_API_HOST_INSECURE']
+      curl.ssl_verify_peer = false 
+      curl.ssl_verify_host = false
+    end
+    if global_opts[:verbose]
+      curl.on_header { |data| $stderr.write data }
+    end
+    curl.on_body { |data| $stdout.write data }
+  end
+  exit 0
+else
+  request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+  result = client.execute(:api_method => eval(api_method),
+                          :parameters => request_parameters,
+                          :body => request_body,
+                          :authenticated => false)
+end
+
 begin
   results = JSON.parse result.body
 rescue JSON::ParserError => e

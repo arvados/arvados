@@ -23,6 +23,7 @@ Gem::Specification.new do |s|
   s.add_dependency('trollop', '>= 2.0')
   s.add_dependency('andand', '>= 1.3.3')
   s.add_dependency('oj', '>= 2.0.3')
+  s.add_dependency('curb', '~> 0.8')
   s.homepage    =
     'http://arvados.org'
 end
