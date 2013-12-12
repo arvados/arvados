@@ -1,99 +1,15 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: Introduction to Keep and your first Crunch job"
-navorder: 11
+title: "Tutorial: Running a Crunch job"
+navorder: 12
 ---
 
-h1. Tutorial: Introduction to Keep and your first crunch job
+h1. Tutorial: Running a crunch job
 
 This tutorial introduces the concepts and use of the Arvados Keep storage and Crunch job system using the @arv@ command line tool and Arvados Workbench.
 
-*This tutorial assumes that you are logged into an Arvados VM instance, as described in "accessing arvados over ssh.":ssh-access.html#login*
-
-h2. Checking your environment
-
-Check that you are able to access the Arvados API server using the following command:
-
-bc. $ arv user current
-
-If you receive the message @ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables@, follow the instructions for "getting an API token,":api-tokens.html then return to this document.
-
-When @arv user current@ is able to access the API server, it will print out the unique identifier associated with your account.  Here is an example (you will receive a different identifier):
-
-bc. qr1hi-xioed-9z2p3pn12yqdaem
-
-This unique identifier represents your identity in the Arvados system and is similar to the concept of a pointer or a foreign key.  You may de-reference (get the contents of) any identifier returned by the "arv" command using the @-h@ command line option.  For example:
-
-bc. $ arv -h user current
-{
- "href":"https://qr1hi.arvadosapi.com/arvados/v1/users/qr1hi-xioed-9z2p3pn12yqdaem",
- "kind":"arvados#user",
- "etag":"8u0xwb9f3otb2xx9hto4wyo03",
- "uuid":"qr1hi-tpzed-92d3kxnimy3d4e8",
- "owner_uuid":"qr1hi-tpqed-23iddeohxta2r59",
- "created_at":"2013-12-02T17:05:47Z",
- "modified_by_client_uuid":"qr1hi-xxfg8-owxa2oa2s33jyej",
- "modified_by_user_uuid":"qr1hi-tpqed-23iddeohxta2r59",
- "modified_at":"2013-12-02T17:07:08Z",
- "updated_at":"2013-12-05T19:51:08Z",
- "email":"you@example.com",
- "full_name":"Example User",
- "first_name":"Example",
- "last_name":"User",
- "identity_url":"https://www.google.com/accounts/o8/id?id=AItOawnhlZr-pQ_Ic2f2W22XaO02oL3avJ322k1",
- "is_active": true,
- "is_admin": false,
- "prefs":{}
-}
-
-h2. Managing data in Arvados using Keep
-
-The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file, rather than human-assigned file names (specifically, the md5 hash).  This has a number of advantages:
-* Files can be stored and replicated across a cluster of servers without requiring a central name server.
-* Systematic validation of data integrity by both server and client because the checksum is built into the identifier.
-* Minimizes data duplication (two files with the same contents will result in the same identifier, and will not be stored twice.)
-* Avoids data race conditions (an identifier always points to the same data.)
-
-In Keep, information is stored in *data blocks*.  Data blocks are normally between 1 byte and 64 megabytes in size.  If a file exceeds the maximum size of a single data block, the file will be split across multiple data blocks until the entire file can be stored.  These data blocks may be stored and replicated across multiple disks, servers, or clusters.  Each data block has its own identifier for the contents of that specific data block.
-
-In order to reassemble the file, Keep stores a *collection* data block which lists in sequence the data blocks that make up the original file.  A collection data block may store the information for multiple files, including a directory structure.
-
-In this example we will use @33a9f3842b01ea3fdf27cc582f5ea2af@ which is already available on {{ site.arvados_api_host }}.  First let us examine the contents of this collection using @arv keep get@:
-
-bc. $ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af
-. 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi 323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi 0:227212247:var-GS000016015-ASM.tsv.bz2
-
-@arv keep get@ fetches the contents of the locator @33a9f3842b01ea3fdf27cc582f5ea2af@.  This is a locator for a collection data block, so it fetches the contents of the collection.  In this example, this collection consists of a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code>, <code>b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi</code>, <code>fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi</code>, <code>323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi</code>.
-
-Let's use @arv keep get@ to download the first datablock:
-
-bc. $ arv keep get 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi > block1
-
-Let's look at the size and compute the md5 hash of @block1@:
-
-bc. $ ls -l block1
--rw-r--r-- 1 you group 67108864 Dec  9 20:14 block1
-$ md5sum block1
-204e43b8a1185621ca55a94839582e6f  block1
-
-Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code> consists of:
-* the md5 hash @204e43b8a1185621ca55a94839582e6f@
-* a size hint @67108864@
-* a location hint <code>K@qr1hi</code>
-
-In fact, _only_ the md5 hash is required to find the block.
-
-Next, let's use @arv keep get@ to download and reassemble @var-GS000016015-ASM.tsv.bz2@ using the following command:
-
-bc. $ arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af/var-GS000016015-ASM.tsv.bz2 .
-
-This downloads the file @var-GS000016015-ASM.tsv.bz2@ described by collection @33a9f3842b01ea3fdf27cc582f5ea2af@ from Keep and places it into the local directory.  Now that we have the file, we can compute the md5 hash of the complete file:
-
-bc. $ md5sum var-GS000016015-ASM.tsv.bz2 
-44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
-
-h2. Submitting your first job
+*This tutorial assumes that you are "logged into an Arvados VM instance":ssh-access.html#login, and have a "working environment.":check-environment.html*
 
 In the previous section, we downloaded a file from Keep and computed the md5 hash of the complete file.  While straightforward, there are several obvious drawbacks to this approach:
 * Large files require significant time to download.
@@ -111,7 +27,8 @@ For your first job, you will run the "hash" crunch script using the Arvados syst
 
 Crunch jobs are described using JSON objects.  For example:
 
-bc. $ read -d $'\000' the_job <<EOF
+<notextile>
+<pre><code>$ <span class="userinput">read -d $'\000' the_job &lt;&lt;EOF
 {
  "script": "hash",
  "script_version": "arvados:master",
@@ -121,6 +38,8 @@ bc. $ read -d $'\000' the_job <<EOF
  }
 }
 EOF
+</code></pre>
+</notextile>
 
 * @read@ is a shell builtin that stores the first line of standard input into the local shell variable @the_job@
 * @-d $'\000'@ changes the line delimiter character from newline to null so that the entire input will be considered a single line.
@@ -130,7 +49,8 @@ EOF
 
 Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
 
-bc. $ arv -h job create --job "$the_job"
+<notextile>
+<pre><code>$ <span class="userinput">arv -h job create --job "$the_job"</span>
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-j5dr6107mxzp3no",
  "kind":"arvados#job",
@@ -166,6 +86,8 @@ bc. $ arv -h job create --job "$the_job"
  ],
  "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-j5dr6107mxzp3no/log_tail_follow"
 }
+</code></pre>
+</notextile>
 
 The job is new queued and will start running as soon as it reaches the front of the queue.  Fields to pay attention to include:
 
@@ -181,7 +103,7 @@ Hit "Refresh" until it finishes.  Successful completion is indicated by a green 
 
 You can watch the log messages while the job runs using @curl@:
 
-bc. $ curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" _value_of_log_stream_href_from_arv_job_create_
+notextile. <pre><code>$ <span class="userinput">curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" _value_of_log_stream_href_from_arv_job_create_</span></code></pre>
 
 * @-s@ suppress status messages from @curl@ itself
 * @-H@ addes a required HTTP header with your Arvados API token
@@ -192,7 +114,8 @@ h3. Inspect the job output
 
 You can access the job output under the *output* column of the _Compute %(rarr)&rarr;% Jobs_ page.  Alternately, you can use @arv job get@ to access a JSON object describing the output:
 
-bc. $ arv -h job get --uuid _value_of_uuid_from_arv_job_create_
+<notextile>
+<pre><code>$ <span class="userinput">arv -h job get --uuid _value_of_uuid_from_arv_job_create_</span>
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-zs6d9pxkr0vk175",
  "kind":"arvados#job",
@@ -233,20 +156,27 @@ bc. $ arv -h job get --uuid _value_of_uuid_from_arv_job_create_
  ],
  "log_stream_href":null
 }
+</code></pre>
+</notextile>
 
 * @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.
 
 Now you can list the files in the collection:
 
-bc. $ arv keep get _value_of_output_from_arv_job_get_
+<notextile>
+<pre><code>$ <span class="userinput">arv keep get _value_of_output_from_arv_job_get_</span>
 . 78b268d1e03d87f8270bdee9d5d427c5+61 0:61:md5sum.txt
+</code></pre>
+</notextile>
 
 This collection consists of the md5sum.txt file.  Use @arv keep get@ to show the contents of the md5sum.txt file:
 
-bc. $ arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt
+<notextile>
+<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
 
 This md5 hash matches the md5 hash which we computed earlier.
 
-This concludes the first tutorial.  
-<!-- In the next tutorial, we will inspect how the hash script works. -->
+This concludes the first tutorial.  In the next tutorial, we will "write script to do the same work.":tutorial-firstscript.html

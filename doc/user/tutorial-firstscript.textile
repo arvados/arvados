@@ -2,41 +2,106 @@
 layout: default
 navsection: userguide
 title: "Tutorial: Writing a Crunch script"
-navorder: 102
+navorder: 13
 ---
 
-{% include alert-stub.html %}
-
-h1. Tutorial 2: Writing a Crunch script
+h1. Tutorial: Writing a Crunch script
 
 In this tutorial, we will write the "hash" script demonstrated in the first tutorial.
 
-*This tutorial assumes that you are logged into an Arvados VM instance, as described in "accessing arvados over ssh.":ssh-access.html#login*
+*This tutorial assumes that you are "logged into an Arvados VM instance":ssh-access.html#login, and have a "working environment.":check-environment.html*
+
+This tutorial uses _you_ to denote your username.  Replace _you_ with your user name in all the following examples.
 
 h2. Setting up Git
 
+As discussed in the previous tutorial, all Crunch scripts are managed through the @git@ revision control system.
 
+First, you should do some basic configuration for git (you only need to do this the first time):
 
-h3. Inspect the code
+<notextile>
+<pre><code>$ <span class="userinput">git config --global user.name "Your Name"</span>
+$ <span class="userinput">git config --global user.email you@example.com</span></code></pre>
+</notextile>
 
-The @script@ and @script_version@ attributes of a Job allow you to confirm the code that was used to run the job. Specifically, @script@ refers to a file in the @/crunch_scripts@ directory in the tree indicated by the commit hash @script_version@.
+On the Arvados Workbench, navigate to _Access %(rarr)&rarr;% Repositories._  You should see two repositories, one named "arvados" (under the *name* column) and a second with your user name.  Next to *name* is the column *push_url*.  Copy the *push_url* cell associated with your repository.  This should look like <code>git@git.{{ site.arvados_api_host }}:you.git</code>.
 
-Example:
+Next, on the Arvados virtual machine, clone your git repository:
 
-<pre>
-cd
-git clone git://github.com/clinicalfuture/arvados.git
-cd arvados
-git checkout $the_version
-less crunch_scripts/hash
-</pre>
+<notextile>
+<pre><code>$ <span class="userinput">git clone git://git.{{ site.arvados_api_host }}:you.git</span>
+Cloning into 'you'...</code></pre>
+</notextile>
 
-<!--
-_If we're going to direct the user to open up the code, some
-discussion of the python API is probably in order.  If the hash
-job is going to be the canonical first crunch map reduce program
-for everybody, than we should break down the program line-by-line and
-explain every step in detail._
--->
+This will create an git checkout in the directory called @you@.
 
+{% include notebox-begin.html %}
+For more information about using @git@, try
+
+notextile. <pre><code>$ <span class="userinput">man gittutoral</span></code></pre>
+
+or "click here search Google for git tutorials":http://google.com/#q=git+tutorial
+{% include notebox-end.html %}
+
+h2. Creating a Crunch script
+
+Start by entering the @you@ directory, creating a subdirectory called @crunch_scripts@ and changing to that directory:
+
+<notextile>
+<pre><code>$ <span class="userinput">cd you</span>
+$ <span class="userinput">mkdir crunch_scripts</span>
+$ <span class="userinput">cd crunch_scripts</span></code></pre>
+</notextile>
+
+Next, create a new file called @hash@ in the @crunch_scripts@ directory.  Add the following code to compute the md5 hash of each file in a collection:
+
+<pre><code class="userinput">{% include tutorial_hash_script.py %}</code></pre>
+
+Make the file executable:
+
+notextile. <pre><code>$ <span class="userinput">chmod +x hash</span></code></pre>
+
+Next, add the file to @git@ staging.  This tells @git@ that the file should be included on the next commit.
+
+notextile. <pre><code>$ <span class="userinput">git add hash</span></code></pre>
+
+Next, commit your changes to git.  All staged changes are recorded into the local @git@ repository:
+
+<notextile>
+<pre><code>$ <span class="userinput">git commit -m"my first script"</span>
+[master (root-commit) 27fd88b] my first script
+ 1 file changed, 33 insertions(+)
+ create mode 100755 crunch_scripts/hash</code></pre>
+</notextile>
+
+Finally, upload your changes to the Arvados server:
+
+<notextile>
+<pre><code>$ <span class="userinput">git push origin master</span>
+Counting objects: 4, done.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (4/4), 682 bytes, done.
+Total 4 (delta 0), reused 0 (delta 0)
+To git@git.qr1hi.arvadosapi.com:you.git
+ * [new branch]      master -> master</code></pre>
+</notextile>
+
+You should now be able to run your script using Crunch, similar to how we did it in the "first tutorial.":tutorial-job1.html  The field @"script_version"@ should be @you:master@ to tell Crunch to run the script that you just uploaded.
+
+<notextile>
+<pre><code>$ <span class="userinput">read -d $'\000' the_job &lt;&lt;EOF
+{
+ "script": "hash",
+ "script_version": "you:master",
+ "script_parameters":
+ {
+  "input": "33a9f3842b01ea3fdf27cc582f5ea2af"
+ }
+}
+EOF</span>
+$ <span class="userinput">arv job create --job "$the_job"</span>
+{
+ ...
+}</code></pre>
+</notextile>
 

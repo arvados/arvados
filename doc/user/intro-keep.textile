@@ -1,0 +1,65 @@
+---
+layout: default
+navsection: userguide
+title: "Tutorial: Fetching data from Arvados using Keep"
+navorder: 11
+---
+
+h1. Fetching data from Arvados using Keep
+
+*This tutorial assumes that you are "logged into an Arvados VM instance":ssh-access.html#login, and have a "working environment.":check-environment.html*
+
+The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file, rather than human-assigned file names (specifically, the md5 hash).  This has a number of advantages:
+* Files can be stored and replicated across a cluster of servers without requiring a central name server.
+* Systematic validation of data integrity by both server and client because the checksum is built into the identifier.
+* Minimizes data duplication (two files with the same contents will result in the same identifier, and will not be stored twice.)
+* Avoids data race conditions (an identifier always points to the same data.)
+
+In Keep, information is stored in *data blocks*.  Data blocks are normally between 1 byte and 64 megabytes in size.  If a file exceeds the maximum size of a single data block, the file will be split across multiple data blocks until the entire file can be stored.  These data blocks may be stored and replicated across multiple disks, servers, or clusters.  Each data block has its own identifier for the contents of that specific data block.
+
+In order to reassemble the file, Keep stores a *collection* data block which lists in sequence the data blocks that make up the original file.  A collection data block may store the information for multiple files, including a directory structure.
+
+In this example we will use @33a9f3842b01ea3fdf27cc582f5ea2af@ which is already available on {{ site.arvados_api_host }}.  First let us examine the contents of this collection using @arv keep get@:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af</span>
+. 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi 323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi 0:227212247:var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+@arv keep get@ fetches the contents of the locator @33a9f3842b01ea3fdf27cc582f5ea2af@.  This is a locator for a collection data block, so it fetches the contents of the collection.  In this example, this collection consists of a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code>, <code>b9677abbac956bd3e86b1deb28dfac03+67108864+K@qr1hi</code>, <code>fc15aff2a762b13f521baf042140acec+67108864+K@qr1hi</code>, <code>323d2a3ce20370c4ca1d3462a344f8fd+25885655+K@qr1hi</code>.
+
+Let's use @arv keep get@ to download the first datablock:
+
+notextile. <pre><code>$ <span class="userinput">arv keep get 204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi &gt; block1</span></code></pre>
+
+Let's look at the size and compute the md5 hash of @block1@:
+
+<notextile>
+<pre><code>$ <span class="userinput">ls -l block1</span>
+-rw-r--r-- 1 you group 67108864 Dec  9 20:14 block1
+$ <span class="userinput">md5sum block1</span>
+204e43b8a1185621ca55a94839582e6f  block1
+</code></pre>
+</notextile>
+
+Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code> consists of:
+* the md5 hash @204e43b8a1185621ca55a94839582e6f@
+* a size hint @67108864@
+* a location hint <code>K@qr1hi</code>
+
+In fact, _only_ the md5 hash is required to find the block.
+
+Next, let's use @arv keep get@ to download and reassemble @var-GS000016015-ASM.tsv.bz2@ using the following command:
+
+notextile. <pre><code>$ <span class="userinput">arv keep get 33a9f3842b01ea3fdf27cc582f5ea2af/var-GS000016015-ASM.tsv.bz2 .</span></code></pre>
+
+This downloads the file @var-GS000016015-ASM.tsv.bz2@ described by collection @33a9f3842b01ea3fdf27cc582f5ea2af@ from Keep and places it into the local directory.  Now that we have the file, we can compute the md5 hash of the complete file:
+
+<notextile>
+<pre><code>$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>
+44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+You are now ready to proceed to the next tutorial, "running a crunch job.":tutorial-job1.html

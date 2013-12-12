@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Tutorial: Search PGP data by trait"
-navorder: 14
+navorder: 15
 ---
 
 h1. Tutorial: Search PGP data by trait

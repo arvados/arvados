@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Tutorial: Debug a crunch script"
-navorder: 13
+navorder: 14
 ---
 
 h1. Tutorial: Debug a crunch script

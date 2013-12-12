@@ -24,16 +24,17 @@ The examples in this guide uses the public Arvados instance located at "https://
 
 If you are using a different Arvados instance replace @{{ site.arvados_api_host }}@ with your private instance in all of the examples in this guide.
 
-h1. Arvados Workbench
+This manual uses the following conventions:
 
-You may access the Arvados workbench using this link:
+<notextile>
+<ul>
+<li>Code blocks which are set aside from the text indicate user input to the system.  Commands that should be entered into a Unix shell are indicated with a '$' at the beginning of the line, and the entire user input <span class="userinput">will be highlighted</span>, possibly followed by example command output in black:
+<pre><code>$ <span class="userinput">ls foo</span>
+foo
+</code></pre></li>
+<li>Code blocks inline with text emphasize specific <code>programs</code>, <code>files</code>, or <code>options</code> that are being discussed.</li>
+<li>Bold text emphasizes <b>specific items</b> to look when discussing Arvados Workbench pages.</li>
+</ul>
+</notextile>
 
-"https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/
-
-If you are accessing Arvados for the first time, you will be asked to log in using a Google account.  Arvados only uses Google services for identification, and will never access any personal information.  Once you are logged in, the Workbench page may indicate your account status is *New / inactive*.  If this is the case, contact the administrator of the Arvados instance to activate your account.
-
-Once your account is active, logging in to the Workbench will present you with a system status dashboard.  This gives a summary of data, configuration, and activity in the Arvados instance.
-
-Next, we will "configure your account for ssh access to an Arvados virtual machine (VM) instance.":ssh-access.html
-
-
+Now begin by "accessing the Arvados workbench.":workbench.html
