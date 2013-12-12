@@ -200,7 +200,7 @@ arvados_gatk2.run(
         '-o', os.path.join(tmpdir, 'out.vcf'),
         '--dbsnp', os.path.join(bundle_dir, 'dbsnp_137.b37.vcf'),
         '-metrics', 'UniGenMetrics',
-        '-A', 'DepthOfCoverage',
+        '-A', 'Coverage',
         '-A', 'AlleleBalance',
         '-A', 'QualByDepth',
         '-A', 'HaplotypeScore',
