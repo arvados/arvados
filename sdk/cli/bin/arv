@@ -120,6 +120,47 @@ def to_boolean(s)
   !!(s =~ /^(true|t|yes|y|1)$/i)
 end
 
+def help_methods(discovery_document, resource, method=nil)
+  banner = "\n"
+  banner += "The #{resource} resource type supports the following methods:"
+  banner += "\n\n"
+  discovery_document["resources"][resource.pluralize]["methods"].
+    each do |k,v|
+    description = ''
+    description = '  ' + v["description"] if v.include?("description")
+    banner += "   #{sprintf("%20s",k)}#{description}\n"
+  end
+  banner += "\n"
+  STDERR.puts banner
+  
+  if not method.nil? and method != '--help' then 
+    Trollop::die ("Unknown method #{method.inspect} " +
+                  "for resource #{resource.inspect}")
+  end
+  exit 255
+end
+
+def help_resources(discovery_document, resource)
+  banner = "\n"
+  banner += "This Arvados instance supports the following resource types:"
+  banner += "\n\n"
+  discovery_document["resources"].each do |k,v|
+    description = ''
+    if discovery_document["schemas"].include?(k.singularize.capitalize) and 
+        discovery_document["schemas"][k.singularize.capitalize].include?('description') then
+      description = '  ' + discovery_document["schemas"][k.singularize.capitalize]["description"]
+    end
+    banner += "   #{sprintf("%30s",k.singularize)}#{description}\n"
+  end
+  banner += "\n"
+  STDERR.puts banner
+
+  if not resource.nil? and resource != '--help' then 
+    Trollop::die "Unknown resource type #{resource.inspect}"
+  end
+  exit 255
+end
+
 def parse_arguments(discovery_document)
   resource_types = Array.new()
   resource_types << '--help'
@@ -138,85 +179,50 @@ def parse_arguments(discovery_document)
     stop_on resource_types
   end
   
-  # get the subcommand
-  resource_arg = ARGV.shift
-  if resource_types.include?(resource_arg) and resource_arg != '--help' then
-    # subcommand exists
-    # Now see if the method supplied exists
-    method = ARGV.shift
-    if discovery_document["resources"][resource_arg.pluralize]["methods"].include?(method) then
-      # method exists. Collect arguments.
-      discovered_params = discovery_document["resources"][resource_arg.pluralize]["methods"][method]["parameters"]
-      method_opts = Trollop::options do
-        discovered_params.each do |k,v|
-          opts = Hash.new()
-          opts[:type] = v["type"].to_sym if v.include?("type")
-          if [:datetime, :text, :object, :array].index opts[:type]
-            opts[:type] = :string                       # else trollop bork
-          end
-          opts[:default] = v["default"] if v.include?("default")
-          opts[:default] = v["default"].to_i if opts[:type] == :integer
-          opts[:default] = to_boolean(v["default"]) if opts[:type] == :boolean
-          opts[:required] = true if v.include?("required") and v["required"]
-          description = ''
-          description = '  ' + v["description"] if v.include?("description")
-          opt k.to_sym, description, opts
-        end
-        body_object = discovery_document["resources"][resource_arg.pluralize]["methods"][method]["request"]
-        if body_object and discovered_params[resource_arg].nil?
-          is_required = true
-          if body_object["required"] == false
-            is_required = false
-          end
-          opt resource_arg.to_sym, "#{resource_arg} (request body)", required: is_required, type: :string
-        end
-      end
-      discovered_params.each do |k,v|
-        if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
-          method_opts[k] = JSON.parse method_opts[k]
-        end
-      end
-    else
-      banner = "\nThis resource type supports the following methods:\n\n"
-      discovery_document["resources"][resource_arg.pluralize]["methods"].each do |k,v|
-        description = ''
-        description = '  ' + v["description"] if v.include?("description")
-        banner += "   #{sprintf("%20s",k)}#{description}\n"
-      end
-      banner += "\n"
-
-      STDERR.puts banner
-  
-      if not method.nil? and method != '--help' then 
-        Trollop::die "Unknown method #{method.to_s} for command #{resource_arg.to_s}"
-      else
-        exit 255
-      end
-
-    end
-    
-  else
-    banner = "\nThis Arvados instance supports the following resource types:\n\n"
-    discovery_document["resources"].each do |k,v|
-      description = ''
-      if discovery_document["schemas"].include?(k.singularize.capitalize) and 
-         discovery_document["schemas"][k.singularize.capitalize].include?('description') then
-        description = '  ' + discovery_document["schemas"][k.singularize.capitalize]["description"]
-      end
-      banner += "   #{sprintf("%30s",k.singularize)}#{description}\n"
-    end
-    banner += "\n"
-
-    STDERR.puts banner
-
-    if not resource_arg.nil? and resource_arg != '--help' then 
-      Trollop::die "Unknown resource type #{resource_arg.inspect}"
-    else
-      exit 255
-    end
+  resource = ARGV.shift
+  if resource == '--help' or not resource_types.include?(resource)
+    help_resources(discovery_document, resource)
   end
 
-  return resource_arg, method, method_opts, global_opts, ARGV
+  method = ARGV.shift
+  if not (discovery_document["resources"][resource.pluralize]["methods"].
+          include?(method))
+    help_methods(discovery_document, resource, method)
+  end
+
+  discovered_params = discovery_document\
+    ["resources"][resource.pluralize]\
+    ["methods"][method]["parameters"]
+  method_opts = Trollop::options do
+    discovered_params.each do |k,v|
+      opts = Hash.new()
+      opts[:type] = v["type"].to_sym if v.include?("type")
+      if [:datetime, :text, :object, :array].index opts[:type]
+        opts[:type] = :string                       # else trollop bork
+      end
+      opts[:default] = v["default"] if v.include?("default")
+      opts[:default] = v["default"].to_i if opts[:type] == :integer
+      opts[:default] = to_boolean(v["default"]) if opts[:type] == :boolean
+      opts[:required] = true if v.include?("required") and v["required"]
+      description = ''
+      description = '  ' + v["description"] if v.include?("description")
+      opt k.to_sym, description, opts
+    end
+    body_object = discovery_document["resources"][resource.pluralize]["methods"][method]["request"]
+    if body_object and discovered_params[resource].nil?
+      is_required = true
+      if body_object["required"] == false
+        is_required = false
+      end
+      opt resource.to_sym, "#{resource} (request body)", required: is_required, type: :string
+    end
+  end
+  discovered_params.each do |k,v|
+    if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
+      method_opts[k] = JSON.parse method_opts[k]
+    end
+  end
+  return resource, method, method_opts, global_opts, ARGV
 end
 
 resource_schema, method, method_opts, global_opts, remaining_opts = parse_arguments(arvados.discovery_document)
@@ -245,7 +251,11 @@ result = client.execute(:api_method => eval(api_method),
                         :parameters => request_parameters,
                         :body => request_body,
                         :authenticated => false)
-results = JSON.parse result.body
+begin
+  results = JSON.parse result.body
+rescue JSON::ParserError => e
+  abort "Failed to parse server response:\n" + e.to_s
+end
 
 if results["errors"] then
   abort "Error: #{results["errors"][0]}"
@@ -257,6 +267,10 @@ elsif global_opts[:json] then
   puts Oj.dump(results)
 elsif results["items"] and results["kind"].match /list$/i
   results['items'].each do |i| puts i['uuid'] end
+elsif results['uuid'].nil?
+  abort("Response did not include a uuid:\n" +
+        Oj.dump(results, :indent => 1) +
+        "\n")
 else
   puts results['uuid']
 end
