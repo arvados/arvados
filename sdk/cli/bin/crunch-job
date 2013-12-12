@@ -120,9 +120,7 @@ $SIG{'USR2'} = sub
 
 
 my $arv = Arvados->new;
-my $metastream = Warehouse::Stream->new(whc => new Warehouse);
-$metastream->clear;
-$metastream->write_start('log.txt');
+my $metastream;
 
 my $User = $arv->{'users'}->{'current'}->execute;
 
@@ -167,6 +165,10 @@ else
 }
 $job_id = $Job->{'uuid'};
 
+$metastream = Warehouse::Stream->new(whc => new Warehouse);
+$metastream->clear;
+$metastream->name('.');
+$metastream->write_start($job_id . '.log.txt');
 
 
 $Job->{'runtime_constraints'} ||= {};
@@ -1166,9 +1168,14 @@ sub save_meta
   my $m = $metastream;
   $m = $m->copy if $justcheckpoint;
   $m->write_finish;
-  my $loglocator = $m->as_key;
+  my $whc = Warehouse->new;
+  my $loglocator = $whc->store_block ($m->as_string);
+  $arv->{'collections'}->{'create'}->execute('collection' => {
+    'uuid' => $loglocator,
+    'manifest_text' => $m->as_string,
+  });
   undef $metastream if !$justcheckpoint; # otherwise Log() will try to use it
-  Log (undef, "meta key is $loglocator");
+  Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
   $Job->update_attributes('log', $loglocator) if $job_has_uuid;
 }
