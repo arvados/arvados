@@ -120,9 +120,7 @@ $SIG{'USR2'} = sub
 
 
 my $arv = Arvados->new;
-my $metastream = Warehouse::Stream->new(whc => new Warehouse);
-$metastream->clear;
-$metastream->write_start('log.txt');
+my $metastream;
 
 my $User = $arv->{'users'}->{'current'}->execute;
 
@@ -167,6 +165,10 @@ else
 }
 $job_id = $Job->{'uuid'};
 
+$metastream = Warehouse::Stream->new(whc => new Warehouse);
+$metastream->clear;
+$metastream->name('.');
+$metastream->write_start($job_id . '.log.txt');
 
 
 $Job->{'runtime_constraints'} ||= {};
@@ -339,13 +341,13 @@ else
   Log (undef, "Install revision ".$Job->{script_version});
   my $nodelist = join(",", @node);
 
-  # Clean out crunch_tmp/work, crunch_tmp/opt, crunch_tmp/src
+  # Clean out crunch_tmp/work, crunch_tmp/opt, crunch_tmp/src*
 
   my $cleanpid = fork();
   if ($cleanpid == 0)
   {
     srun (["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-	  ['bash', '-c', 'if mount | grep -q $JOB_WORK/; then sudo /bin/umount $JOB_WORK/* 2>/dev/null; fi; sleep 1; rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src']);
+	  ['bash', '-c', 'if mount | grep -q $JOB_WORK/; then sudo /bin/umount $JOB_WORK/* 2>/dev/null; fi; sleep 1; rm -rf $JOB_WORK $CRUNCH_TMP/opt $CRUNCH_TMP/src*']);
     exit (1);
   }
   while (1)
@@ -1166,9 +1168,14 @@ sub save_meta
   my $m = $metastream;
   $m = $m->copy if $justcheckpoint;
   $m->write_finish;
-  my $loglocator = $m->as_key;
+  my $whc = Warehouse->new;
+  my $loglocator = $whc->store_block ($m->as_string);
+  $arv->{'collections'}->{'create'}->execute('collection' => {
+    'uuid' => $loglocator,
+    'manifest_text' => $m->as_string,
+  });
   undef $metastream if !$justcheckpoint; # otherwise Log() will try to use it
-  Log (undef, "meta key is $loglocator");
+  Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
   $Job->update_attributes('log', $loglocator) if $job_has_uuid;
 }
@@ -1344,7 +1351,7 @@ my $repo = $ENV{"CRUNCH_SRC_URL"};
 
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
-if (readlink ("$destdir.commit") eq $commit) {
+if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
     exit 0;
 }
 

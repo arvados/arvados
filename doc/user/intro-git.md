@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Reference: git"
-navorder: 23
+navorder: 24
 ---
 
 # Reference: git

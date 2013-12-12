@@ -162,7 +162,7 @@ The GATK data bundle is available in the collection @d237a90bae3870b3b033aea1e99
 <pre>
 {
  "script_parameters":{
-  "gatk_tbz":"5790482512cf6d5d6dfd50b7fd61e1d1+86",
+  "gatk_tbz":"7e0a277d6d2353678a11f56bab3b13f2+87",
   "gatk_bundle":"d237a90bae3870b3b033aea1e99de4a9+10820",
   ...
  },
@@ -207,7 +207,7 @@ Build and run the "picard":http://picard.sourceforge.net/command-line-overview.s
 
 <div class="offset1">
 
-The module retrieves the picard distribution from Keep, using the job's @picard_zip@ parameter.
+The module retrieves the picard binary distribution from Keep, using the job's @picard_zip@ parameter.
 
 <pre>
 import arvados_picard
@@ -224,7 +224,7 @@ arvados_picard.run(
     stdout=open('out.bam','wb'))
 </pre>
 
-On qr1hi.arvadosapi.com, the source distribution @picard-tools-1.82.zip@ is available in the collection @687f74675c6a0e925dec619cc2bec25f+77@.
+On qr1hi.arvadosapi.com, the binary distribution @picard-tools-1.82.zip@ is available in the collection @687f74675c6a0e925dec619cc2bec25f+77@.
 
 <pre>
 {

@@ -4,7 +4,6 @@ import os
 import re
 import arvados
 import arvados_gatk2
-import arvados_picard
 import arvados_samtools
 from arvados_ipc import *
 

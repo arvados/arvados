@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Reference: Getting an API token"
-navorder: 20
+navorder: 21
 ---
 
 h1. Reference: Getting an API token

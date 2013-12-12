@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Reference: Command line SDK"
-navorder: 21
+navorder: 22
 ---
 
 h1. Reference: Command line SDK
