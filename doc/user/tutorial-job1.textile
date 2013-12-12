@@ -159,12 +159,12 @@ You can access the job output under the *output* column of the _Compute %(rarr)&
 </code></pre>
 </notextile>
 
-* @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.
+* @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.  Because the output of Arvados jobs should be deterministic, the known expected output is <code>880b55fb4470b148a447ff38cacdd952+54+K@qr1hi</code>.
 
 Now you can list the files in the collection:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get _value_of_output_from_arv_job_get_</span>
+<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi</span>
 . 78b268d1e03d87f8270bdee9d5d427c5+61 0:61:md5sum.txt
 </code></pre>
 </notextile>
@@ -179,4 +179,4 @@ This collection consists of the md5sum.txt file.  Use @arv keep get@ to show the
 
 This md5 hash matches the md5 hash which we computed earlier.
 
-This concludes the first tutorial.  In the next tutorial, we will "write script to do the same work.":tutorial-firstscript.html
+This concludes the first tutorial.  In the next tutorial, we will "write a script to compute the hash.":tutorial-firstscript.html

@@ -44,4 +44,3 @@ For your convenience you may add the declarations of @ARVADOS_API_HOST@ and @ARV
 bc. $ echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST" >> ~/.bashrc
 $ echo "export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN" >> ~/.bashrc
 
-You are now ready to go through "Tutorial 1":tutorial-job1.html .

@@ -99,9 +99,17 @@ You should now be able to run your script using Crunch, similar to how we did it
  }
 }
 EOF</span>
-$ <span class="userinput">arv job create --job "$the_job"</span>
+$ <span class="userinput">arv -h job create --job "$the_job"</span>
 {
  ...
-}</code></pre>
+}
+$ <span class="userinput">arv -h job get --uuid _value_of_uuid_from_arv_job_create_</span>
+{
+ ...
+}
+$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt</span>
+44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
+</code></pre>
 </notextile>
 
+Next, "debugging a crunch script.":tutorial-job-debug.html

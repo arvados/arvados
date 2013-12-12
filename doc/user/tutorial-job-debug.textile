@@ -1,168 +1,140 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: Debug a crunch script"
+title: "Tutorial: Debug a Crunch script"
 navorder: 14
 ---
 
-h1. Tutorial: Debug a crunch script
+h1. Tutorial: Debug a Crunch script
 
-The commit-push-submit cycle is too slow for developing and debugging crunch scripts.
+To test changes to a script by running a job, the change must be pushed into @git@, the job queued asynchronously, and the actual execution may be run on any compute server.  As a result, debugging a script can be difficult and time consuming.  This tutorial demonstrates using @arv-crunch-job@ to run your job in your local VM.  This avoids the job queue and allows you to execute the script from your uncomitted git tree.
 
-Get quicker turnaround times by running jobs in your VM (rather than submitting to the job queue) using your working git tree (rather than committing and pushing every little change).
+*This tutorial assumes that you are "logged into an Arvados VM instance":ssh-access.html#login, and have a "working environment.":check-environment.html*
 
-h3. Prerequisites
+This tutorial uses _you_ to denote your username.  Replace _you_ with your user name in all the following examples.
 
-* Log in to a VM (see "Setting up SSH access":ssh-access.html)
-* Check out your git tree (see "Intro: git":intro-git.html)
-* Set up your API token environment variables (see "Getting an API token":api-tokens.html)
+h2. Create a new script
 
-If everything is set up correctly, the command @arv -h user current@ will display your account information.
+Change to your git directory and create a new script in "crunch_scripts/".
 
-h3. Create a script
+<notextile>
+<pre><code>$ <span class="userinput">cd you/crunch_scripts</span>
+$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
+#!/usr/bin/env python
 
-Change to your git repository working tree and make sure the @crunch_scripts@ directory exists.
+print "hello world"
+EOF</span>
+$ <span class="userinput">chmod +x hello-world.py</span>
+</code></pre>
+</notextile>
 
-<pre>
-yourname@shell:~$ cd yourrepo
-yourname@shell:~/yourrepo$ mkdir -p crunch_scripts
-</pre>
+h2. Using arv-crunch-job to run the job in your VM
 
-<!-- _Should mention somewhere that it *must* be in a directory called
-crunch_scripts_ -->
+Instead of a git commit hash, we provide the path to the directory in the "script_version" parameter.  The script specified in "script" will actually be searched for in the "crunch_scripts/" subdirectory of the directory specified "script_version".  Although we are running the script locally, the script still requires access to the Arvados API server and Keep storage service, and the job will be recorded on then Arvados Workbench job history.
 
-{% include notebox-begin.html %}
+<notextile>
+<pre><code>$ <span class="userinput">read -rd $'\000' the_job <<'EOF'
+{
+ "script":"hello-world.py",
+ "script_version":"/home/you/you",
+ "script_parameters":{}
+}
+EOF</span>
+$ <span class="userinput">arv-crunch-job --job "$the_job"</span>
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  check slurm allocation
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  node localhost - 1 slots
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  start
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  script hello-world.py
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  script_version /home/tetron/tetron
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  script_parameters {}
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  runtime_constraints {"max_tasks_per_node":0}
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  start level 0
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  status: 0 done, 0 running, 1 todo
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 job_task qr1hi-ot0gb-4zdajby8cjmlguh
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 child 29834 started on localhost.1
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  status: 0 done, 1 running, 0 todo
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 child 29834 on localhost.1 exit 0 signal 0 success=
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 failure (#1, permanent) after 0 seconds
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 output 
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  Every node has failed -- giving up on this round
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  wait for last 0 children to finish
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  status: 0 done, 0 running, 0 todo
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  Freeze not implemented
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  collate
+2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  output d41d8cd98f00b204e9800998ecf8427e+0
+2013-12-12_21:36:44 qr1hi-8i9sb-okzukfzkpbrnhst 29827  meta key is c00bfbd58e6f58ce3bebdd47f745a70f+1857+K@qr1hi
+</code></pre>
+</notextile>
 
-The process described here should work regardless of whether @yourrepo@ contains a git repository. But normally you would only ever edit code in a git tree -- especially crunch scripts, which can't be used to run regular Arvados jobs until they're committed and pushed.
+This is the line of interest:
 
-{% include notebox-end.html %}
+bc. 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
 
+The script's printout is captured in the log, which is useful for print statement debugging.  However, although it the script returned a status code of 0 (success), the job failed.  Why?  For a job to complete successfully scripts must explicitly add their output to Keep, and then tell Arvados about it.  Here is a second try:
 
-Create a new crunch script called @hello-world@ (say, @edit crunch_scripts/hello-world@).
-
-<pre>
+<notextile>
+<pre><code>$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
 #!/usr/bin/env python
 
 import arvados
 
-print "hello world"
-</pre>
-
-Save it.
-
-h3. Run the job in your VM.
-
-Instead of a git commit hash, we provide the path to the working copy in the _script_version_ parameter.
-
-<pre>
-read -rd $'\000' the_job <<'EOF'; arv-crunch-job --job "$the_job"
-{
- "script":"bug-factory",
- "script_version":"/home/yourname/yourrepo"
-}
-EOF
-</pre>
-
-You should see:
-
-<pre>
-No script_parameters specified at arv-crunch-job line 156
-</pre>
-
-Let's try again.
-
-<pre>
-read -rd $'\000' the_job <<'EOF'; arv-crunch-job --job "$the_job"
-{
- "script":"hello-world",
- "script_version":"/home/yourname/yourrepo",
- "script_parameters":{}
-}
-EOF
-</pre>
-
-You should see several attempts to run your script, each ending in tragedy:
-
-<pre>
-2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 stderr bash: /home/yourname/yourrepo/crunch_scripts/hello-world: Permission denied
-2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 stderr bash: line 0: exec: /home/yourname/yourrepo/crunch_scripts/hello-world: cannot execute: Permission denied
-2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 child 12323 on localhost.1 exit 32256 success=false
-2013-09-24_23:14:38 qr1hi-8i9sb-s1ngps1dznzrn8j 12311 0 failure in 1 seconds
-</pre>
-
-Indeed, @hello-world@ is not executable. Fix it:
-
-<pre>
-chmod +x crunch_scripts/hello-world
-</pre>
-
-Try again.
-
-This time, the job will still fail, but "hello world" will appear in the log.
-
-<pre>
-2013-09-26_02:15:35 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 job_task qr1hi-ot0gb-c3x9vcztahzdcol
-2013-09-26_02:15:35 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 child 16249 started on localhost.1
-2013-09-26_02:15:36 qr1hi-8i9sb-fbpcg2conrhnlxv 16179  status: 0 done, 1 running, 0 todo
-2013-09-26_02:15:36 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 stderr hello world
-2013-09-26_02:15:37 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 child 16249 on localhost.1 exit 0 success=false
-2013-09-26_02:15:37 qr1hi-8i9sb-fbpcg2conrhnlxv 16179 0 failure in 1 seconds
-</pre>
-
-There are two problems here:
-
-1. The string "hello world" should be stored as the job's output instead of noted in the job log as "stderr".
-2. The task exited 0, but was recorded as a failure.
-
-The job should work properly after we fix these two problems.
-
-h3. Store output as a collection
-
-Replace the @print "hello world"@ line with the following code.
-
-<pre>
+# Create a new collection
 out = arvados.CollectionWriter()
+
+# Set the name of the file in the collection to write to
 out.set_current_file_name('hello.txt')
+
+# Actually output our text
 out.write('hello world')
+
+# Commit the collection to Keep
 out_collection = out.finish()
-</pre>
 
-<!-- _Explain better_ -->
-
-The return value of @out.finish()@ is the content address (hash) of a collection stored in Keep.
-
-h3. Record successful completion
-
-Append the following line.
-
-<pre>
+# Tell Arvados which Keep object is our output
 arvados.current_task().set_output(out_collection)
-</pre>
 
-The @set_output()@ method tells Arvados that
-* The hash specified by the @out_collection@ parameter is the output of this task, and
-* This task completed successfully.
-
-<!-- _Putting this in a separate section from the code blob above is
-confusing!_ -->
-
-h3. Run the working script.
-
-<pre>
-read -rd $'\000' the_job <<'EOF'; arv-crunch-job --job "$the_job"
+# Done!
+EOF</span>
+$ <span class="userinput">chmod +x hello-world.py</span>
+$ <span class="userinput">read -rd $'\000' the_job <<'EOF'
 {
- "script":"hello-world",
- "script_version":"/home/yourname/yourrepo",
+ "script":"hello-world.py",
+ "script_version":"/home/you/you",
  "script_parameters":{}
 }
-EOF
-</pre>
+EOF</span>
+$ <span class="userinput">arv-crunch-job --job "$the_job"</span>
+2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  check slurm allocation
+2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  node localhost - 1 slots
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  start
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script hello-world.py
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script_version /home/tetron/tetron
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script_parameters {}
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  runtime_constraints {"max_tasks_per_node":0}
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  start level 0
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  status: 0 done, 0 running, 1 todo
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578 0 job_task qr1hi-ot0gb-u8g594ct0wt7f3f
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578 0 child 31585 started on localhost.1
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  status: 0 done, 1 running, 0 todo
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578 0 child 31585 on localhost.1 exit 0 signal 0 success=true
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578 0 success in 1 seconds
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578 0 output 576c44d762ba241b0a674aa43152b52a+53
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  wait for last 0 children to finish
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  status: 1 done, 0 running, 0 todo
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  Freeze not implemented
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  collate
+2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  output 576c44d762ba241b0a674aa43152b52a+53
+2013-12-12_21:57:03 qr1hi-8i9sb-79260ykfew5trzl 31578  finish
+2013-12-12_21:57:04 qr1hi-8i9sb-79260ykfew5trzl 31578  meta key is 9f937693334d0c9234ccc1f808ee7117+1761+K@qr1hi
+</code></pre>
+</notextile>
 
-If everything worked correctly, the end of the log in your terminal should look like this.
+The job succeeded, with output in Keep object @576c44d762ba241b0a674aa43152b52a+53@.  Let's look at our output:
 
-<pre>
-2013-09-26_02:27:07 qr1hi-8i9sb-xsgms0qsf4ztm3l 17149  output dd202dc7b1297aa221c9160455ba43ac+61+K@qr1hi
-2013-09-26_02:27:08 qr1hi-8i9sb-xsgms0qsf4ztm3l 17149  finish
-2013-09-26_02:27:09 qr1hi-8i9sb-xsgms0qsf4ztm3l 17149  meta key is c186e6555b51ac6974d951cd2f387722+1764+K@qr1hi
-</pre>
+<notextile>
+<pre><code>$ <span class="userinput">arv keep get 576c44d762ba241b0a674aa43152b52a+53/hello.txt</span>
+hello world
+</code></pre>
+</notextile>
 
