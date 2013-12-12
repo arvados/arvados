@@ -207,7 +207,7 @@ Build and run the "picard":http://picard.sourceforge.net/command-line-overview.s
 
 <div class="offset1">
 
-The module retrieves the picard distribution from Keep, using the job's @picard_zip@ parameter.
+The module retrieves the picard binary distribution from Keep, using the job's @picard_zip@ parameter.
 
 <pre>
 import arvados_picard
@@ -224,7 +224,7 @@ arvados_picard.run(
     stdout=open('out.bam','wb'))
 </pre>
 
-On qr1hi.arvadosapi.com, the source distribution @picard-tools-1.82.zip@ is available in the collection @687f74675c6a0e925dec619cc2bec25f+77@.
+On qr1hi.arvadosapi.com, the binary distribution @picard-tools-1.82.zip@ is available in the collection @687f74675c6a0e925dec619cc2bec25f+77@.
 
 <pre>
 {
