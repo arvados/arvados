@@ -162,7 +162,7 @@ The GATK data bundle is available in the collection @d237a90bae3870b3b033aea1e99
 <pre>
 {
  "script_parameters":{
-  "gatk_tbz":"5790482512cf6d5d6dfd50b7fd61e1d1+86",
+  "gatk_tbz":"7e0a277d6d2353678a11f56bab3b13f2+87",
   "gatk_bundle":"d237a90bae3870b3b033aea1e99de4a9+10820",
   ...
  },
