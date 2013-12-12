@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Tutorial: Adding Data to Keep"
-navorder: 21
+navorder: 20
 ---
 
 h1. Tutorial: Adding Data to Keep
