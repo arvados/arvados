@@ -1,0 +1,49 @@
+---
+layout: default
+navsection: api
+title: "Resource: Collection"
+navorder: 101
+---
+
+h1. Collection
+
+A **Collection** represents...
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/collection@
+
+h2. Creation
+
+h3. Prerequisites
+
+Prerequisites for creating a Collection.
+
+h3. Side effects
+
+Side effects of creating a Collection.
+
+h2. Resources
+
+Each Collection has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|locator|string|||
+|owner_uuid|string|||
+|created_at|datetime|||
+|modified_by_client_uuid|string|||
+|modified_by_user_uuid|string|||
+|modified_at|datetime|||
+|portable_data_hash|string|||
+|name|string|||
+|redundancy|integer|||
+|redundancy_confirmed_by_client_uuid|string|||
+|redundancy_confirmed_at|datetime|||
+|redundancy_confirmed_as|integer|||
+|updated_at|datetime|||
+|uuid|string|||
+|manifest_text|text|||

@@ -30,7 +30,13 @@ h2. Resources
 Each KeepDisk has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|uuid|string|||
+|owner_uuid|string|||
+|modified_by_client_uuid|string|||
+|modified_by_user_uuid|string|||
+|modified_at|datetime|||
 |ping_secret|string|||
 |node_uuid|string|||
 |filesystem_uuid|string|||
@@ -41,6 +47,7 @@ table(table table-bordered table-condensed).
 |last_read_at|datetime|||
 |last_write_at|datetime|||
 |last_ping_at|datetime|||
+|created_at|datetime|||
 |updated_at|datetime|||
 |service_host|string|||
 |service_port|integer|||

@@ -30,10 +30,17 @@ h2. Resources
 Each AuthorizedKey has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|uuid|string|||
+|owner_uuid|string|||
+|modified_by_client_uuid|string|||
+|modified_by_user_uuid|string|||
+|modified_at|datetime|||
 |name|string|||
 |key_type|string|||
 |authorized_user_uuid|string|||
 |public_key|text|||
 |expires_at|datetime|||
+|created_at|datetime|||
 |updated_at|datetime|||

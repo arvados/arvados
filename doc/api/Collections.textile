@@ -33,7 +33,7 @@ h2. Resource
 Each collection has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|*Property name*|*Value*|*Description*|*Example*|
 |locator|string|||
 |portable_data_hash|string|||
 |name|string|||
