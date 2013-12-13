@@ -126,7 +126,7 @@ class Arvados::V1::JobsController < ApplicationController
     if client_accepts_plain_text_stream
       self.response.headers['Last-Modified'] = Time.now.ctime.to_s
       self.response_body = LogStreamer.new @object, {
-        buffer_size: (params[:buffer_size] || 2**13)
+        buffer_size: (params[:buffer_size].to_i rescue 2**13)
       }
     else
       render json: {
