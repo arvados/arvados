@@ -39,9 +39,8 @@ class Arvados
       ENV['ARVADOS_API_TOKEN'] or
       raise "#{$0}: no :api_token or ENV[ARVADOS_API_TOKEN] provided."
 
-    @suppress_ssl_warnings = opts[:suppress_ssl_warnings] || false
-
-    if @suppress_ssl_warnings
+    if (opts[:api_host] ? opts[:suppress_ssl_warnings] :
+        ENV['ARVADOS_API_HOST_INSECURE'])
       suppress_warnings do
         OpenSSL::SSL.const_set 'VERIFY_PEER', OpenSSL::SSL::VERIFY_NONE
       end
