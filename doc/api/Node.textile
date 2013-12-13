@@ -1,0 +1,48 @@
+---
+layout: default
+navsection: api
+title: "Resource: Node"
+navorder: 101
+---
+
+h1. Node
+
+A **Node** represents...
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/node@
+
+h2. Creation
+
+h3. Prerequisites
+
+Prerequisites for creating a Node.
+
+h3. Side effects
+
+Side effects of creating a Node.
+
+h2. Resources
+
+Each Node has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|uuid|string|||
+|owner_uuid|string|||
+|created_at|datetime|||
+|modified_by_client_uuid|string|||
+|modified_by_user_uuid|string|||
+|modified_at|datetime|||
+|slot_number|integer|||
+|hostname|string|||
+|domain|string|||
+|ip_address|string|||
+|first_ping_at|datetime|||
+|last_ping_at|datetime|||
+|info|Hash|||
+|updated_at|datetime|||

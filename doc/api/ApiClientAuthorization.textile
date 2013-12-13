@@ -1,0 +1,45 @@
+---
+layout: default
+navsection: api
+title: "Resource: ApiClientAuthorization"
+navorder: 101
+---
+
+h1. ApiClientAuthorization
+
+A **ApiClientAuthorization** represents...
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/api_client_authorization@
+
+h2. Creation
+
+h3. Prerequisites
+
+Prerequisites for creating a ApiClientAuthorization.
+
+h3. Side effects
+
+Side effects of creating a ApiClientAuthorization.
+
+h2. Resources
+
+Each ApiClientAuthorization has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|api_token|string|||
+|api_client_id|integer|||
+|user_id|integer|||
+|created_by_ip_address|string|||
+|last_used_by_ip_address|string|||
+|last_used_at|datetime|||
+|expires_at|datetime|||
+|created_at|datetime|||
+|updated_at|datetime|||
+|default_owner_uuid|string|||
+|scopes|Array|||
