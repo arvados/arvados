@@ -20,6 +20,7 @@ h2. Attributes of resources
 table(table table-bordered table-condensed).
 |*Attribute name*|*Value*|*Description*|*Example*|
 |uuid|string|universally unique object identifier|@mk2qn-4zz18-w3anr2hk2wgfpuo@|
+|href|string|a URL that can be used to address this resource||
 |kind|string|@arvados#{resource_type}@|@arvados#collection@|
 |etag|string|The ETag[1] of the resource|@1xlmizzjq7wro3dlb2dirf505@|
 |self_link|string|||

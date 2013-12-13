@@ -1,0 +1,48 @@
+---
+layout: default
+navsection: api
+title: "Resource: Link"
+navorder: 101
+---
+
+h1. Link
+
+A **Link** represents...
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/link@
+
+h2. Creation
+
+h3. Prerequisites
+
+Prerequisites for creating a Link.
+
+h3. Side effects
+
+Side effects of creating a Link.
+
+h2. Resources
+
+Each Link has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|uuid|string|||
+|owner_uuid|string|||
+|created_at|datetime|||
+|modified_by_client_uuid|string|||
+|modified_by_user_uuid|string|||
+|modified_at|datetime|||
+|tail_uuid|string|||
+|tail_kind|string|||
+|link_class|string|||
+|name|string|||
+|head_uuid|string|||
+|properties|Hash|||
+|updated_at|datetime|||
+|head_kind|string|||

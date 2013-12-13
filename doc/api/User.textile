@@ -1,0 +1,49 @@
+---
+layout: default
+navsection: api
+title: "Resource: User"
+navorder: 101
+---
+
+h1. User
+
+A **User** represents...
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/user@
+
+h2. Creation
+
+h3. Prerequisites
+
+Prerequisites for creating a User.
+
+h3. Side effects
+
+Side effects of creating a User.
+
+h2. Resources
+
+Each User has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|uuid|string|||
+|owner_uuid|string|||
+|created_at|datetime|||
+|modified_by_client_uuid|string|||
+|modified_by_user_uuid|string|||
+|modified_at|datetime|||
+|email|string|||
+|first_name|string|||
+|last_name|string|||
+|identity_url|string|||
+|is_admin|boolean|||
+|prefs|Hash|||
+|updated_at|datetime|||
+|default_owner_uuid|string|||
+|is_active|boolean|||

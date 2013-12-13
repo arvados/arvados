@@ -1,0 +1,39 @@
+---
+layout: default
+navsection: api
+title: "Resource: Commit"
+navorder: 101
+---
+
+h1. Commit
+
+A **Commit** represents...
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/commit@
+
+h2. Creation
+
+h3. Prerequisites
+
+Prerequisites for creating a Commit.
+
+h3. Side effects
+
+Side effects of creating a Commit.
+
+h2. Resources
+
+Each Commit has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Property name*|*Value*|*Description*|*Example*|
+|id|integer|||
+|repository_name|string|||
+|sha1|string|||
+|message|string|||
+|created_at|datetime|||
+|updated_at|datetime|||
