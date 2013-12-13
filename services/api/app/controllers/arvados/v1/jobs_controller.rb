@@ -116,7 +116,7 @@ class Arvados::V1::JobsController < ApplicationController
 
   def self._log_tail_follow_requires_parameters
     {
-      buffer_size: {type: 'integer', required: false}
+      buffer_size: {type: 'integer', required: false, default: 2**13}
     }
   end
   def log_tail_follow
