@@ -25,6 +25,41 @@ class TestArvPut < Minitest::Test
     assert_match /^usage:/, out
   end
 
+  def test_raw_stdin
+    out, err = capture_subprocess_io do
+      r,w = IO.pipe
+      wpid = fork do
+        r.close
+        w << 'foo'
+      end
+      w.close
+      assert_equal true, arv_put('--raw', {in: r})
+      r.close
+      Process.waitpid wpid
+    end
+    $stderr.write err
+    assert_match '', err
+    assert_equal "acbd18db4cc2f85cedef654fccc4a4d8+3\n", out
+  end
+
+  def test_raw_file
+    out, err = capture_subprocess_io do
+      assert_equal true, arv_put('--raw', './tmp/foo')
+    end
+    $stderr.write err
+    assert_match '', err
+    assert_equal "acbd18db4cc2f85cedef654fccc4a4d8+3\n", out
+  end
+
+  def test_raw_empty_file
+    out, err = capture_subprocess_io do
+      assert_equal true, arv_put('--raw', './tmp/empty_file')
+    end
+    $stderr.write err
+    assert_match '', err
+    assert_equal "d41d8cd98f00b204e9800998ecf8427e+0\n", out
+  end
+
   def test_filename_arg_with_directory
     out, err = capture_subprocess_io do
       assert_equal(false, arv_put('--filename', 'foo', './tmp/empty_dir/.'),
@@ -116,16 +151,48 @@ class TestArvPut < Minitest::Test
     assert_equal foo_manifest_locator+"\n", out
   end
 
+  def test_read_from_implicit_stdin_implicit_manifest
+    test_read_from_stdin_implicit_manifest(specify_stdin_as=nil,
+                                           expect_filename='stdin')
+  end
+
+  def test_read_from_dev_stdin_implicit_manifest
+    test_read_from_stdin_implicit_manifest(specify_stdin_as='/dev/stdin')
+  end
+
+  def test_read_from_stdin_implicit_manifest(specify_stdin_as='-',
+                                             expect_filename=nil)
+    expect_filename = expect_filename || specify_stdin_as.split('/').last
+    out, err = capture_subprocess_io do
+      r,w = IO.pipe
+      wpid = fork do
+        r.close
+        w << 'foo'
+      end
+      w.close
+      args = []
+      args.push specify_stdin_as if specify_stdin_as
+      assert_equal true, arv_put(*args, { in: r })
+      r.close
+      Process.waitpid wpid
+    end
+    $stderr.write err
+    assert_match '', err
+    assert_equal(foo_manifest_locator(expect_filename)+"\n",
+                 out)
+  end
+
   protected
   def arv_put(*args)
     system ['./bin/arv-put', 'arv-put'], *args
   end
 
-  def foo_manifest
-    ". #{Digest::MD5.hexdigest('foo')}+3 0:3:foo\n"
+  def foo_manifest(filename='foo')
+    ". #{Digest::MD5.hexdigest('foo')}+3 0:3:#{filename}\n"
   end
 
-  def foo_manifest_locator
-    Digest::MD5.hexdigest(foo_manifest) + "+#{foo_manifest.length}"
+  def foo_manifest_locator(filename='foo')
+    Digest::MD5.hexdigest(foo_manifest(filename)) +
+      "+#{foo_manifest(filename).length}"
   end
 end

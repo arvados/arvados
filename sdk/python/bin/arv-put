@@ -44,9 +44,7 @@ group.add_argument('--manifest', action='store_true',
                    help="""
 Store the file data and resulting manifest in Keep, save a Collection
 object in Arvados, and display the manifest locator (Collection uuid)
-on stdout. This is the default behavior if more than one path argument
-is given, or the path given is a directory, or a --filename argument
-is given.
+on stdout. This is the default behavior.
 """)
 group.add_argument('--as-raw', action='store_true', dest='raw',
                    help="""
@@ -55,9 +53,8 @@ Synonym for --raw.
 group.add_argument('--raw', action='store_true',
                    help="""
 Store the file content and display the data block locators on stdout,
-separated by spaces, with a trailing newline. Do not store a
-manifest. This is the default behavior when reading data from a single
-file or standard input.
+separated by commas, with a trailing newline. Do not store a
+manifest.
 """)
 parser.add_argument('--use-filename', type=str, default=None, dest='filename',
                     help="""
@@ -99,10 +96,6 @@ if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
 --filename argument cannot be used when storing a directory or
 multiple files.
 """)
-elif not args.filename and not args.stream and not args.manifest:
-    # When reading from a single non-directory, and no --filename is
-    # given, default to writing raw blocks rather than a manifest.
-    args.raw = True
 
 # Turn on --progress by default if stderr is a tty.
 if (not (args.batch_progress or args.no_progress)
@@ -154,7 +147,10 @@ elif args.batch_progress:
 else:
     writer = arvados.CollectionWriter()
 
-args.paths = [('/dev/stdin' if p=='-' else p) for p in args.paths]
+if args.paths == ['-']:
+    args.paths = ['/dev/stdin']
+    if not args.filename:
+        args.filename = '-'
 
 # Walk the given directory trees and stat files, adding up file sizes,
 # so we can display progress as percent
