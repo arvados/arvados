@@ -24,6 +24,8 @@ from apiclient.discovery import build
 if 'ARVADOS_DEBUG' in os.environ:
     logging.basicConfig(level=logging.DEBUG)
 
+EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
+
 class errors:
     class SyntaxError(Exception):
         pass
@@ -542,8 +544,8 @@ class StreamFileReader(object):
             yield data
     def as_manifest(self):
         if self.size() == 0:
-            return ("%s d41d8cd98f00b204e9800998ecf8427e+0 0:0:%s\n"
-                    % (self._stream.name(), self.name()))
+            return ("%s %s 0:0:%s\n"
+                    % (self._stream.name(), EMPTY_BLOCK_LOCATOR, self.name()))
         return string.join(self._stream.tokens_for_range(self._pos, self._size),
                            " ") + "\n"
 
@@ -799,6 +801,8 @@ class CollectionWriter(object):
                 "Cannot finish an unnamed stream (%d bytes in %d files)" %
                 (self._current_stream_length, len(self._current_stream_files)))
         else:
+            if len(self._current_stream_locators) == 0:
+                self._current_stream_locators += [EMPTY_BLOCK_LOCATOR]
             self._finished_streams += [[self._current_stream_name,
                                        self._current_stream_locators,
                                        self._current_stream_files]]
@@ -817,11 +821,8 @@ class CollectionWriter(object):
             if not re.search(r'^\.(/.*)?$', stream[0]):
                 manifest += './'
             manifest += stream[0]
-            if len(stream[1]) == 0:
-                manifest += " d41d8cd98f00b204e9800998ecf8427e+0"
-            else:
-                for locator in stream[1]:
-                    manifest += " %s" % locator
+            for locator in stream[1]:
+                manifest += " %s" % locator
             for sfile in stream[2]:
                 manifest += " %d:%d:%s" % (sfile[0], sfile[1], sfile[2])
             manifest += "\n"
@@ -1046,7 +1047,7 @@ class KeepClient(object):
         if not r:
             raise errors.NotFoundError(
                 "Invalid data locator: '%s'" % locator)
-        if r.group(0) == 'd41d8cd98f00b204e9800998ecf8427e':
+        if r.group(0) == EMPTY_BLOCK_LOCATOR.split('+')[0]:
             return ''
         with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], r.group(0)), 'r') as f:
             return f.read()
