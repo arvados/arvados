@@ -9,6 +9,13 @@ h1. Welcome to Arvados!
 
 This guide is intended to introduce new users to the Arvados system.  It covers initial configuration required to use the system and then presents several tutorial on using Arvados to do data processing.
 
+This user guide introduces how to use the major components of Arvados.  These are:
+
+* Keep: Content-addressable cluster file system designed for robust storage of very large files, such as whole genome sequences
+* Crunch: Cluster compute engine designed for genomic analysis, e.g. alignment, variant calls
+* Metadata Database: Information about the genomic data stored in Keep, such as genomic traits, human subjects
+* Workbench: Web interface to Arvados components
+
 h2. Prerequisites
 
 To get the most value out of this guide, you should be comfortable with the following:

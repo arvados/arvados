@@ -5,7 +5,7 @@ title: "Debug a Crunch script"
 navorder: 114
 ---
 
-h1. Tutorial: Debug a Crunch script
+h1. Tutorial: Debugging a Crunch script
 
 To test changes to a script by running a job, the change must be pushed into @git@, the job queued asynchronously, and the actual execution may be run on any compute server.  As a result, debugging a script can be difficult and time consuming.  This tutorial demonstrates using @arv-crunch-job@ to run your job in your local VM.  This avoids the job queue and allows you to execute the script from your uncomitted git tree.
 

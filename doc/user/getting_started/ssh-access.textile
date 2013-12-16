@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: Accessing an Arvados VM
+title: Accessing an Arvados VM over ssh
 navorder: 2
 ---
 
-h1. Accessing an Arvados Virtual Machine
+h1. Accessing an Arvados Virtual Machine over ssh
 
 Arvados requires a public @ssh@ key in order to securely log in to an Arvados VM instance, or to access an Arvados @git@ repository.
 

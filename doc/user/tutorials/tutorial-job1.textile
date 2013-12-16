@@ -11,12 +11,12 @@ This tutorial introduces the concepts and use of the Crunch job system using the
 
 *This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
 
-In the previous section, we downloaded a file from Keep and computed the md5 hash of the complete file.  While straightforward, there are several obvious drawbacks to this approach:
+In "retrieving data using Keep,":tutorial-keep.html we downloaded a file from Keep and did some computation with it (specifically, computing the md5 hash of the complete file).  While a straightforward way to accomplish a computational task, there are several obvious drawbacks to this approach:
 * Large files require significant time to download.
 * Very large files may exceed the scratch space of the local disk.
 * We are only able to use the local CPU to process the file.
 
-The Arvados "crunch" framework is designed to support processing very large data batches (gigabytes to terabytes) efficiently, and provides the following benefits:
+The Arvados "Crunch" framework is designed to support processing very large data batches (gigabytes to terabytes) efficiently, and provides the following benefits:
 * Increase concurrency by running tasks asynchronously, using many CPUs and network interfaces at once (especially beneficial for CPU-bound and I/O-bound tasks respectively).
 * Track inputs, outputs, and settings so you can verify that the inputs, settings, and sequence of programs you used to arrive at an output is really what you think it was.
 * Ensure that your programs and workflows are repeatable with different versions of your code, OS updates, etc.
@@ -53,23 +53,23 @@ Use @arv job create@ to actually submit the job.  It should print out a JSON obj
 <notextile>
 <pre><code>$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
 {
- "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-xxxxxxxxxxxxxxx",
+ "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-1pm1t02dezhupss",
  "kind":"arvados#job",
- "etag":"aulvmdxezwxo4zrw15gz1v7x3",
- "uuid":"qr1hi-8i9sb-xxxxxxxxxxxxxxx",
+ "etag":"ax3cn7w9whq2hdh983yxvq09p",
+ "uuid":"qr1hi-8i9sb-1pm1t02dezhupss",
  "owner_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
- "created_at":"2013-12-10T17:07:08Z",
+ "created_at":"2013-12-16T20:44:32Z",
  "modified_by_client_uuid":"qr1hi-ozdt8-obw7foaks3qjyej",
  "modified_by_user_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
- "modified_at":"2013-12-10T17:07:08Z",
- "updated_at":"2013-12-10T17:07:08Z",
+ "modified_at":"2013-12-16T20:44:32Z",
+ "updated_at":"2013-12-16T20:44:33Z",
  "submit_id":null,
  "priority":null,
  "script":"hash",
  "script_parameters":{
   "input":"33a9f3842b01ea3fdf27cc582f5ea2af"
  },
- "script_version":"d3b10812b443dcf0189c1c432483bf7ac06507fe",
+ "script_version":"d9cd657b733d578ac0d2167dd75967aa4f22e0ac",
  "cancelled_at":null,
  "cancelled_by_client_uuid":null,
  "cancelled_by_user_uuid":null,
@@ -85,7 +85,7 @@ Use @arv job create@ to actually submit the job.  It should print out a JSON obj
  "dependencies":[
   "33a9f3842b01ea3fdf27cc582f5ea2af"
  ],
- "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-xxxxxxxxxxxxxxx/log_tail_follow"
+ "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-1pm1t02dezhupss/log_tail_follow"
 }
 </code></pre>
 </notextile>
@@ -95,7 +95,7 @@ The job is new queued and will start running as soon as it reaches the front of 
  * @"uuid"@ is the unique identifier for this specific job
  * @"script_version"@ is the actual revision of the script used.  This is useful if the version was described using the "repository:branch" format.
 
-h3. Monitor job progress
+h2. Monitor job progress
 
 Go to Workbench, and use the menu to navigate to _Compute %(rarr)&rarr;% Jobs_. The job you submitted can be identified by the *uuid* row, which will match the "uuid" field of the JSON object returned when the job was created.
 
@@ -107,40 +107,40 @@ notextile. <pre><code>$ <span class="userinput">arv job log_tail_follow --uuid q
 
 This will print out the last several lines of the log for that job.
 
-h3. Inspect the job output
+h2. Inspect the job output
 
 You can access the job output under the *output* column of the _Compute %(rarr)&rarr;% Jobs_ page.  Alternately, you can use @arv job get@ to access a JSON object describing the output:
 
 <notextile>
 <pre><code>$ <span class="userinput">arv -h job get --uuid qr1hi-8i9sb-xxxxxxxxxxxxxxx</span>
 {
- "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-zs6d9pxkr0vk175",
+ "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-1pm1t02dezhupss",
  "kind":"arvados#job",
- "etag":"eoe99lw7rnqxo7j29fh53hz",
- "uuid":"qr1hi-8i9sb-zs6d9pxkr0vk175",
+ "etag":"1bk98tdj0qipjy0rvrj03ta5r",
+ "uuid":"qr1hi-8i9sb-1pm1t02dezhupss",
  "owner_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
- "created_at":"2013-12-10T17:23:26Z",
+ "created_at":"2013-12-16T20:44:32Z",
  "modified_by_client_uuid":null,
  "modified_by_user_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
- "modified_at":"2013-12-10T17:23:45Z",
- "updated_at":"2013-12-10T17:23:45Z",
+ "modified_at":"2013-12-16T20:44:55Z",
+ "updated_at":"2013-12-16T20:44:55Z",
  "submit_id":null,
  "priority":null,
  "script":"hash",
  "script_parameters":{
   "input":"33a9f3842b01ea3fdf27cc582f5ea2af"
  },
- "script_version":"0a8c7c6fce7a9667ee42c1984a845100f51906a2",
+ "script_version":"d9cd657b733d578ac0d2167dd75967aa4f22e0ac",
  "cancelled_at":null,
  "cancelled_by_client_uuid":null,
  "cancelled_by_user_uuid":null,
- "started_at":"2013-12-10T17:23:29Z",
- "finished_at":"2013-12-10T17:23:44Z",
+ "started_at":"2013-12-16T20:44:36Z",
+ "finished_at":"2013-12-16T20:44:53Z",
  "output":"880b55fb4470b148a447ff38cacdd952+54+K@qr1hi",
  "success":true,
  "running":false,
  "is_locked_by_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
- "log":"f760f3dd3105103e058a043310f7e72b+3028+K@qr1hi",
+ "log":"2afdc6c8b67372ffd22d8ce89d35411f+91+K@qr1hi",
  "runtime_constraints":{},
  "tasks_summary":{
   "done":2,
@@ -166,7 +166,7 @@ Now you can list the files in the collection:
 </code></pre>
 </notextile>
 
-This collection consists of the md5sum.txt file.  Use @arv keep get@ to show the contents of the md5sum.txt file:
+This collection consists of the @md5sum.txt@ file.  Use @arv keep get@ to show the contents of the @md5sum.txt@ file:
 
 <notextile>
 <pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt</span>
@@ -175,5 +175,57 @@ This collection consists of the md5sum.txt file.  Use @arv keep get@ to show the
 </notextile>
 
 This md5 hash matches the md5 hash which we computed earlier.
+
+h2. The job log
+
+When the job completes, you can access the job log.  The keep identifier listed in the @"log"@ field from @arv job get@ specifies a collection.  You can list the files in the collection:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv keep ls 2afdc6c8b67372ffd22d8ce89d35411f+91+K@qr1hi</span>
+qr1hi-8i9sb-1pm1t02dezhupss.log.txt
+</code></pre>
+</notextile>
+
+The log collection consists of one log file named with the job id.  You can access it using @arv keep get@:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv keep get 2afdc6c8b67372ffd22d8ce89d35411f+91+K@qr1hi/qr1hi-8i9sb-1pm1t02dezhupss.log.txt</span>
+2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  check slurm allocation
+2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  node compute13 - 8 slots
+2013-12-16_20:44:36 qr1hi-8i9sb-1pm1t02dezhupss 7575  start
+2013-12-16_20:44:36 qr1hi-8i9sb-1pm1t02dezhupss 7575  Install revision d9cd657b733d578ac0d2167dd75967aa4f22e0ac
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  Clean-work-dir exited 0
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  Install exited 0
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script hash
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script_version d9cd657b733d578ac0d2167dd75967aa4f22e0ac
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script_parameters {"input":"33a9f3842b01ea3fdf27cc582f5ea2af"}
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  runtime_constraints {"max_tasks_per_node":0}
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  start level 0
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 0 done, 0 running, 1 todo
+2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 job_task qr1hi-ot0gb-23c1k3kwrf8da62
+2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 child 7681 started on compute13.1
+2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 0 done, 1 running, 0 todo
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 child 7681 on compute13.1 exit 0 signal 0 success=true
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 success in 1 seconds
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 output 
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  wait for last 0 children to finish
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 0 running, 1 todo
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  start level 1
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 0 running, 1 todo
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 job_task qr1hi-ot0gb-iwr0o3unqothg28
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 child 7716 started on compute13.1
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 1 running, 0 todo
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 child 7716 on compute13.1 exit 0 signal 0 success=true
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 success in 13 seconds
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 output 880b55fb4470b148a447ff38cacdd952+54
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  wait for last 0 children to finish
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 2 done, 0 running, 0 todo
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  release job allocation
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  Freeze not implemented
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  collate
+2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  output 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi
+2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  finish
+</code></pre>
+</notextile>
 
 This concludes the first tutorial.  In the next tutorial, we will "write a script to compute the hash.":tutorial-firstscript.html
