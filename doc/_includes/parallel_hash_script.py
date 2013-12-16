@@ -49,9 +49,7 @@ if this_task['sequence'] == 0:
 
     # Now tell the Arvados API server that this task executed successfully,
     # even though it doesn't have any output.
-    arvados.api().job_tasks().update(uuid=arvados.current_task()['uuid'],
-                                     body={'success':True}
-                                     ).execute()
+    this_task.set_output(None)
 else:
     # The task sequence was not 0, so it must be a parallel worker task
     # created by the first task

@@ -34,9 +34,9 @@ foo
 </code></pre></li>
 <li>Code blocks inline with text emphasize specific <code>programs</code>, <code>files</code>, or <code>options</code> that are being discussed.</li>
 <li>Bold text emphasizes <b>specific items</b> to look when discussing Arvados Workbench pages.</li>
-<li>A sequence of steps separated by right arrows (%(rarr)&rarr;%) indicate a path the user should follow through the Arvados Workbench to access some piece of information under discussion.  The steps indicate a menu, hyperlink, column name, field name, or other label on the page that guide the user where to look or click.
+<li>A sequence of steps separated by right arrows (<span class="rarr">&rarr;</span>) indicate a path the user should follow through the Arvados Workbench to access some piece of information under discussion.  The steps indicate a menu, hyperlink, column name, field name, or other label on the page that guide the user where to look or click.
 </li>
 </ul>
 </notextile>
 
-Now begin by "accessing the Arvados workbench.":workbench.html
+Now begin by "accessing the Arvados workbench.":getting_started/workbench.html

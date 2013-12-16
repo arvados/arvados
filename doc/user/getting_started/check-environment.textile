@@ -11,7 +11,7 @@ Check that you are able to access the Arvados API server using the following com
 
 notextile. <pre><code>$ <span class="userinput">arv user current</span></code></pre>
 
-If you receive the message "ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables", follow the instructions for "getting an API token,":api-tokens.html then return to this document.
+If you receive the message "ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables", follow the instructions for "getting an API token,":{{site.basedoc}}/user/reference/api-tokens.html then return to this document.
 
 When @arv user current@ is able to access the API server, it will print out the unique identifier associated with your account.  Here is an example (you will receive a different identifier):
 
@@ -44,4 +44,4 @@ This unique identifier represents your identity in the Arvados system and is sim
 </code></pre>
 </notextile>
 
-You are now ready proceed to the first tutorial: "Fetching data from Arvados using Keep.":intro-keep.html
+You are now ready proceed to the first tutorial: "Fetching data from Arvados using Keep.":{{site.basedoc}}/user/tutorials/intro-keep.html

@@ -19,13 +19,7 @@ variant in the people with the reported traits_ -->
 <!-- _Rather than having the user do this through the Python command line,
 it might be easier to write a file that is going to do each step_ -->
 
-
-h3. Prerequisites
-
-* Log in to a VM "using SSH":ssh-access.html
-* Put an "API token":api-tokens.html in your @ARVADOS_API_TOKEN@ environment variable
-* Put the API host name in your @ARVADOS_API_HOST@ environment variable
-* Run the @python@ interactive shell.
+*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
 
 If everything is set up correctly, you will be able to import the arvados SDK:
 

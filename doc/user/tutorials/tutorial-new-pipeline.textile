@@ -9,7 +9,7 @@ h1. Tutorial: Construct a pipeline
 
 A pipeline in Arvados is a sequence of crunch scripts, in which the output from the previous script is fed in as the input to the next script.
 
-*This tutorial assumes that you are "logged into an Arvados VM instance":ssh-access.html#login, and have a "working environment.":check-environment.html*
+*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
 
 h2. Create a new script
 

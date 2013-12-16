@@ -77,4 +77,4 @@ $ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr
 
 h2. The one job per file pattern
 
-This example demonstrates how to schedule a new task per file.  Because this is a common pattern, the Crunch Python API contains a convenience function to "queue a task for each input file":crunch-utility-libraries.html#one_task_per_input which reduces the amount of boilerplate code required to handle parallel jobs.
+This example demonstrates how to schedule a new task per file.  Because this is a common pattern, the Crunch Python API contains a convenience function to "queue a task for each input file":{{site.basedoc}}/user/reference/crunch-utility-libraries.html#one_task_per_input which reduces the amount of boilerplate code required to handle parallel jobs.

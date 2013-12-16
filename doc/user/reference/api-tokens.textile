@@ -18,7 +18,7 @@ Access the Arvados workbench using this link:
 
 Use the menu to navigate to _Access %(rarr)&rarr;% API Tokens._  There should be one or more rows.  The column *api_token* contains the actual token string that you will use.  Copy the value of *api_token* for the first row onto the clipboard.
 
-Next, open a shell on the system on which you intend to use the Arvados client (refer to "Accessing Arvados over ssh":ssh-access.html ) and enter the following (replace the value of @ARVADOS_API_TOKEN@ with the value you copied from the Workbench):
+Next, open a shell on the system on which you intend to use the Arvados client (refer to "Accessing Arvados over ssh":{{site.basedoc}}/user/getting_started/ssh-access.html ) and enter the following (replace the value of @ARVADOS_API_TOKEN@ with the value you copied from the Workbench):
 
 bc. $ export ARVADOS_API_HOST={{ site.arvados_api_host }}
 $ export ARVADOS_API_TOKEN=2jv9kd1o39t0pcfu7aueem7a1zjxhak73w90tzq3gx0es7j1ld

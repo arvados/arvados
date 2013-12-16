@@ -9,17 +9,11 @@ h1. Tutorial: GATK VariantFiltration
 
 Here you will use the GATK VariantFiltration program to assign pass/fail scores to variants in a VCF file.
 
+*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
+
 <!-- _This should be motivated better using a specific biomedical research or diagnostic question that involves this analysis_ -->
 
 <!-- From conversation with Ward:  We should link to a discussion of the personal genome project and explain that it a freely available dataset that any researcher can use, which makes it appropriate to be used in these examples._ -->
-
-h3. Prerequisites
-
-* Log in to a VM "using SSH":ssh-access.html
-* Put an "API token":api-tokens.html in your @ARVADOS_API_TOKEN@ environment variable
-* Put the API host name in your @ARVADOS_API_HOST@ environment variable
-
-If everything is set up correctly, the command @arv -h user current@ will display your account information.
 
 h3. Get the GATK binary distribution.
 
