@@ -40,7 +40,7 @@ For more information about using @git@, try
 
 notextile. <pre><code>$ <span class="userinput">man gittutoral</span></code></pre>
 
-or "click here search Google for git tutorials":http://google.com/#q=git+tutorial
+or "click here to search Google for git tutorials":http://google.com/#q=git+tutorial
 {% include notebox-end.html %}
 
 h2. Creating a Crunch script

@@ -3,7 +3,8 @@
 import hashlib
 import arvados
 
-# Jobs consist of one of more tasks.  A task is a single invocation of a crunch script.
+# Jobs consist of one of more tasks.  A task is a single invocation of
+# a crunch script.
 
 # Get the current task
 this_task = arvados.current_task()
@@ -54,8 +55,9 @@ else:
     # The task sequence was not 0, so it must be a parallel worker task
     # created by the first task
 
-    # Instead of getting "input" from the "script_parameters" field of the job object, 
-    # we get it from the "parameters" field of the task object
+    # Instead of getting "input" from the "script_parameters" field of
+    # the job object, we get it from the "parameters" field of the
+    # task object
     this_task_input = this_task['parameters']['input']
 
     collection = arvados.CollectionReader(this_task_input)
@@ -63,9 +65,9 @@ else:
     out = arvados.CollectionWriter()
     out.set_current_file_name("md5sum.txt")
 
-    # There should only be one file in the collection, so get the first one.
-    # collection.all_files() returns an iterator so we need to make in into a list
-    # for indexed access.
+    # There should only be one file in the collection, so get the
+    # first one.  collection.all_files() returns an iterator so we
+    # need to make it into a list for indexed access.
     input_file = list(collection.all_files())[0]
 
     # Everything after this is the same as the first tutorial.

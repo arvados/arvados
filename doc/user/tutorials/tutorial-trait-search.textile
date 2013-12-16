@@ -7,13 +7,13 @@ navorder: 116
 
 h1. Tutorial: Search PGP data by trait
 
-Here you will use the Python SDK to find public WGS data for people who have a certain medical condition.
+Here you will use the Python SDK to find public WGS data for people who have reported a certain medical condition.
 
 <!-- _Define WGS_ -->
 
 <!-- _Explain the motivation in this example a little better.  If I'm
 reading this right, the workflow is 
-traits -> people with those traits -> presense of a specific genetic
+traits -> people with those traits -> presence of a specific genetic
 variant in the people with the reported traits_ -->
 
 <!-- _Rather than having the user do this through the Python command line,

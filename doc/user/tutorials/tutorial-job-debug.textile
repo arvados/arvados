@@ -30,7 +30,7 @@ $ <span class="userinput">chmod +x hello-world.py</span>
 
 h2. Using arv-crunch-job to run the job in your VM
 
-Instead of a git commit hash, we provide the path to the directory in the "script_version" parameter.  The script specified in "script" will actually be searched for in the "crunch_scripts/" subdirectory of the directory specified "script_version".  Although we are running the script locally, the script still requires access to the Arvados API server and Keep storage service, and the job will be recorded on then Arvados Workbench job history.
+Instead of a git commit hash, we provide the path to the directory in the "script_version" parameter.  The script specified in "script" will actually be searched for in the "crunch_scripts/" subdirectory of the directory specified "script_version".  Although we are running the script locally, the script still requires access to the Arvados API server and Keep storage service. The job will be recorded in the Arvados job history, and visible in Workbench.
 
 <notextile>
 <pre><code>$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
@@ -71,7 +71,7 @@ This is the line of interest:
 
 bc. 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
 
-The script's printout is captured in the log, which is useful for print statement debugging.  However, although it the script returned a status code of 0 (success), the job failed.  Why?  For a job to complete successfully scripts must explicitly add their output to Keep, and then tell Arvados about it.  Here is a second try:
+The script's output is captured in the log, which is useful for print statement debugging. However, although this script returned a status code of 0 (success), the job failed.  Why?  For a job to complete successfully scripts must explicitly add their output to Keep, and then tell Arvados about it.  Here is a second try:
 
 <notextile>
 <pre><code>$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
