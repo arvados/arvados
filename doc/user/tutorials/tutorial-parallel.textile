@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: Parallel tasks"
-navorder: 15
+title: "Parallel tasks"
+navorder: 115
 ---
 
 h1. Tutorial: Parallel tasks

@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: Fetching data from Arvados using Keep"
-navorder: 11
+title: "Fetching data from Arvados using Keep"
+navorder: 111
 ---
 
 h1. Fetching data from Arvados using Keep

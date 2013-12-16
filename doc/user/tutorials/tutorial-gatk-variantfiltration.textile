@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: GATK VariantFiltration"
-navorder: 16
+title: "GATK VariantFiltration"
+navorder: 116
 ---
 
 h1. Tutorial: GATK VariantFiltration

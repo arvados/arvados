@@ -2,7 +2,7 @@
 layout: default
 navsection: userguide
 title: "Crunch examples"
-navorder: 30
+navorder: 230
 ---
 
 h1. Crunch examples

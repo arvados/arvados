@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Tutorial: Construct a pipeline"
-navorder: 15
+title: "Construct a pipeline"
+navorder: 115
 ---
 
 h1. Tutorial: Construct a pipeline

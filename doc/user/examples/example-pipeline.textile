@@ -1,8 +1,8 @@
 ---
 layout: default
 navsection: userguide
-title: "Example: Construct a pipeline to look for variants"
-navorder: 41
+title: "Construct a pipeline to look for variants"
+navorder: 241
 ---
 
 h1. Example: Construct a pipeline to look for variants

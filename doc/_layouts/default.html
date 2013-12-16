@@ -100,11 +100,36 @@
         <div class="span3">
           <div class="affix-top">
             <div class="well sidebar-nav">
-              <ul class="nav nav-list">
-                {% for navorder in (0..100) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
-                <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
-                {% endif %}{% endfor %}{% endfor %}
-              </ul>
+	      <ol class="nav nav-list">
+		<li>Getting Started
+		  <ol class="nav nav-list">
+                    {% for navorder in (0..99) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
+                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
+                    {% endif %}{% endfor %}{% endfor %}
+		  </ol>
+		</li>
+		<li>Tutorials
+		  <ol class="nav nav-list">
+                    {% for navorder in (100..199) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
+                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
+                    {% endif %}{% endfor %}{% endfor %}
+		  </ol>
+		</li>
+		<li>Examples
+		  <ol class="nav nav-list">
+                    {% for navorder in (200..299) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
+                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
+                    {% endif %}{% endfor %}{% endfor %}
+		  </ol>
+		</li>
+		<li>Reference
+		  <ol class="nav nav-list">
+                    {% for navorder in (300..399) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
+                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
+                    {% endif %}{% endfor %}{% endfor %}
+		  </ol>
+		</li>
+	      </ol>
             </div>
           </div>
         </div>
