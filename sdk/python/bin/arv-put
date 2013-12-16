@@ -189,7 +189,7 @@ if args.stream:
     print writer.manifest_text(),
 elif args.raw:
     writer.finish_current_stream()
-    print string.join(writer.data_locators(), ',') + '\n'
+    print string.join(writer.data_locators(), ',')
 else:
     # Register the resulting collection in Arvados.
     arvados.api().collections().create(
