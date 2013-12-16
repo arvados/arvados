@@ -1,0 +1,80 @@
+---
+layout: default
+navsection: userguide
+title: "Tutorial: Parallel tasks"
+navorder: 15
+---
+
+h1. Tutorial: Parallel tasks
+
+In the tutorial "writing a crunch script,":tutorial-firstscript.html our script used a "for" loop to compute the md5 hashes for each file in sequence.  This approach, while simple, is not able to take advantage of the compute cluster with multiple nodes and cores to speed up computation by running tasks in parallel.  This tutorial will demonstrate how to create parallel Crunch tasks.
+
+Start by entering the @crunch_scripts@ directory of your git repository:
+
+<notextile>
+<pre><code>$ <span class="userinput">cd you/crunch_scripts</span>
+</code></pre>
+</notextile>
+
+Next, using your favorite text editor, create a new file called @parallel-hash.py@ in the @crunch_scripts@ directory.  Add the following code to compute the md5 hash of each file in a collection:
+
+<pre><code class="userinput">{% include parallel_hash_script.py %}</code></pre>
+
+Make the file executable:
+
+notextile. <pre><code>$ <span class="userinput">chmod +x parallel-hash.py</span></code></pre>
+
+Next, add the file to @git@ staging, commit and push:
+
+<notextile>
+<pre><code>$ <span class="userinput">git add parallel-hash.py</span>
+$ <span class="userinput">git commit -m"parallel hash"</span>
+$ <span class="userinput">git push origin master</span>
+</code></pre>
+</notextile>
+
+You should now be able to run your new script using Crunch, with "script" referring to our new "parallel-hash.py" script.  We will use a different input from our previous examples.  We will use @887cd41e9c613463eab2f0d885c6dd96+83@ which consists of three files, "alice.txt", "bob.txt" and "carol.txt" (the example collection used previously in "fetching data from Arvados using Keep":intro-keep.html).
+
+<notextile>
+<pre><code>$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
+{
+ "script": "parallel-hash.py",
+ "script_version": "you:master",
+ "script_parameters":
+ {
+  "input": "887cd41e9c613463eab2f0d885c6dd96+83"
+ }
+}
+EOF</span>
+$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
+{
+ ...
+ "uuid":"qr1hi-xxxxx-xxxxxxxxxxxxxxx"
+ ...
+}
+$ <span class="userinput">arv -h job get --uuid qr1hi-xxxxx-xxxxxxxxxxxxxxx</span>
+{
+ ...
+ "output":"e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi",
+ ...
+}
+</code></pre>
+</notextile>
+
+Because the job ran in parallel, each instance of parallel-hash creates a separate @md5sum.txt@ as output.  Arvados automatically collates theses files into a single collection, which is the output of the job:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi</span>
+md5sum.txt
+md5sum.txt
+md5sum.txt
+$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi/md5sum.txt</span>
+0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
+504938460ef369cd275e4ef58994cffe bob.txt
+8f3b36aff310e06f3c5b9e95678ff77a carol.txt
+</code></pre>
+</notextile>
+
+h2. The one job per file pattern
+
+This example demonstrates how to schedule a new task per file.  Because this is a common pattern, the Crunch Python API contains a convenience function to "queue a task for each input file":crunch-utility-libraries.html#one_task_per_input which reduces the amount of boilerplate code required to handle parallel jobs.

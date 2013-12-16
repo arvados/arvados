@@ -1,0 +1,358 @@
+---
+layout: default
+navsection: userguide
+title: "Example: Construct a pipeline to look for variants"
+navorder: 41
+---
+
+h1. Example: Construct a pipeline to look for variants
+
+Here you will write two new crunch scripts, incorporate them into a new pipeline template, run the new pipeline a couple of times using different parameters, and compare the results. One of the new scripts will use the Arvados API to look up trait&rarr;human&rarr;data relations and use this information to compile a collection of data to analyze.
+
+<!-- _Like the previous tutorial, this needs more of a basis in some actual
+clinical/research question to motivate it_ -->
+
+h3. Prerequisites
+
+* Log in to a VM "using SSH":ssh-access.html
+* Put an "API token":api-tokens.html in your @ARVADOS_API_TOKEN@ environment variable
+* Put the API host name in your @ARVADOS_API_HOST@ environment variable
+
+If everything is set up correctly, the command @arv -h user current@ will display your account information.
+
+h3. Git repository access
+
+Pushing code to your git repository involves using your private key. There are a few ways to arrange this:
+
+*Option 1:* Use an SSH agent, and log in to your VM with agent forwarding enabled. With Linux, BSD, MacOS, etc., this looks something like:
+
+<pre>
+ssh-add -l
+eval `ssh-agent` # (only if "ssh-add -l" said it could not open a connection)
+ssh-add          # (this adds your private key to the agent)
+ssh -A my_vm.arvados
+ssh-add -l       # (run this in your VM account to confirm forwarding works)
+</pre>
+
+<!-- _This discussion about ssh should probably go under the "ssh"
+section_ -->
+
+With PuTTY under Windows, run "pageant", add your key to the agent, and turn on agent forwarding in your PuTTY settings.
+
+*Option 2:* Edit code on your workstation and push code to your Arvados repository from there instead of your VM account. Depending on your @.ssh/config@ file, you will use names like @my_vm_name.arvados@ instead of @my_vm_name.{{ site.arvados_api_host }}@ in git and ssh commands.
+
+<pre>
+git clone git@git.arvados:my_repo_name.git
+cd my_repo_name
+[...]
+git push
+</pre>
+
+*Option 3:*  Edit code in your VM, and use git on your workstation as an intermediary.
+
+<pre>
+git clone git@my_vm_name.arvados:my_repo_name.git
+cd my_repo_name
+git remote add arvados git@git.arvados:my_repo_name.git
+
+[...make edits and commits in your repository on the VM...]
+
+git pull                        #(update local copy)
+git push arvados master:master  #(update arvados hosted copy)
+</pre>
+
+Whichever setup you choose, if everything is working correctly, this command should give you a list of repositories you can access:
+
+<pre>
+ssh -T git@git.{{ site.arvados_api_host }}
+</pre>
+
+%(darr)&darr;%
+
+<pre>
+hello your_user_name, the gitolite version here is v2.0.2-17-g66f2065
+the gitolite config gives you the following access:
+     R   W      your_repo_name
+</pre>
+
+<!-- _You need to have a git repository set up already, which is not
+necessarily the case for new users, so this should link to the git
+section about setting up a new repo_ -->
+
+h3. Set some variables
+
+Adjust these to match your login account name and the URL of your Arvados repository. The Access&rarr;VMs and Access&rarr;Repositories pages on Workbench will show the specifics.
+
+<pre>
+repo_url=git@git.{{ site.arvados_api_host }}:my_repo_name.git
+repo_name=my_repo_name
+</pre>
+
+h3. Set up a new branch in your Arvados git repository
+
+We will create a new empty branch called "pipeline-tutorial" and add our new crunch scripts there.
+
+<pre>
+mkdir pipeline-tutorial
+cd pipeline-tutorial
+git init
+git checkout -b pipeline-tutorial
+git remote add origin $repo_url
+</pre>
+
+<!-- _Should explain each step_ -->
+
+<!-- _Creating an empty branch in an empty repository makes git do weird
+things, need to fix using
+git branch --set-upstream pipeline_tutorial origin/pipeline_tutorial
+but I don't know what this means._ -->
+
+h3. Write the create-collection-by-trait script
+
+<pre>
+mkdir -p crunch_scripts
+touch crunch_scripts/create-collection-by-trait
+chmod +x crunch_scripts/create-collection-by-trait
+nano crunch_scripts/create-collection-by-trait
+</pre>
+
+<!-- _the -p to mkdir isn't necessary here_ -->
+
+Here is the script:
+
+<pre>
+#!/usr/bin/env python
+
+import arvados
+import re
+import json
+
+trait_name = arvados.current_job()['script_parameters']['trait_name']
+
+# get UUIDs of all matching traits
+trait_uuids = map(lambda t: t['uuid'],
+                  filter(lambda t: re.search(trait_name, t['name'], re.IGNORECASE),
+                         arvados.service.traits().list(limit=1000).execute()['items']))
+
+# list humans linked to these conditions
+trait_links = arvados.service.links().list(limit=10000, where=json.dumps({
+            'link_class': 'human_trait',
+            'tail_kind': 'arvados#human',
+            'head_uuid': trait_uuids
+            })).execute()['items']
+human_uuids = map(lambda l: l['tail_uuid'], trait_links)
+
+# find collections linked to these humans
+provenance_links = arvados.service.links().list(where=json.dumps({
+    "link_class": "provenance",
+    "name": "provided",
+    "tail_uuid": human_uuids
+  })).execute()['items']
+collection_uuids = map(lambda l: l['head_uuid'], provenance_links)
+
+# pick out all of the "var" files, and build a new collection
+out_manifest = ''
+for locator in collection_uuids:
+    for f in arvados.CollectionReader(locator).all_files():
+        if re.search('var-.*\.tsv.bz2', f.name()):
+            out_manifest += f.as_manifest()
+
+# output the new collection
+arvados.current_task().set_output(arvados.Keep.put(out_manifest))
+</pre>
+
+h3. Write the find-dbsnp-id script
+
+<pre>
+touch crunch_scripts/find-dbsnp-id
+chmod +x crunch_scripts/find-dbsnp-id
+nano crunch_scripts/find-dbsnp-id
+</pre>
+
+Here is the script:
+
+<pre>
+#!/usr/bin/env python
+
+import arvados
+import re
+
+arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True)
+
+this_job = arvados.current_job()
+this_task = arvados.current_task()
+this_task_input = this_task['parameters']['input']
+dbsnp_search_pattern = re.compile("\\bdbsnp\\.\\d+:" +
+                                  this_job['script_parameters']['dbsnp_id'] +
+                                  "\\b")
+
+input_file = list(arvados.CollectionReader(this_task_input).all_files())[0]
+out = arvados.CollectionWriter()
+out.set_current_file_name(input_file.decompressed_name())
+out.set_current_stream_name(input_file.stream_name())
+for line in input_file.readlines():
+    if dbsnp_search_pattern.search(line):
+        out.write(line)
+
+this_task.set_output(out.finish())
+</pre>
+
+<!-- _This should probably match the code we ran the user through in the
+previous tutorial, with the only difference being that the prior
+tutorial is interactive, and this tutorial is demonstrating how to
+create a job. -->
+
+h3. Commit your new code
+
+<pre>
+git add crunch_scripts/create-collection-by-trait
+git add crunch_scripts/find-dbsnp-id
+git commit -m 'add scripts from tutorial'
+</pre>
+
+h3. Push your new code to your Arvados git repository
+
+Push the new "pipeline-tutorial" branch to your Arvados hosted repository.
+
+<pre>
+git push origin pipeline-tutorial
+</pre>
+
+h3. Note the commit ID of your latest code
+
+Show the latest commit. The first line includes a 40-digit hexadecimal number that uniquely identifies the content of your git tree. You will specify this in your pipeline template in the next step to ensure that Arvados uses the correct version of your git tree when running jobs.
+
+<pre>
+git show | head
+</pre>
+
+%(darr)&darr;%
+
+<pre>
+commit 37c7faef1b066a2dcdb0667fbe82b7cdd7d0be93
+[...]
+</pre>
+
+h3. Write the pipeline template
+
+Make a directory called @pipeline_templates@ and create a file called @find-dbsnp-by-trait.json@.
+
+<pre>
+mkdir pipeline_templates
+nano pipeline_templates/find-dbsnp-by-trait.json
+</pre>
+
+Copy the following pipeline template.
+
+<pre>
+{
+  "name":"find_dbsnp_by_trait",
+  "components":{
+    "create_collection":{
+      "script":"create-collection-by-trait",
+      "script_parameters":{
+        "trait_name":"Non-melanoma skin cancer"
+      },
+      "script_version":"YOUR_GIT_COMMIT_SHA1_HERE"
+    },
+    "find_variant":{
+      "script":"find-dbsnp-id",
+      "script_parameters":{
+        "input":{
+          "output_of":"create_collection"
+        },
+        "dbsnp_id":"rs1126809"
+      },
+      "script_version":"YOUR_GIT_COMMIT_SHA1_HERE"
+    }
+  }
+}
+</pre>
+
+<!-- _This desperately needs to be explained, since this is the actual
+pipeline definition_ -->
+
+h3. Store the pipeline template in Arvados
+
+<pre>
+read -rd $'\000' the_pipeline < pipeline_templates/find-dbsnp-by-trait.json
+
+arv pipeline_template create --pipeline-template "$the_pipeline"
+</pre>
+
+@arv@ will output the UUID of the new pipeline template.
+
+<pre>
+qr1hi-p5p6p-uf9gi9nolgakm85
+</pre>
+
+The new pipeline template will also appear on the Workbench&rarr;Compute&rarr;Pipeline&nbsp;templates page.
+
+<!-- _Storing the pipeline in arvados as well as in git seems
+redundant_ -->
+
+h3. Invoke the pipeline using "arv pipeline run"
+
+Replace the UUID here with the UUID of your own new pipeline template:
+
+<pre>
+arv pipeline run --template qr1hi-p5p6p-uf9gi9nolgakm85
+</pre>
+
+This instantiates your pipeline template: it submits the first job, waits for it to finish, submits the next job, etc.
+
+h3. Monitor pipeline progress
+
+The "arv pipeline run" command displays progress in your terminal until the pipeline instance is finished.
+
+<pre>
+2013-07-17 05:06:15 +0000 -- pipeline_instance qr1hi-d1hrv-8i4tz440whvwf2o
+create_collection qr1hi-8i9sb-haibhu51olihlwp 9e2e489a73e1a918de8ecfc6f59ae5a1+1803+K@qr1hi
+find_variant      qr1hi-8i9sb-sqduc932xb1tpff cad082ba4cb174ffbebf751bbe3ed77c+506+K@qr1hi
+</pre>
+
+The new pipeline instance will also show up on your Workbench&rarr;Compute&rarr;Pipeline&nbsp;instances page.
+
+h3. Find the output collection UUID
+
+The output of the "find_variant" component is shown in your terminal with the last status update from the "arv pipeline run" command.
+
+It is also displayed on the pipeline instance detail page: go to Workbench&rarr;Compute&rarr;Pipeline&nbsp;instances and click the UUID of your pipeline instance.
+
+<!-- _There needs to be an easier way to get the output from the
+workbench_ -->
+
+h3. Compute a summary statistic from the output collection
+
+For this step we will use python to read the output manifest and count how many of the inputs produced hits.
+
+Type @python@ at a command prompt and paste this script at the prompt:
+
+<pre>
+import arvados
+
+hash = 'cad082ba4cb174ffbebf751bbe3ed77c+506+K@qr1hi' # Use your result here!
+
+collection = arvados.CollectionReader(hash)
+hits = len(filter(lambda f: f.size() > 0, collection.all_files()))
+misses = len(filter(lambda f: f.size() == 0, collection.all_files()))
+print "%d had the variant, %d did not." % (hits, misses)
+</pre>
+
+%(darr)&darr;%
+
+<pre>
+4 had the variant, 3 did not.
+</pre>
+
+<!-- _Explain each step_ -->
+
+h3. Run the pipeline again using different parameters
+
+We can use the same pipeline template to run the jobs again, this time overriding the "trait_name" parameter with a different value:
+
+<pre>
+arv pipeline run --template qr1hi-p5p6p-uf9gi9nolgakm85 create_collection::trait_name=cancer
+</pre>
+
+When this template instance finishes, run the same Python script on the new output collection to summarize the results.

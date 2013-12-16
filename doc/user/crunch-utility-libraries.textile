@@ -35,7 +35,7 @@ this_job_input = this_job['script_parameters']['input']
 this_task_input = this_task['parameters']['input']
 </pre>
 
-h4. Queue a task for each input file
+h4(#one_task_per_input). Queue a task for each input file
 
 A common pattern for a crunch job is to run one task to scan the input, and one task per input file to do the work.
 

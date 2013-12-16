@@ -7,7 +7,7 @@ navorder: 12
 
 h1. Tutorial: Running a crunch job
 
-This tutorial introduces the concepts and use of the Arvados Keep storage and Crunch job system using the @arv@ command line tool and Arvados Workbench.
+This tutorial introduces the concepts and use of the Crunch job system using the @arv@ command line tool and Arvados Workbench.
 
 *This tutorial assumes that you are "logged into an Arvados VM instance":ssh-access.html#login, and have a "working environment.":check-environment.html*
 
@@ -28,7 +28,7 @@ For your first job, you will run the "hash" crunch script using the Arvados syst
 Crunch jobs are described using JSON objects.  For example:
 
 <notextile>
-<pre><code>$ <span class="userinput">read -d $'\000' the_job &lt;&lt;EOF
+<pre><code>$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
 {
  "script": "hash",
  "script_version": "arvados:master",
@@ -41,8 +41,9 @@ EOF
 </code></pre>
 </notextile>
 
-* @read@ is a shell builtin that stores the first line of standard input into the local shell variable @the_job@
-* @-d $'\000'@ changes the line delimiter character from newline to null so that the entire input will be considered a single line.
+* @cat@ is a standard Unix utility that simply copies standard input to standard output
+* @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@
+* @>the_job@ redirects standard output to a file called @the_job@
 * @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
 * @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench through _Access %(rarr)&rarr;% Repositories_.
 * @"script_parameters"@ are provided to the script.  In this case, the input is the locator for the collection that we inspected in the previous section.
@@ -50,12 +51,12 @@ EOF
 Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv -h job create --job "$the_job"</span>
+<pre><code>$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
 {
- "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-j5dr6107mxzp3no",
+ "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-xxxxxxxxxxxxxxx",
  "kind":"arvados#job",
  "etag":"aulvmdxezwxo4zrw15gz1v7x3",
- "uuid":"qr1hi-8i9sb-j5dr6107mxzp3no",
+ "uuid":"qr1hi-8i9sb-xxxxxxxxxxxxxxx",
  "owner_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
  "created_at":"2013-12-10T17:07:08Z",
  "modified_by_client_uuid":"qr1hi-ozdt8-obw7foaks3qjyej",
@@ -84,7 +85,7 @@ Use @arv job create@ to actually submit the job.  It should print out a JSON obj
  "dependencies":[
   "33a9f3842b01ea3fdf27cc582f5ea2af"
  ],
- "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-j5dr6107mxzp3no/log_tail_follow"
+ "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-xxxxxxxxxxxxxxx/log_tail_follow"
 }
 </code></pre>
 </notextile>
@@ -93,7 +94,6 @@ The job is new queued and will start running as soon as it reaches the front of 
 
  * @"uuid"@ is the unique identifier for this specific job
  * @"script_version"@ is the actual revision of the script used.  This is useful if the version was described using the "repository:branch" format.
- * @"log_stream_href"@ provides a means to monitor job progress, described below.
 
 h3. Monitor job progress
 
@@ -101,21 +101,18 @@ Go to Workbench, and use the menu to navigate to _Compute %(rarr)&rarr;% Jobs_. 
 
 Hit "Refresh" until it finishes.  Successful completion is indicated by a green check mark in the *status* column.
 
-You can watch the log messages while the job runs using @curl@:
+You can access log messages while the job runs using @arv job log_tail_follow@:
 
-notextile. <pre><code>$ <span class="userinput">curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" _value_of_log_stream_href_from_arv_job_create_</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-xxxxxxxxxxxxxxx</span></code></pre>
 
-* @-s@ suppress status messages from @curl@ itself
-* @-H@ addes a required HTTP header with your Arvados API token
-
-This will run until the job finishes or is @curl@ is canceled with control-C.
+This will print out the last several lines of the log for that job.
 
 h3. Inspect the job output
 
 You can access the job output under the *output* column of the _Compute %(rarr)&rarr;% Jobs_ page.  Alternately, you can use @arv job get@ to access a JSON object describing the output:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv -h job get --uuid _value_of_uuid_from_arv_job_create_</span>
+<pre><code>$ <span class="userinput">arv -h job get --uuid qr1hi-8i9sb-xxxxxxxxxxxxxxx</span>
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-zs6d9pxkr0vk175",
  "kind":"arvados#job",

@@ -53,17 +53,17 @@ $ <span class="userinput">mkdir crunch_scripts</span>
 $ <span class="userinput">cd crunch_scripts</span></code></pre>
 </notextile>
 
-Next, create a new file called @hash@ in the @crunch_scripts@ directory.  Add the following code to compute the md5 hash of each file in a collection:
+Next, using your favorite text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.  Add the following code to compute the md5 hash of each file in a collection:
 
 <pre><code class="userinput">{% include tutorial_hash_script.py %}</code></pre>
 
 Make the file executable:
 
-notextile. <pre><code>$ <span class="userinput">chmod +x hash</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">chmod +x hash.py</span></code></pre>
 
 Next, add the file to @git@ staging.  This tells @git@ that the file should be included on the next commit.
 
-notextile. <pre><code>$ <span class="userinput">git add hash</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">git add hash.py</span></code></pre>
 
 Next, commit your changes to git.  All staged changes are recorded into the local @git@ repository:
 
@@ -71,7 +71,7 @@ Next, commit your changes to git.  All staged changes are recorded into the loca
 <pre><code>$ <span class="userinput">git commit -m"my first script"</span>
 [master (root-commit) 27fd88b] my first script
  1 file changed, 33 insertions(+)
- create mode 100755 crunch_scripts/hash</code></pre>
+ create mode 100755 crunch_scripts/hash.py</code></pre>
 </notextile>
 
 Finally, upload your changes to the Arvados server:
@@ -89,9 +89,9 @@ To git@git.qr1hi.arvadosapi.com:you.git
 You should now be able to run your script using Crunch, similar to how we did it in the "first tutorial.":tutorial-job1.html  The field @"script_version"@ should be @you:master@ to tell Crunch to run the script that you just uploaded.
 
 <notextile>
-<pre><code>$ <span class="userinput">read -d $'\000' the_job &lt;&lt;EOF
+<pre><code>$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
 {
- "script": "hash",
+ "script": "hash.py",
  "script_version": "you:master",
  "script_parameters":
  {
@@ -99,12 +99,16 @@ You should now be able to run your script using Crunch, similar to how we did it
  }
 }
 EOF</span>
-$ <span class="userinput">arv -h job create --job "$the_job"</span>
+$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
 {
  ...
+ "uuid":"qr1hi-xxxxx-xxxxxxxxxxxxxxx"
+ ...
 }
-$ <span class="userinput">arv -h job get --uuid _value_of_uuid_from_arv_job_create_</span>
+$ <span class="userinput">arv -h job get --uuid qr1hi-xxxxx-xxxxxxxxxxxxxxx</span>
 {
+ ...
+ "output":"880b55fb4470b148a447ff38cacdd952+54+K@qr1hi",
  ...
 }
 $ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt</span>

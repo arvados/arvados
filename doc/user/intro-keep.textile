@@ -7,6 +7,8 @@ navorder: 11
 
 h1. Fetching data from Arvados using Keep
 
+This tutorial introduces you to the Arvados file storage system.
+
 *This tutorial assumes that you are "logged into an Arvados VM instance":ssh-access.html#login, and have a "working environment.":check-environment.html*
 
 The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file, rather than human-assigned file names (specifically, the md5 hash).  This has a number of advantages:
@@ -43,12 +45,12 @@ $ <span class="userinput">md5sum block1</span>
 </code></pre>
 </notextile>
 
-Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code> consists of:
-* the md5 hash @204e43b8a1185621ca55a94839582e6f@
-* a size hint @67108864@
+Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864+K@qr1hi</code> of:
+* the md5 hash @204e43b8a1185621ca55a94839582e6f@ which matches the md5 hash of block1
+* a size hint @67108864@ which matches the size of block1
 * a location hint <code>K@qr1hi</code>
 
-In fact, _only_ the md5 hash is required to find the block.
+The size hint and location hint are used to access the block more quickly, but in fact _only_ the md5 hash is required to find the block.
 
 Next, let's use @arv keep get@ to download and reassemble @var-GS000016015-ASM.tsv.bz2@ using the following command:
 
@@ -61,5 +63,19 @@ This downloads the file @var-GS000016015-ASM.tsv.bz2@ described by collection @3
 44b8ae3fde7a8a88d2f7ebd237625b4f  var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>
+
+h2. Accessing Collections
+
+There are a couple of other ways to access a collection.  You may view the contents of a collection using @arv keep ls@:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv keep ls 33a9f3842b01ea3fdf27cc582f5ea2af</span>
+var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+You may also access through the Arvados Workbench using a URI similar to this, where the last part of the path is the Keep locator:
+
+"https://workbench.{{ site.arvados_api_host }}/collections/33a9f3842b01ea3fdf27cc582f5ea2af":https://workbench.{{ site.arvados_api_host }}/collections/33a9f3842b01ea3fdf27cc582f5ea2af
 
 You are now ready to proceed to the next tutorial, "running a crunch job.":tutorial-job1.html
