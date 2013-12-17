@@ -21,7 +21,7 @@ active, the given repository already exists, etc.
 end
     
 if ARGV.count != 3
-  abort "Usage: #{$0} user_uuid_or_email user_and_repo_name vm_uuid"
+  Trollop::die "required arguments are missing"
 end
 user_arg, user_repo_name, vm_uuid = ARGV
 
