@@ -20,6 +20,9 @@ end
 
 class Arvados
 
+  class TransactionFailedError < StandardError
+  end
+
   @@debuglevel = 0
   class << self
     attr_accessor :debuglevel
@@ -151,7 +154,11 @@ class Arvados
         execute(:api_method => arvados_api.send(api_models_sym).send(method),
                 :authenticated => false,
                 :parameters => parameters)
-      JSON.parse result.body, :symbolize_names => true
+      resp = JSON.parse result.body, :symbolize_names => true
+      if resp[:errors]
+        raise Arvados::TransactionFailedError.new(resp[:errors])
+      end
+      resp
     end
 
     def []=(x,y)
