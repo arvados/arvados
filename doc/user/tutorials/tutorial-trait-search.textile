@@ -176,6 +176,13 @@ for c in collections['items']:
   for f in c['files']:
     print "https://my.personalgenomes.org/profile/%s %s %s%s" % (pgpid[c['uuid']], c['uuid'], ('' if f[0] == '.' else f[0]+'/'), f[1])
 </span>
+https://my.personalgenomes.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
+https://my.personalgenomes.org/profile/huB1FD55 ea30eb9e46eedf7f05ed6e348c2baf5d var-GS000010320-ASM.tsv.bz2
+https://my.personalgenomes.org/profile/huDF04CC 4ab0df8f22f595d1747a22c476c05873 var-GS000010427-ASM.tsv.bz2
+https://my.personalgenomes.org/profile/hu7A2F1D 756d0ada29b376140f64e7abfe6aa0e7 var-GS000014566-ASM.tsv.bz2
+https://my.personalgenomes.org/profile/hu553620 7ed4e425bb1c7cc18387cbd9388181df var-GS000015272-ASM.tsv.bz2
+https://my.personalgenomes.org/profile/huD09534 542112e210daff30dd3cfea4801a9f2f var-GS000016374-ASM.tsv.bz2
+https://my.personalgenomes.org/profile/hu599905 33a9f3842b01ea3fdf27cc582f5ea2af var-GS000016015-ASM.tsv.bz2
 https://my.personalgenomes.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc+302+K@qr1hi var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
 https://my.personalgenomes.org/profile/huB1FD55 ea30eb9e46eedf7f05ed6e348c2baf5d+291+K@qr1hi var-GS000010320-ASM.tsv.bz2
 https://my.personalgenomes.org/profile/huDF04CC 4ab0df8f22f595d1747a22c476c05873+242+K@qr1hi var-GS000010427-ASM.tsv.bz2
@@ -236,28 +243,31 @@ Unfinished jobs will appear as None, failed jobs as False, and completed jobs as
 After the jobs have completed, check output file sizes.
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">total = 0
-for collection_uuid in job:
+<pre><code>&gt;&gt;&gt; <span class="userinput">for collection_uuid in job:
   job_uuid = job[collection_uuid]['uuid']
   job_output = arvados.service.jobs().get(uuid=job_uuid).execute()['output']
   output_files = arvados.service.collections().get(uuid=job_output).execute()['files']
   # Test the output size.  If greater than zero, that means 'grep' found the variant 
   if output_files[0][2] > 0:
-    print "%s has variant rs1126809" % (pgpid[collection_uuid])
-    total += 1
+    print("%s has variant rs1126809" % (pgpid[collection_uuid]))
   else:
-    print "%s does not have variant rs1126809" % (pgpid[collection_uuid])
-print "rs1126809 is found in", total, "out of", len(job), "participants reporting non-melanoma skin cancer"
+    print("%s does not have variant rs1126809" % (pgpid[collection_uuid]))
 </span>
-hu599905  80 5644238bfb2a1925d423f2c264819cfb+75+K@qr1hi
-huD09534  80 f98f92573cf521333607910d320cc33b+75+K@qr1hi
-huB1FD55   0 c10e07d8d90b51ee7f3b0a5855dc77c3+65+K@qr1hi
-hu7A2F1D  80 922c4ce8d3dab3268edf8b9312cc63d4+75+K@qr1hi
-hu553620   0 66da988f45a7ee16b6058fcbe9859d69+65+K@qr1hi
-huDF04CC  80 bbe919451a437dde236a561d4e469ad2+75+K@qr1hi
-hu43860C   0 45797e38410de9b9ddef2f4f0ec41a93+76+K@qr1hi
+hu553620 does not have variant rs1126809
+hu43860C does not have variant rs1126809
+hu599905 has variant rs1126809
+huD09534 has variant rs1126809
+hu553620 does not have variant rs1126809
+huB1FD55 does not have variant rs1126809
+huDF04CC has variant rs1126809
+hu7A2F1D has variant rs1126809
+hu7A2F1D has variant rs1126809
+hu599905 has variant rs1126809
+huDF04CC has variant rs1126809
+huB1FD55 does not have variant rs1126809
+huD09534 has variant rs1126809
+hu43860C does not have variant rs1126809
 </code></pre>
 </notextile>
 
-
-Thus, of the 7 WGS results available for PGP participants reporting non-melanoma skin cancer, 4 include the rs1126809 / TYR-R402Q variant.
+Thus, of the 14 WGS results available for PGP participants reporting non-melanoma skin cancer, 8 include the rs1126809 variant.

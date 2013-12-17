@@ -1,11 +1,11 @@
 ---
 layout: default
 navsection: userguide
-title: "Using GATK"
+title: "Using GATK with Arvados"
 navorder: 116
 ---
 
-h1. Tutorial: Using GATK
+h1. Tutorial: Using GATK with Arvados
 
 This tutorials demonstrates how to use the Genome Analysis Toolkit (GATK) with Arvados. In this example we will install GATK and then create a VariantFiltration job to assign pass/fail scores to variants in a VCF file.
 
@@ -88,23 +88,16 @@ Next, you need the GATK Resource Bundle[2].  This may already be available in Ar
 </code></pre>
 </notextile>
 
-h3. Submit a job.
+h2. Submit a GATK job
 
 The Arvados distribution includes an example crunch script ("crunch_scripts/GATK2-VariantFiltration":https://arvados.org/projects/arvados/repository/revisions/master/entry/crunch_scripts/GATK2-VariantFiltration) that runs the GATK VariantFiltration tool with some default settings.
 
-We will pass it the following parameters:
-
-* input -- a collection containing the source VCF data. Here we will use an exome report from PGP participant hu34D5B9.
-* gatk_binary_tarball -- a collection containing the GATK 2 tarball.
-* gatk_bundle -- a collection containing the GATK resource bundle[2].
-
-<pre>
-src_version=76588bfc57f33ea1b36b82ca7187f465b73b4ca4
-vcf_input=5ee633fe2569d2a42dd81b07490d5d13+82+K@qr1hi
-gatk_binary=c905c8d8443a9c44274d98b7c6cfaa32+94+K@qr1hi
-gatk_bundle=d237a90bae3870b3b033aea1e99de4a9+10820+K@qr1hi
-
-read -rd $'\000' the_job <<EOF
+<notextile>
+<pre><code>$ <span class="userinput">src_version=76588bfc57f33ea1b36b82ca7187f465b73b4ca4</span>
+$ <span class="userinput">vcf_input=5ee633fe2569d2a42dd81b07490d5d13+82</span>
+$ <span class="userinput">gatk_binary=c905c8d8443a9c44274d98b7c6cfaa32+94</span>
+$ <span class="userinput">gatk_bundle=d237a90bae3870b3b033aea1e99de4a9+10820</span>
+$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
 {
  "script":"GATK2-VariantFiltration",
  "script_version":"$src_version",
@@ -115,33 +108,109 @@ read -rd $'\000' the_job <<EOF
   "gatk_bundle":"$gatk_bundle"
  }
 }
-EOF
+EOF</span>
+</code></pre>
+</notextile>
 
-arv -h job create --job "$the_job"
-</pre>
+* @"input"@ is collection containing the source VCF data. Here we are using an exome report from PGP participant hu34D5B9.
+* @"gatk_binary_tarball"@ is a Keep collection containing the GATK 2 binary distribution[1] tar file.
+* @"gatk_bundle"@ is a Keep collection containing the GATK resource bundle[2].
 
-Note the job UUID in the API response.
+Now start a job:
 
-h3. Monitor job progress
+<notextile>
+<pre><code>$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
+{
+ "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-n9k7qyp7bs5b9d4",
+ "kind":"arvados#job",
+ "etag":"9j99n1feoxw3az448f8ises12",
+ "uuid":"qr1hi-8i9sb-n9k7qyp7bs5b9d4",
+ "owner_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
+ "created_at":"2013-12-17T19:02:15Z",
+ "modified_by_client_uuid":"qr1hi-ozdt8-obw7foaks3qjyej",
+ "modified_by_user_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
+ "modified_at":"2013-12-17T19:02:15Z",
+ "updated_at":"2013-12-17T19:02:15Z",
+ "submit_id":null,
+ "priority":null,
+ "script":"GATK2-VariantFiltration",
+ "script_parameters":{
+  "input":"5ee633fe2569d2a42dd81b07490d5d13+82",
+  "gatk_binary_tarball":"c905c8d8443a9c44274d98b7c6cfaa32+94",
+  "gatk_bundle":"d237a90bae3870b3b033aea1e99de4a9+10820"
+ },
+ "script_version":"76588bfc57f33ea1b36b82ca7187f465b73b4ca4",
+ "cancelled_at":null,
+ "cancelled_by_client_uuid":null,
+ "cancelled_by_user_uuid":null,
+ "started_at":null,
+ "finished_at":null,
+ "output":null,
+ "success":null,
+ "running":null,
+ "is_locked_by_uuid":null,
+ "log":null,
+ "runtime_constraints":{},
+ "tasks_summary":{},
+ "dependencies":[
+  "5ee633fe2569d2a42dd81b07490d5d13+82",
+  "c905c8d8443a9c44274d98b7c6cfaa32+94",
+  "d237a90bae3870b3b033aea1e99de4a9+10820"
+ ],
+ "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-n9k7qyp7bs5b9d4/log_tail_follow"
+}
+$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-n9k7qyp7bs5b9d4</span>
+Tue Dec 17 19:02:16 2013 salloc: Granted job allocation 1251
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  check slurm allocation
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  node compute13 - 8 slots
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Install revision 76588bfc57f33ea1b36b82ca7187f465b73b4ca4
+Tue Dec 17 19:02:18 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Clean-work-dir exited 0
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Install exited 0
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script GATK2-VariantFiltration
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script_version 76588bfc57f33ea1b36b82ca7187f465b73b4ca4
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script_parameters {"input":"5ee633fe2569d2a42dd81b07490d5d13+82","gatk_bundle":"d237a90bae3870b3b033aea1e99de4a9+10820","gatk_binary_tarball":"c905c8d8443a9c44274d98b7c6cfaa32+94"}
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  runtime_constraints {"max_tasks_per_node":0}
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start level 0
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 0 done, 0 running, 1 todo
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 job_task qr1hi-ot0gb-d3sjxerucfbvyev
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 child 4946 started on compute13.1
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 0 done, 1 running, 0 todo
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 child 4946 on compute13.1 exit 0 signal 0 success=true
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 success in 1 seconds
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 output
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  wait for last 0 children to finish
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 0 running, 1 todo
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start level 1
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 0 running, 1 todo
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 job_task qr1hi-ot0gb-w8ujbnulxjaamxf
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 started on compute13.1
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 1 running, 0 todo
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 on compute13.1 exit 0 signal 0 success=true
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 success in 110 seconds
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 output bedd6ff56b3ae9f90d873b1fcb72f9a3+91+K@qr1hi
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  wait for last 0 children to finish
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 2 done, 0 running, 0 todo
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  release job allocation
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Freeze not implemented
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  collate
+Tue Dec 17 19:04:10 2013 salloc: Job allocation 1251 has been revoked.
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  output bedd6ff56b3ae9f90d873b1fcb72f9a3+91+K@qr1hi
+Tue Dec 17 19:04:11 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  finish
+Tue Dec 17 19:04:12 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  log manifest is 1e77aaceee2df499e14dc5dde5c3d328+91+K@qr1hi
+</code></pre>
+</notextile>
 
-<!-- _This was already covered in tutorial1_ -->
+Once the job completes, the output can be found in hu34D5B9-exome-filtered.vcf:
 
-There are three ways to monitor job progress:
+<notextile>
+$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91+K@qr1hi</span>
+hu34D5B9-exome-filtered.vcf
+</code></pre>
+</notextile>
 
-# Go to Workbench, drop down the Compute menu, and click Jobs. The job you submitted should appear at the top of the list. Hit "Refresh" until it finishes.
-# Run @arv -h job get --uuid JOB_UUID_HERE@ to see the job particulars, notably the "tasks_summary" attribute which indicates how many tasks are done/running/todo.
-# Watch the crunch log messages and stderr from the job tasks:
+h2. Notes
 
-<pre>
-curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
-  https://{{ site.arvados_api_host }}/arvados/v1/jobs/JOB_UUID_HERE/log_tail_follow
-</pre>
+fn1. "Download the GATK tools":http://www.broadinstitute.org/gatk/download
 
-
-<!-- _That's it?  Say something about the output we're going to get_ -->
-
-h3. Notes
-
-fn1. Download the GATK tools &rarr; "http://www.broadinstitute.org/gatk/download":http://www.broadinstitute.org/gatk/download
-
-fn2. "Information about the GATK resource bundle":http://gatkforums.broadinstitute.org/discussion/1213/whats-in-the-resource-bundle-and-how-can-i-get-it "Direct download link":ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/2.5/hg18/ (if prompted, just submit an empty password)
+fn2. "Information about the GATK resource bundle":http://gatkforums.broadinstitute.org/discussion/1213/whats-in-the-resource-bundle-and-how-can-i-get-it and "direct download link":ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/2.5/b37/ (if prompted, submit an empty password)
