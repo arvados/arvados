@@ -1,64 +1,92 @@
 ---
 layout: default
 navsection: userguide
-title: "GATK VariantFiltration"
+title: "Using GATK"
 navorder: 116
 ---
 
-h1. Tutorial: GATK VariantFiltration
+h1. Tutorial: Using GATK
 
-Here you will use the GATK VariantFiltration program to assign pass/fail scores to variants in a VCF file.
+This tutorials demonstrates how to use the Genome Analysis Toolkit (GATK) with Arvados. In this example we will install GATK and then create a VariantFiltration job to assign pass/fail scores to variants in a VCF file.
 
 *This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
 
-<!-- _This should be motivated better using a specific biomedical research or diagnostic question that involves this analysis_ -->
+h2. Installing GATK
 
-<!-- From conversation with Ward:  We should link to a discussion of the personal genome project and explain that it a freely available dataset that any researcher can use, which makes it appropriate to be used in these examples._ -->
+Download the GATK binary tarball[1] -- e.g., @GenomeAnalysisTK-2.6-4.tar.bz2@ -- and "copy it to your Arvados VM":tutorial-keep.html.
 
-h3. Get the GATK binary distribution.
+<notextile>
+<pre><code>$ <span class="userinput">arv keep put GenomeAnalysisTK-2.6-4.tar.bz2</span>
+c905c8d8443a9c44274d98b7c6cfaa32+94
+</code></pre>
+</notextile>
 
-<!-- _Perhaps separate out this and the next sections and link to it so the user only
-has to do this if they really don't have GATK installed.  Also provide
-a way to determine if they do have it._ -->
+Next, you need the GATK Resource Bundle[2].  This may already be available in Arvados.  If not, you will need to download the files listed below and put them into Keep.
 
-Download the GATK binary tarball[1] -- e.g., @GenomeAnalysisTK-2.6-4.tar.bz2@ -- and copy it to your Arvados VM.
-
-<!-- _Is it necessary to copy it to the Arvados VM first, you could put it into
-keep from your desktop and/or use the workbench?  Also if we are
-telling them to copy it to the VM, maybe we should mention scp?_ -->
-
-Store it in Keep.
-
-<pre>
-arv keep put --in-manifest GenomeAnalysisTK-2.6-4.tar.bz2
-</pre>
-
-&darr;
-
-<!-- _Make the itty bitty down arrows bigger, and maybe center them_ -->
-
-<pre>
-c905c8d8443a9c44274d98b7c6cfaa32+94+K@qr1hi
-</pre>
-
-h3. Get the GATK resource bundle.
-
-This can take a while to download, and should already be available in Arvados. For now let's just list the files and sizes, to make sure we have the correct collection ID.
-
-<pre>
-arv keep ls -s d237a90bae3870b3b033aea1e99de4a9+10820+K@qr1hi
-</pre>
-
-&darr;
-
-<pre>
+<notextile>
+<pre><code>$ <span class="userinput">arv keep ls -s d237a90bae3870b3b033aea1e99de4a9+10820</span>
   50342 1000G_omni2.5.b37.vcf.gz
       1 1000G_omni2.5.b37.vcf.gz.md5
     464 1000G_omni2.5.b37.vcf.idx.gz
       1 1000G_omni2.5.b37.vcf.idx.gz.md5
   43981 1000G_phase1.indels.b37.vcf.gz
-...
-</pre>
+      1 1000G_phase1.indels.b37.vcf.gz.md5
+    326 1000G_phase1.indels.b37.vcf.idx.gz
+      1 1000G_phase1.indels.b37.vcf.idx.gz.md5
+ 537210 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.gz
+      1 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.gz.md5
+   3473 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.idx.gz
+      1 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.idx.gz.md5
+  19403 Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+      1 Mills_and_1000G_gold_standard.indels.b37.vcf.gz.md5
+    536 Mills_and_1000G_gold_standard.indels.b37.vcf.idx.gz
+      1 Mills_and_1000G_gold_standard.indels.b37.vcf.idx.gz.md5
+  29291 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.gz.md5
+    565 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.idx.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.idx.gz.md5
+  37930 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.gz.md5
+    592 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.idx.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.idx.gz.md5
+5898484 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam
+    112 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam.bai.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam.bai.gz.md5
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam.md5
+   3837 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.gz.md5
+     65 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.idx.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.idx.gz.md5
+ 275757 dbsnp_137.b37.excluding_sites_after_129.vcf.gz
+      1 dbsnp_137.b37.excluding_sites_after_129.vcf.gz.md5
+   3735 dbsnp_137.b37.excluding_sites_after_129.vcf.idx.gz
+      1 dbsnp_137.b37.excluding_sites_after_129.vcf.idx.gz.md5
+ 998153 dbsnp_137.b37.vcf.gz
+      1 dbsnp_137.b37.vcf.gz.md5
+   3890 dbsnp_137.b37.vcf.idx.gz
+      1 dbsnp_137.b37.vcf.idx.gz.md5
+  58418 hapmap_3.3.b37.vcf.gz
+      1 hapmap_3.3.b37.vcf.gz.md5
+    999 hapmap_3.3.b37.vcf.idx.gz
+      1 hapmap_3.3.b37.vcf.idx.gz.md5
+      3 human_g1k_v37.dict.gz
+      1 human_g1k_v37.dict.gz.md5
+      2 human_g1k_v37.fasta.fai.gz
+      1 human_g1k_v37.fasta.fai.gz.md5
+ 849537 human_g1k_v37.fasta.gz
+      1 human_g1k_v37.fasta.gz.md5
+      1 human_g1k_v37.stats.gz
+      1 human_g1k_v37.stats.gz.md5
+      3 human_g1k_v37_decoy.dict.gz
+      1 human_g1k_v37_decoy.dict.gz.md5
+      2 human_g1k_v37_decoy.fasta.fai.gz
+      1 human_g1k_v37_decoy.fasta.fai.gz.md5
+ 858592 human_g1k_v37_decoy.fasta.gz
+      1 human_g1k_v37_decoy.fasta.gz.md5
+      1 human_g1k_v37_decoy.stats.gz
+      1 human_g1k_v37_decoy.stats.gz.md5
+</code></pre>
+</notextile>
 
 h3. Submit a job.
 
@@ -114,6 +142,6 @@ curl -s -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
 
 h3. Notes
 
-fn1. Download the GATK tools &rarr; http://www.broadinstitute.org/gatk/download
+fn1. Download the GATK tools &rarr; "http://www.broadinstitute.org/gatk/download":http://www.broadinstitute.org/gatk/download
 
-fn2. Information about the GATK resource bundle &rarr; http://gatkforums.broadinstitute.org/discussion/1213/whats-in-the-resource-bundle-and-how-can-i-get-it
+fn2. "Information about the GATK resource bundle":http://gatkforums.broadinstitute.org/discussion/1213/whats-in-the-resource-bundle-and-how-can-i-get-it "Direct download link":ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/2.5/hg18/ (if prompted, just submit an empty password)

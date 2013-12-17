@@ -71,7 +71,7 @@ h2. Finding humans with the selected trait
 We query the "links" resource to find humans that report the selected trait.  Links are directional connections between Arvados data items, for example, from a human to their reported traits.
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">query = json.dumps({
+<pre><code>&gt;&gt;&gt; <span class="userinput">trait_query = json.dumps({
     'link_class': 'human_trait',
     'tail_kind': 'arvados#human',
     'head_uuid': non_melanoma_cancer
@@ -86,7 +86,7 @@ We query the "links" resource to find humans that report the selected trait.  Li
 The query will return links that match all three conditions.
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">trait_links = arvados.api().links().list(limit=1000, where=query).execute()</span>
+<pre><code>&gt;&gt;&gt; <span class="userinput">trait_links = arvados.api().links().list(limit=1000, where=trait_query).execute()</span>
 </code></pre>
 </notextile>
 
@@ -97,6 +97,7 @@ The query will return links that match all three conditions.
 
 <notextile>
 <pre><code>&gt;&gt;&gt; <span class="userinput">human_uuids = map(lambda l: l['tail_uuid'], trait_links['items'])</span>
+&gt;&gt;&gt; <span class="userinput">human_uuids</span>
 [u'1h9kt-7a9it-c0uqa4kcdh29wdf', u'1h9kt-7a9it-x4tru6mn40hc6ah',
 u'1h9kt-7a9it-yqb8m5s9cpy88i8', u'1h9kt-7a9it-46sm75w200ngwny',
 u'1h9kt-7a9it-gx85a4tdkpzsg3w', u'1h9kt-7a9it-8cvlaa8909lgeo9',
@@ -146,42 +147,35 @@ These PGP IDs let us find public profiles, for example:
 
 h2. Find genomic data from specific humans
 
-Now we want to find collections in Keep that were provided by these humans.
+Now we want to find collections in Keep that were provided by these humans.  We search the "links" resource for "provenance" links that point to subjects in list of humans with the non-melanoma skin cancer trait:
 
 <notextile>
-<pre><code>
-&gt;&gt;&gt; <span class="userinput">human_uuids = map(lambda l: l['uuid'], pgpid_links['items'])</span>
-&gt;&gt;&gt; <span class="userinput">provenance_links = arvados.api().links().list(limit=1000, where=json.dumps({
+<pre><code>&gt;&gt;&gt; <span class="userinput">provenance_links = arvados.api().links().list(limit=1000, where=json.dumps({
     "link_class": "provenance",
     "name": "provided",
     "tail_uuid": human_uuids
-  })).execute()</span>
-&gt;&gt;&gt; <span class="userinput">collection_uuids = map(lambda l: l['head_uuid'], provenance_links)</span>
+  })).execute()
+collection_uuids = map(lambda l: l['head_uuid'], provenance_links['items'])
 
 # build map of human uuid -> PGP ID
 pgpid = {}
-for pgpid_link in pgpid_links:
+for pgpid_link in pgpid_links['items']:
   pgpid[pgpid_link['head_uuid']] = pgpid_link['name']
 
 # build map of collection uuid -> PGP ID
-for p_link in provenance_links:
+for p_link in provenance_links['items']:
   pgpid[p_link['head_uuid']] = pgpid[p_link['tail_uuid']]
 
 # get details (e.g., list of files) of each collection
 collections = arvados.service.collections().list(where=json.dumps({
     "uuid": collection_uuids
-  })).execute()['items']
+  })).execute()
 
 # print PGP public profile links with file locators
-for c in collections:
+for c in collections['items']:
   for f in c['files']:
     print "https://my.personalgenomes.org/profile/%s %s %s%s" % (pgpid[c['uuid']], c['uuid'], ('' if f[0] == '.' else f[0]+'/'), f[1])
-</code></pre>
-</notextile>
-
-%(darr)&darr;%
-
-<pre>
+</span>
 https://my.personalgenomes.org/profile/hu43860C a58dca7609fa84c8c38a7e926a97b2fc+302+K@qr1hi var-GS00253-DNA_A01_200_37-ASM.tsv.bz2
 https://my.personalgenomes.org/profile/huB1FD55 ea30eb9e46eedf7f05ed6e348c2baf5d+291+K@qr1hi var-GS000010320-ASM.tsv.bz2
 https://my.personalgenomes.org/profile/huDF04CC 4ab0df8f22f595d1747a22c476c05873+242+K@qr1hi var-GS000010427-ASM.tsv.bz2
@@ -193,15 +187,16 @@ https://my.personalgenomes.org/profile/hu599905 d6e2e57cd60ba5979006d0b03e45e726
 https://my.personalgenomes.org/profile/hu553620 ea4f2d325592a1272f989d141a917fdd+85+K@qr1hi Devenwood_results.zip
 https://my.personalgenomes.org/profile/hu7A2F1D 4580f6620bb15b25b18373766e14e4a7+85+K@qr1hi Innkeeper_results.zip
 https://my.personalgenomes.org/profile/huD09534 fee37be9440b912eb90f5e779f272416+82+K@qr1hi Hallet_results.zip
-</pre>
+</code></pre>
+</notextile>
 
-h3. Search for a variant.
+h3. Search for a variant
 
-Look for variant rs1126809 in each of the "var" files (these contain variant calls from WGS data).
+Now we will use crunch to issue a 'grep' job to look for variant rs1126809 in each of the "var-" files (these contain variant calls from WGS data).
 
-<pre>
-job = {}
-for c in collections:
+<notextile>
+<pre><code>&gt;&gt;&gt; <span class="userinput">job = {}
+for c in collections['items']:
   if [] != filter(lambda f: re.search('^var-.*\.tsv\.bz2', f[1]), c['files']):
     job[c['uuid']] = arvados.service.jobs().create(body={
       'script': 'grep',
@@ -209,49 +204,51 @@ for c in collections:
       'script_version': 'e7aeb42'
     }).execute()
     print "%s %s" % (pgpid[c['uuid']], job[c['uuid']]['uuid'])
+</span>
+hu43860C qr1hi-8i9sb-wbf3uthbhkcy8ji
+huB1FD55 qr1hi-8i9sb-scklkiy8dc27dab
+huDF04CC qr1hi-8i9sb-pg0w4rfrwfd9srg
+hu7A2F1D qr1hi-8i9sb-n7u0u0rj8b47168
+hu553620 qr1hi-8i9sb-k7gst7vyhg20pt1
+huD09534 qr1hi-8i9sb-4w65pm48123fte5
+hu599905 qr1hi-8i9sb-wmwa5b5r3eghnev
+hu43860C qr1hi-8i9sb-j1mngmakdh8iv9o
+huB1FD55 qr1hi-8i9sb-4j6ehiatcolaoxb
+huDF04CC qr1hi-8i9sb-n6lcmcr3lowqr5u
+hu7A2F1D qr1hi-8i9sb-0hwsdtojfcxjo40
+hu553620 qr1hi-8i9sb-cvvqzqea7jhwb0i
+huD09534 qr1hi-8i9sb-d0y0qtzuwzbrjj0
+hu599905 qr1hi-8i9sb-i9ec9g8d7rt70xg
+</code></pre>
+</notextile>
 
-</pre>
-
-&darr;
-
-<pre>
-hu43860C qr1hi-8i9sb-wyqq2eji4ehiwkq
-huB1FD55 qr1hi-8i9sb-ep68uf0jkj3je7q
-huDF04CC qr1hi-8i9sb-4ts4cvx6mbtcrsk
-hu7A2F1D qr1hi-8i9sb-5lkiu9sh7vdgven
-hu553620 qr1hi-8i9sb-nu4p6hjmziic022
-huD09534 qr1hi-8i9sb-bt9389e9g3ff0m1
-hu599905 qr1hi-8i9sb-ocg0i8r75luvke3
-</pre>
 
 Monitor job progress by refreshing the Jobs page in Workbench, or by using the API:
 
-<pre>
-map(lambda j: arvados.service.jobs().get(uuid=j['uuid']).execute()['success'], job.values())
-</pre>
+<notextile>
+<pre><code>&gt;&gt;&gt; <span class="userinput">map(lambda j: arvados.service.jobs().get(uuid=j['uuid']).execute()['success'], job.values())
+[None, True, None, None, None, None, None, None, None, None, None, None, None, None]
+</code></pre>
+</notextile>
 
-%(darr)&darr;%
-
-<pre>
-[True, True, True, True, True, True, True]
-</pre>
-
-(Unfinished jobs will appear as None, failed jobs as False, and completed jobs as True.)
+Unfinished jobs will appear as None, failed jobs as False, and completed jobs as True.
 
 After the jobs have completed, check output file sizes.
 
-<pre>
+<notextile>
+<pre><code>&gt;&gt;&gt; <span class="userinput">total = 0
 for collection_uuid in job:
   job_uuid = job[collection_uuid]['uuid']
   job_output = arvados.service.jobs().get(uuid=job_uuid).execute()['output']
   output_files = arvados.service.collections().get(uuid=job_output).execute()['files']
-  print "%s %3d %s" % (pgpid[collection_uuid], output_files[0][2], job_output)
-
-</pre>
-
-%(darr)&darr;%
-
-<pre>
+  # Test the output size.  If greater than zero, that means 'grep' found the variant 
+  if output_files[0][2] > 0:
+    print "%s has variant rs1126809" % (pgpid[collection_uuid])
+    total += 1
+  else:
+    print "%s does not have variant rs1126809" % (pgpid[collection_uuid])
+print "rs1126809 is found in", total, "out of", len(job), "participants reporting non-melanoma skin cancer"
+</span>
 hu599905  80 5644238bfb2a1925d423f2c264819cfb+75+K@qr1hi
 huD09534  80 f98f92573cf521333607910d320cc33b+75+K@qr1hi
 huB1FD55   0 c10e07d8d90b51ee7f3b0a5855dc77c3+65+K@qr1hi
@@ -259,6 +256,8 @@ hu7A2F1D  80 922c4ce8d3dab3268edf8b9312cc63d4+75+K@qr1hi
 hu553620   0 66da988f45a7ee16b6058fcbe9859d69+65+K@qr1hi
 huDF04CC  80 bbe919451a437dde236a561d4e469ad2+75+K@qr1hi
 hu43860C   0 45797e38410de9b9ddef2f4f0ec41a93+76+K@qr1hi
-</pre>
+</code></pre>
+</notextile>
+
 
 Thus, of the 7 WGS results available for PGP participants reporting non-melanoma skin cancer, 4 include the rs1126809 / TYR-R402Q variant.

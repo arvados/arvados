@@ -44,6 +44,21 @@ Now use @arv keep put@ to add your VCF data to Keep:
 
 The output value @33a9f3842b01ea3fdf27cc582f5ea2af@ is the Keep locator.  This enables you to access the file you just uploaded, and is explained in the next section.
 
+h2. Putting a directory
+
+You can also use @arv keep put@ to add an entire directory:
+
+<notextile>
+<pre><code>$ <span class="userinput">mkdir tmp</span>
+$ <span class="userinput">echo "hello alice" > tmp/alice.txt</span>
+$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
+$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
+$ <span class="userinput">arv keep put tmp</span>
+0M / 0M 100.0% 
+887cd41e9c613463eab2f0d885c6dd96+83
+</code></pre>
+</notextile>
+
 h1. Getting Data from Keep
 
 In Keep, information is stored in *data blocks*.  Data blocks are normally between 1 byte and 64 megabytes in size.  If a file exceeds the maximum size of a single data block, the file will be split across multiple data blocks until the entire file can be stored.  These data blocks may be stored and replicated across multiple disks, servers, or clusters.  Each data block has its own identifier for the contents of that specific data block.
@@ -97,8 +112,12 @@ There are a couple of other ways to access a collection.  You may view the conte
 <notextile>
 <pre><code>$ <span class="userinput">arv keep ls c1bad4b39ca5a924e481008009d94e32+210</span>
 var-GS000016015-ASM.tsv.bz2
+$ <span class="userinput">arv keep ls -s c1bad4b39ca5a924e481008009d94e32+210</span>
+221887 var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>
+
+* @-s@ prints file sizes
 
 You may also access through the Arvados Workbench using a URI similar to this, where the last part of the path is the Keep locator:
 
