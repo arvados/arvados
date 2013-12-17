@@ -61,9 +61,7 @@ EOF
 * @"components"@ is a set of scripts that make up the pipeline
 * Each component is listed with a human-readable name (@"do_hash"@ and @"filter"@ in this example)
 * Each item in @"components"@ is a single Arvados job, and uses the same format that we saw previously with @arv job create@
-* @"output_of"@ indicates that the @"input"@ of @"filter"@ is the @"output"@ of the @"do_hash"@ component
-
-The @"output_of"@ specifies a _dependency_.  Arvados uses the dependencies between jobs to automatically determine the correct order to run the jobs.
+* @"output_of"@ indicates that the @"input"@ of @"filter"@ is the @"output"@ of the @"do_hash"@ component.  This is a _dependency_.  Arvados uses the dependencies between jobs to automatically determine the correct order to run the jobs.
 
 Now, use @arv pipeline_template create@ tell Arvados about your pipeline template:
 
@@ -100,8 +98,7 @@ Arvados adds each pipeline component to the job queue as its dependencies are sa
 The Keep locators of the output of each of @"do_hash"@ and @"filter"@ component are available from the output log shown above.  The output is also available on the Workbench by navigating to %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;instances %(rarr)&rarr;% pipeline uuid under the *id* column %(rarr)&rarr;% components.
 
 <notextile>
-<pre><code>
-$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi/md5sum.txt</span>
+<pre><code>$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi/md5sum.txt</span>
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 504938460ef369cd275e4ef58994cffe bob.txt
 8f3b36aff310e06f3c5b9e95678ff77a carol.txt
@@ -117,8 +114,7 @@ h3. Running a pipeline with different parameters
 Notice that the pipeline definition explicitly specifies the Keep locator for the input:
 
 <notextile>
-<pre><code>
-...
+<pre><code>...
     "do_hash":{
       "script_parameters":{
         "input": "887cd41e9c613463eab2f0d885c6dd96+83"
@@ -130,17 +126,32 @@ Notice that the pipeline definition explicitly specifies the Keep locator for th
 
 What if we want to run the pipeline on a different input block?  One option is to define a new pipeline template, but would potentially result in clutter with many pipeline templates defined for one-off jobs.  Instead, you can override values in the input of the component like this:
 
-<pre><code>
-$ <span class="userinput">arv pipeline run --template qr1hi-p5p6p-uf9gi9nolgakm85 do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af
+<notextile>
+<pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-d1hrv-vxzkp38nlde9yyr do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af</span>
+2013-12-17 20:31:24 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 queued 2013-12-17T20:31:24Z
+filter  -                           -
+2013-12-17 20:31:34 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 {:done=>1, :running=>1, :failed=>0, :todo=>0}
+filter  -                           -
+2013-12-17 20:31:44 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 {:done=>1, :running=>1, :failed=>0, :todo=>0}
+filter  -                           -
+2013-12-17 20:31:55 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi
+filter  qr1hi-8i9sb-j347g1sqovdh0op queued 2013-12-17T20:31:55Z
+2013-12-17 20:32:05 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi
+filter  qr1hi-8i9sb-j347g1sqovdh0op fb728f0ffe152058fa64b9aeed344cb5+54
 </code></pre>
 </notextile>
+
+Now check the output:
 
 <notextile>
-<pre><code>
-$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
-$ <span class="userinput">arv keep get fb728f0ffe152058fa64b9aeed344cb5+54</span>
+<pre><code>$ <span class="userinput">arv keep ls -s fb728f0ffe152058fa64b9aeed344cb5+54</span>
+0 0-filter.txt
 </code></pre>
 </notextile>
 
-Since the hash of @var-GS000016015-ASM.tsv.bz2@ does not start with 0, the filter script has no output in this pipeline instance.
+Here the filter script output is empty, so none of the files in the collection have hash code that start with 0.

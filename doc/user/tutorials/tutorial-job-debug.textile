@@ -1,7 +1,7 @@
 ---
 layout: default
 navsection: userguide
-title: "Debug a Crunch script"
+title: "Debugging a Crunch script"
 navorder: 114
 ---
 
@@ -137,5 +137,19 @@ The job succeeded, with output in Keep object @576c44d762ba241b0a674aa43152b52a+
 hello world
 </code></pre>
 </notextile>
+
+h3. Location of temporary files
+
+Crunch job tasks are supplied with @TASK_WORK@ and @JOB_WORK@ environment variables, to be used as scratch space.  When running in local development mode using @arv-crunch-job@, Crunch sets these variables to point to directory called @crunch-job-{USERID}@ in @TMPDIR@ (or @/tmp@ if @TMPDIR@ is not set).
+
+* Set @TMPDIR@ to @/scratch@ to make Crunch use a directory like @/scratch/crunch-job-{USERID}/@ for temporary space.
+
+* Set @CRUNCH_TMP@ to @/scratch/foo@ to make Crunch use @/scratch/foo/@ for temporary space (omitting the default @crunch-job-{USERID}@ leaf name)
+
+h3. Testing job scripts without SDKs and Keep access
+
+Read and write data to @/tmp/@ instead of Keep. This only works with the Python SDK.
+
+notextile. <pre><code>$ <span class="userinput">export KEEP_LOCAL_STORE=/tmp</span></code></pre>
 
 Next, "parallel tasks.":tutorial-parallel.html

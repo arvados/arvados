@@ -7,7 +7,7 @@ navorder: 0
 
 h1. Welcome to Arvados!
 
-This guide is intended to introduce new users to the Arvados system.  It covers initial configuration required to use the system and then presents several tutorial on using Arvados to do data processing.
+This guide is intended to introduce new users to the Arvados system.  It covers initial configuration required to use the system and then presents several tutorials on using Arvados to do data processing.
 
 This user guide introduces how to use the major components of Arvados.  These are:
 
@@ -30,6 +30,8 @@ It will also be helpful (but not essential) if you are familiar with revision co
 The examples in this guide uses the public Arvados instance located at "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ .  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@clinicalfuture.com":mailto:arvados@clinicalfuture.com .
 
 If you are using a different Arvados instance replace @{{ site.arvados_api_host }}@ with your private instance in all of the examples in this guide.
+
+h2. Typographic conventions
 
 This manual uses the following typographic conventions:
 
