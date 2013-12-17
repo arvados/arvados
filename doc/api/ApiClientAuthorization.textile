@@ -7,7 +7,7 @@ navorder: 101
 
 h1. ApiClientAuthorization
 
-A **ApiClientAuthorization** represents...
+A **ApiClientAuthorization** represents the API authorization token that has been issued to each "ApiClient":ApiClient.html known to this Arvados instance.
 
 h2. Methods
 
@@ -27,7 +27,7 @@ Side effects of creating a ApiClientAuthorization.
 
 h2. Resources
 
-Each ApiClientAuthorization has, in addition to the usual "attributes of Arvados resources":resources.html:
+An ApiClientAuthorization is not a generic Arvados resource.  The full list of properties that belong to an ApiClientAuthorization is:
 
 table(table table-bordered table-condensed).
 |*Property name*|*Value*|*Description*|*Example*|
