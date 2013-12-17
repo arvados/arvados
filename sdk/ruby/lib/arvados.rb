@@ -53,6 +53,7 @@ class Arvados
     # resource. After this, self.job will return Arvados::Job;
     # self.job.new() and self.job.find() will do what you want.
     _arvados = self
+    namespace_class = Arvados.const_set "A#{self.object_id}", Class.new
     self.arvados_api.schemas.each do |classname, schema|
       next if classname.match /List$/
       klass = Class.new(Arvados::Model) do
@@ -72,11 +73,10 @@ class Arvados
         arvados_api.
         send(classname.underscore.split('/').last.pluralize.to_sym).
         discovered_methods.
-        collect(&:name).
-        each do |method_name|
+        each do |method|
         class << klass; self; end.class_eval do
-          define_method method_name do |*params|
-            self.api_exec(method_name.to_sym, *params)
+          define_method method.name do |*params|
+            self.api_exec(method.name.to_sym, *params)
           end
         end
       end
@@ -89,9 +89,10 @@ class Arvados
         @api_model_sym = classname.underscore.split('/').last.to_sym
       end
 
-      # This might produce confusing results when using multiple
-      # Arvados instances.
-      Arvados.const_set classname, klass
+      # Create the new class in namespace_class so it doesn't
+      # interfere with classes created by other Arvados objects. The
+      # result looks like Arvados::A26949680::Job.
+      namespace_class.const_set classname, klass
 
       self.class.class_eval do
         define_method classname.underscore do
@@ -157,8 +158,15 @@ class Arvados
       resp = JSON.parse result.body, :symbolize_names => true
       if resp[:errors]
         raise Arvados::TransactionFailedError.new(resp[:errors])
+      elsif resp[:uuid] and resp[:etag]
+        self.new(resp)
+      elsif resp[:items].is_a? Array
+        resp.merge(items: resp[:items].collect do |i|
+                     self.new(i)
+                   end)
+      else
+        resp
       end
-      resp
     end
 
     def []=(x,y)
@@ -182,7 +190,7 @@ class Arvados
         :uuid => @attributes[:uuid],
         self.class.api_model_sym => @attributes_to_update.to_json
       }
-      unless j.is_a? Hash and j[:uuid]
+      unless j.respond_to? :[] and j[:uuid]
         debuglog "Failed to save #{self.to_s}: #{j[:errors] rescue nil}", 0
         nil
       else
