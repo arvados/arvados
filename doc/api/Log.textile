@@ -30,18 +30,11 @@ h2. Resources
 Each Log has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Property name*|*Value*|*Description*|*Example*|
-|id|integer|||
-|uuid|string|||
-|owner_uuid|string|||
-|modified_by_client_uuid|string|||
-|modified_by_user_uuid|string|||
+|*Attribute*|*Type*|*Description*|*Example*|
 |object_kind|string|||
 |object_uuid|string|||
 |event_at|datetime|||
 |event_type|string|||
 |summary|text|||
 |info|Hash|||
-|created_at|datetime|||
 |updated_at|datetime|||
-|modified_at|datetime|||
