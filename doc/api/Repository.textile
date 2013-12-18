@@ -30,15 +30,8 @@ h2. Resources
 Each Repository has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Property name*|*Value*|*Description*|*Example*|
-|id|integer|||
-|uuid|string|||
-|owner_uuid|string|||
-|modified_by_client_uuid|string|||
-|modified_by_user_uuid|string|||
-|modified_at|datetime|||
+|*Attribute*|*Type*|*Description*|*Example*|
 |name|string|||
 |fetch_url|string|||
 |push_url|string|||
-|created_at|datetime|||
 |updated_at|datetime|||

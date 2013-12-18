@@ -30,8 +30,7 @@ h2. Resources
 An ApiClientAuthorization is not a generic Arvados resource.  The full list of properties that belong to an ApiClientAuthorization is:
 
 table(table table-bordered table-condensed).
-|*Property name*|*Value*|*Description*|*Example*|
-|id|integer|||
+|*Attribute*|*Type*|*Description*|*Example*|
 |api_token|string|||
 |api_client_id|integer|||
 |user_id|integer|||
@@ -39,7 +38,6 @@ table(table table-bordered table-condensed).
 |last_used_by_ip_address|string|||
 |last_used_at|datetime|||
 |expires_at|datetime|||
-|created_at|datetime|||
 |updated_at|datetime|||
 |default_owner_uuid|string|||
 |scopes|Array|||
