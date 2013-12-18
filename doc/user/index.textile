@@ -7,7 +7,14 @@ navorder: 0
 
 h1. Welcome to Arvados!
 
-This guide is intended to introduce new users to the Arvados system.  It covers initial configuration required to use the system and then presents several tutorial on using Arvados to do data processing.
+This guide is intended to introduce new users to the Arvados system.  It covers initial configuration required to use the system and then presents several tutorials on using Arvados to do data processing.
+
+This user guide introduces how to use the major components of Arvados.  These are:
+
+* Keep: Content-addressable cluster file system designed for robust storage of very large files, such as whole genome sequences
+* Crunch: Cluster compute engine designed for genomic analysis, e.g. alignment, variant calls
+* Metadata Database: Information about the genomic data stored in Keep, such as genomic traits, human subjects
+* Workbench: Web interface to Arvados components
 
 h2. Prerequisites
 
@@ -20,20 +27,25 @@ To get the most value out of this guide, you should be comfortable with the foll
 
 It will also be helpful (but not essential) if you are familiar with revision control using @git@.
 
-The examples in this guide uses the public Arvados instance located at "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ .  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@clinicalfuture.com":mailto:arvados@clinicalfuture.com .
+The examples in this guide uses the public Arvados instance located at "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ .  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@curoverse.com":mailto:arvados@curoverse.com .
 
 If you are using a different Arvados instance replace @{{ site.arvados_api_host }}@ with your private instance in all of the examples in this guide.
 
-h1. Arvados Workbench
+h2. Typographic conventions
 
-You may access the Arvados workbench using this link:
+This manual uses the following typographic conventions:
 
-"https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/
+<notextile>
+<ul>
+<li>Code blocks which are set aside from the text indicate user input to the system.  Commands that should be entered into a Unix shell are indicated with a '$' at the beginning of the line, and the entire user input <span class="userinput">will be highlighted</span>, possibly followed by example command output in black:
+<pre><code>$ <span class="userinput">ls foo</span>
+foo
+</code></pre></li>
+<li>Code blocks inline with text emphasize specific <code>programs</code>, <code>files</code>, or <code>options</code> that are being discussed.</li>
+<li>Bold text emphasizes <b>specific items</b> to look when discussing Arvados Workbench pages.</li>
+<li>A sequence of steps separated by right arrows (<span class="rarr">&rarr;</span>) indicate a path the user should follow through the Arvados Workbench to access some piece of information under discussion.  The steps indicate a menu, hyperlink, column name, field name, or other label on the page that guide the user where to look or click.
+</li>
+</ul>
+</notextile>
 
-If you are accessing Arvados for the first time, you will be asked to log in using a Google account.  Arvados only uses Google services for identification, and will never access any personal information.  Once you are logged in, the Workbench page may indicate your account status is *New / inactive*.  If this is the case, contact the administrator of the Arvados instance to activate your account.
-
-Once your account is active, logging in to the Workbench will present you with a system status dashboard.  This gives a summary of data, configuration, and activity in the Arvados instance.
-
-Next, we will "configure your account for ssh access to an Arvados virtual machine (VM) instance.":ssh-access.html
-
-
+Now begin by "accessing the Arvados workbench.":getting_started/workbench.html

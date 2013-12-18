@@ -15,16 +15,15 @@ The Python package includes the Python API client library module and the CLI uti
 
 Get the arvados source tree.
 
-<pre>
-git clone git://git.clinicalfuture.com/arvados.git
-</pre>
+notextile. <pre><code>$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span></code></pre>
 
 Build and install the python package.
 
-<pre>
-cd arvados/sdk/python
-sudo python setup.py install
-</pre>
+<notextile>
+<pre><code>$ <span class="userinput">cd arvados/sdk/python</span>
+$ <span class="userinput">sudo python setup.py install</span>
+</code></pre>
+</notextile>
 
 Alternatively, build the package (without sudo) using @python setup.py bdist_egg@ and copy the @.egg@ package from @dist/@ to the target system.
 
@@ -34,6 +33,4 @@ h3. Ruby
 The arvados package includes the Ruby client library module. The arvados-cli package includes the CLI utilities @arv@, @arv-run-pipeline-instance@, and @crunch-job@.
 {% include notebox-end.html %}
 
-<pre>
-sudo gem install arvados arvados-cli
-</pre>
+notextile. <pre><code>$ <span class="userinput">sudo gem install arvados arvados-cli</span></code></pre>
