@@ -25,38 +25,26 @@ See "REST methods for working with Arvados resources":methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/job_tasks@
 
-h2. Resource
+h2. Resources
 
-Each job has, in addition to the usual "attributes of Arvados resources":resources.html:
+Each JobTask has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|
+|*Attribute*|*Type*|*Description*|*Example*|
 |sequence|integer|Execution sequence.
 A step cannot be run until all steps with lower sequence numbers have completed.
-Job steps with the same sequence number can be run in any order.|
-|parameters{}|list||
-|runtime_constraints{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the task (see "Jobs":Jobs.html).|
-|output|string||
-|progress|float||
-|success|boolean|Is null if the task has neither completed successfully nor failed permanently.|
+Job steps with the same sequence number can be run in any order.||
+|parameters{}|list|||
+|output|text|||
+|progress|float|||
+|success|boolean|Is null if the task has neither completed successfully nor failed permanently.||
 
 The following attributes should not be updated by anyone other than the job manager:
 
 table(table table-bordered table-condensed).
 |*Attribute*|*Type*|*Description*|*Notes*|
 |qsequence|integer|Order of arrival|0-based|
-|failed_count|number|Times this step has failed||
-|failed_at|number|Time of last failure|Is null if failed_count=0|
-|failed_log|string|stderr from last failure|Is null if failed_count=0|
-|log|string|stderr||
+|job_uuid|string|||
+|created_by_job_task_uuid|string|||
 
 
-h3. Resource limits
-
-table(table table-bordered table-condensed).
-|*Key*|*Type*|*Description*|*Implemented*|
-|min_nodes|integer|||
-|max_nodes|integer|||
-|max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#x2713;|
-|min_ram_per_task|integer|Minimum real memory (KiB) per task||
-|min_ram_per_node|integer|Minimum real memory (KiB) per node||

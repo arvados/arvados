@@ -31,7 +31,7 @@ h2. Resources
 Each ApiClient has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Property name*|*Value*|*Description*|*Example*|
+|*Attribute*|*Type*|*Description*|*Example*|
 |name|string|||
 |url_prefix|string|||
 |is_trusted|boolean|||

@@ -18,7 +18,7 @@ Object IDs are alphanumeric strings, unique across all installations (each insta
 h2. Attributes of resources
 
 table(table table-bordered table-condensed).
-|*Attribute name*|*Value*|*Description*|*Example*|
+|*Attribute*|*Type*|*Description*|*Example*|
 |uuid|string|universally unique object identifier|@mk2qn-4zz18-w3anr2hk2wgfpuo@|
 |href|string|a URL that can be used to address this resource||
 |kind|string|@arvados#{resource_type}@|@arvados#collection@|
@@ -33,7 +33,7 @@ table(table table-bordered table-condensed).
 h2. Attributes of resource lists
 
 table(table table-bordered table-condensed).
-|*Attribute name*|*Value*|*Description*|*Example*|
+|*Attribute*|*Type*|*Description*|*Example*|
 |kind|string|@arvados#{resource_type}_list@|@arvados#project_list@|
 |etag|string|The ETag[1] of the resource list|@cd3o1wi9sf934saajykawrz2e@|
 |self_link|string|||
