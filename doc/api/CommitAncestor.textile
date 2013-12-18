@@ -30,11 +30,9 @@ h2. Resources
 Each CommitAncestor has, in addition to the usual "attributes of Arvados resources":resources.html:
 
 table(table table-bordered table-condensed).
-|*Property name*|*Value*|*Description*|*Example*|
-|id|integer|||
+|*Attribute*|*Type*|*Description*|*Example*|
 |repository_name|string|||
 |descendant|string|||
 |ancestor|string|||
 |is|boolean|||
-|created_at|datetime|||
 |updated_at|datetime|||
