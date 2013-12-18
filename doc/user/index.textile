@@ -27,7 +27,7 @@ To get the most value out of this guide, you should be comfortable with the foll
 
 It will also be helpful (but not essential) if you are familiar with revision control using @git@.
 
-The examples in this guide uses the public Arvados instance located at "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ .  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@clinicalfuture.com":mailto:arvados@clinicalfuture.com .
+The examples in this guide uses the public Arvados instance located at "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ .  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@curoverse.com":mailto:arvados@curoverse.com .
 
 If you are using a different Arvados instance replace @{{ site.arvados_api_host }}@ with your private instance in all of the examples in this guide.
 
