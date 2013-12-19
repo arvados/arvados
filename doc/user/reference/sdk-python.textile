@@ -1,0 +1,127 @@
+---
+layout: default
+navsection: userguide
+title: "Python SDK"
+navorder: 323
+---
+
+h1. Reference: Python SDK
+
+The Python SDK provides a generic set of wrappers so you can make API calls easily. It performs some validation before connecting to the API server: for example, it refuses to do an API call if a required parameter is missing.
+
+The library also includes some conveniences for use in Crunch scripts; see "Crunch utility libraries":crunch-utility-libraries.html for details.
+
+h3. Installation
+
+If you are logged in to an Arvados VM, the Python SDK should be installed.
+
+To use the Python SDK elsewhere, build and install the package using the arvados source tree.
+
+<notextile>
+<pre>
+$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
+$ <code class="userinput">cd arvados/sdk/python</code>
+$ <code class="userinput">sudo python setup.py install</code>
+</pre>
+</notextile>
+
+If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":api-tokens.html for details), @import arvados@ should produce no errors:
+
+<notextile>
+<pre>$ <code class="userinput">python</code>
+Python 2.7.4 (default, Sep 26 2013, 03:20:26) 
+[GCC 4.7.3] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> <code class="userinput">import arvados</code>
+>>> <code class="userinput">arvados.api('v1')</code>
+&lt;apiclient.discovery.Resource object at 0x233bb50&gt;
+</pre>
+</notextile>
+
+h3. Examples
+
+Get the User object for the current user:
+
+<notextile>
+<pre><code class="userinput">current_user = arvados.api('v1').users().current().execute()
+</code></pre>
+</notextile>
+
+Get the UUID of an object that was retrieved using the SDK:
+
+<notextile>
+<pre><code class="userinput">my_uuid = current_user['uuid']
+</code></pre>
+</notextile>
+
+Retrieve an object by ID:
+
+<notextile>
+<pre><code class="userinput">some_user = arvados.api('v1').users().get(uuid=my_uuid).execute()
+</code></pre>
+</notextile>
+
+Create an object:
+
+<notextile>
+<pre><code class="userinput">test_link = arvados.api('v1').links().create(
+    body={'link_class':'test','name':'test'}).execute()
+</code></pre>
+</notextile>
+
+Update an object:
+
+<notextile>
+<pre><code class="userinput">arvados.api('v1').links().update(
+    uuid=test_link['uuid'],
+    body={'properties':{'foo':'bar'}}).execute()
+</code></pre>
+</notextile>
+
+Get a list of objects:
+
+<notextile>
+<pre><code class="userinput">repos = arvados.api('v1').repositories().list().execute()
+len(repos['items'])</code>
+2
+<code class="userinput">repos['items'][0]['uuid']</code>
+u'qr1hi-s0uqq-kg8cawglrf74bmw'
+</code></pre>
+</notextile>
+
+h3. Notes
+
+The general form of an API call is:
+
+<notextile>
+<pre><code class="userinput">arvados.api(<i>api_version</i>).<i>plural_resource_type</i>().<i>api_method</i>(<i>parameter</i>=<i>value</i>, ...).execute()
+</code></pre>
+</notextile>
+
+Many API methods accept a parameter whose name is the same as the resource type. For example, @links.create@ accepts a parameter called @link@. This parameter should be given as @body@.
+
+<notextile>
+<pre><code class="userinput">arvados.api('v1').links().create(
+    uuid=test_link['uuid'],
+    body={'properties':{'foo':'bar'}}).execute()
+</code></pre>
+</notextile>
+
+Currently, non-atom parameter values (hashes and lists) other than @body@ must be explicitly encoded using @json.dumps()@. (This will be fixed in a future release.)
+
+<notextile>
+<pre><code class="userinput">arvados.api('v1').links().list(
+    where=json.dumps({'link_class':'permission'})).execute()
+</code></pre>
+</notextile>
+
+One way to make API calls slightly less verbose is:
+
+<notextile>
+<pre><code class="userinput">arv = arvados.api('v1')
+j = arv.jobs().list().execute()
+</code></pre>
+</notextile>
+
+The SDK retrieves the list of API methods from the server at run time. Therefore, the set of available methods is determined by the server version rather than the SDK version.
+
