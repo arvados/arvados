@@ -16,8 +16,39 @@ Prerequisites
 
   Docker is a Linux container management system based on LXC. It is a
   very young system but is being developed rapidly.
-  [Installation packages](http://www.docker.io/gettingstarted/#h_installation)
+  [Installation packages](http://www.docker.io/gettingstarted/)
   are available for several platforms.
+  
+  If a prebuilt docker package is not available for your platform, the
+  short instructions for installing it are:
+  
+  1. Create a `docker` group and add yourself to it.
+
+     <pre>
+     $ sudo addgroup docker
+     $ sudo adduser `whoami` docker
+     </pre>
+
+     Log out and back in.
+	 
+  2. Add a `cgroup` filesystem and mount it:
+
+     <pre>
+     $ mkdir -p /cgroup
+     $ grep cgroup /etc/fstab
+     none   /cgroup    cgroup    defaults    0    0
+     $ sudo mount /cgroup
+	 </pre>
+
+  3. Enable IPv4 forwarding:
+
+     <pre>
+     $ grep ipv4.ip_forward /etc/sysctl.conf
+     net.ipv4.ip_forward=1
+     $ sudo sysctl net.ipv4.ip_forward=1
+     </pre>
+	 
+  4. [Download and run a docker binary from docker.io.](http://docs.docker.io/en/latest/installation/binaries/)
 
 * Ruby (any version)
 

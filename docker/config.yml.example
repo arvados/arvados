@@ -44,12 +44,13 @@ ARVADOS_PROD_PW:
 # If a _SECRET variable is set to an empty string, a password
 # will be chosen randomly at build time. This is the
 # recommended setting.
+
+# The value for the Rails config.secret_token setting.
 API_SECRET:
 
 # A "superuser" token with which servers can authenticate to
 # the API server, before an administrative user has been created.
-# Necessary for bootstrapping, e.g. so Keep can register with
-# the API server before any users have been added.
+# Leave this blank to generate a secret randomly at build time (recommended).
 API_SUPERUSER_SECRET:
 
 # More than anything this should be auto-generated, but
