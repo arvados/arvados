@@ -169,7 +169,6 @@ function do_start {
 		exit 1
 		;;
 	esac
-	shift
     done
 
     # If no options were selected, then start all servers.
