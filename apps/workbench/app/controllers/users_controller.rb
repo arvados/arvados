@@ -1,11 +1,11 @@
 class UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => :welcome
+  skip_around_filter :thread_with_api_token, :only => :welcome
+  around_filter :thread_with_optional_api_token, :only => :welcome
 
   def welcome
     if current_user
       redirect_to home_user_path(current_user.uuid)
-    else
-      redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
     end
   end
 

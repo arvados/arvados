@@ -41,19 +41,15 @@
           <br />
           <%= raw(aclass.to_s.pluralize.underscore.gsub '_', '&nbsp;') %>
         </div>
-        <% end %>
+	<% end %>
       </div>
     </div>
   </div>
 </div>
-<% end %>
 
 <div class="row-fluid">
   <div class="col span3">
     <div class="clearfix">
-      <% if not current_user.andand.is_active %>
-      <%= render partial: 'request_activation' %>
-      <% else %>
       <h4>Configuration</h4>
       <div class="well dash-list">
         <ul class="nav nav-list">
@@ -80,24 +76,10 @@
           </li>
         </ul>
       </div>
-      <% end %>
     </div>
   </div>
   <div class="col span4">
-    <div class="clearfix">
-      <h4>Quick links</h4>
-      <div class="well dash-list">
-        <ul class="nav nav-list">
-          <li><%= link_to "Introduction to Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %></li>
-          <li><%= link_to "API Reference", "http://doc.arvados.org/api/" %></li>
-          <li><%= link_to "User Guide", "http://doc.arvados.org/api/" %></li>
-          <li><%= link_to "Tutorial 1: Your first job", "http://doc.arvados.org/user/tutorial-job1.html" %></li>
-          <li><%= link_to "Tutorial 2: GATK VariantFiltration", "http://doc.arvados.org/user/tutorial-gatk-variantfiltration.html" %></li>
-          <li><%= link_to "Tutorial 3: Search PGP data by trait", "http://doc.arvados.org/user/tutorial-trait-search.html" %></li>
-          <li><%= link_to "Tutorial 4: Create a new pipeline", "http://doc.arvados.org/user/tutorial-new-pipeline.html" %></li>
-        </ul>
-      </div>
-    </div>
+    <%= render partial: 'quick_links' %>
   </div>
   <div class="col span5">
     <div class="clearfix">
@@ -146,3 +128,26 @@
     </div>
   </div>
 </div>
+<% else %>
+
+<h1>Welcome to Arvados, <%= current_user.first_name %></h1>
+<div class="row-fluid">
+<div class="col">
+  <h4>Your account status</h4>
+<div class="well clearfix">
+  <p><strong>New / inactive</strong></p>
+  <p>
+  Your account must be activated by an Arvados administrator.  If this
+  is your first time accessing Arvados and would like to request
+  access, or you believe you are seeing the page in error, please 
+<%= link_to "contact us", Rails.configuration.activation_contact_link %>.  You should receive an email at the address you used to log in when
+  your account is activated.  In the mean time, you can <%= link_to "learn more about Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %>,
+  and <%= link_to "read the Arvados user guide", "http://doc.arvados.org/user" %>.
+</p>
+  <p>
+  <%= link_to raw('Contact us &#x2709;'),
+  Rails.configuration.activation_contact_link, class: "pull-right btn btn-primary" %></p>
+</div>
+</div>
+</div>
+<% end %>

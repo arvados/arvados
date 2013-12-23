@@ -136,7 +136,7 @@ class ApplicationController < ActionController::Base
     yield
   end
 
-  def thread_with_api_token
+  def thread_with_api_token(login_optional = false)
     begin
       try_redirect_to_login = true
       if params[:api_token]
@@ -177,7 +177,12 @@ class ApplicationController < ActionController::Base
         respond_to do |f|
           f.html {
             if request.method == 'GET'
-              redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+              if login_optional
+                Thread.current[:arvados_api_token] = nil
+                yield
+              else
+                redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+              end
             else
               flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
               redirect_to :back
@@ -192,6 +197,12 @@ class ApplicationController < ActionController::Base
     ensure
       # Remove token in case this Thread is used for anything else.
       Thread.current[:arvados_api_token] = nil
+    end
+  end
+
+  def thread_with_optional_api_token 
+    thread_with_api_token(true) do 
+      yield
     end
   end
 

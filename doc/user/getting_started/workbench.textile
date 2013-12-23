@@ -10,7 +10,7 @@ Access the Arvados beta test instance available using this link:
 
 "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/
 
-If you are accessing Arvados for the first time, you will be asked to log in using a Google account.  Arvados only uses Google services for identification, and will never access any personal information.  Once you are logged in, the Workbench page may indicate your account status is *New / inactive*.  If this is the case, contact the administrator of the Arvados instance to activate your account.
+If you are accessing Arvados for the first time, you will be asked to log in using a Google account.  Arvados uses Google services only for identification, and will never access any personal information.  Once you are logged in, the Workbench page may indicate your account status is *New / inactive*.  If this is the case, contact the administrator of the Arvados instance to activate your account.
 
 Once your account is active, logging in to the Workbench will present you with a system status dashboard.  This gives a summary of data, configuration, and activity in the Arvados instance.
 
