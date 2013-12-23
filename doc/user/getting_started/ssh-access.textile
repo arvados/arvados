@@ -1,6 +1,7 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Getting Started
 title: Accessing an Arvados VM over ssh
 navorder: 2
 ---

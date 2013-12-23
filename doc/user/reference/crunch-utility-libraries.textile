@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Reference
 title: "Crunch utility libraries"
-navorder: 331
+navorder: 31
 ---
 
 h1. Crunch utility libraries

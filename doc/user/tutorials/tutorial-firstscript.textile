@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Tutorials
 title: "Writing a Crunch script"
-navorder: 113
+navorder: 13
 ---
 
 h1. Tutorial: Writing a Crunch script

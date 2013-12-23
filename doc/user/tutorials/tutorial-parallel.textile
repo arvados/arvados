@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Tutorials
 title: "Parallel Crunch tasks"
-navorder: 115
+navorder: 15
 ---
 
 h1. Tutorial: Parallel Crunch tasks
