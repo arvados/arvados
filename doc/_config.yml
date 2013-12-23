@@ -2,7 +2,11 @@ baseurl: /doc
 arvados_api_host: qr1hi.arvadosapi.com
 navbar:
   userguide:
-  - Getting Started
-  - Tutorials
-  - Examples
-  - Reference
+    - Getting Started
+    - Tutorials
+    - Examples
+    - Reference
+  api:
+    - Concepts
+    - API Methods
+    - Schema
