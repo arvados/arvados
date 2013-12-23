@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Reference
 title: "Python SDK"
-navorder: 323
+navorder: 23
 ---
 
 h1. Reference: Python SDK

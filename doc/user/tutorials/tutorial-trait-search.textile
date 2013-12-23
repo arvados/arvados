@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Tutorials
 title: "Querying the Metadata Database"
-navorder: 116
+navorder: 16
 ---
 
 h1. Tutorial: Querying the Metadata Database
