@@ -1,6 +1,7 @@
 ---
 layout: default
 navsection: api
+navmenu: Schema
 title: "Resource: Trait"
 navorder: 101
 ---
