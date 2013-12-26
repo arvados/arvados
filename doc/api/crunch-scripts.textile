@@ -1,6 +1,7 @@
 ---
 layout: default
 navsection: api
+navmenu: Concepts
 title: Crunch scripts
 navorder: 5
 ---

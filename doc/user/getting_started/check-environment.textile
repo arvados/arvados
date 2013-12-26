@@ -1,6 +1,7 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Getting Started
 title: "Checking your environment"
 navorder: 10
 ---

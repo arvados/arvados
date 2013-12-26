@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Tutorials
 title: "Running a Crunch job"
-navorder: 112
+navorder: 12
 ---
 
 h1. Tutorial: Running a crunch job

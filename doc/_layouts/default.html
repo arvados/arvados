@@ -67,28 +67,7 @@
         <![endif]-->
   </head>
   <body class="nopad">
-    <div class="navbar navbar-inverse navbar-fixed-top" style="margin-bottom:0;">
-      <div class="navbar-inner">
-        <div class="container">
-          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="brand" href="{{ site.baseurl }}/">Arvados Docs</a>
-          <div class="nav-collapse collapse">
-            <ul class="nav">
-              <li {% if page.navsection == 'userguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/user/">User&nbsp;Guide</a></li>
-              <li {% if page.navsection == 'api' %} class="active" {% endif %}><a href="{{ site.baseurl }}/api/">API&nbsp;Reference</a></li>
-              <li {% if page.navsection == 'adminguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/admin/">Admin Guide</a></li>
-              <li {% if page.navsection == 'installguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/install/">Install Guide</a></li>
-              <li><a></a></li>
-              <li><a href="https://arvados.org/">arvados.org&nbsp;&raquo;</a></li>
-            </ul>
-          </div><!--/.nav-collapse -->
-        </div>
-      </div>
-    </div>
+    {% include navbar_top.html %}
 
     {% if page.navsection == 'top' %}
     {{ content }}
@@ -98,50 +77,7 @@
 
     <div class="container-fluid">
       <div class="row-fluid">
-        <div class="span3">
-          <div class="affix-top">
-            <div class="well sidebar-nav">
-	      {% if page.navsection == 'userguide' %}
-	      <ol class="nav nav-list">
-		<li>Getting Started
-		  <ol class="nav nav-list">
-                    {% for navorder in (0..99) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
-                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
-                    {% endif %}{% endfor %}{% endfor %}
-		  </ol>
-		</li>
-		<li>Tutorials
-		  <ol class="nav nav-list">
-                    {% for navorder in (100..199) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
-                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
-                    {% endif %}{% endfor %}{% endfor %}
-		  </ol>
-		</li>
-		<li>Examples
-		  <ol class="nav nav-list">
-                    {% for navorder in (200..299) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
-                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
-                    {% endif %}{% endfor %}{% endfor %}
-		  </ol>
-		</li>
-		<li>Reference
-		  <ol class="nav nav-list">
-                    {% for navorder in (300..399) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
-                    <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
-                    {% endif %}{% endfor %}{% endfor %}
-		  </ol>
-		</li>
-	      </ol>
-	      {% else %}
-	      <ol class="nav nav-list">
-		{% for navorder in (0..99) %}{% for p in site.pages %}{% if p.navsection == page.navsection and p.navorder == navorder %}
-		<li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}><a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
-		{% endif %}{% endfor %}{% endfor %}
-	      </ol>	    
-	      {% endif %}
-            </div>
-          </div>
-        </div>
+        {% include navbar_left.html %}
         <div class="span9"><div style="padding-left: 2em;">
           {{ content }}
         </div></div>

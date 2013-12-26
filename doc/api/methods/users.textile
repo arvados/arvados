@@ -1,0 +1,126 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "users"
+navorder: 18
+---
+
+h1. users
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
+
+h2. create
+
+Create a new User.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|user|object||query||
+
+h2. current
+
+current users
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+
+h2. delete
+
+Delete an existing User.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the User in question.|path||
+
+h2. destroy
+
+destroy users
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+h2. event_stream
+
+event_stream users
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+h2. get
+
+Gets a User's metadata by UUID.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the User in question.|path||
+
+h2. index
+
+index users
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|order|string||query||
+|where|object||query||
+
+h2. list
+
+List users.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|limit|integer (default 100)|Maximum number of users to return.|query||
+|order|string|Order in which to return matching users.|query||
+|pageToken|string|Page token.|query||
+|q|string|Query string for searching users.|query||
+|where|object|Conditions for filtering users.|query||
+
+h2. show
+
+show users
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+h2. system
+
+system users
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+
+h2. update
+
+Update attributes of an existing User.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the User in question.|path||
+|user|object||query||

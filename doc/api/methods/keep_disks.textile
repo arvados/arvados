@@ -1,0 +1,114 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "keep_disks"
+navorder: 9
+---
+
+h1. keep_disks
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
+
+h2. create
+
+Create a new KeepDisk.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|keep_disk|object||query||
+
+h2. delete
+
+Delete an existing KeepDisk.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the KeepDisk in question.|path||
+
+h2. destroy
+
+destroy keep_disks
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+h2. get
+
+Gets a KeepDisk's metadata by UUID.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the KeepDisk in question.|path||
+
+h2. index
+
+index keep_disks
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|order|string||query||
+|where|object||query||
+
+h2. list
+
+List keep_disks.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|limit|integer (default 100)|Maximum number of keep_disks to return.|query||
+|order|string|Order in which to return matching keep_disks.|query||
+|pageToken|string|Page token.|query||
+|q|string|Query string for searching keep_disks.|query||
+|where|object|Conditions for filtering keep_disks.|query||
+
+h2. ping
+
+ping keep_disks
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|ping_secret|string||query||
+{background:#ccffcc}.|service_port|string||query||
+{background:#ccffcc}.|service_ssl_flag|string||query||
+|filesystem_uuid|string||query||
+|node_uuid|string||query||
+|service_host|string||query||
+|uuid|string||query||
+
+h2. show
+
+show keep_disks
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+h2. update
+
+Update attributes of an existing KeepDisk.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the KeepDisk in question.|path||
+|keep_disk|object||query||

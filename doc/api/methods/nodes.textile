@@ -1,0 +1,109 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "nodes"
+navorder: 12
+---
+
+h1. nodes
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
+
+h2. create
+
+Create a new Node.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|node|object||query||
+
+h2. delete
+
+Delete an existing Node.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Node in question.|path||
+
+h2. destroy
+
+destroy nodes
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+h2. get
+
+Gets a Node's metadata by UUID.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Node in question.|path||
+
+h2. index
+
+index nodes
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|order|string||query||
+|where|object||query||
+
+h2. list
+
+List nodes.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|limit|integer (default 100)|Maximum number of nodes to return.|query||
+|order|string|Order in which to return matching nodes.|query||
+|pageToken|string|Page token.|query||
+|q|string|Query string for searching nodes.|query||
+|where|object|Conditions for filtering nodes.|query||
+
+h2. ping
+
+ping nodes
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|ping_secret|string||query||
+{background:#ccffcc}.|uuid|string||path||
+
+h2. show
+
+show nodes
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+h2. update
+
+Update attributes of an existing Node.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Node in question.|path||
+|node|object||query||
