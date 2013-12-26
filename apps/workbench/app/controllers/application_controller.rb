@@ -62,7 +62,13 @@ class ApplicationController < ActionController::Base
     end
     respond_to do |f|
       f.json { render json: @object }
-      f.html { render }
+      f.html {
+        if request.method == 'GET'
+          render
+        else
+          redirect_to params[:return_to] || @object
+        end
+      }
     end
   end
 
@@ -93,7 +99,7 @@ class ApplicationController < ActionController::Base
   def create
     @object ||= model_class.new params[model_class.to_s.singularize.to_sym]
     @object.save!
-    redirect_to @object
+    redirect_to(params[:return_to] || @object)
   end
 
   def destroy
