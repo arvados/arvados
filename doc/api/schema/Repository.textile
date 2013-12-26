@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Repository"
-navorder: 101
+navorder: 18
 ---
 
 h1. Repository

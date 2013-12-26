@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Collections"
-navorder: 13
+navorder: 4
 ---
 
 h1. Collections

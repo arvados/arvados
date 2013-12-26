@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: PipelineInstance"
-navorder: 101
+navorder: 16
 ---
 
 h1. PipelineInstance

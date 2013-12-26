@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Log"
-navorder: 101
+navorder: 14
 ---
 
 h1. Log

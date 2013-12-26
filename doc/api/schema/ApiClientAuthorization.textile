@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: ApiClientAuthorization"
-navorder: 101
+navorder: 1
 ---
 
 h1. ApiClientAuthorization

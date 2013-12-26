@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: KeepDisk"
-navorder: 101
+navorder: 11
 ---
 
 h1. KeepDisk

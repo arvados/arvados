@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Jobs"
-navorder: 15
+navorder: 9
 ---
 
 h1. Jobs

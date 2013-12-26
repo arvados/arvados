@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Node"
-navorder: 101
+navorder: 15
 ---
 
 h1. Node

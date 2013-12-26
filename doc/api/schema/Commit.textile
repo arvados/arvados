@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Commit"
-navorder: 101
+navorder: 6
 ---
 
 h1. Commit

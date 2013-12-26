@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: CommitAncestor"
-navorder: 101
+navorder: 5
 ---
 
 h1. CommitAncestor

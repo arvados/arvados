@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Specimen"
-navorder: 101
+navorder: 19
 ---
 
 h1. Specimen

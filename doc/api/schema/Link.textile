@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: Link"
-navorder: 101
+navorder: 13
 ---
 
 h1. Link

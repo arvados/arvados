@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: AuthorizedKey"
-navorder: 101
+navorder: 3
 ---
 
 h1. AuthorizedKey

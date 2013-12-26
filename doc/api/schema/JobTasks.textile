@@ -3,7 +3,7 @@ layout: default
 navsection: api
 navmenu: Schema
 title: "Resource: JobTasks"
-navorder: 16
+navorder: 10
 ---
 
 h1. JobTasks
