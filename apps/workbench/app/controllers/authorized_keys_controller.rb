@@ -7,7 +7,7 @@ class AuthorizedKeysController < ApplicationController
 
   def create
     defaults = { authorized_user_uuid: current_user.uuid, key_type: 'SSH' }
-    @object = AuthorizedKey.new defaults.merge(params[:authorized_key])
+    @object = AuthorizedKey.new defaults.merge(params[:authorized_key] || {})
     super
   end
 end
