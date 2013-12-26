@@ -89,10 +89,13 @@ Server::Application.routes.draw do
       match '/jobs/:uuid/log_tail_follow' => 'jobs#log_tail_follow'
       post '/jobs/:uuid/cancel' => 'jobs#cancel'
       match '/users/:uuid/event_stream' => 'users#event_stream'
+      post '/users/:uuid/activate' => 'users#activate'
       match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
       match '/virtual_machines/:uuid/logins' => 'virtual_machines#logins'
       post '/api_client_authorizations/create_system_auth' => 'api_client_authorizations#create_system_auth'
       match '/repositories/get_all_permissions' => 'repositories#get_all_permissions'
+      get '/user_agreements/signatures' => 'user_agreements#signatures'
+      post '/user_agreements/sign' => 'user_agreements#sign'
       resources :collections
       resources :links
       resources :nodes
@@ -112,6 +115,7 @@ Server::Application.routes.draw do
       resources :repositories
       resources :traits
       resources :humans
+      resources :user_agreements
     end
   end
 

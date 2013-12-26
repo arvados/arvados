@@ -30,6 +30,12 @@ inactive:
   api_token: 5s29oj2hzmcmpq80hx9cta0rl5wuf3xfd6r7disusaptz7h9m0
   expires_at: 2038-01-01 00:00:00
 
+inactive_but_signed_user_agreement:
+  api_client: untrusted
+  user: inactive_but_signed_user_agreement
+  api_token: 64k3bzw37iwpdlexczj02rw3m333rrb8ydvn2qq99ohv68so5k
+  expires_at: 2038-01-01 00:00:00
+
 expired:
   api_client: untrusted
   user: active
