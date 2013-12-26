@@ -88,27 +88,27 @@ $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 api-image: passenger-image $(API_DEPS)
 	mkdir -p api/generated
 	tar -c -z -f api/generated/api.tar.gz -C ../services api
-	./docker_build -t arvados/api api
+	docker build -t arvados/api api
 	echo -n "Built at $(date)" > api-image
 
 doc-image: base-image $(DOC_DEPS)
 	mkdir -p doc/generated
 	tar -c -z -f doc/generated/doc.tar.gz -C .. doc
-	./docker_build -t arvados/doc doc
+	docker build -t arvados/doc doc
 	echo -n "Built at $(date)" > doc-image
 
 workbench-image: passenger-image $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated
 	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
-	./docker_build -t arvados/workbench workbench
+	docker build -t arvados/workbench workbench
 	echo -n "Built at $(date)" > workbench-image
 
 warehouse-image: base-image $(WAREHOUSE_DEPS)
-	./docker_build -t arvados/warehouse warehouse
+	docker build -t arvados/warehouse warehouse
 	echo -n "Built at $(date)" > warehouse-image
 
 sso-image: passenger-image $(SSO_DEPS)
-	./docker_build -t arvados/sso sso
+	docker build -t arvados/sso sso
 	echo -n "Built at $(date)" > sso-image
 
 # ============================================================
@@ -116,11 +116,11 @@ sso-image: passenger-image $(SSO_DEPS)
 # that are dependencies for every Arvados service.
 
 passenger-image: base-image
-	./docker_build -t arvados/passenger passenger
+	docker build -t arvados/passenger passenger
 	echo -n "Built at $(date)" > passenger-image
 
 base-image: debian-image $(BASE_DEPS)
-	./docker_build -t arvados/base base
+	docker build -t arvados/base base
 	echo -n "Built at $(date)" > base-image
 
 debian-image:

@@ -3,9 +3,15 @@
 FROM arvados/passenger
 MAINTAINER Tim Pierce <twp@clinicalfuture.com>
 
-# Install postgres and apache
-RUN apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
-                          supervisor
+# Install postgres and apache.
+# Clone a git repository of Arvados source -- not used to build, but
+# will be used by the Commit model and anything else that needs to
+# check a git repo for crunch scripts.
+#
+RUN apt-get update && \
+    apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
+                          supervisor && \
+    git clone git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
 
 RUN /bin/mkdir -p /usr/src/arvados/services
 ADD generated/api.tar.gz /usr/src/arvados/services/

@@ -30,7 +30,7 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
         words = string.split(string.strip(line), "\t")
         if line_number == 0:
             headings = words
-            for t in arvados.service.traits().list(
+            for t in arvados.api('v1').traits().list(
                 where=json.dumps({'name':words}),
                 limit=1000
                 ).execute()['items']:
@@ -38,28 +38,28 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
             for i, trait_name in enumerate(words[3:], start=3):
                 # find or create trait
                 if trait_name not in traits:
-                    traits_match = arvados.service.traits().list(
+                    traits_match = arvados.api('v1').traits().list(
                         where=json.dumps({'name':trait_name})
                         ).execute()['items']
                     if len(traits_match) > 0:
                         traits[trait_name] = traits_match[0]
                     else:
-                        traits[trait_name] = arvados.service.traits().create(
+                        traits[trait_name] = arvados.api('v1').traits().create(
                             trait=json.dumps({'name':trait_name})).execute()
                 out.write(separator)
                 out.write(json.dumps(traits[trait_name]))
                 separator = ",\n"
         else:
-            huID_links_match = arvados.service.links().list(
+            huID_links_match = arvados.api('v1').links().list(
                 where=json.dumps({'link_class':'identifier','name':words[0]})
                 ).execute()['items']
             if len(huID_links_match) > 0:
                 human_uuid = huID_links_match[0]['head_uuid']
             else:
-                human = arvados.service.humans().create(
+                human = arvados.api('v1').humans().create(
                     body={}
                     ).execute()
-                huID_link = arvados.service.links().create(
+                huID_link = arvados.api('v1').links().create(
                     body={
                         'link_class':'identifier',
                         'name':words[0],
@@ -69,7 +69,7 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
                     ).execute()
                 human_uuid = human['uuid']
             human_trait = {}
-            for t in arvados.service.links().list(
+            for t in arvados.api('v1').links().list(
                 limit=10000,
                 where=json.dumps({
                     'tail_uuid':human_uuid,
@@ -87,7 +87,7 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
                     if trait_link['properties']['value'] != trait_value:
                         # update database value to match survey response
                         trait_link['properties']['value'] = trait_value
-                        arvados.service.links().update(
+                        arvados.api('v1').links().update(
                             uuid=trait_link['uuid'],
                             body={'properties':trait_link['properties']}
                             ).execute()
@@ -106,7 +106,7 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
                         'name':'pgp-survey-response',
                         'properties': { 'value': trait_value }
                         }
-                    arvados.service.links().create(
+                    arvados.api('v1').links().create(
                         body=trait_link
                         ).execute()
                     out.write(",\n")

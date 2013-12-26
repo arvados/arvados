@@ -128,7 +128,7 @@ h2. Find Personal Genome Project identifiers from Arvados UUIDs
     "link_class": "identifier",
     "head_uuid": human_uuids
   })</span>
-&gt;&gt;&gt; <span class="userinput">pgpid_links = arvados.service.links().list(limit=1000, where=human_query).execute()</span>
+&gt;&gt;&gt; <span class="userinput">pgpid_links = arvados.api('v1').links().list(limit=1000, where=human_query).execute()</span>
 &gt;&gt;&gt; <span class="userinput">map(lambda l: l['name'], pgpid_links['items'])</span>
 [u'hu01024B', u'hu11603C', u'hu15402B', u'hu174334', u'hu1BD549', u'hu237A50',
  u'hu34A921', u'hu397733', u'hu414115', u'hu43860C', u'hu474789', u'hu553620',
@@ -167,7 +167,7 @@ for p_link in provenance_links['items']:
   pgpid[p_link['head_uuid']] = pgpid[p_link['tail_uuid']]
 
 # get details (e.g., list of files) of each collection
-collections = arvados.service.collections().list(where=json.dumps({
+collections = arvados.api('v1').collections().list(where=json.dumps({
     "uuid": collection_uuids
   })).execute()
 
@@ -205,7 +205,7 @@ Now we will use crunch to issue a 'grep' job to look for variant rs1126809 in ea
 <pre><code>&gt;&gt;&gt; <span class="userinput">job = {}
 for c in collections['items']:
   if [] != filter(lambda f: re.search('^var-.*\.tsv\.bz2', f[1]), c['files']):
-    job[c['uuid']] = arvados.service.jobs().create(body={
+    job[c['uuid']] = arvados.api('v1').jobs().create(body={
       'script': 'grep',
       'script_parameters': {'input': c['uuid'], 'pattern': "rs1126809\\b"},
       'script_version': 'e7aeb42'
@@ -233,7 +233,7 @@ hu599905 qr1hi-8i9sb-i9ec9g8d7rt70xg
 Monitor job progress by refreshing the Jobs page in Workbench, or by using the API:
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">map(lambda j: arvados.service.jobs().get(uuid=j['uuid']).execute()['success'], job.values())
+<pre><code>&gt;&gt;&gt; <span class="userinput">map(lambda j: arvados.api('v1').jobs().get(uuid=j['uuid']).execute()['success'], job.values())
 [None, True, None, None, None, None, None, None, None, None, None, None, None, None]
 </code></pre>
 </notextile>
@@ -245,8 +245,8 @@ After the jobs have completed, check output file sizes.
 <notextile>
 <pre><code>&gt;&gt;&gt; <span class="userinput">for collection_uuid in job:
   job_uuid = job[collection_uuid]['uuid']
-  job_output = arvados.service.jobs().get(uuid=job_uuid).execute()['output']
-  output_files = arvados.service.collections().get(uuid=job_output).execute()['files']
+  job_output = arvados.api('v1').jobs().get(uuid=job_uuid).execute()['output']
+  output_files = arvados.api('v1').collections().get(uuid=job_output).execute()['files']
   # Test the output size.  If greater than zero, that means 'grep' found the variant 
   if output_files[0][2] > 0:
     print("%s has variant rs1126809" % (pgpid[collection_uuid]))

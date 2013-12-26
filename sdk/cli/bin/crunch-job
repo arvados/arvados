@@ -119,7 +119,7 @@ $SIG{'USR2'} = sub
 
 
 
-my $arv = Arvados->new;
+my $arv = Arvados->new('apiVersion' => 'v1');
 my $metastream;
 
 my $User = $arv->{'users'}->{'current'}->execute;

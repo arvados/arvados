@@ -191,7 +191,7 @@ class Keep < Sinatra::Base
     return if defined? @@last_ping_at and @@last_ping_at > Time.now - 300
     @@last_ping_at = Time.now
     begin
-      @@arvados ||= Arvados.new(api_token: '')
+      @@arvados ||= Arvados.new(api_version: 'v1', api_token: '')
       @@keepdirs.each do |kd|
         ack = @@arvados.keep_disk.ping(uuid: kd[:arvados][:uuid],
                                        service_port: settings.port,

@@ -26,7 +26,7 @@ end
 user_arg, user_repo_name, vm_uuid = ARGV
 
 require 'arvados'
-arv = Arvados.new
+arv = Arvados.new(api_version: 'v1')
 
 # Look up the given user by uuid or, failing that, email address.
 user = begin
