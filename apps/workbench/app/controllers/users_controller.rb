@@ -11,12 +11,23 @@ class UsersController < ApplicationController
 
   def home
     @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
-    @my_vm_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#virtual_machine', link_class: 'permission', name: 'can_login')
-    @my_repo_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#repository', link_class: 'permission', name: 'can_write')
+    # @my_vm_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#virtual_machine', link_class: 'permission', name: 'can_login')
+    # @my_repo_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#repository', link_class: 'permission', name: 'can_write')
     @my_jobs = Job.
       limit(10).
       order('created_at desc').
       where(created_by: current_user.uuid)
+
+    @my_collections = Collection.
+      limit(10).
+      order('created_at desc').
+      where(created_by: current_user.uuid)
+
+    @my_pipelines = PipelineInstance.
+      limit(10).
+      order('created_at desc').
+      where(created_by: current_user.uuid)
+
 
     # A Tutorial is a Link which has link_class "resources" and name
     # "wants", and is owned by the Tutorials Group (i.e., named
