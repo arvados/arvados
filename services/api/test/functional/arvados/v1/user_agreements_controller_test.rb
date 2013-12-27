@@ -33,4 +33,14 @@ class Arvados::V1::UserAgreementsControllerTest < ActionController::TestCase
     assert_not_nil agreements_list['items'][0]
   end
 
+  test "uninvited user receives empty list of user agreements" do
+    authorize_with :inactive_uninvited
+    get :index
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    agreements_list = JSON.parse(@response.body)
+    assert_not_nil agreements_list['items']
+    assert_nil agreements_list['items'][0]
+  end
+
 end

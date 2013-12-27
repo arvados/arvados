@@ -19,3 +19,6 @@ class ActiveSupport::TestCase
 
   # Add more helper methods to be used by all tests here...
 end
+
+# Ensure permissions are computed from the test fixtures.
+User.invalidate_permissions_cache

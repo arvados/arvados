@@ -6,16 +6,22 @@ class Arvados::V1::UserAgreementsController < ApplicationController
   end
 
   def index
-    current_user_uuid = current_user.uuid
-    act_as_system_user do
-      uuids = Link.where(owner_uuid: system_user_uuid,
-                         link_class: 'signature',
-                         name: 'require',
-                         tail_kind: 'arvados#user',
-                         tail_uuid: system_user_uuid,
-                         head_kind: 'arvados#collection').
-        collect &:head_uuid
-      @objects = Collection.where('uuid in (?)', uuids)
+    if not current_user.is_invited
+      # New users cannot see user agreements until/unless invited to
+      # use this installation.
+      @objects = []
+    else
+      current_user_uuid = current_user.uuid
+      act_as_system_user do
+        uuids = Link.where(owner_uuid: system_user_uuid,
+                           link_class: 'signature',
+                           name: 'require',
+                           tail_kind: 'arvados#user',
+                           tail_uuid: system_user_uuid,
+                           head_kind: 'arvados#collection').
+          collect &:head_uuid
+        @objects = Collection.where('uuid in (?)', uuids)
+      end
     end
     @response_resource_name = 'collection'
     super

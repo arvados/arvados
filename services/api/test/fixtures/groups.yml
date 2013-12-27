@@ -3,3 +3,8 @@ public:
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   name: Public
   description: Public Group
+
+all_users:
+  uuid: zzzzz-j7d0g-fffffffffffffff
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  name: All users

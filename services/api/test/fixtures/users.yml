@@ -20,6 +20,16 @@ active:
   is_admin: false
   prefs: {}
 
+inactive_uninvited:
+  uuid: zzzzz-tpzed-rf2ec3ryh4vb5ma
+  email: inactive-uninvited-user@arvados.local
+  first_name: Inactive and Uninvited
+  last_name: User
+  identity_url: https://inactive-uninvited-user.openid.local
+  is_active: false
+  is_admin: false
+  prefs: {}
+
 inactive:
   uuid: zzzzz-tpzed-x9kqpd79egh49c7
   email: inactive-user@arvados.local
