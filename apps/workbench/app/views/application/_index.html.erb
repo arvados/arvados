@@ -62,5 +62,5 @@
 <% end %>
 
 <% if controller.model_class.creatable? %>
-<%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", { action: 'create', return_to: './' }, { class: 'btn btn-primary' } %>
+<%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", { action: 'create', return_to: request.url }, { class: 'btn btn-primary' } %>
 <% end %>
