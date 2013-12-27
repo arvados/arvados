@@ -59,7 +59,7 @@
   </div>
 <% end %>
 
-<% if Collection.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<% if @my_collections.count == 0 %>
 <div class="alert alert-info daxalert">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <%= image_tag "dax.png", class: "dax" %>
@@ -71,7 +71,7 @@
 
 <% end %>
 
-<% if Job.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<% if @my_jobs.count == 0 %>
 <div class="alert alert-info daxalert">
   <button type="button" class="close" data-dismiss="alert">&times;</button>  
   <p><%= image_tag "dax.png", class: "dax" %>
@@ -81,7 +81,7 @@
 </div>
 <% end %>
 
-<% if PipelineInstance.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<% if @my_pipelines.count == 0 %>
 <div class="alert alert-info daxalert">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <p><%= image_tag "dax.png", class: "dax" %>
@@ -108,7 +108,11 @@
         <tr>
           <td>
             <small>
-              <%= link_to c.uuid[0..31], collection_path(c.uuid) %> 
+	      <a href="<%= collection_path(c.uuid) %>">
+              <% c.files.each do |file| %>
+              <%= "#{file[0]}/#{file[1]}" %>
+	      <% end %>
+	      </a>
             </small>
           </td>
           <td>
@@ -163,7 +167,15 @@
 	  <td>
 	    <small>
 	    <% if j.success %>
-	    <%= link_to j.output[0..31], collection_path(j.output) %>  
+
+	      <a href="<%= collection_path(j.output) %>">
+		<% Collection.limit(1).where(uuid: j.output).each do |c|
+		       c.files.each do |file| %>
+		  <%= "#{file[0]}/#{file[1]}" %>
+		<% end %>
+		<% end %>
+	      </a>
+
 	    <% end %>
 	    </small>
 	  </td>
@@ -191,8 +203,9 @@
         <tr>
           <td>
             <small>
-	      <% i = PipelineTemplate.limit(1).where(uuid: p.pipeline_template_uuid)[0] %>
+	      <% PipelineTemplate.limit(1).where(uuid: p.pipeline_template_uuid).each do |i| %>
 		<%= link_to i.name, pipeline_instance_path(p.uuid) %>
+	      <% end %>
             </small>
           </td>
           <td>
