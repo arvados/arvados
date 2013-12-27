@@ -1,0 +1,20 @@
+<%= image_tag "dax.png", style: "float: right; max-width: 25%; margin-left: 2em" %>
+<h1>Hi there!  Please log in to use Arvados Workbench.</h1>
+<div class="row-fluid">
+  <div class="col span8" style="margin-top: 1em">
+    <div class="well clearfix">
+      <p>When you click on the button below you will be taken to a Google sign-in page.
+	After entering your information, you will be redirected back to the Arvados
+	Workbench.  If you have never used Arvados before, logging in for the first
+	time will also create a new user account.  Arvados uses your your name and
+	email address from Google services only for identification, and will never
+	access any personal information.</p>
+      <p>
+	<a  class="pull-right btn btn-primary" href="<%= $arvados_api_client.arvados_login_url(return_to: request.url) %>">
+	  Click here to log in to Arvados Workbench with a Google account</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+
