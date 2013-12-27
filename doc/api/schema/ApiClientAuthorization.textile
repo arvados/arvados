@@ -2,7 +2,7 @@
 layout: default
 navsection: api
 navmenu: Schema
-title: "Resource: ApiClientAuthorization"
+title: ApiClientAuthorization
 navorder: 1
 ---
 
@@ -12,7 +12,7 @@ A **ApiClientAuthorization** represents the API authorization token that has bee
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":methods.html
+See "REST methods for working with Arvados resources":/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/api_client_authorization@
 

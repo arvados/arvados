@@ -2,11 +2,11 @@
 layout: default
 navsection: api
 navmenu: Schema
-title: "Resource: JobTasks"
+title: JobTask
 navorder: 10
 ---
 
-h1. JobTasks
+h1. JobTask
 
 A Job Task is a well defined independently-computable portion of a "Job":Jobs.html.
 
@@ -22,13 +22,13 @@ Job tasks have particular update semantics:
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":methods.html
+See "REST methods for working with Arvados resources":/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/job_tasks@
 
 h2. Resources
 
-Each JobTask has, in addition to the usual "attributes of Arvados resources":resources.html:
+Each JobTask has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
 |*Attribute*|*Type*|*Description*|*Example*|

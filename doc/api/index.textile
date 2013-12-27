@@ -13,40 +13,40 @@ h2. Concepts
 * Resources in requests and responses adhere to a "common structure":resources.html.
 * API transactions use common "REST methods":methods.html.
 * API transactions are subject to a "permission model":permission-model.html.
-* "Job tasks":job-task.html use some special API features.
+* "Job tasks":schema/JobTasks.html use some special API features.
 
 h2. Resources
 
 h3. Generic Resources
 
-* "Collections":Collections.html
-* "Jobs":Jobs.html
-* "JobTasks":JobTasks.html
-* "Links":Links.html
-* "Log":Log.html
-* "PipelineTemplate":PipelineTemplate.html
-* "PipelineInstance":PipelineInstance.html
-* "Group":Group.html
-* "Human":Human.html
-* "Specimen":Specimen.html
-* "Trait":Trait.html
-* "User":User.html
+* "Collections":schema/Collections.html
+* "Jobs":schema/Jobs.html
+* "JobTasks":schema/JobTasks.html
+* "Links":schema/Links.html
+* "Log":schema/Log.html
+* "PipelineTemplate":schema/PipelineTemplate.html
+* "PipelineInstance":schema/PipelineInstance.html
+* "Group":schema/Group.html
+* "Human":schema/Human.html
+* "Specimen":schema/Specimen.html
+* "Trait":schema/Trait.html
+* "User":schema/User.html
 
 h3. Authentication
 
 These Arvados resources govern authorization and "authentication":authentication.html:
 
-* "ApiClients":ApiClients.html
-* "ApiClientAuthorization":ApiClientAuthorization.html
-* "AuthorizedKey":AuthorizedKey.html
+* "ApiClients":schema/ApiClients.html
+* "ApiClientAuthorization":schema/ApiClientAuthorization.html
+* "AuthorizedKey":schema/AuthorizedKey.html
 
 h3. Arvados Infrastructure
 
 These resources govern the Arvados infrastructure itself: Git repositories, Keep disks, active nodes, etc.
 
-* "CommitAncestor":CommitAncestor.html
-* "Commit":Commit.html
-* "KeepDisk":KeepDisk.html
-* "Node":Node.html
-* "Repository":Repository.html
-* "VirtualMachine":VirtualMachine.html
+* "CommitAncestor":schema/CommitAncestor.html
+* "Commit":schema/Commit.html
+* "KeepDisk":schema/KeepDisk.html
+* "Node":schema/Node.html
+* "Repository":schema/Repository.html
+* "VirtualMachine":schema/VirtualMachine.html

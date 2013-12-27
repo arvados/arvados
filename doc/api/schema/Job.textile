@@ -2,11 +2,11 @@
 layout: default
 navsection: api
 navmenu: Schema
-title: "Resource: Jobs"
+title: Job
 navorder: 9
 ---
 
-h1. Jobs
+h1. Job
 
 Applications submit compute jobs when:
 * Provenance is important, i.e., it is worth recording how the output was produced; or
@@ -15,7 +15,7 @@ Applications submit compute jobs when:
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":methods.html
+See "REST methods for working with Arvados resources":/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
 
@@ -37,11 +37,11 @@ where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
 
 &rarr; Job resource list
 
-This method is equivalent to the "index method":methods.html#index, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
+This method is equivalent to the "index method":/api/methods.html#index, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
 
 h2. Resource
 
-Each job has, in addition to the usual "attributes of Arvados resources":resources.html:
+Each job has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
 |*Attribute*|*Type*|*Description*|*Notes*|

@@ -2,7 +2,7 @@
 layout: default
 navsection: api
 navmenu: Schema
-title: "Resource: PipelineInstance"
+title: PipelineInstance
 navorder: 16
 ---
 
@@ -12,7 +12,7 @@ A **PipelineInstance** represents...
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":methods.html
+See "REST methods for working with Arvados resources":/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_instance@
 
@@ -28,7 +28,7 @@ Side effects of creating a PipelineInstance.
 
 h2. Resources
 
-Each PipelineInstance has, in addition to the usual "attributes of Arvados resources":resources.html:
+Each PipelineInstance has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
 |*Attribute*|*Type*|*Description*|*Example*|

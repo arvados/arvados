@@ -20,8 +20,8 @@ A task's context is provided in environment variables.
 
 table(table table-bordered table-condensed).
 |Environment variable|Description|
-|@JOB_UUID@|UUID of the current "Job":Jobs.html|
-|@TASK_UUID@|UUID of the current "JobTask":JobTasks.html|
+|@JOB_UUID@|UUID of the current "Job":schema/Jobs.html|
+|@TASK_UUID@|UUID of the current "JobTask":schema/JobTasks.html|
 |@ARVADOS_API_HOST@|Hostname and port number of API server|
 |@ARVADOS_API_TOKEN@|Authentication token to use with API calls made by the current task|
 

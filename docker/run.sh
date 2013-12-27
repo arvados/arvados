@@ -212,7 +212,7 @@ function do_start {
 	make_keep_volumes
 	for v in ${keep_volumes[*]}
 	do
-	    [ -f $v/keep/.metadata.yml ] && rm $v/keep/.metadata.yml
+	    [ -f $v/keep/.metadata.yml ] && sudo rm $v/keep/.metadata.yml
 	done
 	start_container "25107:25107" "keep_server_0" \
 	    "${keep_volumes[0]}:/dev/keep-0" \
