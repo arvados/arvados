@@ -24,6 +24,28 @@
 <% end %>
 
 <% if current_user.andand.is_active %>
+
+<% if @my_ssh_keys.count == 0%>
+  <div class="alert alert-block alert-info row-fluid">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <div class="span6">
+    <p>I noticed that you have not yet set up an SSH public key for use with Arvados.  
+      <%= link_to "Click here to learn how to create a SSH key pair.",
+	  "http://doc.arvados.org/user/getting_started/ssh-access.html" %>
+      After you have created an SSH key, you can paste your SSH public key
+      in the text box.
+    </p>
+    </div>
+    <div class="span5">
+      <%= form_for AuthorizedKey.new do |f| %>
+	<%= hidden_field_tag :return_to, request.original_url %>
+	<%= f.text_area :public_key, cols: 40, rows: 5, value: "Put your public key here" %>
+	<%= f.submit :Save %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
 <div class="row-fluid">
   <div class="col span12">
     <div class="clearfix">
@@ -130,7 +152,7 @@
 </div>
 
 <% elsif current_user %>
-  <%= image_tag "dax.png", style: "float: right; max-width: 25%; margin-left: 2em" %>
+  <%= image_tag "dax.png", style: "float: left; max-width: 25%; margin-right: 2em" %>
   <h1>Welcome to Arvados, <%= current_user.first_name %>!</h1>
   <div class="row-fluid">
     <div class="col span8">
