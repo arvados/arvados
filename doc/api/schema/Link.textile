@@ -26,7 +26,7 @@ h2. Resource
 Each link has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|
+|_. Attribute|_. Type|_. Description|
 |tail_uuid|string|Object UUID at the tail (start, source, origin) of this link|
 |tail_kind|string|Object kind at the tail (start, source, origin) of this link|
 |link_class|string|Class (see below)|
@@ -40,7 +40,7 @@ h2. Link classes
 Some classes are pre-defined by convention and have standard meanings attached to names.
 
 table(table table-bordered table-condensed).
-|*link_class*|*tail_type&rarr;head_type*|*name&rarr;head_uuid {properties}*|*Notes*|
+|_. link_class|_. tail_type&rarr;head_type|_. name&rarr;head_uuid {properties}|_. Notes|
 |provenance|&rarr;Collection  |provided &rarr; _collection uuid_
 {url&rarr;http://example.com/foo.tgz, retrieved_at&rarr;1352616640.000}||
 |provenance|Job&rarr;Collection     |provided &rarr; _collection uuid_||

@@ -31,6 +31,6 @@ h2. Resources
 Each Human has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|_. Attribute|_. Type|_. Description|_. Example|
 |properties|Hash|||
 |updated_at|datetime|||

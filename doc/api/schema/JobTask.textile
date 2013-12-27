@@ -8,7 +8,7 @@ navorder: 10
 
 h1. JobTask
 
-A Job Task is a well defined independently-computable portion of a "Job":Jobs.html.
+A Job Task is a well defined independently-computable portion of a "Job":Job.html.
 
 Job tasks are created two ways:
 * When a job starts, it is seeded with a job task with @sequence=0@ and an empty @parameters{}@ list.
@@ -31,7 +31,7 @@ h2. Resources
 Each JobTask has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|_. Attribute|_. Type|_. Description|_. Example|
 |sequence|integer|Execution sequence.
 A step cannot be run until all steps with lower sequence numbers have completed.
 Job steps with the same sequence number can be run in any order.||
@@ -43,7 +43,7 @@ Job steps with the same sequence number can be run in any order.||
 The following attributes should not be updated by anyone other than the job manager:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Notes*|
+|_. Attribute|_. Type|_. Description|_. Notes|
 |qsequence|integer|Order of arrival|0-based|
 |job_uuid|string|||
 |created_by_job_task_uuid|string|||

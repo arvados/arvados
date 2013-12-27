@@ -13,16 +13,16 @@ h2. Concepts
 * Resources in requests and responses adhere to a "common structure":resources.html.
 * API transactions use common "REST methods":methods.html.
 * API transactions are subject to a "permission model":permission-model.html.
-* "Job tasks":schema/JobTasks.html use some special API features.
+* "Job tasks":schema/JobTask.html use some special API features.
 
 h2. Resources
 
 h3. Generic Resources
 
-* "Collections":schema/Collections.html
-* "Jobs":schema/Jobs.html
-* "JobTasks":schema/JobTasks.html
-* "Links":schema/Links.html
+* "Collection":schema/Collection.html
+* "Job":schema/Job.html
+* "JobTask":schema/JobTask.html
+* "Link":schema/Link.html
 * "Log":schema/Log.html
 * "PipelineTemplate":schema/PipelineTemplate.html
 * "PipelineInstance":schema/PipelineInstance.html
@@ -36,7 +36,7 @@ h3. Authentication
 
 These Arvados resources govern authorization and "authentication":authentication.html:
 
-* "ApiClients":schema/ApiClients.html
+* "ApiClient":schema/ApiClient.html
 * "ApiClientAuthorization":schema/ApiClientAuthorization.html
 * "AuthorizedKey":schema/AuthorizedKey.html
 

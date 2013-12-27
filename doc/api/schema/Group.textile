@@ -31,7 +31,7 @@ h2. Resources
 Each Group has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
 |description|text|||
 |updated_at|datetime|||

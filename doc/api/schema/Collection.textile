@@ -8,7 +8,7 @@ navorder: 4
 
 h1. Collection
 
-This resource concerns metadata, usage accounting, and integrity checks for data stored on the cloud.  Reading and writing the data _per se_ is achieved by the "Keep":{{ baseurl }}/user/intro-keep.html storage system.
+This resource concerns metadata, usage accounting, and integrity checks for data stored on the cloud.  Reading and writing the data _per se_ is achieved by the "Keep":/user/tutorials/tutorial-keep.html storage system.
 
 
 h2. Methods
@@ -34,7 +34,7 @@ h2. Resource
 Each collection has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|_. Attribute|_. Type|_. Description|_. Example|
 |locator|string|||
 |portable_data_hash|string|||
 |name|string|||
