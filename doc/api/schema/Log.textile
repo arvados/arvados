@@ -1,0 +1,41 @@
+---
+layout: default
+navsection: api
+navmenu: Schema
+title: "Resource: Log"
+navorder: 14
+---
+
+h1. Log
+
+A **Log** represents...
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/log@
+
+h2. Creation
+
+h3. Prerequisites
+
+Prerequisites for creating a Log.
+
+h3. Side effects
+
+Side effects of creating a Log.
+
+h2. Resources
+
+Each Log has, in addition to the usual "attributes of Arvados resources":resources.html:
+
+table(table table-bordered table-condensed).
+|*Attribute*|*Type*|*Description*|*Example*|
+|object_kind|string|||
+|object_uuid|string|||
+|event_at|datetime|||
+|event_type|string|||
+|summary|text|||
+|info|Hash|||
+|updated_at|datetime|||

@@ -1,0 +1,52 @@
+---
+layout: default
+navsection: api
+title: API Reference
+navorder: 0
+---
+
+h1. API Reference
+
+h2. Concepts
+
+* Each API uses the same "authentication mechanism":authentication.html.
+* Resources in requests and responses adhere to a "common structure":resources.html.
+* API transactions use common "REST methods":methods.html.
+* API transactions are subject to a "permission model":permission-model.html.
+* "Job tasks":job-task.html use some special API features.
+
+h2. Resources
+
+h3. Generic Resources
+
+* "Collections":Collections.html
+* "Jobs":Jobs.html
+* "JobTasks":JobTasks.html
+* "Links":Links.html
+* "Log":Log.html
+* "PipelineTemplate":PipelineTemplate.html
+* "PipelineInstance":PipelineInstance.html
+* "Group":Group.html
+* "Human":Human.html
+* "Specimen":Specimen.html
+* "Trait":Trait.html
+* "User":User.html
+
+h3. Authentication
+
+These Arvados resources govern authorization and "authentication":authentication.html:
+
+* "ApiClients":ApiClients.html
+* "ApiClientAuthorization":ApiClientAuthorization.html
+* "AuthorizedKey":AuthorizedKey.html
+
+h3. Arvados Infrastructure
+
+These resources govern the Arvados infrastructure itself: Git repositories, Keep disks, active nodes, etc.
+
+* "CommitAncestor":CommitAncestor.html
+* "Commit":Commit.html
+* "KeepDisk":KeepDisk.html
+* "Node":Node.html
+* "Repository":Repository.html
+* "VirtualMachine":VirtualMachine.html

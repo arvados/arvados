@@ -1,0 +1,22 @@
+    <div class="navbar navbar-inverse navbar-fixed-top" style="margin-bottom:0;">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="{{ site.baseurl }}/">Arvados Docs</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li {% if page.navsection == 'userguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/user/">User&nbsp;Guide</a></li>
+              <li {% if page.navsection == 'api' %} class="active" {% endif %}><a href="{{ site.baseurl }}/api/">API&nbsp;Reference</a></li>
+              <li {% if page.navsection == 'adminguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/admin/">Admin Guide</a></li>
+              <li {% if page.navsection == 'installguide' %} class="active" {% endif %}><a href="{{ site.baseurl }}/install/">Install Guide</a></li>
+              <li><a></a></li>
+              <li><a href="https://arvados.org/">arvados.org&nbsp;&raquo;</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>

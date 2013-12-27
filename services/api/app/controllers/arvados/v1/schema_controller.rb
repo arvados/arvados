@@ -193,9 +193,9 @@ class Arvados::V1::SchemaController < ApplicationController
                 limit: {
                   type: "integer",
                   description: "Maximum number of #{k.to_s.underscore.pluralize} to return.",
-                  default: "100",
+                  default: 100,
                   format: "int32",
-                  minimum: "0",
+                  minimum: 0,
                   location: "query"
                 },
                 pageToken: {

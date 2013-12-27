@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: userguide
+navmenu: Tutorials
 title: "Storing and Retrieving data using Arvados Keep"
-navorder: 111
+navorder: 11
 ---
 
 h1. Tutorial: Storing and Retrieving data using Arvados Keep

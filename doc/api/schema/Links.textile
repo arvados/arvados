@@ -1,8 +1,9 @@
 ---
 layout: default
 navsection: api
+navmenu: Schema
 title: "Resource: Links"
-navorder: 17
+navorder: 12
 ---
 
 h1. Links

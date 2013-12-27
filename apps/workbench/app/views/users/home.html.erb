@@ -25,25 +25,56 @@
 
 <% if current_user.andand.is_active %>
 
+
 <% if @my_ssh_keys.count == 0%>
-  <div class="alert alert-block alert-info row-fluid">
+  <div class="alert alert-info">
     <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <div class="span6">
-    <p>I noticed that you have not yet set up an SSH public key for use with Arvados.  
+    <div class="span5" style="overflow: hidden; margin-right: 1em">
+      <%= image_tag "dax.png", style: "max-width: 10%; margin-right: 1em; float: left" %>
+      Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.  
       <%= link_to "Click here to learn how to create a SSH key pair.",
-	  "http://doc.arvados.org/user/getting_started/ssh-access.html" %>
+	  "http://doc.arvados.org/user/getting_started/ssh-access.html", class: "alert-link" %>
       After you have created an SSH key, you can paste your SSH public key
       in the text box.
-    </p>
     </div>
-    <div class="span5">
       <%= form_for AuthorizedKey.new do |f| %>
 	<%= hidden_field_tag :return_to, request.original_url %>
-	<%= f.text_area :public_key, cols: 40, rows: 5, value: "Put your public key here" %>
-	<%= f.submit :Save %>
+	<%= f.text_area :public_key, cols: 50, rows: 4, placeholder: "Paste your public key here", style: "width: 45%" %>
+	<%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary", style: "vertical-align: top" %>
       <% end %>
-    </div>
   </div>
+<% end %>
+
+<% if Collection.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<div class="alert alert-block alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <p><%= image_tag "dax.png", style: "max-width: 5%; margin-right: 1em" %>
+    Hi, I noticed you haven't uploaded a new collection yet. 
+    <%= link_to "Click here to learn how to upload data to Arvados Keep.", "http://doc.arvados.org/user/tutorials/tutorial-keep.html", class: "alert-link" %>
+  </p>
+</div>
+
+<% end %>
+
+<% if Job.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<div class="alert alert-block alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>  
+  <p><%= image_tag "dax.png", style: "max-width: 5%; margin-right: 1em" %>
+    Hi, I noticed you haven't run a job yet. 
+    <%= link_to "Click here to learn how to run an Arvados Crunch job.", "http://doc.arvados.org/user/tutorials/tutorial-job1.html", class: "alert-link" %>
+  </p>
+</div>
+<% end %>
+
+<% if PipelineInstance.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<div class="alert alert-block alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <p><%= image_tag "dax.png", style: "max-width: 5%; margin-right: 1em" %>
+    Hi, I noticed you haven't run a pipeline yet.  
+    <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", "http://doc.arvados.org/user/tutorials/tutorial-new-pipeline.html", class: "alert-link" %>
+  </p>
+</div>
+
 <% end %>
 
 <div class="row-fluid">
