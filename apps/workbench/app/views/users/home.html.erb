@@ -25,17 +25,34 @@
 
 <% if current_user.andand.is_active %>
 
-<% if not Job.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<% if Collection.limit(1).where(created_by: current_user.uuid).count == 0 %>
 <div class="alert alert-block alert-info">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <p><% image_tag "dax.png" %> You haven't run a job yet</p>
+  <p><%= image_tag "dax.png", style: "max-width: 5%; margin-right: 1em" %>
+    Hi, I noticed you haven't uploaded a new collection yet. 
+    <%= link_to "Click here to learn how to upload data to Arvados Keep.", "http://doc.arvados.org/user/tutorials/tutorial-keep.html", class: "" %>
+  </p>
+</div>
+
+<% end %>
+
+<% if Job.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<div class="alert alert-block alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>  
+  <p><%= image_tag "dax.png", style: "max-width: 5%; margin-right: 1em" %>
+    Hi, I noticed you haven't run a job yet. 
+    <%= link_to "Click here to learn how to run an Arvados Crunch job.", "http://doc.arvados.org/user/tutorials/tutorial-job1.html", class: "" %>
+  </p>
 </div>
 <% end %>
 
-<% if not PipelineInstance.limit(1).where(created_by: current_user.uuid).count == 0 %>
+<% if PipelineInstance.limit(1).where(created_by: current_user.uuid).count == 0 %>
 <div class="alert alert-block alert-info">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <p>You haven't run a pipeline yet</p>
+  <p><%= image_tag "dax.png", style: "max-width: 5%; margin-right: 1em" %>
+    Hi, I noticed you haven't run a pipeline yet.  
+    <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", "http://doc.arvados.org/user/tutorials/tutorial-new-pipeline.html", class: "" %>
+  </p>
 </div>
 <% end %>
 
