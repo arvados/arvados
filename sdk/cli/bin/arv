@@ -60,6 +60,7 @@ begin
   require 'andand'
   require 'oj'
   require 'active_support/inflector'
+  require 'yaml'
 rescue LoadError
   abort <<-EOS
 
@@ -177,6 +178,7 @@ def parse_arguments(discovery_document)
     opt :json, "Return the entire response received from the API server, as a JSON object", :short => "-j"
     opt :human, "Return the response received from the API server, as a JSON object with whitespace added for human consumption", :short => "-h"
     opt :pretty, "Synonym of --human", :short => nil
+    opt :yaml, "Return the response received from the API server, in YAML format", :short => "-y"
     stop_on resource_types
   end
   
@@ -291,6 +293,8 @@ end
 
 if global_opts[:human] or global_opts[:pretty] then
   puts Oj.dump(results, :indent => 1)
+elsif global_opts[:yaml] then
+  puts results.to_yaml
 elsif global_opts[:json] then
   puts Oj.dump(results)
 elsif results["items"] and results["kind"].match /list$/i
