@@ -27,7 +27,7 @@
       font-weight: bold;
       }
       .dax {
-      max-width: 5%;
+      max-width: 10%;
       margin-right: 1em;
       float: left
       }
@@ -39,72 +39,166 @@
 
 <% if current_user.andand.is_active %>
 
+<div class="container-fluid">
+  
+  <div class="span7">
 
-<% if @my_ssh_keys.count == 0%>
-  <div class="alert alert-info daxalert">
-    <button type="button" class="close" data-dismiss="alert">&times;</button>
-    <%= image_tag "dax.png", class: "dax" %>
-    <div class="span5" style="margin-right: 1em">
-      Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.  
-      <%= link_to "Click here to learn about SSH keys in Arvados.",
-	  "http://doc.arvados.org/user/getting_started/ssh-access.html", style: "font-weight: bold" %>
-      Once have an SSH key you would like to use, paste your SSH public key
-      in the text box.
-    </div>
-      <%= form_for AuthorizedKey.new do |f| %>
-	<%= hidden_field_tag :return_to, request.original_url %>
-	<%= f.text_area :public_key, cols: 50, rows: 4, placeholder: "Paste your public key here", style: "width: 40%" %>
-	<%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary", style: "vertical-align: top" %>
+    <div>
+      <strong>Recent jobs</strong>
+      <%= link_to raw("Show all jobs &rarr;"), jobs_path, class: 'pull-right' %>
+      <% if not current_user.andand.is_active or @my_jobs.empty? %>
+      (None)
+      <% else %>
+      <table class="table table-bordered table-condensed job-table">
+	<colgroup>
+          <col width="28%" />
+          <col width="38%" />
+          <col width="7%" />
+          <col width="15%" />
+          <col width="12%" />
+	</colgroup>
+
+        <tr>
+	  <th>Script</th>
+	  <th>Output</th>
+	  <th>Log</th>
+	  <th>Status</th>
+	  <th>Age</th>
+	</tr>
+
+        <% @my_jobs[0..6].each do |j| %>
+        <tr>
+          <td>
+            <small>
+              <%= link_to j.script[0..31], job_path(j.uuid) %>
+            </small>
+          </td>
+
+	  <td>
+	    <small>
+	    <% if j.success %>
+
+	      <a href="<%= collection_path(j.output) %>">
+		<% Collection.limit(1).where(uuid: j.output).each do |c|
+		       c.files.each do |file| %>
+		  <%= "#{file[0]}/#{file[1]}" %>
+		<% end %>
+		<% end %>
+	      </a>
+
+	    <% end %>
+	    </small>
+	  </td>
+
+	  <td>
+	    <small>
+	    <% if j.success %>
+	      <a href="<%= collection_path(j.log) %>">Log</a>
+	    <% end %>
+	    </small>
+	  </td>
+
+          <td>
+            <small>
+<%= raw(distance_of_time_in_words(j[:created_at], Time.now).sub('about
+','~').sub(' ','&nbsp;')) if j[:created_at] %> ago
+            </small>
+          </td>
+
+          <td>
+            <% if j.success %>
+            <span class="label label-success">finished</span>
+            <% elsif j.success == false %>
+            <span class="label label-danger">failed</span>
+            <% elsif j.running and j.started_at and not j.finished_at %>
+            <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
+            <div class="progress" style="margin-bottom: 0">
+              <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
+              <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
+            </div>
+            <% else %>
+            <span class="label">queued</span>
+            <% end %>
+          </td>
+
+        </tr>
+        <% end %>
+      </table>
       <% end %>
-  </div>
-<% end %>
+    </div>
 
-<% if @my_collections.count == 0 %>
-<div class="alert alert-info daxalert">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <%= image_tag "dax.png", class: "dax" %>
-  <p>
-    Hi, I noticed you haven't uploaded a new collection yet. 
-    <%= link_to "Click here to learn how to upload data to Arvados Keep.", "http://doc.arvados.org/user/tutorials/tutorial-keep.html", style: "font-weight: bold" %>
-  </p>
-</div>
+    <div>
+      <strong>Recent pipeline instances</strong>
+      <%= link_to raw("Show all pipeline instances &rarr;"), jobs_path, class: 'pull-right' %>
+      <% if not current_user.andand.is_active or @my_pipelines.empty? %>
+      (None)
+      <% else %>
+      <table class="table table-bordered table-condensed job-table">
+	<colgroup>
+          <col width="73%" />
+          <col width="15%" />
+          <col width="12%" />
+	</colgroup>
 
-<% end %>
+        <tr>
+	  <th>Pipeline template</th>
+	  <th>Age</th>
+	  <th>Status</th>
+	</tr>
 
-<% if @my_jobs.count == 0 %>
-<div class="alert alert-info daxalert">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>  
-  <p><%= image_tag "dax.png", class: "dax" %>
-    Hi, I noticed you haven't run a job yet. 
-    <%= link_to "Click here to learn how to run an Arvados Crunch job.", "http://doc.arvados.org/user/tutorials/tutorial-job1.html", style: "font-weight: bold" %>
-  </p>
-</div>
-<% end %>
+        <% @my_pipelines[0..6].each do |p| %>
+        <tr>
+          <td>
+            <small>
+	      <% PipelineTemplate.limit(1).where(uuid: p.pipeline_template_uuid).each do |i| %>
+		<%= link_to i.name, pipeline_instance_path(p.uuid) %>
+	      <% end %>
+            </small>
+          </td>
 
-<% if @my_pipelines.count == 0 %>
-<div class="alert alert-info daxalert">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <p><%= image_tag "dax.png", class: "dax" %>
-    Hi, I noticed you haven't run a pipeline yet.  
-    <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", "http://doc.arvados.org/user/tutorials/tutorial-new-pipeline.html", style: "font-weight: bold" %>
-  </p>
-</div>
-<% end %>
+          <td>
+            <small>
+<%= raw(distance_of_time_in_words(p[:created_at], Time.now).sub('about
+','~').sub(' ','&nbsp;')) if p[:created_at] %> ago
+            </small>
+          </td>
 
-<div class="row-fluid">
+          <td>
+            <% if p.success %>
+            <span class="label label-success">finished</span>
+            <% elsif p.success == false %>
+            <span class="label label-danger">failed</span>
+            <% elsif p.active %>
+            <span class="label label-info">running</span>
+            <% else %>
+            <span class="label">queued</span>
+            <% end %>
+          </td>
 
-  <div class="col span4">
-    <div class="clearfix">
-      <h4>Recent collections</h4>
+        </tr>
+        <% end %>
+      </table>
+      <% end %>
+    </div>
+
+    <div>
+      <strong>Recent collections</strong>
+      <%= link_to raw("Show all collections &rarr;"), collections_path, class: 'pull-right' %>
       <% if not current_user.andand.is_active or @my_collections.empty? %>
       (None)
       <% else %>
       <table class="table table-bordered table-condensed job-table">
 	<colgroup>
-          <col width="70%" />
-          <col width="30%" />
+          <col width="73%" />
+          <col width="27%" />
 	</colgroup>
-        <% @my_collections[0..8].each do |c| %>
+
+	<tr>
+	  <th>Contents</th>
+	  <th>Age</th>
+	</tr>
+
+        <% @my_collections[0..6].each do |c| %>
         <tr>
           <td>
             <small>
@@ -124,110 +218,83 @@
         </tr>
         <% end %>
       </table>
-      <%= link_to raw("Show all collections &rarr;"), collections_path, class: 'pull-right' %>
       <% end %>
     </div>
   </div>
 
-  <div class="col span4">
-    <div class="clearfix">
-      <h4>Recent jobs</h4>
-      <% if not current_user.andand.is_active or @my_jobs.empty? %>
-      (None)
-      <% else %>
-      <table class="table table-bordered table-condensed job-table">
-	<colgroup>
-          <col width="40%" />
-          <col width="20%" />
-          <col width="40%" />
-	</colgroup>
-
-        <% @my_jobs[0..8].each do |j| %>
-        <tr>
-          <td>
-            <small>
-              <%= link_to j.script[0..31], job_path(j.uuid) %>
-            </small>
-          </td>
-          <td>
-            <% if j.success %>
-            <span class="label label-success">finished</span>
-            <% elsif j.success == false %>
-            <span class="label label-danger">failed</span>
-            <% elsif j.running and j.started_at and not j.finished_at %>
-            <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
-            <div class="progress" style="margin-bottom: 0">
-              <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
-              <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
-            </div>
-            <% else %>
-            <span class="label">queued</span>
-            <% end %>
-          </td>
-	  <td>
-	    <small>
-	    <% if j.success %>
-
-	      <a href="<%= collection_path(j.output) %>">
-		<% Collection.limit(1).where(uuid: j.output).each do |c|
-		       c.files.each do |file| %>
-		  <%= "#{file[0]}/#{file[1]}" %>
-		<% end %>
-		<% end %>
-	      </a>
-
-	    <% end %>
-	    </small>
-	  </td>
-        </tr>
-        <% end %>
-      </table>
-      <%= link_to raw("Show all jobs &rarr;"), jobs_path, class: 'pull-right' %>
-      <% end %>
+<div class="span4">
+<% if @my_ssh_keys.count == 0%>
+  <div class="alert alert-info daxalert">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <%= image_tag "dax.png", class: "dax" %>
+    <div>
+      Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.  
+      <%= link_to "Click here to learn about SSH keys in Arvados.",
+	  "http://doc.arvados.org/user/getting_started/ssh-access.html", 
+	  style: "font-weight: bold",
+	  target: "_blank" %>
+      When you have an SSH key you would like to use, paste the SSH public key
+      in the text box.
     </div>
-  </div>
-
-  <div class="col span4">
-    <div class="clearfix">
-      <h4>Recent pipeline instances</h4>
-      <% if not current_user.andand.is_active or @my_pipelines.empty? %>
-      (None)
-      <% else %>
-      <table class="table table-bordered table-condensed job-table">
-	<colgroup>
-          <col width="80%" />
-          <col width="20%" />
-	</colgroup>
-
-        <% @my_pipelines[0..8].each do |p| %>
-        <tr>
-          <td>
-            <small>
-	      <% PipelineTemplate.limit(1).where(uuid: p.pipeline_template_uuid).each do |i| %>
-		<%= link_to i.name, pipeline_instance_path(p.uuid) %>
-	      <% end %>
-            </small>
-          </td>
-          <td>
-            <% if p.success %>
-            <span class="label label-success">finished</span>
-            <% elsif p.success == false %>
-            <span class="label label-danger">failed</span>
-            <% elsif p.active %>
-            <span class="label label-info">running</span>
-            <% else %>
-            <span class="label">queued</span>
-            <% end %>
-          </td>
-        </tr>
-        <% end %>
-      </table>
-      <%= link_to raw("Show all pipeline instances &rarr;"), jobs_path, class: 'pull-right' %>
+      <%= form_for AuthorizedKey.new do |f| %>
+	<%= hidden_field_tag :return_to, request.original_url %>
+	<%= f.text_area :public_key, cols: 50, rows: 4, placeholder: "Paste your public key here", style: "width: 100%" %>
+	<%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary pull-right" %>
       <% end %>
-    </div>
   </div>
+<% end %>
 
+<% if @my_collections.count == 0 %>
+<div class="alert alert-info daxalert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <%= image_tag "dax.png", class: "dax" %>
+  <p>
+    Hi, I noticed you haven't uploaded a new collection yet. 
+    <%= link_to "Click here to learn how to upload data to Arvados Keep.", 
+	"http://doc.arvados.org/user/tutorials/tutorial-keep.html", 
+	style: "font-weight: bold", target: "_blank" %>
+  </p>
+</div>
 
+<% end %>
+
+<% if @my_jobs.count == 0 %>
+<div class="alert alert-info daxalert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>  
+  <p><%= image_tag "dax.png", class: "dax" %>
+    Hi, I noticed you haven't run a job yet. 
+    <%= link_to "Click here to learn how to run an Arvados Crunch job.", 
+	"http://doc.arvados.org/user/tutorials/tutorial-job1.html", 
+	style: "font-weight: bold",
+	target: "_blank" %>
+  </p>
+</div>
+<% end %>
+
+<% if @my_pipelines.count == 0 %>
+<div class="alert alert-info daxalert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <p><%= image_tag "dax.png", class: "dax" %>
+    Hi, I noticed you haven't run a pipeline yet.  
+    <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", 
+	"http://doc.arvados.org/user/tutorials/tutorial-new-pipeline.html", 
+	style: "font-weight: bold",
+	target: "_blank" %>
+  </p>
+</div>
+<% end %>
+
+<div class="well">
+  <p><strong>Useful links</strong></p>
+  <p><ul>
+      <li><%= link_to "Arvados project page", "http://arvados.org", target: "_blank" %></li>
+      <li><%= link_to "Tutorials and user guide",
+      "http://doc.arvados.org/user/", target: "_blank" %></li>
+    </ul>
+  </p>
+</div>
+
+</div>
 </div>
 
 <% elsif current_user %>
