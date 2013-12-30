@@ -102,10 +102,17 @@
 
   <div class="container">
 
+    <% if current_user and @required_user_agreements.andand.any? %>
+    <%= render partial: 'application/force_user_agreement' %>
+    <% else %>
     <%= yield %>
+    <% end %>
 
   </div> <!-- /container -->
 
   <%= piwik_tracking_tag %>
+  <%= javascript_tag do %>
+  <%= yield :footer_js %>
+  <% end %>
 </body>
 </html>

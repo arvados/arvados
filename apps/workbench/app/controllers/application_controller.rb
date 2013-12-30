@@ -3,6 +3,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_clear
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
+  before_filter :load_required_user_agreements
 
   begin
     rescue_from Exception,
@@ -214,6 +215,19 @@ class ApplicationController < ActionController::Base
     unless current_user and current_user.is_admin
       @errors = ['Permission denied']
       self.render_error status: 401
+    end
+  end
+
+  def load_required_user_agreements
+    @required_user_agreements = []
+    if current_user && !current_user.is_active && current_user.is_invited
+      signatures = UserAgreement.signatures
+      @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
+      @required_user_agreements = UserAgreement.all.map do |ua|
+        if not @signed_ua_uuids.index ua.uuid
+          Collection.find(ua.uuid)
+        end
+      end
     end
   end
 end
