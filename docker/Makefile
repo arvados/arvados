@@ -8,9 +8,9 @@ clean:
 # `make realclean' will also remove the docker images and force
 # subsequent makes to build the entire chain from the ground up
 realclean: clean
-	docker stop $(docker ps -q)
-	docker rm $(docker ps -a -q)
-	docker rmi $(docker images -q)
+	-[ -n "`docker ps -q`" ] && docker stop `docker ps -q`
+	-docker rm `docker ps -a -q`
+	-docker rmi `docker images -q`
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
