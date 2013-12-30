@@ -19,6 +19,7 @@ class User < ArvadosModel
     t.add :identity_url
     t.add :is_active
     t.add :is_admin
+    t.add :is_invited
     t.add :prefs
   end
 
@@ -26,6 +27,12 @@ class User < ArvadosModel
 
   def full_name
     "#{first_name} #{last_name}"
+  end
+
+  def is_invited
+    (self.is_active ||
+     Rails.configuration.new_users_are_active ||
+     self.groups_i_can(:read).select { |x| x.match /-f+$/ }.first)
   end
 
   def groups_i_can(verb)

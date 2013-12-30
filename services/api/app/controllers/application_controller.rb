@@ -328,7 +328,7 @@ class ApplicationController < ActionController::Base
 
   def render_list
     @object_list = {
-      :kind  => "arvados##{resource_name}List",
+      :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",
       :self_link => "",
       :next_page_token => "",
