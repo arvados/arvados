@@ -2,7 +2,7 @@
 layout: default
 navsection: api
 navmenu: Schema
-title: "Resource: AuthorizedKey"
+title: AuthorizedKey
 navorder: 3
 ---
 
@@ -12,7 +12,7 @@ A **AuthorizedKey** represents...
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":methods.html
+See "REST methods for working with Arvados resources":/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/authorized_key@
 
@@ -28,10 +28,10 @@ Side effects of creating a AuthorizedKey.
 
 h2. Resources
 
-Each AuthorizedKey has, in addition to the usual "attributes of Arvados resources":resources.html:
+Each AuthorizedKey has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
 
 table(table table-bordered table-condensed).
-|*Attribute*|*Type*|*Description*|*Example*|
+|_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
 |key_type|string|||
 |authorized_user_uuid|string|||
