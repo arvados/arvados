@@ -1,7 +1,16 @@
 all: api-image doc-image workbench-image warehouse-image sso-image
 
+# `make clean' removes the files generated in the build directory
+# but does not remove any docker images generated in previous builds
 clean:
 	-rm *-image */generated/*
+
+# `make realclean' will also remove the docker images and force
+# subsequent makes to build the entire chain from the ground up
+realclean: clean
+	docker stop $(docker ps -q)
+	docker rm $(docker ps -a -q)
+	docker rmi $(docker images -q)
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
