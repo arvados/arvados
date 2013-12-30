@@ -223,6 +223,8 @@
   </div>
 
 <div class="span4">
+<br/>
+
 <% if @my_ssh_keys.count == 0%>
   <div class="alert alert-info daxalert">
     <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -292,6 +294,31 @@
       "http://doc.arvados.org/user/", target: "_blank" %></li>
     </ul>
   </p>
+</div>
+
+<div class="well">
+  <p><strong>System status</strong></p>
+    <table>
+      <% [Human, Trait, Collection, PipelineTemplate,
+	  PipelineInstance].each do |aclass| %>
+	<tr>
+	  <td>
+	    <span style="margin-right: 2em">
+	      <a href="/<%= raw(aclass.to_s.pluralize.underscore) %>">
+	    <%= raw(aclass.to_s.pluralize.underscore.capitalize.gsub '_', '&nbsp;') %>
+	    </a>
+	    </span>
+	    </td>
+	  <td>
+        <% if aclass == 'File' %>
+          <%= Collection.limit(4000).where({}).collect(&:files).flatten(1).count %>
+        <% else %>
+          <%= aclass.limit(4000).where({}).count %>
+        <% end %>
+	</td>
+	</tr>
+      <% end %>
+      </table>
 </div>
 
 </div>
