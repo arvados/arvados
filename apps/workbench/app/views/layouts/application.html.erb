@@ -102,11 +102,7 @@
 
   <div class="container">
 
-    <% if current_user and @required_user_agreements.andand.any? %>
-    <%= render partial: 'application/force_user_agreement' %>
-    <% else %>
     <%= yield %>
-    <% end %>
 
   </div> <!-- /container -->
 

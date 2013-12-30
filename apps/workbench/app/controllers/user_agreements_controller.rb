@@ -1,4 +1,7 @@
 class UserAgreementsController < ApplicationController
+  skip_before_filter :check_user_agreements
+  skip_before_filter :find_object_by_uuid
+
   def model_class
     Collection
   end

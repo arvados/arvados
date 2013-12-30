@@ -3,7 +3,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_clear
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
-  before_filter :load_required_user_agreements
+  before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
 
   begin
     rescue_from Exception,
@@ -218,8 +218,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def load_required_user_agreements
-    @required_user_agreements = []
+  def check_user_agreements
     if current_user && !current_user.is_active && current_user.is_invited
       signatures = UserAgreement.signatures
       @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
@@ -228,6 +227,8 @@ class ApplicationController < ActionController::Base
           Collection.find(ua.uuid)
         end
       end
+      render 'user_agreements/index' 
     end
+    true
   end
 end
