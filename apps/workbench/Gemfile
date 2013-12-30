@@ -52,3 +52,4 @@ gem 'andand'
 gem 'RedCloth'
 
 gem 'piwik_analytics'
+gem 'httpclient'
