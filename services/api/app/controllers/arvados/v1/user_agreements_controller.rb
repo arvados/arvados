@@ -1,5 +1,6 @@
 class Arvados::V1::UserAgreementsController < ApplicationController
   before_filter :admin_required, except: [:index, :sign, :signatures]
+  skip_before_filter :find_object, only: [:sign, :signatures]
 
   def model_class
     Link
@@ -50,7 +51,7 @@ class Arvados::V1::UserAgreementsController < ApplicationController
                             tail_kind: 'arvados#user',
                             tail_uuid: current_user_uuid,
                             head_kind: 'arvados#collection',
-                            head_uuid: params[:id])
+                            head_uuid: params[:uuid])
     end
     show
   end
