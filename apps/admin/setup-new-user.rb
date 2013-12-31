@@ -5,7 +5,6 @@ abort 'Error: Ruby >= 1.9.3 required.' if RUBY_VERSION < '1.9.3'
 require 'logger'
 require 'trollop'
 log = Logger.new STDERR
-log.level = ENV['DEBUG'] ? Logger::DEBUG : Logger::WARN
 log.progname = $0.split('/').last
 
 opts = Trollop::options do
@@ -13,12 +12,26 @@ opts = Trollop::options do
   banner "Usage: #{log.progname} " +
     "{user_uuid_or_email} {user_and_repo_name} {vm_uuid}"
   banner ''
+  opt :debug, <<-eos
+Show debug messages.
+  eos
+  opt :create, <<-eos
+Create a new user with the given email address if an existing user \
+is not found.
+  eos
+  opt :openid_prefix, <<-eos, default: 'https://www.google.com/accounts/o8/id'
+If creating a new user record, require authentication from an OpenID \
+with this OpenID prefix *and* a matching email address in order to \
+claim the account.
+  eos
   opt :force, <<-eos
 Continue even if sanity checks raise flags: the given user is already \
 active, the given repository already exists, etc.
   eos
   opt :n, 'Do not change anything, just probe'
 end
+
+log.level = (ENV['DEBUG'] || opts.debug) ? Logger::DEBUG : Logger::WARN
     
 if ARGV.count != 3
   Trollop::die "required arguments are missing"
@@ -33,6 +46,30 @@ user = begin
          arv.user.get(uuid: user_arg)
        rescue Arvados::TransactionFailedError
          found = arv.user.list(where: {email: ARGV[0]})[:items]
+         if found.count == 0 and opts.create
+           if !opts.force and !user_arg.match(/\w\@\w+\.\w+/)
+             abort "About to create new user, but #{user_arg.inspect} " +
+               "does not look like an email address. Stop."
+           end
+           if opts.n
+             log.info "-n flag given. Stop before creating new user record."
+             exit 0
+           end
+           new_user = arv.user.create(user: {email: user_arg})
+           log.info { "created user: " + new_user[:uuid] }
+           login_perm_props = {identity_url_prefix: opts.openid_prefix }
+           oid_login_perm = arv.link.create(link: {
+                                              link_class: 'permission',
+                                              name: 'can_login',
+                                              tail_kind: 'email',
+                                              tail_uuid: user_arg,
+                                              head_kind: 'arvados#user',
+                                              head_uuid: new_user[:uuid],
+                                              properties: login_perm_props
+                                            })
+           log.info { "openid login permission: " + oid_login_perm[:uuid] }
+           found = [new_user]
+         end
          if found.count != 1
            abort "Found #{found.count} users " +
              "with uuid or email #{user_arg.inspect}. Stop."
@@ -93,7 +130,7 @@ if opts.n
 end
 
 if need_force and not opts.force
-  abort "This does not seem to be a new user, and -f was not given. Stop."
+  abort "This does not seem to be a new user[name], and -f was not given. Stop."
 end
 
 # Everything seems to be in order. Create a repository (if needed) and
