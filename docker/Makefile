@@ -4,6 +4,7 @@ all: api-image doc-image workbench-image warehouse-image sso-image
 # but does not remove any docker images generated in previous builds
 clean:
 	-rm *-image */generated/*
+	-@rmdir */generated
 
 # `make realclean' will also remove the docker images and force
 # subsequent makes to build the entire chain from the ground up

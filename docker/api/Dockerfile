@@ -40,10 +40,10 @@ RUN sh /tmp/config_databases.sh && \
 
 # Configure Apache and Passenger.
 ADD passenger.conf /etc/apache2/conf.d/passenger
-RUN a2dissite default ; \
-    a2ensite arvados ; \
-    a2enmod rewrite ; \
-    a2enmod ssl ; \
+RUN a2dissite default && \
+    a2ensite arvados && \
+    a2enmod rewrite && \
+    a2enmod ssl && \
     /bin/mkdir /var/run/apache2
 
 # Supervisor.

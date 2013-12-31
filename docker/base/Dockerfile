@@ -10,12 +10,12 @@ ENV DEBIAN_FRONTEND noninteractive
 #   * git, curl, rvm
 #   * Arvados source code in /usr/src/arvados-upstream, for preseeding gem installation
 
-RUN apt-get update ;\
-    apt-get -q -y install -q -y openssh-server apt-utils git curl locales postgresql-server-dev-9.1 ;\
-    /bin/mkdir -p /root/.ssh ;\
-    /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen ;\
-    /usr/sbin/locale-gen ;\
-    curl -L https://get.rvm.io | bash -s stable --ruby=2.0.0 ;\
+RUN apt-get update && \
+    apt-get -q -y install -q -y openssh-server apt-utils git curl locales postgresql-server-dev-9.1 && \
+    /bin/mkdir -p /root/.ssh && \
+    /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    /usr/sbin/locale-gen && \
+    curl -L https://get.rvm.io | bash -s stable --ruby=2.0.0 && \
     git clone https://github.com/clinicalfuture/arvados.git /usr/src/arvados-upstream
 
 # Set up RVM environment. These are just the env variables created by
@@ -27,11 +27,10 @@ ENV PATH /usr/local/rvm/gems/ruby-2.0.0-p353/bin:/usr/local/rvm/gems/ruby-2.0.0-
 
 # Update gem. This (hopefully) fixes
 # https://github.com/rubygems/rubygems.org/issues/613.
-RUN gem update --system 
-
-RUN gem install bundler ;\
-    bundle install --gemfile=/usr/src/arvados-upstream/apps/workbench/Gemfile ;\
-    bundle install --gemfile=/usr/src/arvados-upstream/services/api/Gemfile ;\
+RUN gem update --system && \
+    gem install bundler && \
+    bundle install --gemfile=/usr/src/arvados-upstream/apps/workbench/Gemfile && \
+    bundle install --gemfile=/usr/src/arvados-upstream/services/api/Gemfile && \
     bundle install --gemfile=/usr/src/arvados-upstream/doc/Gemfile
 
 ADD generated/id_rsa.pub /root/.ssh/authorized_keys
