@@ -27,7 +27,7 @@ Start by opening a terminal window.  Check if you have an existing public key:
 
 notextile. <pre><code>$ <span class="userinput">ls ~/.ssh/id_rsa.pub</span></code></pre>
 
-If the file @id_rsa.pub@ exists, then you may use your existing key.  Copy the contents of @~/.ssh/id_rsa.pub@ onto the clipboard and proceed to "adding your key to the Arvados Workbench.":#workbench
+If the file @id_rsa.pub@ exists, then you may use your existing key.  Copy the contents of @~/.ssh/id_rsa.pub@ onto the clipboard (this is your public key).  Proceed to "adding your key to the Arvados Workbench.":#workbench
 
 If there is no file @~/.ssh/id_rsa.pub@, you must generate a new key.  Use @ssh-keygen@ to do this:
 
@@ -72,11 +72,11 @@ When everything is set up, @ssh-add -l@ should yield output that looks something
 </code></pre>
 </notextile>
 
-Copy the contents of @~/.ssh/id_rsa.pub@ onto the clipboard and proceed to "adding your key to the Arvados Workbench":#workbench .
+Copy the contents of @~/.ssh/id_rsa.pub@ onto the clipboard (this is your public key).  Proceed to "adding your key to the Arvados Workbench":#workbench .
 
 h2(#windows). Windows: Using PuTTY
 
-(Note: if you are using the ssh client that comes with "Cygwin":http://cygwin.com you should follow the "Unix":#unix instructions).
+(Note: if you are using the @ssh@ client that comes with "Cygwin":http://cygwin.com you should follow the "Unix":#unix instructions).
 
 "PuTTY":http://www.putty.org/ is a free (MIT-licensed) Win32 Telnet and SSH client. PuTTy includes all the tools a windows user needs to set up Private Keys and to set up and use SSH connections to your virtual machines in the Arvados Cloud. 
 
@@ -119,11 +119,13 @@ _Note: We recommend you do not delete the “Default” Saved Session._
 
 h1(#workbench). Adding your key to Arvados Workbench
 
-Open the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ) and look at the *Configuration* box.  If you do not have any ssh keys added, it will show:
+h3. From the workbench dashboard
 
-bc. SSH keys   0
+Open the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ) and look at the right hand column.  If you have no @ssh@ keys registered, there should be a notification box asking you to provide your @ssh@ public key.  Paste your public key into the text area and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
 
-This indicates that you have not yet provided Arvados with your public @ssh@ key.  Click on "SSH keys" or use the menu item _Access %(rarr)&rarr;% Keys_ to add an authorized ssh key to your account.
+h3. Alternate way to add ssh keys
+
+If you want to add additional @ssh@ keys, use the menu item _Access %(rarr)&rarr;% Keys_ to add an authorized ssh key to your account.
 
 Click on the button <span class="btn btn-primary disabled">Add a new authorized key</span>.
 
@@ -139,9 +141,9 @@ To determine the name and login information of the VM instance that you will con
 
 This section consists of two sets of instructions, depending on whether you will be logging in using a "Unix":#unixvm (Linux, OS X, Cygwin) or "Windows":#windowsvm client.
 
-h2. Logging in using command line ssh (Unix)
+h2(#unixvm). Logging in using command line ssh (Unix)
 
-h3(#unixvm). Connecting to the VM
+h3. Connecting to the VM
 
 Use the following command to connect to the "shell" VM instance as "you":
 
