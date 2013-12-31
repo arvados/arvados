@@ -121,7 +121,7 @@ class CollectionsController < ApplicationController
           yield buf
         end
       end
-      Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: $?") if $? != 0
+      Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: #{$?}") if $? != 0
     end
   end
 end
