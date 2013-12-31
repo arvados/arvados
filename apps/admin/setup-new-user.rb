@@ -166,8 +166,3 @@ group_perm = arv.link.create(link: {
                                link_class: 'permission',
                                name: 'can_read'})
 log.info { "group permission: " + group_perm[:uuid] }
-
-user[:is_active] = true
-user.save
-
-log.info { "user saved with is_active=true" }
