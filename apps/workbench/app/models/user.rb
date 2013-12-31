@@ -21,6 +21,12 @@ class User < ArvadosBase
     (self.first_name || "") + " " + (self.last_name || "")
   end
 
+  def activate
+    self.private_reload($arvados_api_client.api(self.class,
+                                                "/#{self.uuid}/activate",
+                                                {}))
+  end
+
   def attribute_editable?(attr)
     (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super(attr)
   end

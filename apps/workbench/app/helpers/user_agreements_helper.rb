@@ -1,0 +1,2 @@
+module UserAgreementsHelper
+end

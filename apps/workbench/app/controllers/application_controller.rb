@@ -3,6 +3,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_clear
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
+  before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
 
   begin
     rescue_from Exception,
@@ -215,5 +216,29 @@ class ApplicationController < ActionController::Base
       @errors = ['Permission denied']
       self.render_error status: 401
     end
+  end
+
+  def check_user_agreements
+    if current_user && !current_user.is_active && current_user.is_invited
+      signatures = UserAgreement.signatures
+      @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
+      @required_user_agreements = UserAgreement.all.map do |ua|
+        if not @signed_ua_uuids.index ua.uuid
+          Collection.find(ua.uuid)
+        end
+      end
+      if @required_user_agreements.empty?
+        # No agreements to sign. Perhaps we just need to ask?
+        current_user.activate
+        if !current_user.is_active
+          logger.warn "#{current_user.uuid.inspect}: " +
+            "No user agreements to sign, but activate failed!"
+        end
+      end
+      if !current_user.is_active
+        render 'user_agreements/index'
+      end
+    end
+    true
   end
 end

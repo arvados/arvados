@@ -1,13 +1,10 @@
 ArvadosWorkbench::Application.routes.draw do
+  resources :user_agreements
+  post '/user_agreements/sign' => 'user_agreements#sign'
+  get '/user_agreements/signatures' => 'user_agreements#signatures'
   resources :nodes
-
-
   resources :humans
-
-
   resources :traits
-
-
   resources :api_client_authorizations
   resources :repositories
   resources :virtual_machines
@@ -30,6 +27,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :links
   match '/collections/graph' => 'collections#graph'
   resources :collections
+  get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   root :to => 'users#welcome'
 
   # Send unroutable requests to an arbitrary controller

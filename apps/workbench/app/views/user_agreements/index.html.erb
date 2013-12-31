@@ -1,0 +1,45 @@
+<h1>User agreements</h1>
+
+<p>You must read and sign all applicable user agreements before continuing.</p>
+
+<button data-toggle="modal" href="#open_user_agreement" class="btn btn-primary">Show details</button>
+
+<div id="open_user_agreement" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="uaModalLabel" aria-hidden="true" data-show="true">
+  <%= form_for(@required_user_agreements.first, {url: {action: 'sign', controller: 'user_agreements'}}) do |f| %>
+    <%= hidden_field_tag :return_to, request.url %>
+  <% n_files = @required_user_agreements.collect(&:files).flatten(1).count %>
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3 id="uaModalLabel">User agreement<%= 's' if n_files != 1 %></h3>
+  </div>
+  <div class="modal-body">
+    <p>Please check <%= n_files > 1 ? 'each' : 'the' %> box to indicate that you have read and accepted the agreement.</p>
+    <% @required_user_agreements.each do |ua| %>
+    <% ua.files.each do |file| %>
+    <%= f.label 'checked[]', class: 'checkbox inline' do %>
+    <%= check_box_tag 'checked[]', "#{ua.uuid}/#{file[0]}/#{file[1]}", false %>
+    <%= link_to 'view', {controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}"}, {target: '_blank', class: 'label label-info'} %>
+    <%= file[1] %>
+    <% end %>
+    <% end %>
+    <% end %>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+    <%= f.submit 'Accept', {class: 'btn btn-primary', disabled: true} %>
+  </div>
+  <% end %>
+</div>
+
+<% content_for :footer_js do %>
+$('#open_user_agreement').modal();
+$('#open_user_agreement input[name="checked[]"]').on('click', function() {
+    var dialog = $('#open_user_agreement')[0]
+    $('input[type=submit]', dialog).prop('disabled',false);
+    $('input[name="checked[]"]', dialog).each(function(){
+        if(!this.checked) {
+            $('input[type=submit]', dialog).prop('disabled',true);
+        }
+    });
+});
+<% end %>

@@ -41,6 +41,16 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def show_file
+    opts = params.merge(arvados_api_token: Thread.current[:arvados_api_token])
+    if r = params[:file].match(/(\.\w+)/)
+      ext = r[1]
+    end
+    self.response.headers['Content-Type'] =
+      Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
+    self.response_body = FileStreamer.new opts
+  end
+
   def show
     return super if !@object
     @provenance = []
@@ -84,6 +94,34 @@ class CollectionsController < ApplicationController
       if @sourcedata[collection.uuid]
         @sourcedata[collection.uuid][:collection] = collection
       end
+    end
+  end
+
+  protected
+  class FileStreamer
+    def initialize(opts={})
+      @opts = opts
+    end
+    def each
+      return unless @opts[:uuid] && @opts[:file]
+      env = Hash[ENV].
+        merge({
+                'ARVADOS_API_HOST' =>
+                $arvados_api_client.arvados_v1_base.
+                sub(/\/arvados\/v1/, '').
+                sub(/^https?:\/\//, ''),
+                'ARVADOS_API_TOKEN' =>
+                @opts[:arvados_api_token],
+                'ARVADOS_API_HOST_INSECURE' =>
+                Rails.configuration.arvados_insecure_https ? 'true' : 'false'
+              })
+      IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
+               'rb') do |io|
+        while buf = io.read(2**20)
+          yield buf
+        end
+      end
+      Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: $?") if $? != 0
     end
   end
 end
