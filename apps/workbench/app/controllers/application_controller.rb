@@ -238,7 +238,7 @@ class ApplicationController < ActionController::Base
         if not @signed_ua_uuids.index ua.uuid
           Collection.find(ua.uuid)
         end
-      end
+      end.compact
       if @required_user_agreements.empty?
         # No agreements to sign. Perhaps we just need to ask?
         current_user.activate
