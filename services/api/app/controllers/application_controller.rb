@@ -335,6 +335,9 @@ class ApplicationController < ActionController::Base
       :next_link => "",
       :items => @objects.as_api_response(nil)
     }
+    if @objects.respond_to? :except
+      @object_list[:items_available] = @objects.except(:limit).count
+    end
     render json: @object_list
   end
 
