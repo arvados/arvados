@@ -1,0 +1,6 @@
+#!/usr/bin/env rake
+
+require "rubygems"
+require "zenweb/tasks"
+load "zenweb-textile.rb"
+

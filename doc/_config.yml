@@ -1,3 +1,4 @@
+exclude: ["Rakefile", "tmp"]
 baseurl: /doc
 arvados_api_host: qr1hi.arvadosapi.com
 navbar:
