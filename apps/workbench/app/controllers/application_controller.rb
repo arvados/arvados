@@ -227,7 +227,17 @@ class ApplicationController < ActionController::Base
           Collection.find(ua.uuid)
         end
       end
-      render 'user_agreements/index' 
+      if @required_user_agreements.empty?
+        # No agreements to sign. Perhaps we just need to ask?
+        current_user.activate
+        if !current_user.is_active
+          logger.warn "#{current_user.uuid.inspect}: " +
+            "No user agreements to sign, but activate failed!"
+        end
+      end
+      if !current_user.is_active
+        render 'user_agreements/index'
+      end
     end
     true
   end
