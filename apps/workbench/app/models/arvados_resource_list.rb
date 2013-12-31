@@ -104,4 +104,8 @@ class ArvadosResourceList
   def empty?
     results.empty?
   end
+
+  def items_available
+    results.items_available if results.respond_to? :items_available
+  end
 end

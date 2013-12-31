@@ -83,19 +83,16 @@
 	  <td>
 	    <span style="margin-right: 2em">
 	      <a href="/<%= raw(aclass.to_s.pluralize.underscore) %>">
-	    <%= raw(aclass.to_s.pluralize.underscore.capitalize.gsub '_', '&nbsp;') %>
-	    </a>
+	        <%= raw(aclass.to_s.pluralize.underscore.capitalize.gsub '_', '&nbsp;') %>
+	      </a>
 	    </span>
-	    </td>
+	  </td>
 	  <td>
-        <% if aclass == 'File' %>
-          <%= Collection.limit(4000).where({}).collect(&:files).flatten(1).count %>
-        <% else %>
-          <%= aclass.limit(4000).where({}).count %>
-        <% end %>
-	</td>
+            <%= aclass.limit(0).where({}).items_available ||
+                aclass.limit(4000).where({}).count %>
+          </td>
 	</tr>
       <% end %>
-      </table>
+    </table>
 </div>
 <% end %>
