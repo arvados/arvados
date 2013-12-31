@@ -21,6 +21,22 @@ class UserSessionsController < ApplicationController
 
     user = User.find_by_identity_url(omniauth['info']['identity_url'])
     if not user
+      # Check for permission to log in to an existing User record with
+      # a different identity_url
+      Link.where(link_class: 'permission',
+                 name: 'can_login',
+                 tail_kind: 'email',
+                 tail_uuid: omniauth['info']['email'],
+                 head_kind: 'arvados#user').each do |link|
+        if prefix = link.properties[:identity_url_prefix]
+          if prefix == omniauth['info']['identity_url'][0..prefix.size-1]
+            user = User.find_by_uuid(link.head_uuid)
+            break if user
+          end
+        end
+      end
+    end
+    if not user
       # New user registration
       user = User.new(:email => omniauth['info']['email'],
                       :first_name => omniauth['info']['first_name'],
@@ -31,6 +47,10 @@ class UserSessionsController < ApplicationController
       user.email = omniauth['info']['email']
       user.first_name = omniauth['info']['first_name']
       user.last_name = omniauth['info']['last_name']
+      if user.identity_url.nil?
+        # First login to a pre-activated account
+        user.identity_url = omniauth['info']['identity_url']
+      end
     end
 
     # prevent ArvadosModel#before_create and _update from throwing
