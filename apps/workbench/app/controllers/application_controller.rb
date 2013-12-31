@@ -143,7 +143,7 @@ class ApplicationController < ActionController::Base
     yield
   end
 
-  def thread_with_api_token
+  def thread_with_api_token(login_optional = false)
     begin
       try_redirect_to_login = true
       if params[:api_token]
@@ -181,24 +181,36 @@ class ApplicationController < ActionController::Base
         logger.debug "No token received, session is #{session.inspect}"
       end
       if try_redirect_to_login
-        respond_to do |f|
-          f.html {
-            if request.method == 'GET'
-              redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
-            else
-              flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
-              redirect_to :back
-            end
-          }
-          f.json {
-            @errors = ['You do not seem to be logged in. You did not supply an API token with this request, and your session (if any) has timed out.']
-            self.render_error status: 422
-          }
+        unless login_optional
+          respond_to do |f|
+            f.html {
+              if request.method == 'GET'
+                redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+              else
+                flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
+                redirect_to :back
+              end
+            }
+            f.json {
+              @errors = ['You do not seem to be logged in. You did not supply an API token with this request, and your session (if any) has timed out.']
+              self.render_error status: 422
+            }
+          end
+        else
+          # login is optional for this route so go on to the regular controller
+          Thread.current[:arvados_api_token] = nil
+          yield
         end
       end
     ensure
       # Remove token in case this Thread is used for anything else.
       Thread.current[:arvados_api_token] = nil
+    end
+  end
+
+  def thread_with_optional_api_token 
+    thread_with_api_token(true) do 
+      yield
     end
   end
 

@@ -1,40 +1,60 @@
+require 'httpclient'
+require 'thread'
+
 class ArvadosApiClient
   class NotLoggedInException < StandardError
   end
   class InvalidApiResponseException < StandardError
   end
+
+  @@client_mtx = Mutex.new
+  @@api_client = nil
+
   def api(resources_kind, action, data=nil)
-    arvados_api_token = Thread.current[:arvados_api_token]
-    arvados_api_token = '' if arvados_api_token.nil?
-    dataargs = ['--data-urlencode',
-                "api_token=#{arvados_api_token}",
-                '--header',
-                'Accept:application/json']
+    @@client_mtx.synchronize do
+      if not @@api_client 
+        @@api_client = HTTPClient.new
+        if Rails.configuration.arvados_insecure_https
+          @@api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+      end
+    end
+
+    api_token = Thread.current[:arvados_api_token]
+    api_token ||= ''
+
+    resources_kind = class_kind(resources_kind).pluralize if resources_kind.is_a? Class
+    url = "#{self.arvados_v1_base}/#{resources_kind}#{action}"
+
+    query = {"api_token" => api_token}
     if !data.nil?
       data.each do |k,v|
-        dataargs << '--data-urlencode'
         if v.is_a? String or v.nil?
-          dataargs << "#{k}=#{v}"
-        elsif v == true or v == false
-          dataargs << "#{k}=#{v ? 1 : 0}"
+          query[k] = v
+        elsif v == true
+          query[k] = 1
+        elsif v == false
+          query[k] = 0
         else
-          dataargs << "#{k}=#{JSON.dump(v)}"
+          query[k] = JSON.dump(v)
         end
       end
     else
-      dataargs << '--data-urlencode' << '_method=GET'
+      query["_method"] = "GET"
+    end 
+    
+    header = {"Accept" => "application/json"}
+
+    msg = @@api_client.post(url, 
+                            query,
+                            header: header)
+
+    if msg.status_code == 401
+      raise NotLoggedInException.new
     end
-    json = nil
-    resources_kind = class_kind(resources_kind).pluralize if resources_kind.is_a? Class
-    url = "#{self.arvados_v1_base}/#{resources_kind}#{action}"
-    IO.popen([ENV,
-              'curl',
-              "-s#{'k' if Rails.configuration.arvados_insecure_https}",
-              *dataargs,
-              url],
-             'r') do |io|
-      json = io.read
-    end
+
+    json = msg.content
+    
     begin
       resp = Oj.load(json, :symbol_keys => true)
     rescue Oj::ParseError
@@ -44,13 +64,13 @@ class ArvadosApiClient
       raise InvalidApiResponseException.new json
     end
     if resp[:errors]
-      if resp[:errors][0] == 'Not logged in'
-        raise NotLoggedInException.new
-      else
-        errors = resp[:errors]
-        errors = errors.join("\n\n") if errors.is_a? Array
-        raise "API errors:\n\n#{errors}\n"
-      end
+      #if resp[:errors][0] == 'Not logged in'
+      #  raise NotLoggedInException.new
+      #else
+      #  errors = resp[:errors]
+      #  errors = errors.join("\n\n") if errors.is_a? Array
+      #  raise "API errors:\n\n#{errors}\n"
+    #end
     end
     resp
   end

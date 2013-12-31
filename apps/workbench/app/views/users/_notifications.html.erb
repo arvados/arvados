@@ -1,0 +1,101 @@
+<% if current_user.andand.is_active %>
+
+<% if @my_ssh_keys.count == 0 || @showallalerts %>
+  <div class="alert alert-info daxalert">
+    <button type="button" class="close" data-dismiss="alert">&times;</button>
+    <%= image_tag "dax.png", class: "dax" %>
+    <div>
+      Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.  
+      <%= link_to "Click here to learn about SSH keys in Arvados.",
+	  "http://doc.arvados.org/user/getting_started/ssh-access.html", 
+	  style: "font-weight: bold",
+	  target: "_blank" %>
+      When you have an SSH key you would like to use, paste the SSH public key
+      in the text box.
+    </div>
+      <%= form_for AuthorizedKey.new do |f| %>
+	<%= hidden_field_tag :return_to, request.original_url %>
+	<%= f.text_area :public_key, cols: 50, rows: 4, placeholder: "Paste your public key here", style: "width: 100%" %>
+	<%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary pull-right" %>
+      <% end %>
+  </div>
+<% end %>
+
+<% if @my_collections.count == 0 || @showallalerts %>
+<div class="alert alert-info daxalert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <%= image_tag "dax.png", class: "dax" %>
+  <p>
+    Hi, I noticed you haven't uploaded a new collection yet. 
+    <%= link_to "Click here to learn how to upload data to Arvados Keep.", 
+	"http://doc.arvados.org/user/tutorials/tutorial-keep.html", 
+	style: "font-weight: bold", target: "_blank" %>
+  </p>
+</div>
+
+<% end %>
+
+<% if @my_jobs.count == 0 || @showallalerts %>
+<div class="alert alert-info daxalert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>  
+  <p><%= image_tag "dax.png", class: "dax" %>
+    Hi, I noticed you haven't run a job yet. 
+    <%= link_to "Click here to learn how to run an Arvados Crunch job.", 
+	"http://doc.arvados.org/user/tutorials/tutorial-job1.html", 
+	style: "font-weight: bold",
+	target: "_blank" %>
+  </p>
+</div>
+<% end %>
+
+<% if @my_pipelines.count == 0 || @showallalerts %>
+<div class="alert alert-info daxalert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <p><%= image_tag "dax.png", class: "dax" %>
+    Hi, I noticed you haven't run a pipeline yet.  
+    <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", 
+	"http://doc.arvados.org/user/tutorials/tutorial-new-pipeline.html", 
+	style: "font-weight: bold",
+	target: "_blank" %>
+  </p>
+</div>
+<% end %>
+
+<% end %>
+
+<div class="well">
+  <p><strong>Useful links</strong></p>
+  <p><ul>
+      <li><%= link_to "Arvados project page", "http://arvados.org", target: "_blank" %></li>
+      <li><%= link_to "Tutorials and user guide",
+      "http://doc.arvados.org/user/", target: "_blank" %></li>
+    </ul>
+  </p>
+</div>
+
+<% if current_user.andand.is_active %>
+<div class="well">
+  <p><strong>System status</strong></p>
+    <table>
+      <% [Human, Trait, Collection, PipelineTemplate,
+	  PipelineInstance].each do |aclass| %>
+	<tr>
+	  <td>
+	    <span style="margin-right: 2em">
+	      <a href="/<%= raw(aclass.to_s.pluralize.underscore) %>">
+	    <%= raw(aclass.to_s.pluralize.underscore.capitalize.gsub '_', '&nbsp;') %>
+	    </a>
+	    </span>
+	    </td>
+	  <td>
+        <% if aclass == 'File' %>
+          <%= Collection.limit(4000).where({}).collect(&:files).flatten(1).count %>
+        <% else %>
+          <%= aclass.limit(4000).where({}).count %>
+        <% end %>
+	</td>
+	</tr>
+      <% end %>
+      </table>
+</div>
+<% end %>
