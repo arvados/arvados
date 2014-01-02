@@ -48,6 +48,8 @@ class CollectionsController < ApplicationController
     end
     self.response.headers['Content-Type'] =
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
+    self.response.headers['Content-Length'] = params[:size] if params[:size]
+    self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
     self.response_body = FileStreamer.new opts
   end
 
