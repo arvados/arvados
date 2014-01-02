@@ -27,16 +27,29 @@
 
 <div class="tab-content">
   <div id="files" class="tab-pane fade in active">
-    <table class="table table-bordered">
+    <table class="table table-bordered" style="table-layout: fixed">
       <thead>
-        <tr><th style="text-align:right">size (bytes)</th><th>filename</th></tr>
+        <tr>
+          <th style="width: 10em; text-align:right">size</th>
+          <th>
+            <div style="width:3.5em; display:inline-block"></div>
+            path
+          </th>
+        </tr>
       </thead><tbody>
-        <% if @object then @object.files.each do |file| %>
+        <% if @object then @object.files.sort_by{|f|f[1]}.each do |file| %>
+        <% file_path = "#{file[0]}/#{file[1]}" %>
         <tr>
           <td style="text-align:right">
             <%= raw(human_readable_bytes_html(file[2])) %>
           </td><td>
-            <%= file[0] %>/<%= file[1] %>
+            <div style="width:3.5em; display:inline-block">
+            <%= link_to raw('<i class="icon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
+            <% if file_path.match /\.(txt|pdf|png|jpe?g|gif|tiff?|html?)$/i %>
+            <%= link_to raw('<i class="icon-play"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {class: 'label label-info', title: 'View in browser'} %>
+            <% end %>
+            </div>
+            <%= file_path %>
           </td>
         </tr>
         <% end; end %>
