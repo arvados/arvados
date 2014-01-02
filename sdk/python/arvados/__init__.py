@@ -18,8 +18,8 @@ import fcntl
 import time
 import threading
 
-from apiclient import errors
-from apiclient.discovery import build
+import apiclient
+import apiclient.discovery
 
 if 'ARVADOS_DEBUG' in os.environ:
     logging.basicConfig(level=logging.DEBUG)
@@ -98,6 +98,18 @@ def current_job():
 def getjobparam(*args):
     return current_job()['script_parameters'].get(*args)
 
+# Monkey patch discovery._cast() so objects and arrays get serialized
+# with json.dumps() instead of str().
+_cast_orig = apiclient.discovery._cast
+def _cast_objects_too(value, schema_type):
+    global _cast_orig
+    if (type(value) != type('') and
+        (schema_type == 'object' or schema_type == 'array')):
+        return json.dumps(value)
+    else:
+        return _cast_orig(value, schema_type)
+apiclient.discovery._cast = _cast_objects_too
+
 def api(version=None):
     global services
     if not services.get(version):
@@ -123,7 +135,7 @@ def api(version=None):
         if re.match(r'(?i)^(true|1|yes)$',
                     os.environ.get('ARVADOS_API_HOST_INSECURE', '')):
             http.disable_ssl_certificate_validation=True
-        services[version] = build(
+        services[version] = apiclient.discovery.build(
             'arvados', apiVersion, http=http, discoveryServiceUrl=url)
     return services[version]
 
