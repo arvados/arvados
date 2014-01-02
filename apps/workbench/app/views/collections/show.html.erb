@@ -45,7 +45,7 @@
           </td><td>
             <div style="width:3.5em; display:inline-block">
             <%= link_to raw('<i class="icon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
-            <% if file_path.match /\.(txt|pdf|png|jpe?g|gif|tiff?)$/i %>
+            <% if file_path.match /\.(txt|pdf|png|jpe?g|gif|tiff?|html?)$/i %>
             <%= link_to raw('<i class="icon-play"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {class: 'label label-info', title: 'View in browser'} %>
             <% end %>
             </div>
