@@ -108,14 +108,6 @@ Many API methods accept a parameter whose name is the same as the resource type.
 </code></pre>
 </notextile>
 
-Currently, non-atom parameter values (hashes and lists) other than @body@ must be explicitly encoded using @json.dumps()@. (This will be fixed in a future release.)
-
-<notextile>
-<pre><code class="userinput">arvados.api('v1').links().list(
-    where=json.dumps({'link_class':'permission'})).execute()
-</code></pre>
-</notextile>
-
 One way to make API calls slightly less verbose is:
 
 <notextile>

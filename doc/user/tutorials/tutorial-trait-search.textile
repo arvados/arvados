@@ -29,11 +29,10 @@ If everything is set up correctly, you will be able to import the arvados SDK.
 
 notextile. <pre><code>&gt;&gt;&gt; <span class="userinput">import arvados</span></pre></code>
 
-This tutorial will also use the regular expression (re) and json python modules:
+This tutorial will also use the regular expression (re) python module:
 
 <notextile>
 <pre><code>&gt;&gt;&gt; <span class="userinput">import re</span>
-&gt;&gt;&gt; <span class="userinput">import json</span>
 </code></pre>
 </notextile>
 
@@ -72,11 +71,11 @@ h2. Finding humans with the selected trait
 We query the "links" resource to find humans that report the selected trait.  Links are directional connections between Arvados data items, for example, from a human to their reported traits.
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">trait_query = json.dumps({
+<pre><code>&gt;&gt;&gt; <span class="userinput">trait_query = {
     'link_class': 'human_trait',
     'tail_kind': 'arvados#human',
     'head_uuid': non_melanoma_cancer
-  })
+  }
 </code></pre>
 </notextile>
 
@@ -125,10 +124,10 @@ u'1h9kt-7a9it-t1v8sjz6dm9jmjf', u'1h9kt-7a9it-qe8wrbyvuqs5jew']
 h2. Find Personal Genome Project identifiers from Arvados UUIDs
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">human_query = json.dumps({
+<pre><code>&gt;&gt;&gt; <span class="userinput">human_query = {
     "link_class": "identifier",
     "head_uuid": human_uuids
-  })</span>
+  }</span>
 &gt;&gt;&gt; <span class="userinput">pgpid_links = arvados.api('v1').links().list(limit=1000, where=human_query).execute()</span>
 &gt;&gt;&gt; <span class="userinput">map(lambda l: l['name'], pgpid_links['items'])</span>
 [u'hu01024B', u'hu11603C', u'hu15402B', u'hu174334', u'hu1BD549', u'hu237A50',
@@ -151,11 +150,11 @@ h2. Find genomic data from specific humans
 Now we want to find collections in Keep that were provided by these humans.  We search the "links" resource for "provenance" links that point to subjects in list of humans with the non-melanoma skin cancer trait:
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">provenance_links = arvados.api().links().list(limit=1000, where=json.dumps({
+<pre><code>&gt;&gt;&gt; <span class="userinput">provenance_links = arvados.api().links().list(limit=1000, where={
     "link_class": "provenance",
     "name": "provided",
     "tail_uuid": human_uuids
-  })).execute()
+  }).execute()
 collection_uuids = map(lambda l: l['head_uuid'], provenance_links['items'])
 
 # build map of human uuid -> PGP ID
@@ -168,9 +167,9 @@ for p_link in provenance_links['items']:
   pgpid[p_link['head_uuid']] = pgpid[p_link['tail_uuid']]
 
 # get details (e.g., list of files) of each collection
-collections = arvados.api('v1').collections().list(where=json.dumps({
+collections = arvados.api('v1').collections().list(where={
     "uuid": collection_uuids
-  })).execute()
+  }).execute()
 
 # print PGP public profile links with file locators
 for c in collections['items']:
