@@ -23,7 +23,7 @@
   <div class="modal-body">
     <% if n_files == 1 %>
       <% ua = @required_user_agreements.first; file = ua.files.first %>
-      <object data="<%= url_for(controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}") %>" type="<%= Rack::Mime::MIME_TYPES[file[1]] || 'application/pdf' %>" width="100%" height="400px">
+      <object data="<%= url_for(controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}") %>" type="<%= Rack::Mime::MIME_TYPES[file[1].match(/\.\w+$/)[0]] rescue '' %>" width="100%" height="400px">
       </object>
     <% end %>
     <div class="alert alert-info">
