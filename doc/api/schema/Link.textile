@@ -76,11 +76,12 @@ table(table table-bordered table-condensed).
 
 h3. tag
 
-A **tag** link is a keyword string that identifies a group of collections.  A collection may be assigned multiple tags, and a tag will typically include many collections.
+A **tag** link describes an object using an unparsed plain text string. Tags can be used to annotate objects that are not editable, like collections and objects shared as read-only.
 
 table(table table-bordered table-condensed).
-|_. tail_type&rarr;head_type|_. name&rarr;head_uuid {properties}|_. Notes|
-|&rarr;Collection           | _tag name_ &rarr; _collection uuid_||
+|_. tail_type&rarr;head_type|_. name&rarr;head_uuid {properties}|
+|&rarr;Collection           | _tag name_ &rarr; _collection uuid_|
+|&rarr;Job                  | _tag name_ &rarr; _job uuid_|
 
 h3. human_trait
 
