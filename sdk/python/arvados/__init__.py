@@ -995,6 +995,8 @@ class KeepClient(object):
         return pseq
 
     def get(self, locator):
+        if re.search(r',', locator):
+            return ''.join(self.get(x) for x in locator.split(','))
         if 'KEEP_LOCAL_STORE' in os.environ:
             return KeepClient.local_store_get(locator)
         expect_hash = re.sub(r'\+.*', '', locator)
