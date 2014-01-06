@@ -8,21 +8,11 @@ navorder: 12
 
 h1. Link
 
-**Links** describe relationships between Arvados objects, and from
-objects to primitives.
+**Links** describe relationships between Arvados objects, and from objects to primitives.
 
-Links are directional: each metadata object has a tail (subject),
-class, name, properties, and head (object or value).  A Link may
-describe a relationship between two objects in an Arvados database:
-e.g. a _permission_ link between a User and a Group defines the
-permissions that User has to read or modify the Group.  Other Links
-simply represent metadata for a single object, e.g. the _identifier_
-Link, in which the _name_ property represents a human-readable
-identifier for the object at the link's head.
+Links are directional: each metadata object has a tail (subject), class, name, properties, and head (object or value).  A Link may describe a relationship between two objects in an Arvados database: e.g. a _permission_ link between a User and a Group defines the permissions that User has to read or modify the Group.  Other Links simply represent metadata for a single object, e.g. the _identifier_ Link, in which the _name_ property represents a human-readable identifier for the object at the link's head.
 
-For links that don't make sense to share between API clients, a
-_link_class_ that begins with @client@ (like @client.my_app_id@ or
-@client.my_app_id.anythinghere@) should be used.
+For links that don't make sense to share between API clients, a _link_class_ that begins with @client@ (like @client.my_app_id@ or @client.my_app_id.anythinghere@) should be used.
 
 h2. Methods
 
