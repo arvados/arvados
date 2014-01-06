@@ -217,12 +217,20 @@ def parse_arguments(discovery_document)
       if body_object["required"] == false
         is_required = false
       end
-      opt resource.to_sym, "#{resource} (request body)", required: is_required, type: :string
+      opt resource.to_sym, "#{resource} (request body)", {
+        required: is_required,
+        type: :string
+      }
+      discovered_params[resource.to_sym] = body_object
     end
   end
+
   discovered_params.each do |k,v|
+    k = k.to_sym
     if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
-      method_opts[k] = JSON.parse method_opts[k]
+      if method_opts[k].match /^\//
+        method_opts[k] = File.open method_opts[k], 'rb' do |f| f.read end
+      end
     end
   end
   return resource, method, method_opts, global_opts, ARGV
