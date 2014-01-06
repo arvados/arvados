@@ -1,0 +1,67 @@
+#! /usr/bin/env ruby
+
+# arv tag usage:
+#   arv tag add tag1 [tag2 ...] --objects obj_uuid1 [obj_uuid2 ...]
+#   arv tag remove tag1 [tag2 ...] --objects obj_uuid1 [obj_uuid2 ...]
+#   arv tag remove tag1 [tag2 ...] --all
+
+if RUBY_VERSION < '1.9.3' then
+  abort <<-EOS
+#{$0.gsub(/^\.\//,'')} requires Ruby version 1.9.3 or higher.
+  EOS
+end
+
+$arvados_api_version = ENV['ARVADOS_API_VERSION'] || 'v1'
+$arvados_api_host = ENV['ARVADOS_API_HOST'] or
+  abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
+$arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
+  abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
+
+begin
+  require 'rubygems'
+  require 'google/api_client'
+  require 'json'
+  require 'pp'
+  require 'trollop'
+rescue LoadError
+  abort <<-EOS
+#{$0}: fatal: some runtime dependencies are missing.
+Try: gem install pp google-api-client json trollop
+  EOS
+end
+
+def debuglog(message, verbosity=1)
+  $stderr.puts "#{File.split($0).last} #{$$}: #{message}" if $debuglevel >= verbosity
+end
+
+module Kernel
+  def suppress_warnings
+    original_verbosity = $VERBOSE
+    $VERBOSE = nil
+    result = yield
+    $VERBOSE = original_verbosity
+    return result
+  end
+end
+
+if $arvados_api_host.match /local/
+  # You probably don't care about SSL certificate checks if you're
+  # testing with a dev server.
+  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+end
+
+class Google::APIClient
+  def discovery_document(api, version)
+    api = api.to_s
+    return @discovery_documents["#{api}:#{version}"] ||=
+      begin
+        response = self.execute!(
+                                 :http_method => :get,
+                                 :uri => self.discovery_uri(api, version),
+                                 :authenticated => false
+                                 )
+        response.body.class == String ? JSON.parse(response.body) : response.body
+      end
+  end
+end
+
