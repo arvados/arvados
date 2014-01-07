@@ -13,7 +13,7 @@ module Rails
     class Server < ::Rack::Server
         def default_options
             super.merge({
-                :Port => 3000,
+                :Port => 3001,
                 :environment => (ENV['RAILS_ENV'] || "development").dup,
                 :daemonize => false,
                 :debugger => false,

@@ -72,4 +72,7 @@ Server::Application.configure do
   config.new_users_are_active = false
   config.admin_notifier_email_from = 'arvados@example.com'
   config.email_subject_prefix = '[ARVADOS] '
+
+  # Visitors to the API server will be redirected to the workbench
+  config.workbench_address = "http://localhost:3000/"
 end
