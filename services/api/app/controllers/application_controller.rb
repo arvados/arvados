@@ -241,6 +241,7 @@ class ApplicationController < ActionController::Base
   end
 
   def thread_with_auth_info
+    Thread.current[:request_starttime] = Time.now
     Thread.current[:api_url_base] = root_url.sub(/\/$/,'') + '/arvados/v1'
     begin
       user = nil
@@ -362,5 +363,18 @@ class ApplicationController < ActionController::Base
   def client_accepts_plain_text_stream
     (request.headers['Accept'].split(' ') &
      ['text/plain', '*/*']).count > 0
+  end
+
+  def render *opts
+    response = opts.first[:json]
+    if response &&
+        params[:_profile] &&
+        response.respond_to?(:[]) &&
+        Thread.current[:request_starttime]
+      response[:_profile] = {
+         request_time: Time.now - Thread.current[:request_starttime]
+      }
+    end
+    super *opts
   end
 end
