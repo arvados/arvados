@@ -24,5 +24,7 @@ ssh <%= @objects.first.andand.hostname.andand.sub('.'+current_api_host,'') or 'v
 
 <p>
   See also:
-  <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'), 'http://doc.arvados.org/user/ssh-access.html' %>.
+  <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),
+  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access.html",
+  target: "_blank"%>.
 </p>
