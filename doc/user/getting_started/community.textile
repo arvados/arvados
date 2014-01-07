@@ -1,0 +1,16 @@
+---
+layout: default
+navsection: userguide
+navmenu: Getting Started
+title: Arvados Community and Getting Help
+navorder: 11
+---
+h1. Arvados Community and Getting Help
+
+The Arvados Free Sofware project page is located at "http://arvados.org":http://arvados.org .
+
+The "Arvados user mailing list":http://lists.arvados.org/mailman/listinfo/arvados is a forum for general discussion, questions, and news about Arvados development.
+
+The "Arvados developer mailing list":http://lists.arvados.org/mailman/listinfo/arvados-dev is a forum for more technical discussion, intended for developers and contributers to Arvados.
+
+The "#arvados":irc://irc.oftc.net:6667/#arvados IRC (Internet Relay Chat) channel at on the "Open and Free Technology Community (irc.oftc.net)":http://www.oftc.net/oftc/ is available for live discussion and support.  You can use a traditional IRC client or "join OFTC over the web.":https://webchat.oftc.net/?channels=arvados
