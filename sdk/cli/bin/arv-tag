@@ -1,9 +1,38 @@
 #! /usr/bin/env ruby
 
 # arv tag usage:
-#   arv tag add tag1 [tag2 ...] --objects obj_uuid1 [obj_uuid2 ...]
-#   arv tag remove tag1 [tag2 ...] --objects obj_uuid1 [obj_uuid2 ...]
+#   arv tag add tag1 [tag2 ...] --object obj_uuid1 [--object obj_uuid2 ...]
+#   arv tag remove tag1 [tag2 ...] --object obj_uuid1 [--object obj_uuid2 ...]
 #   arv tag remove tag1 [tag2 ...] --all
+
+def tag_add(tag, obj_uuid)
+  request_body = {}
+  request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+
+  return client.execute(:api_method => 'arvados.links.create',
+                        :parameters => {
+                          :name       => tag
+                          :link_class => :tag,
+                          :head_uuid  => obj_uuid,
+                        },
+                        :body => request_body,
+                        :authenticated => false)
+end
+
+def tag_remove(tag, obj_uuid=nil)
+  request_body = {}
+  request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+
+  params = { :name => tag, :link_class => :tag }
+  if obj_uuid then
+    params[:head_uuid] = obj_uuid
+  end
+
+  return client.execute(:api_method => 'arvados.links.destroy',
+                        :parameters => params,
+                        :body => request_body,
+                        :authenticated => false)
+end
 
 if RUBY_VERSION < '1.9.3' then
   abort <<-EOS
@@ -65,3 +94,70 @@ class Google::APIClient
   end
 end
 
+p = Trollop::Parser.new do
+  opt(:all,
+      "Remove this tag from all objects under your ownership. Only valid with `tag remove'.",
+      :short => :none)
+  opt(:object,
+      "The UUID of an object to which this tag operation should be applied.",
+      :type => :string,
+      :multi => true,
+      :short => :o)
+end
+
+$options = Trollop::with_standard_exception_handling p do
+  p.parse ARGV
+end
+
+if $options[:all] and ARGV[0] != 'remove'
+  abort "#{$0}: the --all option is only valid with the tag 'remove' command"
+end
+
+# Set up the API client.
+
+$client ||= Google::APIClient.
+  new(:host => $arvados_api_host,
+      :application_name => File.split($0).last,
+      :application_version => $application_version.to_s)
+$arvados = $client.discovered_api('arvados', $arvados_api_version)
+
+results = []
+cmd = ARGV.shift
+case cmd
+when 'add'
+  ARGV.each do |tag|
+    $options[:object].each do |obj|
+      results.push(tag_add(tag, obj))
+    end
+  end
+when 'remove'
+  ARGV.each do |tag|
+    if $options[:all] then
+      results.push(tag_remove(tag))
+    else
+      $options[:object].each do |obj|
+        results.push(tag_remove(tag, obj))
+      end
+    end
+  end
+else
+  abort "unknown tag command #{cmd}"
+end
+
+if global_opts[:human] or global_opts[:pretty] then
+  puts Oj.dump(results, :indent => 1)
+elsif global_opts[:yaml] then
+  puts results.to_yaml
+elsif global_opts[:json] then
+  puts Oj.dump(results)
+elsif results["items"] and results["kind"].match /list$/i
+  results['items'].each do |i| puts i['uuid'] end
+elsif results['uuid'].nil?
+  abort("Response did not include a uuid:\n" +
+        Oj.dump(results, :indent => 1) +
+        "\n")
+else
+  results.each do |result|
+    puts result['uuid']
+  end
+end
