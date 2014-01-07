@@ -94,7 +94,7 @@ Server::Application.configure do
   config.email_subject_prefix = '[ARVADOS] '
 
   # Visitors to the API server will be redirected to the workbench
-  config.workbench_address = "http://localhost:3000/"
+  config.workbench_address = "http://workbench." + `hostname`
 
   # The e-mail address of the user you would like to become marked as an admin
   # user on their first login.
