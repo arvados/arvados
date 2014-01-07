@@ -63,14 +63,10 @@ class ArvadosApiClient
     if not resp.is_a? Hash
       raise InvalidApiResponseException.new json
     end
-    if resp[:errors]
-      #if resp[:errors][0] == 'Not logged in'
-      #  raise NotLoggedInException.new
-      #else
-      #  errors = resp[:errors]
-      #  errors = errors.join("\n\n") if errors.is_a? Array
-      #  raise "API errors:\n\n#{errors}\n"
-    #end
+    if msg.status_code != 200
+      errors = resp[:errors]
+      errors = errors.join("\n\n") if errors.is_a? Array
+      raise "API error #{msg.status_code}:\n\n#{errors}\n"
     end
     resp
   end
