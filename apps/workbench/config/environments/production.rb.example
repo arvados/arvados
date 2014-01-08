@@ -83,4 +83,6 @@ ArvadosWorkbench::Application.configure do
   config.activation_contact_link = 'mailto:info@arvados.org'
 
   config.arvados_docsite = 'http://doc.arvados.org'
+
+  config.arvados_theme = 'default'
 end

@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
   before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
+  theme :select_theme
 
   begin
     rescue_from Exception,
@@ -252,5 +253,9 @@ class ApplicationController < ActionController::Base
       end
     end
     true
+  end
+
+  def select_theme
+    return Rails.configuration.arvados_theme
   end
 end

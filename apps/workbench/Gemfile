@@ -53,3 +53,4 @@ gem 'RedCloth'
 
 gem 'piwik_analytics'
 gem 'httpclient'
+gem 'themes_for_rails'
