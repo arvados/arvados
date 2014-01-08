@@ -51,7 +51,7 @@ class ArvadosApiClient
     
     header = {"Accept" => "application/json"}
 
-    profile_checkpoint { "Prepare request #{url}" }
+    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]}" }
     msg = @@api_client.post(url, 
                             query,
                             header: header)
