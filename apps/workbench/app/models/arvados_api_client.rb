@@ -9,8 +9,11 @@ class ArvadosApiClient
 
   @@client_mtx = Mutex.new
   @@api_client = nil
+  @@profiling_enabled = Rails.configuration.profiling_enabled rescue false
 
   def api(resources_kind, action, data=nil)
+    profile_checkpoint
+
     @@client_mtx.synchronize do
       if not @@api_client 
         @@api_client = HTTPClient.new
@@ -44,13 +47,18 @@ class ArvadosApiClient
       end
     else
       query["_method"] = "GET"
-    end 
+    end
+    if @@profiling_enabled
+      query["_profile"] = "true"
+    end
     
     header = {"Accept" => "application/json"}
 
+    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]}" }
     msg = @@api_client.post(url, 
                             query,
                             header: header)
+    profile_checkpoint 'API transaction'
 
     if msg.status_code == 401
       raise NotLoggedInException.new
@@ -66,15 +74,16 @@ class ArvadosApiClient
     if not resp.is_a? Hash
       raise InvalidApiResponseException.new json
     end
-    if resp[:errors]
-      #if resp[:errors][0] == 'Not logged in'
-      #  raise NotLoggedInException.new
-      #else
-      #  errors = resp[:errors]
-      #  errors = errors.join("\n\n") if errors.is_a? Array
-      #  raise "API errors:\n\n#{errors}\n"
-    #end
+    if msg.status_code != 200
+      errors = resp[:errors]
+      errors = errors.join("\n\n") if errors.is_a? Array
+      raise "API error #{msg.status_code}:\n\n#{errors}\n"
     end
+    if resp[:_profile]
+      Rails.logger.info "API client: " \
+      "#{resp.delete(:_profile)[:request_time]} request_time"
+    end
+    profile_checkpoint 'Parse response'
     resp
   end
 
@@ -135,5 +144,16 @@ class ArvadosApiClient
 
   def class_kind(resource_class)
     resource_class.to_s.underscore
+  end
+
+  protected
+  def profile_checkpoint label=nil
+    return if !@@profiling_enabled
+    label = yield if block_given?
+    t = Time.now
+    if label and @profile_t0
+      Rails.logger.info "API client: #{t - @profile_t0} #{label}"
+    end
+    @profile_t0 = t
   end
 end

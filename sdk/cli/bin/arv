@@ -283,6 +283,7 @@ when
   exit 0
 else
   request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+  request_body[:_profile] = true
   result = client.execute(:api_method => eval(api_method),
                           :parameters => request_parameters,
                           :body => request_body,
