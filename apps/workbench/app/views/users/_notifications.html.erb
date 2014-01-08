@@ -7,7 +7,7 @@
     <div>
       Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.  
       <%= link_to "Click here to learn about SSH keys in Arvados.",
-	  "http://doc.arvados.org/user/getting_started/ssh-access.html", 
+	  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access.html", 
 	  style: "font-weight: bold",
 	  target: "_blank" %>
       When you have an SSH key you would like to use, paste the SSH public key
@@ -28,7 +28,7 @@
   <p>
     Hi, I noticed you haven't uploaded a new collection yet. 
     <%= link_to "Click here to learn how to upload data to Arvados Keep.", 
-	"http://doc.arvados.org/user/tutorials/tutorial-keep.html", 
+	"#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-keep.html", 
 	style: "font-weight: bold", target: "_blank" %>
   </p>
 </div>
@@ -41,7 +41,7 @@
   <p><%= image_tag "dax.png", class: "dax" %>
     Hi, I noticed you haven't run a job yet. 
     <%= link_to "Click here to learn how to run an Arvados Crunch job.", 
-	"http://doc.arvados.org/user/tutorials/tutorial-job1.html", 
+	"#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-job1.html", 
 	style: "font-weight: bold",
 	target: "_blank" %>
   </p>
@@ -54,7 +54,7 @@
   <p><%= image_tag "dax.png", class: "dax" %>
     Hi, I noticed you haven't run a pipeline yet.  
     <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", 
-	"http://doc.arvados.org/user/tutorials/tutorial-new-pipeline.html", 
+	"#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-new-pipeline.html", 
 	style: "font-weight: bold",
 	target: "_blank" %>
   </p>
@@ -68,7 +68,7 @@
   <p><ul>
       <li><%= link_to "Arvados project page", "http://arvados.org", target: "_blank" %></li>
       <li><%= link_to "Tutorials and user guide",
-      "http://doc.arvados.org/user/", target: "_blank" %></li>
+      "#{Rails.configuration.arvados_docsite}/user/", target: "_blank" %></li>
     </ul>
   </p>
 </div>

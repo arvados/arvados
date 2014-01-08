@@ -51,4 +51,6 @@ ArvadosWorkbench::Application.configure do
 
   config.site_name = 'Arvados Workbench (test)'
   config.activation_contact_link = 'mailto:info@arvados.org'
+
+  config.arvados_docsite = 'http://doc.arvados.org'
 end
