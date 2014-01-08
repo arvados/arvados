@@ -1,0 +1,49 @@
+<% content_for :head do %>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
+<% end %>
+
+<% content_for :css do %>
+body {
+    background: url("<%= current_theme_image_path("Large-vault-door.jpg") %>") no-repeat center center fixed;
+    background-size: cover;
+
+    /* for older browsers */
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+}
+
+.box {
+  color: white;
+  background-color: rgba(0, 0, 0, 0.8);
+  position: fixed;
+  left: 50%;
+  top: 30%;
+  width: 40%;
+  padding: 2em;
+  font-family: 'Open Sans', sans-serif;
+  border-radius: 10px;
+}
+
+.welcome {
+font-size: 2em; 
+font-weight: 600
+}
+
+.copy {
+font-weight: 300; 
+margin-bottom: 1em
+}
+
+.login:link { color: white; }
+.login:visited { color: white; }
+.login:hover { color: #00bf00; text-decoration:none; }
+}
+<% end %>
+
+<div class="box">
+  <p class="welcome">Welcome to Curoverse</p>
+  <p class="copy">For the beta program, we're using Google accounts for authentication.
+    You'll need a Gmail, Google+, or other Google account to login.</p>
+  <%= link_to "Login", $arvados_api_client.arvados_login_url(return_to: request.url), class: "pull-right welcome login" %>
+</div>
