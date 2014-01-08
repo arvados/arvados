@@ -145,6 +145,7 @@ class ArvadosApiClient
 
   protected
   def profile_checkpoint label=nil
+    return if !@@profiling_enabled
     label = yield if block_given?
     t = Time.now
     if label and @profile_t0
