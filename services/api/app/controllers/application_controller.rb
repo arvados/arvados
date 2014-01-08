@@ -367,9 +367,8 @@ class ApplicationController < ActionController::Base
 
   def render *opts
     response = opts.first[:json]
-    if response &&
+    if response.is_a?(Hash) &&
         params[:_profile] &&
-        response.respond_to?(:[]) &&
         Thread.current[:request_starttime]
       response[:_profile] = {
          request_time: Time.now - Thread.current[:request_starttime]
