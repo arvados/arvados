@@ -16,6 +16,9 @@ class ArvadosApiClient
         @@api_client = HTTPClient.new
         if Rails.configuration.arvados_insecure_https
           @@api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        else
+          # Use system CA certificates
+          @@api_client.ssl_config.add_trust_ca('/etc/ssl/certs')
         end
       end
     end
