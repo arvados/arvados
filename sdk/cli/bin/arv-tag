@@ -5,18 +5,25 @@
 #   arv tag remove tag1 [tag2 ...] --object obj_uuid1 [--object obj_uuid2 ...]
 #   arv tag remove tag1 [tag2 ...] --all
 
+def usage
+  abort "Usage:\n" +
+    "arv tag add tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
+    "arv tag remove tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
+    "arv tag remove --all\n"
+end
+
 def tag_add(tag, obj_uuid)
   request_body = {}
   request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
 
-  return client.execute(:api_method => 'arvados.links.create',
-                        :parameters => {
-                          :name       => tag
-                          :link_class => :tag,
-                          :head_uuid  => obj_uuid,
-                        },
-                        :body => request_body,
-                        :authenticated => false)
+  return $client.execute(:api_method => $arvados.links.create,
+                         :parameters => {
+                           :name       => tag,
+                           :link_class => :tag,
+                           :head_uuid  => obj_uuid,
+                         },
+                         :body => request_body,
+                         :authenticated => false)
 end
 
 def tag_remove(tag, obj_uuid=nil)
@@ -28,16 +35,16 @@ def tag_remove(tag, obj_uuid=nil)
     params[:head_uuid] = obj_uuid
   end
 
-  return client.execute(:api_method => 'arvados.links.destroy',
-                        :parameters => params,
-                        :body => request_body,
-                        :authenticated => false)
+  return $client.execute(:api_method => $arvados.links.destroy,
+                         :parameters => params,
+                         :body => request_body,
+                         :authenticated => false)
 end
 
 if RUBY_VERSION < '1.9.3' then
   abort <<-EOS
 #{$0.gsub(/^\.\//,'')} requires Ruby version 1.9.3 or higher.
-  EOS
+EOS
 end
 
 $arvados_api_version = ENV['ARVADOS_API_VERSION'] || 'v1'
@@ -45,6 +52,7 @@ $arvados_api_host = ENV['ARVADOS_API_HOST'] or
   abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
 $arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
   abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
+$arvados_api_host_insecure = ENV['ARVADOS_API_HOST_INSECURE'] == 'yes'
 
 begin
   require 'rubygems'
@@ -73,7 +81,7 @@ module Kernel
   end
 end
 
-if $arvados_api_host.match /local/
+if $arvados_api_host_insecure or $arvados_api_host.match /local/
   # You probably don't care about SSL certificate checks if you're
   # testing with a dev server.
   suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
@@ -110,7 +118,7 @@ $options = Trollop::with_standard_exception_handling p do
 end
 
 if $options[:all] and ARGV[0] != 'remove'
-  abort "#{$0}: the --all option is only valid with the tag 'remove' command"
+  usage
 end
 
 # Set up the API client.
@@ -141,7 +149,7 @@ when 'remove'
     end
   end
 else
-  abort "unknown tag command #{cmd}"
+  usage
 end
 
 if global_opts[:human] or global_opts[:pretty] then

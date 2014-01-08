@@ -20,7 +20,7 @@ if File.exist? config_file then
     if line.match('^\s*#') then
       next
     end
-    var, val = line.split('=', 2)
+    var, val = line.chomp.split('=', 2)
     # allow environment settings to override config files.
     if var and val
       ENV[var] ||= val
@@ -62,15 +62,7 @@ when 'pipeline'
   abort
 when 'tag'
   ARGV.shift
-  @sub = ARGV.shift
-  if ['add', 'remove'].index @sub then
-    exec `which arv-tag`.strip, *ARGV
-  else
-    $stderr.puts "Usage: \n" +
-      "#{$0} tag add tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
-      "#{$0} tag remove tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
-      "#{$0} tag remove --all\n"
-  end
+  exec `which arv-tag`.strip, *ARGV
 end
 
 ENV['ARVADOS_API_VERSION'] ||= 'v1'
