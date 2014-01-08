@@ -37,7 +37,7 @@
 		  <a href="<%= collection_path(j.output) %>">
 		    <% Collection.limit(1).where(uuid: j.output).each do |c|
 			 c.files.each do |file| %>
-		      <%= "#{file[0]}/#{file[1]}" %>
+		      <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
 		    <% end %>
 		<% end %>
 		</a>
@@ -48,7 +48,7 @@
 
 <td>
   <small>
-    <% if j.success %>
+    <% if j.log %>
       <a href="<%= collection_path(j.log) %>">Log</a>
     <% end %>
   </small>
@@ -160,7 +160,7 @@
             <small>
 	      <a href="<%= collection_path(c.uuid) %>">
 		<% c.files.each do |file| %>
-		  <%= "#{file[0]}/#{file[1]}" %>
+		  <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
 		<% end %>
 	      </a>
             </small>
