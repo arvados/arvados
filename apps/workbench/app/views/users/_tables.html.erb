@@ -18,8 +18,8 @@
 	  <th>Script</th>
 	  <th>Output</th>
 	  <th>Log</th>
-	  <th>Status</th>
 	  <th>Age</th>
+	  <th>Status</th>
 	</tr>
 
         <% @my_jobs[0..6].each do |j| %>
@@ -56,8 +56,8 @@
 
 <td>
   <small>
-    <%= raw(distance_of_time_in_words(j[:created_at], Time.now).sub('about
-','~').sub(' ','&nbsp;')) if j[:created_at] %> ago
+    <%= raw(distance_of_time_in_words(j.created_at, Time.now).sub('about
+','~').sub(' ','&nbsp;')) if j.created_at %>
   </small>
 </td>
 
@@ -114,8 +114,8 @@
 
           <td>
             <small>
-	      <%= raw(distance_of_time_in_words(p[:created_at], Time.now).sub('about
-','~').sub(' ','&nbsp;')) if p[:created_at] %> ago
+	      <%= raw(distance_of_time_in_words(p.created_at, Time.now).sub('about
+','~').sub(' ','&nbsp;')) if p.created_at %>
             </small>
           </td>
 
@@ -167,8 +167,8 @@
           </td>
           <td>
             <small>
-	      <%= raw(distance_of_time_in_words(c[:created_at], Time.now).sub('about
-','~').sub(' ','&nbsp;')) if c[:created_at] %> ago
+	      <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about
+','~').sub(' ','&nbsp;')) if c.created_at %>
             </small>
           </td>
         </tr>
