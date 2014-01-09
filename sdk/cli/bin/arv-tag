@@ -12,49 +12,80 @@ def usage
     "arv tag remove --all\n"
 end
 
-def tag_add(tag, obj_uuid)
-  request_body = {
-    :api_token => ENV['ARVADOS_API_TOKEN'],
-    :link => {
-      :name       => tag,
-      :link_class => :tag,
-      :head_uuid  => obj_uuid,
-    }
-  }
-
-  result = $client.execute(:api_method => $arvados.links.create,
+def api_call(method, parameters:{}, request_body:{})
+  request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+  result = $client.execute(:api_method => method,
+                           :parameters => parameters,
                            :body => request_body,
                            :authenticated => false)
 
   begin
     results = JSON.parse result.body
   rescue JSON::ParserError => e
-    $stderr.puts "Failed to parse server response:\n" + e.to_s
-    return nil
+    abort "Failed to parse server response:\n" + e.to_s
   end
 
-  if results["errors"] then
-    $stderr.puts "Error: #{results["errors"][0]}"
-    return nil
+  if results["errors"]
+    abort "Error: #{results["errors"][0]}"
   end
 
   return results
 end
 
-def tag_remove(tag, obj_uuid=nil)
-  request_body = {
-    :api_token => ENV['ARVADOS_API_TOKEN'],
-    :link => {
-      :name       => tag,
-      :link_class => :tag,
-      :head_uuid  => obj_uuid,
-    }
-  }
+def tag_add(tag, obj_uuid)
+  return api_call($arvados.links.create,
+                  request_body: {
+                    :link => {
+                      :name       => tag,
+                      :link_class => :tag,
+                      :head_uuid  => obj_uuid,
+                    }
+                  })
+end
 
-  return $client.execute(:api_method => $arvados.links.destroy,
-                         :parameters => params,
-                         :body => request_body,
-                         :authenticated => false)
+def tag_remove(tag, obj_uuids=nil)
+  # If we got a list of objects to untag, look up the uuids for the
+  # links that need to be deleted.
+  link_uuids = []
+  if obj_uuids
+    obj_uuids.each do |uuid|
+      link = api_call($arvados.links.list,
+                      request_body: {
+                        :where => {
+                          :link_class => :tag,
+                          :name => tag,
+                          :head_uuid => uuid,
+                        }
+                      })
+      if link['items_available'] > 0
+        link_uuids.push link['items'][0]['uuid']
+      end
+    end
+  else
+    all_tag_links = api_call($arvados.links.list,
+                             request_body: {
+                               :where => {
+                                 :link_class => :tag,
+                                 :name => tag,
+                               }
+                             })
+    link_uuids = all_tag_links['items'].map { |obj| obj['uuid'] }
+  end
+
+  results = []
+  if link_uuids
+    link_uuids.each do |uuid|
+      results.push api_call($arvados.links.delete, parameters:{ :uuid => uuid })
+    end
+  else
+    $stderr.puts "no tags found to remove"
+  end
+
+  return {
+    'kind' => 'arvados#linkList',
+    'items_available' => results.length,
+    'items' => results,
+  }
 end
 
 if RUBY_VERSION < '1.9.3' then
@@ -75,6 +106,7 @@ begin
   require 'google/api_client'
   require 'json'
   require 'pp'
+  require 'oj'
   require 'trollop'
 rescue LoadError
   abort <<-EOS
@@ -171,9 +203,7 @@ when 'remove'
     if $options[:all] then
       results.push(tag_remove(tag))
     else
-      $options[:object].each do |obj|
-        results.push(tag_remove(tag, obj))
-      end
+      results.push(tag_remove(tag, $options[:object]))
     end
   end
 else
