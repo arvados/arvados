@@ -58,6 +58,9 @@ Get list of groups (showing just UUIDs)
 Get list of groups (showing entire records)
 @arv -h group list@
 
+Delete a group
+@arv group delete --uuid 6dnxa-j7d0g-iw7i6n43d37jtog@
+
 h3. Global options
 
 <!-- _Move these up to before "basic examples", and give examples of what
