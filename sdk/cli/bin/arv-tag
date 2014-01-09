@@ -1,0 +1,232 @@
+#! /usr/bin/env ruby
+
+# arv tag usage:
+#   arv tag add tag1 [tag2 ...] --object obj_uuid1 [--object obj_uuid2 ...]
+#   arv tag remove tag1 [tag2 ...] --object obj_uuid1 [--object obj_uuid2 ...]
+#   arv tag remove tag1 [tag2 ...] --all
+
+def usage
+  abort "Usage:\n" +
+    "arv tag add tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
+    "arv tag remove tag1 [tag2 ...] --objects object_uuid1 [object_uuid2...]\n" +
+    "arv tag remove --all\n"
+end
+
+def api_call(method, parameters:{}, request_body:{})
+  request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+  result = $client.execute(:api_method => method,
+                           :parameters => parameters,
+                           :body => request_body,
+                           :authenticated => false)
+
+  begin
+    results = JSON.parse result.body
+  rescue JSON::ParserError => e
+    abort "Failed to parse server response:\n" + e.to_s
+  end
+
+  if results["errors"]
+    abort "Error: #{results["errors"][0]}"
+  end
+
+  return results
+end
+
+def tag_add(tag, obj_uuid)
+  return api_call($arvados.links.create,
+                  request_body: {
+                    :link => {
+                      :name       => tag,
+                      :link_class => :tag,
+                      :head_uuid  => obj_uuid,
+                    }
+                  })
+end
+
+def tag_remove(tag, obj_uuids=nil)
+  # If we got a list of objects to untag, look up the uuids for the
+  # links that need to be deleted.
+  link_uuids = []
+  if obj_uuids
+    obj_uuids.each do |uuid|
+      link = api_call($arvados.links.list,
+                      request_body: {
+                        :where => {
+                          :link_class => :tag,
+                          :name => tag,
+                          :head_uuid => uuid,
+                        }
+                      })
+      if link['items_available'] > 0
+        link_uuids.push link['items'][0]['uuid']
+      end
+    end
+  else
+    all_tag_links = api_call($arvados.links.list,
+                             request_body: {
+                               :where => {
+                                 :link_class => :tag,
+                                 :name => tag,
+                               }
+                             })
+    link_uuids = all_tag_links['items'].map { |obj| obj['uuid'] }
+  end
+
+  results = []
+  if link_uuids
+    link_uuids.each do |uuid|
+      results.push api_call($arvados.links.delete, parameters:{ :uuid => uuid })
+    end
+  else
+    $stderr.puts "no tags found to remove"
+  end
+
+  return {
+    'kind' => 'arvados#linkList',
+    'items_available' => results.length,
+    'items' => results,
+  }
+end
+
+if RUBY_VERSION < '1.9.3' then
+  abort <<-EOS
+#{$0.gsub(/^\.\//,'')} requires Ruby version 1.9.3 or higher.
+EOS
+end
+
+$arvados_api_version = ENV['ARVADOS_API_VERSION'] || 'v1'
+$arvados_api_host = ENV['ARVADOS_API_HOST'] or
+  abort "#{$0}: fatal: ARVADOS_API_HOST environment variable not set."
+$arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
+  abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
+$arvados_api_host_insecure = ENV['ARVADOS_API_HOST_INSECURE'] == 'yes'
+
+begin
+  require 'rubygems'
+  require 'google/api_client'
+  require 'json'
+  require 'pp'
+  require 'oj'
+  require 'trollop'
+rescue LoadError
+  abort <<-EOS
+#{$0}: fatal: some runtime dependencies are missing.
+Try: gem install pp google-api-client json trollop
+  EOS
+end
+
+def debuglog(message, verbosity=1)
+  $stderr.puts "#{File.split($0).last} #{$$}: #{message}" if $debuglevel >= verbosity
+end
+
+module Kernel
+  def suppress_warnings
+    original_verbosity = $VERBOSE
+    $VERBOSE = nil
+    result = yield
+    $VERBOSE = original_verbosity
+    return result
+  end
+end
+
+if $arvados_api_host_insecure or $arvados_api_host.match /local/
+  # You probably don't care about SSL certificate checks if you're
+  # testing with a dev server.
+  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+end
+
+class Google::APIClient
+  def discovery_document(api, version)
+    api = api.to_s
+    return @discovery_documents["#{api}:#{version}"] ||=
+      begin
+        response = self.execute!(
+                                 :http_method => :get,
+                                 :uri => self.discovery_uri(api, version),
+                                 :authenticated => false
+                                 )
+        response.body.class == String ? JSON.parse(response.body) : response.body
+      end
+  end
+end
+
+global_opts = Trollop::options do
+  banner "arvados cli client"
+  opt :dry_run, "Don't actually do anything", :short => "-n"
+  opt :verbose, "Print some things on stderr", :short => "-v"
+  opt :uuid, "Return the UUIDs of the objects in the response, one per line (default)", :short => nil
+  opt :json, "Return the entire response received from the API server, as a JSON object", :short => "-j"
+  opt :human, "Return the response received from the API server, as a JSON object with whitespace added for human consumption", :short => "-h"
+  opt :pretty, "Synonym of --human", :short => nil
+  opt :yaml, "Return the response received from the API server, in YAML format", :short => "-y"
+  stop_on ['add', 'remove']
+end
+  
+p = Trollop::Parser.new do
+  opt(:all,
+      "Remove this tag from all objects under your ownership. Only valid with `tag remove'.",
+      :short => :none)
+  opt(:object,
+      "The UUID of an object to which this tag operation should be applied.",
+      :type => :string,
+      :multi => true,
+      :short => :o)
+end
+
+$options = Trollop::with_standard_exception_handling p do
+  p.parse ARGV
+end
+
+if $options[:all] and ARGV[0] != 'remove'
+  usage
+end
+
+# Set up the API client.
+
+$client ||= Google::APIClient.
+  new(:host => $arvados_api_host,
+      :application_name => File.split($0).last,
+      :application_version => $application_version.to_s)
+$arvados = $client.discovered_api('arvados', $arvados_api_version)
+
+results = []
+cmd = ARGV.shift
+case cmd
+when 'add'
+  ARGV.each do |tag|
+    $options[:object].each do |obj|
+      results.push(tag_add(tag, obj))
+    end
+  end
+when 'remove'
+  ARGV.each do |tag|
+    if $options[:all] then
+      results.push(tag_remove(tag))
+    else
+      results.push(tag_remove(tag, $options[:object]))
+    end
+  end
+else
+  usage
+end
+
+if global_opts[:human] or global_opts[:pretty] then
+  puts Oj.dump(results, :indent => 1)
+elsif global_opts[:yaml] then
+  puts results.to_yaml
+elsif global_opts[:json] then
+  puts Oj.dump(results)
+else
+  results.each do |r|
+    next if r == nil
+    if r["items"] and r["kind"].match /list$/i
+      r['items'].each do |i| puts i['uuid'] end
+    elsif r['uuid'].nil?
+      abort("Response did not include a uuid:\n" +
+            Oj.dump(r, :indent => 1) +
+            "\n")
+    else
+      puts r['uuid']
+    end
+  end
+end
