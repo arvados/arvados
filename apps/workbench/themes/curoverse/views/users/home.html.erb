@@ -1,0 +1,14 @@
+<% if current_user.andand.is_active %>
+  <%= render :partial => 'home' %>
+<% else %>
+<% render :partial => "safe" %>
+
+<div class="box">
+  <p class="welcome">Inactive Account</p>
+  <p>You are logged into Curoverse, but your account is not active.  If you
+  have recently registered, you should get an email when your account becomes
+  active.  If you have questions about you account, please email us at 
+    <a href="mailto:support@curoverse.com" class="login">support@curoverse.com</a>.</p>
+</div>
+
+<% end %>
