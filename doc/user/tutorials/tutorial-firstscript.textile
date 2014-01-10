@@ -39,7 +39,7 @@ This will create an git checkout in the directory called @you@.
 {% include notebox-begin.html %}
 For more information about using @git@, try
 
-notextile. <pre><code>$ <span class="userinput">man gittutoral</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
 
 or "click here to search Google for git tutorials":http://google.com/#q=git+tutorial
 {% include notebox-end.html %}
