@@ -13,10 +13,11 @@ Gem::Specification.new do |s|
   s.email       = 'gem-dev@clinicalfuture.com'
   #s.bindir      = '.'
   s.licenses    = ['Apache License, Version 2.0']
-  s.files       = ["bin/arv","bin/arv-run-pipeline-instance","bin/arv-crunch-job","bin/crunch-job"]
+  s.files       = ["bin/arv","bin/arv-run-pipeline-instance","bin/arv-crunch-job","bin/arv-tag","bin/crunch-job"]
   s.executables << "arv"
   s.executables << "arv-run-pipeline-instance"
   s.executables << "arv-crunch-job"
+  s.executables << "arv-tag"
   s.add_dependency('google-api-client', '>= 0.6.3')
   s.add_dependency('activesupport', '>= 3.2.13')
   s.add_dependency('json', '>= 1.7.7')
