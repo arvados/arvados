@@ -251,7 +251,7 @@ def parse_arguments(discovery_document)
   discovered_params.each do |k,v|
     k = k.to_sym
     if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
-      if method_opts[k].match /^\//
+      if method_opts[k].andand.match /^\//
         method_opts[k] = File.open method_opts[k], 'rb' do |f| f.read end
       end
     end
