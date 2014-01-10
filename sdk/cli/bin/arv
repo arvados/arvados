@@ -10,9 +10,9 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
-# read authentication data from ~/.arvados if present
+# read authentication data from ~/.config/arvados if present
 lineno = 0
-config_file = File.expand_path('~/.arvados')
+config_file = File.expand_path('~/.config/arvados')
 if File.exist? config_file then
   File.open(config_file, 'r').each do |line|
     lineno = lineno + 1

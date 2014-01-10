@@ -21,7 +21,24 @@ import threading
 import apiclient
 import apiclient.discovery
 
-if 'ARVADOS_DEBUG' in os.environ:
+# Arvados configuration settings are taken from $HOME/.config/arvados.
+# Environment variables override settings in the config file.
+#
+class ArvadosConfig(dict):
+    def __init__(self, config_file):
+        dict.__init__(self)
+        with open(config_file, "r") as f:
+            for config_line in f:
+                var, val = config_line.rstrip().split('=', 2)
+                self[var] = val
+        for var in os.environ:
+            if var.startswith('ARVADOS_'):
+                self[var] = os.environ[var]
+
+
+config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados')
+
+if 'ARVADOS_DEBUG' in config:
     logging.basicConfig(level=logging.DEBUG)
 
 EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
@@ -45,10 +62,11 @@ class errors:
 class CredentialsFromEnv(object):
     @staticmethod
     def http_request(self, uri, **kwargs):
+        global config
         from httplib import BadStatusLine
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
-        kwargs['headers']['Authorization'] = 'OAuth2 %s' % os.environ['ARVADOS_API_TOKEN']
+        kwargs['headers']['Authorization'] = 'OAuth2 %s' % config.get('ARVADOS_API_TOKEN', 'ARVADOS_API_TOKEN_not_set')
         try:
             return self.orig_http_request(uri, **kwargs)
         except BadStatusLine:
@@ -111,7 +129,7 @@ def _cast_objects_too(value, schema_type):
 apiclient.discovery._cast = _cast_objects_too
 
 def api(version=None):
-    global services
+    global services, config
     if not services.get(version):
         apiVersion = version
         if not version:
@@ -119,10 +137,10 @@ def api(version=None):
             logging.info("Using default API version. " +
                          "Call arvados.api('%s') instead." %
                          apiVersion)
-        if 'ARVADOS_API_HOST' not in os.environ:
+        if 'ARVADOS_API_HOST' not in config:
             raise Exception("ARVADOS_API_HOST is not set. Aborting.")
         url = ('https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' %
-               os.environ['ARVADOS_API_HOST'])
+               config['ARVADOS_API_HOST'])
         credentials = CredentialsFromEnv()
 
         # Use system's CA certificates (if we find them) instead of httplib2's
@@ -133,7 +151,7 @@ def api(version=None):
         http = httplib2.Http(ca_certs=ca_certs)
         http = credentials.authorize(http)
         if re.match(r'(?i)^(true|1|yes)$',
-                    os.environ.get('ARVADOS_API_HOST_INSECURE', '')):
+                    config.get('ARVADOS_API_HOST_INSECURE', 'no')):
             http.disable_ssl_certificate_validation=True
         services[version] = apiclient.discovery.build(
             'arvados', apiVersion, http=http, discoveryServiceUrl=url)
@@ -924,6 +942,7 @@ class KeepClient(object):
             super(KeepClient.KeepWriterThread, self).__init__()
             self.args = kwargs
         def run(self):
+            global config
             with self.args['thread_limiter'] as limiter:
                 if not limiter.shall_i_proceed():
                     # My turn arrived, but the job has been done without
@@ -935,7 +954,7 @@ class KeepClient(object):
                                self.args['service_root']))
                 h = httplib2.Http()
                 url = self.args['service_root'] + self.args['data_hash']
-                api_token = os.environ['ARVADOS_API_TOKEN']
+                api_token = config['ARVADOS_API_TOKEN']
                 headers = {'Authorization': "OAuth2 %s" % api_token}
                 try:
                     resp, content = h.request(url.encode('utf-8'), 'PUT',
@@ -995,6 +1014,7 @@ class KeepClient(object):
         return pseq
 
     def get(self, locator):
+        global config
         if re.search(r',', locator):
             return ''.join(self.get(x) for x in locator.split(','))
         if 'KEEP_LOCAL_STORE' in os.environ:
@@ -1003,7 +1023,7 @@ class KeepClient(object):
         for service_root in self.shuffled_service_roots(expect_hash):
             h = httplib2.Http()
             url = service_root + expect_hash
-            api_token = os.environ['ARVADOS_API_TOKEN']
+            api_token = config['ARVADOS_API_TOKEN']
             headers = {'Authorization': "OAuth2 %s" % api_token,
                        'Accept': 'application/octet-stream'}
             try:
