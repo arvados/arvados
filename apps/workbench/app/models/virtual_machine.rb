@@ -4,7 +4,6 @@ class VirtualMachine < ArvadosBase
     current_user.andand.is_admin
   end
   def attributes_for_display
-    logger.debug super.append ['current_user_logins', @current_user_logins]
     super.append ['current_user_logins', @current_user_logins]
   end
   def attribute_editable?(attr)
