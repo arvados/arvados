@@ -1,47 +1,45 @@
 <%#= render :partial => 'nav' %>
 
-<table class="topalign table table-bordered table-striped">
+<div class="pull-right">
+  <%= form_tag collections_path, method: 'get', remote: true do %>
+  <div class="input-append">
+    <%= text_field_tag :search, params[:search] %>
+    <%= submit_tag "Search", name: nil, class: 'btn btn-info' %>
+  </div>  
+  <% end %>
+</div>
+
+<table id="collections-index" class="topalign table table-bordered table-condensed table-fixedlayout table-smallcontent">
+  <colgroup>
+    <col width="10%" />
+    <col width="50%" />
+    <col width="16%" />
+    <col width="16%" />
+    <col width="8%" />
+  </colgroup>
   <thead>
     <tr class="contain-align-left">
       <th>
 	uuid
       </th><th>
-	created
+	contents
       </th><th>
-	protected
+	age
       </th><th>
-	groups
+	tags
       </th><th>
-	origin
+	storage
       </th>
     </tr>
   </thead>
   <tbody>
-
-    <% @collection_info.sort_by { |k,c| c[:created_at].is_a?(Time) ? c[:created_at] : Time.now }.reverse.each do |uuid, c| %>
-
-    <tr class="collection">
-      <td>
-	<% if @collections.has_key? uuid %>
-	<%= link_to_if_arvados_object uuid %>
-	<% else %>
-	<%= uuid %>
-	<% end %>
-      </td><td>
-	<%= raw(distance_of_time_in_words(c[:created_at], Time.now).sub('about ','~').sub(' ','&nbsp;')) if c[:created_at] %>
-      </td><td>
-	<%= ('Y' if c[:wanted_by_me]) or ('y' if c[:wanted]) %>
-      </td><td>
-	<%= c[:groups].size if c[:groups] %>
-      </td><td>
-	<% if c[:origin] %>
-	<span class="deemphasize"><%= c[:origin].name %></span>
-	<%= c[:origin].head_uuid %>
-	<% end %>
-      </td>
-    </tr>
-
-    <% end %>
-
+    <%= render partial: 'index_tbody' %>
   </tbody>
 </table>
+
+<% content_for :js do %>
+$(document).on('click', 'form[data-remote] input[type=submit]', function() {
+  $('table#collections-index tbody').fadeTo(200, 0.3);
+  return true;
+});
+<% end %>

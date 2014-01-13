@@ -7,39 +7,39 @@ class CollectionsController < ApplicationController
   end
 
   def index
-    @collections = Collection.limit(100).to_hash
-    @links = Link.eager.limit(100).where(head_kind: 'arvados#collection', link_class: 'resources', name: 'wants') |
-      Link.eager.limit(100).where(tail_kind: 'arvados#collection', link_class: 'data_origin')
-    @collections.merge!(Collection.
-                        limit(100).
-                        where(uuid: @links.select{|x|x.head_kind=='arvados#collection'}.collect(&:head_uuid) |
-                              @links.select{|x|x.tail_kind=='arvados#collection'}.collect(&:tail_uuid)).
-                        to_hash)
+    if params[:search].andand.length.andand > 0
+      tags = Link.where(link_class: 'tag', any: ['contains', params[:search]])
+      @collections = Collection.where(uuid: tags.collect(&:head_uuid))
+    else
+      @collections = Collection.limit(100)
+    end
+    @links = Link.limit(1000).
+      where(head_uuid: @collections.collect(&:uuid))
     @collection_info = {}
-    @collections.each do |uuid, c|
-      ci = (@collection_info[uuid] ||= {uuid: uuid})
-      ci[:created_at] = c.created_at
+    @collections.each do |c|
+      @collection_info[c.uuid] = {
+        tags: [],
+        wanted: false,
+        wanted_by_me: false,
+        provenance: [],
+        links: []
+      }
     end
-    @links.each do |l|
-      if l.head_kind == 'arvados#collection'
-        c = (@collection_info[l.head_uuid] ||= {uuid: l.head_uuid})
-        if l.link_class == 'resources' and l.name == 'wants'
-          if l.head.respond_to? :created_at
-            c[:created_at] = l.head.created_at
-          end
-          c[:wanted] = true
-          if l.owner_uuid == current_user.uuid
-            c[:wanted_by_me] = true
-          end
-        end
+    @links.each do |link|
+      @collection_info[link.head_uuid] ||= {}
+      info = @collection_info[link.head_uuid]
+      case link.link_class
+      when 'tag'
+        info[:tags] << link.name
+      when 'resources'
+        info[:wanted] = true
+        info[:wanted_by_me] ||= link.tail_uuid == current_user.uuid
+      when 'provenance'
+        info[:provenance] << link.name
       end
-      if l.tail_kind == 'arvados#collection'
-        c = (@collection_info[l.tail_uuid] ||= {uuid: l.tail_uuid})
-        if l.link_class == 'data_origin'
-          c[:origin] = l
-        end
-      end
+      info[:links] << link
     end
+    @request_url = request.url
   end
 
   def show_file
