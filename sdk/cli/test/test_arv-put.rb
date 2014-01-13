@@ -3,11 +3,8 @@ require 'digest/md5'
 
 class TestArvPut < Minitest::Test
   def setup
-    begin
-      Dir.mkdir './tmp'
-      Dir.mkdir './tmp/empty_dir'
-    rescue Errno::EEXIST
-    end
+    begin Dir.mkdir './tmp' rescue Errno::EEXIST end
+    begin Dir.mkdir './tmp/empty_dir' rescue Errno::EEXIST end
     File.open './tmp/empty_file', 'wb' do
     end
     File.open './tmp/foo', 'wb' do |f|
