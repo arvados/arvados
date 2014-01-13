@@ -19,6 +19,17 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     render :json => api_client_auth.as_api_response(:superuser)
   end
 
+  def create
+    if resource_attrs[:owner_uuid]
+      # The model has an owner_id attribute instead of owner_uuid, but
+      # we can't expect the client to know the local numeric ID. We
+      # translate UUID to numeric ID here.
+      resource_attrs[:user_id] =
+        User.where(uuid: resource_attrs.delete(:owner_uuid)).first.andand.id
+    end
+    super
+  end
+
   protected
 
   def find_objects_for_index
