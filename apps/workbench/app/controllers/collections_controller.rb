@@ -39,6 +39,7 @@ class CollectionsController < ApplicationController
       end
       info[:links] << link
     end
+    @request_url = request.url
   end
 
   def show_file
