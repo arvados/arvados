@@ -1,43 +1,53 @@
 <%#= render :partial => 'nav' %>
 
-<table class="topalign table table-bordered table-striped">
+<table class="topalign table table-bordered table-condensed table-fixedlayout table-smallcontent">
+  <colgroup>
+    <col width="10%" />
+    <col width="50%" />
+    <col width="16%" />
+    <col width="16%" />
+    <col width="8%" />
+  </colgroup>
   <thead>
     <tr class="contain-align-left">
       <th>
 	uuid
       </th><th>
-	created
+	contents
       </th><th>
-	protected
+	age
       </th><th>
-	groups
+	tags
       </th><th>
-	origin
+	storage
       </th>
     </tr>
   </thead>
   <tbody>
 
-    <% @collection_info.sort_by { |k,c| c[:created_at].is_a?(Time) ? c[:created_at] : Time.now }.reverse.each do |uuid, c| %>
+    <% @collections.each do |c| %>
 
     <tr class="collection">
       <td>
-	<% if @collections.has_key? uuid %>
-	<%= link_to_if_arvados_object uuid %>
-	<% else %>
-	<%= uuid %>
-	<% end %>
+        <%= link_to_if_arvados_object c.uuid %>
       </td><td>
-	<%= raw(distance_of_time_in_words(c[:created_at], Time.now).sub('about ','~').sub(' ','&nbsp;')) if c[:created_at] %>
+        <% c.files.each do |file| %>
+          <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
+        <% end %>
       </td><td>
-	<%= ('Y' if c[:wanted_by_me]) or ('y' if c[:wanted]) %>
+	<%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
       </td><td>
-	<%= c[:groups].size if c[:groups] %>
+        <% if @collection_info[c.uuid] %>
+          <%= @collection_info[c.uuid][:tags].uniq.join ', ' %>
+        <% end %>
       </td><td>
-	<% if c[:origin] %>
-	<span class="deemphasize"><%= c[:origin].name %></span>
-	<%= c[:origin].head_uuid %>
-	<% end %>
+        <% if @collection_info[c.uuid][:wanted_by_me] %>
+        <span class="label label-info">2&times;</span>
+        <% elsif @collection_info[c.uuid][:wanted] %>
+        <span class="label">2&times;</span>
+        <% else %>
+        <span class="label">cache</span>
+        <% end %>
       </td>
     </tr>
 

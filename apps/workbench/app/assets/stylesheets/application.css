@@ -57,3 +57,15 @@ table.arv-index tbody td.arv-object-AuthorizedKey.arv-attr-public_key {
     overflow-x: hidden;
     max-width: 120px;
 }
+table.table-fixedlayout {
+    white-space: nowrap;
+    table-layout: fixed;
+}
+table.table-fixedlayout td {
+    overflow: hidden;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
+table.table-smallcontent td {
+    font-size: 85%;
+}
