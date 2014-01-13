@@ -51,7 +51,7 @@ class ApplicationController < ActionController::Base
 
 
   def index
-    @objects ||= model_class.all
+    @objects ||= model_class.limit(1000).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
