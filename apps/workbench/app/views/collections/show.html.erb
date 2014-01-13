@@ -32,8 +32,12 @@
         <tr>
           <th style="width: 10em; text-align:right">size</th>
           <th>
-            <div style="width:3.5em; display:inline-block"></div>
             path
+          </th>
+          <th>
+            file
+          </th>
+          <th style="width:2em">
           </th>
         </tr>
       </thead><tbody>
@@ -42,14 +46,17 @@
         <tr>
           <td style="text-align:right">
             <%= raw(human_readable_bytes_html(file[2])) %>
-          </td><td>
-            <div style="width:3.5em; display:inline-block">
+          </td>
+          <td>
+            <%= file[0] %>
+          </td>
+          <td>
+            <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %>
+          </td>
+          <td>
+            <div style="display:inline-block">
             <%= link_to raw('<i class="icon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
-            <% if file_path.match /\.(txt|pdf|png|jpe?g|gif|tiff?|html?)$/i %>
-            <%= link_to raw('<i class="icon-play"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {class: 'label label-info', title: 'View in browser'} %>
-            <% end %>
             </div>
-            <%= file_path %>
           </td>
         </tr>
         <% end; end %>
