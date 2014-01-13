@@ -20,11 +20,10 @@
   <tbody>
     <% incoming.each do |link| %>
       <tr>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "name", attrvalue: link.name, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "head_uuid", attrvalue: link.head_uuid, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties, allow_edit: false } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "head_uuid", attrvalue: link.head_uuid } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties } %></td>
       </tr>
     <% end %>
   </tbody>
@@ -40,11 +39,10 @@
   <tbody>
     <% outgoing.each do |link| %>
       <tr>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "name", attrvalue: link.name, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "tail_uuid", attrvalue: link.tail_uuid, allow_edit: false } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties, allow_edit: false } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "tail_uuid", attrvalue: link.tail_uuid } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties } %></td>
       </tr>
     <% end %>
   </tbody>
