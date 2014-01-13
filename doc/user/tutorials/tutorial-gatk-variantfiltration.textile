@@ -4,7 +4,7 @@ navsection: userguide
 navmenu: Tutorials
 title: "Using GATK with Arvados"
 navorder: 16
----
+...
 
 h1. Tutorial: Using GATK with Arvados
 

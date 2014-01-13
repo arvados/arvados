@@ -3,7 +3,7 @@ layout: default
 navsection: installguide
 title: Install the Crunch dispatcher
 navorder: 3
----
+...
 
 h1. Crunch setup
 

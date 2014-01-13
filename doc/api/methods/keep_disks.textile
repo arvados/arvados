@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "keep_disks"
 navorder: 9
----
+...
 
 h1. keep_disks
 

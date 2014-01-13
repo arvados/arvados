@@ -4,7 +4,7 @@ navsection: userguide
 navmenu: Reference
 title: "Python SDK"
 navorder: 23
----
+...
 
 h1. Reference: Python SDK
 

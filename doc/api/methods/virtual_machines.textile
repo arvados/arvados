@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "virtual_machines"
 navorder: 19
----
+...
 
 h1. virtual_machines
 

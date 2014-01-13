@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "authorized_keys"
 navorder: 3
----
+...
 
 h1. authorized_keys
 

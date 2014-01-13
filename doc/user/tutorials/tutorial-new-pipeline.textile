@@ -4,7 +4,7 @@ navsection: userguide
 navmenu: Tutorials
 title: "Constructing a Crunch pipeline"
 navorder: 15
----
+...
 
 h1. Tutorial: Constructing a Crunch pipeline
 

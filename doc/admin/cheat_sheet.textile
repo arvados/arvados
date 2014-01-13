@@ -3,7 +3,7 @@ layout: default
 navsection: adminguide
 title: Cheat Sheet
 navorder: 1
----
+...
 
 h1. Cheat Sheet
 

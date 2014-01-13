@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "links"
 navorder: 10
----
+...
 
 h1. links
 

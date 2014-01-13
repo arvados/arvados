@@ -4,7 +4,7 @@ navsection: api
 navmenu: Schema
 title: ApiClientAuthorization
 navorder: 1
----
+...
 
 h1. ApiClientAuthorization
 

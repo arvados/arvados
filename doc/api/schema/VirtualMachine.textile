@@ -4,7 +4,7 @@ navsection: api
 navmenu: Schema
 title: VirtualMachine
 navorder: 22
----
+...
 
 h1. VirtualMachine
 

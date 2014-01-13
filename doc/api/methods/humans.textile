@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "humans"
 navorder: 6
----
+...
 
 h1. humans
 

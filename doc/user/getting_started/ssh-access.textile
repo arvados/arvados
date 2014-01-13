@@ -4,7 +4,7 @@ navsection: userguide
 navmenu: Getting Started
 title: Accessing an Arvados VM over ssh
 navorder: 2
----
+...
 
 h1. Accessing an Arvados Virtual Machine over ssh
 

@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "specimens"
 navorder: 16
----
+...
 
 h1. specimens
 

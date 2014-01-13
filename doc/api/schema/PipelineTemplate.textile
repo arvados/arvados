@@ -4,7 +4,7 @@ navsection: api
 navmenu: Schema
 title: PipelineTemplate
 navorder: 17
----
+...
 
 h1. PipelineTemplate
 

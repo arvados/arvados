@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "traits"
 navorder: 17
----
+...
 
 h1. traits
 

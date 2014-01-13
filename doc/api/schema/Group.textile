@@ -4,7 +4,7 @@ navsection: api
 navmenu: Schema
 title: Group
 navorder: 7
----
+...
 
 h1. Group
 

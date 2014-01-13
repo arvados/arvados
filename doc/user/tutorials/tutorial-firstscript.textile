@@ -4,7 +4,7 @@ navsection: userguide
 navmenu: Tutorials
 title: "Writing a Crunch script"
 navorder: 13
----
+...
 
 h1. Tutorial: Writing a Crunch script
 

@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "nodes"
 navorder: 12
----
+...
 
 h1. nodes
 

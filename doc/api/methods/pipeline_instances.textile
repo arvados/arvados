@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "pipeline_instances"
 navorder: 13
----
+...
 
 h1. pipeline_instances
 

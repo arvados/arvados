@@ -3,7 +3,7 @@ layout: default
 navsection: userguide
 title: Welcome to Arvados!
 navorder: 0
----
+...
 
 h1. Welcome to Arvados!
 

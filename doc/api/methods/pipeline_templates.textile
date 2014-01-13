@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "pipeline_templates"
 navorder: 14
----
+...
 
 h1. pipeline_templates
 

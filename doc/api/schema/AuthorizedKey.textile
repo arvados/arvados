@@ -4,7 +4,7 @@ navsection: api
 navmenu: Schema
 title: AuthorizedKey
 navorder: 3
----
+...
 
 h1. AuthorizedKey
 

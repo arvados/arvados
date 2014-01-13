@@ -3,7 +3,7 @@ layout: default
 navsection: installguide
 title: Create standard objects
 navorder: 4
----
+...
 
 h1. Create standard objects
 

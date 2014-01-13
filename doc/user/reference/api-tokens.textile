@@ -4,7 +4,7 @@ navsection: userguide
 navmenu: Reference
 title: "Getting an API token"
 navorder: 01
----
+...
 
 h1. Reference: Getting an API token
 

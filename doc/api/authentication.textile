@@ -4,7 +4,7 @@ navsection: api
 navmenu: Concepts
 title: Authentication
 navorder: 2
----
+...
 
 h1. Authentication
 

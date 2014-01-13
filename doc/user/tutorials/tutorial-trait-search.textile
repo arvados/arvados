@@ -4,7 +4,7 @@ navsection: userguide
 navmenu: Tutorials
 title: "Querying the Metadata Database"
 navorder: 16
----
+...
 
 h1. Tutorial: Querying the Metadata Database
 

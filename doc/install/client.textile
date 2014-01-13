@@ -3,7 +3,7 @@ layout: default
 navsection: installguide
 title: Install client libraries
 navorder: 5
----
+...
 
 h1. Install client libraries
 

@@ -4,7 +4,7 @@ navsection: api
 navmenu: API Methods
 title: "users"
 navorder: 18
----
+...
 
 h1. users
 
