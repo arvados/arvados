@@ -7,7 +7,7 @@ class CollectionsController < ApplicationController
   end
 
   def index
-    if params[:search].andand.length > 0
+    if params[:search].andand.length.andand > 0
       tags = Link.where(link_class: 'tag', any: ['contains', params[:search]])
       @collections = Collection.where(uuid: tags.collect(&:head_uuid))
     else
