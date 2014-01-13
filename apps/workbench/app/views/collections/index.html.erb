@@ -1,6 +1,15 @@
 <%#= render :partial => 'nav' %>
 
-<table class="topalign table table-bordered table-condensed table-fixedlayout table-smallcontent">
+<div class="pull-right">
+  <%= form_tag collections_path, method: 'get', remote: true do %>
+  <div class="input-append">
+    <%= text_field_tag :search, params[:search] %>
+    <%= submit_tag "Search", name: nil, class: 'btn btn-info' %>
+  </div>  
+  <% end %>
+</div>
+
+<table id="collections-index" class="topalign table table-bordered table-condensed table-fixedlayout table-smallcontent">
   <colgroup>
     <col width="10%" />
     <col width="50%" />
@@ -24,34 +33,13 @@
     </tr>
   </thead>
   <tbody>
-
-    <% @collections.each do |c| %>
-
-    <tr class="collection">
-      <td>
-        <%= link_to_if_arvados_object c.uuid %>
-      </td><td>
-        <% c.files.each do |file| %>
-          <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
-        <% end %>
-      </td><td>
-	<%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
-      </td><td>
-        <% if @collection_info[c.uuid] %>
-          <%= @collection_info[c.uuid][:tags].uniq.join ', ' %>
-        <% end %>
-      </td><td>
-        <% if @collection_info[c.uuid][:wanted_by_me] %>
-        <span class="label label-info">2&times;</span>
-        <% elsif @collection_info[c.uuid][:wanted] %>
-        <span class="label">2&times;</span>
-        <% else %>
-        <span class="label">cache</span>
-        <% end %>
-      </td>
-    </tr>
-
-    <% end %>
-
+    <%= render partial: 'index_tbody' %>
   </tbody>
 </table>
+
+<% content_for :js do %>
+$(document).on('click', 'form[data-remote] input[type=submit]', function() {
+  $('table#collections-index tbody').fadeTo(200, 0.3);
+  return true;
+});
+<% end %>

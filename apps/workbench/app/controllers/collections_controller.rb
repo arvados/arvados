@@ -7,7 +7,12 @@ class CollectionsController < ApplicationController
   end
 
   def index
-    @collections = Collection.limit(100)
+    if params[:search].andand.length > 0
+      tags = Link.where(link_class: 'tag', any: ['contains', params[:search]])
+      @collections = Collection.where(uuid: tags.collect(&:head_uuid))
+    else
+      @collections = Collection.limit(100)
+    end
     @links = Link.limit(1000).
       where(head_uuid: @collections.collect(&:uuid))
     @collection_info = {}
