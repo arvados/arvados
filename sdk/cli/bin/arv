@@ -275,7 +275,7 @@ request_parameters = {}.merge(method_opts)
 resource_body = request_parameters.delete(resource_schema.to_sym)
 if resource_body
   request_body = {
-    resource_schema => JSON.parse(resource_body)
+    resource_schema => resource_body
   }
 else
   request_body = {}
