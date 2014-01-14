@@ -310,7 +310,9 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    @object = model_class.where('uuid=?', params[:uuid]).first
+    @where = { uuid: params[:uuid] }
+    find_objects_for_index
+    @object = @objects.first
   end
 
   def self.accept_attribute_as_json(attr, force_class=nil)
