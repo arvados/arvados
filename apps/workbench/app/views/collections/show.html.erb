@@ -30,27 +30,33 @@
     <table class="table table-bordered" style="table-layout: fixed">
       <thead>
         <tr>
-          <th style="width: 10em; text-align:right">size</th>
-          <th>
-            <div style="width:3.5em; display:inline-block"></div>
-            path
-          </th>
+          <th>path</th>
+          <th>file</th>
+          <th style="width:1.5em">d/l</th>
+          <th style="width: 7em; text-align:right">size</th>
         </tr>
       </thead><tbody>
         <% if @object then @object.files.sort_by{|f|f[1]}.each do |file| %>
         <% file_path = "#{file[0]}/#{file[1]}" %>
         <tr>
+          <td>
+            <%= file[0] %>
+          </td>
+
+          <td>
+            <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %>
+          </td>
+
+          <td>
+            <div style="display:inline-block">
+            <%= link_to raw('<i class="icon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
+            </div>
+          </td>
+
           <td style="text-align:right">
             <%= raw(human_readable_bytes_html(file[2])) %>
-          </td><td>
-            <div style="width:3.5em; display:inline-block">
-            <%= link_to raw('<i class="icon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
-            <% if file_path.match /\.(txt|pdf|png|jpe?g|gif|tiff?|html?)$/i %>
-            <%= link_to raw('<i class="icon-play"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {class: 'label label-info', title: 'View in browser'} %>
-            <% end %>
-            </div>
-            <%= file_path %>
           </td>
+
         </tr>
         <% end; end %>
       </tbody>
