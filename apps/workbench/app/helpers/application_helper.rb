@@ -13,13 +13,34 @@ module ApplicationHelper
 
   def human_readable_bytes_html(n)
     return h(n) unless n.is_a? Fixnum
-    raw = n.to_s
-    cooked = ''
-    while raw.length > 3
-      cooked = ',' + raw[-3..-1] + cooked
-      raw = raw[0..-4]
+
+    orders = {
+      1 => "bytes",
+      1024 => "KiB",
+      (1024*1024) => "MiB",
+      (1024*1024*1024) => "GiB",
+      (1024*1024*1024*1024) => "TiB"
+    }
+
+    orders.each do |k, v|
+      sig = (n.to_f/k)
+      if sig >=1 and sig < 1024
+        if v == 'bytes'
+          return "%i #{v}" % sig
+        else
+          return "%0.1f #{v}" % sig
+        end
+      end
     end
-    cooked = raw + cooked
+    
+    return h(n)
+      #raw = n.to_s
+    #cooked = ''
+    #while raw.length > 3
+    #  cooked = ',' + raw[-3..-1] + cooked
+    #  raw = raw[0..-4]
+    #end
+    #cooked = raw + cooked
   end
 
   def resource_class_for_uuid(attrvalue, opts={})
