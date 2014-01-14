@@ -15,4 +15,7 @@ class VirtualMachine < ArvadosBase
             {current_user_logins: {column_heading: "logins", type: 'array'}},
             super]
   end
+  def friendly_link_name
+    self.hostname
+  end
 end
