@@ -1,10 +1,12 @@
 <% if @objects.empty? %>
 
 <p>
-  No <%= controller.model_class.to_s.underscore.pluralize.gsub '_', ' ' %> to display.
+  No <%= controller.model_class.to_s.pluralize.underscore.gsub '_', ' ' %> to display.
 </p>
 
 <% else %>
+
+<h2><%= controller.model_class.to_s.pluralize.underscore.capitalize.gsub '_', ' ' %></h2>
 
 <% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at' %>
 

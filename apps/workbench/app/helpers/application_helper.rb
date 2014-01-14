@@ -32,8 +32,17 @@ module ApplicationHelper
       link_name = opts[:link_text]
       if !link_name
         link_name = link_uuid
-        if opts[:with_class_name]
-          link_name = "#{resource_class.to_s} #{link_name}"
+
+        if opts[:friendly_name] and resource_class.column_names.include? "name" and resource_class.find(link_uuid).name != nil and not resource_class.find(link_uuid).name.empty?
+          link_name = "#{resource_class.to_s} #{resource_class.find(link_uuid).name}"
+        elsif opts[:friendly_name] and resource_class.column_names.include? "hostname" and resource_class.find(link_uuid).hostname != nil and not resource_class.find(link_uuid).hostname.empty?
+          link_name = "#{resource_class.to_s} #{resource_class.find(link_uuid).hostname}"
+        elsif opts[:friendly_name] and resource_class.column_names.include? "first_name"
+          link_name = "#{resource_class.to_s} #{resource_class.find(link_uuid).first_name} #{resource_class.find(link_uuid).last_name}"
+        else
+          if opts[:with_class_name]
+            link_name = "#{resource_class.to_s} #{link_name}"
+          end
         end
       end
       link_to link_name, { controller: resource_class.to_s.underscore.pluralize, action: 'show', id: link_uuid }, style_opts
