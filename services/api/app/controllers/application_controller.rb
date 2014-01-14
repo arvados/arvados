@@ -101,7 +101,7 @@ class ApplicationController < ActionController::Base
       @where = params[:where]
     elsif params[:where].is_a? String
       begin
-        @where = Oj.load(params[:where])
+        @where = Oj.load(params[:where], symbol_keys: true)
       rescue
         raise ArgumentError.new("Could not parse \"where\" param as an object")
       end
@@ -125,7 +125,7 @@ class ApplicationController < ActionController::Base
     if !@where.empty?
       conditions = ['1=1']
       @where.each do |attr,value|
-        if attr == 'any' or attr == :any
+        if attr == :any
           if value.is_a?(Array) and
               value[0] == 'contains' and
               model_class.columns.collect(&:name).index('name') then
@@ -191,7 +191,7 @@ class ApplicationController < ActionController::Base
     return @attrs if @attrs
     @attrs = params[resource_name]
     if @attrs.is_a? String
-      @attrs = Oj.load @attrs
+      @attrs = Oj.load @attrs, symbol_keys: true
     end
     unless @attrs.is_a? Hash
       message = "No #{resource_name}"
@@ -319,7 +319,8 @@ class ApplicationController < ActionController::Base
   def accept_attribute_as_json(attr, force_class)
     if params[resource_name].is_a? Hash
       if params[resource_name][attr].is_a? String
-        params[resource_name][attr] = Oj.load params[resource_name][attr]
+        params[resource_name][attr] = Oj.load(params[resource_name][attr],
+                                              symbol_keys: true)
         if force_class and !params[resource_name][attr].is_a? force_class
           raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
         end

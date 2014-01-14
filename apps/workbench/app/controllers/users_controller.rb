@@ -15,6 +15,8 @@ class UsersController < ApplicationController
     # @my_vm_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#virtual_machine', link_class: 'permission', name: 'can_login')
     # @my_repo_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#repository', link_class: 'permission', name: 'can_write')
 
+    @my_tag_links = {}
+
     @my_jobs = Job.
       limit(10).
       order('created_at desc').
@@ -24,6 +26,11 @@ class UsersController < ApplicationController
       limit(10).
       order('created_at desc').
       where(created_by: current_user.uuid)
+
+    Link.limit(1000).where(head_uuid: @my_collections.collect(&:uuid),
+                           link_class: 'tag').each do |link|
+      (@my_tag_links[link.head_uuid] ||= []) << link
+    end
 
     @my_pipelines = PipelineInstance.
       limit(10).

@@ -5,7 +5,7 @@
     <% if not current_user.andand.is_active or @my_jobs.empty? %>
       <br/>(None)
     <% else %>
-      <table class="table table-bordered table-condensed job-table">
+      <table class="table table-bordered table-condensed table-fixedlayout">
 	<colgroup>
           <col width="28%" />
           <col width="38%" />
@@ -89,7 +89,7 @@
   <% if not current_user.andand.is_active or @my_pipelines.empty? %>
     <br/>(None)
   <% else %>
-    <table class="table table-bordered table-condensed job-table">
+    <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
         <col width="73%" />
         <col width="15%" />
@@ -140,17 +140,29 @@
 <div>
   <strong>Recent collections</strong>
   <%= link_to raw("Show all collections &rarr;"), collections_path, class: 'pull-right' %>
+  <div class="pull-right" style="padding-right: 1em">
+    <%= form_tag collections_path,
+          method: 'get',
+          class: 'form-search small-form-margin' do %>
+    <div class="input-append">
+      <%= text_field_tag :search, params[:search], class: 'search-query search-mini' %>
+      <%= submit_tag "Search", name: nil, class: 'btn btn-mini btn-info' %>
+    </div>  
+    <% end %>
+  </div>
   <% if not current_user.andand.is_active or @my_collections.empty? %>
     <br/>(None)
   <% else %>
-    <table class="table table-bordered table-condensed job-table">
+    <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
-        <col width="73%" />
+        <col width="46%" />
+        <col width="27%" />
         <col width="27%" />
       </colgroup>
 
       <tr>
 	<th>Contents</th>
+	<th>Tags</th>
 	<th>Age</th>
       </tr>
 
@@ -164,6 +176,13 @@
 		<% end %>
 	      </a>
             </small>
+          </td>
+          <td>
+            <% if @my_tag_links[c.uuid] %>
+            <small>
+              <%= @my_tag_links[c.uuid].collect(&:name).join(", ") %>
+            </small>
+            <% end %>
           </td>
           <td>
             <small>
