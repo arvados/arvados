@@ -81,11 +81,7 @@ def tag_remove(tag, obj_uuids=nil)
     $stderr.puts "no tags found to remove"
   end
 
-  return {
-    'kind' => 'arvados#linkList',
-    'items_available' => results.length,
-    'items' => results,
-  }
+  return results
 end
 
 if RUBY_VERSION < '1.9.3' then
@@ -191,6 +187,11 @@ $arvados = $client.discovered_api('arvados', $arvados_api_version)
 
 results = []
 cmd = ARGV.shift
+
+if ARGV.empty?
+  usage
+end
+
 case cmd
 when 'add'
   ARGV.each do |tag|
@@ -201,9 +202,9 @@ when 'add'
 when 'remove'
   ARGV.each do |tag|
     if $options[:all] then
-      results.push(tag_remove(tag))
+      results.concat tag_remove(tag)
     else
-      results.push(tag_remove(tag, $options[:object]))
+      results.concat tag_remove(tag, $options[:object])
     end
   end
 else
@@ -218,10 +219,7 @@ elsif global_opts[:json] then
   puts Oj.dump(results)
 else
   results.each do |r|
-    next if r == nil
-    if r["items"] and r["kind"].match /list$/i
-      r['items'].each do |i| puts i['uuid'] end
-    elsif r['uuid'].nil?
+    if r['uuid'].nil?
       abort("Response did not include a uuid:\n" +
             Oj.dump(r, :indent => 1) +
             "\n")
