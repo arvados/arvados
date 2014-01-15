@@ -36,6 +36,14 @@ class ArvadosModel < ActiveRecord::Base
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
   end
 
+  def self.searchable_columns
+    self.columns.collect do |col|
+      if [:string, :text].index(col.type) && col.name != 'owner_uuid'
+        col.name
+      end
+    end.compact
+  end
+
   def eager_load_associations
     self.class.columns.each do |col|
       re = col.name.match /^(.*)_kind$/
