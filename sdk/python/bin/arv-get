@@ -130,6 +130,8 @@ if not get_prefix:
         logger.error(e)
         sys.exit(1)
 
+get_prefix = get_prefix.replace(' ', '\\040')
+
 reader = arvados.CollectionReader(collection)
 
 # Scan the collection. Make an array of (stream, file, local
