@@ -53,4 +53,6 @@ ArvadosWorkbench::Application.configure do
   config.arvados_docsite = 'http://doc.arvados.org'
 
   config.arvados_theme = 'default'
+
+  config.show_user_agreement_inline = false
 end
