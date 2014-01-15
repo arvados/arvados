@@ -329,7 +329,7 @@ class ApplicationController < ActionController::Base
     # This is necessary to prevent an ActiveRecord::ReadOnlyRecord
     # error when updating an object which was retrieved using a join.
     if @object.andand.readonly?
-      @object = model_class.find(@objects.first.uuid)
+      @object = model_class.find_by_uuid(@objects.first.uuid)
     end
   end
 
