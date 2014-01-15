@@ -11,6 +11,7 @@ class ApplicationController < ActionController::Base
   before_filter :load_where_param, :only => :index
   before_filter :find_objects_for_index, :only => :index
   before_filter :find_object_by_uuid, :except => [:index, :create]
+  before_filter :reload_object_before_update, :only => :update
 
   attr_accessor :resource_attrs
 
@@ -37,6 +38,9 @@ class ApplicationController < ActionController::Base
   end
 
   def update
+    if !@object
+      return render_not_found("object not found")
+    end
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
@@ -319,6 +323,14 @@ class ApplicationController < ActionController::Base
     @where = { uuid: params[:uuid] }
     find_objects_for_index
     @object = @objects.first
+  end
+
+  def reload_object_before_update
+    # This is necessary to prevent an ActiveRecord::ReadOnlyRecord
+    # error when updating an object which was retrieved using a join.
+    if @object.andand.readonly?
+      @object = model_class.find(@objects.first.uuid)
+    end
   end
 
   def self.accept_attribute_as_json(attr, force_class=nil)
