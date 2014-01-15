@@ -8,7 +8,7 @@ class UserAgreementsController < ApplicationController
 
   def sign
     params[:checked].each do |checked|
-      if r = checked.match(/^([0-9a-f]+)/)
+      if r = checked.match(/^([0-9a-f]+[^\/]*)/)
         UserAgreement.sign uuid: r[1]
       end
     end

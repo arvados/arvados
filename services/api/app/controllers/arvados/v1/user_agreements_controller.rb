@@ -6,6 +6,10 @@ class Arvados::V1::UserAgreementsController < ApplicationController
     Link
   end
 
+  def table_name
+    'links'
+  end
+
   def index
     if not current_user.is_invited
       # New users cannot see user agreements until/unless invited to
