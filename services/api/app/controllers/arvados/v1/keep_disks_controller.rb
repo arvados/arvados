@@ -37,11 +37,8 @@ class Arvados::V1::KeepDisksController < ApplicationController
   end
 
   def find_objects_for_index
-    if current_user.andand.is_admin || !current_user.andand.is_active
-      super
-    else
-      # active non-admin users can list all keep disks
-      @objects = model_class.all
-    end
+    # all users can list all keep disks
+    @objects = model_class.where('1=1')
+    super
   end
 end
