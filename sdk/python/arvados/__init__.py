@@ -603,12 +603,12 @@ class StreamReader(object):
 
         for tok in self._tokens:
             if self._stream_name == None:
-                self._stream_name = tok
+                self._stream_name = tok.replace('\\040', ' ')
             elif re.search(r'^[0-9a-f]{32}(\+\S+)*$', tok):
                 self.data_locators += [tok]
             elif re.search(r'^\d+:\d+:\S+', tok):
                 pos, size, name = tok.split(':',2)
-                self.files += [[int(pos), int(size), name]]
+                self.files += [[int(pos), int(size), name.replace('\\040', ' ')]]
             else:
                 raise errors.SyntaxError("Invalid manifest format")
 
@@ -799,8 +799,7 @@ class CollectionWriter(object):
         self.finish_current_file()
         self.set_current_file_name(newfilename)
     def set_current_file_name(self, newfilename):
-        newfilename = re.sub(r' ', '\\\\040', newfilename)
-        if re.search(r'[ \t\n]', newfilename):
+        if re.search(r'[\t\n]', newfilename):
             raise errors.AssertionError(
                 "Manifest filenames cannot contain whitespace: %s" %
                 newfilename)
@@ -825,7 +824,7 @@ class CollectionWriter(object):
         self.finish_current_stream()
         self.set_current_stream_name(newstreamname)
     def set_current_stream_name(self, newstreamname):
-        if re.search(r'[ \t\n]', newstreamname):
+        if re.search(r'[\t\n]', newstreamname):
             raise errors.AssertionError(
                 "Manifest stream names cannot contain whitespace")
         self._current_stream_name = '.' if newstreamname=='' else newstreamname
@@ -860,11 +859,11 @@ class CollectionWriter(object):
         for stream in self._finished_streams:
             if not re.search(r'^\.(/.*)?$', stream[0]):
                 manifest += './'
-            manifest += stream[0]
+            manifest += stream[0].replace(' ', '\\040')
             for locator in stream[1]:
                 manifest += " %s" % locator
             for sfile in stream[2]:
-                manifest += " %d:%d:%s" % (sfile[0], sfile[1], sfile[2])
+                manifest += " %d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040'))
             manifest += "\n"
         return manifest
     def data_locators(self):
