@@ -27,10 +27,11 @@ import apiclient.discovery
 class ArvadosConfig(dict):
     def __init__(self, config_file):
         dict.__init__(self)
-        with open(config_file, "r") as f:
-            for config_line in f:
-                var, val = config_line.rstrip().split('=', 2)
-                self[var] = val
+        if os.path.exists(config_file):
+            with open(config_file, "r") as f:
+                for config_line in f:
+                    var, val = config_line.rstrip().split('=', 2)
+                    self[var] = val
         for var in os.environ:
             if var.startswith('ARVADOS_'):
                 self[var] = os.environ[var]
