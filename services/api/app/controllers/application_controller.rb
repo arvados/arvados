@@ -50,7 +50,7 @@ class ApplicationController < ActionController::Base
     if @object.update_attributes attrs_to_update
       show
     else
-      render json: { errors: @object.errors.full_messages }, status: 422
+      render_error "Update failed"
     end
   end
 
