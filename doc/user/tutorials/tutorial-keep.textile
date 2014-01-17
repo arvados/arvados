@@ -41,7 +41,7 @@ $ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse
 
 Alternately, if you have your own data, for example @MyData.vcf@, you can use @scp@ or @rsync@ to copy from your local workstation to the shell VM (run this on your local workstation):
 
-notextile. <pre><code>$ <span class="userinput">scp MyData.vcf <b>you@shell</b>.arvados>:/scratch/MyData.vcf</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">scp MyData.vcf <b>you@shell</b>.arvados:/scratch/MyData.vcf</span></code></pre>
 
 Now use @arv keep put@ to add your VCF data to Keep:
 
