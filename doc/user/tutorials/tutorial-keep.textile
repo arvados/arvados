@@ -25,13 +25,13 @@ We will start with downloading a freely available VCF file from the "Personal Ge
 
 First, log into the Arvados VM instance and set up the staging area:
 
-notextile. <pre><code>$ <span class="userinput">mkdir /scratch/$USER</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">mkdir /scratch/<b>you</b></span></code></pre>
 
 Next, download the file:
 
 <notextile>
-<pre><code>$ <span class="userinput">mkdir /scratch/$USER</span>
-$ <span class="userinput">cd /scratch/$USER</span>
+<pre><code>$ <span class="userinput">mkdir /scratch/<b>you</b></span>
+$ <span class="userinput">cd /scratch/<b>you</b></span>
 $ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.personalgenomes.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
@@ -41,12 +41,12 @@ $ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse
 
 Alternately, if you have your own data, for example @MyData.vcf@, you can use @scp@ or @rsync@ to copy from your local workstation to the shell VM (run this on your local workstation):
 
-notextile. <pre><code>$ <span class="userinput">scp MyData.vcf <b>you@shell</b>.arvados:/scratch/MyData.vcf</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">scp MyData.vcf <b>you@shell</b>.arvados:/scratch/<b>you</b>/MyData.vcf</span></code></pre>
 
 Now use @arv keep put@ to add your VCF data to Keep:
 
 <notextile>
-<pre><code>$ <span class="userinput">cd /scratch/$USER</span>
+<pre><code>$ <span class="userinput">cd /scratch/<b>you</b></span>
 $ <span class="userinput">arv keep put var-GS000016015-ASM.tsv.bz2</span>
 c1bad4b39ca5a924e481008009d94e32+210
 </code></pre>
