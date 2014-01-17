@@ -7,6 +7,8 @@ class AuthorizedKey < ArvadosModel
 
   belongs_to :authorized_user, :foreign_key => :authorized_user_uuid, :class_name => 'User', :primary_key => :uuid
 
+  validate :public_key_must_be_unique
+
   api_accessible :user, extend: :common do |t|
     t.add :name
     t.add :key_type
@@ -27,5 +29,22 @@ class AuthorizedKey < ArvadosModel
 
     # Default = deny.
     false
+  end
+
+  def public_key_must_be_unique
+    if self.public_key
+      key = /^ssh-(rsa|dss) [A-Za-z0-9+\/=\+]+\b/.match(self.public_key)
+      
+      if not key
+        errors.add(:public_key, "does not appear to be a valid ssh-rsa or dsa public key")
+      else
+        # Valid if no other rows have this public key
+        if self.class.where('public_key like ?', "%#{key[0]}%").any?
+          errors.add(:public_key, "already exists in the database, use a different key.")
+          return false
+        end
+      end
+    end
+    return true
   end
 end
