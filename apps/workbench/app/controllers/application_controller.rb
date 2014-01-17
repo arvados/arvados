@@ -42,7 +42,7 @@ class ApplicationController < ActionController::Base
     if @object.andand.errors.andand.full_messages.andand.any?
       @errors = @object.errors.full_messages
     else
-      @errors = [e.inspect]
+      @errors = [e.to_s]
     end
     self.render_error status: 422
   end
