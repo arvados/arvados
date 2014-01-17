@@ -63,6 +63,14 @@ class Collection < ArvadosModel
     @files = []
     manifest_text.split("\n").each do |stream|
       toks = stream.split(" ")
+
+      stream = toks[0].gsub /\\(\\|[0-7]{3})/ do |escape_sequence|
+        case $1
+        when '\\' '\\'
+        else $1.to_i(8).chr
+        end
+      end
+
       toks[1..-1].each do |tok|
         if (re = tok.match /^[0-9a-f]{32}/)
           blocksize = nil
@@ -84,7 +92,7 @@ class Collection < ArvadosModel
               else $1.to_i(8).chr
               end
             end
-            @files << [toks[0], filename, re[2].to_i]
+            @files << [stream, filename, re[2].to_i]
           end
         end
       end
