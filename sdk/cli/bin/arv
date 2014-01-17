@@ -188,25 +188,36 @@ end
 
 def parse_arguments(discovery_document)
   resource_types = Array.new()
-  resource_types << '--help'
   discovery_document["resources"].each do |k,v|
     resource_types << k.singularize
   end
 
   global_opts = Trollop::options do
-    banner "arvados cli client"
+    banner "arv: the Arvados CLI tool"
     opt :dry_run, "Don't actually do anything", :short => "-n"
-    opt :verbose, "Print some things on stderr", :short => "-v"
-    opt :uuid, "Return the UUIDs of the objects in the response, one per line (default)", :short => nil
-    opt :json, "Return the entire response received from the API server, as a JSON object", :short => "-j"
-    opt :human, "Return the response received from the API server, as a JSON object with whitespace added for human consumption", :short => "-h"
-    opt :pretty, "Synonym of --human", :short => nil
-    opt :yaml, "Return the response received from the API server, in YAML format", :short => "-y"
+    opt :verbose, "Print some things on stderr"
+    opt :format,
+        "Set the output format. Must be one of json (default), yaml or uuid.",
+        :type => :string,
+        :default => 'json'
+    opt :short, "Return only UUIDs (equivalent to --format=uuid)"
+    opt :resources, "Display list of resources known to this Arvados instance."
+    conflicts :short, :format
     stop_on resource_types
   end
-  
+
+  unless %w(json yaml uuid).include?(global_opts[:format])
+    $stderr.puts "#{$0}: --format must be one of json, yaml or uuid."
+    $stderr.puts "Use #{$0} --help for more information."
+    abort
+  end
+
+  if global_opts[:short]
+    global_opts[:format] = 'uuid'
+  end
+
   resource = ARGV.shift
-  if resource == '--help' or not resource_types.include?(resource)
+  if global_opts[:resources] or not resource_types.include?(resource)
     help_resources(discovery_document, resource)
   end
 
@@ -323,18 +334,21 @@ if results["errors"] then
   abort "Error: #{results["errors"][0]}"
 end
 
-if global_opts[:human] or global_opts[:pretty] then
+case global_opts[:format]
+when 'json'
   puts Oj.dump(results, :indent => 1)
-elsif global_opts[:yaml] then
+when 'yaml'
   puts results.to_yaml
-elsif global_opts[:json] then
-  puts Oj.dump(results)
-elsif results["items"] and results["kind"].match /list$/i
-  results['items'].each do |i| puts i['uuid'] end
-elsif results['uuid'].nil?
-  abort("Response did not include a uuid:\n" +
-        Oj.dump(results, :indent => 1) +
-        "\n")
 else
-  puts results['uuid']
+  if results["items"] and results["kind"].match /list$/i
+    results['items'].each do |i| puts i['uuid'] end
+  elsif results['uuid'].nil?
+    abort("Response did not include a uuid:\n" +
+          Oj.dump(results, :indent => 1) +
+          "\n")
+  else
+    puts results['uuid']
+  end
 end
+
+
