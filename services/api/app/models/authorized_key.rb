@@ -33,10 +33,10 @@ class AuthorizedKey < ArvadosModel
 
   def public_key_must_be_unique
     if self.public_key
-      key = /ssh-rsa [A-Za-z0-9+\/]+/.match(self.public_key)
+      key = /^ssh-(rsa|dss) [A-Za-z0-9+\/=\+]+\b/.match(self.public_key)
       
       if not key
-        errors.add(:public_key, "does not appear to be a valid ssh-rsa key")
+        errors.add(:public_key, "does not appear to be a valid ssh-rsa or dsa public key")
       else
         # Valid if no other rows have this public key
         if self.class.where('public_key like ?', "%#{key[0]}%").any?
