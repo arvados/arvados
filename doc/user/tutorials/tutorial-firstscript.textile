@@ -41,12 +41,12 @@ For more information about using @git@, try
 
 notextile. <pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
 
-or "click here to search Google for git tutorials":http://google.com/#q=git+tutorial
+or <b>"click here to search Google for git tutorials":http://google.com/#q=git+tutorial</b>
 {% include notebox-end.html %}
 
 h2. Creating a Crunch script
 
-Start by entering the @you@ directory, creating a subdirectory called @crunch_scripts@ and changing to that directory:
+Start by entering the @you@ directory created by @git clone@.  Next create a subdirectory called @crunch_scripts@ and change to that directory:
 
 <notextile>
 <pre><code>$ <span class="userinput">cd you</span>
@@ -54,7 +54,11 @@ $ <span class="userinput">mkdir crunch_scripts</span>
 $ <span class="userinput">cd crunch_scripts</span></code></pre>
 </notextile>
 
-Next, using your favorite text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.  Add the following code to compute the md5 hash of each file in a collection:
+Next, using @nano@ or your favorite Unix text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.
+
+notextile. <pre>$ <code class="userinput">nano hash.py</code></pre>
+
+Add the following code to compute the md5 hash of each file in a collection:
 
 <pre><code class="userinput">{% include tutorial_hash_script.py %}</code></pre>
 
@@ -87,7 +91,7 @@ To git@git.qr1hi.arvadosapi.com:you.git
  * [new branch]      master -> master</code></pre>
 </notextile>
 
-You should now be able to run your script using Crunch, similar to how we did it in the "first tutorial.":tutorial-job1.html  The field @"script_version"@ should be @you:master@ to tell Crunch to run the script that you just uploaded.
+You should now be able to run your script using Crunch, similar to how we did it in the "first tutorial.":tutorial-job1.html  The field @"script_version"@ should be @you:master@ to tell Crunch to run the script at the head of the "master" git branch, which you just uploaded.
 
 <notextile>
 <pre><code>$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
@@ -96,7 +100,7 @@ You should now be able to run your script using Crunch, similar to how we did it
  "script_version": "you:master",
  "script_parameters":
  {
-  "input": "33a9f3842b01ea3fdf27cc582f5ea2af"
+  "input": "c1bad4b39ca5a924e481008009d94e32+210"
  }
 }
 EOF</span>
@@ -109,10 +113,10 @@ $ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
 $ <span class="userinput">arv -h job get --uuid qr1hi-xxxxx-xxxxxxxxxxxxxxx</span>
 {
  ...
- "output":"880b55fb4470b148a447ff38cacdd952+54+K@qr1hi",
+ "output":"880b55fb4470b148a447ff38cacdd952+54",
  ...
 }
-$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt</span>
+$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>

@@ -33,8 +33,11 @@ class ApplicationController < ActionController::Base
 
   def create
     @object = model_class.new resource_attrs
-    @object.save
-    show
+    if @object.save
+      show
+    else
+      render_error "Save failed"
+    end
   end
 
   def update
@@ -47,7 +50,7 @@ class ApplicationController < ActionController::Base
     if @object.update_attributes attrs_to_update
       show
     else
-      render json: { errors: @object.errors.full_messages }, status: 422
+      render_error "Update failed"
     end
   end
 
@@ -212,7 +215,7 @@ class ApplicationController < ActionController::Base
       raise ArgumentError.new(message)
     end
     %w(created_at modified_by_client_uuid modified_by_user_uuid modified_at).each do |x|
-      @attrs.delete x
+      @attrs.delete x.to_sym
     end
     @attrs
   end

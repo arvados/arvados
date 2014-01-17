@@ -189,23 +189,23 @@ Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 started o
 Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 1 running, 0 todo
 Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 on compute13.1 exit 0 signal 0 success=true
 Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 success in 110 seconds
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 output bedd6ff56b3ae9f90d873b1fcb72f9a3+91+K@qr1hi
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 output bedd6ff56b3ae9f90d873b1fcb72f9a3+91
 Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  wait for last 0 children to finish
 Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 2 done, 0 running, 0 todo
 Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  release job allocation
 Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Freeze not implemented
 Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  collate
 Tue Dec 17 19:04:10 2013 salloc: Job allocation 1251 has been revoked.
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  output bedd6ff56b3ae9f90d873b1fcb72f9a3+91+K@qr1hi
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  output bedd6ff56b3ae9f90d873b1fcb72f9a3+91
 Tue Dec 17 19:04:11 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  finish
-Tue Dec 17 19:04:12 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  log manifest is 1e77aaceee2df499e14dc5dde5c3d328+91+K@qr1hi
+Tue Dec 17 19:04:12 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  log manifest is 1e77aaceee2df499e14dc5dde5c3d328+91
 </code></pre>
 </notextile>
 
 Once the job completes, the output can be found in hu34D5B9-exome-filtered.vcf:
 
 <notextile>
-$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91+K@qr1hi</span>
+$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91</span>
 hu34D5B9-exome-filtered.vcf
 </code></pre>
 </notextile>

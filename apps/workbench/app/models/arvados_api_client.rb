@@ -77,7 +77,7 @@ class ArvadosApiClient
     if msg.status_code != 200
       errors = resp[:errors]
       errors = errors.join("\n\n") if errors.is_a? Array
-      raise "API error #{msg.status_code}:\n\n#{errors}\n"
+      raise "#{errors} [API: #{msg.status_code}]"
     end
     if resp[:_profile]
       Rails.logger.info "API client: " \
