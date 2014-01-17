@@ -36,11 +36,11 @@ class AuthorizedKey < ArvadosModel
       key = /ssh-rsa [A-Za-z0-9+\/]+/.match(self.public_key)
       
       if not key
-        errors.add(:public_key, "Does not appear to be a valid ssh-rsa key")
+        errors.add(:public_key, "does not appear to be a valid ssh-rsa key")
       else
         # Valid if no other rows have this public key
         if self.class.where('public_key like ?', "%#{key[0]}%").any?
-          errors.add(:public_key, "Key already exists in the database, use a different key.")
+          errors.add(:public_key, "already exists in the database, use a different key.")
           return false
         end
       end
