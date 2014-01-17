@@ -13,11 +13,20 @@
       When you have an SSH key you would like to use, paste the SSH public key
       in the text box.
     </div>
-      <%= form_for AuthorizedKey.new do |f| %>
-	<%= hidden_field_tag :return_to, request.original_url %>
-	<%= f.text_area :public_key, cols: 50, rows: 4, placeholder: "Paste your public key here", style: "width: 100%" %>
-	<%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary pull-right" %>
-      <% end %>
+    <%= form_for AuthorizedKey.new, remote: true do |f| %>
+      <div class="row-fluid">
+        <div class="span12">
+          <%= hidden_field_tag :return_to, request.original_url %>
+          <%= hidden_field_tag :disable_element, 'input[type=submit]' %>
+          <%= f.text_area :public_key, rows: 4, placeholder: "Paste your public key here", style: "width: 100%" %>
+        </div>
+      </div>
+      <div class="row-fluid">
+        <div class="span4 offset8">
+          <%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary pull-right", style: "width: 100%" %>
+        </div>
+      </div>
+    <% end %>
   </div>
 <% end %>
 

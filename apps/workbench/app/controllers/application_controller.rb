@@ -27,8 +27,12 @@ class ApplicationController < ActionController::Base
 
   def render_error(opts)
     respond_to do |f|
-      f.html { render opts.merge(controller: 'application', action: 'error') }
+      # json must come before html here, so it gets used as the
+      # default format when js is requested by the client. This lets
+      # ajax:error callback parse the response correctly, even though
+      # the browser can't.
       f.json { render opts.merge(json: {success: false, errors: @errors}) }
+      f.html { render opts.merge(controller: 'application', action: 'error') }
     end
   end
 
