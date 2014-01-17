@@ -3,7 +3,7 @@
     <strong>Recent jobs</strong>
     <%= link_to raw("Show all jobs &rarr;"), jobs_path, class: 'pull-right' %>
     <% if not current_user.andand.is_active or @my_jobs.empty? %>
-      <br/>(None)
+      <p>(None)</p>
     <% else %>
       <table class="table table-bordered table-condensed table-fixedlayout">
 	<colgroup>
@@ -91,7 +91,7 @@
   <strong>Recent pipeline instances</strong>
   <%= link_to raw("Show all pipeline instances &rarr;"), jobs_path, class: 'pull-right' %>
   <% if not current_user.andand.is_active or @my_pipelines.empty? %>
-    <br/>(None)
+    <p>(None)</p>
   <% else %>
     <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
@@ -155,7 +155,7 @@
     <% end %>
   </div>
   <% if not current_user.andand.is_active or @my_collections.empty? %>
-    <br/>(None)
+    <p>(None)</p>
   <% else %>
     <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
