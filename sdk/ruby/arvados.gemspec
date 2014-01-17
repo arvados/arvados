@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.summary     = "Arvados SDK Ruby"
   s.description = "This is the Arvados SDK gem, git revision " + `/usr/bin/git log --pretty=format:'%H' -n 1`
   s.authors     = ["Arvados Authors"]
-  s.email       = 'gem-dev@clinicalfuture.com'
+  s.email       = 'gem-dev@curoverse.com'
   s.licenses    = ['Apache License, Version 2.0']
   s.files       = ["lib/arvados.rb"]
   s.add_dependency('google-api-client', '>= 0.6.3')
