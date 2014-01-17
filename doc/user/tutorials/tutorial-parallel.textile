@@ -56,7 +56,7 @@ $ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
 $ <span class="userinput">arv -h job get --uuid qr1hi-xxxxx-xxxxxxxxxxxxxxx</span>
 {
  ...
- "output":"e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi",
+ "output":"e2ccd204bca37c77c0ba59fc470cd0f7+162",
  ...
 }
 </code></pre>
@@ -65,11 +65,11 @@ $ <span class="userinput">arv -h job get --uuid qr1hi-xxxxx-xxxxxxxxxxxxxxx</spa
 Because the job ran in parallel, each instance of parallel-hash creates a separate @md5sum.txt@ as output.  Arvados automatically collates theses files into a single collection, which is the output of the job:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi</span>
+<pre><code>$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162</span>
 md5sum.txt
 md5sum.txt
 md5sum.txt
-$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi/md5sum.txt</span>
+$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162/md5sum.txt</span>
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 504938460ef369cd275e4ef58994cffe bob.txt
 8f3b36aff310e06f3c5b9e95678ff77a carol.txt
