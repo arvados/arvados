@@ -129,6 +129,14 @@ def _cast_objects_too(value, schema_type):
         return _cast_orig(value, schema_type)
 apiclient.discovery._cast = _cast_objects_too
 
+def http_cache(data_type):
+    path = os.environ['HOME'] + '/.cache/arvados/' + data_type
+    try:
+        util.mkdir_dash_p(path)
+    except OSError:
+        path = None
+    return path
+
 def api(version=None):
     global services, config
     if not services.get(version):
@@ -149,7 +157,8 @@ def api(version=None):
         if not os.path.exists(ca_certs):
             ca_certs = None             # use httplib2 default
 
-        http = httplib2.Http(ca_certs=ca_certs)
+        http = httplib2.Http(ca_certs=ca_certs,
+                             cache=http_cache('discovery'))
         http = credentials.authorize(http)
         if re.match(r'(?i)^(true|1|yes)$',
                     config.get('ARVADOS_API_HOST_INSECURE', 'no')):
