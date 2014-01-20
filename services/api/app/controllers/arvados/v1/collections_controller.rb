@@ -49,4 +49,25 @@ class Arvados::V1::CollectionsController < ApplicationController
     end
     show
   end
+
+  protected
+
+  def find_object_by_uuid
+    super
+    if !@object and !params[:uuid].match(/^[0-9a-f]+\+\d+$/)
+      # Normalize the given uuid and search again.
+      hash_part = params[:uuid].match(/^([0-9a-f]*)/)[1]
+      collection = Collection.where('uuid like ?', hash_part + '+%').first
+      if collection
+        # We know the collection exists, and what its real uuid is in
+        # the database. Now, throw out @objects and repeat the usual
+        # lookup procedure. (Returning the collection at this point
+        # would bypass permission checks.)
+        @objects = nil
+        @where = { uuid: collection.uuid }
+        find_objects_for_index
+        @object = @objects.first
+      end
+    end
+  end
 end
