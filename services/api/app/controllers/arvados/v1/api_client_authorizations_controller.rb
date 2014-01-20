@@ -10,13 +10,13 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     }
   end
   def create_system_auth
-    api_client_auth = ApiClientAuthorization.
+    @object = ApiClientAuthorization.
       new(user_id: system_user.id,
           api_client_id: params[:api_client_id] || current_api_client.andand.id,
           created_by_ip_address: remote_ip,
           scopes: Oj.load(params[:scopes] || '["all"]'))
-    api_client_auth.save!
-    render :json => api_client_auth.as_api_response(:superuser)
+    @object.save!
+    show
   end
 
   def create
