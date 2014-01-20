@@ -23,6 +23,7 @@ class Arvados::V1::SchemaController < ApplicationController
   end
 
   def discovery_rest_description
+    expires_in 24.hours, public: true
     discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
       discovery = {
