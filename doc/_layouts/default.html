@@ -10,8 +10,12 @@
     <link rel="shortcut icon" href="{{ site.baseurl }}/images/favicon.ico" type="image/x-icon">
     <link href="{{ site.baseurl }}/css/bootstrap.css" rel="stylesheet">
     <style>
+      html {
+      height:100%;
+      }
       body {
       padding-top: 41px;
+      height: calc(100% - 46px);
       }
       div.frontpagehero {
       background: #fff;
@@ -73,7 +77,7 @@
   <body class="nopad">
     {% include navbar_top.html %}
 
-    {% if page.navsection == 'top' %}
+    {% if page.navsection == 'top' or page.no_nav_left %}
     {{ content }}
     {% else %}
 
