@@ -2,11 +2,11 @@
 layout: default
 navsection: userguide
 navmenu: Reference
-title: "Command line SDK"
+title: "Command line interface"
 navorder: 22
 ---
 
-h1. Reference: Command line SDK
+h1. Reference: Command Line Interface
 
 If you are logged in to an Arvados VM, the command line SDK should be installed. Try:
 
