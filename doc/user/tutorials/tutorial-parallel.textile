@@ -6,7 +6,7 @@ title: "Parallel Crunch tasks"
 navorder: 15
 ---
 
-h1. Tutorial: Parallel Crunch tasks
+h1. Parallel Crunch tasks
 
 In the tutorial "writing a crunch script,":tutorial-firstscript.html our script used a "for" loop to compute the md5 hashes for each file in sequence.  This approach, while simple, is not able to take advantage of the compute cluster with multiple nodes and cores to speed up computation by running tasks in parallel.  This tutorial will demonstrate how to create parallel Crunch tasks.
 

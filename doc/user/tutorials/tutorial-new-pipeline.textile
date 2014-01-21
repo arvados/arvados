@@ -6,7 +6,7 @@ title: "Constructing a Crunch pipeline"
 navorder: 15
 ---
 
-h1. Tutorial: Constructing a Crunch pipeline
+h1. Constructing a Crunch pipeline
 
 A pipeline in Arvados is a collection of crunch scripts, in which the output from one script may be used as the input to another script.
 

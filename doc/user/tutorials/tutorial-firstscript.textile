@@ -6,7 +6,7 @@ title: "Writing a Crunch script"
 navorder: 13
 ---
 
-h1. Tutorial: Writing a Crunch script
+h1. Writing a Crunch script
 
 In this tutorial, we will write the "hash" script demonstrated in the first tutorial.
 

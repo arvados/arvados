@@ -6,7 +6,7 @@ title: "Storing and Retrieving data using Arvados Keep"
 navorder: 11
 ---
 
-h1. Tutorial: Storing and Retrieving data using Arvados Keep
+h1. Storing and Retrieving data using Arvados Keep
 
 This tutorial introduces you to the Arvados file storage system.
 

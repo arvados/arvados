@@ -6,7 +6,7 @@ title: "Using GATK with Arvados"
 navorder: 16
 ---
 
-h1. Tutorial: Using GATK with Arvados
+h1. Using GATK with Arvados
 
 This tutorials demonstrates how to use the Genome Analysis Toolkit (GATK) with Arvados. In this example we will install GATK and then create a VariantFiltration job to assign pass/fail scores to variants in a VCF file.
 
@@ -204,8 +204,7 @@ Tue Dec 17 19:04:12 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  log manifest is 1e77a
 
 Once the job completes, the output can be found in hu34D5B9-exome-filtered.vcf:
 
-<notextile>
-$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91</span>
+<notextile><pre><code>$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91</span>
 hu34D5B9-exome-filtered.vcf
 </code></pre>
 </notextile>

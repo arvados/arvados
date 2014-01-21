@@ -6,7 +6,7 @@ title: "Running a Crunch job"
 navorder: 12
 ---
 
-h1. Tutorial: Running a crunch job
+h1. Running a crunch job
 
 This tutorial introduces the concepts and use of the Crunch job system using the @arv@ command line tool and Arvados Workbench.
 
