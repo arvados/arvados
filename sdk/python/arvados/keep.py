@@ -20,6 +20,8 @@ import threading
 
 global_client_object = None
 
+from arvados import *
+
 class Keep:
     @staticmethod
     def global_client_object():

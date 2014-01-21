@@ -18,6 +18,8 @@ import fcntl
 import time
 import threading
 
+from keep import *
+
 class StreamFileReader(object):
     def __init__(self, stream, pos, size, name):
         self._stream = stream

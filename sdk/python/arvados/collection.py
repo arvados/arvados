@@ -19,6 +19,7 @@ import time
 import threading
 
 from stream import *
+from keep import *
 
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):

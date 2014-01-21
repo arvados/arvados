@@ -21,13 +21,14 @@ import threading
 import apiclient
 import apiclient.discovery
 
+config = None
+EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
+services = {}
+
 from stream import *
 from collection import *
 from keep import *
 
-config = None
-EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
-services = {}
 
 # Arvados configuration settings are taken from $HOME/.config/arvados.
 # Environment variables override settings in the config file.
