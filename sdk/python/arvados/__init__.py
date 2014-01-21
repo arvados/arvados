@@ -37,7 +37,7 @@ class ArvadosConfig(dict):
                 self[var] = os.environ[var]
 
 
-config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados')
+config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados/settings.conf')
 
 if 'ARVADOS_DEBUG' in config:
     logging.basicConfig(level=logging.DEBUG)

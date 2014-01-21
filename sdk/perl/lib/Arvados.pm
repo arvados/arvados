@@ -82,9 +82,18 @@ sub new
 sub build
 {
     my $self = shift;
-    $self->{'authToken'} ||= $ENV{'ARVADOS_API_TOKEN'};
-    $self->{'apiHost'} ||= $ENV{'ARVADOS_API_HOST'};
-    $self->{'apiProtocolScheme'} ||= $ENV{'ARVADOS_API_PROTOCOL_SCHEME'};
+
+    $config = load_config_file("$ENV{HOME}/.config/arvados/settings.conf");
+
+    $self->{'authToken'} ||= 
+	$ENV{ARVADOS_API_TOKEN} || $config->{ARVADOS_API_TOKEN};
+
+    $self->{'apiHost'} ||=
+	$ENV{ARVADOS_API_HOST} || $config->{ARVADOS_API_HOST};
+
+    $self->{'apiProtocolScheme'} ||=
+	$ENV{ARVADOS_API_PROTOCOL_SCHEME} ||
+	$config->{ARVADOS_API_PROTOCOL_SCHEME};
 
     $self->{'ua'} = new Arvados::Request;
 
@@ -122,6 +131,23 @@ sub new_request
         $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'} = 0;
     }
     Arvados::Request->new();
+}
+
+sub load_config_file ($)
+{
+    my $config_file = shift;
+    my %config;
+
+    if (open (CONF, $config_file)) {
+	while (<CONF>) {
+	    next if /^\s*#/ || /^\s*$/;  # skip comments and blank lines
+	    chomp;
+	    my ($key, $val) = split /\s*=\s*/, $_, 2;
+	    $config{$key} = $val;
+	}
+    }
+    close CONF;
+    return \%config;
 }
 
 1;

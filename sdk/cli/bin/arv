@@ -12,7 +12,7 @@ end
 
 # read authentication data from ~/.config/arvados if present
 lineno = 0
-config_file = File.expand_path('~/.config/arvados')
+config_file = File.expand_path('~/.config/arvados/settings.conf')
 if File.exist? config_file then
   File.open(config_file, 'r').each do |line|
     lineno = lineno + 1
