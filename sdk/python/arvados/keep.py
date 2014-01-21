@@ -52,11 +52,14 @@ class KeepClient(object):
             self._done = 0
             self._todo_lock = threading.Semaphore(todo)
             self._done_lock = threading.Lock()
+
         def __enter__(self):
             self._todo_lock.acquire()
             return self
+
         def __exit__(self, type, value, traceback):
             self._todo_lock.release()
+
         def shall_i_proceed(self):
             """
             Return true if the current thread should do stuff. Return
@@ -64,12 +67,14 @@ class KeepClient(object):
             """
             with self._done_lock:
                 return (self._done < self._todo)
+
         def increment_done(self):
             """
             Report that the current thread was successful.
             """
             with self._done_lock:
                 self._done += 1
+
         def done(self):
             """
             Return how many successes were reported.
@@ -86,6 +91,7 @@ class KeepClient(object):
         def __init__(self, **kwargs):
             super(KeepClient.KeepWriterThread, self).__init__()
             self.args = kwargs
+
         def run(self):
             global config
             with self.args['thread_limiter'] as limiter:
@@ -230,6 +236,7 @@ class KeepClient(object):
         os.rename(os.path.join(os.environ['KEEP_LOCAL_STORE'], md5 + '.tmp'),
                   os.path.join(os.environ['KEEP_LOCAL_STORE'], md5))
         return locator
+
     @staticmethod
     def local_store_get(locator):
         r = re.search('^([0-9a-f]{32,})', locator)

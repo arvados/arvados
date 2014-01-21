@@ -21,10 +21,13 @@ import threading
 import apiclient
 import apiclient.discovery
 
-from Stream import *
-from Collection import *
-from Keep import *
+from stream import *
+from collection import *
+from keep import *
 
+config = None
+EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
+services = {}
 
 # Arvados configuration settings are taken from $HOME/.config/arvados.
 # Environment variables override settings in the config file.
@@ -40,16 +43,6 @@ class ArvadosConfig(dict):
         for var in os.environ:
             if var.startswith('ARVADOS_'):
                 self[var] = os.environ[var]
-
-
-config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados')
-
-if 'ARVADOS_DEBUG' in config:
-    logging.basicConfig(level=logging.DEBUG)
-
-EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
-
-services = {}
 
 class errors:
     class SyntaxError(Exception):
@@ -136,6 +129,12 @@ apiclient.discovery._cast = _cast_objects_too
 
 def api(version=None):
     global services, config
+
+    if not config:
+        config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados')
+        if 'ARVADOS_DEBUG' in config:
+            logging.basicConfig(level=logging.DEBUG)
+
     if not services.get(version):
         apiVersion = version
         if not version:
@@ -523,8 +522,3 @@ class util:
                 allfiles += [ent_base]
         return allfiles
 
-
-
-# We really shouldn't do this but some clients still use
-# arvados.service.* directly instead of arvados.api().*
-service = api()

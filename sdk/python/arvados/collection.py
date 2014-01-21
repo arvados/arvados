@@ -27,10 +27,13 @@ class CollectionReader(object):
             self._manifest_locator = manifest_locator_or_text
             self._manifest_text = None
         self._streams = None
+
     def __enter__(self):
         pass
+
     def __exit__(self):
         pass
+
     def _populate(self):
         if self._streams != None:
             return
@@ -41,22 +44,26 @@ class CollectionReader(object):
             if stream_line != '':
                 stream_tokens = stream_line.split()
                 self._streams += [stream_tokens]
+
     def all_streams(self):
         self._populate()
         resp = []
         for s in self._streams:
             resp += [StreamReader(s)]
         return resp
+
     def all_files(self):
         for s in self.all_streams():
             for f in s.all_files():
                 yield f
+
     def manifest_text(self):
         self._populate()
         return self._manifest_text
 
 class CollectionWriter(object):
     KEEP_BLOCK_SIZE = 2**26
+
     def __init__(self):
         self._data_buffer = []
         self._data_buffer_len = 0
@@ -67,10 +74,13 @@ class CollectionWriter(object):
         self._current_file_name = None
         self._current_file_pos = 0
         self._finished_streams = []
+
     def __enter__(self):
         pass
+
     def __exit__(self):
         self.finish()
+
     def write_directory_tree(self,
                              path, stream_name='.', max_manifest_depth=-1):
         self.start_new_stream(stream_name)
@@ -106,23 +116,28 @@ class CollectionWriter(object):
         self._current_stream_length += len(newdata)
         while self._data_buffer_len >= self.KEEP_BLOCK_SIZE:
             self.flush_data()
+
     def flush_data(self):
         data_buffer = ''.join(self._data_buffer)
         if data_buffer != '':
             self._current_stream_locators += [Keep.put(data_buffer[0:self.KEEP_BLOCK_SIZE])]
             self._data_buffer = [data_buffer[self.KEEP_BLOCK_SIZE:]]
             self._data_buffer_len = len(self._data_buffer[0])
+
     def start_new_file(self, newfilename=None):
         self.finish_current_file()
         self.set_current_file_name(newfilename)
+
     def set_current_file_name(self, newfilename):
         if re.search(r'[\t\n]', newfilename):
             raise errors.AssertionError(
                 "Manifest filenames cannot contain whitespace: %s" %
                 newfilename)
         self._current_file_name = newfilename
+
     def current_file_name(self):
         return self._current_file_name
+
     def finish_current_file(self):
         if self._current_file_name == None:
             if self._current_file_pos == self._current_stream_length:
@@ -137,16 +152,20 @@ class CollectionWriter(object):
                                        self._current_stream_length - self._current_file_pos,
                                        self._current_file_name]]
         self._current_file_pos = self._current_stream_length
+
     def start_new_stream(self, newstreamname='.'):
         self.finish_current_stream()
         self.set_current_stream_name(newstreamname)
+
     def set_current_stream_name(self, newstreamname):
         if re.search(r'[\t\n]', newstreamname):
             raise errors.AssertionError(
                 "Manifest stream names cannot contain whitespace")
         self._current_stream_name = '.' if newstreamname=='' else newstreamname
+
     def current_stream_name(self):
         return self._current_stream_name
+
     def finish_current_stream(self):
         self.finish_current_file()
         self.flush_data()
@@ -168,8 +187,10 @@ class CollectionWriter(object):
         self._current_stream_name = None
         self._current_file_pos = 0
         self._current_file_name = None
+
     def finish(self):
         return Keep.put(self.manifest_text())
+
     def manifest_text(self):
         self.finish_current_stream()
         manifest = ''
@@ -183,6 +204,7 @@ class CollectionWriter(object):
                 manifest += " %d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040'))
             manifest += "\n"
         return manifest
+
     def data_locators(self):
         ret = []
         for name, locators, files in self._finished_streams:
