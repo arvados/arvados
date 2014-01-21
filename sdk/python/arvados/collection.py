@@ -18,6 +18,8 @@ import fcntl
 import time
 import threading
 
+from stream import *
+
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
         if re.search(r'^\S+( [a-f0-9]{32,}(\+\S+)*)+( \d+:\d+:\S+)+\n', manifest_locator_or_text):
