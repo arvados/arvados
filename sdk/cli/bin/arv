@@ -12,7 +12,7 @@ end
 
 # read authentication data from ~/.config/arvados if present
 lineno = 0
-config_file = File.expand_path('~/.config/arvados')
+config_file = File.expand_path('~/.config/arvados/settings.conf')
 if File.exist? config_file then
   File.open(config_file, 'r').each do |line|
     lineno = lineno + 1
@@ -152,7 +152,10 @@ def help_methods(discovery_document, resource, method=nil)
   discovery_document["resources"][resource.pluralize]["methods"].
     each do |k,v|
     description = ''
-    description = '  ' + v["description"] if v.include?("description")
+    if v.include? "description"
+      # add only the first line of the discovery doc description
+      description = '  ' + v["description"].split("\n").first.chomp
+    end
     banner += "   #{sprintf("%20s",k)}#{description}\n"
   end
   banner += "\n"
@@ -171,9 +174,10 @@ def help_resources(discovery_document, resource)
   banner += "\n\n"
   discovery_document["resources"].each do |k,v|
     description = ''
-    if discovery_document["schemas"].include?(k.singularize.capitalize) and 
-        discovery_document["schemas"][k.singularize.capitalize].include?('description') then
-      description = '  ' + discovery_document["schemas"][k.singularize.capitalize]["description"]
+    resource_info = discovery_document["schemas"][k.singularize.capitalize]
+    if resource_info and resource_info.include?('description')
+      # add only the first line of the discovery doc description
+      description = '  ' + resource_info["description"].split("\n").first.chomp
     end
     banner += "   #{sprintf("%30s",k.singularize)}#{description}\n"
   end
