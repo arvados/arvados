@@ -1,6 +1,7 @@
 exclude: ["Rakefile", "tmp"]
 baseurl: /doc
 arvados_api_host: qr1hi.arvadosapi.com
+layout: default
 navbar:
   userguide:
     - Getting Started

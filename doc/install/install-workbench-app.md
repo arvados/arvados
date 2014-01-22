@@ -3,7 +3,7 @@ layout: default
 navsection: installguide
 title: Install the Arvados workbench application
 navorder: 2
----
+...
 
 {% include alert-stub.html %}
 

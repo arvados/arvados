@@ -3,7 +3,7 @@ layout: default
 navsection: installguide
 title: Install the API server
 navorder: 1
----
+...
 
 {% include alert-stub.html %}
 

@@ -3,7 +3,7 @@ layout: default
 navsection: installguide
 title: Overview
 navorder: 0
----
+...
 
 {% include alert-stub.html %}
 

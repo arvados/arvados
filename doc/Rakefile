@@ -3,4 +3,5 @@
 require "rubygems"
 require "zenweb/tasks"
 load "zenweb-textile.rb"
+load "zenweb-liquid.rb"
 
