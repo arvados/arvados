@@ -45,6 +45,18 @@ Enter same passphrase again:
 
 We strongly recommend that you protect your key with a passphrase.  This means that when the key is used, you will be required to enter the passphrase.  However, unlike logging into remote system using a password, the passphrase is never sent over the network, it is only used to decrypt your private key.
 
+Display the contents of @~/.ssh/id_rsa.pub@ (this is your public key) using @cat@ and then copy it onto the clipboard:
+
+<notextile>
+<pre><code>$ <span class="userinput">cat ~/.ssh/id_rsa.pub</span>
+ssh-rsa AAAAB3NzaC1ycEDoNotUseExampleKeyDoNotUseExampleKeyDoNotUseExampleKeyDoNotUse9lmzkpBq983bQradKGT3LuKda9QOGe8MatI6wzSrJLSGhHm3hk6D8OWWUG4SneuCtKIk2bH0pgBj1G29+uzDIez90WzfCTZKbz4RcVQmPkowSSUAQDwb0ffwvRDhCgcJ1loT1wQAJzqJmljQ7xEYaCOIMqnfYE0lX7B3MSvCV6Ie2rWL33YecLp48LVtqiCOZU4XRyO8RSDFRFLVW+mjkLirwtDHZCRtORScaIEN0jw51p+T+9X5iA9QH/Mn+xlgk7fCgH+JtpBj808N/Qds2Gpff+Kb6ulUrVVfMK6L you@example.com
+</code></pre>
+</notextile>
+
+Now you can set up @ssh-agent@ (next) or proceed to "adding your key to the Arvados Workbench.":#workbench
+
+h3. Setting up ssh-agent (optional)
+
 If you find you are entering your passphrase frequently, you can use @ssh-agent@ to manage your credentials.  Use @ssh-add -l@ to test if you already have ssh-agent running:
 
 notextile. <pre><code>$ <span class="userinput">ssh-add -l</span></code></pre>
@@ -72,7 +84,7 @@ When everything is set up, @ssh-add -l@ should yield output that looks something
 </code></pre>
 </notextile>
 
-Copy the contents of @~/.ssh/id_rsa.pub@ onto the clipboard (this is your public key).  Proceed to "adding your key to the Arvados Workbench":#workbench .
+You may now proceed to "adding your key to the Arvados Workbench.":#workbench
 
 h2(#windows). Windows: Using PuTTY
 
@@ -137,7 +149,7 @@ Paste the public key that you copied to the clipboard in the previous section in
 
 h1(#login). Using ssh to log into an Arvados VM
 
-To determine the name and login information of the VM instance that you will connect to, go to the Arvados workbench and click on "Virtual machines" under *Configuration* or use the menu item _Access %(rarr)&rarr;% VMs_ to see a list of virtual machines that you have access to.  Make a note of the values in the *hostname* and *logins* columns.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login as appropriate.
+To determine the name and login information of the VM instance that you will connect to, go to the Arvados workbench and click on "Virtual machines" under *Configuration* or use the menu item _Access %(rarr)&rarr;% VMs_ to see a list of virtual machines that you have access to.  The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Skip the square brackets and quotes to get your login name.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login as appropriate.
 
 This section consists of two sets of instructions, depending on whether you will be logging in using a "Unix":#unixvm (Linux, OS X, Cygwin) or "Windows":#windowsvm client.
 
@@ -145,9 +157,9 @@ h2(#unixvm). Logging in using command line ssh (Unix)
 
 h3. Connecting to the VM
 
-Use the following command to connect to the "shell" VM instance as "you":
+Use the following command to connect to the "shell" VM instance as "you".  Replace *<code>you@shell</code>* at the end of the following command with your *login* and *hostname* from Workbench:
 
-notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} shell" -A -x you@shell</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} shell" -A -x <b>you@shell</b></span></code></pre>
 
 There are several things going on here:
 
@@ -161,7 +173,7 @@ The VMs typically have addresses that are not globally routable, so you cannot l
 * @shell@ is the name of the VM that we want to connect to.  This is sent to the switchyard server as if it were an ssh command, and the switchyard server connects to the VM on our behalf.
 * After the ProxyCommand section, the @-x@ must be repeated because it applies to the connection to VM instead of the switchyard.
 * @-A@ specifies that we want to forward access to @ssh-agent@ to the VM.
-* Finally, <code>you@shell</code> specifies your username and repeats the hostname of the VM.  The username can be found in the *logins* column in the VMs Workbench page, discussed above.
+* Finally, *<code>you@shell</code>* specifies your username and repeats the hostname of the VM.  The username can be found in the *logins* column in the VMs Workbench page, discussed above.
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
 
@@ -170,17 +182,16 @@ h3. Configuration (optional)
 Since the above command line is cumbersome, it can be greatly simplfied by adding the following section your @~/.ssh/config@ file:
 
 <notextile>
-<pre><code class="userinput">Host *.qr1hi
+<pre><code class="userinput">Host *.arvados
   ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} $SSH_PROXY_FLAGS %h
-  User you
   ForwardAgent yes
   ForwardX11 no
 </code></pre>
 </notextile>
 
-This will recognize any host ending in ".qr1hi" and automatically apply the proxy, user and forwarding settings discussed previously.  For example:
+This will recognize any host ending in ".arvados" and automatically apply the proxy, user and forwarding settings from the configuration file, allowing you to log in with a much simpler command:
 
-notextile. <pre><code>$ <span class="userinput">ssh shell.qr1hi</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">ssh <b>you@shell</b>.arvados</span></code></pre>
 
 h2(#windowsvm). Logging in using PuTTY (Windows)
 

@@ -1,0 +1,25 @@
+---
+layout: default
+navsection: userguide
+navmenu: Getting Started
+title: Arvados Community and Getting Help
+navorder: 11
+---
+h1. Arvados Community and Getting Help
+
+
+h2. On the web
+
+The Arvados Free Sofware project page is located at "http://arvados.org":http://arvados.org .  The "Arvados Wiki":https://arvados.org/projects/arvados/wiki is a collaborative site for documenting Arvados has an overview of the Arvados Platform and Components.  The "Arvados blog":https://arvados.org/projects/arvados/blogs posts articles of interest about Arvados.
+
+h2. Mailing lists
+
+The "Arvados user mailing list":http://lists.arvados.org/mailman/listinfo/arvados is a forum for general discussion, questions, and news about Arvados development.  The "Arvados developer mailing list":http://lists.arvados.org/mailman/listinfo/arvados-dev is a forum for more technical discussion, intended for developers and contributers to Arvados.
+
+h2. IRC
+
+The "#arvados":irc://irc.oftc.net:6667/#arvados IRC (Internet Relay Chat) channel at on the "Open and Free Technology Community (irc.oftc.net)":http://www.oftc.net/oftc/ is available for live discussion and support.  You can use a traditional IRC client or "join OFTC over the web.":https://webchat.oftc.net/?channels=arvados
+
+h2. Bug tracking
+
+If you think you have found a bug, or would like to make a feature request, check the "Arvados issue tracker":https://arvados.org/projects/arvados/issues to see if has already been reported or "add a new issue.":https://arvados.org/projects/arvados/issues/new

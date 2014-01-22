@@ -9,13 +9,19 @@ class ArvadosApiClient
 
   @@client_mtx = Mutex.new
   @@api_client = nil
+  @@profiling_enabled = Rails.configuration.profiling_enabled rescue false
 
   def api(resources_kind, action, data=nil)
+    profile_checkpoint
+
     @@client_mtx.synchronize do
       if not @@api_client 
         @@api_client = HTTPClient.new
         if Rails.configuration.arvados_insecure_https
           @@api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        else
+          # Use system CA certificates
+          @@api_client.ssl_config.add_trust_ca('/etc/ssl/certs')
         end
       end
     end
@@ -41,13 +47,18 @@ class ArvadosApiClient
       end
     else
       query["_method"] = "GET"
-    end 
+    end
+    if @@profiling_enabled
+      query["_profile"] = "true"
+    end
     
     header = {"Accept" => "application/json"}
 
+    profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]}" }
     msg = @@api_client.post(url, 
                             query,
                             header: header)
+    profile_checkpoint 'API transaction'
 
     if msg.status_code == 401
       raise NotLoggedInException.new
@@ -63,21 +74,27 @@ class ArvadosApiClient
     if not resp.is_a? Hash
       raise InvalidApiResponseException.new json
     end
-    if resp[:errors]
-      #if resp[:errors][0] == 'Not logged in'
-      #  raise NotLoggedInException.new
-      #else
-      #  errors = resp[:errors]
-      #  errors = errors.join("\n\n") if errors.is_a? Array
-      #  raise "API errors:\n\n#{errors}\n"
-    #end
+    if msg.status_code != 200
+      errors = resp[:errors]
+      errors = errors.join("\n\n") if errors.is_a? Array
+      raise "#{errors} [API: #{msg.status_code}]"
     end
+    if resp[:_profile]
+      Rails.logger.info "API client: " \
+      "#{resp.delete(:_profile)[:request_time]} request_time"
+    end
+    profile_checkpoint 'Parse response'
     resp
   end
 
   def unpack_api_response(j, kind=nil)
     if j.is_a? Hash and j[:items].is_a? Array and j[:kind].match(/(_list|List)$/)
-      j[:items].collect { |x| unpack_api_response x, j[:kind] }
+      ary = j[:items].collect { |x| unpack_api_response x, j[:kind] }
+      if j[:items_available]
+        (class << ary; self; end).class_eval { attr_accessor :items_available }
+        ary.items_available = j[:items_available]
+      end
+      ary
     elsif j.is_a? Hash and (kind || j[:kind])
       oclass = self.kind_class(kind || j[:kind])
       if oclass
@@ -127,5 +144,16 @@ class ArvadosApiClient
 
   def class_kind(resource_class)
     resource_class.to_s.underscore
+  end
+
+  protected
+  def profile_checkpoint label=nil
+    return if !@@profiling_enabled
+    label = yield if block_given?
+    t = Time.now
+    if label and @profile_t0
+      Rails.logger.info "API client: #{t - @profile_t0} #{label}"
+    end
+    @profile_t0 = t
   end
 end

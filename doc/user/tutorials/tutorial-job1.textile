@@ -6,7 +6,7 @@ title: "Running a Crunch job"
 navorder: 12
 ...
 
-h1. Tutorial: Running a crunch job
+h1. Running a crunch job
 
 This tutorial introduces the concepts and use of the Crunch job system using the @arv@ command line tool and Arvados Workbench.
 
@@ -35,7 +35,7 @@ Crunch jobs are described using JSON objects.  For example:
  "script_version": "arvados:master",
  "script_parameters":
  {
-  "input": "33a9f3842b01ea3fdf27cc582f5ea2af"
+  "input": "c1bad4b39ca5a924e481008009d94e32+210"
  }
 }
 EOF
@@ -68,7 +68,7 @@ Use @arv job create@ to actually submit the job.  It should print out a JSON obj
  "priority":null,
  "script":"hash",
  "script_parameters":{
-  "input":"33a9f3842b01ea3fdf27cc582f5ea2af"
+  "input":"c1bad4b39ca5a924e481008009d94e32+210"
  },
  "script_version":"d9cd657b733d578ac0d2167dd75967aa4f22e0ac",
  "cancelled_at":null,
@@ -84,7 +84,7 @@ Use @arv job create@ to actually submit the job.  It should print out a JSON obj
  "runtime_constraints":{},
  "tasks_summary":{},
  "dependencies":[
-  "33a9f3842b01ea3fdf27cc582f5ea2af"
+  "c1bad4b39ca5a924e481008009d94e32+210"
  ],
  "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-1pm1t02dezhupss/log_tail_follow"
 }
@@ -129,7 +129,7 @@ You can access the job output under the *output* column of the _Compute %(rarr)&
  "priority":null,
  "script":"hash",
  "script_parameters":{
-  "input":"33a9f3842b01ea3fdf27cc582f5ea2af"
+  "input":"c1bad4b39ca5a924e481008009d94e32+210"
  },
  "script_version":"d9cd657b733d578ac0d2167dd75967aa4f22e0ac",
  "cancelled_at":null,
@@ -137,11 +137,11 @@ You can access the job output under the *output* column of the _Compute %(rarr)&
  "cancelled_by_user_uuid":null,
  "started_at":"2013-12-16T20:44:36Z",
  "finished_at":"2013-12-16T20:44:53Z",
- "output":"880b55fb4470b148a447ff38cacdd952+54+K@qr1hi",
+ "output":"880b55fb4470b148a447ff38cacdd952+54",
  "success":true,
  "running":false,
  "is_locked_by_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
- "log":"2afdc6c8b67372ffd22d8ce89d35411f+91+K@qr1hi",
+ "log":"2afdc6c8b67372ffd22d8ce89d35411f+91",
  "runtime_constraints":{},
  "tasks_summary":{
   "done":2,
@@ -150,19 +150,19 @@ You can access the job output under the *output* column of the _Compute %(rarr)&
   "todo":0
  },
  "dependencies":[
-  "33a9f3842b01ea3fdf27cc582f5ea2af"
+  "c1bad4b39ca5a924e481008009d94e32+210"
  ],
  "log_stream_href":null
 }
 </code></pre>
 </notextile>
 
-* @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.  Because the output of Arvados jobs should be deterministic, the known expected output is <code>880b55fb4470b148a447ff38cacdd952+54+K@qr1hi</code>.
+* @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.  Because the output of Arvados jobs should be deterministic, the known expected output is <code>880b55fb4470b148a447ff38cacdd952+54</code>.
 
 Now you can list the files in the collection:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi</span>
+<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54</span>
 . 78b268d1e03d87f8270bdee9d5d427c5+61 0:61:md5sum.txt
 </code></pre>
 </notextile>
@@ -170,7 +170,7 @@ Now you can list the files in the collection:
 This collection consists of the @md5sum.txt@ file.  Use @arv keep get@ to show the contents of the @md5sum.txt@ file:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi/md5sum.txt</span>
+<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>
@@ -182,15 +182,15 @@ h2. The job log
 When the job completes, you can access the job log.  The keep identifier listed in the @"log"@ field from @arv job get@ specifies a collection.  You can list the files in the collection:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep ls 2afdc6c8b67372ffd22d8ce89d35411f+91+K@qr1hi</span>
-qr1hi-8i9sb-1pm1t02dezhupss.log.txt
+<pre><code>$ <span class="userinput">arv keep ls xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91</span>
+qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt
 </code></pre>
 </notextile>
 
 The log collection consists of one log file named with the job id.  You can access it using @arv keep get@:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get 2afdc6c8b67372ffd22d8ce89d35411f+91+K@qr1hi/qr1hi-8i9sb-1pm1t02dezhupss.log.txt</span>
+<pre><code>$ <span class="userinput">arv keep get xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91/qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt</span>
 2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  check slurm allocation
 2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  node compute13 - 8 slots
 2013-12-16_20:44:36 qr1hi-8i9sb-1pm1t02dezhupss 7575  start
@@ -199,12 +199,13 @@ The log collection consists of one log file named with the job id.  You can acce
 2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  Install exited 0
 2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script hash
 2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script_version d9cd657b733d578ac0d2167dd75967aa4f22e0ac
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script_parameters {"input":"33a9f3842b01ea3fdf27cc582f5ea2af"}
+2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script_parameters {"input":"c1bad4b39ca5a924e481008009d94e32+210"}
 2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  runtime_constraints {"max_tasks_per_node":0}
 2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  start level 0
 2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 0 done, 0 running, 1 todo
 2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 job_task qr1hi-ot0gb-23c1k3kwrf8da62
 2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 child 7681 started on compute13.1
+
 2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 0 done, 1 running, 0 todo
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 child 7681 on compute13.1 exit 0 signal 0 success=true
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 success in 1 seconds
@@ -224,7 +225,7 @@ The log collection consists of one log file named with the job id.  You can acce
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  release job allocation
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  Freeze not implemented
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  collate
-2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  output 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi
+2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  output 880b55fb4470b148a447ff38cacdd952+54
 2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  finish
 </code></pre>
 </notextile>

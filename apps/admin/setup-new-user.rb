@@ -91,7 +91,7 @@ group = arv.group.list(where: {name: 'All users'})[:items].select do |g|
   g[:uuid].match /-f+$/
 end.first
 if not group
-  abort "Could not look up virtual machine with uuid #{vm_uuid.inspect}. Stop."
+  abort "Could not look up the 'all users' group with uuid '*-*-fffffffffffffff'. Stop."
 end
 log.info { "\"all users\" group uuid: " + group[:uuid] }
 

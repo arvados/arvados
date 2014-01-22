@@ -10,8 +10,13 @@
     <link rel="shortcut icon" href="{{ site.baseurl }}/images/favicon.ico" type="image/x-icon">
     <link href="{{ site.baseurl }}/css/bootstrap.css" rel="stylesheet">
     <style>
+      html {
+      height:100%;
+      }
       body {
       padding-top: 41px;
+      height: 90%; /* If calc() is not supported */
+      height: calc(100% - 46px); /* Sets the body full height minus the padding for the menu bar */
       }
       div.frontpagehero {
       background: #fff;
@@ -73,7 +78,7 @@
   <body class="nopad">
     {% include navbar_top.html %}
 
-    {% if page.navsection == 'top' %}
+    {% if page.navsection == 'top' or page.no_nav_left %}
     {{ content }}
     {% else %}
 

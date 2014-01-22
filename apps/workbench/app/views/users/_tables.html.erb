@@ -3,9 +3,9 @@
     <strong>Recent jobs</strong>
     <%= link_to raw("Show all jobs &rarr;"), jobs_path, class: 'pull-right' %>
     <% if not current_user.andand.is_active or @my_jobs.empty? %>
-      <br/>(None)
+      <p>(None)</p>
     <% else %>
-      <table class="table table-bordered table-condensed job-table">
+      <table class="table table-bordered table-condensed table-fixedlayout">
 	<colgroup>
           <col width="28%" />
           <col width="38%" />
@@ -18,8 +18,8 @@
 	  <th>Script</th>
 	  <th>Output</th>
 	  <th>Log</th>
-	  <th>Status</th>
 	  <th>Age</th>
+	  <th>Status</th>
 	</tr>
 
         <% @my_jobs[0..6].each do |j| %>
@@ -35,9 +35,9 @@
 		<% if j.success %>
 
 		  <a href="<%= collection_path(j.output) %>">
-		    <% Collection.limit(1).where(uuid: j.output).each do |c|
-			 c.files.each do |file| %>
-		      <%= "#{file[0]}/#{file[1]}" %>
+		    <% Collection.limit(1).where(uuid: j.output).each do |c| %>
+			 <% c.files.each do |file| %>
+		      <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
 		    <% end %>
 		<% end %>
 		</a>
@@ -48,16 +48,20 @@
 
 <td>
   <small>
-    <% if j.success %>
-      <a href="<%= collection_path(j.log) %>">Log</a>
+    <% if j.log %>
+      <% Collection.limit(1).where(uuid: j.log).each do |c| %>
+        <% c.files.each do |file| %>
+          <a href="<%= collection_path(j.log) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">Log</a>
+        <% end %>
+      <% end %>
     <% end %>
   </small>
 </td>
 
 <td>
   <small>
-    <%= raw(distance_of_time_in_words(j[:created_at], Time.now).sub('about
-','~').sub(' ','&nbsp;')) if j[:created_at] %> ago
+    <%= raw(distance_of_time_in_words(j.created_at, Time.now).sub('about
+','~').sub(' ','&nbsp;')) if j.created_at %>
   </small>
 </td>
 
@@ -87,9 +91,9 @@
   <strong>Recent pipeline instances</strong>
   <%= link_to raw("Show all pipeline instances &rarr;"), jobs_path, class: 'pull-right' %>
   <% if not current_user.andand.is_active or @my_pipelines.empty? %>
-    <br/>(None)
+    <p>(None)</p>
   <% else %>
-    <table class="table table-bordered table-condensed job-table">
+    <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
         <col width="73%" />
         <col width="15%" />
@@ -114,8 +118,8 @@
 
           <td>
             <small>
-	      <%= raw(distance_of_time_in_words(p[:created_at], Time.now).sub('about
-','~').sub(' ','&nbsp;')) if p[:created_at] %> ago
+	      <%= raw(distance_of_time_in_words(p.created_at, Time.now).sub('about
+','~').sub(' ','&nbsp;')) if p.created_at %>
             </small>
           </td>
 
@@ -140,17 +144,29 @@
 <div>
   <strong>Recent collections</strong>
   <%= link_to raw("Show all collections &rarr;"), collections_path, class: 'pull-right' %>
+  <div class="pull-right" style="padding-right: 1em">
+    <%= form_tag collections_path,
+          method: 'get',
+          class: 'form-search small-form-margin' do %>
+    <div class="input-append">
+      <%= text_field_tag :search, params[:search], class: 'search-query search-mini' %>
+      <%= submit_tag "Search", name: nil, class: 'btn btn-mini btn-info' %>
+    </div>  
+    <% end %>
+  </div>
   <% if not current_user.andand.is_active or @my_collections.empty? %>
-    <br/>(None)
+    <p>(None)</p>
   <% else %>
-    <table class="table table-bordered table-condensed job-table">
+    <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
-        <col width="73%" />
+        <col width="46%" />
+        <col width="27%" />
         <col width="27%" />
       </colgroup>
 
       <tr>
 	<th>Contents</th>
+	<th>Tags</th>
 	<th>Age</th>
       </tr>
 
@@ -160,15 +176,22 @@
             <small>
 	      <a href="<%= collection_path(c.uuid) %>">
 		<% c.files.each do |file| %>
-		  <%= "#{file[0]}/#{file[1]}" %>
+		  <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
 		<% end %>
 	      </a>
             </small>
           </td>
           <td>
+            <% if @my_tag_links[c.uuid] %>
             <small>
-	      <%= raw(distance_of_time_in_words(c[:created_at], Time.now).sub('about
-','~').sub(' ','&nbsp;')) if c[:created_at] %> ago
+              <%= @my_tag_links[c.uuid].collect(&:name).join(", ") %>
+            </small>
+            <% end %>
+          </td>
+          <td>
+            <small>
+	      <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about
+','~').sub(' ','&nbsp;')) if c.created_at %>
             </small>
           </td>
         </tr>

@@ -260,6 +260,12 @@ class ArvadosBase < ActiveRecord::Base
     resource_class
   end
 
+  def friendly_link_name
+    if self.class.column_names.include? 'name'
+      self.name
+    end
+  end
+
   protected
 
   def forget_uuid!

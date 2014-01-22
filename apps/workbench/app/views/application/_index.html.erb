@@ -1,7 +1,17 @@
-<% if @objects.empty? %>
 
-<p>
-  No <%= controller.model_class.to_s.underscore.pluralize.gsub '_', ' ' %> to display.
+<h2 class="pull-left"><%= controller.model_class.to_s.pluralize.underscore.capitalize.gsub '_', ' ' %></h2>
+<br/>
+<% if controller.model_class.creatable? %>
+<%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", 
+    { action: 'create', return_to: request.url }, 
+    { class: 'btn btn-primary pull-right' } %>
+<% end %>
+
+
+<% if @objects.empty? %>
+<br/>
+<p style="text-align: center">
+  No <%= controller.model_class.to_s.pluralize.underscore.gsub '_', ' ' %> to display.
 </p>
 
 <% else %>
@@ -61,6 +71,3 @@
 
 <% end %>
 
-<% if controller.model_class.creatable? %>
-<%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", { action: 'create', return_to: request.url }, { class: 'btn btn-primary' } %>
-<% end %>

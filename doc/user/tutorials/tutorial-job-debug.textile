@@ -6,7 +6,7 @@ title: "Debugging a Crunch script"
 navorder: 14
 ...
 
-h1. Tutorial: Debugging a Crunch script
+h1. Debugging a Crunch script
 
 To test changes to a script by running a job, the change must be pushed into @git@, the job queued asynchronously, and the actual execution may be run on any compute server.  As a result, debugging a script can be difficult and time consuming.  This tutorial demonstrates using @arv-crunch-job@ to run your job in your local VM.  This avoids the job queue and allows you to execute the script from your uncomitted git tree.
 
@@ -64,7 +64,7 @@ $ <span class="userinput">arv-crunch-job --job "$(cat the_job)"</span>
 2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  Freeze not implemented
 2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  collate
 2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827  output d41d8cd98f00b204e9800998ecf8427e+0
-2013-12-12_21:36:44 qr1hi-8i9sb-okzukfzkpbrnhst 29827  meta key is c00bfbd58e6f58ce3bebdd47f745a70f+1857+K@qr1hi
+2013-12-12_21:36:44 qr1hi-8i9sb-okzukfzkpbrnhst 29827  meta key is c00bfbd58e6f58ce3bebdd47f745a70f+1857
 </code></pre>
 </notextile>
 
@@ -127,7 +127,7 @@ $ <span class="userinput">arv-crunch-job --job "$(cat the_job)"</span>
 2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  collate
 2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  output 576c44d762ba241b0a674aa43152b52a+53
 2013-12-12_21:57:03 qr1hi-8i9sb-79260ykfew5trzl 31578  finish
-2013-12-12_21:57:04 qr1hi-8i9sb-79260ykfew5trzl 31578  meta key is 9f937693334d0c9234ccc1f808ee7117+1761+K@qr1hi
+2013-12-12_21:57:04 qr1hi-8i9sb-79260ykfew5trzl 31578  meta key is 9f937693334d0c9234ccc1f808ee7117+1761
 </code></pre>
 </notextile>
 

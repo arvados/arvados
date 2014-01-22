@@ -30,4 +30,8 @@ class User < ArvadosBase
   def attribute_editable?(attr)
     (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super(attr)
   end
+
+  def friendly_link_name
+    [self.first_name, self.last_name].compact.join ' '
+  end
 end

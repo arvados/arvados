@@ -7,17 +7,26 @@
     <div>
       Hi, I noticed that you have not yet set up an SSH public key for use with Arvados.  
       <%= link_to "Click here to learn about SSH keys in Arvados.",
-	  "http://doc.arvados.org/user/getting_started/ssh-access.html", 
+	  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access.html", 
 	  style: "font-weight: bold",
 	  target: "_blank" %>
       When you have an SSH key you would like to use, paste the SSH public key
       in the text box.
     </div>
-      <%= form_for AuthorizedKey.new do |f| %>
-	<%= hidden_field_tag :return_to, request.original_url %>
-	<%= f.text_area :public_key, cols: 50, rows: 4, placeholder: "Paste your public key here", style: "width: 100%" %>
-	<%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary pull-right" %>
-      <% end %>
+    <%= form_for AuthorizedKey.new, remote: true do |f| %>
+      <div class="row-fluid">
+        <div class="span12">
+          <%= hidden_field_tag :return_to, request.original_url %>
+          <%= hidden_field_tag :disable_element, 'input[type=submit]' %>
+          <%= f.text_area :public_key, rows: 4, placeholder: "Paste your public key here", style: "width: 100%" %>
+        </div>
+      </div>
+      <div class="row-fluid">
+        <div class="span4 offset8">
+          <%= f.submit :Save, value: raw("&check;"), class: "btn btn-primary pull-right", style: "width: 100%" %>
+        </div>
+      </div>
+    <% end %>
   </div>
 <% end %>
 
@@ -28,7 +37,7 @@
   <p>
     Hi, I noticed you haven't uploaded a new collection yet. 
     <%= link_to "Click here to learn how to upload data to Arvados Keep.", 
-	"http://doc.arvados.org/user/tutorials/tutorial-keep.html", 
+	"#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-keep.html", 
 	style: "font-weight: bold", target: "_blank" %>
   </p>
 </div>
@@ -41,7 +50,7 @@
   <p><%= image_tag "dax.png", class: "dax" %>
     Hi, I noticed you haven't run a job yet. 
     <%= link_to "Click here to learn how to run an Arvados Crunch job.", 
-	"http://doc.arvados.org/user/tutorials/tutorial-job1.html", 
+	"#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-job1.html", 
 	style: "font-weight: bold",
 	target: "_blank" %>
   </p>
@@ -54,7 +63,7 @@
   <p><%= image_tag "dax.png", class: "dax" %>
     Hi, I noticed you haven't run a pipeline yet.  
     <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", 
-	"http://doc.arvados.org/user/tutorials/tutorial-new-pipeline.html", 
+	"#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-new-pipeline.html", 
 	style: "font-weight: bold",
 	target: "_blank" %>
   </p>
@@ -68,7 +77,7 @@
   <p><ul>
       <li><%= link_to "Arvados project page", "http://arvados.org", target: "_blank" %></li>
       <li><%= link_to "Tutorials and user guide",
-      "http://doc.arvados.org/user/", target: "_blank" %></li>
+      "#{Rails.configuration.arvados_docsite}/user/", target: "_blank" %></li>
     </ul>
   </p>
 </div>
@@ -83,19 +92,16 @@
 	  <td>
 	    <span style="margin-right: 2em">
 	      <a href="/<%= raw(aclass.to_s.pluralize.underscore) %>">
-	    <%= raw(aclass.to_s.pluralize.underscore.capitalize.gsub '_', '&nbsp;') %>
-	    </a>
+	        <%= raw(aclass.to_s.pluralize.underscore.capitalize.gsub '_', '&nbsp;') %>
+	      </a>
 	    </span>
-	    </td>
+	  </td>
 	  <td>
-        <% if aclass == 'File' %>
-          <%= Collection.limit(4000).where({}).collect(&:files).flatten(1).count %>
-        <% else %>
-          <%= aclass.limit(4000).where({}).count %>
-        <% end %>
-	</td>
+            <%= aclass.limit(0).where({}).items_available ||
+                aclass.limit(4000).where({}).count %>
+          </td>
 	</tr>
       <% end %>
-      </table>
+    </table>
 </div>
 <% end %>

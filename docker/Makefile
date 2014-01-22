@@ -92,33 +92,38 @@ $(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
 $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 	./config.rb
 
+# The docker build -q option suppresses verbose build output.
+# Necessary to prevent failure on building warehouse; see
+# https://github.com/dotcloud/docker/issues/3172
+DOCKER_BUILD = docker build -q
+
 # ============================================================
 # The main Arvados servers: api, doc, workbench, warehouse
 
 api-image: passenger-image $(API_DEPS)
 	mkdir -p api/generated
 	tar -c -z -f api/generated/api.tar.gz -C ../services api
-	docker build -t arvados/api api
+	$(DOCKER_BUILD) -t arvados/api api
 	echo -n "Built at $(date)" > api-image
 
 doc-image: base-image $(DOC_DEPS)
 	mkdir -p doc/generated
 	tar -c -z -f doc/generated/doc.tar.gz -C .. doc
-	docker build -t arvados/doc doc
+	$(DOCKER_BUILD) -t arvados/doc doc
 	echo -n "Built at $(date)" > doc-image
 
 workbench-image: passenger-image $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated
 	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
-	docker build -t arvados/workbench workbench
+	$(DOCKER_BUILD) -t arvados/workbench workbench
 	echo -n "Built at $(date)" > workbench-image
 
 warehouse-image: base-image $(WAREHOUSE_DEPS)
-	docker build -t arvados/warehouse warehouse
+	$(DOCKER_BUILD) -t arvados/warehouse warehouse
 	echo -n "Built at $(date)" > warehouse-image
 
 sso-image: passenger-image $(SSO_DEPS)
-	docker build -t arvados/sso sso
+	$(DOCKER_BUILD) -t arvados/sso sso
 	echo -n "Built at $(date)" > sso-image
 
 # ============================================================
@@ -126,11 +131,11 @@ sso-image: passenger-image $(SSO_DEPS)
 # that are dependencies for every Arvados service.
 
 passenger-image: base-image
-	docker build -t arvados/passenger passenger
+	$(DOCKER_BUILD) -t arvados/passenger passenger
 	echo -n "Built at $(date)" > passenger-image
 
 base-image: debian-image $(BASE_DEPS)
-	docker build -t arvados/base base
+	$(DOCKER_BUILD) -t arvados/base base
 	echo -n "Built at $(date)" > base-image
 
 debian-image:

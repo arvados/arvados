@@ -13,13 +13,34 @@ module ApplicationHelper
 
   def human_readable_bytes_html(n)
     return h(n) unless n.is_a? Fixnum
-    raw = n.to_s
-    cooked = ''
-    while raw.length > 3
-      cooked = ',' + raw[-3..-1] + cooked
-      raw = raw[0..-4]
+
+    orders = {
+      1 => "bytes",
+      1024 => "KiB",
+      (1024*1024) => "MiB",
+      (1024*1024*1024) => "GiB",
+      (1024*1024*1024*1024) => "TiB"
+    }
+
+    orders.each do |k, v|
+      sig = (n.to_f/k)
+      if sig >=1 and sig < 1024
+        if v == 'bytes'
+          return "%i #{v}" % sig
+        else
+          return "%0.1f #{v}" % sig
+        end
+      end
     end
-    cooked = raw + cooked
+    
+    return h(n)
+      #raw = n.to_s
+    #cooked = ''
+    #while raw.length > 3
+    #  cooked = ',' + raw[-3..-1] + cooked
+    #  raw = raw[0..-4]
+    #end
+    #cooked = raw + cooked
   end
 
   def resource_class_for_uuid(attrvalue, opts={})
@@ -32,8 +53,20 @@ module ApplicationHelper
       link_name = opts[:link_text]
       if !link_name
         link_name = link_uuid
+
+        if opts[:friendly_name]
+          begin
+            friendly_name = resource_class.find(link_uuid).friendly_link_name
+            if friendly_name and not friendly_name.empty?
+              link_name = friendly_name
+            end
+          rescue RuntimeError
+            # If that lookup failed, the link will too. So don't make one.
+            return attrvalue
+          end
+        end
         if opts[:with_class_name]
-          link_name = "#{resource_class.to_s} #{link_name}"
+          link_name = "#{resource_class.to_s}: #{link_name}"
         end
       end
       link_to link_name, { controller: resource_class.to_s.underscore.pluralize, action: 'show', id: link_uuid }, style_opts

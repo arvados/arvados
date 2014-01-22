@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
   before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
+  theme :select_theme
 
   begin
     rescue_from Exception,
@@ -26,8 +27,12 @@ class ApplicationController < ActionController::Base
 
   def render_error(opts)
     respond_to do |f|
-      f.html { render opts.merge(controller: 'application', action: 'error') }
+      # json must come before html here, so it gets used as the
+      # default format when js is requested by the client. This lets
+      # ajax:error callback parse the response correctly, even though
+      # the browser can't.
       f.json { render opts.merge(json: {success: false, errors: @errors}) }
+      f.html { render opts.merge(controller: 'application', action: 'error') }
     end
   end
 
@@ -37,7 +42,7 @@ class ApplicationController < ActionController::Base
     if @object.andand.errors.andand.full_messages.andand.any?
       @errors = @object.errors.full_messages
     else
-      @errors = [e.inspect]
+      @errors = [e.to_s]
     end
     self.render_error status: 422
   end
@@ -50,7 +55,7 @@ class ApplicationController < ActionController::Base
 
 
   def index
-    @objects ||= model_class.all
+    @objects ||= model_class.limit(1000).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -252,5 +257,9 @@ class ApplicationController < ActionController::Base
       end
     end
     true
+  end
+
+  def select_theme
+    return Rails.configuration.arvados_theme
   end
 end

@@ -4,7 +4,7 @@ class StaticController < ApplicationController
   skip_before_filter :require_auth_scope_all, :only => [ :home, :login_failure ]
 
   def home
-    render 'intro'
+    redirect_to Rails.configuration.workbench_address
   end
 
 end

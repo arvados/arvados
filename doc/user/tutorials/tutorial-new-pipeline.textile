@@ -6,7 +6,7 @@ title: "Constructing a Crunch pipeline"
 navorder: 15
 ...
 
-h1. Tutorial: Constructing a Crunch pipeline
+h1. Constructing a Crunch pipeline
 
 A pipeline in Arvados is a collection of crunch scripts, in which the output from one script may be used as the input to another script.
 
@@ -84,10 +84,10 @@ Run the pipeline using @arv pipeline run@, using the UUID that you received from
 do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 queued 2013-12-16T14:08:40Z
 filter  -                           -
 2013-12-16 14:08:51 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi
+do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 e2ccd204bca37c77c0ba59fc470cd0f7+162
 filter  qr1hi-8i9sb-w5k40fztqgg9i2x queued 2013-12-16T14:08:50Z
 2013-12-16 14:09:01 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi
+do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 e2ccd204bca37c77c0ba59fc470cd0f7+162
 filter  qr1hi-8i9sb-w5k40fztqgg9i2x 735ac35adf430126cf836547731f3af6+56
 </code></pre>
 </notextile>
@@ -99,7 +99,7 @@ Arvados adds each pipeline component to the job queue as its dependencies are sa
 The Keep locators of the output of each of @"do_hash"@ and @"filter"@ component are available from the output log shown above.  The output is also available on the Workbench by navigating to %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;instances %(rarr)&rarr;% pipeline uuid under the *id* column %(rarr)&rarr;% components.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162+K@qr1hi/md5sum.txt</span>
+<pre><code>$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162/md5sum.txt</span>
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 504938460ef369cd275e4ef58994cffe bob.txt
 8f3b36aff310e06f3c5b9e95678ff77a carol.txt
@@ -139,10 +139,10 @@ filter  -                           -
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 {:done=>1, :running=>1, :failed=>0, :todo=>0}
 filter  -                           -
 2013-12-17 20:31:55 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54
 filter  qr1hi-8i9sb-j347g1sqovdh0op queued 2013-12-17T20:31:55Z
 2013-12-17 20:32:05 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54+K@qr1hi
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54
 filter  qr1hi-8i9sb-j347g1sqovdh0op fb728f0ffe152058fa64b9aeed344cb5+54
 </code></pre>
 </notextile>

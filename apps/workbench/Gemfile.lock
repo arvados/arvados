@@ -130,6 +130,8 @@ GEM
       rack (~> 1.0)
       tilt (~> 1.1, != 1.3.0)
     sqlite3 (1.3.8)
+    themes_for_rails (0.5.1)
+      rails (>= 3.0.0)
     therubyracer (0.12.0)
       libv8 (~> 3.16.14.0)
       ref
@@ -170,6 +172,7 @@ DEPENDENCIES
   sass
   sass-rails (~> 3.2.0)
   sqlite3
+  themes_for_rails
   therubyracer
   twitter-bootstrap-rails
   uglifier (>= 1.0.3)

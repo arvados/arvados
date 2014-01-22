@@ -243,7 +243,7 @@ class Arvados::V1::SchemaController < ApplicationController
               request: {
                 required: false,
                 properties: {
-                  k.to_s => {
+                  k.to_s.underscore => {
                     "$ref" => k.to_s
                   }
                 }
@@ -277,7 +277,7 @@ class Arvados::V1::SchemaController < ApplicationController
               request: {
                 required: false,
                 properties: {
-                  k.to_s => {
+                  k.to_s.underscore => {
                     "$ref" => k.to_s
                   }
                 }

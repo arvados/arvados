@@ -11,6 +11,7 @@ class ApplicationController < ActionController::Base
   before_filter :load_where_param, :only => :index
   before_filter :find_objects_for_index, :only => :index
   before_filter :find_object_by_uuid, :except => [:index, :create]
+  before_filter :reload_object_before_update, :only => :update
 
   attr_accessor :resource_attrs
 
@@ -32,18 +33,24 @@ class ApplicationController < ActionController::Base
 
   def create
     @object = model_class.new resource_attrs
-    @object.save
-    show
+    if @object.save
+      show
+    else
+      render_error "Save failed"
+    end
   end
 
   def update
+    if !@object
+      return render_not_found("object not found")
+    end
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
     if @object.update_attributes attrs_to_update
       show
     else
-      render json: { errors: @object.errors.full_messages }, status: 422
+      render_error "Update failed"
     end
   end
 
@@ -101,7 +108,7 @@ class ApplicationController < ActionController::Base
       @where = params[:where]
     elsif params[:where].is_a? String
       begin
-        @where = Oj.load(params[:where])
+        @where = Oj.load(params[:where], symbol_keys: true)
       rescue
         raise ArgumentError.new("Could not parse \"where\" param as an object")
       end
@@ -125,12 +132,18 @@ class ApplicationController < ActionController::Base
     if !@where.empty?
       conditions = ['1=1']
       @where.each do |attr,value|
-        if attr == 'any' or attr == :any
+        if attr == :any
           if value.is_a?(Array) and
               value[0] == 'contains' and
               model_class.columns.collect(&:name).index('name') then
-            conditions[0] << " and #{table_name}.name ilike ?"
-            conditions << "%#{value[1]}%"
+            ilikes = []
+            model_class.searchable_columns.each do |column|
+              ilikes << "#{table_name}.#{column} ilike ?"
+              conditions << "%#{value[1]}%"
+            end
+            if ilikes.any?
+              conditions[0] << ' and (' + ilikes.join(' or ') + ')'
+            end
           end
         elsif attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr.to_s)
@@ -191,7 +204,7 @@ class ApplicationController < ActionController::Base
     return @attrs if @attrs
     @attrs = params[resource_name]
     if @attrs.is_a? String
-      @attrs = Oj.load @attrs
+      @attrs = Oj.load @attrs, symbol_keys: true
     end
     unless @attrs.is_a? Hash
       message = "No #{resource_name}"
@@ -202,7 +215,7 @@ class ApplicationController < ActionController::Base
       raise ArgumentError.new(message)
     end
     %w(created_at modified_by_client_uuid modified_by_user_uuid modified_at).each do |x|
-      @attrs.delete x
+      @attrs.delete x.to_sym
     end
     @attrs
   end
@@ -241,6 +254,7 @@ class ApplicationController < ActionController::Base
   end
 
   def thread_with_auth_info
+    Thread.current[:request_starttime] = Time.now
     Thread.current[:api_url_base] = root_url.sub(/\/$/,'') + '/arvados/v1'
     begin
       user = nil
@@ -309,7 +323,17 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    @object = model_class.where('uuid=?', params[:uuid]).first
+    @where = { uuid: params[:uuid] }
+    find_objects_for_index
+    @object = @objects.first
+  end
+
+  def reload_object_before_update
+    # This is necessary to prevent an ActiveRecord::ReadOnlyRecord
+    # error when updating an object which was retrieved using a join.
+    if @object.andand.readonly?
+      @object = model_class.find_by_uuid(@objects.first.uuid)
+    end
   end
 
   def self.accept_attribute_as_json(attr, force_class=nil)
@@ -318,7 +342,8 @@ class ApplicationController < ActionController::Base
   def accept_attribute_as_json(attr, force_class)
     if params[resource_name].is_a? Hash
       if params[resource_name][attr].is_a? String
-        params[resource_name][attr] = Oj.load params[resource_name][attr]
+        params[resource_name][attr] = Oj.load(params[resource_name][attr],
+                                              symbol_keys: true)
         if force_class and !params[resource_name][attr].is_a? force_class
           raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
         end
@@ -335,6 +360,9 @@ class ApplicationController < ActionController::Base
       :next_link => "",
       :items => @objects.as_api_response(nil)
     }
+    if @objects.respond_to? :except
+      @object_list[:items_available] = @objects.except(:limit).count
+    end
     render json: @object_list
   end
 
@@ -359,5 +387,17 @@ class ApplicationController < ActionController::Base
   def client_accepts_plain_text_stream
     (request.headers['Accept'].split(' ') &
      ['text/plain', '*/*']).count > 0
+  end
+
+  def render *opts
+    response = opts.first[:json]
+    if response.is_a?(Hash) &&
+        params[:_profile] &&
+        Thread.current[:request_starttime]
+      response[:_profile] = {
+         request_time: Time.now - Thread.current[:request_starttime]
+      }
+    end
+    super *opts
   end
 end

@@ -6,7 +6,7 @@ title: "Storing and Retrieving data using Arvados Keep"
 navorder: 11
 ...
 
-h1. Tutorial: Storing and Retrieving data using Arvados Keep
+h1. Storing and Retrieving data using Arvados Keep
 
 This tutorial introduces you to the Arvados file storage system.
 
@@ -21,29 +21,38 @@ The Arvados distributed file system is called *Keep*.  Keep is a content-address
 
 h1. Putting Data into Keep
 
-We will start with downloading a freely available VCF exome from the "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905":https://my.personalgenomes.org/profile/hu599905 and add it to Keep.  From an Arvados VM instance:
+We will start with downloading a freely available VCF file from the "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905":https://my.personalgenomes.org/profile/hu599905 to a staging directory on the VM, and then add it to Keep.
+
+First, log into the Arvados VM instance and set up the staging area:
+
+notextile. <pre><code>$ <span class="userinput">mkdir /scratch/<b>you</b></span></code></pre>
+
+Next, download the file:
 
 <notextile>
-<pre><code>$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.personalgenomes.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
+<pre><code>$ <span class="userinput">mkdir /scratch/<b>you</b></span>
+$ <span class="userinput">cd /scratch/<b>you</b></span>
+$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.personalgenomes.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100  216M  100  216M    0     0  10.0M      0  0:00:21  0:00:21 --:--:-- 9361k
 </code></pre>
 </notextile>
 
-Alternately, if you have your own data, for example @MyExome.vcf@, you can use @rsync@ on your local computer to copy it to the shell VM:
+Alternately, if you have your own data, for example @MyData.vcf@, you can use @scp@ or @rsync@ to copy from your local workstation to the shell VM (run this on your local workstation):
 
-notextile. <pre><code>$ <span class="userinput">rsync MyExome.vcf shell.qr1hi:MyExome.vcf</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">scp MyData.vcf <b>you@shell</b>.arvados:/scratch/<b>you</b>/MyData.vcf</span></code></pre>
 
 Now use @arv keep put@ to add your VCF data to Keep:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep put var-GS000016015-ASM.tsv.bz2</span>
-33a9f3842b01ea3fdf27cc582f5ea2af
+<pre><code>$ <span class="userinput">cd /scratch/<b>you</b></span>
+$ <span class="userinput">arv keep put var-GS000016015-ASM.tsv.bz2</span>
+c1bad4b39ca5a924e481008009d94e32+210
 </code></pre>
 </notextile>
 
-The output value @33a9f3842b01ea3fdf27cc582f5ea2af@ is the Keep locator.  This enables you to access the file you just uploaded, and is explained in the next section.
+The output value @c1bad4b39ca5a924e481008009d94e32+210@ is the Keep locator.  This enables you to access the file you just uploaded, and is explained in the next section.
 
 h2. Putting a directory
 

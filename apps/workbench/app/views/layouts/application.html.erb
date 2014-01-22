@@ -22,10 +22,12 @@
   <%= yield :js %>
   <% end %>
   <style>
-    body  {
-    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+    .container  {
+    padding-top: 60px; /* 60px to make the container go all the way to the
+    bottom of the topbar */
     }
     @media (max-width: 979px) { body { padding-top: 0; } }
+    <%= yield :css %>
   </style>
 </head>
 <body>
@@ -72,6 +74,7 @@
             </a>
             <ul class="dropdown-menu">
               <li><%= link_to 'Collections', collections_path %></li>
+              <li><%= link_to 'Links', links_path %></li>
               <li><%= link_to 'Humans', humans_path %></li>
               <li><%= link_to 'Traits', traits_path %></li>
             </ul>
@@ -93,10 +96,10 @@
               Docs <b class="caret"></b>
             </a>
             <ul class="dropdown-menu">
-              <li><%= link_to 'Tutorials and User guide', "http://doc.arvados.org/user", target: "_blank" %></li>
-              <li><%= link_to 'API Reference', "http://doc.arvados.org/api", target: "_blank" %></li>
-              <li><%= link_to 'Admin guide', "http://doc.arvados.org/admin", target: "_blank" %></li>
-              <li><%= link_to 'Install guide', "http://doc.arvados.org/install", target: "_blank" %></li>
+              <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+              <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+              <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+              <li><%= link_to 'Install guide', "#{Rails.configuration.arvados_docsite}/install", target: "_blank" %></li>
             </ul>
           </li>
 

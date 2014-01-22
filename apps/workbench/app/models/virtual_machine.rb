@@ -4,7 +4,6 @@ class VirtualMachine < ArvadosBase
     current_user.andand.is_admin
   end
   def attributes_for_display
-    logger.debug super.append ['current_user_logins', @current_user_logins]
     super.append ['current_user_logins', @current_user_logins]
   end
   def attribute_editable?(attr)
@@ -15,5 +14,8 @@ class VirtualMachine < ArvadosBase
     merger [nil,
             {current_user_logins: {column_heading: "logins", type: 'array'}},
             super]
+  end
+  def friendly_link_name
+    self.hostname
   end
 end

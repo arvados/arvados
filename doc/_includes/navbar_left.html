@@ -1,7 +1,7 @@
         <div class="span3">
           <div class="affix-top">
             <div class="well sidebar-nav">
-	      {% if page.navsection == 'userguide' or page.navsection == 'api' %}
+	      {% if page.navsection == 'userguide' or page.navsection == 'api' or page.navsection == 'sdk' %}
 	      <ol class="nav nav-list">
                 {% for menu_item in site.navbar[page.navsection] %}
 		<li>{{ menu_item }}

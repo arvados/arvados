@@ -10,13 +10,24 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     }
   end
   def create_system_auth
-    api_client_auth = ApiClientAuthorization.
+    @object = ApiClientAuthorization.
       new(user_id: system_user.id,
           api_client_id: params[:api_client_id] || current_api_client.andand.id,
           created_by_ip_address: remote_ip,
           scopes: Oj.load(params[:scopes] || '["all"]'))
-    api_client_auth.save!
-    render :json => api_client_auth.as_api_response(:superuser)
+    @object.save!
+    show
+  end
+
+  def create
+    if resource_attrs[:owner_uuid]
+      # The model has an owner_id attribute instead of owner_uuid, but
+      # we can't expect the client to know the local numeric ID. We
+      # translate UUID to numeric ID here.
+      resource_attrs[:user_id] =
+        User.where(uuid: resource_attrs.delete(:owner_uuid)).first.andand.id
+    end
+    super
   end
 
   protected

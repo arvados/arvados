@@ -1,5 +1,6 @@
 class Arvados::V1::NodesController < ApplicationController
   skip_before_filter :require_auth_scope_all, :only => :ping
+  skip_before_filter :find_object_by_uuid, :only => :ping
 
   def create
     @object = Node.new
@@ -12,6 +13,10 @@ class Arvados::V1::NodesController < ApplicationController
     { ping_secret: true }
   end
   def ping
+    @object = Node.where(uuid: (params[:id] || params[:uuid])).first
+    if !@object
+      return render_not_found
+    end
     @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
                    ping_secret: params[:ping_secret],
                    ec2_instance_id: params[:instance_id] })

@@ -1,0 +1,62 @@
+<% content_for :css do %>
+      .dash-list {
+        padding: 9px 0;
+      }
+      .dash-list>ul>li>a>span {
+      min-width: 1.5em;
+      margin-left: auto;
+      margin-right: auto;
+      }
+      .centerme {
+      margin-left: auto;
+      margin-right: auto;
+      text-align: center;
+      }
+      .bigfatnumber {
+      font-size: 4em;
+      font-weight: bold;
+      }
+      .dax {
+      max-width: 10%;
+      margin-right: 1em;
+      float: left
+      }
+      .daxalert {
+      overflow: hidden;
+      }
+<% end %>
+
+<div class="container-fluid">
+
+  <div class="span3 pull-right">
+    <br/>
+
+    <div class="well">
+<% if current_user.andand.is_active %>
+  <p>Your account status:<br/>
+    <strong>Active</strong></p>
+<% elsif current_user %>
+      <p>Your account status:<br/>
+	<strong>New / inactive</strong></p>
+      <p>
+	Your account must be activated by an Arvados administrator.  If this
+	is your first time accessing Arvados and would like to request
+	access, or you believe you are seeing the page in error, please 
+	<%= link_to "contact us", Rails.configuration.activation_contact_link %>.  
+	You should receive an email at the address you used to log in when
+	your account is activated.
+      </p>
+      <p>
+	<%= link_to raw('Contact us &#x2709;'),
+	    Rails.configuration.activation_contact_link, class: "btn btn-primary" %></p>
+<% end %>
+    </div>
+
+    <%= render :partial => 'notifications' %>
+  </div>
+  
+  <div class="span8">
+    <%= render :partial => 'tables' %>
+  </div>
+
+</div>

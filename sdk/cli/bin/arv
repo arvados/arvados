@@ -10,6 +10,26 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
+# read authentication data from ~/.config/arvados if present
+lineno = 0
+config_file = File.expand_path('~/.config/arvados')
+if File.exist? config_file then
+  File.open(config_file, 'r').each do |line|
+    lineno = lineno + 1
+    # skip comments
+    if line.match('^\s*#') then
+      next
+    end
+    var, val = line.chomp.split('=', 2)
+    # allow environment settings to override config files.
+    if var and val
+      ENV[var] ||= val
+    else
+      warn "#{config_file}: #{lineno}: could not parse `#{line}'"
+    end
+  end
+end
+
 case ARGV[0]
 when 'keep'
   ARGV.shift
@@ -40,6 +60,9 @@ when 'pipeline'
       "(see arv-run-pipeline-instance --help for details)\n"
   end
   abort
+when 'tag'
+  ARGV.shift
+  exec `which arv-tag`.strip, *ARGV
 end
 
 ENV['ARVADOS_API_VERSION'] ||= 'v1'
@@ -165,25 +188,36 @@ end
 
 def parse_arguments(discovery_document)
   resource_types = Array.new()
-  resource_types << '--help'
   discovery_document["resources"].each do |k,v|
     resource_types << k.singularize
   end
 
   global_opts = Trollop::options do
-    banner "arvados cli client"
+    banner "arv: the Arvados CLI tool"
     opt :dry_run, "Don't actually do anything", :short => "-n"
-    opt :verbose, "Print some things on stderr", :short => "-v"
-    opt :uuid, "Return the UUIDs of the objects in the response, one per line (default)", :short => nil
-    opt :json, "Return the entire response received from the API server, as a JSON object", :short => "-j"
-    opt :human, "Return the response received from the API server, as a JSON object with whitespace added for human consumption", :short => "-h"
-    opt :pretty, "Synonym of --human", :short => nil
-    opt :yaml, "Return the response received from the API server, in YAML format", :short => "-y"
+    opt :verbose, "Print some things on stderr"
+    opt :format,
+        "Set the output format. Must be one of json (default), yaml or uuid.",
+        :type => :string,
+        :default => 'json'
+    opt :short, "Return only UUIDs (equivalent to --format=uuid)"
+    opt :resources, "Display list of resources known to this Arvados instance."
+    conflicts :short, :format
     stop_on resource_types
   end
-  
+
+  unless %w(json yaml uuid).include?(global_opts[:format])
+    $stderr.puts "#{$0}: --format must be one of json, yaml or uuid."
+    $stderr.puts "Use #{$0} --help for more information."
+    abort
+  end
+
+  if global_opts[:short]
+    global_opts[:format] = 'uuid'
+  end
+
   resource = ARGV.shift
-  if resource == '--help' or not resource_types.include?(resource)
+  if global_opts[:resources] or not resource_types.include?(resource)
     help_resources(discovery_document, resource)
   end
 
@@ -217,12 +251,20 @@ def parse_arguments(discovery_document)
       if body_object["required"] == false
         is_required = false
       end
-      opt resource.to_sym, "#{resource} (request body)", required: is_required, type: :string
+      opt resource.to_sym, "#{resource} (request body)", {
+        required: is_required,
+        type: :string
+      }
+      discovered_params[resource.to_sym] = body_object
     end
   end
+
   discovered_params.each do |k,v|
+    k = k.to_sym
     if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
-      method_opts[k] = JSON.parse method_opts[k]
+      if method_opts[k].andand.match /^\//
+        method_opts[k] = File.open method_opts[k], 'rb' do |f| f.read end
+      end
     end
   end
   return resource, method, method_opts, global_opts, ARGV
@@ -244,7 +286,7 @@ request_parameters = {}.merge(method_opts)
 resource_body = request_parameters.delete(resource_schema.to_sym)
 if resource_body
   request_body = {
-    resource_schema => JSON.parse(resource_body)
+    resource_schema => resource_body
   }
 else
   request_body = {}
@@ -275,6 +317,7 @@ when
   exit 0
 else
   request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
+  request_body[:_profile] = true
   result = client.execute(:api_method => eval(api_method),
                           :parameters => request_parameters,
                           :body => request_body,
@@ -291,18 +334,21 @@ if results["errors"] then
   abort "Error: #{results["errors"][0]}"
 end
 
-if global_opts[:human] or global_opts[:pretty] then
+case global_opts[:format]
+when 'json'
   puts Oj.dump(results, :indent => 1)
-elsif global_opts[:yaml] then
+when 'yaml'
   puts results.to_yaml
-elsif global_opts[:json] then
-  puts Oj.dump(results)
-elsif results["items"] and results["kind"].match /list$/i
-  results['items'].each do |i| puts i['uuid'] end
-elsif results['uuid'].nil?
-  abort("Response did not include a uuid:\n" +
-        Oj.dump(results, :indent => 1) +
-        "\n")
 else
-  puts results['uuid']
+  if results["items"] and results["kind"].match /list$/i
+    results['items'].each do |i| puts i['uuid'] end
+  elsif results['uuid'].nil?
+    abort("Response did not include a uuid:\n" +
+          Oj.dump(results, :indent => 1) +
+          "\n")
+  else
+    puts results['uuid']
+  end
 end
+
+

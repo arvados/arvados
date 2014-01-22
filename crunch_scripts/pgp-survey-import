@@ -31,7 +31,7 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
         if line_number == 0:
             headings = words
             for t in arvados.api('v1').traits().list(
-                where=json.dumps({'name':words}),
+                where={'name':words},
                 limit=1000
                 ).execute()['items']:
                 traits[t['name']] = t
@@ -39,19 +39,19 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
                 # find or create trait
                 if trait_name not in traits:
                     traits_match = arvados.api('v1').traits().list(
-                        where=json.dumps({'name':trait_name})
+                        where={'name':trait_name}
                         ).execute()['items']
                     if len(traits_match) > 0:
                         traits[trait_name] = traits_match[0]
                     else:
                         traits[trait_name] = arvados.api('v1').traits().create(
-                            trait=json.dumps({'name':trait_name})).execute()
+                            trait={'name':trait_name}).execute()
                 out.write(separator)
                 out.write(json.dumps(traits[trait_name]))
                 separator = ",\n"
         else:
             huID_links_match = arvados.api('v1').links().list(
-                where=json.dumps({'link_class':'identifier','name':words[0]})
+                where={'link_class':'identifier','name':words[0]}
                 ).execute()['items']
             if len(huID_links_match) > 0:
                 human_uuid = huID_links_match[0]['head_uuid']
@@ -71,13 +71,13 @@ for input_file in arvados.CollectionReader(this_job_input).all_files():
             human_trait = {}
             for t in arvados.api('v1').links().list(
                 limit=10000,
-                where=json.dumps({
+                where={
                     'tail_uuid':human_uuid,
                     'tail_kind':'arvados#human',
                     'head_kind':'arvados#trait',
                     'link_class':'human_trait',
                     'name':'pgp-survey-response'
-                    })
+                    }
                 ).execute()['items']:
                 human_trait[t['head_uuid']] = t
             for i, trait_value in enumerate(words[3:], start=3):

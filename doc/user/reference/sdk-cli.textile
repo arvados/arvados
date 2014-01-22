@@ -2,11 +2,11 @@
 layout: default
 navsection: userguide
 navmenu: Reference
-title: "Command line SDK"
+title: "Command line interface"
 navorder: 22
 ...
 
-h1. Reference: Command line SDK
+h1. Reference: Command Line Interface
 
 If you are logged in to an Arvados VM, the command line SDK should be installed. Try:
 
@@ -57,6 +57,9 @@ Get list of groups (showing just UUIDs)
 
 Get list of groups (showing entire records)
 @arv -h group list@
+
+Delete a group
+@arv group delete --uuid 6dnxa-j7d0g-iw7i6n43d37jtog@
 
 h3. Global options
 

@@ -11,3 +11,5 @@ navbar:
     - Concepts
     - API Methods
     - Schema
+  sdk:
+    - Python

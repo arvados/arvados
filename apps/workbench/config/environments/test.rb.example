@@ -35,6 +35,9 @@ ArvadosWorkbench::Application.configure do
   # Print deprecation notices to the stderr
   config.active_support.deprecation = :stderr
 
+  # Log timing data for API transactions
+  config.profiling_enabled = false
+
   config.arvados_login_base = 'http://arvados.local/login'
   config.arvados_v1_base = 'https://arvados.local/arvados/v1'
   config.arvados_insecure_https = true # true = do not check server certificate
@@ -48,4 +51,10 @@ ArvadosWorkbench::Application.configure do
 
   config.site_name = 'Arvados Workbench (test)'
   config.activation_contact_link = 'mailto:info@arvados.org'
+
+  config.arvados_docsite = 'http://doc.arvados.org'
+
+  config.arvados_theme = 'default'
+
+  config.show_user_agreement_inline = false
 end

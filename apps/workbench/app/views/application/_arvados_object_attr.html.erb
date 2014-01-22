@@ -2,15 +2,7 @@
 <tr class="info">
   <td><%= attr %>[<%= infokey %>]</td>
   <td>
-    <tt>
-      <% if infocontent.is_a? Array and infocontent.collect(&:class).uniq.compact == [String] then infocontent.each do |message| %>
-      <%= message %><br />
-      <% end; elsif infocontent.is_a? String %>
-      <%= infocontent %>
-      <% else %>
-      <%= infocontent.inspect %>
-      <% end %>
-    </tt>
+    <%= render partial: 'application/arvados_attr_value', locals: { obj: @object, attr: nil, attrvalue: infocontent } %>
   </td>
 </tr>
 <% end %>
@@ -18,14 +10,7 @@
 <tr class="<%= 'info' if %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).index(attr.to_s).nil? %>">
   <td><%= attr %></td>
   <td>
-    <% if attr == 'uuid' and (uuid = attrvalue.split('-')).size == 3 %>
-    <%= uuid[0..-2].join('-') %>-<b><%= uuid[-1] %></b>
-    <% elsif @object.attribute_editable?(attr) %>
-    <%= render_editable_attribute @object, attr %>
-    <% else %>
-    <%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: @object, with_class_name: true} %>
-    <% end %>
-    <%= link_to_if_arvados_object(attrvalue, { referring_object: @object, link_text: raw('<i class="icon-hand-right"></i>') }) if resource_class_for_uuid(attrvalue, {referring_object: @object}) %>
+    <%= render partial: 'application/arvados_attr_value', locals: { obj: @object, attr: attr, attrvalue: attrvalue } %>
   </td>
 </tr>
 <% end %>
