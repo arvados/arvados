@@ -1,10 +1,2 @@
 source 'https://rubygems.org'
-gem 'minitest', '>= 5.0.0'
-gem 'rake'
-gem 'google-api-client', '~> 0.6.3'
-gem 'activesupport', '>= 3.2.13'
-gem 'json', '>= 1.7.7'
-gem 'trollop', '>= 2.0'
-gem 'andand', '>= 1.3.3'
-gem 'oj', '>= 2.0.3'
-gem 'curb', '~> 0.8'
+gemspec
