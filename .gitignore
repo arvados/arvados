@@ -2,3 +2,5 @@
 *.pyc
 docker/*/generated/*
 docker/config.yml
+doc/_site/*
+doc/.site/*
