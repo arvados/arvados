@@ -340,13 +340,18 @@ class ApplicationController < ActionController::Base
     before_filter lambda { accept_attribute_as_json attr, force_class }
   end
   def accept_attribute_as_json(attr, force_class)
-    if params[resource_name].is_a? Hash
-      if params[resource_name][attr].is_a? String
-        params[resource_name][attr] = Oj.load(params[resource_name][attr],
-                                              symbol_keys: true)
-        if force_class and !params[resource_name][attr].is_a? force_class
+    if params[resource_name] and resource_attrs.is_a? Hash
+      if resource_attrs[attr].is_a? String
+        resource_attrs[attr] = Oj.load(resource_attrs[attr],
+                                       symbol_keys: false)
+        if force_class and !resource_attrs[attr].is_a? force_class
           raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
         end
+      elsif resource_attrs[attr].is_a? Hash
+        # Convert symbol keys to strings (in hashes provided by
+        # resource_attrs)
+        resource_attrs[attr] = resource_attrs[attr].
+          with_indifferent_access.to_hash
       end
     end
   end
