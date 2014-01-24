@@ -6,15 +6,15 @@ class ArvadosBase < ActiveRecord::Base
     @@uuid_infix_object_kind ||= {
       '4zz18' => 'arvados#collection',
       'tpzed' => 'arvados#user',
-      'ozdt8' => 'arvados#api_client',
+      'ozdt8' => 'arvados#apiClient',
       '8i9sb' => 'arvados#job',
       'o0j2j' => 'arvados#link',
       '57u5n' => 'arvados#log',
       'j58dm' => 'arvados#specimen',
-      'p5p6p' => 'arvados#pipeline_template',
-      'mxsvm' => 'arvados#pipeline_template', # legacy Pipeline objects
-      'd1hrv' => 'arvados#pipeline_instance',
-      'uo14g' => 'arvados#pipeline_instance', # legacy PipelineInstance objects
+      'p5p6p' => 'arvados#pipelineTemplate',
+      'mxsvm' => 'arvados#pipelineTemplate', # legacy Pipeline objects
+      'd1hrv' => 'arvados#pipelineInstance',
+      'uo14g' => 'arvados#pipelineInstance', # legacy PipelineInstance objects
       'j7d0g' => 'arvados#group',
       'ldvyl' => 'arvados#group' # only needed for legacy Project objects
     }

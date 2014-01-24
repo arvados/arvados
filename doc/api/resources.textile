@@ -35,7 +35,7 @@ h2. Attributes of resource lists
 
 table(table table-bordered table-condensed).
 |*Attribute*|*Type*|*Description*|*Example*|
-|kind|string|@arvados#{resource_type}_list@|@arvados#project_list@|
+|kind|string|@arvados#{resource_type}List@|@arvados#projectList@|
 |etag|string|The ETag[1] of the resource list|@cd3o1wi9sf934saajykawrz2e@|
 |self_link|string|||
 |next_page_token|string|||
