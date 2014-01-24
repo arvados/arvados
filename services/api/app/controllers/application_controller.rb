@@ -339,6 +339,8 @@ class ApplicationController < ActionController::Base
   def self.accept_attribute_as_json(attr, force_class=nil)
     before_filter lambda { accept_attribute_as_json attr, force_class }
   end
+  accept_attribute_as_json :properties, Hash
+  accept_attribute_as_json :info, Hash
   def accept_attribute_as_json(attr, force_class)
     if params[resource_name] and resource_attrs.is_a? Hash
       if resource_attrs[attr].is_a? String
