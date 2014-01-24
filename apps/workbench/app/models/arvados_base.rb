@@ -3,21 +3,22 @@ class ArvadosBase < ActiveRecord::Base
   attr_accessor :attribute_sortkey
 
   def self.uuid_infix_object_kind
-    @@uuid_infix_object_kind ||= {
-      '4zz18' => 'arvados#collection',
-      'tpzed' => 'arvados#user',
-      'ozdt8' => 'arvados#apiClient',
-      '8i9sb' => 'arvados#job',
-      'o0j2j' => 'arvados#link',
-      '57u5n' => 'arvados#log',
-      'j58dm' => 'arvados#specimen',
-      'p5p6p' => 'arvados#pipelineTemplate',
-      'mxsvm' => 'arvados#pipelineTemplate', # legacy Pipeline objects
-      'd1hrv' => 'arvados#pipelineInstance',
-      'uo14g' => 'arvados#pipelineInstance', # legacy PipelineInstance objects
-      'j7d0g' => 'arvados#group',
-      'ldvyl' => 'arvados#group' # only needed for legacy Project objects
-    }
+    @@uuid_infix_object_kind ||=
+      begin
+        infix_kind = {}
+        $arvados_api_client.discovery[:schemas].each do |name, schema|
+          if schema[:uuidPrefix]
+            infix_kind[schema[:uuidPrefix]] =
+              'arvados#' + name.to_s.camelcase(:lower)
+          end
+        end
+
+        # Recognize obsolete types.
+        infix_kind.
+          merge('mxsvm' => 'arvados#pipelineTemplate', # Pipeline
+                'uo14g' => 'arvados#pipelineInstance', # PipelineInvocation
+                'ldvyl' => 'arvados#group') # Project
+      end
   end
 
   def initialize(*args)

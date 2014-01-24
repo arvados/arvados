@@ -138,6 +138,10 @@ class ArvadosApiClient
     @arvados_schema ||= api 'schema', ''
   end
 
+  def discovery
+    @discovery ||= api '../../discovery/v1/apis/arvados/v1/rest', ''
+  end
+
   def kind_class(kind)
     kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
   end
