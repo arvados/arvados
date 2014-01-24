@@ -148,6 +148,7 @@ class Arvados::V1::SchemaController < ApplicationController
           id: k.to_s,
           description: k.to_s,
           type: "object",
+          uuidPrefix: (k.respond_to?(:uuid_prefix) ? k.uuid_prefix : nil),
           properties: {
             uuid: {
               type: "string",
