@@ -1,5 +1,6 @@
 class Arvados::V1::KeepDisksController < ApplicationController
   skip_before_filter :require_auth_scope_all, :only => :ping
+  skip_before_filter :find_object_by_uuid, :only => :ping
 
   def self._ping_requires_parameters
     {
@@ -13,6 +14,7 @@ class Arvados::V1::KeepDisksController < ApplicationController
     }
   end
   def ping
+    @object = Node.where(uuid: (params[:id] || params[:uuid])).first
     if !@object
       if current_user.andand.is_admin
         @object = KeepDisk.new(filesystem_uuid: params[:filesystem_uuid])
