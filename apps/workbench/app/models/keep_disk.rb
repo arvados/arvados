@@ -1,0 +1,2 @@
+class KeepDisk < ArvadosBase
+end
