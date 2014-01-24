@@ -10,7 +10,9 @@ class ApplicationController < ActionController::Base
 
   before_filter :load_where_param, :only => :index
   before_filter :find_objects_for_index, :only => :index
-  before_filter :find_object_by_uuid, :except => [:index, :create]
+  before_filter :find_object_by_uuid, :except => [:index, :create,
+                                                  :render_error,
+                                                  :render_not_found]
   before_filter :reload_object_before_update, :only => :update
 
   attr_accessor :resource_attrs
