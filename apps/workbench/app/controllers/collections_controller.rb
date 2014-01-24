@@ -56,6 +56,54 @@ class CollectionsController < ApplicationController
     self.response_body = FileStreamer.new opts
   end
 
+  def generate_edges(gr, uuid, edge_added = false)
+    m = /([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?/.match(uuid)
+    if m  
+      # uuid is a collection
+      uuid = m[1]
+      gr += "\"#{uuid}\" [href=\"#{collection_path uuid}\"];"
+
+      Job.where(output: uuid).each do |job|
+        gr += "\"#{job.uuid}\" [href=\"#{job_path job.uuid}\"];"
+        gr += "\"#{uuid}\" -> \"#{job.uuid}\" [label=\" output\"];"
+        gr = generate_edges(gr, job.uuid)
+      end
+
+      Job.where(log: uuid).each do |job|
+        gr += "\"#{job.uuid}\" [href=\"#{job_path job.uuid}\"];"
+        gr += "\"#{uuid}\" -> \"#{job.uuid}\" [label=\" log\"];"
+        gr = generate_edges(gr, job.uuid)
+      end
+      
+    else
+      # uuid is something else
+      rsc = ArvadosBase::resource_class_for_uuid uuid
+      gr += "\"#{uuid}\" [href=\"#{rsc}/#{uuid}\"];"
+      
+      if rsc.to_s == "Job"
+        Job.where(uuid: uuid).each do |job|
+          job.script_parameters.each do |k, v|
+            gr += "\"#{job.uuid}\" [href=\"#{job_path job.uuid}\"];"
+            gr += "\"#{job.uuid}\" -> \"#{v}\" [label=\" #{k}\"];"
+            gr = generate_edges(gr, v)
+          end
+        end
+      end
+     
+      gr
+    end
+
+    Link.where(head_uuid: uuid, link_class: "provenance", name: "provided").each do |link|
+      rsc = ArvadosBase::resource_class_for_uuid link.tail_uuid
+      puts "rsc is #{rsc}"
+      gr += "\"#{link.tail_uuid}\" [href=\"#{rsc}/#{link.tail_uuid}\"];"
+      gr += "\"#{link.head_uuid}\" -> \"#{link.tail_uuid}\" [label=\" provided\"];"
+      generate_edges(gr, link.tail_uuid)
+    end
+
+    gr
+  end
+
   def show
     return super if !@object
     @provenance = []
@@ -100,6 +148,28 @@ class CollectionsController < ApplicationController
         @sourcedata[collection.uuid][:collection] = collection
       end
     end
+
+    require 'open3'
+    
+    gr = "digraph {"
+    gr += "node [fontsize=8];"
+    gr += "edge [dir=back,fontsize=8];"
+    
+    gr = generate_edges(gr, @object.uuid)
+
+    gr += "}"
+    @prov_svg = ""
+
+    Open3.popen2("dot", "-Tsvg") do |stdin, stdout, wait_thr|
+      stdin.print(gr)
+      stdin.close
+      wait_thr.value
+      @prov_svg = stdout.read()
+      stdout.close()
+    end
+
+    @prov_svg = @prov_svg.sub(/<\?xml.*?\?>/m, "")
+    @prov_svg = @prov_svg.sub(/<!DOCTYPE.*?>/m, "")
   end
 
   protected

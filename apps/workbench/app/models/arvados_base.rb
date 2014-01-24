@@ -16,7 +16,8 @@ class ArvadosBase < ActiveRecord::Base
       'd1hrv' => 'arvados#pipeline_instance',
       'uo14g' => 'arvados#pipeline_instance', # legacy PipelineInstance objects
       'j7d0g' => 'arvados#group',
-      'ldvyl' => 'arvados#group' # only needed for legacy Project objects
+      'ldvyl' => 'arvados#group', # only needed for legacy Project objects
+      '7a9it' => 'arvados#human'
     }
   end
 

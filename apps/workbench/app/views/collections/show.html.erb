@@ -23,6 +23,8 @@
   <li><a href="#jobs" data-toggle="tab">Jobs (<%= @provenance.size %>)</a></li>
   <li><a href="#sourcedata" data-toggle="tab">Source data (<%= @sourcedata.size %>)</a></li>
   <li><a href="#owner-groups-resources" data-toggle="tab">Owner, groups, resources</a></li>
+  <li><a href="#provenance2" data-toggle="tab">Provenance graph</a></li>
+  <li><a href="#used-by" data-toggle="tab">Used by</a></li>
 </ul>
 
 <div class="tab-content">
@@ -132,6 +134,9 @@
 
       </tbody>
     </table>
+  </div>
+  <div id="provenance2" class="tab-pane fade">
+    <%= raw(@prov_svg) %>
   </div>
   <div id="jobs" class="tab-pane fade">
     <table class="topalign table table-bordered">
