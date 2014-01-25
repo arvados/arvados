@@ -54,6 +54,7 @@ Server::Application.configure do
   # config.compute_node_ami = 'ami-cbca41a2'
   # config.compute_node_ec2run_args = '-g arvados-compute'
   # config.compute_node_spot_bid = 0.11
+  config.compute_node_ec2_tag_enable = false
 
   # config.compute_node_domain = `hostname --domain`.strip
 
