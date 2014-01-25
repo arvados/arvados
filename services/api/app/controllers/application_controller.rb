@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
   include CurrentApiClient
 
+  respond_to :json
   protect_from_forgery
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
