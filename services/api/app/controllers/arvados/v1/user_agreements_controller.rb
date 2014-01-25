@@ -1,6 +1,7 @@
 class Arvados::V1::UserAgreementsController < ApplicationController
   before_filter :admin_required, except: [:index, :sign, :signatures]
-  skip_before_filter :find_object, only: [:sign, :signatures]
+  skip_before_filter :find_object_by_uuid, only: [:sign, :signatures]
+  skip_before_filter :render_404_if_no_object, only: [:sign, :signatures]
 
   def model_class
     Link

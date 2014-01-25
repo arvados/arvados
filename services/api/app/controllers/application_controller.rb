@@ -14,6 +14,9 @@ class ApplicationController < ActionController::Base
                                                   :render_error,
                                                   :render_not_found]
   before_filter :reload_object_before_update, :only => :update
+  before_filter :render_404_if_no_object, except: [:index, :create,
+                                                   :render_error,
+                                                   :render_not_found]
 
   attr_accessor :resource_attrs
 
@@ -26,11 +29,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    if @object
-      render json: @object.as_api_response
-    else
-      render_not_found("object not found")
-    end
+    render json: @object.as_api_response
   end
 
   def create
@@ -43,9 +42,6 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    if !@object
-      return render_not_found("object not found")
-    end
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
@@ -82,6 +78,10 @@ class ApplicationController < ActionController::Base
     :with => :render_not_found
     rescue_from ArvadosModel::PermissionDeniedError,
     :with => :render_error
+  end
+
+  def render_404_if_no_object
+    render_not_found "Object not found" if !@object
   end
 
   def render_error(e)

@@ -1,4 +1,9 @@
 class Arvados::V1::UsersController < ApplicationController
+  skip_before_filter :find_object_by_uuid, only:
+    [:activate, :event_stream, :current, :system]
+  skip_before_filter :render_404_if_no_object, only:
+    [:activate, :event_stream, :current, :system]
+
   def current
     @object = current_user
     show
@@ -75,7 +80,7 @@ class Arvados::V1::UsersController < ApplicationController
         else
           logger.warn "User #{@object.uuid} called users.activate " +
             "before signing agreements #{todo_uuids.inspect}"
-          raise ArgumentError.new \
+          raise ArvadosModel::PermissionDeniedError.new \
           "Cannot activate without user agreements #{todo_uuids.inspect}."
         end
       end
