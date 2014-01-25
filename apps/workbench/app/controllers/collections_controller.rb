@@ -56,49 +56,89 @@ class CollectionsController < ApplicationController
     self.response_body = FileStreamer.new opts
   end
 
-  def generate_edges(gr, uuid, edge_added = false)
+  def describe_node(uuid)
+    rsc = ArvadosBase::resource_class_for_uuid uuid
+    "\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{url_for rsc}/#{uuid}\"];"    
+  end
+
+  def describe_script(job)
+    #"""\"#{job.script_version}\" [label=\"#{job.script}: #{job.script_version}\"];
+    #   \"#{job.uuid}\" -> \"#{job.script_version}\" [label=\"script\"];"""
+    "\"#{job.uuid}\" [label=\"#{job.script}\\n#{job.script_version}\"];"
+  end
+
+  def job_uuid(job)
+    "#{job.script}\\n#{job.script_version}"
+  end
+
+  def collection_uuid(uuid)
     m = /([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?/.match(uuid)
+    if m
+      m[1]
+    else
+      nil
+    end
+  end
+
+  def script_param_edges(gr, job, prefix, sp)
+      case sp
+      when Hash
+        sp.each do |k, v|
+        if prefix.size > 0
+          k = prefix + "::" + k.to_s
+        end
+        gr = script_param_edges(gr, job, k.to_s, v)
+      end
+      when Array
+        sp.each do |k|
+          gr = script_param_edges(gr, job, prefix, k)
+        end
+      else
+        m = collection_uuid(sp)
+        v = m if m
+        gr += "\"#{job_uuid(job)}\" -> \"#{v}\" [label=\" #{prefix}\"];"
+        gr = generate_edges(gr, v)
+      end
+    gr
+  end
+
+  def generate_edges(gr, uuid, edge_added = false)
+    m = collection_uuid(uuid)
     if m  
       # uuid is a collection
-      uuid = m[1]
-      gr += "\"#{uuid}\" [href=\"#{collection_path uuid}\"];"
+      uuid = m
+      gr += describe_node(uuid)
 
       Job.where(output: uuid).each do |job|
-        gr += "\"#{job.uuid}\" [href=\"#{job_path job.uuid}\"];"
-        gr += "\"#{uuid}\" -> \"#{job.uuid}\" [label=\" output\"];"
+        #gr += describe_node(job_uuid(job)) 
+        gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\" output\"];"
         gr = generate_edges(gr, job.uuid)
       end
 
       Job.where(log: uuid).each do |job|
-        gr += "\"#{job.uuid}\" [href=\"#{job_path job.uuid}\"];"
-        gr += "\"#{uuid}\" -> \"#{job.uuid}\" [label=\" log\"];"
+        #gr += describe_node(job_uuid(job))
+        gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\" log\"];"
         gr = generate_edges(gr, job.uuid)
       end
       
     else
       # uuid is something else
       rsc = ArvadosBase::resource_class_for_uuid uuid
-      gr += "\"#{uuid}\" [href=\"#{rsc}/#{uuid}\"];"
-      
-      if rsc.to_s == "Job"
+
+      if rsc == Job
         Job.where(uuid: uuid).each do |job|
-          job.script_parameters.each do |k, v|
-            gr += "\"#{job.uuid}\" [href=\"#{job_path job.uuid}\"];"
-            gr += "\"#{job.uuid}\" -> \"#{v}\" [label=\" #{k}\"];"
-            gr = generate_edges(gr, v)
-          end
+          gr = script_param_edges(gr, job, "", job.script_parameters)
+          #gr += describe_script(job)
         end
+      else
+        gr += describe_node(uuid)
       end
-     
-      gr
     end
 
-    Link.where(head_uuid: uuid, link_class: "provenance", name: "provided").each do |link|
-      rsc = ArvadosBase::resource_class_for_uuid link.tail_uuid
-      puts "rsc is #{rsc}"
-      gr += "\"#{link.tail_uuid}\" [href=\"#{rsc}/#{link.tail_uuid}\"];"
-      gr += "\"#{link.head_uuid}\" -> \"#{link.tail_uuid}\" [label=\" provided\"];"
-      generate_edges(gr, link.tail_uuid)
+    Link.where(head_uuid: uuid, link_class: "provenance").each do |link|
+      gr += describe_node(link.tail_uuid)
+      gr += "\"#{link.head_uuid}\" -> \"#{link.tail_uuid}\" [label=\" #{link.name}\", href=\"/links/#{link.uuid}\"];"
+      gr = generate_edges(gr, link.tail_uuid)
     end
 
     gr
@@ -151,9 +191,10 @@ class CollectionsController < ApplicationController
 
     require 'open3'
     
-    gr = "digraph {"
-    gr += "node [fontsize=8];"
-    gr += "edge [dir=back,fontsize=8];"
+    gr = """strict digraph {
+//rankdir=LR;
+node [fontsize=8,shape=box];
+edge [dir=back,fontsize=8];"""
     
     gr = generate_edges(gr, @object.uuid)
 
