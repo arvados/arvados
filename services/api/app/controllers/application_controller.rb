@@ -220,6 +220,7 @@ class ApplicationController < ActionController::Base
     %w(created_at modified_by_client_uuid modified_by_user_uuid modified_at).each do |x|
       @attrs.delete x.to_sym
     end
+    @attrs = @attrs.symbolize_keys if @attrs.is_a? HashWithIndifferentAccess
     @attrs
   end
 
