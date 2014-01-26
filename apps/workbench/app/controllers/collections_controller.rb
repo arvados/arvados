@@ -58,7 +58,11 @@ class CollectionsController < ApplicationController
 
   def describe_node(uuid)
     rsc = ArvadosBase::resource_class_for_uuid uuid
-    "\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{url_for rsc}/#{uuid}\"];"    
+    if rsc
+      "\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{url_for rsc}/#{uuid}\"];"
+    else
+      ""
+    end
   end
 
   def describe_script(job)
@@ -80,54 +84,70 @@ class CollectionsController < ApplicationController
     end
   end
 
-  def script_param_edges(gr, job, prefix, sp)
+  def script_param_edges(visited, job, prefix, sp)
+    gr = ""
+    if sp and not sp.empty?
       case sp
       when Hash
         sp.each do |k, v|
-        if prefix.size > 0
-          k = prefix + "::" + k.to_s
+          if prefix.size > 0
+            k = prefix + "::" + k.to_s
+          end
+          gr += script_param_edges(visited, job, k.to_s, v)
         end
-        gr = script_param_edges(gr, job, k.to_s, v)
-      end
       when Array
-        sp.each do |k|
-          gr = script_param_edges(gr, job, prefix, k)
+        sp.each do |v|
+          gr += script_param_edges(visited, job, prefix, v)
         end
       else
         m = collection_uuid(sp)
-        v = m if m
-        gr += "\"#{job_uuid(job)}\" -> \"#{v}\" [label=\" #{prefix}\"];"
-        gr = generate_edges(gr, v)
+        if m
+          gr += "\"#{job_uuid(job)}\" -> \"#{m}\" [label=\" #{prefix}\"];"
+          gr += generate_provenance_edges(visited, m)
+        end
       end
+    end
     gr
   end
 
-  def generate_edges(gr, uuid, edge_added = false)
+  def generate_provenance_edges(visited, uuid)
+    gr = ""
     m = collection_uuid(uuid)
+
+    if not uuid or uuid.empty? or visited[uuid] or visited[m]
+      return ""
+    end
+
+    #puts "visiting #{uuid}"
+
     if m  
       # uuid is a collection
       uuid = m
+      visited[uuid] = true
+
       gr += describe_node(uuid)
 
       Job.where(output: uuid).each do |job|
         #gr += describe_node(job_uuid(job)) 
         gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\" output\"];"
-        gr = generate_edges(gr, job.uuid)
+        gr += generate_provenance_edges(visited, job.uuid)
       end
 
       Job.where(log: uuid).each do |job|
         #gr += describe_node(job_uuid(job))
         gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\" log\"];"
-        gr = generate_edges(gr, job.uuid)
+        gr += generate_provenance_edges(visited, job.uuid)
       end
       
     else
+      visited[uuid] = true
+
       # uuid is something else
       rsc = ArvadosBase::resource_class_for_uuid uuid
 
       if rsc == Job
         Job.where(uuid: uuid).each do |job|
-          gr = script_param_edges(gr, job, "", job.script_parameters)
+          gr += script_param_edges(visited, job, "", job.script_parameters)
           #gr += describe_script(job)
         end
       else
@@ -138,10 +158,38 @@ class CollectionsController < ApplicationController
     Link.where(head_uuid: uuid, link_class: "provenance").each do |link|
       gr += describe_node(link.tail_uuid)
       gr += "\"#{link.head_uuid}\" -> \"#{link.tail_uuid}\" [label=\" #{link.name}\", href=\"/links/#{link.uuid}\"];"
-      gr = generate_edges(gr, link.tail_uuid)
+      gr += generate_provenance_edges(visited, link.tail_uuid)
     end
 
+    #puts "finished #{uuid}"
+
     gr
+  end
+
+  def create_provenance_graph(uuid)
+    require 'open3'
+    
+    gr = """strict digraph {
+//rankdir=LR;
+node [fontsize=8,shape=box];
+edge [dir=back,fontsize=8];"""
+
+    visited = {}
+    gr += generate_provenance_edges(visited, uuid)
+
+    gr += "}"
+    svg = ""
+
+    Open3.popen2("dot", "-Tsvg") do |stdin, stdout, wait_thr|
+      stdin.print(gr)
+      stdin.close
+      svg = stdout.read()
+      wait_thr.value
+      stdout.close()
+    end
+
+    svg = svg.sub(/<\?xml.*?\?>/m, "")
+    svg = svg.sub(/<!DOCTYPE.*?>/m, "")
   end
 
   def show
@@ -189,28 +237,7 @@ class CollectionsController < ApplicationController
       end
     end
 
-    require 'open3'
-    
-    gr = """strict digraph {
-//rankdir=LR;
-node [fontsize=8,shape=box];
-edge [dir=back,fontsize=8];"""
-    
-    gr = generate_edges(gr, @object.uuid)
-
-    gr += "}"
-    @prov_svg = ""
-
-    Open3.popen2("dot", "-Tsvg") do |stdin, stdout, wait_thr|
-      stdin.print(gr)
-      stdin.close
-      wait_thr.value
-      @prov_svg = stdout.read()
-      stdout.close()
-    end
-
-    @prov_svg = @prov_svg.sub(/<\?xml.*?\?>/m, "")
-    @prov_svg = @prov_svg.sub(/<!DOCTYPE.*?>/m, "")
+    @prov_svg = create_provenance_graph(@object.uuid)
   end
 
   protected
