@@ -1,14 +1,13 @@
 PATH
   remote: .
   specs:
-    arvados-cli (0.1.20140127123159)
+    arvados (0.1.20140127093947)
       activesupport (>= 3.2.13)
-      andand (>= 1.3.3)
-      curb (~> 0.8)
+      andand
       google-api-client (~> 0.6.3)
       json (>= 1.7.7)
-      oj (>= 2.0.3)
-      trollop (>= 2.0)
+      minitest (>= 5.0.0)
+      rake
 
 GEM
   remote: https://rubygems.org/
@@ -22,7 +21,6 @@ GEM
       addressable (>= 2.3.1)
       extlib (>= 0.9.15)
       multi_json (>= 1.0.0)
-    curb (0.8.5)
     extlib (0.9.16)
     faraday (0.8.9)
       multipart-post (~> 1.2.0)
@@ -45,20 +43,16 @@ GEM
     minitest (5.2.2)
     multi_json (1.8.4)
     multipart-post (1.2.0)
-    oj (2.5.4)
     rake (10.1.1)
     signet (0.4.5)
       addressable (>= 2.2.3)
       faraday (~> 0.8.1)
       jwt (>= 0.1.5)
       multi_json (>= 1.0.0)
-    trollop (2.0)
     uuidtools (2.1.4)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  arvados-cli!
-  minitest (>= 5.0.0)
-  rake
+  arvados!

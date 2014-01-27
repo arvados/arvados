@@ -246,16 +246,9 @@ class Arvados::V1::SchemaController < ApplicationController
               path: "#{k.to_s.underscore.pluralize}",
               httpMethod: "POST",
               description: "Create a new #{k.to_s}.",
-              parameters: {
-                k.to_s.underscore => {
-                  type: "object",
-                  required: false,
-                  location: "query",
-                  properties: object_properties
-                }
-              },
+              parameters: {},
               request: {
-                required: false,
+                required: true,
                 properties: {
                   k.to_s.underscore => {
                     "$ref" => k.to_s
@@ -280,16 +273,10 @@ class Arvados::V1::SchemaController < ApplicationController
                   description: "The UUID of the #{k.to_s} in question.",
                   required: true,
                   location: "path"
-                },
-                k.to_s.underscore => {
-                  type: "object",
-                  required: false,
-                  location: "query",
-                  properties: object_properties
                 }
               },
               request: {
-                required: false,
+                required: true,
                 properties: {
                   k.to_s.underscore => {
                     "$ref" => k.to_s

@@ -207,6 +207,7 @@ def parse_arguments(discovery_document)
   end
 
   global_opts = Trollop::options do
+    version __FILE__
     banner "arv: the Arvados CLI tool"
     opt :dry_run, "Don't actually do anything", :short => "-n"
     opt :verbose, "Print some things on stderr"
@@ -269,7 +270,6 @@ def parse_arguments(discovery_document)
         required: is_required,
         type: :string
       }
-      discovered_params[resource.to_sym] = body_object
     end
   end
 
