@@ -269,7 +269,6 @@ def parse_arguments(discovery_document)
         required: is_required,
         type: :string
       }
-      discovered_params[resource.to_sym] = body_object
     end
   end
 
