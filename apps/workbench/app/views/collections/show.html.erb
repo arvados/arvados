@@ -147,13 +147,13 @@
 
     function graph_zoom(scale) {
       var pg = document.getElementById("provenance_graph");
-      var st = pg.scrollTop / pg.scrollTopMax;
-      var sl = pg.scrollLeft / pg.scrollLeftMax;
+      vcenter = (pg.scrollTop + (pg.scrollHeight - pg.scrollTopMax)/2.0) / pg.scrollHeight;
+      hcenter = (pg.scrollLeft + (pg.scrollWidth - pg.scrollLeftMax)/2.0) / pg.scrollWidth;
       var g = document.getElementById("graph1").parentNode;
       g.setAttribute("height", parseFloat(g.getAttribute("height")) * scale);
       g.setAttribute("width", parseFloat(g.getAttribute("width")) * scale);
-      pg.scrollTop = st * pg.scrollTopMax;
-      pg.scrollLeft = sl * pg.scrollLeftMax;
+      pg.scrollTop = (vcenter * pg.scrollHeight) - (pg.scrollHeight - pg.scrollTopMax)/2.0;
+      pg.scrollLeft = (hcenter * pg.scrollWidth) - (pg.scrollWidth - pg.scrollLeftMax)/2.0;
     }
   </script>
   <div style="text-align: right">
