@@ -1,5 +1,4 @@
-<%= content_for :head do %>
-<style>
+<%= content_for :css do %>
 <%# https://github.com/mbostock/d3/wiki/Ordinal-Scales %>
 <% n=-1; %w(#1f77b4 #ff7f0e #2ca02c #d62728 #9467bd #8c564b #e377c2 #7f7f7f #bcbd22 #17becf).each do |color| %>
 .colorseries-10-<%= n += 1 %>, .btn.colorseries-10-<%= n %>:hover, .label.colorseries-10-<%= n %>:hover {
@@ -12,7 +11,13 @@
 .label a {
   color: inherit;
 }
-</style>
+#provenance_graph {
+ padding-left: 3px;
+ overflow:auto;
+ border:solid;
+ border-width:1px;
+ border-color: gray
+}
 <% end %>
 
 <%#= render :partial => 'nav' %>
@@ -24,7 +29,7 @@
   <li><a href="#jobs" data-toggle="tab">Jobs (<%= @provenance.size %>)</a></li>
   <li><a href="#sourcedata" data-toggle="tab">Source data (<%= @sourcedata.size %>)</a></li>
   <li><a href="#owner-groups-resources" data-toggle="tab">Owner, groups, resources</a></li>
-  <li><a href="#provenance2" data-toggle="tab">Provenance graph</a></li>
+  <li><a href="#provenance2" data-toggle="tab" id="prov-tab">Provenance graph</a></li>
   <li><a href="#used-by" data-toggle="tab">Used by</a></li>
 </ul>
 
@@ -140,7 +145,7 @@
   <script>
     function provenance_sizing_fixup() {
       var a = document.getElementById("provenance_graph");
-      a.style.height = String(window.innerHeight - (a.getBoundingClientRect().top + window.scrollY)) + "px";
+      a.style.height = String(window.innerHeight - (a.getBoundingClientRect().top + window.scrollY) - 2) + "px";
     }
     $(window).resize(provenance_sizing_fixup);
     $(window).load(provenance_sizing_fixup);
@@ -155,13 +160,17 @@
       pg.scrollTop = (vcenter * pg.scrollHeight) - (pg.scrollHeight - pg.scrollTopMax)/2.0;
       pg.scrollLeft = (hcenter * pg.scrollWidth) - (pg.scrollWidth - pg.scrollLeftMax)/2.0;
     }
+
+    $(function() {
+      $('#prov-tab').on('shown', provenance_sizing_fixup);
+    })
   </script>
   <div style="text-align: right">
   <a href="#"><span class="icon-zoom-out" onclick="graph_zoom(.9)"></span></a>
   <a href="#"><span class="icon-zoom-in" onclick="graph_zoom(1./.9)"></span></a>
   </div>
   
-  <div id="provenance_graph" style="padding-left: 3px; overflow:auto; border:solid; border-width:1px; border-color: gray">
+  <div id="provenance_graph">
       <%= raw(@prov_svg) %>
   </div>
   </div>
