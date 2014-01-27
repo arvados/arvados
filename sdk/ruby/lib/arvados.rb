@@ -24,6 +24,7 @@ class Arvados
   class TransactionFailedError < StandardError
   end
 
+  @@config = nil
   @@debuglevel = 0
   class << self
     attr_accessor :debuglevel
@@ -33,20 +34,18 @@ class Arvados
     @application_version ||= 0.0
     @application_name ||= File.split($0).last
 
-    @config = self.load_config_file
-
     @arvados_api_version = opts[:api_version] ||
-      @config['ARVADOS_API_VERSION'] ||
+      config['ARVADOS_API_VERSION'] ||
       'v1'
     @arvados_api_host = opts[:api_host] ||
-      @config['ARVADOS_API_HOST'] or
+      config['ARVADOS_API_HOST'] or
       raise "#{$0}: no :api_host or ENV[ARVADOS_API_HOST] provided."
     @arvados_api_token = opts[:api_token] ||
-      @config['ARVADOS_API_TOKEN'] or
+      config['ARVADOS_API_TOKEN'] or
       raise "#{$0}: no :api_token or ENV[ARVADOS_API_TOKEN] provided."
 
     if (opts[:suppress_ssl_warnings] or
-        @config['ARVADOS_API_HOST_INSECURE'])
+        config['ARVADOS_API_HOST_INSECURE'])
       suppress_warnings do
         OpenSSL::SSL.const_set 'VERIFY_PEER', OpenSSL::SSL::VERIFY_NONE
       end
@@ -142,7 +141,9 @@ class Arvados
     $stderr.puts "#{File.split($0).last} #{$$}: #{message}" if @@debuglevel >= verbosity
   end
 
-  def load_config_file(config_file_path="~/.config/arvados/settings.conf")
+  def config(config_file_path="~/.config/arvados/settings.conf")
+    return @@config if @@config
+
     # Initialize config settings with environment variables.
     config = {}
     config['ARVADOS_API_HOST']          = ENV['ARVADOS_API_HOST']
@@ -150,22 +151,25 @@ class Arvados
     config['ARVADOS_API_HOST_INSECURE'] = ENV['ARVADOS_API_HOST_INSECURE']
     config['ARVADOS_API_VERSION']       = ENV['ARVADOS_API_VERSION']
 
-    # Load settings from the config file.
-    lineno = 0
-    File.open(File.expand_path config_file_path).each do |line|
-      lineno = lineno + 1
-      # skip comments and blank lines
-      next if line.match('^\s*#') or not line.match('\S')
-      var, val = line.chomp.split('=', 2)
-      # allow environment settings to override config files.
-      if var and val
-        config[var] ||= val
-      else
-        warn "#{config_file}: #{lineno}: could not parse `#{line}'"
+    expanded_path = File.expand_path config_file_path
+    if File.exist? expanded_path
+      # Load settings from the config file.
+      lineno = 0
+      File.open(expanded_path).each do |line|
+        lineno = lineno + 1
+        # skip comments and blank lines
+        next if line.match('^\s*#') or not line.match('\S')
+        var, val = line.chomp.split('=', 2)
+        # allow environment settings to override config files.
+        if var and val
+          config[var] ||= val
+        else
+          warn "#{expanded_path}: #{lineno}: could not parse `#{line}'"
+        end
       end
     end
 
-    config
+    @@config = config
   end
 
   class Model
@@ -183,7 +187,7 @@ class Arvados
     end
     def self.api_exec(method, parameters={})
       parameters = parameters.
-        merge(:api_token => @config['ARVADOS_API_TOKEN'])
+        merge(:api_token => arvados.config['ARVADOS_API_TOKEN'])
       parameters.each do |k,v|
         parameters[k] = v.to_json if v.is_a? Array or v.is_a? Hash
       end
