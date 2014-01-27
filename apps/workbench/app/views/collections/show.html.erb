@@ -17,6 +17,7 @@
 
 <%#= render :partial => 'nav' %>
 
+<div class="tabbable">
 <ul class="nav nav-tabs">
   <li class="active"><a href="#files" data-toggle="tab">Files (<%= @object.files ? @object.files.size : 0 %>)</a></li>
   <li><a href="#provenance" data-toggle="tab">Provenance (<%= @provenance.size %>)</a></li>
@@ -136,7 +137,33 @@
     </table>
   </div>
   <div id="provenance2" class="tab-pane fade">
-    <%= raw(@prov_svg) %>
+  <script>
+    function provenance_sizing_fixup() {
+      var a = document.getElementById("provenance_graph");
+      a.style.height = String(window.innerHeight - (a.getBoundingClientRect().top + window.scrollY)) + "px";
+    }
+    $(window).resize(provenance_sizing_fixup);
+    $(window).load(provenance_sizing_fixup);
+
+    function graph_zoom(scale) {
+      var pg = document.getElementById("provenance_graph");
+      var st = pg.scrollTop / pg.scrollTopMax;
+      var sl = pg.scrollLeft / pg.scrollLeftMax;
+      var g = document.getElementById("graph1").parentNode;
+      g.setAttribute("height", parseFloat(g.getAttribute("height")) * scale);
+      g.setAttribute("width", parseFloat(g.getAttribute("width")) * scale);
+      pg.scrollTop = st * pg.scrollTopMax;
+      pg.scrollLeft = sl * pg.scrollLeftMax;
+    }
+  </script>
+  <div style="text-align: right">
+  <a href="#"><span class="icon-zoom-out" onclick="graph_zoom(.9)"></span></a>
+  <a href="#"><span class="icon-zoom-in" onclick="graph_zoom(1./.9)"></span></a>
+  </div>
+  
+  <div id="provenance_graph" style="padding-left: 3px; overflow:auto; border:solid; border-width:1px; border-color: gray">
+      <%= raw(@prov_svg) %>
+  </div>
   </div>
   <div id="jobs" class="tab-pane fade">
     <table class="topalign table table-bordered">
@@ -253,4 +280,5 @@
   <div id="owner-groups-resources" class="tab-pane fade">
     <%= render :partial => 'application/arvados_object' %>
   </div>
+</div>
 </div>
