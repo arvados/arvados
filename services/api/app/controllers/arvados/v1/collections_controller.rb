@@ -50,6 +50,88 @@ class Arvados::V1::CollectionsController < ApplicationController
     show
   end
 
+  def collection_uuid(uuid)
+    m = /([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?/.match(uuid)
+    if m
+      m[1]
+    else
+      nil
+    end
+  end
+
+  def script_param_edges(visited, sp)
+    if sp and not sp.empty?
+      case sp
+      when Hash
+        sp.each do |k, v|
+          script_param_edges(visited, v)
+        end
+      when Array
+        sp.each do |v|
+          script_param_edges(visited, v)
+        end
+      else
+        m = collection_uuid(sp)
+        if m
+          generate_provenance_edges(visited, m)
+        end
+      end
+    end
+    gr
+  end
+
+  def generate_provenance_edges(visited, uuid)
+    m = collection_uuid(uuid)
+
+    if not uuid or uuid.empty? or visited[uuid] or visited[m]
+      return ""
+    end
+
+    #puts "visiting #{uuid}"
+
+    if m  
+      # uuid is a collection
+      uuid = m
+      Collection.where(uuid:"uuid").each do |c|
+        visited[uuid] = c
+      end
+
+      Job.where(output: uuid).each do |job|
+        generate_provenance_edges(visited, job.uuid)
+      end
+
+      Job.where(log: uuid).each do |job|
+        generate_provenance_edges(visited, job.uuid)
+      end
+      
+    else
+      visited[uuid] = true
+
+      # uuid is something else
+      rsc = ArvadosBase::resource_class_for_uuid uuid
+
+      if rsc == Job
+        Job.where(uuid: uuid).each do |job|
+          visited[uuid] = job
+          script_param_edges(visited, job, "", job.script_parameters)
+        end
+    end
+
+    Link.where(head_uuid: uuid, link_class: "provenance").each do |link|
+      generate_provenance_edges(visited, link.tail_uuid)
+    end
+
+    #puts "finished #{uuid}"
+
+    gr
+  end
+
+  def provenance 
+    visited = {}
+    generate_provenance_edges(visited, @object.uuid)
+    visited
+  end
+
   protected
 
   def find_object_by_uuid
