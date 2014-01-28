@@ -21,7 +21,7 @@ input_dir = arvados.util.collection_extract(this_task_input,
         files=[input_file],
         decompress=False)
 
-# Run the 'md5sum' command on the input file, with the current working
+# Run the external 'md5sum' program on the input file, with the current working
 # directory set to the location the input file was extracted to.
 stdoutdata, stderrdata = arvados.util.run_command(
         ['md5sum', input_file],

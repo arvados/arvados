@@ -1,5 +1,6 @@
 class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :find_object_by_uuid
+  skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope_all
 
   def show
@@ -148,6 +149,7 @@ class Arvados::V1::SchemaController < ApplicationController
           id: k.to_s,
           description: k.to_s,
           type: "object",
+          uuidPrefix: (k.respond_to?(:uuid_prefix) ? k.uuid_prefix : nil),
           properties: {
             uuid: {
               type: "string",
@@ -244,16 +246,9 @@ class Arvados::V1::SchemaController < ApplicationController
               path: "#{k.to_s.underscore.pluralize}",
               httpMethod: "POST",
               description: "Create a new #{k.to_s}.",
-              parameters: {
-                k.to_s.underscore => {
-                  type: "object",
-                  required: false,
-                  location: "query",
-                  properties: object_properties
-                }
-              },
+              parameters: {},
               request: {
-                required: false,
+                required: true,
                 properties: {
                   k.to_s.underscore => {
                     "$ref" => k.to_s
@@ -278,16 +273,10 @@ class Arvados::V1::SchemaController < ApplicationController
                   description: "The UUID of the #{k.to_s} in question.",
                   required: true,
                   location: "path"
-                },
-                k.to_s.underscore => {
-                  type: "object",
-                  required: false,
-                  location: "query",
-                  properties: object_properties
                 }
               },
               request: {
-                required: false,
+                required: true,
                 properties: {
                   k.to_s.underscore => {
                     "$ref" => k.to_s

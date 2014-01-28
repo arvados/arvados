@@ -8,7 +8,7 @@ module KindAndEtag
   end
 
   def kind
-    'arvados#' + self.class.to_s.underscore
+    'arvados#' + self.class.to_s.camelcase(:lower)
   end
 
   def etag

@@ -151,7 +151,7 @@ log.info { "repo permission: " + repo_perm[:uuid] }
 login_perm = arv.link.create(link: {
                                tail_kind: 'arvados#user',
                                tail_uuid: user[:uuid],
-                               head_kind: 'arvados#virtual_machine',
+                               head_kind: 'arvados#virtualMachine',
                                head_uuid: vm[:uuid],
                                link_class: 'permission',
                                name: 'can_login',

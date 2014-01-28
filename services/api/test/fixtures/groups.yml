@@ -4,6 +4,12 @@ public:
   name: Public
   description: Public Group
 
+private:
+  uuid: zzzzz-j7d0g-rew6elm53kancon
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  name: Private
+  description: Private Group
+
 all_users:
   uuid: zzzzz-j7d0g-fffffffffffffff
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f

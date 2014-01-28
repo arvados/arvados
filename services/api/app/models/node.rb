@@ -89,9 +89,11 @@ class Node < ArvadosModel
     if o[:ec2_instance_id]
       if !self.info[:ec2_instance_id] 
         self.info[:ec2_instance_id] = o[:ec2_instance_id]
-        tag_cmd = ("ec2-create-tags #{o[:ec2_instance_id]} " +
-                   "--tag 'Name=#{self.uuid}'")
-        `#{tag_cmd}`
+        if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
+          tag_cmd = ("ec2-create-tags #{o[:ec2_instance_id]} " +
+                     "--tag 'Name=#{self.uuid}'")
+          `#{tag_cmd}`
+        end
       elsif self.info[:ec2_instance_id] != o[:ec2_instance_id]
         logger.debug "Multiple nodes have credentials for #{self.uuid}"
         raise "#{self.uuid} is already running at #{self.info[:ec2_instance_id]} so rejecting ping from #{o[:ec2_instance_id]}"
@@ -113,7 +115,9 @@ class Node < ArvadosModel
       end while true
       self.hostname = self.class.hostname_for_slot(self.slot_number)
       if info[:ec2_instance_id]
-        `ec2-create-tags #{self.info[:ec2_instance_id]} --tag 'hostname=#{self.hostname}'`
+        if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
+          `ec2-create-tags #{self.info[:ec2_instance_id]} --tag 'hostname=#{self.hostname}'`
+        end
       end
     end
 
@@ -144,12 +148,16 @@ class Node < ArvadosModel
     result.match(/INSTANCE\s*(i-[0-9a-f]+)/) do |m|
       instance_id = m[1]
       self.info[:ec2_instance_id] = instance_id
-      `ec2-create-tags #{instance_id} --tag 'Name=#{self.uuid}'`
+      if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
+        `ec2-create-tags #{instance_id} --tag 'Name=#{self.uuid}'`
+      end
     end
     result.match(/SPOTINSTANCEREQUEST\s*(sir-[0-9a-f]+)/) do |m|
       sir_id = m[1]
       self.info[:ec2_sir_id] = sir_id
-      `ec2-create-tags #{sir_id} --tag 'Name=#{self.uuid}'`
+      if (Rails.configuration.compute_node_ec2_tag_enable rescue true)
+        `ec2-create-tags #{sir_id} --tag 'Name=#{self.uuid}'`
+      end
     end
     self.save!
   end

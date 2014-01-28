@@ -12,14 +12,16 @@ This tutorial demonstrates how to use Crunch to run an external program by writt
 
 *This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
 
+In this tutorial, you will use the external program @md5sum@ to compute hashes instead of the built-in Python library used in earlier tutorials.
+
 Start by entering the @crunch_scripts@ directory of your git repository:
 
 <notextile>
 <pre><code>$ <span class="userinput">cd you/crunch_scripts</span>
 </code></pre>
 </notextile>
-
-Next, using your favorite text editor, create a new file called @run-md5sum.py@ in the @crunch_scripts@ directory.  Add the following code to compute the md5 hash of each file in a collection:
+ 
+Next, using your favorite text editor, create a new file called @run-md5sum.py@ in the @crunch_scripts@ directory.  Add the following code to use the @md5sum@ program to compute the hash of each file in a collection:
 
 <pre><code class="userinput">{% include run-md5sum.py %}</code></pre>
 

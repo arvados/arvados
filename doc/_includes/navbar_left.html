@@ -4,7 +4,7 @@
 	      {% if page.navsection == 'userguide' or page.navsection == 'api' or page.navsection == 'sdk' %}
 	      <ol class="nav nav-list">
                 {% for menu_item in site.navbar[page.navsection] %}
-		<li>{{ menu_item }}
+		<li><span class="nav-header">{{ menu_item }}</span>
 		  <ol class="nav nav-list">
                     {% for navorder in (0..99) %}
                      {% for p in site.pages %}

@@ -1,6 +1,7 @@
 ArvadosWorkbench::Application.routes.draw do
   themes_for_rails
 
+  resources :keep_disks
   resources :user_agreements
   post '/user_agreements/sign' => 'user_agreements#sign'
   get '/user_agreements/signatures' => 'user_agreements#signatures'
