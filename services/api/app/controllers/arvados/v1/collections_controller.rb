@@ -115,6 +115,7 @@ class Arvados::V1::CollectionsController < ApplicationController
           visited[uuid] = job
           script_param_edges(visited, job, "", job.script_parameters)
         end
+      end
     end
 
     Link.where(head_uuid: uuid, link_class: "provenance").each do |link|
@@ -126,14 +127,14 @@ class Arvados::V1::CollectionsController < ApplicationController
     gr
   end
 
-  def provenance 
+  def provenance(id)
     visited = {}
-    generate_provenance_edges(visited, @object.uuid)
+    generate_provenance_edges(visited, id[:uuid])
     visited
   end
 
-  protected
 
+  protected
   def find_object_by_uuid
     super
     if !@object and !params[:uuid].match(/^[0-9a-f]+\+\d+$/)
@@ -152,4 +153,5 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     end
   end
+
 end

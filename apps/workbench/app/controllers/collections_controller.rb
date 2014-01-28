@@ -1,10 +1,6 @@
 class CollectionsController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => [:graph]
+  skip_before_filter :find_object_by_uuid, :only => [:provenance]
   skip_before_filter :check_user_agreements, :only => [:show_file]
-
-  def graph
-    index
-  end
 
   def index
     if params[:search].andand.length.andand > 0
