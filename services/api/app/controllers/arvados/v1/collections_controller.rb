@@ -92,8 +92,8 @@ class Arvados::V1::CollectionsController < ApplicationController
     if m  
       # uuid is a collection
       uuid = m
-      Collection.where(uuid:"uuid").each do |c|
-        visited[uuid] = c
+      Collection.where(uuid: uuid).each do |c|
+        visited[uuid] = c.as_api_response
       end
 
       Job.where(output: uuid).each do |job|
@@ -105,32 +105,32 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
       
     else
-      visited[uuid] = true
-
       # uuid is something else
-      rsc = ArvadosBase::resource_class_for_uuid uuid
-
+      rsc = ArvadosModel::resource_class_for_uuid uuid
       if rsc == Job
         Job.where(uuid: uuid).each do |job|
-          visited[uuid] = job
+          visited[uuid] = job.as_api_response
           script_param_edges(visited, job, "", job.script_parameters)
+        end
+      elsif rsc != nil
+        rsc.where(uuid: uuid).each do |r|
+          visited[uuid] = r.as_api_response
         end
       end
     end
 
     Link.where(head_uuid: uuid, link_class: "provenance").each do |link|
+      visited[link.uuid] = link.as_api_response
       generate_provenance_edges(visited, link.tail_uuid)
     end
 
     #puts "finished #{uuid}"
-
-    gr
   end
 
-  def provenance(id)
+  def provenance
     visited = {}
-    generate_provenance_edges(visited, id[:uuid])
-    visited
+    generate_provenance_edges(visited, @object[:uuid])
+    render json: visited
   end
 
 

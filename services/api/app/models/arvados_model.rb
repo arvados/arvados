@@ -1,3 +1,4 @@
+require 'assign_uuid'
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
@@ -140,4 +141,30 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
   end
+
+  def self.resource_class_for_uuid(uuid)
+    if uuid.is_a? ArvadosModel
+      return uuid.class
+    end
+    unless uuid.is_a? String
+      return nil
+    end
+    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
+      return Collection
+    end
+    resource_class = nil
+
+    Rails.application.eager_load!
+    uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+        if k.respond_to?(:uuid_prefix)
+          if k.uuid_prefix == re[1]
+            return k
+          end
+        end
+      end
+    end
+    nil
+  end
+
 end
