@@ -16,7 +16,9 @@
  overflow:auto;
  border:solid;
  border-width:1px;
- border-color: gray
+ border-color: gray;
+ position: absolute;
+ left: 1px;
 }
 <% end %>
 
@@ -146,9 +148,9 @@
     function provenance_sizing_fixup() {
       var a = document.getElementById("provenance_graph");
       a.style.height = String(window.innerHeight - (a.getBoundingClientRect().top + window.scrollY) - 2) + "px";
+      a.style.width = String(window.innerWidth - 10) + "px";
     }
     $(window).resize(provenance_sizing_fixup);
-    $(window).load(provenance_sizing_fixup);
 
     function graph_zoom(scale) {
       var pg = document.getElementById("provenance_graph");
