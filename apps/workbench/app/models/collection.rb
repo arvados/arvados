@@ -12,4 +12,8 @@ class Collection < ArvadosBase
   def attribute_editable?(attr)
     false
   end
+
+  def provenance
+    $arvados_api_client.api "collections/#{self.uuid}/", "provenance"
+  end
 end
