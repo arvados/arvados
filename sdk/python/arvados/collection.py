@@ -20,6 +20,7 @@ import threading
 
 from stream import *
 from keep import *
+import util
 
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
