@@ -8,19 +8,19 @@ class PipelineInstancesController < ApplicationController
       j = v[:job]
       somejob = j[:uuid]
       provenance[somejob.intern] = j
-      collections << j[:output]
+      collections << j[:output].intern
+      j[:dependencies].each do |k|
+        collections << k.intern
+      end
     end
 
-    puts collections
-    puts '---'
-
     Collection.where(uuid: collections).each do |c|
-      puts c.uuid
+      #puts c.uuid
       provenance[c.uuid.intern] = c
     end
 
     PipelineInstance.where(uuid: @object.uuid).each do |u|
-      @prov_svg = CollectionsController::create_provenance_graph provenance, somejob
+      @prov_svg = ProvenanceHelper::create_provenance_graph provenance, collections, {:all_script_parameters => true}
     end
   end
 

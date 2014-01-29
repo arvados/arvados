@@ -1,12 +1,33 @@
-class ProvenanceHelper
-  def self.describe_node(uuid)
-    uuid = uuid.to_s
-    rsc = ArvadosBase::resource_class_for_uuid uuid
+module ProvenanceHelper
+  def self.describe_node(pdata, uuid)
+    rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
     if rsc
-      "\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}\"];"
-    else
-      ""
+      href = "/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}"
+
+      #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
+      if rsc == Collection
+        if pdata[uuid] 
+          #puts pdata[uuid]
+          if pdata[uuid][:name]
+            return "\"#{uuid}\" [label=\"#{pdata[uuid][:name]}\",href=\"#{href}\",shape=oval];\n"
+          else
+            i = 0
+            label = ""
+            while i < 3 and i < pdata[uuid].files.length
+              label += "\\n" unless label == ""
+              label += pdata[uuid].files[i][1]
+              i += 1
+            end
+            if i < pdata[uuid].files.length
+              label += "\\n&vellip;"
+            end
+            return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval];\n"
+          end  
+        end
+        return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\"];\n"
+      end
     end
+    return ""
   end
 
   def self.job_uuid(job)
@@ -23,7 +44,24 @@ class ProvenanceHelper
     end
   end
 
-  def self.script_param_edges(visited, job, prefix, sp, opts)
+  def self.edge(tail, head, extra, opts)
+    if opts[:direction] == :bottom_up
+      gr = "\"#{tail}\" -> \"#{head}\""
+    else
+      gr = "\"#{head}\" -> \"#{tail}\""
+    end
+    if extra.length > 0
+      gr += "["
+      extra.each do |k, v|
+        gr += "#{k}=\"#{v}\","
+      end
+      gr += "]"
+    end
+    gr += ";\n"
+    gr
+  end
+
+  def self.script_param_edges(pdata, visited, job, prefix, sp, opts)
     gr = ""
     if sp and not sp.empty?
       case sp
@@ -32,57 +70,76 @@ class ProvenanceHelper
           if prefix.size > 0
             k = prefix + "::" + k.to_s
           end
-          gr += CollectionsController::script_param_edges(visited, job, k.to_s, v, opts)
+          gr += ProvenanceHelper::script_param_edges(pdata, visited, job, k.to_s, v, opts)
         end
       when Array
+        i = 0
+        node = ""
         sp.each do |v|
-          gr += CollectionsController::script_param_edges(visited, job, prefix, v, opts)
+          if collection_uuid(v)
+            gr += ProvenanceHelper::script_param_edges(pdata, visited, job, "#{prefix}[#{i}]", v, opts)
+          else
+            node += "', '" unless node == ""
+            node = "['" if node == ""
+            node += "#{v}"
+          end
+          i += 1
+        end
+        unless node == ""
+          node += "']"
+          #puts node
+          id = "#{job[:uuid]}_#{prefix}"
+          gr += "\"#{id}\" [label=\"#{node}\"];\n"
+          gr += edge(job_uuid(job), id, {:label => prefix}, opts)        
         end
       else
         m = collection_uuid(sp)
         if m
-          gr += "\"#{job_uuid(job)}\" -> \"#{m}\" [label=\" #{prefix}\"];"
-          gr += CollectionsController::generate_provenance_edges(visited, m, opts)
+          gr += edge(job_uuid(job), m, {:label => prefix}, opts)
+          gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, m, opts)
+        elsif opts[:all_script_parameters]
+          id = "#{job[:uuid]}_#{prefix}"
+          gr += "\"#{id}\" [label=\"#{sp}\"];\n"
+          gr += edge(job_uuid(job), id, {:label => prefix}, opts)
         end
       end
     end
     gr
   end
 
-  def self.generate_provenance_edges(pdata, uuid, opts)
+  def self.generate_provenance_edges(pdata, visited, uuid, opts)
     gr = ""
-    m = CollectionsController::collection_uuid(uuid)
+    m = ProvenanceHelper::collection_uuid(uuid)
     uuid = m if m
 
     uuid = uuid.intern if uuid
 
-    if (not uuid) or uuid.empty? \
-      or (pdata[uuid] and pdata[uuid][:_visited])
+    if (not uuid) or uuid.empty? or visited[uuid]
 
       #puts "already visited #{uuid}"
       return ""
     end
 
     if not pdata[uuid] then 
-      return CollectionsController::describe_node(uuid) 
+      return ProvenanceHelper::describe_node(pdata, uuid)
     else
-      pdata[uuid][:_visited] = true
+      visited[uuid] = true
     end
 
     #puts "visiting #{uuid}"
 
     if m  
       # uuid is a collection
-      gr += CollectionsController::describe_node(uuid)
+      gr += ProvenanceHelper::describe_node(pdata, uuid)
 
       pdata.each do |k, job|
         if job[:output] == uuid.to_s
-          gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\"output\"];"
-          gr += CollectionsController::generate_provenance_edges(pdata, job[:uuid])
+          gr += self.edge(uuid, job_uuid(job), {:label => "output"}, opts)
+          gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, job[:uuid], opts)
         end
         if job[:log] == uuid.to_s
-          gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\"log\"];"
-          gr += CollectionsController::generate_provenance_edges(pdata, job[:uuid])
+          gr += edge(uuid, job_uuid(job), {:label => "log"}, opts)
+          gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, job[:uuid], opts)
         end
       end
     else
@@ -92,18 +149,18 @@ class ProvenanceHelper
       if rsc == Job
         job = pdata[uuid]
         if job
-          gr += CollectionsController::script_param_edges(pdata, job, "", job[:script_parameters], opts)
+          gr += ProvenanceHelper::script_param_edges(pdata, visited, job, "", job[:script_parameters], opts)
         end
       else
-        gr += CollectionsController::describe_node(uuid)
+        gr += ProvenanceHelper::describe_node(pdata, uuid)
       end
     end
 
     pdata.each do |k, link|
       if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
-        gr += CollectionsController::describe_node(link[:tail_uuid])
-        gr += "\"#{link[:head_uuid]}\" -> \"#{link[:tail_uuid]}\" [label=\" #{link[:name]}\", href=\"/links/#{link[:uuid]}\"];"
-        gr += CollectionsController::generate_provenance_edges(pdata, link[:tail_uuid], opts)
+        gr += ProvenanceHelper::describe_node(pdata, link[:tail_uuid])
+        gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => "/links/#{link[:uuid]}"}, opts) 
+        gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, link[:tail_uuid], opts)
       end
     end
 
@@ -117,14 +174,27 @@ class ProvenanceHelper
     
     gr = """strict digraph {
 node [fontsize=8,shape=box];
-edge [dir=back,fontsize=8];"""
+edge [fontsize=8];"""
+
+    if opts[:direction] == :bottom_up
+      gr += "edge [dir=back];"
+    end
 
     #puts "pdata is #{pdata}"
 
-    gr += CollectionsController::generate_provenance_edges(pdata, uuid, opts)
+    visited = {}
+    if uuid.respond_to? :each
+      uuid.each do |u|
+        gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, u, opts)
+      end
+    else
+      gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, uuid, opts)
+    end
 
     gr += "}"
     svg = ""
+
+    #puts gr
 
     Open3.popen2("dot", "-Tsvg") do |stdin, stdout, wait_thr|
       stdin.print(gr)
