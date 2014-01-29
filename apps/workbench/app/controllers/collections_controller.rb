@@ -58,7 +58,6 @@ class CollectionsController < ApplicationController
     if rsc
       "\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}\"];"
     else
-      puts "error! #{uuid} #{rsc}"
       ""
     end
   end
@@ -77,7 +76,7 @@ class CollectionsController < ApplicationController
     end
   end
 
-  def self.script_param_edges(visited, job, prefix, sp)
+  def self.script_param_edges(visited, job, prefix, sp, opts)
     gr = ""
     if sp and not sp.empty?
       case sp
@@ -86,24 +85,24 @@ class CollectionsController < ApplicationController
           if prefix.size > 0
             k = prefix + "::" + k.to_s
           end
-          gr += CollectionsController::script_param_edges(visited, job, k.to_s, v)
+          gr += CollectionsController::script_param_edges(visited, job, k.to_s, v, opts)
         end
       when Array
         sp.each do |v|
-          gr += CollectionsController::script_param_edges(visited, job, prefix, v)
+          gr += CollectionsController::script_param_edges(visited, job, prefix, v, opts)
         end
       else
         m = collection_uuid(sp)
         if m
           gr += "\"#{job_uuid(job)}\" -> \"#{m}\" [label=\" #{prefix}\"];"
-          gr += CollectionsController::generate_provenance_edges(visited, m)
+          gr += CollectionsController::generate_provenance_edges(visited, m, opts)
         end
       end
     end
     gr
   end
 
-  def self.generate_provenance_edges(pdata, uuid)
+  def self.generate_provenance_edges(pdata, uuid, opts)
     gr = ""
     m = CollectionsController::collection_uuid(uuid)
     uuid = m if m
@@ -113,7 +112,7 @@ class CollectionsController < ApplicationController
     if (not uuid) or uuid.empty? \
       or (pdata[uuid] and pdata[uuid][:_visited])
 
-      puts "already visited #{uuid}"
+      #puts "already visited #{uuid}"
       return ""
     end
 
@@ -123,7 +122,7 @@ class CollectionsController < ApplicationController
       pdata[uuid][:_visited] = true
     end
 
-    puts "visiting #{uuid}"
+    #puts "visiting #{uuid}"
 
     if m  
       # uuid is a collection
@@ -146,7 +145,7 @@ class CollectionsController < ApplicationController
       if rsc == Job
         job = pdata[uuid]
         if job
-          gr += CollectionsController::script_param_edges(pdata, job, "", job[:script_parameters])
+          gr += CollectionsController::script_param_edges(pdata, job, "", job[:script_parameters], opts)
         end
       else
         gr += CollectionsController::describe_node(uuid)
@@ -157,25 +156,25 @@ class CollectionsController < ApplicationController
       if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
         gr += CollectionsController::describe_node(link[:tail_uuid])
         gr += "\"#{link[:head_uuid]}\" -> \"#{link[:tail_uuid]}\" [label=\" #{link[:name]}\", href=\"/links/#{link[:uuid]}\"];"
-        gr += CollectionsController::generate_provenance_edges(pdata, link[:tail_uuid])
+        gr += CollectionsController::generate_provenance_edges(pdata, link[:tail_uuid], opts)
       end
     end
 
-    puts "finished #{uuid}"
+    #puts "finished #{uuid}"
 
     gr
   end
 
-  def self.create_provenance_graph(pdata, uuid)
+  def self.create_provenance_graph(pdata, uuid, opts={})
     require 'open3'
     
     gr = """strict digraph {
 node [fontsize=8,shape=box];
 edge [dir=back,fontsize=8];"""
 
-    puts "pdata is #{pdata}"
+    #puts "pdata is #{pdata}"
 
-    gr += CollectionsController::generate_provenance_edges(pdata, uuid)
+    gr += CollectionsController::generate_provenance_edges(pdata, uuid, opts)
 
     gr += "}"
     svg = ""

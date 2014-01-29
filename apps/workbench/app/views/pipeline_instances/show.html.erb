@@ -28,6 +28,9 @@
     <% end %>
   </tbody>
 </table>
+
+<%= raw(@prov_svg) %>
+
 <pre>
 <%= JSON.pretty_generate(@object.attributes) rescue nil %>
 </pre>
