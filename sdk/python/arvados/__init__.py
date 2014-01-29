@@ -140,7 +140,7 @@ def api(version=None):
     global services, config
 
     if not config:
-        config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados')
+        config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados/settings.conf')
         if 'ARVADOS_DEBUG' in config:
             logging.basicConfig(level=logging.DEBUG)
 

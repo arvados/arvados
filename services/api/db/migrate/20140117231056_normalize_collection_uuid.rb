@@ -25,7 +25,7 @@ EOS
     update_sql <<-EOS
 UPDATE collections
  SET uuid = regexp_replace(uuid,'\\+.*','') || '+' || length(manifest_text)
- WHERE uuid !~ '^[0-9a-f]{32,}\\+[0-9]+'
+ WHERE uuid !~ '^[0-9a-f]{32,}\\+[0-9]+$'
    AND (regexp_replace(uuid,'\\+.*','') || '+' || length(manifest_text))
      NOT IN (SELECT uuid FROM collections)
 EOS
@@ -60,7 +60,7 @@ UPDATE links
    AND (#{ht}_kind='arvados#collection' or #{ht}_uuid ~ '^[0-9a-f]{32,}')
    AND #{ht}_uuid NOT IN (SELECT uuid FROM collections)
    AND regexp_replace(#{ht}_uuid,'\\+.*','') = regexp_replace(c.uuid,'\\+.*','')
-   AND c.uuid ~ '^[0-9a-f]{32,}\\+[0-9]+'
+   AND c.uuid ~ '^[0-9a-f]{32,}\\+[0-9]+$'
 EOS
     end
 

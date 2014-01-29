@@ -18,13 +18,13 @@ Gem::Specification.new do |s|
   s.executables << "arv-run-pipeline-instance"
   s.executables << "arv-crunch-job"
   s.executables << "arv-tag"
-  s.add_dependency('google-api-client', '~> 0.6.3')
-  s.add_dependency('activesupport', '>= 3.2.13')
-  s.add_dependency('json', '>= 1.7.7')
-  s.add_dependency('trollop', '>= 2.0')
-  s.add_dependency('andand', '>= 1.3.3')
-  s.add_dependency('oj', '>= 2.0.3')
-  s.add_dependency('curb', '~> 0.8')
+  s.add_runtime_dependency 'google-api-client', '~> 0.6', '>= 0.6.3'
+  s.add_runtime_dependency 'activesupport', '~> 3.2', '>= 3.2.13'
+  s.add_runtime_dependency 'json', '~> 1.7', '>= 1.7.7'
+  s.add_runtime_dependency 'trollop', '~> 2.0'
+  s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
+  s.add_runtime_dependency 'oj', '~> 2.0', '>= 2.0.3'
+  s.add_runtime_dependency 'curb', '~> 0.8'
   s.homepage    =
     'http://arvados.org'
 end
