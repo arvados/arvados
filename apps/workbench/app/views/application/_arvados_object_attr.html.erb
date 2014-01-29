@@ -1,8 +1,9 @@
+<% object ||= @object %>
 <% if attrvalue.is_a? Hash then attrvalue.each do |infokey, infocontent| %>
 <tr class="info">
   <td><%= attr %>[<%= infokey %>]</td>
   <td>
-    <%= render partial: 'application/arvados_attr_value', locals: { obj: @object, attr: nil, attrvalue: infocontent } %>
+    <%= render partial: 'application/arvados_attr_value', locals: { obj: object, attr: nil, attrvalue: infocontent } %>
   </td>
 </tr>
 <% end %>
@@ -10,7 +11,7 @@
 <tr class="<%= 'info' if %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).index(attr.to_s).nil? %>">
   <td><%= attr %></td>
   <td>
-    <%= render partial: 'application/arvados_attr_value', locals: { obj: @object, attr: attr, attrvalue: attrvalue } %>
+    <%= render partial: 'application/arvados_attr_value', locals: { obj: object, attr: attr, attrvalue: attrvalue } %>
   </td>
 </tr>
 <% end %>

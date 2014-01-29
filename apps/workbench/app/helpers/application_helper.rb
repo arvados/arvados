@@ -69,6 +69,7 @@ module ApplicationHelper
           link_name = "#{resource_class.to_s}: #{link_name}"
         end
       end
+      style_opts[:class] = (style_opts[:class] || '') + ' nowrap'
       link_to link_name, { controller: resource_class.to_s.underscore.pluralize, action: 'show', id: link_uuid }, style_opts
     else
       attrvalue
