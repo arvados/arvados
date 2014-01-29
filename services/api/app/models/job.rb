@@ -106,8 +106,8 @@ class Job < ArvadosModel
           script_parameters_changed? or
           script_version_changed? or
           (!cancelled_at_was.nil? and
-           (cancelled_by_client_changed? or
-            cancelled_by_user_changed? or
+           (cancelled_by_client_uuid_changed? or
+            cancelled_by_user_uuid_changed? or
             cancelled_at_changed?)) or
           started_at_changed? or
           finished_at_changed? or
