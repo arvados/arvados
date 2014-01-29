@@ -58,18 +58,14 @@ class CollectionsController < ApplicationController
     if rsc
       "\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}\"];"
     else
+      puts "error! #{uuid} #{rsc}"
       ""
     end
   end
 
-  def self.describe_script(job)
-    # """\"#{job.script_version}\" [label=\"#{job.script}: #{job.script_version}\"];
-    #   \"#{job.uuid}\" -> \"#{job.script_version}\" [label=\"script\"];"""
-    "\"#{job.uuid}\" [label=\"#{job.script}\\n#{job.script_version}\"];"
-  end
-
   def self.job_uuid(job)
-    "#{job.script}\\n#{job.script_version}"
+    # "#{job[:script]}\\n#{job[:script_version]}"
+    "#{job[:script]}"
   end
 
   def self.collection_uuid(uuid)
@@ -115,39 +111,42 @@ class CollectionsController < ApplicationController
     uuid = uuid.intern if uuid
 
     if (not uuid) or uuid.empty? \
-      or (pdata[uuid] and pdata[uuid][:_visited]) \
-      or (not pdata[uuid])
+      or (pdata[uuid] and pdata[uuid][:_visited])
 
       puts "already visited #{uuid}"
       return ""
     end
 
-    puts "visiting #{uuid}"
+    if not pdata[uuid] then 
+      return CollectionsController::describe_node(uuid) 
+    else
+      pdata[uuid][:_visited] = true
+    end
 
-    pdata[uuid][:_visited] = true
+    puts "visiting #{uuid}"
 
     if m  
       # uuid is a collection
       gr += CollectionsController::describe_node(uuid)
 
       pdata.each do |k, job|
-        if job[:output] == uuid
+        if job[:output] == uuid.to_s
           gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\"output\"];"
           gr += CollectionsController::generate_provenance_edges(pdata, job[:uuid])
         end
-        if job[:log] == uuid
+        if job[:log] == uuid.to_s
           gr += "\"#{uuid}\" -> \"#{job_uuid(job)}\" [label=\"log\"];"
           gr += CollectionsController::generate_provenance_edges(pdata, job[:uuid])
         end
       end
     else
       # uuid is something else
-      rsc = ArvadosBase::resource_class_for_uuid uuid
+      rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
 
       if rsc == Job
         job = pdata[uuid]
         if job
-          gr += CollectionsController::script_param_edges(pdata, job, "", job.script_parameters)
+          gr += CollectionsController::script_param_edges(pdata, job, "", job[:script_parameters])
         end
       else
         gr += CollectionsController::describe_node(uuid)

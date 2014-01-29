@@ -77,13 +77,13 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
       end
     end
-    gr
   end
 
   def generate_provenance_edges(visited, uuid)
     m = collection_uuid(uuid)
+    uuid = m if m
 
-    if not uuid or uuid.empty? or visited[uuid] or visited[m]
+    if not uuid or uuid.empty? or visited[uuid]
       return ""
     end
 
@@ -91,7 +91,6 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     if m  
       # uuid is a collection
-      uuid = m
       Collection.where(uuid: uuid).each do |c|
         visited[uuid] = c.as_api_response
       end
@@ -110,7 +109,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       if rsc == Job
         Job.where(uuid: uuid).each do |job|
           visited[uuid] = job.as_api_response
-          script_param_edges(visited, job, "", job.script_parameters)
+          script_param_edges(visited, job.script_parameters)
         end
       elsif rsc != nil
         rsc.where(uuid: uuid).each do |r|

@@ -210,8 +210,8 @@
 	  </td><td>
 	    <%= j.script_version %>
 	  </td><td>
-            <span class="label <%= if j.success then 'label-success'; elsif j.active then 'label-primary'; else 'label-warning'; end %>">
-	      <%= j.success || j.active ? 'ok' : 'failed' %>
+            <span class="label <%= if j.success then 'label-success'; elsif j.running then 'label-primary'; else 'label-warning'; end %>">
+	      <%= j.success || j.running ? 'ok' : 'failed' %>
             </span>
 	  </td><td>
 	    <%= j.started_at %>
