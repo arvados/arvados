@@ -93,6 +93,10 @@ class Arvados::V1::CollectionsController < ApplicationController
       # uuid is a collection
       Collection.where(uuid: uuid).each do |c|
         visited[uuid] = c.as_api_response
+        visited[uuid][:files] = []
+        c.files.each do |f|
+          visited[uuid][:files] << f
+        end
       end
 
       Job.where(output: uuid).each do |job|

@@ -11,17 +11,26 @@ module ProvenanceHelper
           if pdata[uuid][:name]
             return "\"#{uuid}\" [label=\"#{pdata[uuid][:name]}\",href=\"#{href}\",shape=oval];\n"
           else
-            i = 0
-            label = ""
-            while i < 3 and i < pdata[uuid].files.length
-              label += "\\n" unless label == ""
-              label += pdata[uuid].files[i][1]
-              i += 1
+            files = nil
+            if pdata[uuid].respond_to? :files
+              files = pdata[uuid].files
+            elsif pdata[uuid][:files]
+              files = pdata[uuid][:files]
             end
-            if i < pdata[uuid].files.length
-              label += "\\n&vellip;"
+            
+            if files
+              i = 0
+              label = ""
+              while i < 3 and i < files.length
+                label += "\\n" unless label == ""
+                label += files[i][1]
+                i += 1
+              end
+              if i < files.length
+                label += "\\n&vellip;"
+              end
+              return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval];\n"
             end
-            return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval];\n"
           end  
         end
         return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\"];\n"
@@ -88,9 +97,9 @@ module ProvenanceHelper
         unless node == ""
           node += "']"
           #puts node
-          id = "#{job[:uuid]}_#{prefix}"
-          gr += "\"#{id}\" [label=\"#{node}\"];\n"
-          gr += edge(job_uuid(job), id, {:label => prefix}, opts)        
+          #id = "#{job[:uuid]}_#{prefix}"
+          gr += "\"#{node}\" [label=\"#{node}\"];\n"
+          gr += edge(job_uuid(job), node, {:label => prefix}, opts)        
         end
       else
         m = collection_uuid(sp)
@@ -98,9 +107,9 @@ module ProvenanceHelper
           gr += edge(job_uuid(job), m, {:label => prefix}, opts)
           gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, m, opts)
         elsif opts[:all_script_parameters]
-          id = "#{job[:uuid]}_#{prefix}"
-          gr += "\"#{id}\" [label=\"#{sp}\"];\n"
-          gr += edge(job_uuid(job), id, {:label => prefix}, opts)
+          #id = "#{job[:uuid]}_#{prefix}"
+          gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
+          gr += edge(job_uuid(job), sp, {:label => prefix}, opts)
         end
       end
     end
