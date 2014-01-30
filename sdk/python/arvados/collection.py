@@ -22,7 +22,6 @@ from keep import *
 from stream import *
 import config
 import errors
-import util
 
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
