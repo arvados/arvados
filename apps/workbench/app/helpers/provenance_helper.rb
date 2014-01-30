@@ -24,17 +24,32 @@ module ProvenanceHelper
       end
     end
 
+    def determine_fillcolor(n)
+      bgcolor = ""
+      case n
+      when 1
+        bgcolor = "style=filled,fillcolor=\"#88ff88\""
+      when 2
+        bgcolor = "style=filled,fillcolor=\"#8888ff\""
+      when 3
+        bgcolor = "style=filled,fillcolor=\"#88ffff\""
+      end
+      bgcolor
+    end
+
     def describe_node(uuid)
+      bgcolor = determine_fillcolor @opts[:pips][uuid] if @opts[:pips]
+
       rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
       if rsc
         href = "/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}"
-
+      
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
           if @pdata[uuid] 
             #puts @pdata[uuid]
             if @pdata[uuid][:name]
-              return "\"#{uuid}\" [label=\"#{@pdata[uuid][:name]}\",href=\"#{href}\",shape=oval];\n"
+              return "\"#{uuid}\" [label=\"#{@pdata[uuid][:name]}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
             else
               files = nil
               if @pdata[uuid].respond_to? :files
@@ -54,19 +69,21 @@ module ProvenanceHelper
                 if i < files.length
                   label += "\\n&vellip;"
                 end
-                return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval];\n"
+                return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
               end
             end  
           end
-          return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\"];\n"
+          return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\",#{bgcolor}];\n"
         end
       end
-      return ""
+      "\"#{uuid}\" [#{bgcolor}];\n"
     end
 
     def job_uuid(job)
-      if @opts[:combine_jobs]
+      if @opts[:combine_jobs] == :script_only
         uuid = "#{job[:script]}"
+      elsif @opts[:combine_jobs] == :script_and_version
+        uuid = "#{job[:script]}_#{job[:script_version]}"
       else
         uuid = "#{job[:uuid]}"
       end
@@ -185,6 +202,7 @@ module ProvenanceHelper
             gr += script_param_edges(job, "", job[:script_parameters])
 
             if @opts[:script_version_nodes]
+              gr += describe_node(job[:script_version])
               gr += edge(job_uuid(job), job[:script_version], {:label => "script_version"})
             end
           end
@@ -206,18 +224,27 @@ module ProvenanceHelper
       gr
     end
 
-    def add_jobs_href
+    def describe_jobs
       gr = ""
       @jobs.each do |k, v|
         gr += "\"#{k}\" [href=\"/jobs?"
-        script = ""
+        
+        n = 0
         v.each do |u|
           gr += "uuid%5b%5d=#{u[:uuid]}&"
-          script = u[:script]
+          n |= @opts[:pips][u[:uuid].intern] if @opts[:pips] and @opts[:pips][u[:uuid].intern]
         end
+
         gr += "\",label=\""
-        gr += if @opts[:combine_jobs] then "#{script}" else "#{script}\\n#{v[0][:finished_at]}" end
-        gr += "\"];\n"
+        
+        if @opts[:combine_jobs] == :script_only
+          gr += uuid = "#{v[0][:script]}"
+        elsif @opts[:combine_jobs] == :script_and_version
+          gr += uuid = "#{v[0][:script]}"
+        else
+          gr += uuid = "#{v[0][:script]}\\n#{v[0][:finished_at]}"
+        end
+        gr += "\",#{determine_fillcolor n}];\n"
       end
       gr
     end
@@ -254,7 +281,7 @@ edge [fontsize=8];
       gr += g.generate_provenance_edges(k)
     end
 
-    gr += g.add_jobs_href
+    gr += g.describe_jobs
 
     gr += "}"
     svg = ""
