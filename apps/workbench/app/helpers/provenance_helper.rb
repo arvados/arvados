@@ -1,209 +1,267 @@
 module ProvenanceHelper
-  def self.describe_node(pdata, uuid)
-    rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
-    if rsc
-      href = "/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}"
 
-      #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
-      if rsc == Collection
-        if pdata[uuid] 
-          #puts pdata[uuid]
-          if pdata[uuid][:name]
-            return "\"#{uuid}\" [label=\"#{pdata[uuid][:name]}\",href=\"#{href}\",shape=oval];\n"
-          else
-            files = nil
-            if pdata[uuid].respond_to? :files
-              files = pdata[uuid].files
-            elsif pdata[uuid][:files]
-              files = pdata[uuid][:files]
-            end
-            
-            if files
-              i = 0
-              label = ""
-              while i < 3 and i < files.length
-                label += "\\n" unless label == ""
-                label += files[i][1]
-                i += 1
-              end
-              if i < files.length
-                label += "\\n&vellip;"
-              end
-              return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval];\n"
-            end
-          end  
-        end
-        return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\"];\n"
-      end
+  class GenerateGraph
+    def initialize(pdata, opts)
+      @pdata = pdata
+      @opts = opts
+      @visited = {}
+      @jobs = {}
     end
-    return ""
-  end
 
-  def self.job_uuid(job)
-    # "#{job[:script]}\\n#{job[:script_version]}"
-    "#{job[:script]}"
-  end
-
-  def self.collection_uuid(uuid)
-    m = /([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?/.match(uuid.to_s)
-    if m
-      m[1]
-    else
-      nil
-    end
-  end
-
-  def self.edge(tail, head, extra, opts)
-    if opts[:direction] == :bottom_up
-      gr = "\"#{tail}\" -> \"#{head}\""
-    else
-      gr = "\"#{head}\" -> \"#{tail}\""
-    end
-    if extra.length > 0
-      gr += "["
-      extra.each do |k, v|
-        gr += "#{k}=\"#{v}\","
-      end
-      gr += "]"
-    end
-    gr += ";\n"
-    gr
-  end
-
-  def self.script_param_edges(pdata, visited, job, prefix, sp, opts)
-    gr = ""
-    if sp and not sp.empty?
-      case sp
-      when Hash
-        sp.each do |k, v|
-          if prefix.size > 0
-            k = prefix + "::" + k.to_s
-          end
-          gr += ProvenanceHelper::script_param_edges(pdata, visited, job, k.to_s, v, opts)
-        end
-      when Array
-        i = 0
-        node = ""
-        sp.each do |v|
-          if collection_uuid(v)
-            gr += ProvenanceHelper::script_param_edges(pdata, visited, job, "#{prefix}[#{i}]", v, opts)
-          else
-            node += "', '" unless node == ""
-            node = "['" if node == ""
-            node += "#{v}"
-          end
-          i += 1
-        end
-        unless node == ""
-          node += "']"
-          #puts node
-          #id = "#{job[:uuid]}_#{prefix}"
-          gr += "\"#{node}\" [label=\"#{node}\"];\n"
-          gr += edge(job_uuid(job), node, {:label => prefix}, opts)        
-        end
+    def self.collection_uuid(uuid)
+      m = /^([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?$/.match(uuid.to_s)
+      if m
+        #if m[2]
+        return m[1]
+        #else
+        #  Collection.where(uuid: ['contains', m[1]]).each do |u|
+        #    puts "fixup #{uuid} to #{u.uuid}"
+        #    return u.uuid
+        #  end
+        #end
       else
-        m = collection_uuid(sp)
-        if m
-          gr += edge(job_uuid(job), m, {:label => prefix}, opts)
-          gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, m, opts)
-        elsif opts[:all_script_parameters]
-          #id = "#{job[:uuid]}_#{prefix}"
-          gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
-          gr += edge(job_uuid(job), sp, {:label => prefix}, opts)
-        end
+        nil
       end
     end
-    gr
-  end
 
-  def self.generate_provenance_edges(pdata, visited, uuid, opts)
-    gr = ""
-    m = ProvenanceHelper::collection_uuid(uuid)
-    uuid = m if m
+    def describe_node(uuid)
+      rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
+      if rsc
+        href = "/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}"
 
-    uuid = uuid.intern if uuid
-
-    if (not uuid) or uuid.empty? or visited[uuid]
-
-      #puts "already visited #{uuid}"
+        #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
+        if rsc == Collection
+          if @pdata[uuid] 
+            #puts @pdata[uuid]
+            if @pdata[uuid][:name]
+              return "\"#{uuid}\" [label=\"#{@pdata[uuid][:name]}\",href=\"#{href}\",shape=oval];\n"
+            else
+              files = nil
+              if @pdata[uuid].respond_to? :files
+                files = @pdata[uuid].files
+              elsif @pdata[uuid][:files]
+                files = @pdata[uuid][:files]
+              end
+              
+              if files
+                i = 0
+                label = ""
+                while i < 3 and i < files.length
+                  label += "\\n" unless label == ""
+                  label += files[i][1]
+                  i += 1
+                end
+                if i < files.length
+                  label += "\\n&vellip;"
+                end
+                return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval];\n"
+              end
+            end  
+          end
+          return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\"];\n"
+        end
+      end
       return ""
     end
 
-    if not pdata[uuid] then 
-      return ProvenanceHelper::describe_node(pdata, uuid)
-    else
-      visited[uuid] = true
+    def job_uuid(job)
+      if @opts[:combine_jobs]
+        uuid = "#{job[:script]}"
+      else
+        uuid = "#{job[:uuid]}"
+      end
+
+      @jobs[uuid] = [] unless @jobs[uuid]
+      @jobs[uuid] << job unless @jobs[uuid].include? job
+
+      uuid
     end
 
-    #puts "visiting #{uuid}"
-
-    if m  
-      # uuid is a collection
-      gr += ProvenanceHelper::describe_node(pdata, uuid)
-
-      pdata.each do |k, job|
-        if job[:output] == uuid.to_s
-          gr += self.edge(uuid, job_uuid(job), {:label => "output"}, opts)
-          gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, job[:uuid], opts)
+    def edge(tail, head, extra)
+      if @opts[:direction] == :bottom_up
+        gr = "\"#{tail}\" -> \"#{head}\""
+      else
+        gr = "\"#{head}\" -> \"#{tail}\""
+      end
+      if extra.length > 0
+        gr += "["
+        extra.each do |k, v|
+          gr += "#{k}=\"#{v}\","
         end
-        if job[:log] == uuid.to_s
-          gr += edge(uuid, job_uuid(job), {:label => "log"}, opts)
-          gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, job[:uuid], opts)
+        gr += "]"
+      end
+      gr += ";\n"
+      gr
+    end
+
+    def script_param_edges(job, prefix, sp)
+      gr = ""
+      if sp and not sp.empty?
+        case sp
+        when Hash
+          sp.each do |k, v|
+            if prefix.size > 0
+              k = prefix + "::" + k.to_s
+            end
+            gr += script_param_edges(job, k.to_s, v)
+          end
+        when Array
+          i = 0
+          node = ""
+          sp.each do |v|
+            if GenerateGraph::collection_uuid(v)
+              gr += script_param_edges(job, "#{prefix}[#{i}]", v)
+            else
+              node += "', '" unless node == ""
+              node = "['" if node == ""
+              node += "#{v}"
+            end
+            i += 1
+          end
+          unless node == ""
+            node += "']"
+            #puts node
+            #id = "#{job[:uuid]}_#{prefix}"
+            gr += "\"#{node}\" [label=\"#{node}\"];\n"
+            gr += edge(job_uuid(job), node, {:label => prefix})        
+          end
+        else
+          m = GenerateGraph::collection_uuid(sp)
+          if m
+            gr += edge(job_uuid(job), m, {:label => prefix})
+            gr += generate_provenance_edges(m)
+          elsif @opts[:all_script_parameters]
+            #id = "#{job[:uuid]}_#{prefix}"
+            gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
+            gr += edge(job_uuid(job), sp, {:label => prefix})
+          end
         end
       end
-    else
-      # uuid is something else
-      rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
+      gr
+    end
 
-      if rsc == Job
-        job = pdata[uuid]
-        if job
-          gr += ProvenanceHelper::script_param_edges(pdata, visited, job, "", job[:script_parameters], opts)
+    def generate_provenance_edges(uuid)
+      gr = ""
+      m = GenerateGraph::collection_uuid(uuid)
+      uuid = m if m
+
+      uuid = uuid.intern if uuid
+
+      if (not uuid) or uuid.empty? or @visited[uuid]
+
+        #puts "already @visited #{uuid}"
+        return ""
+      end
+
+      if not @pdata[uuid] then 
+        return describe_node(uuid)
+      else
+        @visited[uuid] = true
+      end
+
+      #puts "visiting #{uuid}"
+
+      if m  
+        # uuid is a collection
+        gr += describe_node(uuid)
+
+        @pdata.each do |k, job|
+          if job[:output] == uuid.to_s
+            gr += edge(uuid, job_uuid(job), {:label => "output"})
+            gr += generate_provenance_edges(job[:uuid])
+          end
+          if job[:log] == uuid.to_s
+            gr += edge(uuid, job_uuid(job), {:label => "log"})
+            gr += generate_provenance_edges(job[:uuid])
+          end
         end
       else
-        gr += ProvenanceHelper::describe_node(pdata, uuid)
+        # uuid is something else
+        rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
+
+        if rsc == Job
+          job = @pdata[uuid]
+          if job
+            gr += script_param_edges(job, "", job[:script_parameters])
+
+            if @opts[:script_version_nodes]
+              gr += edge(job_uuid(job), job[:script_version], {:label => "script_version"})
+            end
+          end
+        else
+          gr += describe_node(uuid)
+        end
       end
+
+      @pdata.each do |k, link|
+        if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
+          gr += describe_node(link[:tail_uuid])
+          gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => "/links/#{link[:uuid]}"}) 
+          gr += generate_provenance_edges(link[:tail_uuid])
+        end
+      end
+
+      #puts "finished #{uuid}"
+
+      gr
     end
 
-    pdata.each do |k, link|
-      if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
-        gr += ProvenanceHelper::describe_node(pdata, link[:tail_uuid])
-        gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => "/links/#{link[:uuid]}"}, opts) 
-        gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, link[:tail_uuid], opts)
+    def add_jobs_href
+      gr = ""
+      @jobs.each do |k, v|
+        gr += "\"#{k}\" [href=\"/jobs?"
+        script = ""
+        v.each do |u|
+          gr += "uuid%5b%5d=#{u[:uuid]}&"
+          script = u[:script]
+        end
+        gr += "\",label=\""
+        gr += if @opts[:combine_jobs] then "#{script}" else "#{script}\\n#{v[0][:finished_at]}" end
+        gr += "\"];\n"
       end
+      gr
     end
 
-    #puts "finished #{uuid}"
-
-    gr
   end
 
-  def self.create_provenance_graph(pdata, uuid, opts={})
-    require 'open3'
+  def self.create_provenance_graph(pdata, opts={})
+    if pdata.is_a? Array or pdata.is_a? ArvadosResourceList
+      p2 = {}
+      pdata.each do |k|
+        p2[k[:uuid].intern] = k if k[:uuid]
+      end
+      pdata = p2
+    end
+
+    unless pdata.is_a? Hash
+      raise "create_provenance_graph accepts Array or Hash for pdata only, pdata is #{pdata.class}"
+    end
     
     gr = """strict digraph {
 node [fontsize=8,shape=box];
-edge [fontsize=8];"""
+edge [fontsize=8];
+"""
 
     if opts[:direction] == :bottom_up
       gr += "edge [dir=back];"
     end
 
-    #puts "pdata is #{pdata}"
+    #puts "@pdata is #{pdata}"
 
-    visited = {}
-    if uuid.respond_to? :each
-      uuid.each do |u|
-        gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, u, opts)
-      end
-    else
-      gr += ProvenanceHelper::generate_provenance_edges(pdata, visited, uuid, opts)
+    g = GenerateGraph.new(pdata, opts)
+
+    pdata.each do |k, v|
+      gr += g.generate_provenance_edges(k)
     end
+
+    gr += g.add_jobs_href
 
     gr += "}"
     svg = ""
 
     #puts gr
+
+    require 'open3'
 
     Open3.popen2("dot", "-Tsvg") do |stdin, stdout, wait_thr|
       stdin.print(gr)
@@ -215,5 +273,27 @@ edge [fontsize=8];"""
 
     svg = svg.sub(/<\?xml.*?\?>/m, "")
     svg = svg.sub(/<!DOCTYPE.*?>/m, "")
+  end
+
+  def self.find_collections(sp)
+    c = []
+    if sp and not sp.empty?
+      case sp
+      when Hash
+        sp.each do |k, v|
+          c.concat(find_collections(v))
+        end
+      when Array
+        sp.each do |v|
+          c.concat(find_collections(v))
+        end
+      else
+        m = GenerateGraph::collection_uuid(sp)
+        if m
+          c << m
+        end
+      end
+    end
+    c
   end
 end

@@ -19,9 +19,7 @@ class PipelineInstancesController < ApplicationController
       provenance[c.uuid.intern] = c
     end
 
-    PipelineInstance.where(uuid: @object.uuid).each do |u|
-      @prov_svg = ProvenanceHelper::create_provenance_graph provenance, collections, {:all_script_parameters => true}
-    end
+    @prov_svg = ProvenanceHelper::create_provenance_graph provenance, {:all_script_parameters => true}
   end
 
 end
