@@ -18,27 +18,12 @@ import fcntl
 import time
 import threading
 
-EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
-
 from api import *
-from stream import *
 from collection import *
 from keep import *
+from stream import *
+import errors
 import util
-
-class errors:
-    class SyntaxError(Exception):
-        pass
-    class AssertionError(Exception):
-        pass
-    class NotFoundError(Exception):
-        pass
-    class CommandFailedError(Exception):
-        pass
-    class KeepWriteError(Exception):
-        pass
-    class NotImplementedError(Exception):
-        pass
 
 def task_set_output(self,s):
     api('v1').job_tasks().update(uuid=self['uuid'],

@@ -7,15 +7,15 @@ import types
 
 import apiclient
 import apiclient.discovery
+import config
+import errors
 import util
 
-config = None
 services = {}
 
 class CredentialsFromEnv(object):
     @staticmethod
     def http_request(self, uri, **kwargs):
-        global config
         from httplib import BadStatusLine
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
@@ -34,21 +34,6 @@ class CredentialsFromEnv(object):
         http.orig_http_request = http.request
         http.request = types.MethodType(self.http_request, http)
         return http
-
-# Arvados configuration settings are taken from $HOME/.config/arvados.
-# Environment variables override settings in the config file.
-#
-class ArvadosConfig(dict):
-    def __init__(self, config_file):
-        dict.__init__(self)
-        if os.path.exists(config_file):
-            with open(config_file, "r") as f:
-                for config_line in f:
-                    var, val = config_line.rstrip().split('=', 2)
-                    self[var] = val
-        for var in os.environ:
-            if var.startswith('ARVADOS_'):
-                self[var] = os.environ[var]
 
 # Monkey patch discovery._cast() so objects and arrays get serialized
 # with json.dumps() instead of str().
@@ -71,12 +56,10 @@ def http_cache(data_type):
     return path
 
 def api(version=None):
-    global services, config
+    global services
 
-    if not config:
-        config = ArvadosConfig(os.environ['HOME'] + '/.config/arvados/settings.conf')
-        if 'ARVADOS_DEBUG' in config:
-            logging.basicConfig(level=logging.DEBUG)
+    if 'ARVADOS_DEBUG' in config.settings():
+        logging.basicConfig(level=logging.DEBUG)
 
     if not services.get(version):
         apiVersion = version
@@ -85,10 +68,10 @@ def api(version=None):
             logging.info("Using default API version. " +
                          "Call arvados.api('%s') instead." %
                          apiVersion)
-        if 'ARVADOS_API_HOST' not in config:
+        if 'ARVADOS_API_HOST' not in config.settings():
             raise Exception("ARVADOS_API_HOST is not set. Aborting.")
         url = ('https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' %
-               config['ARVADOS_API_HOST'])
+               config.get('ARVADOS_API_HOST'))
         credentials = CredentialsFromEnv()
 
         # Use system's CA certificates (if we find them) instead of httplib2's

@@ -19,6 +19,8 @@ import time
 import threading
 
 from keep import *
+import config
+import errors
 
 class StreamFileReader(object):
     def __init__(self, stream, pos, size, name):
@@ -99,7 +101,7 @@ class StreamFileReader(object):
     def as_manifest(self):
         if self.size() == 0:
             return ("%s %s 0:0:%s\n"
-                    % (self._stream.name(), EMPTY_BLOCK_LOCATOR, self.name()))
+                    % (self._stream.name(), config.EMPTY_BLOCK_LOCATOR, self.name()))
         return string.join(self._stream.tokens_for_range(self._pos, self._size),
                            " ") + "\n"
 
