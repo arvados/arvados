@@ -1,13 +1,33 @@
-<div>
+<%= content_for :css do %>
+#<%= divId %> {
+ padding-left: 3px;
+ overflow: auto;
+ border: solid;
+ border-width: 1px;
+ border-color: gray;
+ position: absolute;
+ left: 1px;
+
+}
+<% end %>
+
+<div id="_<%= divId %>_container" style="padding-top: 41px; margin-top: -41px">
   <script>
-    $(window).resize(function () { provenance_sizing_fixup("<%= divId %>") } );
+    (function() {
+      var fn = function () { graph_zoom("<%= divId %>", "<%=svgId %>", 1) };
+      $(window).resize(fn);
+      $(window).load(fn);
+      $(window).scroll(fn);
+    })();
   </script>
   <div style="text-align: right">
-    <a href="#"><span class="icon-zoom-out" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', .9)"></span></a>
-    <a href="#"><span class="icon-zoom-in" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', 1./.9)"></span></a>
+    <a style="cursor: pointer"><span class="icon-zoom-out" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', .9)"></span></a>
+    <a style="cursor: pointer"><span class="icon-zoom-in" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', 1./.9)"></span></a>
   </div>
 
   <div id="<%= divId %>">
+    <span id="_<%= divId %>_center" style="padding-left: 300px"/>
     <%= raw(svg) %>
   </div>
+  <div id="_<%= divId %>_padding" style="padding-bottom: 1em" />
 </div>

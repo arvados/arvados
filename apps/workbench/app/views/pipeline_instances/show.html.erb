@@ -1,3 +1,10 @@
+<% content_for :css do %>
+  .pipeline_color_legend {
+    padding-left: 1em;
+    padding-right: 1em;
+  }
+<% end %>
+
 <table class="table table-condensed table-hover topalign">
   <thead>
   </thead>
@@ -29,7 +36,16 @@
   </tbody>
 </table>
 
-<%= raw(@prov_svg) %>
+<div style="text-align: center">
+<span class="pipeline_color_legend" style="background: #88ff88">This pipeline</span> 
+<span class="pipeline_color_legend" style="background: #8888ff">Comparison pipeline</span>
+<span class="pipeline_color_legend" style="background: #88ffff">Shared by both pipelines</span>
+</div>
+
+   <%= render partial: 'application/svg_div', locals: {
+         divId: "provenance_graph", 
+         svgId: "provenance_svg", 
+         svg: @prov_svg } %>
 
 <pre>
 <%= JSON.pretty_generate(@object.attributes) rescue nil %>

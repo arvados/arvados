@@ -11,15 +11,7 @@
 .label a {
   color: inherit;
 }
-#provenance_graph {
- padding-left: 3px;
- overflow:auto;
- border:solid;
- border-width:1px;
- border-color: gray;
- position: absolute;
- left: 1px;
-}
+
 <% end %>
 
 <%#= render :partial => 'nav' %>
@@ -146,7 +138,7 @@
   <div id="provenance2" class="tab-pane fade">
 <script>
     $(function() {
-      $('#prov-tab').on('shown', function() { provenance_sizing_fixup("provenance_graph"); });
+      $('#prov-tab').on('shown', function() { provenance_sizing_fixup("provenance_graph", "provenance_svg"); });
     })
 </script>
    <%= render partial: 'application/svg_div', locals: {

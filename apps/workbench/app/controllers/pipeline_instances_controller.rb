@@ -44,9 +44,9 @@ class PipelineInstancesController < ApplicationController
       n = n << 1
     end
 
-    puts pips
+    #puts pips
 
-    @prov_svg = ProvenanceHelper::create_provenance_graph provenance, {
+    @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
       :all_script_parameters => true, 
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
