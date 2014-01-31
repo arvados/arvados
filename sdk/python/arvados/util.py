@@ -225,7 +225,7 @@ def collection_extract(collection, path, files=[], decompress=True):
                 files_got += [outname]
                 if os.path.exists(os.path.join(path, stream_name, outname)):
                     continue
-                util.mkdir_dash_p(os.path.dirname(os.path.join(path, stream_name, outname)))
+                mkdir_dash_p(os.path.dirname(os.path.join(path, stream_name, outname)))
                 outfile = open(os.path.join(path, stream_name, outname), 'wb')
                 for buf in (f.readall_decompressed() if decompress
                             else f.readall()):
@@ -243,12 +243,7 @@ def collection_extract(collection, path, files=[], decompress=True):
 
 def mkdir_dash_p(path):
     if not os.path.exists(path):
-        util.mkdir_dash_p(os.path.dirname(path))
-        try:
-            os.mkdir(path)
-        except OSError:
-            if not os.path.exists(path):
-                os.mkdir(path)
+        os.makedirs(path)
 
 def stream_extract(stream, path, files=[], decompress=True):
     """Retrieve a stream from Keep and extract it to a local
