@@ -1,0 +1,19 @@
+<ul class="breadcrumb">
+  <li>
+    <%= link_to((Rails.configuration.site_name rescue Rails.application.class.parent_name), '/') %>
+    <span class="divider">/</span>
+  </li>
+  <% if params[:action] == 'index' %>
+    <li class="active">
+      <%= controller.model_class.to_s.pluralize.underscore.gsub '_', ' ' %>
+    </li>
+  <% else %>
+    <li><%= link_to(
+            controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
+            url_for({controller: params[:controller]})) %>
+      <span class="divider">/</span>
+    </li>
+    <li class="active"><%= @object.andand.friendly_link_name %>
+    </li>
+  <% end %>
+</ul>

@@ -16,6 +16,6 @@ class VirtualMachine < ArvadosBase
             super]
   end
   def friendly_link_name
-    self.hostname
+    (hostname && !hostname.empty?) ? hostname : uuid
   end
 end
