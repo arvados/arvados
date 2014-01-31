@@ -251,7 +251,7 @@ module ProvenanceHelper
 
   end
 
-  def self.create_provenance_graph(pdata, opts={})
+  def self.create_provenance_graph(pdata, svgId, opts={})
     if pdata.is_a? Array or pdata.is_a? ArvadosResourceList
       p2 = {}
       pdata.each do |k|
@@ -300,6 +300,7 @@ edge [fontsize=8];
 
     svg = svg.sub(/<\?xml.*?\?>/m, "")
     svg = svg.sub(/<!DOCTYPE.*?>/m, "")
+    svg = svg.sub(/<svg /, "<svg id=\"#{svgId}\" ")
   end
 
   def self.find_collections(sp)

@@ -99,7 +99,7 @@ class CollectionsController < ApplicationController
     end
     
     Collection.where(uuid: @object.uuid).each do |u|
-      @prov_svg = ProvenanceHelper::create_provenance_graph u.provenance, {:direction => :bottom_up, :combine_jobs => :script_only}
+      @prov_svg = ProvenanceHelper::create_provenance_graph u.provenance, "provenance_svg", {:direction => :bottom_up, :combine_jobs => :script_only}
     end
   end
 
