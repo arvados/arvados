@@ -9,7 +9,7 @@ function provenance_sizing_fixup(divId, svgId) {
     var gh = parseFloat(g.getAttribute("height"));
     //var sh = (a.scrollTopMax > 0) ? a.scrollHeight : 0;
     //gh = (gh > sh) ? gh : sh;
-    gh += 5;
+    gh += 25;
     if (h < 0) { h = max; }
     var height;
     if (gh < h) {
