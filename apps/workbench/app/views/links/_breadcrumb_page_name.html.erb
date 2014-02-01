@@ -1,0 +1,8 @@
+<% if @object %>
+(<%= @object.link_class %>)
+<%= @object.name %>:
+<%= @object.tail_kind.sub 'arvados#', ' ' %>
+&rarr;
+<%= @object.head_kind.sub 'arvados#', ' ' %>
+<% end %>
+

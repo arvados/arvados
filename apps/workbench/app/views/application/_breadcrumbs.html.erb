@@ -13,7 +13,8 @@
             url_for({controller: params[:controller]})) %>
       <span class="divider">/</span>
     </li>
-    <li class="active"><%= @object.andand.friendly_link_name %>
+    <li class="active">
+      <%= render partial: 'breadcrumb_page_name' %>
     </li>
   <% end %>
 </ul>
