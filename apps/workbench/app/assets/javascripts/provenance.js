@@ -21,7 +21,13 @@ function provenance_sizing_fixup(divId, svgId) {
         height = String(h) + "px";
     }
     a.style.height = height;
-    b.style.paddingTop = height;
+
+    if (gh < max) {
+        b.style.paddingTop = String(gh) + "px";
+    }
+    else {
+        b.style.paddingTop = String(max) + "px";
+    }
 
     w = window.innerWidth - 25;
     a.style.width = String(w) + "px";
