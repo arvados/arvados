@@ -21,12 +21,12 @@ class TestArvTag < Minitest::Test
   def test_single_tag_single_obj
     # Add a single tag.
     tag_uuid, err = capture_subprocess_io do
-      assert arv_tag 'add', 'test_tag1', '--object', 'uuid1'
+      assert arv_tag '--short', 'add', 'test_tag1', '--object', 'uuid1'
     end
     assert_empty err
 
     out, err = capture_subprocess_io do
-      assert arv '-h', 'link', 'show', '--uuid', tag_uuid.rstrip
+      assert arv 'link', 'show', '--uuid', tag_uuid.rstrip
     end
 
     assert_empty err
@@ -35,7 +35,7 @@ class TestArvTag < Minitest::Test
 
     # Remove the tag.
     out, err = capture_subprocess_io do
-      assert arv_tag '-h', 'remove', 'test_tag1', '--object', 'uuid1'
+      assert arv_tag 'remove', 'test_tag1', '--object', 'uuid1'
     end
 
     assert_empty err
@@ -45,7 +45,7 @@ class TestArvTag < Minitest::Test
 
     # Verify that the link no longer exists.
     out, err = capture_subprocess_io do
-      assert_equal false, arv('-h', 'link', 'show', '--uuid', links[0]['uuid'])
+      assert_equal false, arv('link', 'show', '--uuid', links[0]['uuid'])
     end
 
     assert_equal "Error: Path not found\n", err
@@ -62,7 +62,7 @@ class TestArvTag < Minitest::Test
     assert_empty err
 
     out, err = capture_subprocess_io do
-      assert arv '-h', 'link', 'list', '--where', '{"link_class":"tag","name":"test_tag1"}'
+      assert arv 'link', 'list', '--where', '{"link_class":"tag","name":"test_tag1"}'
     end
 
     assert_empty err

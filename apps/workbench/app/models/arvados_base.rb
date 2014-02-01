@@ -262,9 +262,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def friendly_link_name
-    if self.class.column_names.include? 'name'
-      self.name
-    end
+    (name if self.respond_to? :name) || uuid
   end
 
   protected

@@ -18,8 +18,10 @@ import fcntl
 import time
 import threading
 
-from stream import *
 from keep import *
+from stream import *
+import config
+import errors
 
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
@@ -180,7 +182,7 @@ class CollectionWriter(object):
                 (self._current_stream_length, len(self._current_stream_files)))
         else:
             if len(self._current_stream_locators) == 0:
-                self._current_stream_locators += [EMPTY_BLOCK_LOCATOR]
+                self._current_stream_locators += [config.EMPTY_BLOCK_LOCATOR]
             self._finished_streams += [[self._current_stream_name,
                                        self._current_stream_locators,
                                        self._current_stream_files]]

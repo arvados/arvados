@@ -129,6 +129,11 @@ class ApplicationController < ActionController::Base
     controller_name.classify.constantize
   end
 
+  def breadcrumb_page_name
+    (@breadcrumb_page_name ||
+     (@object.friendly_link_name if @object.respond_to? :friendly_link_name))
+  end
+
   protected
     
   def find_object_by_uuid

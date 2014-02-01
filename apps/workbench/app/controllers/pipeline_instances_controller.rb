@@ -4,6 +4,8 @@ class PipelineInstancesController < ApplicationController
   include PipelineInstancesHelper
 
   def compare
+    @breadcrumb_page_name = 'compare'
+
     @rows = []          # each is {name: S, components: [...]}
 
     # Build a table: x=pipeline y=component

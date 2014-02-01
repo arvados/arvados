@@ -27,7 +27,11 @@ class User < ArvadosBase
                                                 {}))
   end
 
-  def attribute_editable?(attr)
+  def attributes_for_display
+    super.reject { |k,v| %w(owner_uuid default_owner_uuid identity_url prefs).index k }
+  end
+
+ def attribute_editable?(attr)
     (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super(attr)
   end
 

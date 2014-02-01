@@ -89,7 +89,7 @@
 
 <div>
   <strong>Recent pipeline instances</strong>
-  <%= link_to raw("Show all pipeline instances &rarr;"), jobs_path, class: 'pull-right' %>
+  <%= link_to raw("Show all pipeline instances &rarr;"), pipeline_instances_path, class: 'pull-right' %>
   <% if not current_user.andand.is_active or @my_pipelines.empty? %>
     <p>(None)</p>
   <% else %>

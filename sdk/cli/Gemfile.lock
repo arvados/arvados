@@ -1,14 +1,14 @@
 PATH
   remote: .
   specs:
-    arvados-cli (0.1.20140127123159)
-      activesupport (>= 3.2.13)
-      andand (>= 1.3.3)
+    arvados-cli (0.1.20140130154213)
+      activesupport (~> 3.2, >= 3.2.13)
+      andand (~> 1.3, >= 1.3.3)
       curb (~> 0.8)
-      google-api-client (~> 0.6.3)
-      json (>= 1.7.7)
-      oj (>= 2.0.3)
-      trollop (>= 2.0)
+      google-api-client (~> 0.6, >= 0.6.3)
+      json (~> 1.7, >= 1.7.7)
+      oj (~> 2.0, >= 2.0.3)
+      trollop (~> 2.0)
 
 GEM
   remote: https://rubygems.org/

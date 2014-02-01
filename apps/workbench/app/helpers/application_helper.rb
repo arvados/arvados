@@ -56,10 +56,7 @@ module ApplicationHelper
 
         if opts[:friendly_name]
           begin
-            friendly_name = resource_class.find(link_uuid).friendly_link_name
-            if friendly_name and not friendly_name.empty?
-              link_name = friendly_name
-            end
+            link_name = resource_class.find(link_uuid).friendly_link_name
           rescue RuntimeError
             # If that lookup failed, the link will too. So don't make one.
             return attrvalue
