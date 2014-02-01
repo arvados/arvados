@@ -11,11 +11,6 @@
 }
 <% end %>
 
-<ul class="breadcrumb">
-  <li><%= link_to 'Pipeline instances', pipeline_instances_path %> <span class="divider">/</span></li>
-  <li class="active">Compare</li>
-</ul>
-
 <% pi_span = [(10.0/(@objects.count)).floor,1].max %>
 <div>
 <% [['Instance', :uuid], ['Template', :pipeline_template_uuid]].each do |label, attr| %>
