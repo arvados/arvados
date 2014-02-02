@@ -71,7 +71,7 @@ class PipelineInstancesController < ApplicationController
   end
 
   def find_objects_by_uuid
-    @objects = model_class.where(uuid: params[:uuid].split('/'))
+    @objects = model_class.where(uuid: params[:uuids])
   end
 
 end
