@@ -48,6 +48,8 @@
               <% unless key=='output' and pj[:result] != 'complete' %>
               <% val = pj[key.to_sym] || pj[:job].andand[key.to_sym] %>
               <% link_name = case
+                 when !val
+                   val = ''
                  when key == 'script_version' && val.match(/^[0-9a-f]{7,}$/)
                    val = val[0..7] # TODO: leave val alone, make link_to handle git commits
                  when key == 'output'
