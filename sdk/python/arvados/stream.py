@@ -55,6 +55,9 @@ class StreamFileReader(object):
                 break
             yield data
 
+    def seek(self, pos):
+        self._filepos = pos
+
     def bunzip2(self, size):
         decompressor = bz2.BZ2Decompressor()
         for chunk in self.readall(size):
