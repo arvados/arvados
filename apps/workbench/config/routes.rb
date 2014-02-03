@@ -26,7 +26,9 @@ ArvadosWorkbench::Application.routes.draw do
   resources :groups
   resources :specimens
   resources :pipeline_templates
-  resources :pipeline_instances
+  resources :pipeline_instances do
+    get 'compare', on: :collection
+  end
   resources :links
   match '/collections/graph' => 'collections#graph'
   resources :collections

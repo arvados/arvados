@@ -64,11 +64,13 @@ class Job < ArvadosModel
       # instead of a commit-ish.
       return true
     end
-    sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
-    if sha1
-      self.script_version = sha1
-    else
-      raise ArgumentError.new("Specified script_version does not resolve to a commit")
+    if new_record? or script_version_changed?
+      sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
+      if sha1
+        self.script_version = sha1
+      else
+        raise ArgumentError.new("Specified script_version does not resolve to a commit")
+      end
     end
   end
 

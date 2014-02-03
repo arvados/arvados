@@ -1,7 +1,7 @@
 <% if @object.respond_to? :properties %>
 
 <% content_for :page_title do %>
-<%= @object.properties[:page_title] || @object.uuid %>
+<%= @object.properties[:page_title] || @object.friendly_link_name %>
 <% end %>
 
 <% if @object.properties[:page_content] %>

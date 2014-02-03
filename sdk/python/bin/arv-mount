@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+
+import argparse
+import hashlib
+import os
+import re
+import string
+import sys
+import logging
+import fuse
+import errno
+import stat
+import arvados
+import time
+
+class KeepMount(fuse.LoggingMixIn, fuse.Operations):
+    'Read-only Keep mount.'
+
+    def __init__(self):
+        self.arv = arvados.api('v1')
+        self.reader = None
+        self.collections = {}
+        self.audited = dict(read={})
+
+    def load_collection(self, uuid):
+        if uuid in self.collections:
+            return
+        now = time.time()
+        reader = arvados.CollectionReader(uuid)
+        files = {}
+        files[''] = dict(
+            stat=dict(
+                st_mode=(stat.S_IFDIR | 0755), st_ctime=now,
+                st_mtime=now, st_atime=now, st_nlink=2))
+        try:
+            for s in reader.all_streams():
+                for f in s.all_files():
+                    path = re.sub(r'^\./', '', os.path.join(s.name(), f.name()))
+                    files[path] = dict(
+                        stat=dict(
+                            st_mode=(stat.S_IFREG | 0444),
+                            st_size=f.size(), st_nlink=1,
+                            st_ctime=now, st_mtime=now, st_atime=now),
+                        arv_file=f)
+                    logger.debug("collection.load: %s: %s" % (uuid, path))
+        except:
+            # TODO: propagate real error, don't assume ENOENT
+            raise fuse.FuseOSError(errno.ENOENT)
+        self.collections[uuid] = dict(reader=reader, files=files)
+        logger.info("collection.load %s" % uuid)
+
+    def setup_reader(self, path):
+        logger.debug("%s", path.split('/'))
+        return True
+
+    def set_args(self, args):
+        self.args = args
+
+    def parse_and_load(self, path):
+        parts = path.split(os.path.sep, 2)
+        while len(parts) < 3:
+            parts += ['']
+        if not re.match(r'[0-9a-f]{32,}(\+\S+?)*', parts[1]):
+            raise fuse.FuseOSError(errno.ENOENT)
+        if self.args.collection != []:
+            if parts[1] not in self.args.collection:
+                raise fuse.FuseOSError(errno.EPERM)
+        self.load_collection(parts[1])
+        return parts[0:3]
+
+    def audit_read(self, uuid):
+        if self.args.audit and uuid not in self.audited['read']:
+            self.audited['read'][uuid] = True
+            logger.info("collection.read %s" % uuid)
+
+    def read(self, path, size, offset, fh):
+        _, uuid, target = self.parse_and_load(path)
+        if (uuid not in self.collections or
+            target not in self.collections[uuid]['files']):
+            raise fuse.FuseOSError(errno.ENOENT)
+        self.audit_read(uuid)
+        f = self.collections[uuid]['files'][target]['arv_file']
+        f.seek(offset)
+        return f.read(size)
+
+    def readdir(self, path, fh):
+        if path == '/':
+            raise fuse.FuseOSError(errno.EPERM)
+        _, uuid, target = self.parse_and_load(path)
+        if uuid not in self.collections:
+            raise fuse.FuseOSError(errno.ENOENT)
+        if target != '' and target[-1] != os.path.sep:
+            target += os.path.sep
+        dirs = {}
+        for filepath in self.collections[uuid]['files']:
+            if filepath != '':
+                logger.debug(filepath)
+                if target == '' or 0 == string.find(filepath, target):
+                    dirs[filepath[len(target):].split(os.path.sep)[0]] = True
+        return ['.', '..'] + dirs.keys()
+
+    def getattr(self, path, fh=None):
+        if path == '/':
+            now = time.time()
+            return dict(st_mode=(stat.S_IFDIR | 0111), st_ctime=now,
+                        st_mtime=now, st_atime=now, st_nlink=2)
+        _, uuid, target = self.parse_and_load(path)
+        if uuid not in self.collections:
+            raise fuse.FuseOSError(errno.ENOENT)
+        if target in self.collections[uuid]['files']:
+            return self.collections[uuid]['files'][target]['stat']
+        for filepath in self.collections[uuid]['files']:
+            if filepath != '':
+                if target == '' or 0 == string.find(filepath, target + '/'):
+                    return self.collections[uuid]['files']['']['stat']
+        raise fuse.FuseOSError(errno.ENOENT)
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Mount Keep data under the local filesystem.')
+    parser.add_argument('mountpoint', type=str,
+                        help="""
+Mount point.
+""")
+    parser.add_argument('--collection', type=str, action='append', default=[],
+                        help="""
+Collection locator. If none supplied, provide access to all readable
+manifests.
+""")
+    parser.add_argument('--audit', action='store_true',
+                        help="""
+Print the collection uuid on stderr the first time a given collection
+is read.
+""")
+    parser.add_argument('--debug', action='store_true',
+                        help="""
+Print debug messages.
+""")
+    parser.add_argument('--foreground', action='store_true',
+                        help="""
+Run in foreground, instead of detaching and running as a daemon.
+""")
+    args = parser.parse_args()
+    return args
+
+if __name__ == '__main__':
+    args = parse_args()
+    logger = logging.getLogger(os.path.basename(sys.argv[0]))
+    if args.audit:
+        logging.basicConfig(level=logging.INFO)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+    mounter = KeepMount()
+    mounter.set_args(args)
+    fuse = fuse.FUSE(mounter,
+                     args.mountpoint,
+                     foreground=args.foreground,
+                     fsname='arv-mount')

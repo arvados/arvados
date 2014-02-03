@@ -54,4 +54,21 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_not_nil job['cancelled_at'], 'un-cancelled job stays cancelled'
   end
 
+  test "update a job without failing script_version check" do
+    authorize_with :admin
+    put :update, {
+      id: jobs(:uses_nonexistent_script_version).uuid,
+      job: {
+        owner_uuid: users(:admin).uuid
+      }
+    }
+    assert_response :success
+    put :update, {
+      id: jobs(:uses_nonexistent_script_version).uuid,
+      job: {
+        owner_uuid: users(:active).uuid
+      }
+    }
+    assert_response :success
+  end
 end

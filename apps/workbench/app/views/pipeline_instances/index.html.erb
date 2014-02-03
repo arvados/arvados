@@ -1,7 +1,11 @@
+<%= form_tag({action: 'compare', controller: 'pipeline_instances', method: 'get'}, {method: 'get', id: 'compare'}) do |f| %>
+
 <table class="table table-hover">
   <thead>
     <tr class="contain-align-left">
       <th>
+	<%= submit_tag 'Compare', {class: 'btn btn-primary', disabled: true} %>
+      </th><th>
 	status
       </th><th>
 	id
@@ -22,10 +26,12 @@
   </thead>
   <tbody>
 
-    <% @objects.sort_by { |ob| ob[:created_at] }.reverse.each do |ob| %>
+    <% @objects.sort_by { |ob| ob.created_at }.reverse.each do |ob| %>
 
     <tr>
       <td>
+        <%= check_box_tag 'uuids[]', ob.uuid, false %>
+      </td><td>
         <% if ob.success %>
         <span class="label label-success">success</span>
         <% elsif ob.active %>
@@ -59,3 +65,17 @@
 
   </tbody>
 </table>
+
+<% end %>
+
+<% content_for :footer_js do %>
+$('form#compare input[name="uuids[]"]').on('click', function() {
+    var form = $('form#compare')[0]
+    $('input[type=submit]', form).prop('disabled',true);
+    $('input[name="uuids[]"]', form).each(function(){
+        if(this.checked) {
+            $('input[type=submit]', form).prop('disabled',false);
+        }
+    });
+});
+<% end %>
