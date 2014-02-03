@@ -37,6 +37,11 @@
       <a class="brand" style="margin-left: 1px" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
 
       <ul class="nav pull-right">
+        <li>
+          <div class="loading" style="transform: translate(-20px,20px) scale(0.1,0.1); -ms-transform: translate(-20px,20px) scale(0.1,0.1); -webkit-transform: translate(-20px,20px) scale(0.1,0.1); display: none">
+            <%= render partial: 'loading' %>
+          </div>
+        </li>
 	<% if current_user -%>
           <li><span class="badge badge-info" style="margin: 10px auto 10px; padding-top: 4px; padding-bottom: 4px"><%= current_user.email %></span></li>
           <li><a href="<%= logout_path %>">Log out</a></li>
@@ -113,7 +118,10 @@
   <div class="container">
 
     <%= content_for?(:breadcrumbs) ? yield(:breadcrumbs) : render(partial: 'breadcrumbs') %>
-    <%= yield %>
+
+    <div class="body-content">
+      <%= yield %>
+    </div>
 
   </div> <!-- /container -->
 

@@ -3,37 +3,66 @@
     padding-left: 1em;
     padding-right: 1em;
   }
+table.pipeline-components-table thead th {
+  text-align: bottom;
+}
+table.pipeline-components-table div.progress {
+  margin-bottom: 0;
+}
 <% end %>
+<br />
 
-<table class="table table-condensed table-hover topalign">
+<table class="table pipeline-components-table">
+  <colgroup>
+    <col width="15%" />
+    <col width="15%" />
+    <col width="35%" />
+    <col width="35%" />
+  </colgroup>
   <thead>
+    <tr>
+      <th>
+        component
+      </th><th>
+        progress
+        <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
+      </th><th>
+        script, version
+      </th><th>
+        output
+      </th>
+    </tr>
   </thead>
   <tbody>
-    <% @object.attributes_for_display.each do |attr, attrvalue| %>
-    <% if attr == 'components' and attrvalue.is_a? Hash %>
-
-    <tr class="info"><td><%= attr %></td><td>
-        <table class="table">
-          <% render_pipeline_jobs.each do |pj| %>
-          <tr><% %w(index name result job_link script script_version progress_detail progress_bar output_link).each do |key| %>
-            <td>
-              <% if key == 'script_version' %>
-              <%= pj[key.to_sym][0..6] rescue '' %>
-              <% else %>
-              <%= pj[key.to_sym] %>
-              <% end %>
-            </td>
-            <% end %>
-          </tr>
-          <% end %>
-        </table>
-    </td></tr>
-
-    <% else %>
-    <%= render partial: 'application/arvados_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
-    <% end %>
+    <% render_pipeline_jobs.each do |pj| %>
+    <tr>
+      <td>
+        <% if pj[:job].andand[:uuid] %>
+        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]) %>
+        <% else %>
+        <%= pj[:name] %>
+        <% end %>
+      </td><td>
+        <%= pj[:progress_bar] %>
+        <% if pj[:job].andand[:cancelled_at] %>
+        <span class="pull-right label label-warning">cancelled</span>
+        <% elsif pj[:failed] %>
+        <span class="pull-right label label-warning">failed</span>
+        <% elsif pj[:result] == 'queued' %>
+        <span class="pull-right label">queued</span>
+        <% end %>
+      </td><td>
+        <%= pj[:script] %>
+        <br /><span class="deemphasize"><%= pj[:script_version] %></span>
+      </td><td>
+        <%= link_to_if_arvados_object pj[:output] %>
+      </td>
+    </tr>
     <% end %>
   </tbody>
+  <tfoot>
+    <tr><td colspan="4"></td></tr>
+  </tfoot>
 </table>
 
 <div style="text-align: center">
@@ -47,6 +76,12 @@
          svgId: "provenance_svg", 
          svg: @prov_svg } %>
 
-<pre>
-<%= JSON.pretty_generate(@object.attributes) rescue nil %>
-</pre>
+<div style="height: 1em"></div>
+
+<%= render partial: 'arvados_object' %>
+
+<% if @object.active %>
+<% content_for :js do %>
+setInterval(function(){$('a.refresh').click()}, 30000);
+<% end %>
+<% end %>

@@ -20,4 +20,8 @@ class PipelineInstance < ArvadosBase
   def attribute_editable?(attr)
     attr == 'name'
   end
+
+  def attributes_for_display
+    super.reject { |k,v| k == 'components' }
+  end
 end

@@ -5,7 +5,7 @@ class UsersController < ApplicationController
 
   def welcome
     if current_user
-      redirect_to home_user_path(current_user.uuid)
+      home
     end
   end
 
@@ -53,5 +53,9 @@ class UsersController < ApplicationController
     @tutorial_complete = {
       'Run a job' => @my_last_job
     }
+    respond_to do |f|
+      f.js { render template: 'users/home.js' }
+      f.html { render template: 'users/home' }
+    end
   end
 end

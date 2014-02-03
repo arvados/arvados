@@ -1,4 +1,5 @@
 class ApplicationController < ActionController::Base
+  respond_to :html, :json, :js
   protect_from_forgery
   around_filter :thread_clear
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
@@ -59,6 +60,7 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
+      f.js { render }
     end
   end
 
@@ -75,6 +77,7 @@ class ApplicationController < ActionController::Base
           redirect_to params[:return_to] || @object
         end
       }
+      f.js { render }
     end
   end
 
@@ -110,7 +113,12 @@ class ApplicationController < ActionController::Base
 
   def destroy
     if @object.destroy
-      redirect_to(params[:return_to] || :back)
+      respond_to do |f|
+        f.html {
+          redirect_to(params[:return_to] || :back)
+        }
+        f.js { render }
+      end
     else
       self.render_error status: 422
     end

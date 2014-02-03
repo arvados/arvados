@@ -21,6 +21,7 @@
 	dependencies
       </th><th>
 	created
+      </th><th>
       </th>
     </tr>
   </thead>
@@ -28,7 +29,7 @@
 
     <% @objects.sort_by { |ob| ob.created_at }.reverse.each do |ob| %>
 
-    <tr>
+    <tr data-object-uuid="<%= ob.uuid %>">
       <td>
         <%= check_box_tag 'uuids[]', ob.uuid, false %>
       </td><td>
@@ -58,6 +59,12 @@
         </small>
       </td><td>
         <%= ob.created_at %>
+      </td><td>
+        <% if ob.editable? %>
+        <%= link_to({action: 'destroy', id: ob.uuid}, method: :delete, remote: true, data: {confirm: "You are about to delete #{controller.model_class} #{ob.uuid}.\n\nAre you sure?"}) do %>
+        <i class="icon-trash"></i>
+        <% end %>
+        <% end %>
       </td>
     </tr>
 
