@@ -113,7 +113,10 @@
   <div class="container">
 
     <%= content_for?(:breadcrumbs) ? yield(:breadcrumbs) : render(partial: 'breadcrumbs') %>
-    <%= yield %>
+
+    <div class="body-content">
+      <%= yield %>
+    </div>
 
   </div> <!-- /container -->
 

@@ -61,23 +61,23 @@ module PipelineInstancesHelper
           pj[:progress] = 0.0
         end
       end
-      if pj[:job]
-        if pj[:job][:success]
-          pj[:result] = 'complete'
-          pj[:complete] = true
-          pj[:progress] = 1.0
-        elsif pj[:job][:finished_at]
-          pj[:result] = 'failed'
-          pj[:failed] = true
-        elsif pj[:job][:started_at]
-          pj[:result] = 'running'
-        else
-          pj[:result] = 'queued'
-        end
+      if pj[:job][:success]
+        pj[:result] = 'complete'
+        pj[:complete] = true
+        pj[:progress] = 1.0
+      elsif pj[:job][:finished_at]
+        pj[:result] = 'failed'
+        pj[:failed] = true
+      elsif pj[:job][:started_at]
+        pj[:result] = 'running'
+      elsif pj[:job][:uuid]
+        pj[:result] = 'queued'
+      else
+        pj[:result] = 'none'
       end
       pj[:job_id] = pj[:job][:uuid]
-      pj[:script] = pj[:job][:script]
-      pj[:script_version] = pj[:job][:script_version]
+      pj[:script] = pj[:job][:script] || c[:script]
+      pj[:script_version] = pj[:job][:script_version] || c[:script_version]
       pj[:output] = pj[:job][:output]
       pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
       ret << pj

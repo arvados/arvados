@@ -59,6 +59,7 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
+      f.js { render }
     end
   end
 
@@ -75,6 +76,7 @@ class ApplicationController < ActionController::Base
           redirect_to params[:return_to] || @object
         end
       }
+      f.js { render }
     end
   end
 
