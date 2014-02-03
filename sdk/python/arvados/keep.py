@@ -22,7 +22,7 @@ global_client_object = None
 
 from api import *
 import config
-import errors
+import arvados.errors
 
 class Keep:
     @staticmethod
@@ -192,7 +192,7 @@ class KeepClient(object):
             except (httplib2.HttpLib2Error, httplib.ResponseNotReady) as e:
                 logging.info("Request fail: GET %s => %s: %s" %
                              (url, type(e), str(e)))
-        raise errors.NotFoundError("Block not found: %s" % expect_hash)
+        raise arvados.errors.NotFoundError("Block not found: %s" % expect_hash)
 
     def put(self, data, **kwargs):
         if 'KEEP_LOCAL_STORE' in os.environ:
@@ -218,7 +218,7 @@ class KeepClient(object):
         have_copies = thread_limiter.done()
         if have_copies == want_copies:
             return (data_hash + '+' + str(len(data)))
-        raise errors.KeepWriteError(
+        raise arvados.errors.KeepWriteError(
             "Write fail for %s: wanted %d but wrote %d" %
             (data_hash, want_copies, have_copies))
 
@@ -243,7 +243,7 @@ class KeepClient(object):
     def local_store_get(locator):
         r = re.search('^([0-9a-f]{32,})', locator)
         if not r:
-            raise errors.NotFoundError(
+            raise arvados.errors.NotFoundError(
                 "Invalid data locator: '%s'" % locator)
         if r.group(0) == config.EMPTY_BLOCK_LOCATOR.split('+')[0]:
             return ''
