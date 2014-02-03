@@ -3,6 +3,7 @@ import hashlib
 import os
 import re
 import subprocess
+import errno
 
 def clear_tmpdir(path=None):
     """
@@ -242,8 +243,16 @@ def collection_extract(collection, path, files=[], decompress=True):
     return path
 
 def mkdir_dash_p(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
+    if not os.path.isdir(path):
+        try:
+            os.makedirs(path)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(path):
+                # It is not an error if someone else creates the
+                # directory between our exists() and makedirs() calls.
+                pass
+            else:
+                raise
 
 def stream_extract(stream, path, files=[], decompress=True):
     """Retrieve a stream from Keep and extract it to a local
