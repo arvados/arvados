@@ -1,6 +1,7 @@
 <% if current_user.andand.is_active %>
   <div>
     <strong>Recent jobs</strong>
+    <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
     <%= link_to raw("Show all jobs &rarr;"), jobs_path, class: 'pull-right' %>
     <% if not current_user.andand.is_active or @my_jobs.empty? %>
       <p>(None)</p>
@@ -89,6 +90,7 @@
 
 <div>
   <strong>Recent pipeline instances</strong>
+  <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
   <%= link_to raw("Show all pipeline instances &rarr;"), pipeline_instances_path, class: 'pull-right' %>
   <% if not current_user.andand.is_active or @my_pipelines.empty? %>
     <p>(None)</p>
@@ -143,6 +145,7 @@
 
 <div>
   <strong>Recent collections</strong>
+  <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
   <%= link_to raw("Show all collections &rarr;"), collections_path, class: 'pull-right' %>
   <div class="pull-right" style="padding-right: 1em">
     <%= form_tag collections_path,
@@ -202,4 +205,8 @@
 
 <% else %>
   <%= image_tag "dax.png", style: "max-width=40%" %>
+<% end %>
+
+<% content_for :js do %>
+setInterval(function(){$('a.refresh:eq(0)').click()}, 60000);
 <% end %>

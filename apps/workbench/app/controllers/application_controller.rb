@@ -1,4 +1,5 @@
 class ApplicationController < ActionController::Base
+  respond_to :html, :json, :js
   protect_from_forgery
   around_filter :thread_clear
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
