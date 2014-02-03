@@ -112,7 +112,12 @@ class ApplicationController < ActionController::Base
 
   def destroy
     if @object.destroy
-      redirect_to(params[:return_to] || :back)
+      respond_to do |f|
+        f.html {
+          redirect_to(params[:return_to] || :back)
+        }
+        f.js { render }
+      end
     else
       self.render_error status: 422
     end
