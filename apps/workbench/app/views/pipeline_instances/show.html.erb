@@ -14,7 +14,7 @@
 
     <tr class="info"><td><%= attr %></td><td>
         <table class="table">
-          <% pipeline_jobs.each do |pj| %>
+          <% render_pipeline_jobs.each do |pj| %>
           <tr><% %w(index name result job_link script script_version progress_detail progress_bar output_link).each do |key| %>
             <td>
               <% if key == 'script_version' %>

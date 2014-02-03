@@ -1,0 +1,75 @@
+<% content_for :css do %>
+.notnormal {
+  background: #ffffaa;
+}
+.headrow div {
+  padding-top: .5em;
+  padding-bottom: .5em;
+}
+.headrow:first-child {
+  border-bottom: 1px solid black;
+}
+<% end %>
+
+<% pi_span = [(10.0/(@objects.count)).floor,1].max %>
+<div>
+<% [['Instance', :uuid], ['Template', :pipeline_template_uuid]].each do |label, attr| %>
+<div class="row headrow">
+  <div class="span2">
+    <%# label %>
+  </div>
+  <% @objects.each do |object| %>
+  <div class="span<%= pi_span %>">
+    <%= render partial: 'application/arvados_attr_value', locals: { obj: object, attr: attr, attrvalue: object.send(attr.to_sym) } %>
+  </div>
+  <% end %>
+</div>
+<% end %>
+</div>
+
+<% @rows.each do |row| %>
+<div class="row">
+  <div class="span2">
+    <%= row[:name] %>
+  </div>
+  <% @objects.each_with_index do |_, x| %>
+    <div class="span<%= pi_span %>">
+      <div class="row">
+
+        <% if row[:components][x] %>
+          <% pj = render_pipeline_job row[:components][x] %>
+
+          <div class="span3">
+            <%= link_to_if_arvados_object pj[:job_id], {friendly_name: true, with_class_name: true}, {class: 'deemphasize'} %>
+          </div>
+
+          <% %w(script script_version script_parameters output).each do |key| %>
+            <div class="span3">
+              <% unless key=='output' and pj[:result] != 'complete' %>
+              <% val = pj[key.to_sym] || pj[:job].andand[key.to_sym] %>
+              <% link_name = case
+                 when !val
+                   val = ''
+                 when key == 'script_version' && val.match(/^[0-9a-f]{7,}$/)
+                   val = val[0..7] # TODO: leave val alone, make link_to handle git commits
+                 when key == 'output'
+                   val.sub! /\+K.*$/, ''
+                   val[0..12]
+                 when key == 'script_parameters'
+                   val = val.keys.sort.join(', ')
+                 end
+                 %>
+              <span class="deemphasize"><%= key %>:</span>&nbsp;<span class="<%= 'notnormal' if !pj[:is_normal][key.to_sym] %>"><%= link_to_if_arvados_object val, {friendly_name: true, link_text: link_name} %></span>
+              <% end %>
+            </div>
+          <% end %>
+          <% else %>
+          None
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+<div class="row" style="padding: .5em">
+</div>
+<% end %>

@@ -1,18 +1,36 @@
 module PipelineInstancesHelper
-  def pipeline_jobs
-    if @object.components[:steps].is_a? Array
-      pipeline_jobs_oldschool
-    elsif @object.components.is_a? Hash
-      pipeline_jobs_newschool
+  def pipeline_jobs object=nil
+    object ||= @object
+    if object.components[:steps].is_a? Array
+      pipeline_jobs_oldschool object
+    elsif object.components.is_a? Hash
+      pipeline_jobs_newschool object
     end
+  end
+
+  def render_pipeline_jobs
+    pipeline_jobs.collect do |pj|
+      render_pipeline_job pj
+    end
+  end
+
+  def render_pipeline_job pj
+    if pj[:percent_done]
+      pj[:progress_bar] = raw("<div class=\"progress\" style=\"width:100px\"><div class=\"bar bar-success\" style=\"width:#{pj[:percent_done]}%\"></div><div class=\"bar\" style=\"width:#{pj[:percent_running]}%\"></div></div>")
+    elsif pj[:progress]
+      raw("<div class=\"progress\" style=\"width:100px\"><div class=\"bar\" style=\"width:#{pj[:progress]*100}%\"></div></div>")
+    end
+    pj[:output_link] = link_to_if_arvados_object pj[:output]
+    pj[:job_link] = link_to_if_arvados_object pj[:job][:uuid]
+    pj
   end
 
   protected
 
-  def pipeline_jobs_newschool
+  def pipeline_jobs_newschool object
     ret = []
     i = -1
-    @object.components.each do |cname, c|
+    object.components.each do |cname, c|
       i += 1
       pj = {index: i, name: cname}
       pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
@@ -58,20 +76,18 @@ module PipelineInstancesHelper
         end
       end
       pj[:job_id] = pj[:job][:uuid]
-      pj[:job_link] = link_to_if_arvados_object pj[:job][:uuid]
+      pj[:script] = pj[:job][:script]
       pj[:script_version] = pj[:job][:script_version]
       pj[:output] = pj[:job][:output]
       pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
-      pj[:progress_bar] = raw("<div class=\"progress\" style=\"width:100px\"><div class=\"bar bar-success\" style=\"width:#{pj[:percent_done]}%\"></div><div class=\"bar\" style=\"width:#{pj[:percent_running]}%\"></div></div>")
-      pj[:output_link] = link_to_if_arvados_object pj[:output]
       ret << pj
     end
     ret
   end
 
-  def pipeline_jobs_oldschool
+  def pipeline_jobs_oldschool object
     ret = []
-    @object.components[:steps].each_with_index do |step, i|
+    object.components[:steps].each_with_index do |step, i|
       pj = {index: i, name: step[:name]}
       if step[:complete] and step[:complete] != 0
         if step[:output_data_locator]
@@ -112,8 +128,6 @@ module PipelineInstancesHelper
       pj[:script_version] = (step[:warehousejob][:revision] rescue nil)
       pj[:output] = step[:output_data_locator]
       pj[:finished_at] = (Time.parse(step[:warehousejob][:finishtime]) rescue nil)
-      pj[:progress_bar] = raw("<div class=\"progress\" style=\"width:100px\"><div class=\"bar\" style=\"width:#{pj[:progress]*100}%\"></div></div>")
-      pj[:output_link] = link_to_if_arvados_object pj[:output]
       ret << pj
     end
     ret
