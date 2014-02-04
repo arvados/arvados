@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>
     <% if content_for? :page_title %>
-    <%= yield :page_title %>
+    <%= yield :page_title %> @<%= Rails.configuration.site_name %>
     <% else %>
     <%= Rails.configuration.site_name %>
     <% end %>

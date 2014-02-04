@@ -1,3 +1,7 @@
+<% content_for :page_title do %>
+<%= controller.model_class.to_s.pluralize.underscore.capitalize.gsub '_', ' ' %>
+<% end %>
+
 <% if controller.model_class.creatable? %>
 <%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", 
     { action: 'create', return_to: request.url }, 
