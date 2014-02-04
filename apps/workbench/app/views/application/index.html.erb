@@ -1,1 +1,26 @@
-<%= render partial: 'index' %>
+<% if controller.model_class.creatable? %>
+<%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", 
+    { action: 'create', return_to: request.url }, 
+    { class: 'btn btn-primary pull-right' } %>
+<% end %>
+<%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
+<%= submit_tag 'Compare selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
+&nbsp;
+<% end rescue nil %>
+
+<% pane_list = (controller.class.to_s.sub(/Controller$/,'')+'Helper').constantize.index_pane_list rescue %w(recent) %>
+
+<div class="tabbable">
+<ul class="nav nav-tabs">
+  <% pane_list.each_with_index do |pane, i| %>
+  <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab"><%= pane.capitalize %></a></li>
+  <% end %>
+</ul>
+
+<div class="tab-content">
+  <% pane_list.each_with_index do |pane, i| %>
+  <div id="<%= pane %>" class="tab-pane fade in <%= 'active' if i==0 %>">
+    <%= render partial: pane %>
+  </div>
+  <% end %>
+</div>

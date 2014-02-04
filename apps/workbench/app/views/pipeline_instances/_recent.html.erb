@@ -1,10 +1,9 @@
-<%= form_tag({action: 'compare', controller: 'pipeline_instances', method: 'get'}, {method: 'get', id: 'compare'}) do |f| %>
+<%= form_tag do |f| %>
 
 <table class="table table-hover">
   <thead>
     <tr class="contain-align-left">
       <th>
-	<%= submit_tag 'Compare', {class: 'btn btn-primary', disabled: true} %>
       </th><th>
 	status
       </th><th>
@@ -76,13 +75,17 @@
 <% end %>
 
 <% content_for :footer_js do %>
-$('form#compare input[name="uuids[]"]').on('click', function() {
-    var form = $('form#compare')[0]
+var showhide_compare = function() {
+    var form = $('form#compare')[0];
+    $('input[type=hidden][name="uuids[]"]', form).remove();
     $('input[type=submit]', form).prop('disabled',true);
-    $('input[name="uuids[]"]', form).each(function(){
+    $('input[name="uuids[]"]').each(function(){
         if(this.checked) {
-            $('input[type=submit]', form).prop('disabled',false);
+            $('input[type=submit]', form).prop('disabled',false).show();
+            $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
         }
     });
-});
+};
+$('form input[name="uuids[]"]').on('click', showhide_compare);
+showhide_compare();
 <% end %>

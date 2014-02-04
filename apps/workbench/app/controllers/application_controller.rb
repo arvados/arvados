@@ -54,7 +54,9 @@ class ApplicationController < ActionController::Base
     self.render_error status: 404
   end
 
-
+  def helper
+    (self.class.to_s.sub(/Controller$/,'')+'Helper').constantize
+  end
   def index
     @objects ||= model_class.limit(1000).all
     respond_to do |f|

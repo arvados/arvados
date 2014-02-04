@@ -11,7 +11,7 @@
 }
 <% end %>
 
-<% pi_span = [(10.0/(@objects.count)).floor,1].max %>
+<% pi_span = [(10.0/[@objects.count,1].max).floor,1].max %>
 <div>
 <% [['Instance', :uuid], ['Template', :pipeline_template_uuid]].each do |label, attr| %>
 <div class="row headrow">
