@@ -1,4 +1,6 @@
 class Arvados::V1::RepositoriesController < ApplicationController
+  skip_before_filter :find_object_by_uuid, :only => :get_all_permissions
+  skip_before_filter :render_404_if_no_object, :only => :get_all_permissions
   before_filter :admin_required, :only => :get_all_permissions
   def get_all_permissions
     @users = {}
