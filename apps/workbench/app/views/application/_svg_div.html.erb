@@ -1,4 +1,5 @@
 <%= content_for :css do %>
+/* Need separate style for each instance of svg div because javascript will manipulate the properties. */
 #<%= divId %> {
  padding-left: 3px;
  overflow: auto;
@@ -7,27 +8,29 @@
  border-color: gray;
  position: absolute;
  left: 1px;
-
+}
+path:hover {
+stroke-width: 5;
 }
 <% end %>
 
-<div id="_<%= divId %>_container" style="padding-top: 41px; margin-top: -41px">
-  <script>
-    (function() {
+<%= content_for :js do %>
+    $(window).on('load', function() {
       var fn = function () { graph_zoom("<%= divId %>", "<%=svgId %>", 1) };
-      $(window).resize(fn);
-      $(window).load(fn);
-      $(window).scroll(fn);
-    })();
-  </script>
+      $(window).on('resize', fn);
+      $(window).on('scroll', fn);
+    });
+<% end %>
+
+<div id="_<%= divId %>_container" style="padding-top: 41px; margin-top: -41px">
   <div style="text-align: right">
     <a style="cursor: pointer"><span class="icon-zoom-out" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', .9)"></span></a>
     <a style="cursor: pointer"><span class="icon-zoom-in" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', 1./.9)"></span></a>
   </div>
 
   <div id="<%= divId %>">
-    <span id="_<%= divId %>_center" style="padding-left: 300px"/>
+    <span id="_<%= divId %>_center" style="padding-left: 300px"></span>
     <%= raw(svg) %>
   </div>
-  <div id="_<%= divId %>_padding" style="padding-bottom: 1em" />
+  <div id="_<%= divId %>_padding" style="padding-bottom: 1em"></div>
 </div>

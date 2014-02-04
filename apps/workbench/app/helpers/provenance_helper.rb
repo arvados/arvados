@@ -46,6 +46,12 @@ module ProvenanceHelper
       
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
+          puts uuid
+          if uuid == :"d41d8cd98f00b204e9800998ecf8427e+0"
+            # special case
+            puts "empty!"
+            return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
+          end
           if @pdata[uuid] 
             #puts @pdata[uuid]
             if @pdata[uuid][:name]
@@ -128,7 +134,7 @@ module ProvenanceHelper
           sp.each do |v|
             if GenerateGraph::collection_uuid(v)
               gr += script_param_edges(job, "#{prefix}[#{i}]", v)
-            else
+            elsif @opts[:all_script_parameters]
               node += "', '" unless node == ""
               node = "['" if node == ""
               node += "#{v}"
@@ -144,7 +150,8 @@ module ProvenanceHelper
           end
         else
           m = GenerateGraph::collection_uuid(sp)
-          if m
+          #puts "#{m} pdata is #{@pdata[m.intern]}"
+          if m and (@pdata[m.intern] or (not @opts[:pdata_only]))
             gr += edge(job_uuid(job), m, {:label => prefix})
             gr += generate_provenance_edges(m)
           elsif @opts[:all_script_parameters]
@@ -181,6 +188,11 @@ module ProvenanceHelper
       if m  
         # uuid is a collection
         gr += describe_node(uuid)
+
+        if m == :"d41d8cd98f00b204e9800998ecf8427e+0"
+          # empty collection, don't follow any further
+          return gr
+        end
 
         @pdata.each do |k, job|
           if job[:output] == uuid.to_s
@@ -265,8 +277,8 @@ module ProvenanceHelper
     end
     
     gr = """strict digraph {
-node [fontsize=8,shape=box];
-edge [fontsize=8];
+node [fontsize=10,shape=box];
+edge [fontsize=10];
 """
 
     if opts[:direction] == :bottom_up

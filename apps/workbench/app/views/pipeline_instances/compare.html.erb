@@ -73,3 +73,15 @@
 <div class="row" style="padding: .5em">
 </div>
 <% end %>
+
+
+  <div style="text-align: center">
+    <span class="pipeline_color_legend" style="background: #88ff88">This pipeline</span> 
+    <span class="pipeline_color_legend" style="background: #8888ff">Comparison pipeline</span>
+    <span class="pipeline_color_legend" style="background: #88ffff">Shared by both pipelines</span>
+  </div>
+
+   <%= render partial: 'application/svg_div', locals: {
+         divId: "provenance_graph", 
+         svgId: "provenance_svg", 
+         svg: @prov_svg } %>

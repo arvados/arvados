@@ -144,7 +144,7 @@ class ApplicationController < ActionController::Base
             conditions << nil
           elsif value.is_a? Array
             if value[0] == 'contains' and value.length == 2
-              conditions[0] << "and #{table_name}.#{attr} ilike ?"
+              conditions[0] << " and #{table_name}.#{attr} like ?"
               conditions << "%#{value[1]}%"
             else
               conditions[0] << " and #{table_name}.#{attr} in (?)"

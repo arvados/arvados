@@ -17,7 +17,7 @@
 <div class="tabbable">
 <ul class="nav nav-tabs">
   <% pane_list.each_with_index do |pane, i| %>
-  <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab"><%= pane.capitalize %></a></li>
+  <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.capitalize %></a></li>
   <% end %>
 </ul>
 

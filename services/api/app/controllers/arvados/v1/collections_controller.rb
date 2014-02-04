@@ -139,6 +139,65 @@ class Arvados::V1::CollectionsController < ApplicationController
     render json: visited
   end
 
+  def generate_used_by_edges(visited, uuid)
+    m = collection_uuid(uuid)
+    uuid = m if m
+
+    if not uuid or uuid.empty? or visited[uuid]
+      return ""
+    end
+
+    logger.debug "visiting #{uuid}"
+
+    if m  
+      # uuid is a collection
+      Collection.readable_by(current_user).where(uuid: uuid).each do |c|
+        visited[uuid] = c.as_api_response
+        visited[uuid][:files] = []
+        c.files.each do |f|
+          visited[uuid][:files] << f
+        end
+      end
+
+      if uuid == "d41d8cd98f00b204e9800998ecf8427e+0"
+        # special case for empty collection
+        return
+      end
+
+      Job.readable_by(current_user).where(["jobs.script_parameters like ?", "%#{uuid}%"]).each do |job|
+        generate_used_by_edges(visited, job.uuid)
+      end
+      
+    else
+      # uuid is something else
+      rsc = ArvadosModel::resource_class_for_uuid uuid
+      if rsc == Job
+        Job.readable_by(current_user).where(uuid: uuid).each do |job|
+          visited[uuid] = job.as_api_response
+          generate_used_by_edges(visited, job.output)
+        end
+      elsif rsc != nil
+        rsc.where(uuid: uuid).each do |r|
+          visited[uuid] = r.as_api_response
+        end
+      end
+    end
+
+    Link.readable_by(current_user).
+      where(tail_uuid: uuid, link_class: "provenance").
+      each do |link|
+      visited[link.uuid] = link.as_api_response
+      generate_used_by_edges(visited, link.head_uuid)
+    end
+
+    #puts "finished #{uuid}"
+  end
+
+  def used_by
+    visited = {}
+    generate_used_by_edges(visited, @object[:uuid])
+    render json: visited
+  end
 
   protected
   def find_object_by_uuid

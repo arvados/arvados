@@ -97,6 +97,7 @@ Server::Application.routes.draw do
       get '/user_agreements/signatures' => 'user_agreements#signatures'
       post '/user_agreements/sign' => 'user_agreements#sign'
       get '/collections/:uuid/provenance' => 'collections#provenance'
+      get '/collections/:uuid/used_by' => 'collections#used_by'
       resources :collections
       resources :links
       resources :nodes

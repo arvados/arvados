@@ -1,0 +1,11 @@
+ <% content_for :js do %>
+  $(window).on('load',
+    $(function() {
+      $('#used_by-tab').on('shown', function() { graph_zoom("used_by_graph", "used_by_svg", 1); });
+    }))
+<% end %>
+<%= render partial: 'application/svg_div', locals: {
+    divId: "used_by_graph", 
+    svgId: "used_by_svg", 
+    svg: @used_by_svg } %>
+

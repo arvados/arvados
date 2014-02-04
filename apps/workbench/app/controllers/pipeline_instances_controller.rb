@@ -3,21 +3,13 @@ class PipelineInstancesController < ApplicationController
   before_filter :find_objects_by_uuid, only: :compare
   include PipelineInstancesHelper
 
-  def show
-    @pipelines = [@object]
-
-    if params[:compare]
-      PipelineInstance.where(uuid: params[:compare]).each do |p|
-        @pipelines << p
-      end
-    end
-
+  def graph(pipelines)
     count = {}    
     provenance = {}
     pips = {}
     n = 1
 
-    @pipelines.each do |p|
+    pipelines.each do |p|
       collections = []
 
       p.components.each do |k, v|
@@ -48,6 +40,20 @@ class PipelineInstancesController < ApplicationController
       
       n = n << 1
     end
+
+    return provenance, pips
+  end
+
+  def show
+    @pipelines = [@object]
+
+    if params[:compare]
+      PipelineInstance.where(uuid: params[:compare]).each do |p|
+        @pipelines << p
+      end
+    end
+
+    provenance, pips = graph(@pipelines)
 
     @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
       :all_script_parameters => true, 
@@ -112,6 +118,14 @@ class PipelineInstancesController < ApplicationController
         end
       end
     end
+
+    provenance, pips = graph(@objects)
+
+    @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
+      :all_script_parameters => true, 
+      :combine_jobs => :script_and_version,
+      :script_version_nodes => true,
+      :pips => pips }
   end
 
   protected
