@@ -4,11 +4,11 @@ class PipelineInstancesController < ApplicationController
   include PipelineInstancesHelper
 
   def show
-    pipelines = [@object]
+    @pipelines = [@object]
 
     if params[:compare]
       PipelineInstance.where(uuid: params[:compare]).each do |p|
-        pipelines << p
+        @pipelines << p
       end
     end
 
@@ -17,7 +17,7 @@ class PipelineInstancesController < ApplicationController
     pips = {}
     n = 1
 
-    pipelines.each do |p|
+    @pipelines.each do |p|
       collections = []
 
       p.components.each do |k, v|

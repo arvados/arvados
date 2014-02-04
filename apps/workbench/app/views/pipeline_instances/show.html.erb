@@ -65,11 +65,13 @@ table.pipeline-components-table div.progress {
   </tfoot>
 </table>
 
-<div style="text-align: center">
-<span class="pipeline_color_legend" style="background: #88ff88">This pipeline</span> 
-<span class="pipeline_color_legend" style="background: #8888ff">Comparison pipeline</span>
-<span class="pipeline_color_legend" style="background: #88ffff">Shared by both pipelines</span>
-</div>
+<% if @pipelines.count > 1 %>
+  <div style="text-align: center">
+    <span class="pipeline_color_legend" style="background: #88ff88">This pipeline</span> 
+    <span class="pipeline_color_legend" style="background: #8888ff">Comparison pipeline</span>
+    <span class="pipeline_color_legend" style="background: #88ffff">Shared by both pipelines</span>
+  </div>
+<% end %>
 
    <%= render partial: 'application/svg_div', locals: {
          divId: "provenance_graph", 
