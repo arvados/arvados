@@ -97,7 +97,7 @@ class PipelineInstancesController < ApplicationController
         pj.each do |k,v|
           vstr = for_comparison v
           score[k] ||= {}
-          score[k][vstr] = (score[k][vstr.to_s] || 0) + 1
+          score[k][vstr] = (score[k][vstr] || 0) + 1
           highscore[k] ||= 0
           if score[k][vstr] == highscore[k]
             # tie for first place = no "normal"

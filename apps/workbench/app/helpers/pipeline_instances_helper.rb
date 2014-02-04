@@ -77,6 +77,7 @@ module PipelineInstancesHelper
       end
       pj[:job_id] = pj[:job][:uuid]
       pj[:script] = pj[:job][:script] || c[:script]
+      pj[:script_parameters] = pj[:job][:script_parameters] || c[:script_parameters]
       pj[:script_version] = pj[:job][:script_version] || c[:script_version]
       pj[:output] = pj[:job][:output]
       pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
