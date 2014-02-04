@@ -87,11 +87,11 @@ class Arvados::V1::CollectionsController < ApplicationController
       return ""
     end
 
-    #puts "visiting #{uuid}"
+    logger.debug "visiting #{uuid}"
 
     if m  
       # uuid is a collection
-      Collection.where(uuid: uuid).each do |c|
+      Collection.readable_by(current_user).where(uuid: uuid).each do |c|
         visited[uuid] = c.as_api_response
         visited[uuid][:files] = []
         c.files.each do |f|
@@ -99,11 +99,11 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
       end
 
-      Job.where(output: uuid).each do |job|
+      Job.readable_by(current_user).where(output: uuid).each do |job|
         generate_provenance_edges(visited, job.uuid)
       end
 
-      Job.where(log: uuid).each do |job|
+      Job.readable_by(current_user).where(log: uuid).each do |job|
         generate_provenance_edges(visited, job.uuid)
       end
       
@@ -111,7 +111,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       # uuid is something else
       rsc = ArvadosModel::resource_class_for_uuid uuid
       if rsc == Job
-        Job.where(uuid: uuid).each do |job|
+        Job.readable_by(current_user).where(uuid: uuid).each do |job|
           visited[uuid] = job.as_api_response
           script_param_edges(visited, job.script_parameters)
         end
@@ -122,7 +122,9 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     end
 
-    Link.where(head_uuid: uuid, link_class: "provenance").each do |link|
+    Link.readable_by(current_user).
+      where(head_uuid: uuid, link_class: "provenance").
+      each do |link|
       visited[link.uuid] = link.as_api_response
       generate_provenance_edges(visited, link.tail_uuid)
     end

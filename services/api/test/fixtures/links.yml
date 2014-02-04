@@ -203,6 +203,6 @@ barbaz_job_readable_by_spectator:
   link_class: permission
   name: can_read
   head_kind: arvados#job
-  head_uuid: zzzzz-8i9sb-aceg2bnq7jt7kon
+  head_uuid: zzzzz-8i9sb-cjs4pklxxjykyuq
   properties: {}
 
