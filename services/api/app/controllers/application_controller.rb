@@ -137,6 +137,7 @@ class ApplicationController < ActionController::Base
       @where.each do |attr,value|
         if attr == :any
           if value.is_a?(Array) and
+              value.length == 2 and
               value[0] == 'contains' and
               model_class.columns.collect(&:name).index('name') then
             ilikes = []
@@ -154,8 +155,13 @@ class ApplicationController < ActionController::Base
             conditions[0] << " and #{table_name}.#{attr} is ?"
             conditions << nil
           elsif value.is_a? Array
-            conditions[0] << " and #{table_name}.#{attr} in (?)"
-            conditions << value
+            if value[0] == 'contains' and value.length == 2
+              conditions[0] << "and #{table_name}.#{attr} ilike ?"
+              conditions << "%#{value[1]}%"
+            else
+              conditions[0] << " and #{table_name}.#{attr} in (?)"
+              conditions << value
+            end
           elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
             conditions[0] << " and #{table_name}.#{attr}=?"
             conditions << value
