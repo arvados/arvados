@@ -68,11 +68,21 @@ class ArvadosBase < ActiveRecord::Base
     self.columns
     @attribute_info
   end
-  def self.find(uuid)
+  def self.find(uuid, opts={})
     if uuid.class != String or uuid.length < 27 then
       raise 'argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx'
     end
-    new.private_reload(uuid)
+
+    # Only do one lookup on the API side per {class, uuid, workbench
+    # request} unless {cache: false} is given via opts.
+    cache_key = "request_#{Thread.current.object_id}_#{self.to_s}_#{uuid}"
+    if opts[:cache] == false
+      Rails.cache.write cache_key, $arvados_api_client.api(self, '/' + uuid)
+    end
+    hash = Rails.cache.fetch cache_key do
+      $arvados_api_client.api(self, '/' + uuid)
+    end
+    new.private_reload(hash)
   end
   def self.order(*args)
     ArvadosResourceList.new(self).order(*args)

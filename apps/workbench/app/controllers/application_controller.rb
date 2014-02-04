@@ -157,7 +157,9 @@ class ApplicationController < ActionController::Base
   def thread_clear
     Thread.current[:arvados_api_token] = nil
     Thread.current[:user] = nil
+    Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
     yield
+    Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
   end
 
   def thread_with_api_token(login_optional = false)
