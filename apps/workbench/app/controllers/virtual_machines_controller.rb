@@ -1,4 +1,7 @@
 class VirtualMachinesController < ApplicationController
+  def index_pane_list
+    %w(recent help)
+  end
   def index
     @objects ||= model_class.all
     @vm_logins = {}

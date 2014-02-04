@@ -21,5 +21,19 @@
 <% end %>
 <% end %>
 
+<% pane_list = controller.show_pane_list rescue %w(attributes) %>
 
-<%= render :partial => 'application/arvados_object' %>
+<div class="tabbable">
+<ul class="nav nav-tabs">
+  <% pane_list.each_with_index do |pane, i| %>
+  <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab"><%= pane.capitalize.gsub '_', ' ' %></a></li>
+  <% end %>
+</ul>
+
+<div class="tab-content">
+  <% pane_list.each_with_index do |pane, i| %>
+  <div id="<%= pane %>" class="tab-pane fade in <%= 'active' if i==0 %>">
+    <%= render partial: 'show_' + pane %>
+  </div>
+  <% end %>
+</div>

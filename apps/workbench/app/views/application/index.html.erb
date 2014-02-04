@@ -12,7 +12,7 @@
 &nbsp;
 <% end rescue nil %>
 
-<% pane_list = (controller.class.to_s.sub(/Controller$/,'')+'Helper').constantize.index_pane_list rescue %w(recent) %>
+<% pane_list = controller.index_pane_list rescue %w(recent) %>
 
 <div class="tabbable">
 <ul class="nav nav-tabs">
