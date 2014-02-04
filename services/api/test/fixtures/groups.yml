@@ -6,9 +6,21 @@ public:
 
 private:
   uuid: zzzzz-j7d0g-rew6elm53kancon
-  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Private
   description: Private Group
+
+system_owned_group:
+  uuid: zzzzz-j7d0g-8ulrifv67tve5sx
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: System Private
+  description: System-owned Group
+
+empty_lonely_group:
+  uuid: zzzzz-j7d0g-jtp06ulmvsezgyu
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: Empty
+  description: Empty Group
 
 all_users:
   uuid: zzzzz-j7d0g-fffffffffffffff

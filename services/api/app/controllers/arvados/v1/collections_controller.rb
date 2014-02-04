@@ -12,6 +12,7 @@ class Arvados::V1::CollectionsController < ApplicationController
                    'arvados#group'
                  end
     unless current_user.can? write: owner_uuid
+      logger.warn "User #{current_user.andand.uuid} tried to set collection owner_uuid to #{owner_uuid}"
       raise ArvadosModel::PermissionDeniedError
     end
     act_as_system_user do
