@@ -40,6 +40,7 @@ class User < ArvadosModel
   end
 
   def can?(actions)
+    return true if is_admin
     actions.each do |action, target|
       target_uuid = target
       if target.respond_to? :uuid
@@ -74,15 +75,22 @@ class User < ArvadosModel
         lookup_uuids = todo.keys
         lookup_uuids.each do |uuid| done[uuid] = true end
         todo = {}
+        newgroups = []
+        Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
+          newgroups << [group.owner_uuid, group.uuid, 'can_manage']
+        end
         Link.where('tail_uuid in (?) and link_class = ? and head_kind = ?',
                    lookup_uuids,
                    'permission',
                    'arvados#group').each do |link|
-          unless done.has_key? link.head_uuid
-            todo[link.head_uuid] = true
+          newgroups << [link.tail_uuid, link.head_uuid, link.name]
+        end
+        newgroups.each do |tail_uuid, head_uuid, perm_name|
+          unless done.has_key? head_uuid
+            todo[head_uuid] = true
           end
           link_permissions = {}
-          case link.name
+          case perm_name
           when 'can_read'
             link_permissions = {read:true}
           when 'can_write'
@@ -90,10 +98,10 @@ class User < ArvadosModel
           when 'can_manage'
             link_permissions = ALL_PERMISSIONS
           end
-          permissions_from[link.tail_uuid] ||= {}
-          permissions_from[link.tail_uuid][link.head_uuid] ||= {}
+          permissions_from[tail_uuid] ||= {}
+          permissions_from[tail_uuid][head_uuid] ||= {}
           link_permissions.each do |k,v|
-            permissions_from[link.tail_uuid][link.head_uuid][k] ||= v
+            permissions_from[tail_uuid][head_uuid][k] ||= v
           end
         end
       end

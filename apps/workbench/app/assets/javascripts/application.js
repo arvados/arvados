@@ -37,4 +37,11 @@ jQuery(function($){
         }
         targets.fadeToggle(200);
     });
+    $(document).
+        on('ajax:send', function(e, xhr) {
+            $('.loading').show();
+        }).
+        on('ajax:complete', function(e, status) {
+            $('.loading').hide();
+        });
 })(jQuery);

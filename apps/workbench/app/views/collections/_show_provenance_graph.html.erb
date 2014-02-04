@@ -1,0 +1,9 @@
+<% content_for :js do %>
+    $(function() {
+      $('#prov-tab').on('shown', function() { provenance_sizing_fixup("provenance_graph", "provenance_svg"); });
+    })
+<% end %>
+<%= render partial: 'application/svg_div', locals: {
+    divId: "provenance_graph", 
+    svgId: "provenance_svg", 
+    svg: @prov_svg } %>

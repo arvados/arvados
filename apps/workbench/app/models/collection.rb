@@ -13,6 +13,10 @@ class Collection < ArvadosBase
     false
   end
 
+  def self.creatable?
+    false
+  end
+
   def provenance
     $arvados_api_client.api "collections/#{self.uuid}/", "provenance"
   end

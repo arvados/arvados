@@ -1,0 +1,18 @@
+<ul class="nav">
+  <li class="nav-separator">
+    <span><i class="icon-arrow-right"></i></span>
+  </li>
+  <li>
+    <%= link_to(
+        controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
+        url_for({controller: params[:controller]})) %>
+  </li>
+  <% if params[:action] != 'index' %>
+    <li class="nav-separator">
+      <span><i class="icon-arrow-right"></i></span>
+    </li>
+    <li>
+      <%= render partial: 'breadcrumb_page_name' %>
+    </li>
+  <% end %>
+</ul>

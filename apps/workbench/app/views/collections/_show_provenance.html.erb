@@ -1,0 +1,84 @@
+<%= content_for :css do %>
+<%# https://github.com/mbostock/d3/wiki/Ordinal-Scales %>
+<% n=-1; %w(#1f77b4 #ff7f0e #2ca02c #d62728 #9467bd #8c564b #e377c2 #7f7f7f #bcbd22 #17becf).each do |color| %>
+.colorseries-10-<%= n += 1 %>, .btn.colorseries-10-<%= n %>:hover, .label.colorseries-10-<%= n %>:hover {
+  *background-color: <%= color %>;
+  background-color: <%= color %>;
+  background-image: none;
+}
+<% end %>
+.colorseries-nil { }
+.label a {
+  color: inherit;
+}
+<% end %>
+
+<table class="topalign table table-bordered">
+  <thead>
+  </thead>
+  <tbody>
+
+    <% @provenance.reverse.each do |p| %>
+    <% j = p[:job] %>
+
+    <% if j %>
+
+    <tr class="job">
+      <td style="padding-bottom: 3em">
+        <table class="table" style="margin-bottom: 0; background: #f0f0ff">
+	  <% j.script_parameters.each do |k,v| %>
+          <tr>
+            <td style="width: 20%">
+              <%= k.to_s %>
+            </td><td style="width: 60%">
+	      <% if v and @output2job.has_key? v %>
+	      <tt class="label colorseries-10-<%= @output2colorindex[v] %>"><%= link_to_if_arvados_object v %></tt>
+              <% else %>
+	      <span class="deemphasize"><%= link_to_if_arvados_object v %></span>
+              <% end %>
+            </td><td style="text-align: center; width: 20%">
+              <% if v
+                 if @protected[v]
+                 labelclass = 'success'
+                 labeltext = 'keep'
+                 else
+                 labelclass = @output2job.has_key?(v) ? 'warning' : 'danger'
+                 labeltext = 'cache'
+                 end %>
+
+	      <tt class="label label-<%= labelclass %>"><%= labeltext %></tt>
+              <% end %>
+            </td>
+          </tr>
+	  <% end %>
+        </table>
+        <div style="text-align: center">
+          &darr;
+          <br />
+	  <span class="label"><%= j.script %><br /><tt><%= link_to_if j.script_version.match(/[0-9a-f]{40}/), j.script_version, "https://arvados.org/projects/arvados/repository/revisions/#{j.script_version}/entry/crunch_scripts/#{j.script}" if j.script_version %></tt></span>
+          <br />
+          &darr;
+          <br />
+	  <tt class="label colorseries-10-<%= @output2colorindex[p[:output]] %>"><%= link_to_if_arvados_object p[:output] %></tt>
+        </div>
+      </td>
+      <td>
+	<tt><span class="deemphasize">job:</span><br /><%= link_to_if_arvados_object j %><br /><span class="deemphasize"><%= j.submit_id %></span></tt>
+      </td>
+    </tr>
+
+    <% else %>
+    <tr>
+      <td>
+	<span class="label label-danger">lookup fail</span>
+	<br />
+	<tt class="deemphasize"><%= p[:target] %></tt>
+      </td><td colspan="5">
+      </td>
+    </tr>
+    <% end %>
+
+    <% end %>
+
+  </tbody>
+</table>

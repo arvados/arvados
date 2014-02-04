@@ -2,6 +2,9 @@ class CollectionsController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => [:provenance]
   skip_before_filter :check_user_agreements, :only => [:show_file]
 
+  def show_pane_list
+    %w(files attributes provenance provenance_graph)
+  end
   def index
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])

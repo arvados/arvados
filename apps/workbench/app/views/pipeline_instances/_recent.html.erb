@@ -1,7 +1,10 @@
+<%= form_tag do |f| %>
+
 <table class="table table-hover">
   <thead>
     <tr class="contain-align-left">
       <th>
+      </th><th>
 	status
       </th><th>
 	id
@@ -17,15 +20,18 @@
 	dependencies
       </th><th>
 	created
+      </th><th>
       </th>
     </tr>
   </thead>
   <tbody>
 
-    <% @objects.sort_by { |ob| ob[:created_at] }.reverse.each do |ob| %>
+    <% @objects.sort_by { |ob| ob.created_at }.reverse.each do |ob| %>
 
-    <tr>
+    <tr data-object-uuid="<%= ob.uuid %>">
       <td>
+        <%= check_box_tag 'uuids[]', ob.uuid, false %>
+      </td><td>
         <% if ob.success %>
         <span class="label label-success">success</span>
         <% elsif ob.active %>
@@ -52,6 +58,12 @@
         </small>
       </td><td>
         <%= ob.created_at %>
+      </td><td>
+        <% if ob.editable? %>
+        <%= link_to({action: 'destroy', id: ob.uuid}, method: :delete, remote: true, data: {confirm: "You are about to delete #{controller.model_class} #{ob.uuid}.\n\nAre you sure?"}) do %>
+        <i class="icon-trash"></i>
+        <% end %>
+        <% end %>
       </td>
     </tr>
 
@@ -59,3 +71,21 @@
 
   </tbody>
 </table>
+
+<% end %>
+
+<% content_for :footer_js do %>
+var showhide_compare = function() {
+    var form = $('form#compare')[0];
+    $('input[type=hidden][name="uuids[]"]', form).remove();
+    $('input[type=submit]', form).prop('disabled',true);
+    $('input[name="uuids[]"]').each(function(){
+        if(this.checked) {
+            $('input[type=submit]', form).prop('disabled',false).show();
+            $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
+        }
+    });
+};
+$('form input[name="uuids[]"]').on('click', showhide_compare);
+showhide_compare();
+<% end %>

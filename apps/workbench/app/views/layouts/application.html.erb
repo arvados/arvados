@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>
     <% if content_for? :page_title %>
-    <%= yield :page_title %>
+    <%= yield :page_title %> @<%= Rails.configuration.site_name %>
     <% else %>
     <%= Rails.configuration.site_name %>
     <% end %>
@@ -22,7 +22,7 @@
   <%= yield :js %>
   <% end %>
   <style>
-    .container  {
+    body > div.container-fluid {
     padding-top: 60px; /* 60px to make the container go all the way to the
     bottom of the topbar */
     }
@@ -32,11 +32,59 @@
 </head>
 <body>
 
-  <div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
-      <a class="brand" style="margin-left: 1px" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
+      <ul class="nav">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" href="/">
+            <b><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></b>
+          </a>
+          <ul class="dropdown-menu">
+            <li><%= link_to 'Home', root_url %></li>
+            <li class="divider"></li>
+            <li><%= link_to 'Keys', authorized_keys_path %></li>
+            <li><%= link_to 'VMs', virtual_machines_path %></li>
+            <li><%= link_to 'Repositories', repositories_path %></li>
+            <li><%= link_to 'API Tokens', api_client_authorizations_path %></li>
+            <li class="divider"></li>
+            <li><%= link_to 'Jobs', jobs_path %></li>
+            <li><%= link_to 'Pipeline instances', pipeline_instances_path %></li>
+            <li><%= link_to 'Pipeline templates', pipeline_templates_path %></li>
+            <li class="divider"></li>
+            <li><%= link_to 'Collections', collections_path %></li>
+            <li><%= link_to 'Links', links_path %></li>
+            <li><%= link_to 'Humans', humans_path %></li>
+            <li><%= link_to 'Specimens', specimens_path %></li>
+            <li><%= link_to 'Traits', traits_path %></li>
+            <li class="divider"></li>
+            <% if current_user.andand.is_admin %>
+            <li><%= link_to 'Users', users_path %></li>
+            <% end %>
+            <li><%= link_to 'Groups', groups_path %></li>
+            <li><%= link_to 'Compute nodes', nodes_path %></li>
+            <li><%= link_to 'Keep disks', keep_disks_path %></li>
+          </ul>
+        </li>
+      </ul>
+      <%= content_for?(:breadcrumbs) ? yield(:breadcrumbs) : render(partial: 'breadcrumbs') %>
 
       <ul class="nav pull-right">
+        <li>
+          <div class="loading" style="transform: translate(-20px,20px) scale(0.1,0.1); -ms-transform: translate(-20px,20px) scale(0.1,0.1); -webkit-transform: translate(-20px,20px) scale(0.1,0.1); display: none">
+            <%= render partial: 'loading' %>
+          </div>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" href="/">
+            Help <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+            <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+            <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+            <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+            <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+          </ul>
+        </li>
 	<% if current_user -%>
           <li><span class="badge badge-info" style="margin: 10px auto 10px; padding-top: 4px; padding-bottom: 4px"><%= current_user.email %></span></li>
           <li><a href="<%= logout_path %>">Log out</a></li>
@@ -44,75 +92,14 @@
           <li><a href="<%= $arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
 	<% end -%>
       </ul>
-
-      <% if current_user.andand.is_active %>
-        <ul class="nav">
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              Access <b class="caret"></b>
-            </a>
-            <ul class="dropdown-menu">
-              <li><%= link_to 'Keys', authorized_keys_path %></li>
-              <li><%= link_to 'VMs', virtual_machines_path %></li>
-              <li><%= link_to 'Repositories', repositories_path %></li>
-              <li><%= link_to 'API Tokens', api_client_authorizations_path %></li>
-            </ul>
-          </li>
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              Compute <b class="caret"></b>
-            </a>
-            <ul class="dropdown-menu">
-              <li><%= link_to 'Jobs', jobs_path %></li>
-              <li><%= link_to 'Pipeline instances', pipeline_instances_path %></li>
-              <li><%= link_to 'Pipeline templates', pipeline_templates_path %></li>
-            </ul>
-          </li>
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              Data <b class="caret"></b>
-            </a>
-            <ul class="dropdown-menu">
-              <li><%= link_to 'Collections', collections_path %></li>
-              <li><%= link_to 'Links', links_path %></li>
-              <li><%= link_to 'Humans', humans_path %></li>
-              <li><%= link_to 'Specimens', specimens_path %></li>
-              <li><%= link_to 'Traits', traits_path %></li>
-            </ul>
-          </li>
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              System <b class="caret"></b>
-            </a>
-            <ul class="dropdown-menu">
-              <% if current_user.is_admin %>
-              <li><%= link_to 'Users', users_path %></li>
-              <% end %>
-              <li><%= link_to 'Groups', groups_path %></li>
-              <li><%= link_to 'Compute nodes', nodes_path %></li>
-              <li><%= link_to 'Keep disks', keep_disks_path %></li>
-            </ul>
-          </li>
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              Docs <b class="caret"></b>
-            </a>
-            <ul class="dropdown-menu">
-              <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-              <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-              <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
-              <li><%= link_to 'Install guide', "#{Rails.configuration.arvados_docsite}/install", target: "_blank" %></li>
-            </ul>
-          </li>
-
-	</ul>
-      <% end %>
     </div>
   </div>
 
-  <div class="container">
+  <div class="container-fluid">
 
-    <%= yield %>
+    <div class="body-content">
+      <%= yield %>
+    </div>
 
   </div> <!-- /container -->
 

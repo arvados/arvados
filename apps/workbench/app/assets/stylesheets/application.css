@@ -75,3 +75,17 @@ form input.search-mini {
 form.small-form-margin {
     margin-bottom: 2px;
 }
+.nowrap {
+    white-space: nowrap;
+}
+.navbar .nav li.nav-separator > span {
+    display: block;
+    float: none;
+    color: #bbbbbb;
+    padding: 10px 0 10px;
+    text-decoration: none;
+    text-shadow: 0 1px 0 #ffffff;
+}
+.navbar .nav .dropdown .dropdown-menu li a {
+    padding: 2px 20px;
+}
