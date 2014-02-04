@@ -1,19 +1,17 @@
-<ul class="breadcrumb">
-  <li>
-    <%= link_to((Rails.configuration.site_name rescue Rails.application.class.parent_name), '/') %>
-    <span class="divider">/</span>
+<ul class="nav">
+  <li class="nav-separator">
+    <span><i class="icon-arrow-right"></i></span>
   </li>
-  <% if params[:action] == 'index' %>
-    <li class="active">
-      <%= controller.model_class.to_s.pluralize.underscore.gsub '_', ' ' %>
+  <li>
+    <%= link_to(
+        controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
+        url_for({controller: params[:controller]})) %>
+  </li>
+  <% if params[:action] != 'index' %>
+    <li class="nav-separator">
+      <span><i class="icon-arrow-right"></i></span>
     </li>
-  <% else %>
-    <li><%= link_to(
-            controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
-            url_for({controller: params[:controller]})) %>
-      <span class="divider">/</span>
-    </li>
-    <li class="active">
+    <li>
       <%= render partial: 'breadcrumb_page_name' %>
     </li>
   <% end %>
