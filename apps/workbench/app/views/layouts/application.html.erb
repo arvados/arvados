@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>
     <% if content_for? :page_title %>
-    <%= yield :page_title %> @<%= Rails.configuration.site_name %>
+    <%= yield :page_title %> / <%= Rails.configuration.site_name %>
     <% else %>
     <%= Rails.configuration.site_name %>
     <% end %>
@@ -22,58 +22,52 @@
   <%= yield :js %>
   <% end %>
   <style>
+    <%= yield :css %>
     body > div.container-fluid {
-    padding-top: 60px; /* 60px to make the container go all the way to the
-    bottom of the topbar */
+    padding-top: 70px; /* 70px to make the container go all the way to the bottom of the navbar */
     }
     @media (max-width: 979px) { body { padding-top: 0; } }
-    <%= yield :css %>
+
+    .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
+    padding-top: 1em;
+    }
   </style>
 </head>
 <body>
 
-  <div class="navbar navbar-fixed-top">
-    <div class="navbar-inner">
-      <ul class="nav">
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" href="/">
-            <b><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></b>
-          </a>
-          <ul class="dropdown-menu">
-            <li><%= link_to 'Home', root_url %></li>
-            <li class="divider"></li>
-            <li><%= link_to 'Keys', authorized_keys_path %></li>
-            <li><%= link_to 'VMs', virtual_machines_path %></li>
-            <li><%= link_to 'Repositories', repositories_path %></li>
-            <li><%= link_to 'API Tokens', api_client_authorizations_path %></li>
-            <li class="divider"></li>
-            <li><%= link_to 'Jobs', jobs_path %></li>
-            <li><%= link_to 'Pipeline instances', pipeline_instances_path %></li>
-            <li><%= link_to 'Pipeline templates', pipeline_templates_path %></li>
-            <li class="divider"></li>
-            <li><%= link_to 'Collections', collections_path %></li>
-            <li><%= link_to 'Links', links_path %></li>
-            <li><%= link_to 'Humans', humans_path %></li>
-            <li><%= link_to 'Specimens', specimens_path %></li>
-            <li><%= link_to 'Traits', traits_path %></li>
-            <li class="divider"></li>
-            <% if current_user.andand.is_admin %>
-            <li><%= link_to 'Users', users_path %></li>
-            <% end %>
-            <li><%= link_to 'Groups', groups_path %></li>
-            <li><%= link_to 'Compute nodes', nodes_path %></li>
-            <li><%= link_to 'Keep disks', keep_disks_path %></li>
-          </ul>
-        </li>
+  <div class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+      <ul class="nav navbar-nav navbar-left">
+        <li><a class="navbar-brand"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a></li>
+        <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
+        <% if content_for?(:breadcrumbs) %>
+          <%= yield(:breadcrumbs) %>
+        <% else %>
+          <li>
+            <%= link_to(
+                        controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
+                        url_for({controller: params[:controller]})) %>
+          </li>
+          <% if params[:action] != 'index' %>
+            <li class="nav-separator">
+              <span class="glyphicon glyphicon-arrow-right"></span>
+            </li>
+            <li>
+              <%= render partial: 'breadcrumb_page_name' %>
+            </li>
+          <% end %>
+        <% end %>
       </ul>
-      <%= content_for?(:breadcrumbs) ? yield(:breadcrumbs) : render(partial: 'breadcrumbs') %>
-
-      <ul class="nav pull-right">
+  
+      <ul class="nav navbar-nav navbar-right">
+        <!--
         <li>
           <div class="loading" style="transform: translate(-20px,20px) scale(0.1,0.1); -ms-transform: translate(-20px,20px) scale(0.1,0.1); -webkit-transform: translate(-20px,20px) scale(0.1,0.1); display: none">
             <%= render partial: 'loading' %>
           </div>
         </li>
+        -->
+        <!--
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" href="/">
             Help <span class="caret"></span>
@@ -85,9 +79,30 @@
             <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
           </ul>
         </li>
+        -->
+
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="glyphicon glyphicon-th-list"></span> (0)<span class="caret"></span>
+          </a>
+        </li>        
+
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="glyphicon glyphicon-envelope"></span> (0)<span class="caret"></span>
+          </a>
+        </li>        
+
 	<% if current_user -%>
-          <li><span class="badge badge-info" style="margin: 10px auto 10px; padding-top: 4px; padding-bottom: 4px"><%= current_user.email %></span></li>
-          <li><a href="<%= logout_path %>">Log out</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="glyphicon glyphicon-user"></span><span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+            <li role="presentation" class="dropdown-header"><%= current_user.email %></li>
+            <li role="presentation"><a href="<%= logout_path %>" role="menuitem">Log out</a></li>
+          </ul>
+        </li>
 	<% else -%>
           <li><a href="<%= $arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
 	<% end -%>
