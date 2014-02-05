@@ -13,7 +13,7 @@ class PipelineInstancesController < ApplicationController
       collections = []
 
       p.components.each do |k, v|
-        j = v[:job]
+        j = v[:job] || next
 
         uuid = j[:uuid].intern
         provenance[uuid] = j
@@ -31,7 +31,7 @@ class PipelineInstancesController < ApplicationController
         pips[uuid] |= n
       end
 
-      Collection.where(uuid: collections).each do |c|
+      Collection.where(uuid: collections.compact).each do |c|
         uuid = c.uuid.intern
         provenance[uuid] = c
         pips[uuid] = 0 unless pips[uuid] != nil
