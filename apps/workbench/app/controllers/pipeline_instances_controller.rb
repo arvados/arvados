@@ -60,6 +60,7 @@ class PipelineInstancesController < ApplicationController
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
       :pips => pips }
+    super
   end
 
   def compare
