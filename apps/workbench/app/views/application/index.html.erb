@@ -14,6 +14,7 @@
 
 <% pane_list = controller.index_pane_list rescue %w(recent) %>
 
+<% if pane_list.length > 1 %>
 <div class="tabbable">
 <ul class="nav nav-tabs">
   <% pane_list.each_with_index do |pane, i| %>
@@ -28,3 +29,9 @@
   </div>
   <% end %>
 </div>
+
+<% else %>
+  <% pane_list.each_with_index do |pane, i| %>
+    <%= render partial: pane %>
+  <% end %>
+<% end %>

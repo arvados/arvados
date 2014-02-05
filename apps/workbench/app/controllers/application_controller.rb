@@ -5,6 +5,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
   before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
+  before_filter :check_user_notifications, :except => [:render_exception, :render_not_found]
   theme :select_theme
 
   begin
@@ -275,5 +276,101 @@ class ApplicationController < ActionController::Base
 
   def select_theme
     return Rails.configuration.arvados_theme
+  end
+
+  @@notification_tests = []
+
+  @@notification_tests.push lambda { |controller, current_user|
+    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do   
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/ssh_key_notification'
+    }
+  }
+
+  @@notification_tests.push lambda { |controller, current_user|
+    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do   
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/jobs_notification'
+    }
+  }
+
+  @@notification_tests.push lambda { |controller, current_user|
+    Job.limit(1).where(created_by: current_user.uuid).each do   
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/jobs_notification'
+    }
+  }
+
+  @@notification_tests.push lambda { |controller, current_user|
+    Collection.limit(1).where(created_by: current_user.uuid).each do   
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/collections_notification'
+    }
+  }
+
+  @@notification_tests.push lambda { |controller, current_user|
+    PipelineInstance.limit(1).where(created_by: current_user.uuid).each do   
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/pipelines_notification'
+    }
+  }
+
+  def check_user_notifications
+    @notification_count = 0
+    @notifications = []
+
+    if current_user
+      @showallalerts = false      
+      @@notification_tests.each do |t|
+        a = t.call(self, current_user)
+        if a
+          @notification_count += 1
+          @notifications.push a
+        end
+      end
+    end
+
+    if @notification_count == 0
+      @notification_count = ''
+    end
+    
+    # @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
+    # @my_vm_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#virtual_machine', link_class: 'permission', name: 'can_login')
+    # @my_repo_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#repository', link_class: 'permission', name: 'can_write')
+
+    # @my_tag_links = {}
+
+    # @my_jobs = Job.
+    #   limit(10).
+    #   order('created_at desc').
+    #   where(created_by: current_user.uuid)
+
+    # @my_collections = Collection.
+    #   limit(10).
+    #   order('created_at desc').
+    #   where(created_by: current_user.uuid)
+
+    # Link.limit(1000).where(head_uuid: @my_collections.collect(&:uuid),
+    #                        link_class: 'tag').each do |link|
+    #   (@my_tag_links[link.head_uuid] ||= []) << link
+    # end
+
+    # @my_pipelines = PipelineInstance.
+    #   limit(10).
+    #   order('created_at desc').
+    #   where(created_by: current_user.uuid)
+
+    
+
   end
 end

@@ -29,7 +29,22 @@
     @media (max-width: 979px) { body { padding-top: 0; } }
 
     .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
-    padding-top: 1em;
+    padding-top: 1.25em;
+    }
+
+    /* Setting the height needs to be fixed with javascript. */
+    .dropdown-menu {
+    padding-right: 20px;
+    max-height: 440px;
+    width: 400px;
+    overflow-y: auto;
+    }
+    
+    .arvados-nav-active {
+    background: rgb(66, 139, 202);
+    }
+    .arvados-nav-active a {
+    color: white;
     }
   </style>
 </head>
@@ -38,7 +53,8 @@
   <div class="navbar navbar-default navbar-fixed-top">
     <div class="container-fluid">
       <ul class="nav navbar-nav navbar-left">
-        <li><a class="navbar-brand"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a></li>
+        <li><a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a></li>
+        <% if current_user %>
         <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
         <% if content_for?(:breadcrumbs) %>
           <%= yield(:breadcrumbs) %>
@@ -53,53 +69,58 @@
               <span class="glyphicon glyphicon-arrow-right"></span>
             </li>
             <li>
-              <%= render partial: 'breadcrumb_page_name' %>
+<%= link_to controller.breadcrumb_page_name, request.fullpath %>
             </li>
           <% end %>
+        <% end %>
         <% end %>
       </ul>
   
       <ul class="nav navbar-nav navbar-right">
-        <!--
+
+        <% if current_user %>
         <li>
           <div class="loading" style="transform: translate(-20px,20px) scale(0.1,0.1); -ms-transform: translate(-20px,20px) scale(0.1,0.1); -webkit-transform: translate(-20px,20px) scale(0.1,0.1); display: none">
             <%= render partial: 'loading' %>
           </div>
         </li>
-        -->
-        <!--
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" href="/">
-            Help <span class="caret"></span>
-          </a>
-          <ul class="dropdown-menu">
-            <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-            <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-            <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
-            <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
-          </ul>
+
+        <li>
+          <form class="navbar-form" role="search">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="search">
+              <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span>
+            </div>
         </li>
-        -->
 
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-            <span class="glyphicon glyphicon-th-list"></span> (0)<span class="caret"></span>
+            <span class="glyphicon glyphicon-envelope"></span>
+            <span class="badge"><%= @notification_count %></span>
+            <span class="caret"></span>
           </a>
+          <ul class="dropdown-menu" role="menu">
+            <% if @notifications.length > 0 %>
+              <% @notifications.each do |n| %>
+                <li style="padding: 10px"><%= n.call(self) %></li>
+                <li class="divider"></li>
+              <% end %>
+            <% else %>
+              <li style="padding: 10px">No notifications.</li>
+            <% end %>
+          </ul>
         </li>        
 
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-            <span class="glyphicon glyphicon-envelope"></span> (0)<span class="caret"></span>
-          </a>
-        </li>        
-
-	<% if current_user -%>
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <span class="glyphicon glyphicon-user"></span><span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
             <li role="presentation" class="dropdown-header"><%= current_user.email %></li>
+            <li role="presentation" class="divider"></li>
+            <li role="presentation"><a href="/authorized_keys" role="menuitem">Manage ssh keys</a></li>
+            <li role="presentation"><a href="/api_client_authorizations" role="menuitem">Manage API tokens</a></li>
+            <li role="presentation" class="divider"></li>
             <li role="presentation"><a href="<%= logout_path %>" role="menuitem">Log out</a></li>
           </ul>
         </li>
@@ -110,13 +131,61 @@
     </div>
   </div>
 
-  <div class="container-fluid">
-
-    <div class="body-content">
-      <%= yield %>
+  <div style="padding: 70px 15px 0px">
+    <div class="row">
+      <div class="col-sm-3">
+        <% if current_user %>
+        <div class="well">
+        <ul class="arvados-nav">
+          <li><a href="/">Dashboard</a></li>
+          <li>Data
+            <ul>
+              <li class="arvados-nav-active"><a href="/humans">Humans</a></li>
+              <li><a href="/traits">Traits</a></li>
+              <li><a href="/specimens">Specimens</a></li>
+              <li><a href="/collections">Files</a></li>
+            </ul>
+          </li>
+          <li>Compute
+            <ul>
+              <li><a href="/pipeline_templates">Pipelines</a></li>
+              <li><a href="/repositories">Script repositories</a></li>
+              <li><a href="/virtual_machines">Virtual machines</a></li>
+            </ul>
+          </li>
+          <li>History
+            <ul>
+              <li><a href="/pipeline_instances">Pipeline history</a></li>
+              <li><a href="/jobs">Job history</a></li>
+            </ul>
+          </li>
+          <li>Help
+            <ul>
+              <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+              <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+              <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+              <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+            </ul>
+          </li>
+          <% if current_user.andand.is_admin %>
+          <li>Admin
+            <ul>
+              <li><a href="/users">Users</a></li>
+              <li><a href="/groups">Groups</a></li>
+              <li><a href="/compute_nodes">Compute nodes</a></li>
+              <li><a href="/keep_disks">Keep disks</a></li>
+            </ul>
+          </li>
+          <% end %>
+        </ul>
+        </div>
+        <% end %>
+      </div>
+      <div class="col-sm-9">
+        <%= yield %>
+      </div>
     </div>
-
-  </div> <!-- /container -->
+  </div>
 
   <%= piwik_tracking_tag %>
   <%= javascript_tag do %>
