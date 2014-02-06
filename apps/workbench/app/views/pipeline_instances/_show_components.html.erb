@@ -70,3 +70,5 @@ table.pipeline-components-table div.progress {
 setInterval(function(){$('a.refresh').click()}, 30000);
 <% end %>
 <% end %>
+
+<pre><%= JSON.pretty_generate @object.attributes %></pre>

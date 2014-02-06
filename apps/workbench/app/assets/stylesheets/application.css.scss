@@ -116,7 +116,13 @@ ul.arvados-nav li ul li {
     margin-right: 1em;
     float: left
 }
-
 .smart-scroll {
     overflow: auto;
+}
+.inline-progress-container div.progress {
+    margin-bottom: 0;
+}
+.inline-progress-container {
+    width: 100px;
+    display:inline-block;
 }

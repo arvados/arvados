@@ -73,7 +73,7 @@
     <span class="label label-danger">failed</span>
   <% elsif j.running and j.started_at and not j.finished_at %>
     <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
-    <div class="progress" style="margin-bottom: 0">
+    <div class="progress">
       <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
       <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
     </div>
@@ -97,13 +97,15 @@
   <% else %>
     <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
-        <col width="73%" />
-        <col width="15%" />
-        <col width="12%" />
+        <col width="30%" />
+        <col width="30%" />
+        <col width="13%" />
+        <col width="27%" />
       </colgroup>
 
       <tr>
-	<th>Pipeline template</th>
+	<th>Instance</th>
+	<th>Template</th>
 	<th>Age</th>
 	<th>Status</th>
       </tr>
@@ -112,9 +114,13 @@
         <tr>
           <td>
             <small>
-	      <% PipelineTemplate.limit(1).where(uuid: p.pipeline_template_uuid).each do |i| %>
-		<%= link_to i.name, pipeline_instance_path(p.uuid) %>
-	      <% end %>
+	      <%= link_to_if_arvados_object p.uuid, friendly_name: true %>
+            </small>
+          </td>
+
+          <td>
+            <small>
+	      <%= link_to_if_arvados_object p.pipeline_template_uuid, friendly_name: true %>
             </small>
           </td>
 
@@ -130,11 +136,32 @@
               <span class="label label-success">finished</span>
             <% elsif p.success == false %>
               <span class="label label-danger">failed</span>
+            <% elsif p.active and p.modified_at < 30.minutes.ago %>
+              <span class="label label-info">stopped</span>
             <% elsif p.active %>
               <span class="label label-info">running</span>
             <% else %>
               <span class="label">queued</span>
             <% end %>
+
+            <% summary = pipeline_summary p %>
+            <div class="inline-progress-container pull-right">
+              <div class="progress">
+                <div class="bar bar-success" style="width: <%= summary[:percent_done] %>%;">
+                </div>
+                <% if p.success == false %>
+                <div class="bar bar-danger" style="width: <%= 100.0 - summary[:percent_done] %>%;">
+                </div>
+                <% else %>
+                <div class="bar" style="width: <%= summary[:percent_running] %>%;">
+                </div>
+                <div class="bar bar-info" style="width: <%= summary[:percent_queued] %>%;">
+                </div>
+                <div class="bar bar-danger" style="width: <%= summary[:percent_failed] %>%;">
+                </div>
+                <% end %>
+              </div>
+            </div>
           </td>
 
         </tr>
