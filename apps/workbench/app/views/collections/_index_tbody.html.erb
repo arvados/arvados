@@ -3,17 +3,29 @@
 <tr class="collection">
   <td>
     <%= link_to_if_arvados_object c.uuid %>
-  </td><td>
-    <% c.files.each do |file| %>
-      <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
+  </td>
+  <td>
+    <% i = 0 %>
+    <% while i < 3 and i < c.files.length %>
+      <% file = c.files[i] %>
+      <% file_path = "#{file[0]}/#{file[1]}" %>
+      <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: c.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %><br />
+      <% i += 1 %>
     <% end %>
-  </td><td>
+    <% if i < c.files.length %>
+      &vellip;
+    <% end %>
+  </td>
+  <td><%= render partial: 'application/arvados_attr_value', locals: { obj: c, attr: "owner_uuid", attrvalue: c.owner_uuid } %></td>
+  <td>
     <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
-  </td><td>
+  </td>
+  <td>
     <% if @collection_info[c.uuid] %>
       <%= @collection_info[c.uuid][:tags].uniq.join ', ' %>
     <% end %>
-  </td><td>
+  </td>
+  <td>
     <% if @collection_info[c.uuid][:wanted_by_me] %>
       <span class="label label-info">2&times;</span>
     <% elsif @collection_info[c.uuid][:wanted] %>

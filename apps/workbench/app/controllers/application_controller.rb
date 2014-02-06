@@ -142,8 +142,12 @@ class ApplicationController < ActionController::Base
      (@object.friendly_link_name if @object.respond_to? :friendly_link_name))
   end
 
+  def index_pane_list
+    %w(recent)
+  end
+
   def show_pane_list
-    %w(attributes links json api)
+    %w(attributes metadata json api)
   end
 
   protected

@@ -102,6 +102,7 @@
           </div>
         </li>
 
+        <!-- XXX placeholder for this when search is implemented
         <li>
           <form class="navbar-form" role="search">
             <div class="input-group" style="width: 220px">
@@ -110,6 +111,20 @@
             </div>
           </form>
         </li>
+        -->
+
+        <!-- XXX placeholder for this when persistent selection is implemented
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="glyphicon glyphicon-paperclip"></span>
+            <span class="badge"><%= @selection_count %></span>
+            <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+              <li style="padding: 10px">No selections.</li>
+          </ul>
+        </li>        
+        -->
 
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -161,7 +176,7 @@
                         ['traits'],
                         ['specimens'],
                         ['collections', 'Files'],
-                        ['links']]],
+                        ['links', 'Metadata']]],
               ['Compute', [['pipeline_templates', 'Pipelines'],
                            ['repositories', 'Code repositories'],
                            ['virtual_machines']]],

@@ -3,7 +3,7 @@ class CollectionsController < ApplicationController
   skip_before_filter :check_user_agreements, :only => [:show_file]
 
   def show_pane_list
-    %w(files attributes provenance_graph used_by)
+    %w(files attributes metadata provenance_graph used_by json api)
   end
   def index
     if params[:search].andand.length.andand > 0
@@ -102,8 +102,8 @@ class CollectionsController < ApplicationController
     end
     
     Collection.where(uuid: @object.uuid).each do |u|
-      @prov_svg = ProvenanceHelper::create_provenance_graph u.provenance, "provenance_svg", {:direction => :bottom_up, :combine_jobs => :script_only}
-      @used_by_svg = ProvenanceHelper::create_provenance_graph u.used_by, "used_by_svg", {:direction => :top_down, :combine_jobs => :script_only, :pdata_only => true}
+      @prov_svg = ProvenanceHelper::create_provenance_graph u.provenance, "provenance_svg", {:direction => :bottom_up, :combine_jobs => :script_only} rescue nil
+      @used_by_svg = ProvenanceHelper::create_provenance_graph u.used_by, "used_by_svg", {:direction => :top_down, :combine_jobs => :script_only, :pdata_only => true} rescue nil
     end
   end
 
