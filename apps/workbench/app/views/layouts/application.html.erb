@@ -72,10 +72,10 @@
       <ul class="nav navbar-nav navbar-left">
         <li><a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a></li>
         <% if current_user %>
-        <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
         <% if content_for?(:breadcrumbs) %>
           <%= yield(:breadcrumbs) %>
         <% else %>
+          <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
           <li>
             <%= link_to(
                         controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
