@@ -15,8 +15,9 @@
 //= require bootstrap
 //= require bootstrap/dropdown
 //= require bootstrap/tab
-//= require bootstrap-editable
-//= require bootstrap-editable-rails
+//= require bootstrap/tooltip
+//= require bootstrap/popover
+//= require bootstrap3-editable/bootstrap-editable
 //= require_tree .
 
 jQuery(function($){

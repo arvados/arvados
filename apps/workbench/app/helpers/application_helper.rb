@@ -93,10 +93,10 @@ module ApplicationHelper
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-resource" => object.class.to_s.underscore,
       "data-name" => attr,
+      "data-pk" => object.uuid,
       "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
-      "data-original-title" => "Update #{attr.gsub '_', ' '}",
+      "data-title" => "Update #{attr.gsub '_', ' '}",
       :class => "editable"
     }.merge(htmloptions)
   end

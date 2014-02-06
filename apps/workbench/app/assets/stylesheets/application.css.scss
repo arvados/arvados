@@ -9,11 +9,10 @@
  * compiled file, but it's generally better to create a new file per style scope.
  *
  *= require_self
- *= require bootstrap-editable
+ *= require bootstrap
+ *= require bootstrap3-editable/bootstrap-editable
  *= require_tree .
  */
-
-@import "bootstrap";
 
 .contain-align-left {
     text-align: left;
