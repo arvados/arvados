@@ -122,12 +122,22 @@ class PipelineInstancesController < ApplicationController
 
     provenance, pips = graph(@objects)
 
+    @pipelines = @objects
+
     @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
       :all_script_parameters => true, 
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
       :pips => pips }
   end
+
+  def show_pane_list
+    %w(components graph attributes metadata json api)
+  end
+
+  def compare_pane_list 
+    %w(text_compare graph)
+  end 
 
   protected
   def for_comparison v

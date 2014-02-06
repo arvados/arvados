@@ -1,0 +1,27 @@
+<% if @object.andand.uuid %>
+
+  <pre>
+curl -X PUT \
+ -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
+ --data-urlencode <%= @object.class.to_s.underscore %>@/dev/stdin \
+ https://$ARVADOS_API_HOST/arvados/v1/<%= @object.class.to_s.pluralize.underscore %>/<%= @object.uuid %> \
+ &lt;&lt;EOF
+<%= JSON.pretty_generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}) %>
+EOF
+  </pre>
+
+  <pre>
+arv --pretty <%= @object.class.to_s.underscore %> get \
+ --uuid <%= @object.uuid %>
+
+arv <%= @object.class.to_s.underscore %> update \
+ --uuid <%= @object.uuid %> \
+ --<%= @object.class.to_s.underscore.gsub '_', '-' %> '<%= JSON.generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}).gsub("'","'\''") %>'
+      </pre>
+
+    <pre>
+import arvados
+
+x = arvados.api().<%= @object.class.to_s.pluralize.underscore %>().get(uuid='<%= @object.uuid %>').execute()
+      </pre>
+<% end %>

@@ -1,3 +1,10 @@
+<%= content_for :tab_line_buttons do %>
+<%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
+  <%= submit_tag 'Compare selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
+  &nbsp;
+<% end rescue nil %>
+<% end %>
+
 <%= form_tag do |f| %>
 
 <table class="table table-hover">
@@ -58,12 +65,6 @@
         </small>
       </td><td>
         <%= ob.created_at %>
-      </td><td>
-        <% if ob.editable? %>
-        <%= link_to({action: 'destroy', id: ob.uuid}, method: :delete, remote: true, data: {confirm: "You are about to delete #{controller.model_class} #{ob.uuid}.\n\nAre you sure?"}) do %>
-        <i class="icon-trash"></i>
-        <% end %>
-        <% end %>
       </td>
     </tr>
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>
     <% if content_for? :page_title %>
-    <%= yield :page_title %> @<%= Rails.configuration.site_name %>
+    <%= yield :page_title %> / <%= Rails.configuration.site_name %>
     <% else %>
     <%= Rails.configuration.site_name %>
     <% end %>
@@ -22,72 +22,141 @@
   <%= yield :js %>
   <% end %>
   <style>
-    body > div.container-fluid {
-    padding-top: 60px; /* 60px to make the container go all the way to the
-    bottom of the topbar */
-    }
-    @media (max-width: 979px) { body { padding-top: 0; } }
     <%= yield :css %>
+    body {
+    min-height: 100%;
+    height: 100%;
+    }
+
+    body > div.container-fluid {
+    padding-top: 70px; /* 70px to make the container go all the way to the bottom of the navbar */
+    }
+    
+    body > div.container-fluid > div.col-sm-9.col-sm-offset-3 {
+    overflow: auto;
+    }
+
+    @media (max-width: 979px) { body { padding-top: 0; } }
+
+    .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
+    padding-top: 1.25em;
+    }
+
+    /* Setting the height needs to be fixed with javascript. */
+    .dropdown-menu {
+    padding-right: 20px;
+    max-height: 440px;
+    width: 400px;
+    overflow-y: auto;
+    }
+
+    .arvados-nav-container {
+    position: fixed; 
+    top: 70px; 
+    height: calc(100% - 70px); 
+    overflow: auto; 
+    z-index: 2;
+    }
+    .arvados-nav-active {
+    background: rgb(66, 139, 202);
+    }
+    .arvados-nav-active a {
+    color: white;
+    }
   </style>
 </head>
 <body>
 
-  <div class="navbar navbar-fixed-top">
-    <div class="navbar-inner">
-      <ul class="nav">
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" href="/">
-            <b><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></b>
-          </a>
-          <ul class="dropdown-menu">
-            <li><%= link_to 'Home', root_url %></li>
-            <li class="divider"></li>
-            <li><%= link_to 'Keys', authorized_keys_path %></li>
-            <li><%= link_to 'VMs', virtual_machines_path %></li>
-            <li><%= link_to 'Repositories', repositories_path %></li>
-            <li><%= link_to 'API Tokens', api_client_authorizations_path %></li>
-            <li class="divider"></li>
-            <li><%= link_to 'Jobs', jobs_path %></li>
-            <li><%= link_to 'Pipeline instances', pipeline_instances_path %></li>
-            <li><%= link_to 'Pipeline templates', pipeline_templates_path %></li>
-            <li class="divider"></li>
-            <li><%= link_to 'Collections', collections_path %></li>
-            <li><%= link_to 'Links', links_path %></li>
-            <li><%= link_to 'Humans', humans_path %></li>
-            <li><%= link_to 'Specimens', specimens_path %></li>
-            <li><%= link_to 'Traits', traits_path %></li>
-            <li class="divider"></li>
-            <% if current_user.andand.is_admin %>
-            <li><%= link_to 'Users', users_path %></li>
-            <% end %>
-            <li><%= link_to 'Groups', groups_path %></li>
-            <li><%= link_to 'Compute nodes', nodes_path %></li>
-            <li><%= link_to 'Keep disks', keep_disks_path %></li>
-          </ul>
-        </li>
+  <div class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+      <ul class="nav navbar-nav navbar-left">
+        <li><a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a></li>
+        <% if current_user %>
+        <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
+        <% if content_for?(:breadcrumbs) %>
+          <%= yield(:breadcrumbs) %>
+        <% else %>
+          <li>
+            <%= link_to(
+                        controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
+                        url_for({controller: params[:controller]})) %>
+          </li>
+          <% if params[:action] != 'index' %>
+            <li class="nav-separator">
+              <span class="glyphicon glyphicon-arrow-right"></span>
+            </li>
+            <li>
+<%= link_to controller.breadcrumb_page_name, request.fullpath %>
+            </li>
+          <% end %>
+        <% end %>
+        <% end %>
       </ul>
-      <%= content_for?(:breadcrumbs) ? yield(:breadcrumbs) : render(partial: 'breadcrumbs') %>
+  
+      <ul class="nav navbar-nav navbar-right">
 
-      <ul class="nav pull-right">
+        <% if current_user %>
         <li>
           <div class="loading" style="transform: translate(-20px,20px) scale(0.1,0.1); -ms-transform: translate(-20px,20px) scale(0.1,0.1); -webkit-transform: translate(-20px,20px) scale(0.1,0.1); display: none">
             <%= render partial: 'loading' %>
           </div>
         </li>
+
+        <!-- XXX placeholder for this when search is implemented
+        <li>
+          <form class="navbar-form" role="search">
+            <div class="input-group" style="width: 220px">
+              <input type="text" class="form-control" placeholder="search">
+              <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+            </div>
+          </form>
+        </li>
+        -->
+
+        <!-- XXX placeholder for this when persistent selection is implemented
         <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" href="/">
-            Help <span class="caret"></span>
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="glyphicon glyphicon-paperclip"></span>
+            <span class="badge"><%= @selection_count %></span>
+            <span class="caret"></span>
           </a>
-          <ul class="dropdown-menu">
-            <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-            <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-            <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
-            <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+          <ul class="dropdown-menu" role="menu">
+              <li style="padding: 10px">No selections.</li>
+          </ul>
+        </li>        
+        -->
+
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="glyphicon glyphicon-envelope"></span>
+            <span class="badge"><%= @notification_count %></span>
+            <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+            <% if @notifications.length > 0 %>
+              <% @notifications.each do |n| %>
+                <li style="padding: 10px"><%= n.call(self) %></li>
+                <li class="divider"></li>
+              <% end %>
+            <% else %>
+              <li style="padding: 10px">No notifications.</li>
+            <% end %>
+          </ul>
+        </li>        
+
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            <span class="glyphicon glyphicon-user"></span><span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu" role="menu">
+            <li role="presentation" class="dropdown-header"><%= current_user.email %></li>
+            <li role="presentation" class="divider"></li>
+            <li role="presentation"><a href="/authorized_keys" role="menuitem">Manage ssh keys</a></li>
+            <li role="presentation"><a href="/api_client_authorizations" role="menuitem">Manage API tokens</a></li>
+            <li role="presentation" class="divider"></li>
+            <li role="presentation"><a href="<%= logout_path %>" role="menuitem">Log out</a></li>
           </ul>
         </li>
-	<% if current_user -%>
-          <li><span class="badge badge-info" style="margin: 10px auto 10px; padding-top: 4px; padding-bottom: 4px"><%= current_user.email %></span></li>
-          <li><a href="<%= logout_path %>">Log out</a></li>
 	<% else -%>
           <li><a href="<%= $arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
 	<% end -%>
@@ -96,12 +165,74 @@
   </div>
 
   <div class="container-fluid">
+      <div class="col-sm-3">
+        <div class="left-nav arvados-nav-container">
+        <% if current_user %>
+        <div class="well">
+        <ul class="arvados-nav">
+          <li><a href="/">Dashboard</a></li>
+          
+          <% [['Data', [['humans'],
+                        ['traits'],
+                        ['specimens'],
+                        ['collections', 'Files'],
+                        ['links', 'Metadata']]],
+              ['Compute', [['pipeline_templates', 'Pipelines'],
+                           ['repositories', 'Code repositories'],
+                           ['virtual_machines']]],
+              ['Activity', [['pipeline_instances', 'Recent pipelines'],
+                            ['jobs', 'Recent jobs']]]].each do |j| %>
+            <li><%= j[0] %>
+              <ul>
+              <% j[1].each do |k| %>
+                <li class="<%= 'arvados-nav-active' if params[:controller] == k[0] %>">
+                  <a href="/<%= k[0] %>">
+                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                  </a>
+                </li>
+              <% end %>
+              </ul>
+            </li>
+          <% end %>
 
-    <div class="body-content">
-      <%= yield %>
-    </div>
+          <li>Help
+            <ul>
+              <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+              <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+              <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+              <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+            </ul>
+          </li>
+          <% if current_user.andand.is_admin %>
 
-  </div> <!-- /container -->
+          <% [['Admin', [['users'],
+                         ['groups'],
+                         ['nodes', 'Compute nodes'],
+                         ['keep_disks']]]].each do |j| %>   
+            <li><%= j[0] %>
+              <ul>
+              <% j[1].each do |k| %>
+                <li class="<%= "arvados-nav-active" if params[:controller] == k[0] %>">
+                  <a href="/<%= k[0] %>">
+                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                  </a>
+                </li>
+              <% end %>
+              </ul>
+            </li>
+          <% end %>
+          <% end %>
+        </ul>
+        </div>
+        <% end %>
+      </div>
+        </div>
+      <div class="col-sm-9 col-sm-offset-3">
+        <div id="content">
+          <%= yield %>
+        </div>
+      </div>
+  </div>
 
   <%= piwik_tracking_tag %>
   <%= javascript_tag do %>

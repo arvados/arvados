@@ -1,0 +1,21 @@
+<% content_for :tab_panes do %>
+
+<% pane_list ||= %w(recent) %>
+
+<ul class="nav nav-tabs">
+  <% pane_list.each_with_index do |pane, i| %>
+    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.capitalize.gsub('_', ' ') %></a></li>
+  <% end %>
+</ul>
+<div class="tab-content">
+<% pane_list.each_with_index do |pane, i| %>
+  <div id="<%= pane %>" class="tab-pane fade <%= 'in active' if i==0 %>">
+    <div class="smart-scroll">
+      <%= render partial: 'show_' + pane %>
+    </div>
+  </div>
+<% end %>
+</div>
+
+<% end %>
+

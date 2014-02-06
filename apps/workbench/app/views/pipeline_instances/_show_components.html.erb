@@ -65,23 +65,6 @@ table.pipeline-components-table div.progress {
   </tfoot>
 </table>
 
-<% if @pipelines.count > 1 %>
-  <div style="text-align: center">
-    <span class="pipeline_color_legend" style="background: #88ff88">This pipeline</span> 
-    <span class="pipeline_color_legend" style="background: #8888ff">Comparison pipeline</span>
-    <span class="pipeline_color_legend" style="background: #88ffff">Shared by both pipelines</span>
-  </div>
-<% end %>
-
-   <%= render partial: 'application/svg_div', locals: {
-         divId: "provenance_graph", 
-         svgId: "provenance_svg", 
-         svg: @prov_svg } %>
-
-<div style="height: 1em"></div>
-
-<%= render partial: 'arvados_object' %>
-
 <% if @object.active %>
 <% content_for :js do %>
 setInterval(function(){$('a.refresh').click()}, 30000);

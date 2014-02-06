@@ -46,7 +46,7 @@
       <td>
         <% if object.editable? %>
         <%= link_to({action: 'destroy', id: object.uuid}, method: :delete, remote: true, data: {confirm: "You are about to delete #{controller.model_class} #{object.uuid}.\n\nAre you sure?"}) do %>
-        <i class="icon-trash"></i>
+        <i class="glyphicon glyphicon-trash"></i>
         <% end %>
         <% end %>
       </td>
