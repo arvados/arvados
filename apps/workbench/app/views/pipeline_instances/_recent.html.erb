@@ -58,12 +58,6 @@
         </small>
       </td><td>
         <%= ob.created_at %>
-      </td><td>
-        <% if ob.editable? %>
-        <%= link_to({action: 'destroy', id: ob.uuid}, method: :delete, remote: true, data: {confirm: "You are about to delete #{controller.model_class} #{ob.uuid}.\n\nAre you sure?"}) do %>
-        <i class="icon-trash"></i>
-        <% end %>
-        <% end %>
       </td>
     </tr>
 
