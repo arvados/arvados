@@ -7,13 +7,13 @@
       <p>(None)</p>
     <% else %>
       <table class="table table-bordered table-condensed table-fixedlayout">
-	<colgroup>
-          <col width="28%" />
-          <col width="38%" />
-          <col width="7%" />
-          <col width="15%" />
-          <col width="12%" />
-	</colgroup>
+        <colgroup>
+          <col width="20%" />
+          <col width="20%" />
+          <col width="20%" />
+          <col width="13%" />
+          <col width="27%" />
+        </colgroup>
 
         <tr>
 	  <th>Script</th>
@@ -71,15 +71,26 @@
     <span class="label label-success">finished</span>
   <% elsif j.success == false %>
     <span class="label label-danger">failed</span>
-  <% elsif j.running and j.started_at and not j.finished_at %>
-    <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
-    <div class="progress">
-      <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
-      <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
-    </div>
+  <% elsif j.finished_at %>
+    <span class="label">finished?</span>
+  <% elsif j.started_at %>
+    <span class="label label-success">running</span>
   <% else %>
     <span class="label">queued</span>
   <% end %>
+  <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
+  <div class="inline-progress-container pull-right">
+    <div class="progress">
+      <span class="progress-bar progress-bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;">
+      </span>
+      <span class="progress-bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%;">
+      </span>
+      <% if j.success == false %>
+      <span class="progress-bar progress-bar-danger" style="width: <%= tasks_summary[:failed] * percent_total_tasks rescue 0 %>%;">
+      </span>
+      <% end %>
+    </div>
+  </div>
 </td>
 
 </tr>
@@ -147,18 +158,18 @@
             <% summary = pipeline_summary p %>
             <div class="inline-progress-container pull-right">
               <div class="progress">
-                <div class="bar bar-success" style="width: <%= summary[:percent_done] %>%;">
-                </div>
+                <span class="progress-bar progress-bar-success" style="width: <%= summary[:percent_done] %>%;">
+                </span>
                 <% if p.success == false %>
-                <div class="bar bar-danger" style="width: <%= 100.0 - summary[:percent_done] %>%;">
-                </div>
+                <span class="progress-bar progress-bar-danger" style="width: <%= 100.0 - summary[:percent_done] %>%;">
+                </span>
                 <% else %>
-                <div class="bar" style="width: <%= summary[:percent_running] %>%;">
-                </div>
-                <div class="bar bar-info" style="width: <%= summary[:percent_queued] %>%;">
-                </div>
-                <div class="bar bar-danger" style="width: <%= summary[:percent_failed] %>%;">
-                </div>
+                <span class="progress-bar" style="width: <%= summary[:percent_running] %>%;">
+                </span>
+                <span class="progress-bar progress-bar-info" style="width: <%= summary[:percent_queued] %>%;">
+                </span>
+                <span class="progress-bar progress-bar-danger" style="width: <%= summary[:percent_failed] %>%;">
+                </span>
                 <% end %>
               </div>
             </div>
