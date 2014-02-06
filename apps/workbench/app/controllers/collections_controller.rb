@@ -3,7 +3,7 @@ class CollectionsController < ApplicationController
   skip_before_filter :check_user_agreements, :only => [:show_file]
 
   def show_pane_list
-    %w(files attributes provenance provenance_graph used_by)
+    %w(files attributes provenance_graph used_by)
   end
   def index
     if params[:search].andand.length.andand > 0

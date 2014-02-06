@@ -128,6 +128,10 @@ class PipelineInstancesController < ApplicationController
       :pips => pips }
   end
 
+  def show_pane_list
+    %w(components graph attributes  links json api)
+  end
+
   protected
   def for_comparison v
     if v.is_a? Hash or v.is_a? Array

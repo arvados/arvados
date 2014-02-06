@@ -3,7 +3,7 @@
     <tr>
       <th>path</th>
       <th>file</th>
-      <th style="width:1.5em">d/l</th>
+      <th style="width: 3em">d/l</th>
       <th style="width: 7em; text-align:right">size</th>
     </tr>
   </thead><tbody>
@@ -20,7 +20,7 @@
 
       <td>
         <div style="display:inline-block">
-          <%= link_to raw('<i class="icon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
+          <%= link_to raw('<i class="glyphicon glyphicon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
         </div>
       </td>
 

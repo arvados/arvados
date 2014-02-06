@@ -30,4 +30,8 @@ class JobsController < ApplicationController
   def show
     generate_provenance([@object])
   end
+
+  def show_pane_list
+    %w(attributes provenance links json api)
+  end
 end

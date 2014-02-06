@@ -23,9 +23,19 @@
   <% end %>
   <style>
     <%= yield :css %>
+    body {
+    min-height: 100%;
+    height: 100%;
+    }
+
     body > div.container-fluid {
     padding-top: 70px; /* 70px to make the container go all the way to the bottom of the navbar */
     }
+    
+    body > div.container-fluid > div.col-sm-9.col-sm-offset-3 {
+    overflow: auto;
+    }
+
     @media (max-width: 979px) { body { padding-top: 0; } }
 
     .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
@@ -39,7 +49,14 @@
     width: 400px;
     overflow-y: auto;
     }
-    
+
+    .arvados-nav-container {
+    position: fixed; 
+    top: 70px; 
+    height: calc(100% - 70px); 
+    overflow: auto; 
+    z-index: 2;
+    }
     .arvados-nav-active {
     background: rgb(66, 139, 202);
     }
@@ -87,10 +104,11 @@
 
         <li>
           <form class="navbar-form" role="search">
-            <div class="input-group" style="width: 300px">
+            <div class="input-group" style="width: 220px">
               <input type="text" class="form-control" placeholder="search">
-              <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span>
+              <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
             </div>
+          </form>
         </li>
 
         <li class="dropdown">
@@ -131,34 +149,36 @@
     </div>
   </div>
 
-  <div style="padding: 70px 15px 0px">
-    <div class="row">
+  <div class="container-fluid">
       <div class="col-sm-3">
+        <div class="left-nav arvados-nav-container">
         <% if current_user %>
         <div class="well">
         <ul class="arvados-nav">
           <li><a href="/">Dashboard</a></li>
-          <li>Data
-            <ul>
-              <li class="arvados-nav-active"><a href="/humans">Humans</a></li>
-              <li><a href="/traits">Traits</a></li>
-              <li><a href="/specimens">Specimens</a></li>
-              <li><a href="/collections">Files</a></li>
-            </ul>
-          </li>
-          <li>Compute
-            <ul>
-              <li><a href="/pipeline_templates">Pipelines</a></li>
-              <li><a href="/repositories">Script repositories</a></li>
-              <li><a href="/virtual_machines">Virtual machines</a></li>
-            </ul>
-          </li>
-          <li>History
-            <ul>
-              <li><a href="/pipeline_instances">Pipeline history</a></li>
-              <li><a href="/jobs">Job history</a></li>
-            </ul>
-          </li>
+          
+          <% [['Data', [['humans'],
+                        ['traits'],
+                        ['specimens'],
+                        ['collections', 'Files']]],
+              ['Compute', [['pipeline_templates', 'Pipelines'],
+                           ['repositories', 'Code repositories'],
+                           ['virtual_machines']]],
+              ['Activity', [['pipeline_instances', 'Recent pipelines'],
+                            ['jobs', 'Recent jobs']]]].each do |j| %>
+            <li><%= j[0] %>
+              <ul>
+              <% j[1].each do |k| %>
+                <li class="<%= 'arvados-nav-active' if params[:controller] == k[0] %>">
+                  <a href="/<%= k[0] %>">
+                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                  </a>
+                </li>
+              <% end %>
+              </ul>
+            </li>
+          <% end %>
+
           <li>Help
             <ul>
               <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
@@ -168,23 +188,34 @@
             </ul>
           </li>
           <% if current_user.andand.is_admin %>
-          <li>Admin
-            <ul>
-              <li><a href="/users">Users</a></li>
-              <li><a href="/groups">Groups</a></li>
-              <li><a href="/compute_nodes">Compute nodes</a></li>
-              <li><a href="/keep_disks">Keep disks</a></li>
-            </ul>
-          </li>
+
+          <% [['Admin', [['users'],
+                         ['groups'],
+                         ['nodes', 'Compute nodes'],
+                         ['keep_disks']]]].each do |j| %>   
+            <li><%= j[0] %>
+              <ul>
+              <% j[1].each do |k| %>
+                <li class="<%= "arvados-nav-active" if params[:controller] == k[0] %>">
+                  <a href="/<%= k[0] %>">
+                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                  </a>
+                </li>
+              <% end %>
+              </ul>
+            </li>
+          <% end %>
           <% end %>
         </ul>
         </div>
         <% end %>
       </div>
-      <div class="col-sm-9">
-        <%= yield %>
+        </div>
+      <div class="col-sm-9 col-sm-offset-3">
+        <div id="content">
+          <%= yield %>
+        </div>
       </div>
-    </div>
   </div>
 
   <%= piwik_tracking_tag %>

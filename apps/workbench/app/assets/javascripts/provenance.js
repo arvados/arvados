@@ -29,6 +29,7 @@ function provenance_sizing_fixup(divId, svgId) {
         b.style.paddingTop = String(max) + "px";
     }
 
+    /*
     w = window.innerWidth - 25;
     a.style.width = String(w) + "px";
     gw = parseFloat(g.getAttribute("width"));
@@ -37,7 +38,7 @@ function provenance_sizing_fixup(divId, svgId) {
     }
     else {
         c.style.paddingLeft = "0px";
-    }
+    }*/
 }
 
 function graph_zoom(divId, svgId, scale) {
@@ -51,3 +52,13 @@ function graph_zoom(divId, svgId, scale) {
     pg.scrollLeft = (hcenter * pg.scrollWidth) - (pg.scrollWidth - pg.scrollLeftMax)/2.0;
     provenance_sizing_fixup(divId, svgId);
 }
+
+$(window).on('load resize', function () {
+    var s = document.getElementsByClassName("smart-scroll");
+    for (var i = 0; i < s.length; i++) {
+        a = s[i];
+        var h = window.innerHeight - a.getBoundingClientRect().top - 20;
+        height = String(h) + "px";
+        a.style.height = height;
+    }
+});

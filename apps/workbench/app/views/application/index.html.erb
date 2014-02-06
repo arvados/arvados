@@ -7,6 +7,7 @@
     { action: 'create', return_to: request.url }, 
     { class: 'btn btn-primary pull-right' } %>
 <% end %>
+
 <%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
 <%= submit_tag 'Compare selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
 &nbsp;
@@ -14,24 +15,17 @@
 
 <% pane_list = controller.index_pane_list rescue %w(recent) %>
 
-<% if pane_list.length > 1 %>
-<div class="tabbable">
 <ul class="nav nav-tabs">
   <% pane_list.each_with_index do |pane, i| %>
-  <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.capitalize %></a></li>
+    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.capitalize %></a></li>
   <% end %>
 </ul>
-
 <div class="tab-content">
-  <% pane_list.each_with_index do |pane, i| %>
-  <div id="<%= pane %>" class="tab-pane fade in <%= 'active' if i==0 %>">
-    <%= render partial: pane %>
+<% pane_list.each_with_index do |pane, i| %>
+  <div id="<%= pane %>" class="tab-pane fade <%= 'in active' if i==0 %>">
+    <div class="smart-scroll">
+      <%= render partial: pane %>
+    </div>
   </div>
-  <% end %>
-</div>
-
-<% else %>
-  <% pane_list.each_with_index do |pane, i| %>
-    <%= render partial: pane %>
-  <% end %>
 <% end %>
+</div>

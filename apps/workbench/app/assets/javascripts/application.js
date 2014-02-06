@@ -14,6 +14,7 @@
 //= require jquery_ujs
 //= require bootstrap
 //= require bootstrap/dropdown
+//= require bootstrap/tab
 //= require bootstrap-editable
 //= require bootstrap-editable-rails
 //= require_tree .
@@ -46,3 +47,4 @@ jQuery(function($){
             $('.loading').hide();
         });
 })(jQuery);
+
