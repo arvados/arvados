@@ -8,6 +8,10 @@ class Collection < ArvadosModel
     t.add :files
   end
 
+  def is_searchable
+    true
+  end
+
   def redundancy_status
     if redundancy_confirmed_as.nil?
       'unconfirmed'

@@ -17,6 +17,10 @@ class JobTask < ArvadosModel
     t.add :success
   end
 
+  def is_searchable
+    true
+  end
+
   protected
 
   def delete_created_job_tasks_if_failed

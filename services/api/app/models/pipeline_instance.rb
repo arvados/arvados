@@ -21,6 +21,10 @@ class PipelineInstance < ArvadosModel
     t.add :properties
   end
 
+  def is_searchable
+    true
+  end
+
   def dependencies
     dependency_search(self.components).keys
   end

@@ -16,6 +16,10 @@ class Log < ArvadosModel
     t.add :info
   end
 
+  def is_searchable
+    true
+  end
+
   protected
 
   def set_default_event_at

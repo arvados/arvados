@@ -29,6 +29,10 @@ class Link < ArvadosModel
     super
   end
 
+  def is_searchable
+    true
+  end
+
   protected
 
   def permission_to_attach_to_objects

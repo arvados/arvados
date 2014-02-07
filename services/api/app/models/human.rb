@@ -7,4 +7,8 @@ class Human < ArvadosModel
   api_accessible :user, extend: :common do |t|
     t.add :properties
   end
+
+  def is_searchable
+    true
+  end
 end
