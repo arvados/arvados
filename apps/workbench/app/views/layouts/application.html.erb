@@ -165,8 +165,13 @@
   </div>
 
   <div class="container-fluid">
-      <div class="col-sm-3">
-        <div class="left-nav arvados-nav-container">
+      <div class="col-sm-9 col-sm-offset-3">
+        <div id="content">
+          <%= yield %>
+        </div>
+      </div>
+      <div class="col-sm-3 left-nav">
+        <div class="arvados-nav-container">
         <% if current_user %>
         <div class="well">
         <ul class="arvados-nav">
@@ -216,11 +221,6 @@
         <% end %>
       </div>
         </div>
-      <div class="col-sm-9 col-sm-offset-3">
-        <div id="content">
-          <%= yield %>
-        </div>
-      </div>
   </div>
 
   <%= piwik_tracking_tag %>
