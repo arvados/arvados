@@ -20,9 +20,7 @@ stroke-linecap: round;
 
 <%= content_for :js do %>
     $(window).on('load', function() {
-      var fn = function () { graph_zoom("<%= divId %>", "<%=svgId %>", 1) };
-      $(window).on('resize', fn);
-      $(window).on('scroll', fn);
+      $(window).on('load resize scroll', function () { graph_zoom("<%= divId %>","<%=svgId %>", 1) } );
     });
 <% end %>
 
@@ -32,8 +30,8 @@ stroke-linecap: round;
     <a style="cursor: pointer"><span class="glyphicon glyphicon-zoom-in" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', 1./.9)"></span></a>
   </div>
 
-  <div id="<%= divId %>">
-    <span id="_<%= divId %>_center" style="padding-left: 300px"></span>
+  <div id="<%= divId %>" class="smart-scroll">
+    <span id="_<%= divId %>_center" style="padding-left: 0px"></span>
     <%= raw(svg) %>
   </div>
   <div id="_<%= divId %>_padding" style="padding-bottom: 1em"></div>

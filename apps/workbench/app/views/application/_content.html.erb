@@ -24,3 +24,8 @@
 
 <% end %>
 
+<% content_for :js do %>
+  $(window).on('load', function() {
+    $('ul.nav-tabs > li > a').on('shown.bs.tab', smart_scroll_fixup);
+   });
+<% end %>
