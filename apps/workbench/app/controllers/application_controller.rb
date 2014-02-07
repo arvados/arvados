@@ -2,7 +2,8 @@ class ApplicationController < ActionController::Base
   respond_to :html, :json, :js
   protect_from_forgery
   around_filter :thread_clear
-  around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
+  around_filter :thread_with_mandatory_api_token, :except => [:render_exception, :render_not_found]
+  around_filter :thread_with_optional_api_token
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
   before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
   before_filter :check_user_notifications, :except => [:render_exception, :render_not_found]
@@ -236,9 +237,22 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def thread_with_optional_api_token 
-    thread_with_api_token(true) do 
+  def thread_with_mandatory_api_token
+    thread_with_api_token do
       yield
+    end
+  end
+
+  # This runs after thread_with_mandatory_api_token in the filter chain.
+  def thread_with_optional_api_token
+    if Thread.current[:arvados_api_token]
+      # We are already inside thread_with_mandatory_api_token.
+      yield
+    else
+      # We skipped thread_with_mandatory_api_token. Use the optional version.
+      thread_with_api_token(true) do 
+        yield
+      end
     end
   end
 
@@ -298,7 +312,7 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do   
+    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
@@ -307,7 +321,7 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    Job.limit(1).where(created_by: current_user.uuid).each do   
+    Job.limit(1).where(created_by: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
@@ -316,7 +330,7 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    Collection.limit(1).where(created_by: current_user.uuid).each do   
+    Collection.limit(1).where(created_by: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
@@ -325,7 +339,7 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    PipelineInstance.limit(1).where(created_by: current_user.uuid).each do   
+    PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
