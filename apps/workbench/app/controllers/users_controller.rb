@@ -5,6 +5,7 @@ class UsersController < ApplicationController
 
   def welcome
     if current_user
+      params[:action] = 'home'
       home
     end
   end

@@ -170,7 +170,9 @@
         <% if current_user %>
         <div class="well">
         <ul class="arvados-nav">
-          <li><a href="/">Dashboard</a></li>
+          <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
+            <a href="/">Dashboard</a>
+          </li>
           
           <% [['Data', [['humans'],
                         ['traits'],
@@ -181,15 +183,21 @@
                            ['repositories', 'Code repositories'],
                            ['virtual_machines']]],
               ['Activity', [['pipeline_instances', 'Recent pipelines'],
-                            ['jobs', 'Recent jobs']]]].each do |j| %>
+                            ['jobs', 'Recent jobs']]],
+              ['System', [['users'],
+                         ['groups'],
+                         ['nodes', 'Compute nodes'],
+                         ['keep_disks']]]].each do |j| %>   
             <li><%= j[0] %>
               <ul>
               <% j[1].each do |k| %>
-                <li class="<%= 'arvados-nav-active' if params[:controller] == k[0] %>">
-                  <a href="/<%= k[0] %>">
-                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
-                  </a>
-                </li>
+                <% unless k[0] == 'users' and !current_user.andand.is_admin %>
+                  <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
+                    <a href="/<%= k[0] %>">
+                      <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                    </a>
+                  </li>
+                <% end %>
               <% end %>
               </ul>
             </li>
@@ -203,25 +211,6 @@
               <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
             </ul>
           </li>
-          <% if current_user.andand.is_admin %>
-
-          <% [['Admin', [['users'],
-                         ['groups'],
-                         ['nodes', 'Compute nodes'],
-                         ['keep_disks']]]].each do |j| %>   
-            <li><%= j[0] %>
-              <ul>
-              <% j[1].each do |k| %>
-                <li class="<%= "arvados-nav-active" if params[:controller] == k[0] %>">
-                  <a href="/<%= k[0] %>">
-                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
-                  </a>
-                </li>
-              <% end %>
-              </ul>
-            </li>
-          <% end %>
-          <% end %>
         </ul>
         </div>
         <% end %>
