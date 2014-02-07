@@ -134,9 +134,9 @@
           </a>
           <ul class="dropdown-menu" role="menu">
             <% if @notifications.length > 0 %>
-              <% @notifications.each do |n| %>
+              <% @notifications.each_with_index do |n, i| %>
+                <% if i > 0 %><li class="divider"></li><% end %>
                 <li style="padding: 10px"><%= n.call(self) %></li>
-                <li class="divider"></li>
               <% end %>
             <% else %>
               <li style="padding: 10px">No notifications.</li>
