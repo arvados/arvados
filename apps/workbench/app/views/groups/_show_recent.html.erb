@@ -2,17 +2,15 @@
   <thead>
     <tr class="contain-align-left">
       <th>
-	id
+	Group
       </th><th>
-	name
+	Owner
       </th><th>
-	owner
+	Incoming permissions
       </th><th>
-	incoming permissions
+	Outgoing permissions
       </th><th>
-	outgoing permissions
-      </th><th>
-	owned
+	<!-- column for delete buttons -->
       </th>
     </tr>
   </thead>
@@ -22,17 +20,15 @@
 
     <tr>
       <td>
-        <%= link_to_if_arvados_object g %>
+        <%= g.friendly_link_name %>
       </td><td>
-        <%= g.name %>
-      </td><td>
-        <%= g.owner_uuid %>
+        <%= link_to_if_arvados_object g.owner_uuid, friendly_name: true %>
       </td><td>
         <%= @links_to.select { |x| x.head_uuid == g.uuid }.collect(&:tail_uuid).uniq.count %>
       </td><td>
         <%= @links_from.select { |x| x.tail_uuid == g.uuid }.collect(&:head_uuid).uniq.count %>
       </td><td>
-        <%= @owned_users.select { |x| x.owner_uuid == g.uuid }.count %> users<br />
+        <%= render partial: 'delete_object_button', locals: {object:g} %>
       </td>
     </tr>
 
