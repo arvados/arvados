@@ -72,10 +72,10 @@
       <ul class="nav navbar-nav navbar-left">
         <li><a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a></li>
         <% if current_user %>
-        <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
         <% if content_for?(:breadcrumbs) %>
           <%= yield(:breadcrumbs) %>
         <% else %>
+          <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
           <li>
             <%= link_to(
                         controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
@@ -117,7 +117,7 @@
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <span class="glyphicon glyphicon-paperclip"></span>
-            <span class="badge"><%= @selection_count %></span>
+            <span class="badge badge-alert"><%= @selection_count %></span>
             <span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
@@ -129,14 +129,14 @@
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <span class="glyphicon glyphicon-envelope"></span>
-            <span class="badge"><%= @notification_count %></span>
+            <span class="badge badge-alert"><%= @notification_count %></span>
             <span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
             <% if @notifications.length > 0 %>
-              <% @notifications.each do |n| %>
+              <% @notifications.each_with_index do |n, i| %>
+                <% if i > 0 %><li class="divider"></li><% end %>
                 <li style="padding: 10px"><%= n.call(self) %></li>
-                <li class="divider"></li>
               <% end %>
             <% else %>
               <li style="padding: 10px">No notifications.</li>
@@ -170,7 +170,9 @@
         <% if current_user %>
         <div class="well">
         <ul class="arvados-nav">
-          <li><a href="/">Dashboard</a></li>
+          <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
+            <a href="/">Dashboard</a>
+          </li>
           
           <% [['Data', [['humans'],
                         ['traits'],
@@ -181,15 +183,21 @@
                            ['repositories', 'Code repositories'],
                            ['virtual_machines']]],
               ['Activity', [['pipeline_instances', 'Recent pipelines'],
-                            ['jobs', 'Recent jobs']]]].each do |j| %>
+                            ['jobs', 'Recent jobs']]],
+              ['System', [['users'],
+                         ['groups'],
+                         ['nodes', 'Compute nodes'],
+                         ['keep_disks']]]].each do |j| %>   
             <li><%= j[0] %>
               <ul>
               <% j[1].each do |k| %>
-                <li class="<%= 'arvados-nav-active' if params[:controller] == k[0] %>">
-                  <a href="/<%= k[0] %>">
-                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
-                  </a>
-                </li>
+                <% unless k[0] == 'users' and !current_user.andand.is_admin %>
+                  <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
+                    <a href="/<%= k[0] %>">
+                      <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                    </a>
+                  </li>
+                <% end %>
               <% end %>
               </ul>
             </li>
@@ -203,25 +211,6 @@
               <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
             </ul>
           </li>
-          <% if current_user.andand.is_admin %>
-
-          <% [['Admin', [['users'],
-                         ['groups'],
-                         ['nodes', 'Compute nodes'],
-                         ['keep_disks']]]].each do |j| %>   
-            <li><%= j[0] %>
-              <ul>
-              <% j[1].each do |k| %>
-                <li class="<%= "arvados-nav-active" if params[:controller] == k[0] %>">
-                  <a href="/<%= k[0] %>">
-                    <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
-                  </a>
-                </li>
-              <% end %>
-              </ul>
-            </li>
-          <% end %>
-          <% end %>
         </ul>
         </div>
         <% end %>

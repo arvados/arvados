@@ -11,8 +11,7 @@
 }
 <% end %>
 
-<%# pi_span = [(10.0/[@objects.count,1].max).floor,1].max %>
-<% pi_span = 4 %>
+<% pi_span = [(10.0/[@objects.count,1].max).floor,1].max %>
 
 <div class="headrow">
   <div class="row">
@@ -20,9 +19,10 @@
     <%# label %>
   </div>
   <% @objects.each do |object| %>
-  <div class="col-sm-<%= pi_span %>">
-    <%= render partial: 'application/arvados_attr_value', locals: { obj: object, attr: 'uuid', attrvalue: object.uuid } %>
-    <%= render partial: 'application/arvados_attr_value', locals: { obj: object, attr: 'pipeline_template_uuid', attrvalue: object.pipeline_template_uuid } %>
+  <div class="col-sm-<%= pi_span %>" style="overflow-x: hidden; text-overflow: ellipsis;">
+    <%= link_to_if_arvados_object object, friendly_name: true %>
+    <br />
+    Template: <%= link_to_if_arvados_object object.pipeline_template_uuid, friendly_name: true %>
   </div>
   <% end %>
   </div>
@@ -36,6 +36,7 @@
   <% @objects.each_with_index do |_, x| %>
     <div class="col-sm-<%= pi_span %>">
       <div class="row">
+        <div class="col-sm-12">
 
         <% if row[:components][x] %>
           <% pj = render_pipeline_job row[:components][x] %>
@@ -65,6 +66,7 @@
           <% else %>
           None
         <% end %>
+        </div>
       </div>
     </div>
   <% end %>

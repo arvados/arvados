@@ -1,10 +1,10 @@
 class UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => :welcome
-  skip_around_filter :thread_with_api_token, :only => :welcome
-  around_filter :thread_with_optional_api_token, :only => :welcome
+  skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
 
   def welcome
     if current_user
+      params[:action] = 'home'
       home
     end
   end

@@ -7,7 +7,7 @@ class ApiClientAuthorizationsController < ApplicationController
   end
 
   def index_pane_list
-    %w(recent help)
+    %w(Recent Help)
   end
 
 end
