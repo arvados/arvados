@@ -1,10 +1,16 @@
-<table class="table table-bordered" style="table-layout: fixed">
+<table class="table table-condensed table-fixedlayout">
+  <colgroup>
+    <col width="35%" />
+    <col width="40%" />
+    <col width="15%" />
+    <col width="10%" />
+  </colgroup>
   <thead>
     <tr>
       <th>path</th>
       <th>file</th>
-      <th style="width: 3em">d/l</th>
-      <th style="width: 7em; text-align:right">size</th>
+      <th style="text-align:right">size</th>
+      <th>d/l</th>
     </tr>
   </thead><tbody>
     <% if @object then @object.files.sort_by{|f|f[1]}.each do |file| %>
@@ -18,16 +24,15 @@
         <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %>
       </td>
 
-      <td>
-        <div style="display:inline-block">
-          <%= link_to raw('<i class="glyphicon glyphicon-download"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'label label-info', title: 'Download'} %>
-        </div>
-      </td>
-
       <td style="text-align:right">
         <%= raw(human_readable_bytes_html(file[2])) %>
       </td>
 
+      <td>
+        <div style="display:inline-block">
+          <%= link_to raw('<i class="glyphicon glyphicon-download-alt"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'btn btn-info btn-sm', title: 'Download'} %>
+        </div>
+      </td>
     </tr>
     <% end; end %>
   </tbody>

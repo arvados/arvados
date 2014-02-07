@@ -8,7 +8,7 @@
 
 <% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at' %>
 
-<table class="table arv-index">
+<table class="table table-condensed arv-index">
   <thead>
     <tr>
       <% @objects.first.attributes_for_display.each do |attr, attrvalue| %>
