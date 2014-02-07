@@ -7,27 +7,29 @@
 
 <%= form_tag do |f| %>
 
-<table class="table table-hover">
+<table class="table table-condensed table-fixedlayout">
+  <colgroup>
+    <col width="5%" />
+    <col width="10%" />
+    <col width="20%" />
+    <col width="10%" />
+    <col width="30%" />
+    <col width="15%" />
+    <col width="10%" />
+  </colgroup>
   <thead>
     <tr class="contain-align-left">
       <th>
       </th><th>
-	status
+	Status
       </th><th>
-	id
+	Instance
+      </th><th colspan="2">
+	Template
       </th><th>
-	name
+	Owner
       </th><th>
-	template
-      </th><th>
-	owner
-      </th><th>
-	components
-      </th><th>
-	dependencies
-      </th><th>
-	created
-      </th><th>
+	Age
       </th>
     </tr>
   </thead>
@@ -44,30 +46,34 @@
         <% elsif ob.active %>
         <span class="label label-info">active</span>
         <% end %>
+      </td><td colspan="2">
+        <%= link_to_if_arvados_object ob, friendly_name: true %>
       </td><td>
-        <%= link_to_if_arvados_object ob %>
+        <%= link_to_if_arvados_object ob.pipeline_template_uuid, friendly_name: true %>
       </td><td>
-        <%= ob.name %>
+        <%= link_to_if_arvados_object ob.owner_uuid, friendly_name: true %>
       </td><td>
-        <%= link_to_if_arvados_object ob.pipeline_template_uuid %>
-      </td><td>
-        <%= link_to_if_arvados_object ob.owner_uuid %>
-      </td><td>
-        <% ob.components.each do |cname, c| %>
-        <% status = if !(c.is_a?(Hash) && c[:job].is_a?(Hash)) then nil elsif c[:job][:success] then 'success' elsif c[:job][:running] then 'info' else 'warning' end %>
-        <span class="label <%= "label-#{status}" if status %>"><%= cname.to_s %></span>
-        <% end %>
-      </td><td>
-        <small>
-          <% ob.dependencies.each do |d| %>
-          <%= d %><br />
-          <% end %>
-        </small>
-      </td><td>
-        <%= ob.created_at %>
+        <%= distance_of_time_in_words(ob.created_at, Time.now) %>
       </td>
     </tr>
-
+    <tr>
+      <td style="border-top: 0;" colspan="3">
+      </td>
+      <td style="border-top: 0; opacity: 0.5;" colspan="4">
+        <% ob.components.each do |cname, c| %>
+        <% status = if !(c.is_a?(Hash) && c[:job].is_a?(Hash))
+                      nil
+                    elsif c[:job][:success]
+                      'success'
+                    elsif c[:job][:running]
+                      'info'
+                    else
+                      'warning'
+                    end %>
+        <span class="label label-<%= status || 'default' %>"><%= cname.to_s %></span>
+        <% end %>
+      </td>
+    </tr>
     <% end %>
 
   </tbody>
