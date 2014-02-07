@@ -50,8 +50,17 @@
     overflow-y: auto;
     }
 
+    @media (min-width: 768px) {
+    .left-nav {
+    position: fixed;
+    }
+    }
+    @media (max-width: 767px) {
+    .breadcrumbs {
+    display: none;
+    }
+    }
     .arvados-nav-container {
-    position: fixed; 
     top: 70px; 
     height: calc(100% - 70px); 
     overflow: auto; 
@@ -69,8 +78,18 @@
 
   <div class="navbar navbar-default navbar-fixed-top">
     <div class="container-fluid">
-      <ul class="nav navbar-nav navbar-left">
-        <li><a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a></li>
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#workbench-navbar.navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
+      </div>
+
+      <div class="collapse navbar-collapse" id="workbench-navbar">
+      <ul class="nav navbar-nav navbar-left breadcrumbs">
         <% if current_user %>
         <% if content_for?(:breadcrumbs) %>
           <%= yield(:breadcrumbs) %>
@@ -161,7 +180,8 @@
           <li><a href="<%= $arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
 	<% end -%>
       </ul>
-    </div>
+      </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
   </div>
 
   <div class="container-fluid">
