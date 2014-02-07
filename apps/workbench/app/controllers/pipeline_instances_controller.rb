@@ -132,11 +132,11 @@ class PipelineInstancesController < ApplicationController
   end
 
   def show_pane_list
-    %w(components graph attributes metadata json api)
+    %w(Components Graph Attributes Metadata JSON API)
   end
 
   def compare_pane_list 
-    %w(text_compare graph)
+    %w(Compare Graph)
   end 
 
   protected

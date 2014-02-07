@@ -144,11 +144,11 @@ class ApplicationController < ActionController::Base
   end
 
   def index_pane_list
-    %w(recent)
+    %w(Recent)
   end
 
   def show_pane_list
-    %w(attributes metadata json api)
+    %w(Attributes Metadata JSON API)
   end
 
   protected

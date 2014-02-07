@@ -33,13 +33,13 @@ class JobsController < ApplicationController
 
   def index_pane_list
     if params[:uuid]
-      %w(recent provenance)
+      %w(Recent Provenance)
     else
-      %w(recent)
+      %w(Recent)
     end
   end
 
   def show_pane_list
-    %w(attributes provenance metadata json api)
+    %w(Attributes Provenance Metadata JSON API)
   end
 end

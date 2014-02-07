@@ -3,7 +3,7 @@ class CollectionsController < ApplicationController
   skip_before_filter :check_user_agreements, :only => [:show_file]
 
   def show_pane_list
-    %w(files attributes metadata provenance_graph used_by json api)
+    %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
   def index
     if params[:search].andand.length.andand > 0
