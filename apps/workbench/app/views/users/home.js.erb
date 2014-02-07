@@ -1,0 +1,4 @@
+var new_content = "<%= escape_javascript(render partial: 'tables') %>";
+if ($('div#home-tables').html() != new_content)
+   $('div#home-tables').html(new_content);
+$('.loading').hide();

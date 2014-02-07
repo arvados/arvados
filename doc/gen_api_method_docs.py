@@ -9,13 +9,35 @@
 # and will generate Textile documentation files in the current
 # directory.
 
-import requests
-import re
-import os
+import argparse
 import pprint
+import re
+import requests
+import os
+import sys #debugging
 
-r = requests.get('https://localhost:9900/discovery/v1/apis/arvados/v1/rest',
-                 verify=False)
+p = argparse.ArgumentParser(description='Generate Arvados API method documentation.')
+
+p.add_argument('--host',
+               type=str,
+               default='localhost',
+               help="The hostname or IP address of the API server")
+
+p.add_argument('--port',
+               type=int,
+               default=9900,
+               help="The port of the API server")
+
+p.add_argument('--output-dir',
+               type=str,
+               default='.',
+               help="Directory in which to write output files.")
+
+args = p.parse_args()
+
+api_url = 'https://{host}:{port}/discovery/v1/apis/arvados/v1/rest'.format(**vars(args))
+
+r = requests.get(api_url, verify=False)
 if r.status_code != 200:
     raise Exception('Bad status code %d: %s' % (r.status_code, r.text))
 
@@ -23,15 +45,19 @@ if 'application/json' not in r.headers.get('content-type', ''):
     raise Exception('Unexpected content type: %s: %s' %
                     (r.headers.get('content-type', ''), r.text))
 
-api = r.json
+api = r.json()
 
 resource_num = 0
 for resource in sorted(api[u'resources']):
     resource_num = resource_num + 1
-    out_fname = resource + '.textile'
+    out_fname = os.path.join(args.output_dir, resource + '.textile')
     if os.path.exists(out_fname):
-        print "PATH EXISTS ", out_fname
-        next
+        backup_name = out_fname + '.old'
+        try:
+            os.rename(out_fname, backup_name)
+        except OSError as e:
+            print "WARNING: could not back up {1} as {2}: {3}".format(
+                out_fname, backup_name, e)
     outf = open(out_fname, 'w')
     outf.write(
 """---

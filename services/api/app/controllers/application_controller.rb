@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
   include CurrentApiClient
 
+  respond_to :json
   protect_from_forgery
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
@@ -10,8 +11,13 @@ class ApplicationController < ActionController::Base
 
   before_filter :load_where_param, :only => :index
   before_filter :find_objects_for_index, :only => :index
-  before_filter :find_object_by_uuid, :except => [:index, :create]
+  before_filter :find_object_by_uuid, :except => [:index, :create,
+                                                  :render_error,
+                                                  :render_not_found]
   before_filter :reload_object_before_update, :only => :update
+  before_filter :render_404_if_no_object, except: [:index, :create,
+                                                   :render_error,
+                                                   :render_not_found]
 
   attr_accessor :resource_attrs
 
@@ -24,11 +30,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    if @object
-      render json: @object.as_api_response
-    else
-      render_not_found("object not found")
-    end
+    render json: @object.as_api_response
   end
 
   def create
@@ -41,9 +43,6 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    if !@object
-      return render_not_found("object not found")
-    end
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
@@ -82,6 +81,10 @@ class ApplicationController < ActionController::Base
     :with => :render_error
   end
 
+  def render_404_if_no_object
+    render_not_found "Object not found" if !@object
+  end
+
   def render_error(e)
     logger.error e.inspect
     logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
@@ -116,24 +119,13 @@ class ApplicationController < ActionController::Base
   end
 
   def find_objects_for_index
-    uuid_list = [current_user.uuid, *current_user.groups_i_can(:read)]
-    sanitized_uuid_list = uuid_list.
-      collect { |uuid| model_class.sanitize(uuid) }.join(', ')
-    or_references_me = ''
-    if model_class == Link and current_user
-      or_references_me = "OR (#{table_name}.link_class in (#{model_class.sanitize 'permission'}, #{model_class.sanitize 'resources'}) AND #{model_class.sanitize current_user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
-    end
-    @objects ||= model_class.
-      joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
-            true, current_user.is_admin,
-            uuid_list,
-            current_user.uuid)
+    @objects ||= model_class.readable_by(current_user)
     if !@where.empty?
       conditions = ['1=1']
       @where.each do |attr,value|
         if attr == :any
           if value.is_a?(Array) and
+              value.length == 2 and
               value[0] == 'contains' and
               model_class.columns.collect(&:name).index('name') then
             ilikes = []
@@ -151,8 +143,13 @@ class ApplicationController < ActionController::Base
             conditions[0] << " and #{table_name}.#{attr} is ?"
             conditions << nil
           elsif value.is_a? Array
-            conditions[0] << " and #{table_name}.#{attr} in (?)"
-            conditions << value
+            if value[0] == 'contains' and value.length == 2
+              conditions[0] << " and #{table_name}.#{attr} like ?"
+              conditions << "%#{value[1]}%"
+            else
+              conditions[0] << " and #{table_name}.#{attr} in (?)"
+              conditions << value
+            end
           elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
             conditions[0] << " and #{table_name}.#{attr}=?"
             conditions << value
@@ -217,6 +214,7 @@ class ApplicationController < ActionController::Base
     %w(created_at modified_by_client_uuid modified_by_user_uuid modified_at).each do |x|
       @attrs.delete x.to_sym
     end
+    @attrs = @attrs.symbolize_keys if @attrs.is_a? HashWithIndifferentAccess
     @attrs
   end
 
@@ -339,14 +337,21 @@ class ApplicationController < ActionController::Base
   def self.accept_attribute_as_json(attr, force_class=nil)
     before_filter lambda { accept_attribute_as_json attr, force_class }
   end
+  accept_attribute_as_json :properties, Hash
+  accept_attribute_as_json :info, Hash
   def accept_attribute_as_json(attr, force_class)
-    if params[resource_name].is_a? Hash
-      if params[resource_name][attr].is_a? String
-        params[resource_name][attr] = Oj.load(params[resource_name][attr],
-                                              symbol_keys: true)
-        if force_class and !params[resource_name][attr].is_a? force_class
+    if params[resource_name] and resource_attrs.is_a? Hash
+      if resource_attrs[attr].is_a? String
+        resource_attrs[attr] = Oj.load(resource_attrs[attr],
+                                       symbol_keys: false)
+        if force_class and !resource_attrs[attr].is_a? force_class
           raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
         end
+      elsif resource_attrs[attr].is_a? Hash
+        # Convert symbol keys to strings (in hashes provided by
+        # resource_attrs)
+        resource_attrs[attr] = resource_attrs[attr].
+          with_indifferent_access.to_hash
       end
     end
   end

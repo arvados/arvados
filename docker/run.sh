@@ -224,15 +224,17 @@ function do_start {
 	    "arvados/warehouse"
     fi
 
-    ARVADOS_API_HOST=$(ip_address "api_server")
-    ARVADOS_API_HOST_INSECURE=yes
-    ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
+    if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
+    then
+	cat >$HOME/.config/arvados/settings.conf <<EOF
+ARVADOS_API_HOST=$(ip_address "api_server")
+ARVADOS_API_HOST_INSECURE=yes
+ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
+EOF
 
-    echo "To run a test suite:"
-    echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST"
-    echo "export ARVADOS_API_HOST_INSECURE=$ARVADOS_API_HOST_INSECURE"
-    echo "export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN"
-    echo "python -m unittest discover ../sdk/python"
+        echo "To run a test suite:"
+	echo "python -m unittest discover ../sdk/python"
+    fi
 }
 
 function do_stop {

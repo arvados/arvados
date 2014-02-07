@@ -12,6 +12,7 @@ class Arvados::V1::CollectionsController < ApplicationController
                    'arvados#group'
                  end
     unless current_user.can? write: owner_uuid
+      logger.warn "User #{current_user.andand.uuid} tried to set collection owner_uuid to #{owner_uuid}"
       raise ArvadosModel::PermissionDeniedError
     end
     act_as_system_user do
@@ -49,4 +50,173 @@ class Arvados::V1::CollectionsController < ApplicationController
     end
     show
   end
+
+  def collection_uuid(uuid)
+    m = /([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?/.match(uuid)
+    if m
+      m[1]
+    else
+      nil
+    end
+  end
+
+  def script_param_edges(visited, sp)
+    if sp and not sp.empty?
+      case sp
+      when Hash
+        sp.each do |k, v|
+          script_param_edges(visited, v)
+        end
+      when Array
+        sp.each do |v|
+          script_param_edges(visited, v)
+        end
+      else
+        m = collection_uuid(sp)
+        if m
+          generate_provenance_edges(visited, m)
+        end
+      end
+    end
+  end
+
+  def generate_provenance_edges(visited, uuid)
+    m = collection_uuid(uuid)
+    uuid = m if m
+
+    if not uuid or uuid.empty? or visited[uuid]
+      return ""
+    end
+
+    logger.debug "visiting #{uuid}"
+
+    if m  
+      # uuid is a collection
+      Collection.readable_by(current_user).where(uuid: uuid).each do |c|
+        visited[uuid] = c.as_api_response
+        visited[uuid][:files] = []
+        c.files.each do |f|
+          visited[uuid][:files] << f
+        end
+      end
+
+      Job.readable_by(current_user).where(output: uuid).each do |job|
+        generate_provenance_edges(visited, job.uuid)
+      end
+
+      Job.readable_by(current_user).where(log: uuid).each do |job|
+        generate_provenance_edges(visited, job.uuid)
+      end
+      
+    else
+      # uuid is something else
+      rsc = ArvadosModel::resource_class_for_uuid uuid
+      if rsc == Job
+        Job.readable_by(current_user).where(uuid: uuid).each do |job|
+          visited[uuid] = job.as_api_response
+          script_param_edges(visited, job.script_parameters)
+        end
+      elsif rsc != nil
+        rsc.where(uuid: uuid).each do |r|
+          visited[uuid] = r.as_api_response
+        end
+      end
+    end
+
+    Link.readable_by(current_user).
+      where(head_uuid: uuid, link_class: "provenance").
+      each do |link|
+      visited[link.uuid] = link.as_api_response
+      generate_provenance_edges(visited, link.tail_uuid)
+    end
+
+    #puts "finished #{uuid}"
+  end
+
+  def provenance
+    visited = {}
+    generate_provenance_edges(visited, @object[:uuid])
+    render json: visited
+  end
+
+  def generate_used_by_edges(visited, uuid)
+    m = collection_uuid(uuid)
+    uuid = m if m
+
+    if not uuid or uuid.empty? or visited[uuid]
+      return ""
+    end
+
+    logger.debug "visiting #{uuid}"
+
+    if m  
+      # uuid is a collection
+      Collection.readable_by(current_user).where(uuid: uuid).each do |c|
+        visited[uuid] = c.as_api_response
+        visited[uuid][:files] = []
+        c.files.each do |f|
+          visited[uuid][:files] << f
+        end
+      end
+
+      if uuid == "d41d8cd98f00b204e9800998ecf8427e+0"
+        # special case for empty collection
+        return
+      end
+
+      Job.readable_by(current_user).where(["jobs.script_parameters like ?", "%#{uuid}%"]).each do |job|
+        generate_used_by_edges(visited, job.uuid)
+      end
+      
+    else
+      # uuid is something else
+      rsc = ArvadosModel::resource_class_for_uuid uuid
+      if rsc == Job
+        Job.readable_by(current_user).where(uuid: uuid).each do |job|
+          visited[uuid] = job.as_api_response
+          generate_used_by_edges(visited, job.output)
+        end
+      elsif rsc != nil
+        rsc.where(uuid: uuid).each do |r|
+          visited[uuid] = r.as_api_response
+        end
+      end
+    end
+
+    Link.readable_by(current_user).
+      where(tail_uuid: uuid, link_class: "provenance").
+      each do |link|
+      visited[link.uuid] = link.as_api_response
+      generate_used_by_edges(visited, link.head_uuid)
+    end
+
+    #puts "finished #{uuid}"
+  end
+
+  def used_by
+    visited = {}
+    generate_used_by_edges(visited, @object[:uuid])
+    render json: visited
+  end
+
+  protected
+  def find_object_by_uuid
+    super
+    if !@object and !params[:uuid].match(/^[0-9a-f]+\+\d+$/)
+      # Normalize the given uuid and search again.
+      hash_part = params[:uuid].match(/^([0-9a-f]*)/)[1]
+      collection = Collection.where('uuid like ?', hash_part + '+%').first
+      if collection
+        # We know the collection exists, and what its real uuid is in
+        # the database. Now, throw out @objects and repeat the usual
+        # lookup procedure. (Returning the collection at this point
+        # would bypass permission checks.)
+        @objects = nil
+        @where = { uuid: collection.uuid }
+        find_objects_for_index
+        @object = @objects.first
+      end
+    end
+  end
+
 end

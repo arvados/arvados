@@ -1,0 +1,31 @@
+<% content_for :tab_panes do %>
+
+<% comparable = controller.respond_to? :compare %>
+<% pane_list ||= %w(recent) %>
+<% panes = Hash[pane_list.map { |pane|
+     [pane, render(partial: 'show_' + pane.downcase,
+                   locals: { comparable: comparable })]
+   }.compact] %>
+
+<ul class="nav nav-tabs">
+  <% panes.each_with_index do |(pane, content), i| %>
+    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.gsub('_', ' ') %></a></li>
+  <% end %>
+</ul>
+<div class="tab-content">
+<% panes.each_with_index do |(pane, content), i| %>
+  <div id="<%= pane %>" class="tab-pane fade <%= 'in active' if i==0 %>">
+    <div class="smart-scroll" style="margin-top:0.5em;">
+      <%= content %>
+    </div>
+  </div>
+<% end %>
+</div>
+
+<% end %>
+
+<% content_for :js do %>
+  $(window).on('load', function() {
+    $('ul.nav-tabs > li > a').on('shown.bs.tab', smart_scroll_fixup);
+   });
+<% end %>

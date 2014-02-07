@@ -1,11 +1,10 @@
 class CollectionsController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => [:graph]
+  skip_before_filter :find_object_by_uuid, :only => [:provenance]
   skip_before_filter :check_user_agreements, :only => [:show_file]
 
-  def graph
-    index
+  def show_pane_list
+    %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
-
   def index
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
@@ -56,6 +55,7 @@ class CollectionsController < ApplicationController
     self.response_body = FileStreamer.new opts
   end
 
+
   def show
     return super if !@object
     @provenance = []
@@ -99,6 +99,11 @@ class CollectionsController < ApplicationController
       if @sourcedata[collection.uuid]
         @sourcedata[collection.uuid][:collection] = collection
       end
+    end
+    
+    Collection.where(uuid: @object.uuid).each do |u|
+      @prov_svg = ProvenanceHelper::create_provenance_graph u.provenance, "provenance_svg", {:direction => :bottom_up, :combine_jobs => :script_only} rescue nil
+      @used_by_svg = ProvenanceHelper::create_provenance_graph u.used_by, "used_by_svg", {:direction => :top_down, :combine_jobs => :script_only, :pdata_only => true} rescue nil
     end
   end
 

@@ -1,4 +1,8 @@
 class AuthorizedKeysController < ApplicationController
+  def index_pane_list
+    %w(Recent Help)
+  end
+
   def new
     super
     @object.authorized_user_uuid = current_user.uuid if current_user

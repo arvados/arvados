@@ -1,25 +1,29 @@
-<% if @object.respond_to? :properties %>
-
 <% content_for :page_title do %>
-<%= @object.properties[:page_title] || @object.uuid %>
+  <%= (@object.respond_to?(:properties) ? @object.properties[:page_title] : nil) ||
+        @object.friendly_link_name %>
 <% end %>
 
-<% if @object.properties[:page_content] %>
-<% content_for :page_content do %>
-<h1>
-<%= render_content_from_database(@object.properties[:page_title] || @object.uuid) %>
-</h1>
+<% content_for :content_top do %>
 
-<% if @object.properties[:page_subtitle] %>
-<h4>
-<%= render_content_from_database @object.properties[:page_subtitle] %>
-</h4>
+<% if @object.respond_to? :properties %>
+  <% if @object.properties[:page_content] %>
+    <% content_for :page_content do %>
+      <h1>
+        <%= render_content_from_database(@object.properties[:page_title] || @object.uuid) %>
+      </h1>
+      
+      <% if @object.properties[:page_subtitle] %>
+        <h4>
+          <%= render_content_from_database @object.properties[:page_subtitle] %>
+        </h4>
+      <% end %>
+
+      <%= render_content_from_database @object.properties[:page_content] %>
+    <% end %>
+  <% end %>
 <% end %>
 
-<%= render_content_from_database @object.properties[:page_content] %>
-<% end %>
-<% end %>
 <% end %>
 
+<%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.show_pane_list }%>
 
-<%= render :partial => 'application/arvados_object' %>

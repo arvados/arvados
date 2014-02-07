@@ -2,6 +2,8 @@ require 'rubygems'
 require 'google/api_client'
 require 'active_support/inflector'
 require 'json'
+require 'fileutils'
+require 'andand'
 
 ActiveSupport::Inflector.inflections do |inflect|
   inflect.irregular 'specimen', 'specimens'
@@ -23,6 +25,7 @@ class Arvados
   class TransactionFailedError < StandardError
   end
 
+  @@config = nil
   @@debuglevel = 0
   class << self
     attr_accessor :debuglevel
@@ -33,17 +36,17 @@ class Arvados
     @application_name ||= File.split($0).last
 
     @arvados_api_version = opts[:api_version] ||
-      ENV['ARVADOS_API_VERSION'] ||
+      config['ARVADOS_API_VERSION'] ||
       'v1'
     @arvados_api_host = opts[:api_host] ||
-      ENV['ARVADOS_API_HOST'] or
+      config['ARVADOS_API_HOST'] or
       raise "#{$0}: no :api_host or ENV[ARVADOS_API_HOST] provided."
     @arvados_api_token = opts[:api_token] ||
-      ENV['ARVADOS_API_TOKEN'] or
+      config['ARVADOS_API_TOKEN'] or
       raise "#{$0}: no :api_token or ENV[ARVADOS_API_TOKEN] provided."
 
-    if (opts[:api_host] ? opts[:suppress_ssl_warnings] :
-        ENV['ARVADOS_API_HOST_INSECURE'])
+    if (opts[:suppress_ssl_warnings] or
+        config['ARVADOS_API_HOST_INSECURE'])
       suppress_warnings do
         OpenSSL::SSL.const_set 'VERIFY_PEER', OpenSSL::SSL::VERIFY_NONE
       end
@@ -76,7 +79,7 @@ class Arvados
         each do |method|
         class << klass; self; end.class_eval do
           define_method method.name do |*params|
-            self.api_exec(method.name.to_sym, *params)
+            self.api_exec method, *params
           end
         end
       end
@@ -84,7 +87,7 @@ class Arvados
       # Give the new class access to the API
       klass.instance_eval do
         @arvados = _arvados
-        # These should be pulled from the discovery document instead:
+        # TODO: Pull these from the discovery document instead.
         @api_models_sym = classname.underscore.split('/').last.pluralize.to_sym
         @api_model_sym = classname.underscore.split('/').last.to_sym
       end
@@ -107,12 +110,19 @@ class Arvados
       api = api.to_s
       return @discovery_documents["#{api}:#{version}"] ||=
         begin
-          response = self.execute!(
-                                   :http_method => :get,
-                                   :uri => self.discovery_uri(api, version),
-                                   :authenticated => false
-                                   )
-          response.body.class == String ? JSON.parse(response.body) : response.body
+          # fetch new API discovery doc if stale
+          cached_doc = File.expand_path '~/.cache/arvados/discovery_uri.json'
+          if not File.exist?(cached_doc) or (Time.now - File.mtime(cached_doc)) > 86400
+            response = self.execute!(:http_method => :get,
+                                     :uri => self.discovery_uri(api, version),
+                                     :authenticated => false)
+            FileUtils.makedirs(File.dirname cached_doc)
+            File.open(cached_doc, 'w') do |f|
+              f.puts response.body
+            end
+          end
+
+          File.open(cached_doc) { |f| JSON.load f }
         end
     end
   end
@@ -132,6 +142,37 @@ class Arvados
     $stderr.puts "#{File.split($0).last} #{$$}: #{message}" if @@debuglevel >= verbosity
   end
 
+  def config(config_file_path="~/.config/arvados/settings.conf")
+    return @@config if @@config
+
+    # Initialize config settings with environment variables.
+    config = {}
+    config['ARVADOS_API_HOST']          = ENV['ARVADOS_API_HOST']
+    config['ARVADOS_API_TOKEN']         = ENV['ARVADOS_API_TOKEN']
+    config['ARVADOS_API_HOST_INSECURE'] = ENV['ARVADOS_API_HOST_INSECURE']
+    config['ARVADOS_API_VERSION']       = ENV['ARVADOS_API_VERSION']
+
+    expanded_path = File.expand_path config_file_path
+    if File.exist? expanded_path
+      # Load settings from the config file.
+      lineno = 0
+      File.open(expanded_path).each do |line|
+        lineno = lineno + 1
+        # skip comments and blank lines
+        next if line.match('^\s*#') or not line.match('\S')
+        var, val = line.chomp.split('=', 2)
+        # allow environment settings to override config files.
+        if var and val
+          config[var] ||= val
+        else
+          warn "#{expanded_path}: #{lineno}: could not parse `#{line}'"
+        end
+      end
+    end
+
+    @@config = config
+  end
+
   class Model
     def self.arvados_api
       arvados.arvados_api
@@ -146,15 +187,28 @@ class Arvados
       self.class.arvados.class.debuglog *args
     end
     def self.api_exec(method, parameters={})
+      api_method = arvados_api.send(api_models_sym).send(method.name.to_sym)
       parameters = parameters.
-        merge(:api_token => ENV['ARVADOS_API_TOKEN'])
+        merge(:api_token => arvados.config['ARVADOS_API_TOKEN'])
       parameters.each do |k,v|
         parameters[k] = v.to_json if v.is_a? Array or v.is_a? Hash
       end
+      # Look for objects expected by request.properties.(key).$ref and
+      # move them from parameters (query string) to request body.
+      body = nil
+      method.discovery_document['request'].
+        andand['properties'].
+        andand.each do |k,v|
+        if v.is_a? Hash and v['$ref']
+          body ||= {}
+          body[k] = parameters.delete k.to_sym
+        end
+      end
       result = client.
-        execute(:api_method => arvados_api.send(api_models_sym).send(method),
+        execute(:api_method => api_method,
                 :authenticated => false,
-                :parameters => parameters)
+                :parameters => parameters,
+                :body => body)
       resp = JSON.parse result.body, :symbolize_names => true
       if resp[:errors]
         raise Arvados::TransactionFailedError.new(resp[:errors])

@@ -54,6 +54,7 @@ Server::Application.configure do
   # config.compute_node_ami = 'ami-cbca41a2'
   # config.compute_node_ec2run_args = '-g arvados-compute'
   # config.compute_node_spot_bid = 0.11
+  config.compute_node_ec2_tag_enable = false
 
   # config.compute_node_domain = `hostname --domain`.strip
 
@@ -63,7 +64,7 @@ Server::Application.configure do
   # config.compute_node_nameservers = ['1.2.3.4', '1.2.3.5']
   config.compute_node_nameservers = [ "172.16.0.23" ]
 
-  config.uuid_prefix('test@' + `hostname`.strip)
+  config.uuid_prefix = 'zzzzz'
 
   # Authentication stub: hard code pre-approved API tokens.
   # config.accept_api_token = { rand(2**256).to_s(36) => true }

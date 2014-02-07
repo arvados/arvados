@@ -2,7 +2,7 @@ require 'test_helper'
 
 class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
 
-  test "add keep node with admin token" do
+  test "add keep disk with admin token" do
     authorize_with :admin
     post :ping, {
       ping_secret: '',          # required by discovery doc, but ignored
@@ -13,13 +13,13 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     }
     assert_response :success
     assert_not_nil assigns(:object)
-    new_keep_node = JSON.parse(@response.body)
-    assert_not_nil new_keep_node['uuid']
-    assert_not_nil new_keep_node['ping_secret']
-    assert_not_equal '', new_keep_node['ping_secret']
+    new_keep_disk = JSON.parse(@response.body)
+    assert_not_nil new_keep_disk['uuid']
+    assert_not_nil new_keep_disk['ping_secret']
+    assert_not_equal '', new_keep_disk['ping_secret']
   end
 
-  test "add keep node with no filesystem_uuid" do
+  test "add keep disk with no filesystem_uuid" do
     authorize_with :admin
     opts = {
       ping_secret: '',
@@ -36,7 +36,7 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     assert_not_nil JSON.parse(@response.body)['uuid']
   end
 
-  test "refuse to add keep node without admin token" do
+  test "refuse to add keep disk without admin token" do
     post :ping, {
       ping_secret: '',
       service_host: '::1',
@@ -46,7 +46,7 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     assert_response 404
   end
 
-  test "ping from keep node" do
+  test "ping keep disk" do
     post :ping, {
       uuid: keep_disks(:nonfull).uuid,
       ping_secret: keep_disks(:nonfull).ping_secret,
@@ -54,12 +54,12 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     }
     assert_response :success
     assert_not_nil assigns(:object)
-    keep_node = JSON.parse(@response.body)
-    assert_not_nil keep_node['uuid']
-    assert_not_nil keep_node['ping_secret']
+    keep_disk = JSON.parse(@response.body)
+    assert_not_nil keep_disk['uuid']
+    assert_not_nil keep_disk['ping_secret']
   end
 
-  test "should get index with ping_secret" do
+  test "admin should get index with ping_secret" do
     authorize_with :admin
     get :index
     assert_response :success
@@ -69,13 +69,13 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     assert_not_nil items[0]['ping_secret']
   end
 
-  # inactive user does not see any keep disks
-  test "inactive user should get empty index" do
+  # inactive user sees keep disks
+  test "inactive user should get index" do
     authorize_with :inactive
     get :index
     assert_response :success
     items = JSON.parse(@response.body)['items']
-    assert_equal 0, items.size
+    assert_not_equal 0, items.size
   end
 
   # active user sees non-secret attributes of keep disks

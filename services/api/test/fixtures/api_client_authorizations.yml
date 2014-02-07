@@ -24,6 +24,12 @@ active_trustedclient:
   api_token: 27bnddk6x2nmq00a1e3gq43n9tsl5v87a3faqar2ijj8tud5en
   expires_at: 2038-01-01 00:00:00
 
+spectator:
+  api_client: untrusted
+  user: spectator
+  api_token: zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu
+  expires_at: 2038-01-01 00:00:00
+
 inactive:
   api_client: untrusted
   user: inactive

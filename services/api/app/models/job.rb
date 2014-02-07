@@ -64,11 +64,13 @@ class Job < ArvadosModel
       # instead of a commit-ish.
       return true
     end
-    sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
-    if sha1
-      self.script_version = sha1
-    else
-      raise ArgumentError.new("Specified script_version does not resolve to a commit")
+    if new_record? or script_version_changed?
+      sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
+      if sha1
+        self.script_version = sha1
+      else
+        raise ArgumentError.new("Specified script_version does not resolve to a commit")
+      end
     end
   end
 
@@ -106,8 +108,8 @@ class Job < ArvadosModel
           script_parameters_changed? or
           script_version_changed? or
           (!cancelled_at_was.nil? and
-           (cancelled_by_client_changed? or
-            cancelled_by_user_changed? or
+           (cancelled_by_client_uuid_changed? or
+            cancelled_by_user_uuid_changed? or
             cancelled_at_changed?)) or
           started_at_changed? or
           finished_at_changed? or

@@ -1,5 +1,6 @@
 class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :find_object_by_uuid
+  skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope_all
 
   def show
@@ -23,6 +24,7 @@ class Arvados::V1::SchemaController < ApplicationController
   end
 
   def discovery_rest_description
+    expires_in 24.hours, public: true
     discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
       discovery = {
@@ -147,6 +149,7 @@ class Arvados::V1::SchemaController < ApplicationController
           id: k.to_s,
           description: k.to_s,
           type: "object",
+          uuidPrefix: (k.respond_to?(:uuid_prefix) ? k.uuid_prefix : nil),
           properties: {
             uuid: {
               type: "string",
@@ -188,7 +191,28 @@ class Arvados::V1::SchemaController < ApplicationController
               id: "arvados.#{k.to_s.underscore.pluralize}.list",
               path: k.to_s.underscore.pluralize,
               httpMethod: "GET",
-              description: "List #{k.to_s.underscore.pluralize}.",
+              description:
+                 %|List #{k.to_s.pluralize}.
+
+                   The <code>list</code> method returns a 
+                   <a href="/api/resources.html">resource list</a> of
+                   matching #{k.to_s.pluralize}. For example:
+
+                   <pre>
+                   {
+                    "kind":"arvados##{k.to_s.camelcase(:lower)}List",
+                    "etag":"",
+                    "self_link":"",
+                    "next_page_token":"",
+                    "next_link":"",
+                    "items":[
+                       ...
+                    ],
+                    "items_available":745,
+                    "_profile":{
+                     "request_time":0.157236317
+                    }
+                    </pre>|,
               parameters: {
                 limit: {
                   type: "integer",
@@ -196,17 +220,7 @@ class Arvados::V1::SchemaController < ApplicationController
                   default: 100,
                   format: "int32",
                   minimum: 0,
-                  location: "query"
-                },
-                pageToken: {
-                  type: "string",
-                  description: "Page token.",
-                  location: "query"
-                },
-                q: {
-                  type: "string",
-                  description: "Query string for searching #{k.to_s.underscore.pluralize}.",
-                  location: "query"
+                  location: "query",
                 },
                 where: {
                   type: "object",
@@ -232,16 +246,9 @@ class Arvados::V1::SchemaController < ApplicationController
               path: "#{k.to_s.underscore.pluralize}",
               httpMethod: "POST",
               description: "Create a new #{k.to_s}.",
-              parameters: {
-                k.to_s.underscore => {
-                  type: "object",
-                  required: false,
-                  location: "query",
-                  properties: object_properties
-                }
-              },
+              parameters: {},
               request: {
-                required: false,
+                required: true,
                 properties: {
                   k.to_s.underscore => {
                     "$ref" => k.to_s
@@ -266,16 +273,10 @@ class Arvados::V1::SchemaController < ApplicationController
                   description: "The UUID of the #{k.to_s} in question.",
                   required: true,
                   location: "path"
-                },
-                k.to_s.underscore => {
-                  type: "object",
-                  required: false,
-                  location: "query",
-                  properties: object_properties
                 }
               },
               request: {
-                required: false,
+                required: true,
                 properties: {
                   k.to_s.underscore => {
                     "$ref" => k.to_s

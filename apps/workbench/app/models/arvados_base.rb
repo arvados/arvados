@@ -3,21 +3,22 @@ class ArvadosBase < ActiveRecord::Base
   attr_accessor :attribute_sortkey
 
   def self.uuid_infix_object_kind
-    @@uuid_infix_object_kind ||= {
-      '4zz18' => 'arvados#collection',
-      'tpzed' => 'arvados#user',
-      'ozdt8' => 'arvados#api_client',
-      '8i9sb' => 'arvados#job',
-      'o0j2j' => 'arvados#link',
-      '57u5n' => 'arvados#log',
-      'j58dm' => 'arvados#specimen',
-      'p5p6p' => 'arvados#pipeline_template',
-      'mxsvm' => 'arvados#pipeline_template', # legacy Pipeline objects
-      'd1hrv' => 'arvados#pipeline_instance',
-      'uo14g' => 'arvados#pipeline_instance', # legacy PipelineInstance objects
-      'j7d0g' => 'arvados#group',
-      'ldvyl' => 'arvados#group' # only needed for legacy Project objects
-    }
+    @@uuid_infix_object_kind ||=
+      begin
+        infix_kind = {}
+        $arvados_api_client.discovery[:schemas].each do |name, schema|
+          if schema[:uuidPrefix]
+            infix_kind[schema[:uuidPrefix]] =
+              'arvados#' + name.to_s.camelcase(:lower)
+          end
+        end
+
+        # Recognize obsolete types.
+        infix_kind.
+          merge('mxsvm' => 'arvados#pipelineTemplate', # Pipeline
+                'uo14g' => 'arvados#pipelineInstance', # PipelineInvocation
+                'ldvyl' => 'arvados#group') # Project
+      end
   end
 
   def initialize(*args)
@@ -67,11 +68,21 @@ class ArvadosBase < ActiveRecord::Base
     self.columns
     @attribute_info
   end
-  def self.find(uuid)
+  def self.find(uuid, opts={})
     if uuid.class != String or uuid.length < 27 then
       raise 'argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx'
     end
-    new.private_reload(uuid)
+
+    # Only do one lookup on the API side per {class, uuid, workbench
+    # request} unless {cache: false} is given via opts.
+    cache_key = "request_#{Thread.current.object_id}_#{self.to_s}_#{uuid}"
+    if opts[:cache] == false
+      Rails.cache.write cache_key, $arvados_api_client.api(self, '/' + uuid)
+    end
+    hash = Rails.cache.fetch cache_key do
+      $arvados_api_client.api(self, '/' + uuid)
+    end
+    new.private_reload(hash)
   end
   def self.order(*args)
     ArvadosResourceList.new(self).order(*args)
@@ -261,9 +272,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def friendly_link_name
-    if self.class.column_names.include? 'name'
-      self.name
-    end
+    (name if self.respond_to? :name) || uuid
   end
 
   protected

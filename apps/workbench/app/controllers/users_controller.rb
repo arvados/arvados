@@ -1,11 +1,11 @@
 class UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => :welcome
-  skip_around_filter :thread_with_api_token, :only => :welcome
-  around_filter :thread_with_optional_api_token, :only => :welcome
+  skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
 
   def welcome
     if current_user
-      redirect_to home_user_path(current_user.uuid)
+      params[:action] = 'home'
+      home
     end
   end
 
@@ -53,5 +53,9 @@ class UsersController < ApplicationController
     @tutorial_complete = {
       'Run a job' => @my_last_job
     }
+    respond_to do |f|
+      f.js { render template: 'users/home.js' }
+      f.html { render template: 'users/home' }
+    end
   end
 end

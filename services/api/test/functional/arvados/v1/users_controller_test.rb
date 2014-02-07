@@ -20,7 +20,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
     me = JSON.parse(@response.body)
     post :activate, uuid: me['uuid']
-    assert_response 422
+    assert_response 403
     get :current
     assert_response :success
     me = JSON.parse(@response.body)

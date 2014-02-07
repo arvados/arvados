@@ -60,28 +60,13 @@
 <% if @my_pipelines.count == 0 || @showallalerts %>
 <div class="alert alert-info daxalert">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <p><%= image_tag "dax.png", class: "dax" %>
-    Hi, I noticed you haven't run a pipeline yet.  
-    <%= link_to "Click here to learn how to run an Arvados Crunch pipeline.", 
-	"#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-new-pipeline.html", 
-	style: "font-weight: bold",
-	target: "_blank" %>
-  </p>
+
 </div>
 <% end %>
 
 <% end %>
 
-<div class="well">
-  <p><strong>Useful links</strong></p>
-  <p><ul>
-      <li><%= link_to "Arvados project page", "http://arvados.org", target: "_blank" %></li>
-      <li><%= link_to "Tutorials and user guide",
-      "#{Rails.configuration.arvados_docsite}/user/", target: "_blank" %></li>
-    </ul>
-  </p>
-</div>
-
+<!--
 <% if current_user.andand.is_active %>
 <div class="well">
   <p><strong>System status</strong></p>
@@ -105,3 +90,4 @@
     </table>
 </div>
 <% end %>
+-->

@@ -32,6 +32,9 @@ class ArvadosApiClient
     resources_kind = class_kind(resources_kind).pluralize if resources_kind.is_a? Class
     url = "#{self.arvados_v1_base}/#{resources_kind}#{action}"
 
+    # Clean up /arvados/v1/../../discovery/v1 to /discovery/v1
+    url.sub! '/arvados/v1/../../', '/'
+
     query = {"api_token" => api_token}
     if !data.nil?
       data.each do |k,v|
@@ -136,6 +139,10 @@ class ArvadosApiClient
 
   def arvados_schema
     @arvados_schema ||= api 'schema', ''
+  end
+
+  def discovery
+    @discovery ||= api '../../discovery/v1/apis/arvados/v1/rest', ''
   end
 
   def kind_class(kind)

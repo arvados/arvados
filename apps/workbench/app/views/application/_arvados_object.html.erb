@@ -1,57 +1,5 @@
 <% content_for :arvados_object_table do %>
-<h2><%= @object.class %> <%= @object.uuid %></h2>
-<%= form_for @object do |f| %>
-<table class="table topalign">
-  <thead>
-  </thead>
-  <tbody>
-    <% @object.attributes_for_display.each do |attr, attrvalue| %>
-    <%= render partial: 'application/arvados_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
-    <% end %>
-  </tbody>
-</table>
 
-<% incoming = Link.where(tail_uuid: @object.uuid) %>
-<% if incoming.items_available > 0 %>
-<h3>Incoming Links</h3>
-<table class="table topalign">
-  <thead>
-  </thead>
-  <tbody>
-    <% incoming.each do |link| %>
-      <tr>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "name", attrvalue: link.name } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "head_uuid", attrvalue: link.head_uuid } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties } %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-<% end %>
-
-<% outgoing = Link.where(head_uuid: @object.uuid) %>
-<% if outgoing.items_available > 0 %>
-<h3>Outgoing Links</h3>
-<table class="table topalign">
-  <thead>
-  </thead>
-  <tbody>
-    <% outgoing.each do |link| %>
-      <tr>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "name", attrvalue: link.name } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "tail_uuid", attrvalue: link.tail_uuid } %></td>
-        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties } %></td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-<% end %>
-
-<% end %>
 <% end %>
 
 <% if content_for? :page_content %>
@@ -80,45 +28,9 @@
     </div>
     <% end %>
     <div id="arvados-object-json" class="tab-pane fade in active">
-      <pre>
-<%= JSON.pretty_generate(@object.attributes.reject { |k,v| k == 'id' }) rescue nil %>
-      </pre>
+
     </div>
 
-    <% if @object.andand.uuid %>
-
-    <div id="arvados-object-curl" class="tab-pane fade">
-      <pre>
-curl -X PUT \
- -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
- --data-urlencode <%= @object.class.to_s.underscore %>@/dev/stdin \
- https://$ARVADOS_API_HOST/arvados/v1/<%= @object.class.to_s.pluralize.underscore %>/<%= @object.uuid %> \
- &lt;&lt;EOF
-<%= JSON.pretty_generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}) %>
-EOF
-      </pre>
-    </div>
-
-    <div id="arvados-object-arv" class="tab-pane fade">
-      <pre>
-arv --pretty <%= @object.class.to_s.underscore %> get \
- --uuid <%= @object.uuid %>
-
-arv <%= @object.class.to_s.underscore %> update \
- --uuid <%= @object.uuid %> \
- --<%= @object.class.to_s.underscore.gsub '_', '-' %> '<%= JSON.generate({@object.attributes.keys[-3] => @object.attributes.values[-3]}).gsub("'","'\''") %>'
-      </pre>
-    </div>
-
-    <div id="arvados-object-python" class="tab-pane fade">
-      <pre>
-import arvados
-
-x = arvados.api().<%= @object.class.to_s.pluralize.underscore %>().get(uuid='<%= @object.uuid %>').execute()
-      </pre>
-    </div>
-
-    <% end %>
 
   </div>
 </div>

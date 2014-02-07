@@ -1,0 +1,64 @@
+<table class="topalign table table-bordered">
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+	job
+      </th><th>
+	version
+      </th><th>
+	status
+      </th><th>
+	start
+      </th><th>
+	finish
+      </th><th>
+	clock time
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <% @provenance.reverse.each do |p| %>
+    <% j = p[:job] %>
+
+    <% if j %>
+
+    <tr class="job">
+      <td>
+	<tt><%= j.uuid %></tt>
+	<br />
+	<tt class="deemphasize"><%= j.submit_id %></tt>
+      </td><td>
+	<%= j.script_version %>
+      </td><td>
+        <span class="label <%= if j.success then 'label-success'; elsif j.running then 'label-primary'; else 'label-warning'; end %>">
+	  <%= j.success || j.running ? 'ok' : 'failed' %>
+        </span>
+      </td><td>
+	<%= j.started_at %>
+      </td><td>
+	<%= j.finished_at %>
+      </td><td>
+	<% if j.started_at and j.finished_at %>
+	<%= raw(distance_of_time_in_words(j.started_at, j.finished_at).sub('about ','~').sub(' ','&nbsp;')) %>
+	<% elsif j.started_at and j.running %>
+	<%= raw(distance_of_time_in_words(j.started_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) %> (running)
+	<% end %>
+      </td>
+    </tr>
+
+    <% else %>
+    <tr>
+      <td>
+	<span class="label label-danger">lookup fail</span>
+	<br />
+	<tt class="deemphasize"><%= p[:target] %></tt>
+      </td><td colspan="4">
+      </td>
+    </tr>
+    <% end %>
+
+    <% end %>
+
+  </tbody>
+</table>

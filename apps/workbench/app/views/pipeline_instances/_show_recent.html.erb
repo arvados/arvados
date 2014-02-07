@@ -1,0 +1,98 @@
+<%= content_for :tab_line_buttons do %>
+<%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
+  <%= submit_tag 'Compare selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
+  &nbsp;
+<% end rescue nil %>
+<% end %>
+
+<%= form_tag do |f| %>
+
+<table class="table table-condensed table-fixedlayout">
+  <colgroup>
+    <col width="5%" />
+    <col width="10%" />
+    <col width="20%" />
+    <col width="10%" />
+    <col width="30%" />
+    <col width="15%" />
+    <col width="10%" />
+  </colgroup>
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+      </th><th>
+	Status
+      </th><th>
+	Instance
+      </th><th colspan="2">
+	Template
+      </th><th>
+	Owner
+      </th><th>
+	Age
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <% @objects.sort_by { |ob| ob.created_at }.reverse.each do |ob| %>
+
+    <tr data-object-uuid="<%= ob.uuid %>">
+      <td>
+        <%= check_box_tag 'uuids[]', ob.uuid, false %>
+      </td><td>
+        <% if ob.success %>
+        <span class="label label-success">success</span>
+        <% elsif ob.active %>
+        <span class="label label-info">active</span>
+        <% end %>
+      </td><td colspan="2">
+        <%= link_to_if_arvados_object ob, friendly_name: true %>
+      </td><td>
+        <%= link_to_if_arvados_object ob.pipeline_template_uuid, friendly_name: true %>
+      </td><td>
+        <%= link_to_if_arvados_object ob.owner_uuid, friendly_name: true %>
+      </td><td>
+        <%= distance_of_time_in_words(ob.created_at, Time.now) %>
+      </td>
+    </tr>
+    <tr>
+      <td style="border-top: 0;" colspan="3">
+      </td>
+      <td style="border-top: 0; opacity: 0.5;" colspan="4">
+        <% ob.components.each do |cname, c| %>
+        <% status = if !(c.is_a?(Hash) && c[:job].is_a?(Hash))
+                      nil
+                    elsif c[:job][:success]
+                      'success'
+                    elsif c[:job][:running]
+                      'info'
+                    else
+                      'warning'
+                    end %>
+        <span class="label label-<%= status || 'default' %>"><%= cname.to_s %></span>
+        <% end %>
+      </td>
+    </tr>
+    <% end %>
+
+  </tbody>
+</table>
+
+<% end %>
+
+<% content_for :footer_js do %>
+var showhide_compare = function() {
+    var form = $('form#compare')[0];
+    $('input[type=hidden][name="uuids[]"]', form).remove();
+    $('input[type=submit]', form).prop('disabled',true);
+    $('input[name="uuids[]"]').each(function(){
+        if(this.checked) {
+            $('input[type=submit]', form).prop('disabled',false).show();
+            $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
+        }
+    });
+};
+$('form input[name="uuids[]"]').on('click', showhide_compare);
+showhide_compare();
+<% end %>

@@ -30,7 +30,7 @@ On the Arvados Workbench, navigate to _Access %(rarr)&rarr;% Repositories._  You
 Next, on the Arvados virtual machine, clone your git repository:
 
 <notextile>
-<pre><code>$ <span class="userinput">git clone git://git.{{ site.arvados_api_host }}:you.git</span>
+<pre><code>$ <span class="userinput">git clone git@git.{{ site.arvados_api_host }}:you.git</span>
 Cloning into 'you'...</code></pre>
 </notextile>
 

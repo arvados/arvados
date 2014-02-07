@@ -1,6 +1,8 @@
 class Node < ArvadosBase
-  attr_accessor :object
+  def self.creatable?
+    current_user and current_user.is_admin
+  end
   def friendly_link_name
-    self.hostname
+    (hostname && !hostname.empty?) ? hostname : uuid
   end
 end

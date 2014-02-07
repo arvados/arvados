@@ -1,0 +1,2 @@
+class KeepDisksController < ApplicationController
+end

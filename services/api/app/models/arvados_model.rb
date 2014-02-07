@@ -1,3 +1,4 @@
+require 'assign_uuid'
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
@@ -55,6 +56,21 @@ class ArvadosModel < ActiveRecord::Base
         self.instance_variable_set('@'+re[1], aobject)
       end
     end
+  end
+
+  def self.readable_by user
+    uuid_list = [user.uuid, *user.groups_i_can(:read)]
+    sanitized_uuid_list = uuid_list.
+      collect { |uuid| sanitize(uuid) }.join(', ')
+    or_references_me = ''
+    if self == Link and user
+      or_references_me = "OR (#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND #{sanitize user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
+    end
+    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
+      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
+            true, user.is_admin,
+            uuid_list,
+            user.uuid)
   end
 
   protected
@@ -140,4 +156,30 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
   end
+
+  def self.resource_class_for_uuid(uuid)
+    if uuid.is_a? ArvadosModel
+      return uuid.class
+    end
+    unless uuid.is_a? String
+      return nil
+    end
+    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
+      return Collection
+    end
+    resource_class = nil
+
+    Rails.application.eager_load!
+    uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+        if k.respond_to?(:uuid_prefix)
+          if k.uuid_prefix == re[1]
+            return k
+          end
+        end
+      end
+    end
+    nil
+  end
+
 end

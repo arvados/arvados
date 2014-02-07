@@ -20,7 +20,9 @@ import threading
 
 global_client_object = None
 
-from arvados import *
+from api import *
+import config
+import arvados.errors
 
 class Keep:
     @staticmethod
@@ -95,7 +97,6 @@ class KeepClient(object):
             self.args = kwargs
 
         def run(self):
-            global config
             with self.args['thread_limiter'] as limiter:
                 if not limiter.shall_i_proceed():
                     # My turn arrived, but the job has been done without
@@ -107,7 +108,7 @@ class KeepClient(object):
                                self.args['service_root']))
                 h = httplib2.Http()
                 url = self.args['service_root'] + self.args['data_hash']
-                api_token = config['ARVADOS_API_TOKEN']
+                api_token = config.get('ARVADOS_API_TOKEN')
                 headers = {'Authorization': "OAuth2 %s" % api_token}
                 try:
                     resp, content = h.request(url.encode('utf-8'), 'PUT',
@@ -167,7 +168,6 @@ class KeepClient(object):
         return pseq
 
     def get(self, locator):
-        global config
         if re.search(r',', locator):
             return ''.join(self.get(x) for x in locator.split(','))
         if 'KEEP_LOCAL_STORE' in os.environ:
@@ -176,7 +176,7 @@ class KeepClient(object):
         for service_root in self.shuffled_service_roots(expect_hash):
             h = httplib2.Http()
             url = service_root + expect_hash
-            api_token = config['ARVADOS_API_TOKEN']
+            api_token = config.get('ARVADOS_API_TOKEN')
             headers = {'Authorization': "OAuth2 %s" % api_token,
                        'Accept': 'application/octet-stream'}
             try:
@@ -192,7 +192,7 @@ class KeepClient(object):
             except (httplib2.HttpLib2Error, httplib.ResponseNotReady) as e:
                 logging.info("Request fail: GET %s => %s: %s" %
                              (url, type(e), str(e)))
-        raise errors.NotFoundError("Block not found: %s" % expect_hash)
+        raise arvados.errors.NotFoundError("Block not found: %s" % expect_hash)
 
     def put(self, data, **kwargs):
         if 'KEEP_LOCAL_STORE' in os.environ:
@@ -218,7 +218,7 @@ class KeepClient(object):
         have_copies = thread_limiter.done()
         if have_copies == want_copies:
             return (data_hash + '+' + str(len(data)))
-        raise errors.KeepWriteError(
+        raise arvados.errors.KeepWriteError(
             "Write fail for %s: wanted %d but wrote %d" %
             (data_hash, want_copies, have_copies))
 
@@ -243,9 +243,9 @@ class KeepClient(object):
     def local_store_get(locator):
         r = re.search('^([0-9a-f]{32,})', locator)
         if not r:
-            raise errors.NotFoundError(
+            raise arvados.errors.NotFoundError(
                 "Invalid data locator: '%s'" % locator)
-        if r.group(0) == EMPTY_BLOCK_LOCATOR.split('+')[0]:
+        if r.group(0) == config.EMPTY_BLOCK_LOCATOR.split('+')[0]:
             return ''
         with open(os.path.join(os.environ['KEEP_LOCAL_STORE'], r.group(0)), 'r') as f:
             return f.read()
