@@ -1,9 +1,13 @@
 <% content_for :tab_line_buttons do %>
-<div class="pull-right">
+<div class="pull-right" style="width: 30%">
   <%= form_tag collections_path, method: 'get', remote: true, class: 'form-search' do %>
-  <div class="input-append">
-    <%= text_field_tag :search, params[:search], class: 'search-query' %>
-    <%= submit_tag "Search", name: nil, class: 'btn btn-info' %>
+  <div class="input-group">
+    <%= text_field_tag :search, params[:search], class: 'form-control', placeholder: 'Search collections' %>
+    <span class="input-group-btn">
+      <%= button_tag(class: 'btn btn-info') do %>
+      <span class="glyphicon glyphicon-search"></span>
+      <% end %>
+    </span>
   </div>  
   <% end %>
 </div>
