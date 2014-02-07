@@ -15,7 +15,7 @@
 <div class="tab-content">
 <% panes.each_with_index do |(pane, content), i| %>
   <div id="<%= pane %>" class="tab-pane fade <%= 'in active' if i==0 %>">
-    <div class="smart-scroll">
+    <div class="smart-scroll" style="margin-top:0.5em;">
       <%= content %>
     </div>
   </div>
