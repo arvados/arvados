@@ -38,6 +38,10 @@ class Job < ArvadosModel
     t.add :log_buffer
   end
 
+  def is_searchable
+    true
+  end
+
   def assert_finished
     update_attributes(finished_at: finished_at || Time.now,
                       success: success.nil? ? false : success,

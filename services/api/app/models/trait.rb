@@ -8,4 +8,8 @@ class Trait < ArvadosModel
     t.add :name
     t.add :properties
   end
+
+  def is_searchable
+    true
+  end
 end

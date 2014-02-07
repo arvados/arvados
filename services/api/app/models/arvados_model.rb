@@ -45,6 +45,13 @@ class ArvadosModel < ActiveRecord::Base
     end.compact
   end
 
+  # is_searchable returns 'true' if a model is subject to full-text
+  # search through the workbench.  Models which are searchable should
+  # return true.
+  def is_searchable
+    false
+  end
+
   def eager_load_associations
     self.class.columns.each do |col|
       re = col.name.match /^(.*)_kind$/

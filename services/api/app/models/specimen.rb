@@ -9,6 +9,10 @@ class Specimen < ArvadosModel
     t.add :properties
   end
 
+  def is_searchable
+    true
+  end
+
   def properties
     @properties ||= Hash.new
     super
