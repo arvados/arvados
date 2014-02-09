@@ -43,7 +43,14 @@ class CollectionReader(object):
         if self._streams != None:
             return
         if not self._manifest_text:
-            self._manifest_text = Keep.get(self._manifest_locator)
+            try:
+                c = arvados.api('v1').collections().get(
+                    uuid=self._manifest_locator).execute()
+                self._manifest_text = c['manifest_text']
+            except Exception as e:
+                logging.warning("API lookup failed for collection %s (%s: %s)" %
+                                (self._manifest_locator, type(e), str(e)))
+                self._manifest_text = Keep.get(self._manifest_locator)
         self._streams = []
         for stream_line in self._manifest_text.split("\n"):
             if stream_line != '':
