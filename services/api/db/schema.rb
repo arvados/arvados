@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140129184311) do
+ActiveRecord::Schema.define(:version => 20140209212819) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -83,6 +83,7 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
     t.datetime "updated_at",                          :null => false
     t.string   "uuid"
     t.text     "manifest_text"
+    t.text     "portable_manifest_text"
   end
 
   add_index "collections", ["created_at"], :name => "index_collections_on_created_at"
