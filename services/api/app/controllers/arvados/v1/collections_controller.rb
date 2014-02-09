@@ -51,6 +51,10 @@ class Arvados::V1::CollectionsController < ApplicationController
     show
   end
 
+  def show
+    render json: @object.as_api_response(:with_data)
+  end
+
   def collection_uuid(uuid)
     m = /([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?/.match(uuid)
     if m

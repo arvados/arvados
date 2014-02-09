@@ -103,6 +103,66 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_response 422
   end
 
+  test "create with checksum matching portable manifest" do
+    authorize_with :active
+    post :create, {
+      collection: {
+        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy 0:0:foo.txt\n",
+        uuid: "9458070263ca8298748bf27253a6c469+57"
+      }
+    }
+    assert_response :success
+    assert_nil assigns(:objects)
+    resp = JSON.parse(@response.body)
+    assert_equal '9458070263ca8298748bf27253a6c469+49', resp['uuid']
+  end
+
+  test "create with checksum matching non-portable manifest" do
+    authorize_with :active
+    post :create, {
+      collection: {
+        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy 0:0:foo.txt\n",
+        uuid: "fbf92328d90daac6360915f374894456"
+      }
+    }
+    assert_response :success
+    assert_nil assigns(:objects)
+    resp = JSON.parse(@response.body)
+    assert_equal 'fbf92328d90daac6360915f374894456+57', resp['uuid']
+  end
+
+  test "create with portable_manifest_text and get manifest_text made up" do
+    authorize_with :active
+    post :create, {
+      collection: {
+        portable_manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+        uuid: "9458070263ca8298748bf27253a6c469"
+      }
+    }
+    assert_response :success
+    assert_nil assigns(:objects)
+    resp = JSON.parse(@response.body)
+    assert_equal '9458070263ca8298748bf27253a6c469+49', resp['uuid']
+    assert_equal resp['portable_manifest_text'], resp['manifest_text']
+  end
+
+  test "create with portable_manifest_text and manifest_text supplied" do
+    authorize_with :active
+    post :create, {
+      collection: {
+        portable_manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt\n",
+        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy 0:0:foo.txt\n",
+        uuid: "9458070263ca8298748bf27253a6c469"
+      }
+    }
+    assert_response :success
+    assert_nil assigns(:objects)
+    resp = JSON.parse(@response.body)
+    assert_equal '9458070263ca8298748bf27253a6c469+49', resp['uuid']
+    assert_nil resp['portable_manifest_text'].index '+K@xyzzy '
+    assert_not_nil resp['manifest_text'].index '+K@xyzzy '
+  end
+
   test "get full provenance for baz file" do
     authorize_with :active
     get :provenance, uuid: 'ea10d51bcf88862dbcc36eb292017dfd+45'

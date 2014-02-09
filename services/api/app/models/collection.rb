@@ -8,6 +8,11 @@ class Collection < ArvadosModel
     t.add :files
   end
 
+  api_accessible :with_data, extend: :user do |t|
+    t.add :portable_manifest_text
+    t.add :manifest_text
+  end
+
   def redundancy_status
     if redundancy_confirmed_as.nil?
       'unconfirmed'
@@ -25,6 +30,17 @@ class Collection < ArvadosModel
   end
 
   def assign_uuid
+    # The client may provide either a portable or a non-portable
+    # manifest or both, as long as the given UUID matches one of
+    # them. If only one is provided, we make up something reasonable
+    # for the other. This behavior allows the client to expect all
+    # three of "uuid given == uuid stored in database", "uuid is
+    # stable when non-portable manifest changes, if md5(portable
+    # manifest) given", and "other clients see the +K@xyzzy hints I
+    # provide until the api server takes charge of them".
+    self.manifest_text ||= portable_manifest_text
+    self.portable_manifest_text ||= manifest_text.andand.gsub /\+K@[a-z0-9]+/, ''
+
     if self.manifest_text.nil? and self.uuid.nil?
       super
     elsif self.manifest_text and self.uuid
@@ -32,15 +48,18 @@ class Collection < ArvadosModel
       if self.uuid == Digest::MD5.hexdigest(self.manifest_text)
         self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
         true
+      elsif self.uuid == Digest::MD5.hexdigest(self.portable_manifest_text)
+        self.uuid.gsub! /$/, '+' + self.portable_manifest_text.length.to_s
+        true
       else
-        errors.add :uuid, 'uuid does not match checksum of manifest_text'
+        errors.add :uuid, 'does not match checksum of manifest_text or portable_manifest_text'
         false
       end
     elsif self.manifest_text
-      errors.add :uuid, 'checksum for manifest_text not supplied in uuid'
+      errors.add :uuid, 'not supplied to match manifest_text'
       false
     else
-      errors.add :manifest_text, 'manifest_text not supplied'
+      errors.add :manifest_text, 'not supplied'
       false
     end
   end
