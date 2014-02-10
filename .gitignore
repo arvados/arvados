@@ -4,3 +4,4 @@ docker/*/generated/*
 docker/config.yml
 doc/_site/*
 doc/.site/*
+doc/sdk/python/arvados

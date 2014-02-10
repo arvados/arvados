@@ -61,7 +61,6 @@ for resource in sorted(api[u'resources']):
     outf = open(out_fname, 'w')
     outf.write(
 """---
-layout: default
 navsection: api
 navmenu: API Methods
 title: "{resource}"

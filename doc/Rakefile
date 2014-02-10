@@ -1,7 +1,18 @@
 #!/usr/bin/env rake
 
 require "rubygems"
-require "zenweb/tasks"
+Rake.application.rake_require "zenweb/tasks"
 load "zenweb-textile.rb"
 load "zenweb-liquid.rb"
 
+file ".site/sdk/python/arvados/index.html" do |t|
+  sh "epydoc --html -o sdk/python/arvados arvados"
+  Dir["sdk/python/arvados/*"].each do |f|
+    puts f
+    $website.pages[f] = Zenweb::Page.new($website, f)
+  end
+end
+
+task :extra_wirings do
+  $website.pages["sdk/python/python.html.textile.liquid"].depends_on(".site/sdk/python/arvados/index.html")
+end

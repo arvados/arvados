@@ -5,18 +5,37 @@ module ZenwebLiquid
 end
 
 module Zenweb
+
   class Page
+
+    def render_liquid page, content
+      liquid self.body, content, page, binding
+    end
     
     ##
     # Render a page's liquid and return the intermediate result
-    def render_liquid page, content, binding = TOPLEVEL_BINDING
+    def liquid template, content, page, binding = TOPLEVEL_BINDING
       require 'liquid'
-      
-      unless defined? @liquid_template then
-        @liquid_template = Liquid::Template.parse(content).render()
+      Liquid::Template.file_system = Liquid::LocalFileSystem.new(File.join(File.dirname(Rake.application().rakefile), "_includes"))
+      unless defined? @liquid_template
+        @liquid_template = Liquid::Template.parse(template)
       end
       
-      @liquid_template.render(binding)
+      vars = {}
+      vars["content"] = content
+
+      vars["site"] = site.config.h.clone
+      pages = {}
+      site.pages.each do |f, p|
+        pages[f] = p.config.h.clone
+        pages[f]["url"] = p.url
+      end
+      vars["site"]["pages"] = pages
+
+      vars["page"] = page.config.h.clone
+      vars["page"]["url"] = page.url
+      
+      @liquid_template.render(vars)
     end
   end
 end
