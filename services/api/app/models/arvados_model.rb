@@ -45,11 +45,29 @@ class ArvadosModel < ActiveRecord::Base
     end.compact
   end
 
-  # is_searchable returns 'true' if a model is subject to full-text
-  # search through the workbench.  Models which are searchable should
-  # return true.
-  def is_searchable
+  # searchable? indicates whether a model is subject to full-text
+  # search through the workbench.  Models which include data that is
+  # interesting to a full-text search (e.g. Collection, Specimen, Trait)
+  # should override this to return 'true'.
+  def self.searchable?
     false
+  end
+
+  # search all "searchable" columns of this table for query_str.
+  def self.search_for_user(user, query_str)
+    return [] unless self.searchable?
+    ilikes = []
+    ilike_params = []
+    self.searchable_columns.each do |column|
+      ilikes << "#{table_name}.#{column} ilike ?"
+      ilike_params << "%#{query_str}%"
+    end
+    if ilikes.empty?
+      return []
+    else
+      query_conditions = [ ilikes.join(' or ') ] + ilike_params
+      return self.readable_by(user).where(query_conditions)
+    end
   end
 
   def eager_load_associations

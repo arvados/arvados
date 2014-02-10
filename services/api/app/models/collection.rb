@@ -8,7 +8,7 @@ class Collection < ArvadosModel
     t.add :files
   end
 
-  def is_searchable
+  def self.searchable?
     true
   end
 

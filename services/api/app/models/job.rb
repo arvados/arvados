@@ -38,7 +38,7 @@ class Job < ArvadosModel
     t.add :log_buffer
   end
 
-  def is_searchable
+  def self.searchable?
     true
   end
 

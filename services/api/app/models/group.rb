@@ -8,7 +8,7 @@ class Group < ArvadosModel
     t.add :description
   end
 
-  def is_searchable
+  def self.searchable?
     true
   end
 end

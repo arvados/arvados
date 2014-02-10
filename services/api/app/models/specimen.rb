@@ -9,7 +9,7 @@ class Specimen < ArvadosModel
     t.add :properties
   end
 
-  def is_searchable
+  def self.searchable?
     true
   end
 
