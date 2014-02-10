@@ -16,7 +16,7 @@ class Log < ArvadosModel
     t.add :info
   end
 
-  def is_searchable
+  def self.searchable?
     true
   end
 

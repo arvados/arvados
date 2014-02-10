@@ -29,7 +29,7 @@ class Link < ArvadosModel
     super
   end
 
-  def is_searchable
+  def self.searchable?
     true
   end
 

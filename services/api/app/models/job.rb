@@ -37,7 +37,7 @@ class Job < ArvadosModel
     t.add :log_stream_href
   end
 
-  def is_searchable
+  def self.searchable?
     true
   end
 
