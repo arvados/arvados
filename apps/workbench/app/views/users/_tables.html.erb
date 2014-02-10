@@ -55,6 +55,9 @@
           <a href="<%= collection_path(j.log) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">Log</a>
         <% end %>
       <% end %>
+    <% elsif j.respond_to? :log_buffer and j.log_buffer %>
+      <% buf = j.log_buffer.strip.split("\n").last %>
+      <span title="<%= buf %>"><%= buf %></span>
     <% end %>
   </small>
 </td>
