@@ -35,6 +35,7 @@ class Job < ArvadosModel
     t.add :tasks_summary
     t.add :dependencies
     t.add :log_stream_href
+    t.add :log_buffer
   end
 
   def assert_finished
@@ -166,4 +167,10 @@ class Job < ArvadosModel
     end
   end
 
+  def log_buffer
+    @@redis ||= Redis.new(:timeout => 0)
+    if @@redis.exists uuid
+      @@redis.getrange(uuid, 0 - 2**10, -1)
+    end
+  end
 end
