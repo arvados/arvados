@@ -1,15 +1,3 @@
-PATH
-  remote: .
-  specs:
-    arvados-cli (0.1.20140205194548)
-      activesupport (~> 3.2, >= 3.2.13)
-      andand (~> 1.3, >= 1.3.3)
-      curb (~> 0.8)
-      google-api-client (~> 0.6, >= 0.6.3)
-      json (~> 1.7, >= 1.7.7)
-      oj (~> 2.0, >= 2.0.3)
-      trollop (~> 2.0)
-
 GEM
   remote: https://rubygems.org/
   specs:
@@ -18,23 +6,32 @@ GEM
       multi_json (~> 1.0)
     addressable (2.3.5)
     andand (1.3.3)
+    arvados-cli (0.1.20140210141349)
+      activesupport (~> 3.2, >= 3.2.13)
+      andand (~> 1.3, >= 1.3.3)
+      curb (~> 0.8)
+      google-api-client (~> 0.6, >= 0.6.3)
+      json (~> 1.7, >= 1.7.7)
+      oj (~> 2.0, >= 2.0.3)
+      trollop (~> 2.0)
     autoparse (0.3.3)
       addressable (>= 2.3.1)
       extlib (>= 0.9.15)
       multi_json (>= 1.0.0)
     curb (0.8.5)
     extlib (0.9.16)
-    faraday (0.8.9)
-      multipart-post (~> 1.2.0)
-    google-api-client (0.6.4)
+    faraday (0.9.0)
+      multipart-post (>= 1.2, < 3)
+    google-api-client (0.7.1)
       addressable (>= 2.3.2)
       autoparse (>= 0.3.3)
       extlib (>= 0.9.15)
-      faraday (~> 0.8.4)
+      faraday (>= 0.9.0)
       jwt (>= 0.1.5)
       launchy (>= 2.1.1)
       multi_json (>= 1.0.0)
-      signet (~> 0.4.5)
+      retriable (>= 1.4)
+      signet (>= 0.5.0)
       uuidtools (>= 2.1.0)
     i18n (0.6.9)
     json (1.8.1)
@@ -44,12 +41,13 @@ GEM
       addressable (~> 2.3)
     minitest (5.2.2)
     multi_json (1.8.4)
-    multipart-post (1.2.0)
+    multipart-post (2.0.0)
     oj (2.5.4)
     rake (10.1.1)
-    signet (0.4.5)
+    retriable (1.4.1)
+    signet (0.5.0)
       addressable (>= 2.2.3)
-      faraday (~> 0.8.1)
+      faraday (>= 0.9.0.rc5)
       jwt (>= 0.1.5)
       multi_json (>= 1.0.0)
     trollop (2.0)
@@ -59,6 +57,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  arvados-cli!
+  arvados-cli
   minitest (>= 5.0.0)
   rake
