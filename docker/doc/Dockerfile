@@ -13,7 +13,7 @@ ADD generated/doc.tar.gz /usr/src/arvados/
 # Build static site
 RUN /bin/sed -ri 's/^baseurl: .*$/baseurl: /' /usr/src/arvados/doc/_config.yml && \
     cd /usr/src/arvados/doc && \
-    LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" jekyll build
+    LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" rake
 
 # Configure Apache
 ADD apache2_vhost /etc/apache2/sites-available/doc
