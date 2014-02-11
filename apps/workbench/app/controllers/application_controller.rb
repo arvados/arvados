@@ -109,7 +109,12 @@ class ApplicationController < ActionController::Base
   def create
     @object ||= model_class.new params[model_class.to_s.singularize.to_sym]
     @object.save!
-    redirect_to(params[:return_to] || @object)
+    respond_to do |f|
+      f.html {
+        redirect_to(params[:return_to] || @object)
+      }
+      f.js { render }
+    end
   end
 
   def destroy
