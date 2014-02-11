@@ -125,3 +125,16 @@ ul.arvados-nav li ul li {
     width: 100px;
     display:inline-block;
 }
+
+td.add-tag-button .add-tag-button {
+    margin-top: 2px;
+    opacity: 0;
+}
+
+td.add-tag-button:hover .add-tag-button {
+    opacity: 1;
+}
+
+.removable-tag a {
+    cursor: pointer;
+}

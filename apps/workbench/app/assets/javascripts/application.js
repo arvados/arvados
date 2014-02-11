@@ -47,8 +47,21 @@ jQuery(function($){
         }).
         on('ajax:complete', function(e, status) {
             $('.loading').hide();
+        }).
+        on('click', '.removable-tag a', function(e) {
+            $(this).parents('[data-tag-link-uuid]').eq(0).next().andSelf().remove();
+        }).
+        on('click', 'a.add-tag-button', function(e) {
+            new_tag = window.prompt("Add tag for collection "+
+                                    $(this).parents('tr').attr('data-object-uuid'),
+                                    "");
+            if (new_tag != null) {
+                $(this).
+                    parent().
+                    find('>span').
+                    append($('<span class="label label-info removable-tag" data-tag-link-uuid=""></span>').text(new_tag).append('&nbsp;<a>&times;</a>')).
+                    append('<br/>');
+            }
+            return false;
         });
 })(jQuery);
-
-
-
