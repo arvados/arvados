@@ -1,374 +1,46 @@
-/* http://codepen.io/alucard11/pen/IxLDJ */
-
 .loading {
-    background: #1b1b1b;
+    opacity: 0;
 }
 
-.loading .socket{
-    width: 200px;
-    height: 200px;
-    position: absolute;
-    left: 50%;
-    margin-left: -100px;
-    top: 50%;
-    margin-top: -100px;
-}
-
-.loading .hex-brick{
-    background: #ABF8FF;
-    width: 30px;
-    height: 17px;
-    position: absolute;
-    top: 5px;
-    animation-name: fade;
+.rotating {
+    animation-name: rotateThis;
     animation-duration: 2s;
     animation-iteration-count: infinite;
-    -webkit-animation-name: fade;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
+    animation-timing-function: linear;
+    -moz-animation-name: rotateThis;
+    -moz-animation-duration: 2s;
+    -moz-animation-iteration-count: infinite;
+    -moz-animation-timing-function: linear;
+    -ms-animation-name: rotateThis;
+    -ms-animation-duration: 2s;
+    -ms-animation-iteration-count: infinite;
+    -ms-animation-timing-function: linear;
+    /* Chrome, at least in Linux, renders a horrible shaky mess -- better
+       not to bother.
+
+      -webkit-animation-name: rotateThis;
+      -webkit-animation-duration: 2s;
+      -webkit-animation-iteration-count: infinite;
+      -webkit-animation-timing-function: linear;
+      */
 }
 
-.loading .h2{
-    transform: rotate(60deg);
-    -webkit-transform: rotate(60deg);
+@keyframes rotateThis {
+  from { transform: rotate( 0deg );   }
+  to   { transform: rotate( 360deg ); }
 }
 
-.loading .h3{
-    transform: rotate(-60deg);
-    -webkit-transform: rotate(-60deg);
+@-webkit-keyframes rotateThis {
+  from { -webkit-transform: rotate( 0deg );   }
+  to   { -webkit-transform: rotate( 360deg ); }
 }
 
-.loading .gel{
-    height: 30px;
-    width: 30px;	
-    transition: all .3s;
-    -webkit-transition: all .3s;
-    position: absolute;
-    top: 50%;
-    left: 50%;
+@-moz-keyframes rotateThis {
+  from { -moz-transform: rotate( 0deg );   }
+  to   { -moz-transform: rotate( 360deg ); }
 }
 
-.loading .center-gel{
-    margin-left: -15px;
-    margin-top: -15px;
-    
-    animation-name: pulse;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    -webkit-animation-name: pulse;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
-}
-
-.loading .c1{
-    margin-left: -47px;
-    margin-top: -15px;
-}
-
-.loading .c2{
-    margin-left: -31px;
-    margin-top: -43px;
-}
-
-.loading .c3{
-    margin-left: 1px;
-    margin-top: -43px;
-}
-
-.loading .c4{
-    margin-left: 17px;
-    margin-top: -15px;
-}
-.loading .c5{
-    margin-left: -31px;
-    margin-top: 13px;
-}
-
-.loading .c6{
-    margin-left: 1px;
-    margin-top: 13px;
-}
-
-.loading .c7{
-    margin-left: -63px;
-    margin-top: -43px;
-}
-
-.loading .c8{
-    margin-left: 33px;
-    margin-top: -43px;
-}
-
-.loading .c9{
-    margin-left: -15px;
-    margin-top: 41px;
-}
-
-.loading .c10{
-    margin-left: -63px;
-    margin-top: 13px;
-}
-
-.loading .c11{
-    margin-left: 33px;
-    margin-top: 13px;
-}
-
-.loading .c12{
-    margin-left: -15px;
-    margin-top: -71px;
-}
-
-.loading .c13{
-    margin-left: -47px;
-    margin-top: -71px;
-}
-
-.loading .c14{
-    margin-left: 17px;
-    margin-top: -71px;
-}
-
-.loading .c15{
-    margin-left: -47px;
-    margin-top: 41px;
-}
-
-.loading .c16{
-    margin-left: 17px;
-    margin-top: 41px;
-}
-
-.c17{
-    margin-left: -79px;
-    margin-top: -15px;
-}
-
-.loading .c18{
-    margin-left: 49px;
-    margin-top: -15px;
-}
-
-.loading .c19{
-    margin-left: -63px;
-    margin-top: -99px;
-}
-
-.loading .c20{
-    margin-left: 33px;
-    margin-top: -99px;
-}
-
-.loading .c21{
-    margin-left: 1px;
-    margin-top: -99px;
-}
-
-.loading .c22{
-    margin-left: -31px;
-    margin-top: -99px;
-}
-
-.loading .c23{
-    margin-left: -63px;
-    margin-top: 69px;
-}
-
-.loading .c24{
-    margin-left: 33px;
-    margin-top: 69px;
-}
-
-.loading .c25{
-    margin-left: 1px;
-    margin-top: 69px;
-}
-
-.loading .c26{
-    margin-left: -31px;
-    margin-top: 69px;
-}
-
-.loading .c27{
-    margin-left: -79px;
-    margin-top: -15px;
-}
-
-.loading .c28{
-    margin-left: -95px;
-    margin-top: -43px;
-}
-
-.loading .c29{
-    margin-left: -95px;
-    margin-top: 13px;
-}
-
-.loading .c30{
-    margin-left: 49px;
-    margin-top: 41px;
-}
-
-.loading .c31{
-    margin-left: -79px;
-    margin-top: -71px;
-}
-
-.loading .c32{
-    margin-left: -111px;
-    margin-top: -15px;
-}
-
-.loading .c33{
-    margin-left: 65px;
-    margin-top: -43px;
-}
-
-.loading .c34{
-    margin-left: 65px;
-    margin-top: 13px;
-}
-
-.loading .c35{
-    margin-left: -79px;
-    margin-top: 41px;
-}
-
-.loading .c36{
-    margin-left: 49px;
-    margin-top: -71px;
-}
-
-.loading .c37{
-    margin-left: 81px;
-    margin-top: -15px;
-}
-
-.loading .r1{
-    animation-name: pulse;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-delay: .2s;
-    -webkit-animation-name: pulse;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
-    -webkit-animation-delay: .2s;
-}
-
-.loading .r2{
-    animation-name: pulse;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-delay: .4s;
-    -webkit-animation-name: pulse;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
-    -webkit-animation-delay: .4s;
-}
-
-.loading .r3{
-    animation-name: pulse;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-delay: .6s;
-    -webkit-animation-name: pulse;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
-    -webkit-animation-delay: .6s;
-}
-
-.loading .r1 > .hex-brick{
-    animation-name: fade;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-delay: .2s;
-    -webkit-animation-name: fade;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
-    -webkit-animation-delay: .2s;
-}
-
-.loading .r2 > .hex-brick{
-    animation-name: fade;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-delay: .4s;
-    -webkit-animation-name: fade;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
-    -webkit-animation-delay: .4s;
-}
-
-.loading .r3 > .hex-brick{
-    animation-name: fade;
-    animation-duration: 2s;
-    animation-iteration-count: infinite;
-    animation-delay: .6s;
-    -webkit-animation-name: fade;
-    -webkit-animation-duration: 2s;
-    -webkit-animation-iteration-count: infinite;
-    -webkit-animation-delay: .6s;
-}
-
-
-@keyframes pulse{
-    0%{
-	-webkit-transform: scale(1);
-	transform: scale(1);
-    }
-    
-    50%{
-	-webkit-transform: scale(0.01);
-	transform: scale(0.01);
-    }
-    
-    100%{
-	-webkit-transform: scale(1);
-	transform: scale(1);
-    }
-}
-
-@keyframes fade{
-    0%{
-	background: #ABF8FF;
-    }
-    
-    50%{
-	background: #90BBBF;
-    }
-    
-    100%{
-	background: #ABF8FF;
-    }
-}
-
-@-webkit-keyframes pulse{
-    0%{
-	-webkit-transform: scale(1);
-	transform: scale(1);
-    }
-    
-    50%{
-	-webkit-transform: scale(0.01);
-	transform: scale(0.01);
-    }
-    
-    100%{
-	-webkit-transform: scale(1);
-	transform: scale(1);
-    }
-}
-
-@-webkit-keyframes fade{
-    0%{
-	background: #ABF8FF;
-    }
-    
-    50%{
-	background: #389CA6;
-    }
-    
-    100%{
-	background: #ABF8FF;
-    }
+@-ms-keyframes rotateThis {
+  from { -ms-transform: rotate( 0deg );   }
+  to   { -ms-transform: rotate( 360deg ); }
 }
