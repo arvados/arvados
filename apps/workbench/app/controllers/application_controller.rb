@@ -312,15 +312,6 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
-      return nil
-    end
-    return lambda { |view|
-      view.render partial: 'notifications/jobs_notification'
-    }
-  }
-
-  @@notification_tests.push lambda { |controller, current_user|
     Job.limit(1).where(created_by: current_user.uuid).each do
       return nil
     end
