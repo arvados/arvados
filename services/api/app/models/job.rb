@@ -168,9 +168,13 @@ class Job < ArvadosModel
   end
 
   def log_buffer
-    @@redis ||= Redis.new(:timeout => 0)
-    if @@redis.exists uuid
-      @@redis.getrange(uuid, 0 - 2**10, -1)
+    begin
+      @@redis ||= Redis.new(:timeout => 0)
+      if @@redis.exists uuid
+        @@redis.getrange(uuid, 0 - 2**10, -1)
+      end
+    rescue Redis::CannotConnectError
+      return '(not available)'
     end
   end
 end
