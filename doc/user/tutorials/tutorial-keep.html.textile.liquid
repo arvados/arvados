@@ -23,6 +23,8 @@ h1. Putting Data into Keep
 
 We will start with downloading a freely available VCF file from the "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905":https://my.personalgenomes.org/profile/hu599905 to a staging directory on the VM, and then add it to Keep.
 
+In the following tutorials, replace <b><code>you</code></b> with your user id.
+
 First, log into the Arvados VM instance and set up the staging area:
 
 notextile. <pre><code>$ <span class="userinput">mkdir /scratch/<b>you</b></span></code></pre>
@@ -39,9 +41,13 @@ $ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse
 </code></pre>
 </notextile>
 
-Alternately, if you have your own data, for example @MyData.vcf@, you can use @scp@ or @rsync@ to copy from your local workstation to the shell VM (run this on your local workstation):
+{% include 'notebox_begin' %}
+
+If you have your own data, for example @MyData.vcf@, you can use @scp@ or @rsync@ to copy from your local workstation to the shell VM (run this on your local workstation):
 
 notextile. <pre><code>$ <span class="userinput">scp MyData.vcf <b>you@shell</b>.arvados:/scratch/<b>you</b>/MyData.vcf</span></code></pre>
+
+{% include 'notebox_end' %}
 
 Now use @arv keep put@ to add your VCF data to Keep:
 

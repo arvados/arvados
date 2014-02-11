@@ -8,40 +8,60 @@ title: "Getting an API token"
 
 h1. Reference: Getting an API token
 
-The Arvados API token is a secret key that enables the @arv@ command line
-client to access Arvados with the proper permissions.
+The Arvados API token is a secret key that enables the @arv@ command line client to access Arvados with the proper permissions.
 
-Access the Arvados workbench using this link:
-
-"https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/
+Access the Arvados workbench using this link: "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/
 
 (Replace @{{ site.arvados_api_host }}@ with the hostname of your local Arvados instance if necessary.)
 
-Use the menu to navigate to _Access %(rarr)&rarr;% API Tokens._  There should be one or more rows.  The column *api_token* contains the actual token string that you will use.  Copy the value of *api_token* for the first row onto the clipboard.
+First, open a shell on the system on which you intend to use the Arvados client (this may be your local workstation, or an Arvados VM, refer to "Accessing Arvados over ssh":{{site.basedoc}}/user/getting_started/ssh-access.html ) .
 
-Next, open a shell on the system on which you intend to use the Arvados client (refer to "Accessing Arvados over ssh":{{site.basedoc}}/user/getting_started/ssh-access.html ) and enter the following (replace the value of @ARVADOS_API_TOKEN@ with the value you copied from the Workbench):
+Click on the user icon <span class="glyphicon glyphicon-user"></span> in the upper right corner to access the user settings menu, and click on the menu item _Manage API token_ to go to the "api client authorizations" page.  
 
-bc. $ export ARVADOS_API_HOST={{ site.arvados_api_host }}
-$ export ARVADOS_API_TOKEN=2jv9kd1o39t0pcfu7aueem7a1zjxhak73w90tzq3gx0es7j1ld
+h2. The easy way
 
-* @ARVADOS_API_HOST@ tells @arv@ which host to connect to
-* @ARVADOS_API_TOKEN@ is the secret key used by the Arvados API server to authenticate access.
-
-For your convenience, the "API Tokens" Workbench page provides a section at the top of the  page that you may copy and paste directly into the shell.  It will look something like this:
+For your convenience, the "api client authorizations" page on Workbench provides a "Help" tab that provides a command you may copy and paste directly into the shell.  It will look something like this:
 
 bc. ### Pasting the following lines at a shell prompt will allow Arvados SDKs
 ### to authenticate to your account, youraddress@example.com
 read ARVADOS_API_TOKEN <<EOF
-2jv9kd1o39t0pcfu7aueem7a1zjxhak73w90tzq3gx0es7j1ld
+2jv9346o396exampledonotuseexampledonotuseexes7j1ld
 EOF
-export ARVADOS_API_TOKEN ARVADOS_API_HOST=qr1hi.arvadosapi.com
+export ARVADOS_API_TOKEN ARVADOS_API_HOST={{ site.arvados_api_host }}
 
 * The @read@ command takes the contents of stdin and puts it into the shell variable named on the command line.
 * The @<<EOF@ notation means read each line on stdin and pipe it to the command, terminating on reading the line @EOF@.
 * The @export@ command puts a local shell variable into the environment that will be inherited by child processes (e.g. the @arv@ client).
 
-For your convenience you may add the declarations of @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ to the @~/.bashrc@ file on the system on which you intend to use the Arvados client.  If you have already put the variables into the environment with instructions above, you can use these commands to append the environment variables to your @~/.bashrc@:
+h2. Setting the environment manually
 
-bc. $ echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST" >> ~/.bashrc
-$ echo "export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN" >> ~/.bashrc
+Alternately, look for the column *api_token* contains the actual token string that you will use.  Copy the value of *api_token* for the first row onto the clipboard.
 
+<notextile>
+<pre><code>$ <span class="userinput">export ARVADOS_API_HOST={{ site.arvados_api_host }}</span>
+$ <span class="userinput">export ARVADOS_API_TOKEN=2jv9346o3966345u7ueuim7a1zaaoueo3w90tzq3gx0es7j1ld</span>
+</code></pre>
+</notextile>
+
+* @ARVADOS_API_HOST@ tells @arv@ which host to connect to
+* @ARVADOS_API_TOKEN@ is the secret key used by the Arvados API server to authenticate access.
+
+h2. settings.conf
+
+Arvados tools will also look for the authentication information in @~/.config/arvados/settings.conf@. If you have already put the variables into the environment with instructions above, you can use these commands to create an Arvados configuration file:
+
+<notextile>
+<pre><code>$ <span class="userinput">echo "ARVADOS_API_HOST=$ARVADOS_API_HOST" > ~/.config/arvados/settings.conf</span>
+$ <span class="userinput">echo "ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN" >> ~/.config/arvados/settings.conf</span>
+</code></pre>
+</notextile>
+
+h2. .bashrc
+
+Alternately, you may add the declarations of @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ to the @~/.bashrc@ file on the system on which you intend to use the Arvados client.  If you have already put the variables into the environment with instructions above, you can use these commands to append the environment variables to your @~/.bashrc@:
+
+<notextile>
+<pre><code>$ <span class="userinput">echo "export ARVADOS_API_HOST=$ARVADOS_API_HOST" >> ~/.bashrc</span>
+$ <span class="userinput">echo "export ARVADOS_API_TOKEN=$ARVADOS_API_TOKEN" >> ~/.bashrc</span>
+</code></pre>
+</notextile>

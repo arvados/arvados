@@ -133,15 +133,15 @@ h1(#workbench). Adding your key to Arvados Workbench
 
 h3. From the workbench dashboard
 
-If you have no @ssh@ keys registered, there should be a notification asking you to provide your @ssh@ public key.  On the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ), look for the icon <span class="glyphicon glyphicon-envelope"></span> <span class="badge badge-alert">1</span> in upper right corner.  Click on this icon and a dropdown menu should appear with a message asking you to add your public key.  Paste your public key into the text area provided and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
+If you have no @ssh@ keys registered, there should be a notification asking you to provide your @ssh@ public key.  On the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ), look for the envelope icon <span class="glyphicon glyphicon-envelope"></span> <span class="badge badge-alert">1</span> in upper right corner (the number indicates there are new notifications).  Click on this icon and a dropdown menu should appear with a message asking you to add your public key.  Paste your public key into the text area provided and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
 
 h3. Alternate way to add ssh keys
 
-If you want to add additional @ssh@ keys, click on the user icon <span class="glyphicon glyphicon-user"></span> in the upper right corner to access the user settings menu, and click on the menu item _Manage ssh keys_ to add an authorized ssh key to your account.
+If you want to add additional @ssh@ keys, click on the user icon <span class="glyphicon glyphicon-user"></span> in the upper right corner to access the user settings menu, and click on the menu item _Manage ssh keys_ to go to the Authorized keys page.
 
-Netx, on _Authorized keys_ page, the click on the button <span class="btn btn-primary disabled">Add a new authorized key</span>
+On _Authorized keys_ page, the click on the button <span class="btn btn-primary disabled">Add a new authorized key</span> in the upper right corner.
 
-This will reload the page, and should now show a row of information.  Under the *public_key* column heading, click on the cell _none_ .  This should open up an editing popup as shown in this screenshot:
+The page will reload with a new row of information.  Under the *public_key* column heading, click on the cell +none+ .  This will open an editing popup as shown in this screenshot:
 
 !{{ site.baseurl }}/images/ssh-adding-public-key.png!
 
@@ -149,7 +149,7 @@ Paste the public key from the previous section into the popup text box and click
 
 h1(#login). Using ssh to log into an Arvados VM
 
-To determine the name and login information of the VM instance that you will connect to, go to the Arvados workbench and click on "Virtual machines" under *Configuration* or use the menu item _Access %(rarr)&rarr;% VMs_ to see a list of virtual machines that you have access to.  The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Skip the square brackets and quotes to get your login name.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login as appropriate.
+To see a list of virtual machines that you have access to and determine the name and login information, click on Compute %(rarr)&rarr;% Virtual machines.  Once on the "virtual machines" page, The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Ignore the square brackets and quotes to get your login name.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login as appropriate.
 
 This section consists of two sets of instructions, depending on whether you will be logging in using a "Unix":#unixvm (Linux, OS X, Cygwin) or "Windows":#windowsvm client.
 
@@ -177,7 +177,7 @@ The VMs typically have addresses that are not globally routable, so you cannot l
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
 
-h3. Configuration (optional)
+h3. Configuration (recommended)
 
 Since the above command line is cumbersome, it can be greatly simplfied by adding the following section your @~/.ssh/config@ file:
 
