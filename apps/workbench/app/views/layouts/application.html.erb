@@ -114,13 +114,11 @@
   
       <ul class="nav navbar-nav navbar-right">
 
-        <% if current_user %>
         <li>
-          <div class="loading" style="transform: translate(-20px,20px) scale(0.1,0.1); -ms-transform: translate(-20px,20px) scale(0.1,0.1); -webkit-transform: translate(-20px,20px) scale(0.1,0.1); display: none">
-            <%= render partial: 'loading' %>
-          </div>
+          <a><i class="rotating loading glyphicon glyphicon-refresh"></i></a>
         </li>
 
+        <% if current_user %>
         <!-- XXX placeholder for this when search is implemented
         <li>
           <form class="navbar-form" role="search">
@@ -247,5 +245,6 @@
   <%= javascript_tag do %>
   <%= yield :footer_js %>
   <% end %>
+
 </body>
 </html>

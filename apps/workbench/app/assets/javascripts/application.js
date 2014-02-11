@@ -43,12 +43,9 @@ jQuery(function($){
     });
     $(document).
         on('ajax:send', function(e, xhr) {
-            $('.loading').show();
+            $('.loading').fadeTo('fast', 1);
         }).
         on('ajax:complete', function(e, status) {
-            $('.loading').hide();
+            $('.loading').fadeOut('fast', 0);
         });
 })(jQuery);
-
-
-
