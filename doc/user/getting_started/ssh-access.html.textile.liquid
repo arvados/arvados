@@ -55,7 +55,7 @@ ssh-rsa AAAAB3NzaC1ycEDoNotUseExampleKeyDoNotUseExampleKeyDoNotUseExampleKeyDoNo
 
 Now you can set up @ssh-agent@ (next) or proceed to "adding your key to the Arvados Workbench.":#workbench
 
-h3. Setting up ssh-agent (optional)
+h3. Setting up ssh-agent (recommended)
 
 If you find you are entering your passphrase frequently, you can use @ssh-agent@ to manage your credentials.  Use @ssh-add -l@ to test if you already have ssh-agent running:
 
@@ -133,7 +133,7 @@ h1(#workbench). Adding your key to Arvados Workbench
 
 h3. From the workbench dashboard
 
-Open the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ) and look at the right hand column.  If you have no @ssh@ keys registered, there should be a notification box asking you to provide your @ssh@ public key.  Paste your public key into the text area and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
+Open the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ) and look in upper right corner.  If you have no @ssh@ keys registered, there should be a notification asking you to provide your @ssh@ public key.  Paste your public key into the text area and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
 
 h3. Alternate way to add ssh keys
 
