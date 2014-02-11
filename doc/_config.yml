@@ -5,6 +5,7 @@ arvados_api_host: qr1hi.arvadosapi.com
 navbar:
   userguide:
     - Getting Started:
+      - user/index.html.textile.liquid
       - user/getting_started/workbench.html.textile.liquid
       - user/getting_started/ssh-access.html.textile.liquid
       - user/getting_started/check-environment.html.textile.liquid
@@ -25,12 +26,15 @@ navbar:
       - user/reference/api-tokens.html.textile.liquid
       - user/reference/sdk-cli.html.textile.liquid
   sdk:
+    - Overview:
+      - sdk/index.html.textile.liquid
     - Python:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
   api:
     - Concepts:
+      - api/index.html.textile.liquid
       - api/authentication.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid

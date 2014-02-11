@@ -11,7 +11,7 @@ This guide is intended to introduce new users to the Arvados system.  It covers 
 
 This user guide introduces how to use the major components of Arvados.  These are:
 
-* Keep: Content-addressable cluster file system designed for robust storage of very large files, such as whole genome sequences
+* Keep: Content-addressable cluster file system designed for robust storage of very large files, such as whole genome sequences running in the hundreds of gigabytes
 * Crunch: Cluster compute engine designed for genomic analysis, e.g. alignment, variant calls
 * Metadata Database: Information about the genomic data stored in Keep, such as genomic traits, human subjects
 * Workbench: Web interface to Arvados components
@@ -24,8 +24,7 @@ To get the most value out of this guide, you should be comfortable with the foll
 # Using the unix command line shell @bash@
 # Viewing and editing files using a unix text editor such as @vi@, @emacs@, or @nano@
 # Programming in @python@
-
-It will also be helpful (but not essential) if you are familiar with revision control using @git@.
+# Revision control using @git@
 
 The examples in this guide uses the public Arvados instance located at "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ .  You must have an account in order to use this service.  If you would like to request an account, please send an email to "arvados@curoverse.com":mailto:arvados@curoverse.com .
 

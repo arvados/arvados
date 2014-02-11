@@ -9,25 +9,16 @@
     <link rel="icon" href="{{ site.baseurl }}/images/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="{{ site.baseurl }}/images/favicon.ico" type="image/x-icon">
     <link href="{{ site.baseurl }}/css/bootstrap.css" rel="stylesheet">
+    <link href="{{ site.baseurl }}/css/nav-list.css" rel="stylesheet">
+    <link href="{{ site.baseurl }}/css/badges.css" rel="stylesheet">
     <style>
       html {
       height:100%;
       }
       body {
-      padding-top: 41px;
+      padding-top: 61px;
       height: 90%; /* If calc() is not supported */
       height: calc(100% - 46px); /* Sets the body full height minus the padding for the menu bar */
-      }
-      div.frontpagehero {
-      background: #fff;
-      height: 270px;
-      background-image: url('images/doc-bg.jpg');
-      background-repeat: no-repeat;
-      color: #fff;
-      margin-top:0;
-      margin-left:0;
-      z-index: -1000;
-      opacity: 0.8;
       }
       @media (max-width: 979px) {
       div.frontpagehero {
@@ -65,8 +56,8 @@
       color: #d14;
       }
       :target {
-      padding-top: 41px;
-      margin-top: -41px;
+      padding-top: 61px;
+      margin-top: -61px;
       }
     </style>
     <link href="{{ site.baseurl }}/css/bootstrap-responsive.min.css" rel="stylesheet">
@@ -82,14 +73,12 @@
     {{ content }}
     {% else %}
 
-    <div style="height:19px;"></div>
-
     <div class="container-fluid">
-      <div class="row-fluid">
+      <div class="row">
         {% include 'navbar_left' %}
-        <div class="span9"><div style="padding-left: 2em;">
+        <div class="col-sm-9">
           {{ content }}
-        </div></div>
+        </div>
       </div>
 
       <div style="height: 2em"></div>

@@ -133,19 +133,19 @@ h1(#workbench). Adding your key to Arvados Workbench
 
 h3. From the workbench dashboard
 
-Open the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ) and look in upper right corner.  If you have no @ssh@ keys registered, there should be a notification asking you to provide your @ssh@ public key.  Paste your public key into the text area and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
+If you have no @ssh@ keys registered, there should be a notification asking you to provide your @ssh@ public key.  On the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ), look for the icon <span class="glyphicon glyphicon-envelope"></span> <span class="badge badge-alert">1</span> in upper right corner.  Click on this icon and a dropdown menu should appear with a message asking you to add your public key.  Paste your public key into the text area provided and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
 
 h3. Alternate way to add ssh keys
 
-If you want to add additional @ssh@ keys, use the menu item _Access %(rarr)&rarr;% Keys_ to add an authorized ssh key to your account.
+If you want to add additional @ssh@ keys, click on the user icon <span class="glyphicon glyphicon-user"></span> in the upper right corner to access the user settings menu, and click on the menu item _Manage ssh keys_ to add an authorized ssh key to your account.
 
-Click on the button <span class="btn btn-primary disabled">Add a new authorized key</span>.
+Netx, on _Authorized keys_ page, the click on the button <span class="btn btn-primary disabled">Add a new authorized key</span>
 
 This will reload the page, and should now show a row of information.  Under the *public_key* column heading, click on the cell _none_ .  This should open up an editing popup as shown in this screenshot:
 
 !{{ site.baseurl }}/images/ssh-adding-public-key.png!
 
-Paste the public key that you copied to the clipboard in the previous section into the popup text box and click on the check mark to save it.  This should refresh the page with the public key that you just added now listed under the *public_key* column.  You are now ready to "log into an Arvados VM":#login.
+Paste the public key from the previous section into the popup text box and click on the check mark to save it.  This should refresh the page with the public key that you just added now listed under the *public_key* column.  You are now ready to "log into an Arvados VM":#login.
 
 h1(#login). Using ssh to log into an Arvados VM
 
