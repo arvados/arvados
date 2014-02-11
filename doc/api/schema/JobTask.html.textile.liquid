@@ -1,0 +1,51 @@
+---
+layout: default
+navsection: api
+navmenu: Schema
+title: JobTask
+
+...
+
+h1. JobTask
+
+A Job Task is a well defined independently-computable portion of a "Job":Job.html.
+
+Job tasks are created two ways:
+* When a job starts, it is seeded with a job task with @sequence=0@ and an empty @parameters{}@ list.
+* Job task A can create additional job tasks B, C, D, which will belong to the same job. Tasks B, C, D will not be performed until job task A is complete. If job task A fails, tasks B, C, D will be deleted.
+
+Job tasks have particular update semantics:
+* Progress reporting: A job task should only be <code>PATCH</code>ed by a worker process which has been dispatched to work on that task and is reporting progress or completion status &mdash; and by the job manager itself.
+* Completion: When a job task process terminates, the task is considered complete only if its most recent @PATCH@ transaction had @progress=1.0@ and @success=true@.
+* Temporary failure: If a job task process terminates without updating @success@ to @true@ or @false@, it is assumed that the task failed but is worth re-attempting (at a different time, on a different node, etc).
+
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":/api/methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/job_tasks@
+
+h2. Resources
+
+Each JobTask has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|sequence|integer|Execution sequence.
+A step cannot be run until all steps with lower sequence numbers have completed.
+Job steps with the same sequence number can be run in any order.||
+|parameters{}|list|||
+|output|text|||
+|progress|float|||
+|success|boolean|Is null if the task has neither completed successfully nor failed permanently.||
+
+The following attributes should not be updated by anyone other than the job manager:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Notes|
+|qsequence|integer|Order of arrival|0-based|
+|job_uuid|string|||
+|created_by_job_task_uuid|string|||
+
+

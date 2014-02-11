@@ -65,6 +65,10 @@ Server::Application.configure do
   config.crunch_job_wrapper = :slurm_immediate
   config.crunch_job_user = 'crunch' # if false, do not set uid when running jobs
 
+  # The web service must be able to create/write this file, and
+  # crunch-job must be able to stat() it.
+  config.crunch_refresh_trigger = '/tmp/crunch_refresh_trigger'
+
   # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
 
   # config.compute_node_ami = 'ami-cbca41a2'

@@ -30,4 +30,16 @@ class JobsController < ApplicationController
   def show
     generate_provenance([@object])
   end
+
+  def index_pane_list
+    if params[:uuid]
+      %w(Recent Provenance)
+    else
+      %w(Recent)
+    end
+  end
+
+  def show_pane_list
+    %w(Attributes Provenance Metadata JSON API)
+  end
 end

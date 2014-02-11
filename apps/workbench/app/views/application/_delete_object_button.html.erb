@@ -1,0 +1,5 @@
+<% if object.editable? %>
+  <%= link_to({action: 'destroy', id: object.uuid}, method: :delete, remote: true, data: {confirm: "You are about to delete #{object.class} #{object.uuid}.\n\nAre you sure?"}) do %>
+    <i class="glyphicon glyphicon-trash"></i>
+  <% end %>
+<% end %>

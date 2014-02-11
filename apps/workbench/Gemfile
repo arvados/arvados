@@ -24,9 +24,9 @@ group :assets do
 end
 
 gem 'jquery-rails'
-gem 'twitter-bootstrap-rails'
-gem 'anjlab-bootstrap-rails', '~> 2.3', :require => 'bootstrap-rails'
-gem 'bootstrap-editable-rails'
+gem 'bootstrap-sass', '~> 3.1.0'
+gem 'bootstrap-x-editable-rails'
+
 gem 'less'
 gem 'less-rails'
 

@@ -1,0 +1,45 @@
+---
+layout: default
+navsection: api
+navmenu: Schema
+title: Collection
+
+...
+
+h1. Collection
+
+This resource concerns metadata, usage accounting, and integrity checks for data stored on the cloud.  Reading and writing the data _per se_ is achieved by the "Keep":/user/tutorials/tutorial-keep.html storage system.
+
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":/api/methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/links@
+
+h3. Conditions of creating a Collection
+
+The @uuid@ and @manifest_text@ attributes must be provided when creating a Collection. The cryptographic digest of the supplied @manifest_text@ must match the supplied @uuid@.
+
+h3. Side effects of creating a Collection
+
+Referenced data can be protected from garbage collection.
+
+Data can be shared with other users via the Arvados permission model.
+
+Clients can request checks of data integrity and storage redundancy.
+
+h2. Resource
+
+Each collection has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|locator|string|||
+|portable_data_hash|string|||
+|name|string|||
+|redundancy|number|||
+|redundancy_confirmed_by_client_uuid|string|API client||
+|redundancy_confirmed_at|datetime|||
+|redundancy_confirmed_as|number|||
+|manifest_text|text|||

@@ -1,0 +1,39 @@
+---
+layout: default
+navsection: api
+navmenu: Schema
+title: Log
+
+...
+
+h1. Log
+
+**Log** objects record events that occur in an Arvados cluster. Both user-written pipelines and the Arvados system itself may generate Log events.
+
+h2. Methods
+
+See "REST methods for working with Arvados resources":/api/methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/log@
+
+h2. Creation
+
+Any user may create Log entries for any event they find useful. User-generated Logs have no intrinsic meaning to other users or to the Arvados system itself; it is up to each user to choose appropriate log event types and summaries for their project.
+
+h3. System Logs
+
+At the time of this writing, the Arvados system uses Logs only to record interactive user shell logins (event type @LOGIN@).
+
+h2. Resources
+
+Each Log has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|object_kind|string|||
+|object_uuid|string|||
+|event_at|datetime|||
+|event_type|string|A user-defined category or type for this event.|@LOGIN@|
+|summary|text|||
+|info|Hash|||
+|updated_at|datetime|||

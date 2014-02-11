@@ -46,10 +46,10 @@ module ProvenanceHelper
       
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
-          puts uuid
+          #puts uuid
           if uuid == :"d41d8cd98f00b204e9800998ecf8427e+0"
             # special case
-            puts "empty!"
+            #puts "empty!"
             return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
           end
           if @pdata[uuid] 

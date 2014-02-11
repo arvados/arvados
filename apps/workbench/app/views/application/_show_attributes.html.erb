@@ -1,1 +1,13 @@
-<%= render partial: 'arvados_object' %>
+<%= form_for @object do |f| %>
+<table class="table topalign">
+  <thead>
+  </thead>
+  <tbody>
+    <% @object.attributes_for_display.each do |attr, attrvalue| %>
+    <%= render partial: 'application/arvados_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
+    <% end %>
+  </tbody>
+</table>
+
+<% end %>
+

@@ -174,25 +174,37 @@ class KeepClient(object):
             return KeepClient.local_store_get(locator)
         expect_hash = re.sub(r'\+.*', '', locator)
         for service_root in self.shuffled_service_roots(expect_hash):
-            h = httplib2.Http()
             url = service_root + expect_hash
             api_token = config.get('ARVADOS_API_TOKEN')
             headers = {'Authorization': "OAuth2 %s" % api_token,
                        'Accept': 'application/octet-stream'}
-            try:
-                resp, content = h.request(url.encode('utf-8'), 'GET',
-                                          headers=headers)
-                if re.match(r'^2\d\d$', resp['status']):
-                    m = hashlib.new('md5')
-                    m.update(content)
-                    md5 = m.hexdigest()
-                    if md5 == expect_hash:
-                        return content
-                    logging.warning("Checksum fail: md5(%s) = %s" % (url, md5))
-            except (httplib2.HttpLib2Error, httplib.ResponseNotReady) as e:
-                logging.info("Request fail: GET %s => %s: %s" %
-                             (url, type(e), str(e)))
+            blob = self.get_url(url, headers, expect_hash)
+            if blob:
+                return blob
+        for location_hint in re.finditer(r'\+K@([a-z0-9]+)', locator):
+            instance = location_hint.group(1)
+            url = 'http://keep.' + instance + '.arvadosapi.com/' + expect_hash
+            blob = self.get_url(url, {}, expect_hash)
+            if blob:
+                return blob
         raise arvados.errors.NotFoundError("Block not found: %s" % expect_hash)
+
+    def get_url(self, url, headers, expect_hash):
+        h = httplib2.Http()
+        try:
+            resp, content = h.request(url.encode('utf-8'), 'GET',
+                                      headers=headers)
+            if re.match(r'^2\d\d$', resp['status']):
+                m = hashlib.new('md5')
+                m.update(content)
+                md5 = m.hexdigest()
+                if md5 == expect_hash:
+                    return content
+                logging.warning("Checksum fail: md5(%s) = %s" % (url, md5))
+        except Exception as e:
+            logging.info("Request fail: GET %s => %s: %s" %
+                         (url, type(e), str(e)))
+        return None
 
     def put(self, data, **kwargs):
         if 'KEEP_LOCAL_STORE' in os.environ:

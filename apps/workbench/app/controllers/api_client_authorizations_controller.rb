@@ -5,4 +5,9 @@ class ApiClientAuthorizationsController < ApplicationController
     end
     super
   end
+
+  def index_pane_list
+    %w(Recent Help)
+  end
+
 end

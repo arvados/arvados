@@ -1,9 +1,3 @@
-<% content_for :js do %>
-  $(window).on('load',
-    $(function() {
-      $('#provenance_graph-tab').on('shown', function() { graph_zoom("provenance_graph_div", "provenance_svg", 1); });
-    }))
-<% end %>
 <%= render partial: 'application/svg_div', locals: {
     divId: "provenance_graph_div", 
     svgId: "provenance_svg", 

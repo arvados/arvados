@@ -1,0 +1,81 @@
+---
+layout: default
+navsection: userguide
+navmenu: Reference
+title: "Command line interface"
+
+...
+
+h1. Reference: Command Line Interface
+
+If you are logged in to an Arvados VM, the command line SDK should be installed. Try:
+
+@arv --help@
+
+<!-- _Help is not helpful.  See bug #1667_ -->
+
+h3. First...
+
+Set the ARVADOS_API_HOST environment variable.
+
+@export ARVADOS_API_HOST={{ site.arvados_api_host }}@
+
+Log in to Workbench and get an API token for your account. Set the ARVADOS_API_TOKEN environment variable.
+
+@export
+ARVADOS_API_TOKEN=c0vdbi8wp7f703lbthyadlvmaivgldxssy3l32isslmax93k9@
+
+If you are using a development instance with an unverifiable SSL certificate, set the ARVADOS_API_HOST_INSECURE environment variable.
+
+@export ARVADOS_API_HOST_INSECURE=1@
+
+<!-- _This should link back to "api-tokens":api-tokens.html instead of
+re-explaining it__ -->
+
+h3. Usage
+
+@arv [global_options] resource_type resource_method [method_parameters]@
+
+<!-- _This is what arv --help really ought to print out_ -->
+
+h3. Basic examples
+
+Get UUID of the current user
+@arv user current@
+
+Get entire record (json) for current user
+@arv -h user current@
+
+Get entire record for identified user
+@arv -h user get --uuid 6dnxa-tpzed-iimd25zhzh84gbk@
+
+Update user record
+@arv user update --uuid 6dnxa-tpzed-iimd25zhzh84gbk --first-name "Bob"@
+
+Get list of groups (showing just UUIDs)
+@arv group list@
+
+Get list of groups (showing entire records)
+@arv -h group list@
+
+Delete a group
+@arv group delete --uuid 6dnxa-j7d0g-iw7i6n43d37jtog@
+
+h3. Global options
+
+<!-- _Move these up to before "basic examples", and give examples of what
+these options do and how they might be useful._ -->
+
+- @--json@, @-j@ := Output entire response as compact JSON.
+
+- @--pretty@, @--human@, @-h@ := Output entire response as JSON with whitespace for better human-readability.
+
+- @--uuid@ := Output only the UUIDs of object(s) in the API response, one per line.
+
+h3. Resource types and methods
+
+Get list of resource types
+@arv --help@
+
+Get list of resource methods for the "user" resource type
+@arv user --help@

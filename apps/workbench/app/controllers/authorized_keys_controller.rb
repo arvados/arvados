@@ -1,6 +1,6 @@
 class AuthorizedKeysController < ApplicationController
   def index_pane_list
-    %w(recent help)
+    %w(Recent Help)
   end
 
   def new

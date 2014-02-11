@@ -2,9 +2,11 @@ class ApplicationController < ActionController::Base
   respond_to :html, :json, :js
   protect_from_forgery
   around_filter :thread_clear
-  around_filter :thread_with_api_token, :except => [:render_exception, :render_not_found]
+  around_filter :thread_with_mandatory_api_token, :except => [:render_exception, :render_not_found]
+  around_filter :thread_with_optional_api_token
   before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
   before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
+  before_filter :check_user_notifications, :except => [:render_exception, :render_not_found]
   theme :select_theme
 
   begin
@@ -141,6 +143,14 @@ class ApplicationController < ActionController::Base
      (@object.friendly_link_name if @object.respond_to? :friendly_link_name))
   end
 
+  def index_pane_list
+    %w(Recent)
+  end
+
+  def show_pane_list
+    %w(Attributes Metadata JSON API)
+  end
+
   protected
     
   def find_object_by_uuid
@@ -227,9 +237,22 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def thread_with_optional_api_token 
-    thread_with_api_token(true) do 
+  def thread_with_mandatory_api_token
+    thread_with_api_token do
       yield
+    end
+  end
+
+  # This runs after thread_with_mandatory_api_token in the filter chain.
+  def thread_with_optional_api_token
+    if Thread.current[:arvados_api_token]
+      # We are already inside thread_with_mandatory_api_token.
+      yield
+    else
+      # We skipped thread_with_mandatory_api_token. Use the optional version.
+      thread_with_api_token(true) do 
+        yield
+      end
     end
   end
 
@@ -275,5 +298,63 @@ class ApplicationController < ActionController::Base
 
   def select_theme
     return Rails.configuration.arvados_theme
+  end
+
+  @@notification_tests = []
+
+  @@notification_tests.push lambda { |controller, current_user|
+    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do   
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/ssh_key_notification'
+    }
+  }
+
+  @@notification_tests.push lambda { |controller, current_user|
+    Job.limit(1).where(created_by: current_user.uuid).each do
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/jobs_notification'
+    }
+  }
+
+  @@notification_tests.push lambda { |controller, current_user|
+    Collection.limit(1).where(created_by: current_user.uuid).each do
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/collections_notification'
+    }
+  }
+
+  @@notification_tests.push lambda { |controller, current_user|
+    PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
+      return nil
+    end
+    return lambda { |view|
+      view.render partial: 'notifications/pipelines_notification'
+    }
+  }
+
+  def check_user_notifications
+    @notification_count = 0
+    @notifications = []
+
+    if current_user
+      @showallalerts = false      
+      @@notification_tests.each do |t|
+        a = t.call(self, current_user)
+        if a
+          @notification_count += 1
+          @notifications.push a
+        end
+      end
+    end
+
+    if @notification_count == 0
+      @notification_count = ''
+    end
   end
 end

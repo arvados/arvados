@@ -1,0 +1,58 @@
+<% outgoing = Link.where(tail_uuid: @object.uuid) %>
+<% incoming = Link.where(head_uuid: @object.uuid) %>
+
+<h3>Metadata about this object</h3>
+<% if outgoing.items_available > 0 %>
+<table class="table topalign">
+  <thead>
+    <tr>
+      <th>metadata uuid</th>
+      <th>class</th>
+      <th>name</th>
+      <th>properties</th>
+      <th>object</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% outgoing.each do |link| %>
+      <tr>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "name", attrvalue: link.name } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "head_uuid", attrvalue: link.head_uuid } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<% else %>
+No metadata.
+<% end %>
+
+<h3>Metadata that refers to this object</h3>
+<% if outgoing.items_available > 0 %>
+<table class="table topalign">
+  <thead>
+    <tr>
+      <th>metadata uuid</th>
+      <th>subject</th>
+      <th>class</th>
+      <th>name</th>
+      <th>properties</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% incoming.each do |link| %>
+      <tr>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "uuid", attrvalue: link.uuid } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "tail_uuid", attrvalue: link.tail_uuid } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "link_class", attrvalue: link.link_class } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "name", attrvalue: link.name } %></td>
+        <td><%= render partial: 'application/arvados_attr_value', locals: { obj: link, attr: "properties", attrvalue: link.properties } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+<% else %>
+No metadata.
+<% end %>
