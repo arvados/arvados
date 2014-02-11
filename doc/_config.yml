@@ -1,4 +1,4 @@
-exclude: ["Rakefile", "tmp"]
+exclude: ["Rakefile", "tmp", "vendor"]
 baseurl: /doc
 arvados_api_host: qr1hi.arvadosapi.com
 
