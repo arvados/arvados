@@ -65,9 +65,11 @@ ArvadosWorkbench::Application.configure do
   # with SQLite, MySQL, and PostgreSQL)
   # config.active_record.auto_explain_threshold_in_seconds = 0.5
 
+  # Log timing data for API transactions
+  config.profiling_enabled = false
+
   config.arvados_login_base = 'https://' + ENV['API_PORT_443_TCP_ADDR'].to_s + '/login'
   config.arvados_v1_base = 'https://' + ENV['API_PORT_443_TCP_ADDR'].to_s + '/arvados/v1'
-
   config.arvados_insecure_https = @@WORKBENCH_INSECURE_HTTPS@@ # true = do not check server certificate
 
   config.data_import_dir = '@@WORKBENCH_DATA_IMPORT_DIR@@'
@@ -81,4 +83,9 @@ ArvadosWorkbench::Application.configure do
 
   config.site_name = '@@WORKBENCH_SITE_NAME@@'
   config.activation_contact_link = '@@WORKBENCH_ACTIVATION_CONTACT_LINK@@'
+  config.arvados_docsite = 'http://doc.arvados.org'
+
+  config.arvados_theme = 'default'
+
+  config.show_user_agreement_inline = false
 end
