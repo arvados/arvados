@@ -145,20 +145,20 @@
         </li>        
         -->
 
-        <li class="dropdown">
+        <li class="dropdown notification-menu">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <span class="glyphicon glyphicon-envelope"></span>
-            <span class="badge badge-alert"><%= @notification_count %></span>
+            <span class="badge badge-alert notification-count"><%= @notification_count %></span>
             <span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
             <% if @notifications.length > 0 %>
               <% @notifications.each_with_index do |n, i| %>
                 <% if i > 0 %><li class="divider"></li><% end %>
-                <li style="padding: 10px"><%= n.call(self) %></li>
+                <li class="notification"><%= n.call(self) %></li>
               <% end %>
             <% else %>
-              <li style="padding: 10px">No notifications.</li>
+              <li class="notification empty">No notifications.</li>
             <% end %>
           </ul>
         </li>        
