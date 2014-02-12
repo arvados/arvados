@@ -1,7 +1,7 @@
 # Arvados Documentation Docker container.
 
 FROM arvados/base
-maintainer Ward Vandewege <ward@clinicalfuture.com>
+maintainer Ward Vandewege <ward@curoverse.com>
 
 # Install packages
 RUN /bin/mkdir -p /usr/src/arvados && \
