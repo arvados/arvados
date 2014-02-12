@@ -17,7 +17,7 @@ h2. Installing GATK
 Download the GATK binary tarball[1] -- e.g., @GenomeAnalysisTK-2.6-4.tar.bz2@ -- and "copy it to your Arvados VM":tutorial-keep.html.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep put GenomeAnalysisTK-2.6-4.tar.bz2</span>
+<pre><code>~$ <span class="userinput">arv keep put GenomeAnalysisTK-2.6-4.tar.bz2</span>
 c905c8d8443a9c44274d98b7c6cfaa32+94
 </code></pre>
 </notextile>
@@ -25,7 +25,7 @@ c905c8d8443a9c44274d98b7c6cfaa32+94
 Next, you need the GATK Resource Bundle[2].  This may already be available in Arvados.  If not, you will need to download the files listed below and put them into Keep.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep ls -s d237a90bae3870b3b033aea1e99de4a9+10820</span>
+<pre><code>~$ <span class="userinput">arv keep ls -s d237a90bae3870b3b033aea1e99de4a9+10820</span>
   50342 1000G_omni2.5.b37.vcf.gz
       1 1000G_omni2.5.b37.vcf.gz.md5
     464 1000G_omni2.5.b37.vcf.idx.gz
@@ -94,11 +94,11 @@ h2. Submit a GATK job
 The Arvados distribution includes an example crunch script ("crunch_scripts/GATK2-VariantFiltration":https://arvados.org/projects/arvados/repository/revisions/master/entry/crunch_scripts/GATK2-VariantFiltration) that runs the GATK VariantFiltration tool with some default settings.
 
 <notextile>
-<pre><code>$ <span class="userinput">src_version=76588bfc57f33ea1b36b82ca7187f465b73b4ca4</span>
-$ <span class="userinput">vcf_input=5ee633fe2569d2a42dd81b07490d5d13+82</span>
-$ <span class="userinput">gatk_binary=c905c8d8443a9c44274d98b7c6cfaa32+94</span>
-$ <span class="userinput">gatk_bundle=d237a90bae3870b3b033aea1e99de4a9+10820</span>
-$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
+<pre><code>~$ <span class="userinput">src_version=76588bfc57f33ea1b36b82ca7187f465b73b4ca4</span>
+~$ <span class="userinput">vcf_input=5ee633fe2569d2a42dd81b07490d5d13+82</span>
+~$ <span class="userinput">gatk_binary=c905c8d8443a9c44274d98b7c6cfaa32+94</span>
+~$ <span class="userinput">gatk_bundle=d237a90bae3870b3b033aea1e99de4a9+10820</span>
+~$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
 {
  "script":"GATK2-VariantFiltration",
  "script_version":"$src_version",
@@ -120,7 +120,7 @@ EOF</span>
 Now start a job:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
+<pre><code>~$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-n9k7qyp7bs5b9d4",
  "kind":"arvados#job",
@@ -160,7 +160,7 @@ Now start a job:
  ],
  "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-n9k7qyp7bs5b9d4/log_tail_follow"
 }
-$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-n9k7qyp7bs5b9d4</span>
+~$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-n9k7qyp7bs5b9d4</span>
 Tue Dec 17 19:02:16 2013 salloc: Granted job allocation 1251
 Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  check slurm allocation
 Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  node compute13 - 8 slots
@@ -204,7 +204,7 @@ Tue Dec 17 19:04:12 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  log manifest is 1e77a
 
 Once the job completes, the output can be found in hu34D5B9-exome-filtered.vcf:
 
-<notextile><pre><code>$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91</span>
+<notextile><pre><code>~$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91</span>
 hu34D5B9-exome-filtered.vcf
 </code></pre>
 </notextile>
