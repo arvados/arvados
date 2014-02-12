@@ -46,6 +46,13 @@ $ <span class="userinput">export ARVADOS_API_TOKEN=2jv9346o3966345u7ueuim7a1zaao
 * @ARVADOS_API_HOST@ tells @arv@ which host to connect to
 * @ARVADOS_API_TOKEN@ is the secret key used by the Arvados API server to authenticate access.
 
+If you are connecting to a development instance with a unverified/self-signed SSL certificate, set this variable to skip SSL validation:
+
+<notextile>
+<pre><code>$ <span class="userinput">export ARVADOS_API_HOST_INSECURE=1
+</code></pre>
+</notextile>
+
 h2. settings.conf
 
 Arvados tools will also look for the authentication information in @~/.config/arvados/settings.conf@. If you have already put the variables into the environment with instructions above, you can use these commands to create an Arvados configuration file:

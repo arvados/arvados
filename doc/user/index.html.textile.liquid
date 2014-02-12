@@ -36,10 +36,12 @@ This manual uses the following typographic conventions:
 
 <notextile>
 <ul>
-<li>Code blocks which are set aside from the text indicate user input to the system.  Commands that should be entered into a Unix shell are indicated with a '$' at the beginning of the line, and the entire user input <span class="userinput">will be highlighted</span>, possibly followed by example command output in black:
-<pre><code>$ <span class="userinput">ls foo</span>
+<li>Code blocks which are set aside from the text indicate user input to the system.  Commands that should be entered into a Unix shell are indicated by the directory where you should  enter the command ('~' indicates your home directory) followed by '$', followed by the highlighted <span class="userinput">command to enter</span> (do not enter the '$'), and possibly followed by example command output in black.  For example, the following block indicates that you should type "ls foo" while in your home directory and the expected output will be "foo".
+
+<pre><code>~$ <span class="userinput">ls foo</span>
 foo
 </code></pre></li>
+
 <li>Code blocks inline with text emphasize specific <code>programs</code>, <code>files</code>, or <code>options</code> that are being discussed.</li>
 <li>Bold text emphasizes <b>specific items</b> to look when discussing Arvados Workbench pages.</li>
 <li>A sequence of steps separated by right arrows (<span class="rarr">&rarr;</span>) indicate a path the user should follow through the Arvados Workbench to access some piece of information under discussion.  The steps indicate a menu, hyperlink, column name, field name, or other label on the page that guide the user where to look or click.
