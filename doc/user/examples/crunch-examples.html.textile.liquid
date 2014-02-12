@@ -18,6 +18,7 @@ Run the bwa aligner on a set of paired-end fastq files, producing a BAM file for
 table(table table-bordered table-condensed).
 |_Parameter_|_Description_|_Example_|
 |bwa_tbz|Collection with the bwa source distribution.|@8b6e2c4916133e1d859c9e812861ce13+70@|
+|samtools_tgz|Collection with the samtools source distribution.|@c777e23cf13e5d5906abfdc08d84bfdb+74@|
 |input|Collection with fastq reads (pairs of *_1.fastq.gz and *_2.fastq.gz).|@d0136bc494c21f79fc1b6a390561e6cb+2778@|
 </div>
 
@@ -40,7 +41,7 @@ Using the FixMateInformation, SortSam, ReorderSam, AddOrReplaceReadGroups, and B
 table(table table-bordered table-condensed).
 |_Parameter_|_Description_|_Example_|
 |input|Collection containing aligned bam files.||
-|picard_zip|Collection with the picard binary distribution.||
+|picard_zip|Collection with the picard binary distribution.|@687f74675c6a0e925dec619cc2bec25f+77@|
 |reference|Collection with reference data (*.fasta.gz, *.fasta.fai.gz, *.dict.gz).|@c361dbf46ee3397b0958802b346e9b5a+925@|
 </div>
 
@@ -52,8 +53,8 @@ Run GATK's RealignerTargetCreator and IndelRealigner modules on a set of BAM fil
 table(table table-bordered table-condensed).
 |_Parameter_|_Description_|_Example_|
 |input|Collection containing aligned bam files.||
-|picard_zip|Collection with the picard binary distribution.||
-|gatk_tbz|Collection with the GATK2 binary distribution.||
+|picard_zip|Collection with the picard binary distribution.|@687f74675c6a0e925dec619cc2bec25f+77@|
+|gatk_tbz|Collection with the GATK2 binary distribution.|@7e0a277d6d2353678a11f56bab3b13f2+87@|
 |gatk_bundle|Collection with the GATK data bundle.|@d237a90bae3870b3b033aea1e99de4a9+10820@|
 |known_sites|List of files in the data bundle to use as GATK @-known@ arguments. Optional. |@["dbsnp_137.b37.vcf","Mills_and_1000G_gold_standard.indels.b37.vcf"]@ (this is the default value)|
 |regions|Collection with .bed files indicating sequencing target regions. Optional.||
@@ -68,7 +69,7 @@ Run GATK's BaseQualityScoreRecalibration module on a set of BAM files. "View sou
 table(table table-bordered table-condensed).
 |_Parameter_|_Description_|_Example_|
 |input|Collection containing bam files.||
-|gatk_tbz|Collection with the GATK2 binary distribution.||
+|gatk_tbz|Collection with the GATK2 binary distribution.|@7e0a277d6d2353678a11f56bab3b13f2+87@|
 |gatk_bundle|Collection with the GATK data bundle.|@d237a90bae3870b3b033aea1e99de4a9+10820@|
 </div>
 
@@ -80,8 +81,8 @@ Merge a set of BAM files using picard, and run GATK's UnifiedGenotyper module on
 table(table table-bordered table-condensed).
 |_Parameter_|_Description_|_Example_|
 |input|Collection containing bam files.||
-|picard_zip|Collection with the picard binary distribution.||
-|gatk_tbz|Collection with the GATK2 binary distribution.||
+|picard_zip|Collection with the picard binary distribution.|@687f74675c6a0e925dec619cc2bec25f+77@|
+|gatk_tbz|Collection with the GATK2 binary distribution.|@7e0a277d6d2353678a11f56bab3b13f2+87@|
 |gatk_bundle|Collection with the GATK data bundle.|@d237a90bae3870b3b033aea1e99de4a9+10820@|
 |regions|Collection with .bed files indicating sequencing target regions. Optional.||
 |region_padding|Corresponds to GATK @--interval_padding@ argument. Required if a regions parameter is given.|10|
