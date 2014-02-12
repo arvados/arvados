@@ -76,6 +76,12 @@ sub execute
                     if (ref $property eq '' || $property eq undef) {
                         $param_value{$property_name} = $property;
                     }
+                    elsif (ref $property eq 'HASH') {
+                        $param_value{$property_name} = {};
+                        while (my ($k, $v) = each %$property) {
+                            $param_value{$property_name}->{$k} = $v;
+                        }
+                    }
                 }
             }
             $body_params{$param_name} = \%param_value;
