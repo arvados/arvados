@@ -4,22 +4,18 @@ ENABLE_SSH=false
 
 function usage {
     echo >&2
-    echo >&2 "usage: $0 (start|stop|test) [options]"
+    echo >&2 "usage: $0 (start|stop|restart|test) [options]"
     echo >&2
-    echo >&2 "$0 start options:"
-    echo >&2 "  -d [port], --doc[=port]        Start documentation server (default port 9898)"
-    echo >&2 "  -w [port], --workbench[=port]  Start workbench server (default port 9899)"
-    echo >&2 "  -s [port], --sso[=port]        Start SSO server (default port 9901)"
-    echo >&2 "  -a [port], --api[=port]        Start API server (default port 9900)"
-    echo >&2 "  -k, --keep                     Start Keep servers"
+    echo >&2 "$0 start/stop/restart options:"
+    echo >&2 "  -d [port], --doc[=port]        Documentation server (default port 9898)"
+    echo >&2 "  -w [port], --workbench[=port]  Workbench server (default port 9899)"
+    echo >&2 "  -s [port], --sso[=port]        SSO server (default port 9901)"
+    echo >&2 "  -a [port], --api[=port]        API server (default port 9900)"
+    echo >&2 "  -k, --keep                     Keep servers"
     echo >&2 "  --ssh                          Enable SSH access to server containers"
     echo >&2 "  -h, --help                     Display this help and exit"
     echo >&2
-    echo >&2 "  If no switches are given, the default is to start all"
-    echo >&2 "  servers on the default ports."
-    echo >&2
-    echo >&2 "$0 stop"
-    echo >&2 "  Stop all servers."
+    echo >&2 "  If no options are given, the action is applied to all servers."
     echo >&2
     echo >&2 "$0 test [testname] [testname] ..."
     echo >&2 "  By default, all tests are run."
@@ -231,19 +227,69 @@ ARVADOS_API_HOST=$(ip_address "api_server")
 ARVADOS_API_HOST_INSECURE=yes
 ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 EOF
-
-        echo "To run a test suite:"
-	echo "python -m unittest discover ../sdk/python"
     fi
 }
 
 function do_stop {
-    docker stop doc_server \
-	api_server \
-	sso_server \
-	workbench_server \
-	keep_server_0 \
-	keep_server_1 2>/dev/null
+    local stop_doc=""
+    local stop_sso=""
+    local stop_api=""
+    local stop_workbench=""
+    local stop_keep=""
+
+    # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
+    local TEMP=`getopt -o d::s::a::w::kh \
+                  --long doc::,sso::,api::,workbench::,keep,help,ssh \
+                  -n "$0" -- "$@"`
+
+    if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
+
+    # Note the quotes around `$TEMP': they are essential!
+    eval set -- "$TEMP"
+
+    while [ $# -ge 1 ]
+    do
+        case $1 in
+	    -d | --doc)
+		stop_doc=doc_server ; shift 2 ;;
+	    -s | --sso)
+		stop_sso=sso_server ; shift 2 ;;
+	    -a | --api)
+		stop_api=api_server ; shift 2 ;;
+	    -w | --workbench)
+		stop_workbench=workbench_server ; shift 2 ;;
+	    -k | --keep )
+		stop_keep="keep_server_0 keep_server_1" ; shift ;;
+	    --ssh)
+		shift
+		;;
+	    --)
+		shift
+		break
+		;;
+	    *)
+		usage
+		exit 1
+		;;
+	esac
+    done
+
+    # If no options were selected, then start all servers.
+    if [[ $stop_doc == "" &&
+	  $stop_sso == "" &&
+	  $stop_api == "" &&
+	  $stop_workbench == "" &&
+	  $stop_keep == "" ]]
+    then
+	stop_doc=doc_server
+	stop_sso=sso_server
+	stop_api=api_server
+	stop_workbench=workbench_server
+	stop_keep="keep_server_0 keep_server_1"
+    fi
+
+    docker stop $stop_doc $stop_sso $stop_api $stop_workbench $stop_keep \
+	2>/dev/null
 }
 
 function do_test {
@@ -291,6 +337,11 @@ case $1 in
     stop)
 	shift
 	do_stop $@
+	;;
+    restart)
+	shift
+	do_stop $@
+	do_start $@
 	;;
     test)
 	shift
