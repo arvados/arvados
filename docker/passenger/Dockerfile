@@ -1,7 +1,7 @@
 # Arvados passenger image
 
 FROM arvados/base
-MAINTAINER Ward Vandewege <ward@clinicalfuture.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # Install packages and build the passenger apache module
 RUN apt-get update && \

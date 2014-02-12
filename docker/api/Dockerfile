@@ -1,7 +1,7 @@
 # Arvados API server Docker container.
 
 FROM arvados/passenger
-MAINTAINER Tim Pierce <twp@clinicalfuture.com>
+MAINTAINER Tim Pierce <twp@curoverse.com>
 
 # Install postgres and apache.
 # Clone a git repository of Arvados source -- not used to build, but
