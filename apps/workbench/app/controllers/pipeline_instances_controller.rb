@@ -95,6 +95,7 @@ class PipelineInstancesController < ApplicationController
       highscore = {}           # attr => how common "normal" is
       score = {}               # attr => { value => how common }
       row[:components].each do |pj|
+        next if pj.nil?
         pj.each do |k,v|
           vstr = for_comparison v
           score[k] ||= {}
@@ -113,6 +114,7 @@ class PipelineInstancesController < ApplicationController
 
       # Add a hash in component[:is_normal]: { attr => is_the_value_normal? }
       row[:components].each do |pj|
+        next if pj.nil?
         pj[:is_normal] = {}
         pj.each do |k,v|
           pj[:is_normal][k] = (normal.has_key?(k) && normal[k] == for_comparison(v))
