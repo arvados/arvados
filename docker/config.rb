@@ -3,6 +3,8 @@
 require 'yaml'
 require 'fileutils'
 
+abort 'Error: Ruby >= 1.9.3 required.' if RUBY_VERSION < '1.9.3'
+
 # Initialize config settings from config.yml
 config = YAML.load_file('config.yml')
 
