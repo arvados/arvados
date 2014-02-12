@@ -6,7 +6,13 @@ class StaticController < ApplicationController
   skip_before_filter :require_auth_scope_all, :only => [ :home, :login_failure ]
 
   def home
-    redirect_to Rails.configuration.workbench_address
+    if Rails.configuration.respond_to? :workbench_address
+      redirect_to Rails.configuration.workbench_address
+    else
+      render json: {
+        error: ('This is the API server; you probably want to be at the workbench for this installation. Unfortunately, config.workbench_address is not set so I can not redirect you there automatically')
+      }
+    end
   end
 
 end

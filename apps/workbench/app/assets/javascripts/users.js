@@ -1,8 +1,15 @@
 $(document).
+    on('notifications:recount',
+       function() {
+           var menu = $('.notification-menu');
+           n = $('.notification', menu).not('.empty').length;
+           $('.notification-count', menu).html(n>0 ? n : '');
+       }).
     on('ajax:success', 'form.new_authorized_key',
        function(e, data, status, xhr) {
-           $(e.target).parents('div.daxalert').fadeOut('slow', function() {
-               $('<div class="alert alert-success daxalert"><button type="button" class="close" data-dismiss="alert">&times;</button><p>Key added.</p></div>').hide().replaceAll(this).fadeIn('slow');
+           $(e.target).parents('.notification').eq(0).fadeOut('slow', function() {
+               $('<li class="alert alert-success daxalert">SSH key added.</li>').hide().replaceAll(this).fadeIn('slow');
+               $(document).trigger('notifications:recount');
            });
        }).
     on('ajax:complete', 'form.new_authorized_key',

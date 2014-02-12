@@ -6,7 +6,7 @@ ServerName doc.arvados.org
 
   ServerName doc.arvados.org
 
-  DocumentRoot /usr/src/arvados/doc/_site/
+  DocumentRoot /usr/src/arvados/doc/.site/
 
 </VirtualHost>
 
