@@ -7,11 +7,11 @@ function usage {
     echo >&2 "usage: $0 (start|stop|restart|test) [options]"
     echo >&2
     echo >&2 "$0 start/stop/restart options:"
-    echo >&2 "  -d [port], --doc[=port]        Start documentation server (default port 9898)"
-    echo >&2 "  -w [port], --workbench[=port]  Start workbench server (default port 9899)"
-    echo >&2 "  -s [port], --sso[=port]        Start SSO server (default port 9901)"
-    echo >&2 "  -a [port], --api[=port]        Start API server (default port 9900)"
-    echo >&2 "  -k, --keep                     Start Keep servers"
+    echo >&2 "  -d [port], --doc[=port]        Documentation server (default port 9898)"
+    echo >&2 "  -w [port], --workbench[=port]  Workbench server (default port 9899)"
+    echo >&2 "  -s [port], --sso[=port]        SSO server (default port 9901)"
+    echo >&2 "  -a [port], --api[=port]        API server (default port 9900)"
+    echo >&2 "  -k, --keep                     Keep servers"
     echo >&2 "  --ssh                          Enable SSH access to server containers"
     echo >&2 "  -h, --help                     Display this help and exit"
     echo >&2
