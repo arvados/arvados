@@ -23,6 +23,60 @@ from stream import *
 import config
 import errors
 
+def normalize(collection):
+    streams = {}
+    for s in collection.all_streams():
+        for f in s.all_files():
+            filestream = s.name() + "/" + f.name()
+            r = filestream.rindex("/")
+            streamname = filestream[:r]
+            filename = filestream[r+1:]
+            if streamname not in streams:
+                streams[streamname] = {}
+            if filename not in streams[streamname]:
+                streams[streamname][filename] = []
+            print streamname, filename
+            streams[streamname][filename].extend(s.locators_and_ranges(f.stream_offset(), f.size()))
+            
+    manifest = ""
+    sortedstreams = list(streams.keys())
+    sortedstreams.sort()
+    import pprint
+    pprint.pprint(streams)
+    for s in sortedstreams:
+        stream = streams[s]
+        manifest += s
+        sortedfiles = list(stream.keys())
+        sortedfiles.sort()
+        for f in sortedfiles:
+            fn = stream[f]
+            for chunk in fn:
+                manifest += " " + chunk[StreamReader.LOCATOR]
+        for f in sortedfiles:
+            fn = stream[f]
+            streamoffset = 0L
+            fileoffset = 0L
+            easy = True
+            for chunk in fn:
+                if chunk[StreamReader.CHUNKOFFSET] != 0 or streamoffset != fileoffset:
+                    easy = False
+                streamoffset += chunk[StreamReader.BLOCKSIZE]
+                fileoffset += chunk[StreamReader.CHUNKSIZE]
+
+            if easy:
+                manifest += " " + "{0}:{1}:{2}".format(0, fileoffset, f)
+            else:
+                streamoffset = 0
+                fileoffset = 0
+                # not easy
+                for chunk in fn:
+                    manifest += " " + "{0}:{1}:{2}".format(streamoffset + chunk[StreamReader.CHUNKOFFSET], chunk[StreamReader.CHUNKSIZE], f)
+                    streamoffset += chunk[StreamReader.BLOCKSIZE]
+                    fileoffset += chunk[StreamReader.CHUNKSIZE]
+
+        manifest += "\n"
+    return manifest
+
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
         if re.search(r'^\S+( [a-f0-9]{32,}(\+\S+)*)+( \d+:\d+:\S+)+\n', manifest_locator_or_text):

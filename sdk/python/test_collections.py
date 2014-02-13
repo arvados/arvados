@@ -205,3 +205,51 @@ class LocalCollectionGzipDecompressionTest(unittest.TestCase):
         self.assertEqual(got,
                          n_lines_in,
                          "decompression returned %d lines instead of %d" % (got, n_lines_in))
+
+class NormalizedCollectionTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def runTest(self):
+        m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt"""
+        self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m1)),
+                         """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt
+""")
+
+        m2 = """. 204e43b8a1185621ca55a94839582e6f+67108864 b9677abbac956bd3e86b1deb28dfac03+67108864 fc15aff2a762b13f521baf042140acec+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:227212247:var-GS000016015-ASM.tsv.bz2
+"""
+        self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m2)), m2)
+
+        m3 = """. 5348b82a029fd9e971a811ce1f71360b+43 3:40:md5sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt"""
+        self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m3)),
+                         """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:40:md5sum.txt 43:41:md5sum.txt 84:43:md5sum.txt
+""")
+
+        m4 = """. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+./foo 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar"""
+        self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m4)),
+                         """./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+""")
+
+        m5 = """. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+./foo 204e43b8a1185621ca55a94839582e6f+67108864 3:3:bar"""
+        self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m5)),
+                         """./foo 204e43b8a1185621ca55a94839582e6f+67108864 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar 67108867:3:bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+""")
+
+        with open('gatkmanifest') as f6:
+            m6 = f6.read()
+            m6n = arvados.collection.normalize(arvados.CollectionReader(m6))
+            with open('gatkmanifest_normalized', 'w') as f6n:
+                f6n.write(m6n)
+            
+            #self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m6)), m6)
+

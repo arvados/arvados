@@ -101,6 +101,9 @@ class StreamFileReader(object):
         if data != '':
             yield data
 
+    def stream_offset(self):
+        return self._pos
+
     def as_manifest(self):
         if self.size() == 0:
             return ("%s %s 0:0:%s\n"
@@ -114,7 +117,7 @@ class StreamReader(object):
         self._current_datablock_data = None
         self._current_datablock_pos = 0
         self._current_datablock_index = -1
-        self._pos = 0
+        self._pos = 0L
 
         self._stream_name = None
         self.data_locators = []
@@ -127,7 +130,7 @@ class StreamReader(object):
                 self.data_locators += [tok]
             elif re.search(r'^\d+:\d+:\S+', tok):
                 pos, size, name = tok.split(':',2)
-                self.files += [[int(pos), int(size), name.replace('\\040', ' ')]]
+                self.files += [[long(pos), long(size), name.replace('\\040', ' ')]]
             else:
                 raise errors.SyntaxError("Invalid manifest format")
 
@@ -161,6 +164,47 @@ class StreamReader(object):
                 and
                 f[1] > 0):
                 resp += ["%d:%d:%s" % (f[0] - token_bytes_skipped, f[1], f[2])]
+        return resp
+
+    LOCATOR = 0
+    BLOCKSIZE = 1
+    CHUNKOFFSET = 2
+    CHUNKSIZE = 3
+
+    def locators_and_ranges(self, range_start, range_size):
+        '''returns list of [block locator, blocksize, chunk offset, chunk size] that satisfies the range'''
+        print 'locators_and_ranges', range_start, range_size
+        resp = []
+        return_all_tokens = False
+        range_start = long(range_start)
+        range_size = long(range_size)
+        range_end = range_start + range_size
+        block_start = 0L
+        for locator in self.data_locators:
+            sizehint = re.search(r'[0-9a-f]{32}\+(\d+)', locator)
+            if not sizehint:
+                raise Exception("Manifest must include block sizes to be normalized")
+            block_size = long(sizehint.group(1))
+            block_end = block_start + block_size
+            if range_end < block_start:
+                # range ends before this block starts, so don't look at any more locators
+                break
+            if range_start > block_end:
+                # range starts after this block ends, so go to next block
+                next
+            elif range_start >= block_start and range_end <= block_end:
+                # range starts and ends in this block
+                resp.append([locator, block_size, range_start - block_start, range_size])
+            elif range_start >= block_start:
+                # range starts in this block
+                resp.append([locator, block_size, range_start - block_start, block_end - range_start])
+            elif range_start < block_start and range_end > block_end:
+                # range starts in a previous block and extends to further blocks
+                resp.append([locator, block_size, 0L, block_size])
+            elif range_start < block_start and range_end <= block_end:
+                # range starts in a previous block and ends in this block
+                resp.append([locator, block_size, 0L, range_end - block_start])
+            block_start = block_end
         return resp
 
     def name(self):
