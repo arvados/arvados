@@ -33,14 +33,14 @@ class Collection < ArvadosModel
         self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
         true
       else
-        errors.add :uuid, 'uuid does not match checksum of manifest_text'
+        errors.add :uuid, 'does not match checksum of manifest_text'
         false
       end
     elsif self.manifest_text
-      errors.add :uuid, 'checksum for manifest_text not supplied in uuid'
+      errors.add :uuid, 'not supplied (must match checksum of manifest_text)'
       false
     else
-      errors.add :manifest_text, 'manifest_text not supplied'
+      errors.add :manifest_text, 'not supplied'
       false
     end
   end
@@ -99,5 +99,21 @@ class Collection < ArvadosModel
         end
       end
     end
+  end
+
+  def self.normalize_uuid uuid
+    hash_part = nil
+    size_part = nil
+    uuid.split('+').each do |token|
+      if token.match /^[0-9a-f]{32,}$/
+        raise "uuid #{uuid} has multiple hash parts" if hash_part
+        hash_part = token
+      elsif token.match /^\d+$/
+        raise "uuid #{uuid} has multiple size parts" if size_part
+        size_part = token
+      end
+    end
+    raise "uuid #{uuid} has no hash part" if !hash_part
+    [hash_part, size_part].compact.join '+'
   end
 end
