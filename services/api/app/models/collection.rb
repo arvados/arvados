@@ -8,6 +8,10 @@ class Collection < ArvadosModel
     t.add :files
   end
 
+  api_accessible :with_data, extend: :user do |t|
+    t.add :manifest_text
+  end
+
   def redundancy_status
     if redundancy_confirmed_as.nil?
       'unconfirmed'
