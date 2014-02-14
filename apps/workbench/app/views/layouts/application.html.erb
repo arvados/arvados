@@ -178,7 +178,7 @@
       </div>
       <div class="col-sm-3 left-nav">
         <div class="arvados-nav-container">
-        <% if current_user %>
+        <% if current_user.andand.is_active %>
         <div class="well">
         <ul class="arvados-nav">
           <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
