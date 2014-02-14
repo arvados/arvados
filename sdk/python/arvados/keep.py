@@ -138,6 +138,10 @@ class KeepClient(object):
     def __init__(self):
         self.lock = threading.Lock()
         self.service_roots = None
+        self._cache_lock = threading.Lock()
+        self._cache = []
+        # default 256 megabyte cache
+        self._cache_max = 256 * 1024 * 1024
 
     def shuffled_service_roots(self, hash):
         if self.service_roots == None:
@@ -173,6 +177,11 @@ class KeepClient(object):
         if 'KEEP_LOCAL_STORE' in os.environ:
             return KeepClient.local_store_get(locator)
         expect_hash = re.sub(r'\+.*', '', locator)
+
+        c = self.check_cache(expect_hash)
+        if c:
+            return c
+
         for service_root in self.shuffled_service_roots(expect_hash):
             url = service_root + expect_hash
             api_token = config.get('ARVADOS_API_TOKEN')
@@ -180,12 +189,15 @@ class KeepClient(object):
                        'Accept': 'application/octet-stream'}
             blob = self.get_url(url, headers, expect_hash)
             if blob:
+                self.put_cache(expect_hash, blob)
                 return blob
+
         for location_hint in re.finditer(r'\+K@([a-z0-9]+)', locator):
             instance = location_hint.group(1)
             url = 'http://keep.' + instance + '.arvadosapi.com/' + expect_hash
             blob = self.get_url(url, {}, expect_hash)
             if blob:
+                self.put_cache(expect_hash, blob)
                 return blob
         raise arvados.errors.NotFoundError("Block not found: %s" % expect_hash)
 
@@ -233,6 +245,37 @@ class KeepClient(object):
         raise arvados.errors.KeepWriteError(
             "Write fail for %s: wanted %d but wrote %d" %
             (data_hash, want_copies, have_copies))
+
+    def put_cache(self, locator, data):
+        """Put a block into the cache."""
+        if self.check_cache(locator) != None:
+            return
+        self.cache_lock.acquire()
+        try:
+            # first check cache size and delete stuff from the end if necessary
+            sm = sum([len(a[1]) for a in self._cache]) + len(data)
+            while sum > self._cache_max:
+                del self._cache[-1]
+                sm = sum([len(a[1]) for a in self._cache]) + len(data)
+
+            # now add the new block at the front of the list
+            self._cache.insert(0, [locator, data])
+        finally:
+            self.cache_lock.release()
+
+    def check_cache(self, locator):
+        """Get a block from the cache.  Also moves the block to the front of the list."""
+        self._cache_lock.acquire()
+        try:
+            for i in xrange(0, len(self._cache)):
+                if self._cache[i][0] == locator:
+                    n = self._cache[i]
+                    del self._cache[i]
+                    self._cache.insert(0, n)
+                    return n[1]   
+        finally:
+            self.cache_lock.release()
+        return None            
 
     @staticmethod
     def sign_for_old_server(data_hash, data):

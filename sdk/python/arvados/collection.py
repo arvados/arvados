@@ -60,7 +60,7 @@ def normalize(collection):
             current_span = None
             fout = f.replace(' ', '\\040')
             for chunk in stream[f]:
-                chunkoffset = blocks[chunk[StreamReader.LOCATOR]] + chunk[StreamReader.CHUNKOFFSET]
+                chunkoffset = blocks[chunk[StreamReader.LOCATOR]] + chunk[StreamReader.OFFSET]
                 if current_span == None:
                     current_span = [chunkoffset, chunkoffset + chunk[StreamReader.CHUNKSIZE]]
                 else:
@@ -127,7 +127,7 @@ class CollectionReader(object):
         self._populate()
         resp = []
         for s in self._streams:
-            resp += [StreamReader(s)]
+            resp.append(StreamReader(s))
         return resp
 
     def all_files(self):
