@@ -36,15 +36,14 @@ def normalize(collection):
             if filename not in streams[streamname]:
                 streams[streamname][filename] = []
             streams[streamname][filename].extend(s.locators_and_ranges(f.stream_offset(), f.size()))
-            
-    manifest = ""
+
+    normalized_streams = []
     sortedstreams = list(streams.keys())
     sortedstreams.sort()
-    #import pprint
-    #pprint.pprint(streams)
     for s in sortedstreams:
         stream = streams[s]
-        manifest += s.replace(' ', '\\040')
+        stream_tokens = [s]
+
         sortedfiles = list(stream.keys())
         sortedfiles.sort()
 
@@ -53,7 +52,7 @@ def normalize(collection):
         for f in sortedfiles:
             for b in stream[f]:
                 if b[StreamReader.LOCATOR] not in blocks:
-                    manifest += " " + b[StreamReader.LOCATOR]
+                    stream_tokens.append(b[StreamReader.LOCATOR])
                     blocks[b[StreamReader.LOCATOR]] = streamoffset
                     streamoffset += b[StreamReader.BLOCKSIZE]
 
@@ -68,15 +67,15 @@ def normalize(collection):
                     if chunkoffset == current_span[1]:
                         current_span[1] += chunk[StreamReader.CHUNKSIZE]
                     else:
-                        manifest += " " + "{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout)
+                        stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
                         current_span = [chunkoffset, chunkoffset + chunk[StreamReader.CHUNKSIZE]]
 
             if current_span != None:
-                manifest += " " + "{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout)
+                stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
 
-        manifest += "\n"
-    manifest = manifest
-    return manifest
+        normalized_streams.append(stream_tokens)
+    return normalized_streams
+
 
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
@@ -111,6 +110,18 @@ class CollectionReader(object):
             if stream_line != '':
                 stream_tokens = stream_line.split()
                 self._streams += [stream_tokens]
+        self._streams = normalize(self)
+
+        # now regenerate the manifest text based on the normalized stream
+
+        #print "normalizing", self._manifest_text        
+        self._manifest_text = ''
+        for stream in self._streams:
+            self._manifest_text += stream[0].replace(' ', '\\040')
+            for t in stream[1:]:
+                self._manifest_text += (" " + t.replace(' ', '\\040'))
+            self._manifest_text += "\n"
+        #print "result     ", self._manifest_text
 
     def all_streams(self):
         self._populate()
@@ -258,6 +269,7 @@ class CollectionWriter(object):
     def finish(self):
         return Keep.put(self.manifest_text())
 
+
     def manifest_text(self):
         self.finish_current_stream()
         manifest = ''
@@ -270,7 +282,7 @@ class CollectionWriter(object):
             for sfile in stream[2]:
                 manifest += " %d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040'))
             manifest += "\n"
-        return manifest
+        return CollectionReader(manifest).manifest_text()
 
     def data_locators(self):
         ret = []
