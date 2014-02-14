@@ -35,46 +35,47 @@ def normalize(collection):
                 streams[streamname] = {}
             if filename not in streams[streamname]:
                 streams[streamname][filename] = []
-            print streamname, filename
             streams[streamname][filename].extend(s.locators_and_ranges(f.stream_offset(), f.size()))
             
     manifest = ""
     sortedstreams = list(streams.keys())
     sortedstreams.sort()
-    import pprint
-    pprint.pprint(streams)
+    #import pprint
+    #pprint.pprint(streams)
     for s in sortedstreams:
         stream = streams[s]
-        manifest += s
+        manifest += s.replace(' ', '\\040')
         sortedfiles = list(stream.keys())
         sortedfiles.sort()
-        for f in sortedfiles:
-            fn = stream[f]
-            for chunk in fn:
-                manifest += " " + chunk[StreamReader.LOCATOR]
-        for f in sortedfiles:
-            fn = stream[f]
-            streamoffset = 0L
-            fileoffset = 0L
-            easy = True
-            for chunk in fn:
-                if chunk[StreamReader.CHUNKOFFSET] != 0 or streamoffset != fileoffset:
-                    easy = False
-                streamoffset += chunk[StreamReader.BLOCKSIZE]
-                fileoffset += chunk[StreamReader.CHUNKSIZE]
 
-            if easy:
-                manifest += " " + "{0}:{1}:{2}".format(0, fileoffset, f)
-            else:
-                streamoffset = 0
-                fileoffset = 0
-                # not easy
-                for chunk in fn:
-                    manifest += " " + "{0}:{1}:{2}".format(streamoffset + chunk[StreamReader.CHUNKOFFSET], chunk[StreamReader.CHUNKSIZE], f)
-                    streamoffset += chunk[StreamReader.BLOCKSIZE]
-                    fileoffset += chunk[StreamReader.CHUNKSIZE]
+        blocks = {}
+        streamoffset = 0L
+        for f in sortedfiles:
+            for b in stream[f]:
+                if b[StreamReader.LOCATOR] not in blocks:
+                    manifest += " " + b[StreamReader.LOCATOR]
+                    blocks[b[StreamReader.LOCATOR]] = streamoffset
+                    streamoffset += b[StreamReader.BLOCKSIZE]
+
+        for f in sortedfiles:
+            current_span = None
+            fout = f.replace(' ', '\\040')
+            for chunk in stream[f]:
+                chunkoffset = blocks[chunk[StreamReader.LOCATOR]] + chunk[StreamReader.CHUNKOFFSET]
+                if current_span == None:
+                    current_span = [chunkoffset, chunkoffset + chunk[StreamReader.CHUNKSIZE]]
+                else:
+                    if chunkoffset == current_span[1]:
+                        current_span[1] += chunk[StreamReader.CHUNKSIZE]
+                    else:
+                        manifest += " " + "{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout)
+                        current_span = [chunkoffset, chunkoffset + chunk[StreamReader.CHUNKSIZE]]
+
+            if current_span != None:
+                manifest += " " + "{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout)
 
         manifest += "\n"
+    manifest = manifest
     return manifest
 
 class CollectionReader(object):

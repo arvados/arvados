@@ -173,7 +173,6 @@ class StreamReader(object):
 
     def locators_and_ranges(self, range_start, range_size):
         '''returns list of [block locator, blocksize, chunk offset, chunk size] that satisfies the range'''
-        print 'locators_and_ranges', range_start, range_size
         resp = []
         return_all_tokens = False
         range_start = long(range_start)

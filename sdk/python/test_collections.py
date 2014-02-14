@@ -226,7 +226,7 @@ class NormalizedCollectionTest(unittest.TestCase):
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt"""
         self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m3)),
-                         """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:40:md5sum.txt 43:41:md5sum.txt 84:43:md5sum.txt
+                         """. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:124:md5sum.txt
 """)
 
         m4 = """. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
@@ -241,15 +241,18 @@ class NormalizedCollectionTest(unittest.TestCase):
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 ./foo 204e43b8a1185621ca55a94839582e6f+67108864 3:3:bar"""
         self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m5)),
-                         """./foo 204e43b8a1185621ca55a94839582e6f+67108864 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar 67108867:3:bar
+                         """./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:6:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 """)
 
-        with open('gatkmanifest') as f6:
+        with open('testdata/1000G_ref_manifest') as f6:
             m6 = f6.read()
-            m6n = arvados.collection.normalize(arvados.CollectionReader(m6))
-            with open('gatkmanifest_normalized', 'w') as f6n:
-                f6n.write(m6n)
-            
-            #self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m6)), m6)
+            self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m6)), m6)
 
+        with open('testdata/jlake_manifest') as f7:
+            m7 = f7.read()
+            self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m7)), m7)
+
+        m8 = """./a\\040b\\040c 59ca0efa9f5633cb0371bbc0355478d8+13 0:13:hello\\040world.txt
+"""
+        self.assertEqual(arvados.collection.normalize(arvados.CollectionReader(m8)), m8)
