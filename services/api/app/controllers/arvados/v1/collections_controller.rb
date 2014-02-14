@@ -61,21 +61,20 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def script_param_edges(visited, sp)
-    if sp and not sp.empty?
-      case sp
-      when Hash
-        sp.each do |k, v|
-          script_param_edges(visited, v)
-        end
-      when Array
-        sp.each do |v|
-          script_param_edges(visited, v)
-        end
-      else
-        m = collection_uuid(sp)
-        if m
-          generate_provenance_edges(visited, m)
-        end
+    case sp
+    when Hash
+      sp.each do |k, v|
+        script_param_edges(visited, v)
+      end
+    when Array
+      sp.each do |v|
+        script_param_edges(visited, v)
+      end
+    when String
+      return if sp.empty?
+      m = collection_uuid(sp)
+      if m
+        generate_provenance_edges(visited, m)
       end
     end
   end
