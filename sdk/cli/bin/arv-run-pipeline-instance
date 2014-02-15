@@ -543,6 +543,7 @@ class WhRunPipelineInstance
 
     if @options[:status_text] != '/dev/null'
       File.open(@options[:status_text], 'w') do |f|
+        f.puts ""
         f.puts "#{Time.now} -- pipeline_instance #{@instance[:uuid]}"
         namewidth = @components.collect { |cname, c| cname.size }.max
         @components.each do |cname, c|
