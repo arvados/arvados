@@ -15,7 +15,7 @@
 
 <div style="padding-right: 1em">
 
-<table id="collections-index" class="topalign table table-condensed table-fixedlayout">
+<table id="collections-index" class="topalign table table-condensed table-fixedlayout table-fixed-header-row">
   <colgroup>
     <col width="10%" />
     <col width="36%" />
@@ -40,9 +40,45 @@
 </table>
 </div>
 
-<% content_for :js do %>
+<% content_for :css do %>
+table.table-fixed-header-row {width: 100%;border-spacing: 0px;margin:0;}
+table.table-fixed-header-row thead {position:fixed; background: #fff;}
+table.table-fixed-header-row tbody {position:relative; top:1.5em;}
+<% end %>
+<% content_for :footer_js do %>
 $(document).on('click', 'form[data-remote] input[type=submit]', function() {
   $('table#collections-index tbody').fadeTo(200, 0.3);
   return true;
+});
+HeaderRowFixer = function(selector) {
+    settings = {
+        tables: $(selector),
+        thead: []
+    };
+
+    this.duplicateTheadTr = function() {
+        $('>tbody', settings.tables).each(function(){
+            $(this).prepend($('thead>tr', this).clone().css('opacity:0'));
+        });
+    }
+    this.fixThead = function() {
+        settings.tables.each(function() {
+            var widths = [];
+            $('> tbody > tr:eq(1) > td', this).each( function(i,v){
+                widths.push($(v).width());
+            });
+            for(i=0;i<widths.length;i++) {
+                $('thead th:eq('+i+')', this).width(widths[i]);
+            }
+        });
+    }
+}
+$(function(){
+    var fixer = new HeaderRowFixer('.table-fixed-header-row');
+    fixer.fixThead();
+    fixer.duplicateTheadTr();
+    $(window).resize(function(){
+        fixer.fixThead();
+    });
 });
 <% end %>
