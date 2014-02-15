@@ -27,7 +27,7 @@ BLOCKSIZE = 1
 OFFSET = 2
 SEGMENTSIZE = 3
 
-def locators_and_ranges(self, data_locators, range_start, range_size):
+def locators_and_ranges(data_locators, range_start, range_size):
     '''returns list of [block locator, blocksize, segment offset, segment size] that satisfies the range'''
     resp = []
     range_start = long(range_start)
@@ -81,10 +81,10 @@ class StreamFileReader(object):
         return self._filepos
 
     def size(self):
-        n = self.data_locators[-1]
-        return n[self.OFFSET] + n[self.BLOCKSIZE]
+        n = self.segments[-1]
+        return n[OFFSET] + n[BLOCKSIZE]
 
-    def read(self, size, **kwargs):
+    def read(self, size):
         """Read up to 'size' bytes from the stream, starting at the current file position"""
         if size == 0:
             return ''
@@ -96,9 +96,9 @@ class StreamFileReader(object):
             self._filepos += len(data)
         return data
 
-    def readall(self, size=2**20, **kwargs):
+    def readall(self, size=2**20):
         while True:
-            data = self.read(size, **kwargs)
+            data = self.read(size)
             if data == '':
                 break
             yield data
@@ -204,7 +204,8 @@ class StreamReader(object):
         n = self.data_locators[-1]
         return n[self.OFFSET] + n[self.BLOCKSIZE]
 
-    def locators_and_ranges(self.data_locators, self._pos, size)
+    def locators_and_ranges(self, range_start, range_size):
+        return locators_and_ranges(self.data_locators, range_start, range_size)
 
     def read(self, size):
         """Read up to 'size' bytes from the stream, starting at the current file position"""
