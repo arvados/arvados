@@ -52,14 +52,18 @@ jQuery(function($){
     HeaderRowFixer = function(selector) {
         var tables = $(selector);
         this.duplicateTheadTr = function() {
-            $('>tbody', tables).each(function(){
-                $(this).prepend($('thead>tr', this).clone().css('opacity:0'));
+            tables.each(function() {
+                var the_table = this;
+                $('>tbody', the_table).
+                    prepend($('>thead>tr', the_table).
+                            clone().
+                            css('opacity', 0));
             });
         }
         this.fixThead = function() {
             tables.each(function() {
                 var widths = [];
-                $('> tbody > tr:eq(1) > td', this).each( function(i,v){
+                $('> tbody > tr:eq(0) > td', this).each( function(i,v){
                     widths.push($(v).width());
                 });
                 for(i=0;i<widths.length;i++) {
