@@ -2,3 +2,4 @@ if(history.replaceState)
     history.replaceState(null, null, "<%= escape_javascript(@request_url) %>");
 $('table#collections-index tbody').html("<%= escape_javascript(render partial: 'index_tbody') %>");
 $('table#collections-index tbody').fadeTo(200, 1.0);
+$(document).trigger('ajax:complete');
