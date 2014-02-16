@@ -30,11 +30,11 @@
     <% end %>
   </td>
   <td class="add-tag-button">
-    <a class="btn btn-xs btn-info add-tag-button pull-right"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
+    <a class="btn btn-xs btn-info add-tag-button pull-right" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
     <span>
     <% if @collection_info[c.uuid] %>
-      <% @collection_info[c.uuid][:tags].uniq.each do |tag| %>
-        <span class="label label-info removable-tag" data-tag-link-uuid=""><%= tag %>&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a></span>
+      <% @collection_info[c.uuid][:tag_links].each do |tag_link| %>
+        <span class="label label-info removable-tag" data-tag-link-uuid="<%= tag_link.uuid %>"><%= tag_link.name %>&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a></span>
       <% end %>
     <% end %>
     </span>

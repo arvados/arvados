@@ -49,24 +49,58 @@ jQuery(function($){
             $('.loading').fadeOut('fast', 0);
         }).
         on('click', '.removable-tag a', function(e) {
-            $(this).parents('[data-tag-link-uuid]').eq(0).remove();
+            var tag_span = $(this).parents('[data-tag-link-uuid]').eq(0)
+            tag_span.fadeTo('fast', 0.2);
+            $.ajax('/links/' + tag_span.attr('data-tag-link-uuid'),
+                   {dataType: 'json',
+                    type: 'POST',
+                    data: { '_method': 'DELETE' },
+                    context: tag_span}).
+                done(function(data, status, jqxhr) {
+                    this.remove();
+                }).
+                fail(function(jqxhr, status, error) {
+                    this.addClass('label-danger').fadeTo('fast', '1');
+                });
             return false;
         }).
         on('click', 'a.add-tag-button', function(e) {
-            new_tag = window.prompt("Add tag for collection "+
-                                    $(this).parents('tr').attr('data-object-uuid'),
+            var jqxhr;
+            var new_tag_uuid = 'new-tag-' + Math.random();
+            var tag_head_uuid = $(this).parents('tr').attr('data-object-uuid');
+            var new_tag = window.prompt("Add tag for collection "+
+                                    tag_head_uuid,
                                     "");
-            if (new_tag != null) {
-                new_tag_uuid = 'xxx';
-                $(this).
-                    parent().
-                    find('>span').
-                    append($('<span class="label label-info removable-tag" data-tag-link-uuid=""></span>').
-                           attr('data-tag-link-uuid', new_tag_uuid).
-                           text(new_tag).
-                           append('&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a>&nbsp;')).
-                    append(' ');
-            }
+            if (new_tag == null)
+                return false;
+            var new_tag_span =
+                $('<span class="label label-info removable-tag"></span>').
+                attr('data-tag-link-uuid', new_tag_uuid).
+                text(new_tag).
+                css('opacity', '0.2').
+                append('&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a>&nbsp;');
+            $(this).
+                parent().
+                find('>span').
+                append(new_tag_span).
+                append(' ');
+            $.ajax($(this).attr('data-remote-href'),
+                           {dataType: 'json',
+                            type: $(this).attr('data-remote-method'),
+                            data: {
+                                'link[head_kind]': 'arvados#collection',
+                                'link[head_uuid]': tag_head_uuid,
+                                'link[link_class]': 'tag',
+                                'link[name]': new_tag
+                            },
+                            context: new_tag_span}).
+                done(function(data, status, jqxhr) {
+                    this.attr('data-tag-link-uuid', data.uuid).
+                        fadeTo('fast', '1');
+                }).
+                fail(function(jqxhr, status, error) {
+                    this.addClass('label-danger').fadeTo('fast', '1');
+                });
             return false;
         });
 
