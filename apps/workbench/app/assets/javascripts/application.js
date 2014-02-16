@@ -105,10 +105,11 @@ jQuery(function($){
         });
 
     HeaderRowFixer = function(selector) {
-        var tables = $(selector);
         this.duplicateTheadTr = function() {
-            tables.each(function() {
+            $(selector).each(function() {
                 var the_table = this;
+                if ($('>tbody>tr:first>th', the_table).length > 0)
+                    return;
                 $('>tbody', the_table).
                     prepend($('>thead>tr', the_table).
                             clone().
@@ -116,9 +117,9 @@ jQuery(function($){
             });
         }
         this.fixThead = function() {
-            tables.each(function() {
+            $(selector).each(function() {
                 var widths = [];
-                $('> tbody > tr:eq(0) > td', this).each( function(i,v){
+                $('> tbody > tr:eq(1) > td', this).each( function(i,v){
                     widths.push($(v).width());
                 });
                 for(i=0;i<widths.length;i++) {
@@ -127,10 +128,15 @@ jQuery(function($){
             });
         }
     }
+    
     var fixer = new HeaderRowFixer('.table-fixed-header-row');
-    fixer.fixThead();
     fixer.duplicateTheadTr();
+    fixer.fixThead();
     $(window).resize(function(){
+        fixer.fixThead();
+    });
+    $(document).on('ajax:complete', function(e, status) {
+        fixer.duplicateTheadTr();
         fixer.fixThead();
     });
 })(jQuery);
