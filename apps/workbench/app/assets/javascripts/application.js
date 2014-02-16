@@ -78,7 +78,7 @@ jQuery(function($){
                 attr('data-tag-link-uuid', new_tag_uuid).
                 text(new_tag).
                 css('opacity', '0.2').
-                append('&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a>&nbsp;');
+                append('&nbsp;<a title="Delete tag"><i class="glyphicon glyphicon-trash"></i></a>&nbsp;');
             $(this).
                 parent().
                 find('>span').
