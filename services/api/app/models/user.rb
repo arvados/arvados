@@ -30,9 +30,9 @@ class User < ArvadosModel
   end
 
   def is_invited
-    (self.is_active ||
-     Rails.configuration.new_users_are_active ||
-     self.groups_i_can(:read).select { |x| x.match /-f+$/ }.first)
+    !!(self.is_active ||
+       Rails.configuration.new_users_are_active ||
+       self.groups_i_can(:read).select { |x| x.match /-f+$/ }.first)
   end
 
   def groups_i_can(verb)
