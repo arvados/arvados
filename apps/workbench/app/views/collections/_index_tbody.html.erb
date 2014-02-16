@@ -20,16 +20,6 @@
   <td>
     <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
   </td>
-  <td class="add-tag-button">
-    <span>
-    <% if @collection_info[c.uuid] %>
-      <% @collection_info[c.uuid][:tags].uniq.each do |tag| %>
-        <span class="label label-info removable-tag" data-tag-link-uuid=""><%= tag %>&nbsp;<a>&times;</a></span><br/>
-      <% end %>
-    <% end %>
-    </span>
-    <a class="btn btn-xs btn-info add-tag-button"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
-  </td>
   <td>
     <% if @collection_info[c.uuid][:wanted_by_me] %>
       <span class="label label-info">2&times;</span>
@@ -38,6 +28,16 @@
     <% else %>
       <span class="label">cache</span>
     <% end %>
+  </td>
+  <td class="add-tag-button">
+    <a class="btn btn-xs btn-info add-tag-button pull-right"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
+    <span>
+    <% if @collection_info[c.uuid] %>
+      <% @collection_info[c.uuid][:tags].uniq.each do |tag| %>
+        <span class="label label-info removable-tag" data-tag-link-uuid=""><%= tag %>&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a></span>
+      <% end %>
+    <% end %>
+    </span>
   </td>
 </tr>
 

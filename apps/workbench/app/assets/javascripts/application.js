@@ -49,18 +49,23 @@ jQuery(function($){
             $('.loading').fadeOut('fast', 0);
         }).
         on('click', '.removable-tag a', function(e) {
-            $(this).parents('[data-tag-link-uuid]').eq(0).next().andSelf().remove();
+            $(this).parents('[data-tag-link-uuid]').eq(0).remove();
+            return false;
         }).
         on('click', 'a.add-tag-button', function(e) {
             new_tag = window.prompt("Add tag for collection "+
                                     $(this).parents('tr').attr('data-object-uuid'),
                                     "");
             if (new_tag != null) {
+                new_tag_uuid = 'xxx';
                 $(this).
                     parent().
                     find('>span').
-                    append($('<span class="label label-info removable-tag" data-tag-link-uuid=""></span>').text(new_tag).append('&nbsp;<a>&times;</a>')).
-                    append('<br/>');
+                    append($('<span class="label label-info removable-tag" data-tag-link-uuid=""></span>').
+                           attr('data-tag-link-uuid', new_tag_uuid).
+                           text(new_tag).
+                           append('&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a>&nbsp;')).
+                    append(' ');
             }
             return false;
         });
