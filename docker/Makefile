@@ -139,6 +139,6 @@ base-image: debian-image $(BASE_DEPS)
 	echo -n "Built at $(date)" > base-image
 
 debian-image:
-	./mkimage-debootstrap.sh arvados/debian wheezy http://debian.lcs.mit.edu/debian/
+	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
 	echo -n "Built at $(date)" > debian-image
 

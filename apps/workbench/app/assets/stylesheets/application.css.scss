@@ -130,11 +130,42 @@ td.add-tag-button .add-tag-button {
     margin-top: 2px;
     opacity: 0;
 }
-
 td.add-tag-button:hover .add-tag-button {
     opacity: 1;
 }
-
 .removable-tag a {
     cursor: pointer;
+}
+
+li.notification {
+    padding: 10px;
+}
+.arvados-nav-container {
+    top: 70px; 
+    height: calc(100% - 70px); 
+    overflow: auto; 
+    z-index: 2;
+}
+
+.arvados-nav-active {
+    background: rgb(66, 139, 202);
+}
+
+.arvados-nav-active a {
+    color: white;
+}
+
+// See HeaderRowFixer in application.js
+table.table-fixed-header-row {
+    width: 100%;
+    border-spacing: 0px;
+    margin:0;
+}
+table.table-fixed-header-row thead {
+    position:fixed;
+    background: #fff;
+}
+table.table-fixed-header-row tbody {
+    position:relative;
+    top:1.5em;
 }

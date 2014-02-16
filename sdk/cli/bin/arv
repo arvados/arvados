@@ -12,7 +12,7 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
-# read authentication data from ~/.config/arvados if present
+# read authentication data from arvados configuration file if present
 lineno = 0
 config_file = File.expand_path('~/.config/arvados/settings.conf')
 if File.exist? config_file then

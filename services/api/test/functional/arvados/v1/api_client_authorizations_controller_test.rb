@@ -20,4 +20,22 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     assert_response 403
   end
 
+  test "create system auth" do
+    authorize_with :admin_trustedclient
+    post :create_system_auth, scopes: '["test"]'
+    assert_response :success
+  end
+
+  test "prohibit create system auth with token from non-trusted client" do
+    authorize_with :admin
+    post :create_system_auth, scopes: '["test"]'
+    assert_response 403
+  end
+
+  test "prohibit create system auth by non-admin" do
+    authorize_with :active
+    post :create_system_auth, scopes: '["test"]'
+    assert_response 403
+  end
+
 end

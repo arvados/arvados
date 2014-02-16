@@ -124,7 +124,16 @@ if not get_prefix:
                 logger.error('Local file %s already exists' % args.destination)
                 sys.exit(1)
             with open(args.destination, 'wb') as f:
-                f.write(arvados.Keep.get(collection))
+                try:
+                    c = arvados.api('v1').collections().get(
+                        uuid=collection).execute()
+                    manifest = c['manifest_text']
+                except Exception as e:
+                    logging.warning(
+                        "API lookup failed for collection %s (%s: %s)" %
+                        (collection, type(e), str(e)))
+                    manifest = arvados.Keep.get(collection)
+                f.write(manifest)
         sys.exit(0)
     except arvados.errors.NotFoundError as e:
         logger.error(e)

@@ -28,7 +28,16 @@ sub execute
     my %body_params;
     my %given_params = @_;
     my %extra_params = %given_params;
-    while (my ($param_name, $param) = each %{$method->{'parameters'}}) {
+    my %method_params = %{$method->{'parameters'}};
+    if ($method->{'request'}->{'properties'}) {
+        while (my ($prop_name, $prop_value) =
+               each %{$method->{'request'}->{'properties'}}) {
+            if (ref($prop_value) eq 'HASH' && $prop_value->{'$ref'}) {
+                $method_params{$prop_name} = { 'type' => 'object' };
+            }
+        }
+    }
+    while (my ($param_name, $param) = each %method_params) {
         delete $extra_params{$param_name};
         if ($param->{'required'} && !exists $given_params{$param_name}) {
             croak("Required parameter not supplied: $param_name");
@@ -66,6 +75,12 @@ sub execute
                        each %{$given_params{$param_name}}) {
                     if (ref $property eq '' || $property eq undef) {
                         $param_value{$property_name} = $property;
+                    }
+                    elsif (ref $property eq 'HASH') {
+                        $param_value{$property_name} = {};
+                        while (my ($k, $v) = each %$property) {
+                            $param_value{$property_name}->{$k} = $v;
+                        }
                     }
                 }
             }

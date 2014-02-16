@@ -19,7 +19,7 @@ class CommitAncestor < ActiveRecord::Base
       next if repo.match /^\./
       git_dir = repo.match(/\.git$/) ? repo : File.join(repo, '.git')
       repo_name = repo.sub(/\.git$/, '')
-      ENV['GIT_DIR'] = File.join(@gitdirbase, repo, '.git')
+      ENV['GIT_DIR'] = File.join(@gitdirbase, git_dir)
       IO.foreach("|git rev-list --format=oneline '#{self.descendant.gsub /[^0-9a-f]/,""}'") do |line|
         self.is = false
         sha1, message = line.strip.split(" ", 2)
@@ -34,7 +34,7 @@ class CommitAncestor < ActiveRecord::Base
       end
     end
     if self.is.nil?
-      raise CommitNotFoundError: "Specified commit was not found"
+      raise CommitNotFoundError.new "Specified commit was not found"
     end
   end
 end

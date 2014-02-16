@@ -1,4 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'jekyll'
+gem 'zenweb'
+gem 'liquid'
 gem 'RedCloth'
+gem 'colorize'

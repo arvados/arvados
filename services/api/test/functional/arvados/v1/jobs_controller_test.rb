@@ -13,6 +13,38 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_not_nil assigns(:object)
     new_job = JSON.parse(@response.body)
     assert_not_nil new_job['uuid']
+    assert_not_nil new_job['script_version'].match(/^[0-9a-f]{40}$/)
+  end
+
+  test "normalize output and log uuids when creating job" do
+    authorize_with :active
+    post :create, job: {
+      script: "hash",
+      script_version: "master",
+      script_parameters: {},
+      started_at: Time.now,
+      finished_at: Time.now,
+      running: false,
+      success: true,
+      output: 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy',
+      log: 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_job = JSON.parse(@response.body)
+    assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['log']
+    assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['output']
+    version = new_job['script_version']
+
+    # Make sure version doesn't get mangled by normalize
+    assert_not_nil version.match(/^[0-9a-f]{40}$/)
+    put :update, {
+      id: new_job['uuid'],
+      job: {
+        log: new_job['log']
+      }
+    }
+    assert_equal version, JSON.parse(@response.body)['script_version']
   end
 
   test "cancel a running job" do

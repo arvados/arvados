@@ -20,7 +20,7 @@
 
     <tr>
       <td>
-        <%= g.friendly_link_name %>
+        <%= link_to_if_arvados_object g, friendly_name: true %>
       </td><td>
         <%= link_to_if_arvados_object g.owner_uuid, friendly_name: true %>
       </td><td>

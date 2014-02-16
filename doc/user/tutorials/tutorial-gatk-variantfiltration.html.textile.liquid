@@ -1,0 +1,216 @@
+---
+layout: default
+navsection: userguide
+navmenu: Tutorials
+title: "Using GATK with Arvados"
+
+...
+
+h1. Using GATK with Arvados
+
+This tutorials demonstrates how to use the Genome Analysis Toolkit (GATK) with Arvados. In this example we will install GATK and then create a VariantFiltration job to assign pass/fail scores to variants in a VCF file.
+
+*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
+
+h2. Installing GATK
+
+Download the GATK binary tarball[1] -- e.g., @GenomeAnalysisTK-2.6-4.tar.bz2@ -- and "copy it to your Arvados VM":tutorial-keep.html.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv keep put GenomeAnalysisTK-2.6-4.tar.bz2</span>
+c905c8d8443a9c44274d98b7c6cfaa32+94
+</code></pre>
+</notextile>
+
+Next, you need the GATK Resource Bundle[2].  This may already be available in Arvados.  If not, you will need to download the files listed below and put them into Keep.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv keep ls -s d237a90bae3870b3b033aea1e99de4a9+10820</span>
+  50342 1000G_omni2.5.b37.vcf.gz
+      1 1000G_omni2.5.b37.vcf.gz.md5
+    464 1000G_omni2.5.b37.vcf.idx.gz
+      1 1000G_omni2.5.b37.vcf.idx.gz.md5
+  43981 1000G_phase1.indels.b37.vcf.gz
+      1 1000G_phase1.indels.b37.vcf.gz.md5
+    326 1000G_phase1.indels.b37.vcf.idx.gz
+      1 1000G_phase1.indels.b37.vcf.idx.gz.md5
+ 537210 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.gz
+      1 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.gz.md5
+   3473 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.idx.gz
+      1 CEUTrio.HiSeq.WGS.b37.bestPractices.phased.b37.vcf.idx.gz.md5
+  19403 Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+      1 Mills_and_1000G_gold_standard.indels.b37.vcf.gz.md5
+    536 Mills_and_1000G_gold_standard.indels.b37.vcf.idx.gz
+      1 Mills_and_1000G_gold_standard.indels.b37.vcf.idx.gz.md5
+  29291 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.gz.md5
+    565 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.idx.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.sites.vcf.idx.gz.md5
+  37930 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.gz.md5
+    592 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.idx.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.raw.subset.b37.vcf.idx.gz.md5
+5898484 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam
+    112 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam.bai.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam.bai.gz.md5
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.bam.md5
+   3837 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.gz.md5
+     65 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.idx.gz
+      1 NA12878.HiSeq.WGS.bwa.cleaned.recal.b37.20.vcf.idx.gz.md5
+ 275757 dbsnp_137.b37.excluding_sites_after_129.vcf.gz
+      1 dbsnp_137.b37.excluding_sites_after_129.vcf.gz.md5
+   3735 dbsnp_137.b37.excluding_sites_after_129.vcf.idx.gz
+      1 dbsnp_137.b37.excluding_sites_after_129.vcf.idx.gz.md5
+ 998153 dbsnp_137.b37.vcf.gz
+      1 dbsnp_137.b37.vcf.gz.md5
+   3890 dbsnp_137.b37.vcf.idx.gz
+      1 dbsnp_137.b37.vcf.idx.gz.md5
+  58418 hapmap_3.3.b37.vcf.gz
+      1 hapmap_3.3.b37.vcf.gz.md5
+    999 hapmap_3.3.b37.vcf.idx.gz
+      1 hapmap_3.3.b37.vcf.idx.gz.md5
+      3 human_g1k_v37.dict.gz
+      1 human_g1k_v37.dict.gz.md5
+      2 human_g1k_v37.fasta.fai.gz
+      1 human_g1k_v37.fasta.fai.gz.md5
+ 849537 human_g1k_v37.fasta.gz
+      1 human_g1k_v37.fasta.gz.md5
+      1 human_g1k_v37.stats.gz
+      1 human_g1k_v37.stats.gz.md5
+      3 human_g1k_v37_decoy.dict.gz
+      1 human_g1k_v37_decoy.dict.gz.md5
+      2 human_g1k_v37_decoy.fasta.fai.gz
+      1 human_g1k_v37_decoy.fasta.fai.gz.md5
+ 858592 human_g1k_v37_decoy.fasta.gz
+      1 human_g1k_v37_decoy.fasta.gz.md5
+      1 human_g1k_v37_decoy.stats.gz
+      1 human_g1k_v37_decoy.stats.gz.md5
+</code></pre>
+</notextile>
+
+h2. Submit a GATK job
+
+The Arvados distribution includes an example crunch script ("crunch_scripts/GATK2-VariantFiltration":https://arvados.org/projects/arvados/repository/revisions/master/entry/crunch_scripts/GATK2-VariantFiltration) that runs the GATK VariantFiltration tool with some default settings.
+
+<notextile>
+<pre><code>~$ <span class="userinput">src_version=76588bfc57f33ea1b36b82ca7187f465b73b4ca4</span>
+~$ <span class="userinput">vcf_input=5ee633fe2569d2a42dd81b07490d5d13+82</span>
+~$ <span class="userinput">gatk_binary=c905c8d8443a9c44274d98b7c6cfaa32+94</span>
+~$ <span class="userinput">gatk_bundle=d237a90bae3870b3b033aea1e99de4a9+10820</span>
+~$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
+{
+ "script":"GATK2-VariantFiltration",
+ "script_version":"$src_version",
+ "script_parameters":
+ {
+  "input":"$vcf_input",
+  "gatk_binary_tarball":"$gatk_binary",
+  "gatk_bundle":"$gatk_bundle"
+ }
+}
+EOF</span>
+</code></pre>
+</notextile>
+
+* @"input"@ is collection containing the source VCF data. Here we are using an exome report from PGP participant hu34D5B9.
+* @"gatk_binary_tarball"@ is a Keep collection containing the GATK 2 binary distribution[1] tar file.
+* @"gatk_bundle"@ is a Keep collection containing the GATK resource bundle[2].
+
+Now start a job:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
+{
+ "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-n9k7qyp7bs5b9d4",
+ "kind":"arvados#job",
+ "etag":"9j99n1feoxw3az448f8ises12",
+ "uuid":"qr1hi-8i9sb-n9k7qyp7bs5b9d4",
+ "owner_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
+ "created_at":"2013-12-17T19:02:15Z",
+ "modified_by_client_uuid":"qr1hi-ozdt8-obw7foaks3qjyej",
+ "modified_by_user_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
+ "modified_at":"2013-12-17T19:02:15Z",
+ "updated_at":"2013-12-17T19:02:15Z",
+ "submit_id":null,
+ "priority":null,
+ "script":"GATK2-VariantFiltration",
+ "script_parameters":{
+  "input":"5ee633fe2569d2a42dd81b07490d5d13+82",
+  "gatk_binary_tarball":"c905c8d8443a9c44274d98b7c6cfaa32+94",
+  "gatk_bundle":"d237a90bae3870b3b033aea1e99de4a9+10820"
+ },
+ "script_version":"76588bfc57f33ea1b36b82ca7187f465b73b4ca4",
+ "cancelled_at":null,
+ "cancelled_by_client_uuid":null,
+ "cancelled_by_user_uuid":null,
+ "started_at":null,
+ "finished_at":null,
+ "output":null,
+ "success":null,
+ "running":null,
+ "is_locked_by_uuid":null,
+ "log":null,
+ "runtime_constraints":{},
+ "tasks_summary":{},
+ "dependencies":[
+  "5ee633fe2569d2a42dd81b07490d5d13+82",
+  "c905c8d8443a9c44274d98b7c6cfaa32+94",
+  "d237a90bae3870b3b033aea1e99de4a9+10820"
+ ],
+ "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-n9k7qyp7bs5b9d4/log_tail_follow"
+}
+~$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-n9k7qyp7bs5b9d4</span>
+Tue Dec 17 19:02:16 2013 salloc: Granted job allocation 1251
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  check slurm allocation
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  node compute13 - 8 slots
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start
+Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Install revision 76588bfc57f33ea1b36b82ca7187f465b73b4ca4
+Tue Dec 17 19:02:18 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Clean-work-dir exited 0
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Install exited 0
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script GATK2-VariantFiltration
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script_version 76588bfc57f33ea1b36b82ca7187f465b73b4ca4
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script_parameters {"input":"5ee633fe2569d2a42dd81b07490d5d13+82","gatk_bundle":"d237a90bae3870b3b033aea1e99de4a9+10820","gatk_binary_tarball":"c905c8d8443a9c44274d98b7c6cfaa32+94"}
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  runtime_constraints {"max_tasks_per_node":0}
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start level 0
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 0 done, 0 running, 1 todo
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 job_task qr1hi-ot0gb-d3sjxerucfbvyev
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 child 4946 started on compute13.1
+Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 0 done, 1 running, 0 todo
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 child 4946 on compute13.1 exit 0 signal 0 success=true
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 success in 1 seconds
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 output
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  wait for last 0 children to finish
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 0 running, 1 todo
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start level 1
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 0 running, 1 todo
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 job_task qr1hi-ot0gb-w8ujbnulxjaamxf
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 started on compute13.1
+Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 1 running, 0 todo
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 on compute13.1 exit 0 signal 0 success=true
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 success in 110 seconds
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 output bedd6ff56b3ae9f90d873b1fcb72f9a3+91
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  wait for last 0 children to finish
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 2 done, 0 running, 0 todo
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  release job allocation
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Freeze not implemented
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  collate
+Tue Dec 17 19:04:10 2013 salloc: Job allocation 1251 has been revoked.
+Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  output bedd6ff56b3ae9f90d873b1fcb72f9a3+91
+Tue Dec 17 19:04:11 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  finish
+Tue Dec 17 19:04:12 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  log manifest is 1e77aaceee2df499e14dc5dde5c3d328+91
+</code></pre>
+</notextile>
+
+Once the job completes, the output can be found in hu34D5B9-exome-filtered.vcf:
+
+<notextile><pre><code>~$ <span class="userinput">arv keep ls bedd6ff56b3ae9f90d873b1fcb72f9a3+91</span>
+hu34D5B9-exome-filtered.vcf
+</code></pre>
+</notextile>
+
+h2. Notes
+
+fn1. "Download the GATK tools":http://www.broadinstitute.org/gatk/download
+
+fn2. "Information about the GATK resource bundle":http://gatkforums.broadinstitute.org/discussion/1213/whats-in-the-resource-bundle-and-how-can-i-get-it and "direct download link":ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/2.5/b37/ (if prompted, submit an empty password)

@@ -57,7 +57,7 @@ class ApplicationController < ActionController::Base
   end
 
   def index
-    @objects ||= model_class.limit(1000).all
+    @objects ||= model_class.limit(200).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -109,7 +109,12 @@ class ApplicationController < ActionController::Base
   def create
     @object ||= model_class.new params[model_class.to_s.singularize.to_sym]
     @object.save!
-    redirect_to(params[:return_to] || @object)
+    respond_to do |f|
+      f.html {
+        redirect_to(params[:return_to] || @object)
+      }
+      f.js { render }
+    end
   end
 
   def destroy
@@ -308,15 +313,6 @@ class ApplicationController < ActionController::Base
     end
     return lambda { |view|
       view.render partial: 'notifications/ssh_key_notification'
-    }
-  }
-
-  @@notification_tests.push lambda { |controller, current_user|
-    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
-      return nil
-    end
-    return lambda { |view|
-      view.render partial: 'notifications/jobs_notification'
     }
   }
 

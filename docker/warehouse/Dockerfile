@@ -1,5 +1,5 @@
 FROM arvados/base
-MAINTAINER Tim Pierce <twp@clinicalfuture.com>
+MAINTAINER Tim Pierce <twp@curoverse.com>
 
 RUN apt-get update && \
     apt-get -q -y install dpkg-dev debhelper libdbi-perl libwww-perl \
@@ -14,7 +14,7 @@ RUN apt-get update && \
 RUN \
     perl -MCPAN -e 'install MogileFS::Client;' \
                 -e 'install Crypt::GpgME' && \
-    git clone https://github.com/clinicalfuture/warehouse-apps.git /usr/src/warehouse-apps && \
+    git clone https://github.com/curoverse/warehouse-apps.git /usr/src/warehouse-apps && \
     rm /usr/src/warehouse-apps/libwarehouse-perl/t/pod-coverage.t && \
     cd /usr/src/warehouse-apps && \
     sh install.sh /usr/local && \

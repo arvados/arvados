@@ -14,6 +14,7 @@ class ArvadosModel < ActiveRecord::Base
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
   validate :ensure_serialized_attribute_type
+  validate :normalize_collection_uuids
 
   has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
 
@@ -152,6 +153,24 @@ class ArvadosModel < ActiveRecord::Base
       if attr.object_class
         unless self.attributes[colname].is_a? attr.object_class
           self.errors.add colname.to_sym, "must be a #{attr.object_class.to_s}"
+        end
+      end
+    end
+  end
+
+  def foreign_key_attributes
+    attributes.keys.select { |a| a.match /_uuid$/ }
+  end
+
+  def normalize_collection_uuids
+    foreign_key_attributes.each do |attr|
+      attr_value = send attr
+      if attr_value.is_a? String and
+          attr_value.match /^[0-9a-f]{32,}(\+[@\w]+)*$/
+        begin
+          send "#{attr}=", Collection.normalize_uuid(attr_value)
+        rescue
+          # TODO: abort instead of silently accepting unnormalizable value?
         end
       end
     end

@@ -1,15 +1,22 @@
 <% content_for :css do %>
   .pipeline_color_legend {
-    padding-left: 1em;
-    padding-right: 1em;
+    margin-top: 0.2em;
+    padding: 0.2em 1em;
+    border: 1px solid #000;
+  }
+  .pipeline_color_legend a {
+    color: #000;
   }
 <% end %>
 
 <% if @pipelines.count > 1 %>
-  <div style="text-align: center">
-    <span class="pipeline_color_legend" style="background: #88ff88">This pipeline</span> 
-    <span class="pipeline_color_legend" style="background: #8888ff">Comparison pipeline</span>
-    <span class="pipeline_color_legend" style="background: #88ffff">Shared by both pipelines</span>
+  <div style="text-align: center; padding-top: 0.5em">
+    <span class="pipeline_color_legend" style="background: #aaffaa"><%= link_to_if_arvados_object @pipelines[0], friendly_name: true %></span>
+    <span class="pipeline_color_legend" style="background: #aaaaff"><%= link_to_if_arvados_object @pipelines[1], friendly_name: true %></span>
+    <% if @pipelines.count > 2 %>
+    <span class="pipeline_color_legend" style="background: #ffaaaa"><%= link_to_if_arvados_object @pipelines[2], friendly_name: true %></span>
+    <% end %>
+    <span class="pipeline_color_legend" style="background: #aaaaaa">Common to <%= @pipelines.count > 2 ? 'multiple' : 'both' %> pipelines</span>
   </div>
 <% end %>
 

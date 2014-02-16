@@ -2,7 +2,7 @@
 
 # Based on Debian Wheezy
 FROM arvados/debian:wheezy
-MAINTAINER Tim Pierce <twp@clinicalfuture.com>
+MAINTAINER Tim Pierce <twp@curoverse.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -16,7 +16,7 @@ RUN apt-get update && \
     /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     /usr/sbin/locale-gen && \
     curl -L https://get.rvm.io | bash -s stable --ruby=2.0.0 && \
-    git clone https://github.com/clinicalfuture/arvados.git /usr/src/arvados-upstream
+    git clone https://github.com/curoverse/arvados.git /usr/src/arvados-upstream
 
 # Set up RVM environment. These are just the env variables created by
 # /usr/local/rvm/scripts/rvm, which can't be run from a non-login shell.

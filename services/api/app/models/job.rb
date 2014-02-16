@@ -58,6 +58,10 @@ class Job < ArvadosModel
 
   protected
 
+  def foreign_key_attributes
+    super + %w(output log)
+  end
+
   def ensure_script_version_is_commit
     if self.is_locked_by_uuid and self.started_at
       # Apparently client has already decided to go for it. This is
@@ -168,9 +172,13 @@ class Job < ArvadosModel
   end
 
   def log_buffer
-    @@redis ||= Redis.new(:timeout => 0)
-    if @@redis.exists uuid
-      @@redis.getrange(uuid, 0 - 2**10, -1)
+    begin
+      @@redis ||= Redis.new(:timeout => 0)
+      if @@redis.exists uuid
+        @@redis.getrange(uuid, 0 - 2**10, -1)
+      end
+    rescue Redis::CannotConnectError
+      return '(not available)'
     end
   end
 end

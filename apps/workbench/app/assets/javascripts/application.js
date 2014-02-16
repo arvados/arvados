@@ -43,10 +43,10 @@ jQuery(function($){
     });
     $(document).
         on('ajax:send', function(e, xhr) {
-            $('.loading').show();
+            $('.loading').fadeTo('fast', 1);
         }).
         on('ajax:complete', function(e, status) {
-            $('.loading').hide();
+            $('.loading').fadeOut('fast', 0);
         }).
         on('click', '.removable-tag a', function(e) {
             $(this).parents('[data-tag-link-uuid]').eq(0).next().andSelf().remove();
@@ -64,4 +64,30 @@ jQuery(function($){
             }
             return false;
         });
+
+    HeaderRowFixer = function(selector) {
+        var tables = $(selector);
+        this.duplicateTheadTr = function() {
+            $('>tbody', tables).each(function(){
+                $(this).prepend($('thead>tr', this).clone().css('opacity:0'));
+            });
+        }
+        this.fixThead = function() {
+            tables.each(function() {
+                var widths = [];
+                $('> tbody > tr:eq(1) > td', this).each( function(i,v){
+                    widths.push($(v).width());
+                });
+                for(i=0;i<widths.length;i++) {
+                    $('thead th:eq('+i+')', this).width(widths[i]);
+                }
+            });
+        }
+    }
+    var fixer = new HeaderRowFixer('.table-fixed-header-row');
+    fixer.fixThead();
+    fixer.duplicateTheadTr();
+    $(window).resize(function(){
+        fixer.fixThead();
+    });
 })(jQuery);

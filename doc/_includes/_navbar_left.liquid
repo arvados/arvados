@@ -1,0 +1,18 @@
+<div class="col-sm-3">
+  <div class="well">
+    <ol class="nav nav-list">
+      {% for section in site.navbar[page.navsection] %}
+      {% for entry in section %}
+      <li><span class="nav-header">{{ entry[0] }}</span>
+	<ol class="nav nav-list">
+          {% for item in entry[1] %}        
+          {% assign p = site.pages[item] %}
+          <li {% if p.url == page.url %} class="active activesubnav" {% elsif p.title == page.subnavsection %} class="activesubnav" {% endif %}>
+            <a href="{{ site.baseurl }}{{ p.url }}">{{ p.title }}</a></li>
+          {% endfor %}
+        </ol>
+        {% endfor %}
+        {% endfor %}
+    </ol>
+  </div>
+</div>

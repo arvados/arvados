@@ -31,7 +31,7 @@
     body > div.container-fluid {
     padding-top: 70px; /* 70px to make the container go all the way to the bottom of the navbar */
     }
-    
+
     body > div.container-fluid > div.col-sm-9.col-sm-offset-3 {
     overflow: auto;
     }
@@ -59,18 +59,6 @@
     .breadcrumbs {
     display: none;
     }
-    }
-    .arvados-nav-container {
-    top: 70px; 
-    height: calc(100% - 70px); 
-    overflow: auto; 
-    z-index: 2;
-    }
-    .arvados-nav-active {
-    background: rgb(66, 139, 202);
-    }
-    .arvados-nav-active a {
-    color: white;
     }
   </style>
 </head>
@@ -111,16 +99,14 @@
         <% end %>
         <% end %>
       </ul>
-  
+
       <ul class="nav navbar-nav navbar-right">
 
-        <% if current_user %>
         <li>
-          <div class="loading" style="transform: translate(-20px,20px) scale(0.1,0.1); -ms-transform: translate(-20px,20px) scale(0.1,0.1); -webkit-transform: translate(-20px,20px) scale(0.1,0.1); display: none">
-            <%= render partial: 'loading' %>
-          </div>
+          <a><i class="rotating loading glyphicon glyphicon-refresh"></i></a>
         </li>
 
+        <% if current_user %>
         <!-- XXX placeholder for this when search is implemented
         <li>
           <form class="navbar-form" role="search">
@@ -142,26 +128,28 @@
           <ul class="dropdown-menu" role="menu">
               <li style="padding: 10px">No selections.</li>
           </ul>
-        </li>        
+        </li>
         -->
 
-        <li class="dropdown">
+        <% if current_user.is_active %>
+        <li class="dropdown notification-menu">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <span class="glyphicon glyphicon-envelope"></span>
-            <span class="badge badge-alert"><%= @notification_count %></span>
+            <span class="badge badge-alert notification-count"><%= @notification_count %></span>
             <span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
-            <% if @notifications.length > 0 %>
+            <% if (@notifications || []).length > 0 %>
               <% @notifications.each_with_index do |n, i| %>
                 <% if i > 0 %><li class="divider"></li><% end %>
-                <li style="padding: 10px"><%= n.call(self) %></li>
+                <li class="notification"><%= n.call(self) %></li>
               <% end %>
             <% else %>
-              <li style="padding: 10px">No notifications.</li>
+              <li class="notification empty">No notifications.</li>
             <% end %>
           </ul>
-        </li>        
+        </li>
+        <% end %>
 
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -169,10 +157,12 @@
           </a>
           <ul class="dropdown-menu" role="menu">
             <li role="presentation" class="dropdown-header"><%= current_user.email %></li>
+            <% if current_user.is_active %>
             <li role="presentation" class="divider"></li>
             <li role="presentation"><a href="/authorized_keys" role="menuitem">Manage ssh keys</a></li>
             <li role="presentation"><a href="/api_client_authorizations" role="menuitem">Manage API tokens</a></li>
             <li role="presentation" class="divider"></li>
+            <% end %>
             <li role="presentation"><a href="<%= logout_path %>" role="menuitem">Log out</a></li>
           </ul>
         </li>
@@ -192,27 +182,27 @@
       </div>
       <div class="col-sm-3 left-nav">
         <div class="arvados-nav-container">
-        <% if current_user %>
+        <% if current_user.andand.is_active %>
         <div class="well">
         <ul class="arvados-nav">
           <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
             <a href="/">Dashboard</a>
           </li>
-          
+
           <% [['Data', [['humans'],
                         ['traits'],
                         ['specimens'],
                         ['collections', 'Files'],
                         ['links', 'Metadata']]],
-              ['Compute', [['pipeline_templates', 'Pipelines'],
+              ['Compute', [['pipeline_templates'],
                            ['repositories', 'Code repositories'],
                            ['virtual_machines']]],
-              ['Activity', [['pipeline_instances', 'Recent pipelines'],
+              ['Activity', [['pipeline_instances', 'Recent pipeline instances'],
                             ['jobs', 'Recent jobs']]],
               ['System', [['users'],
                          ['groups'],
                          ['nodes', 'Compute nodes'],
-                         ['keep_disks']]]].each do |j| %>   
+                         ['keep_disks']]]].each do |j| %>
             <li><%= j[0] %>
               <ul>
               <% j[1].each do |k| %>
@@ -247,5 +237,6 @@
   <%= javascript_tag do %>
   <%= yield :footer_js %>
   <% end %>
+
 </body>
 </html>

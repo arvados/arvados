@@ -1,0 +1,28 @@
+/* Colors
+ * Contextual variations of badges
+ * Bootstrap 3.0 removed contexts for badges, we re-introduce them, based on what is done for labels
+ */
+
+.badge.badge-error {
+  background-color: #b94a48;
+}
+
+.badge.badge-warning {
+  background-color: #f89406;
+}
+
+.badge.badge-success {
+  background-color: #468847;
+}
+
+.badge.badge-info {
+  background-color: #3a87ad;
+}
+
+.badge.badge-inverse {
+  background-color: #333333;
+}
+
+.badge.badge-alert {
+    background: red;
+}
