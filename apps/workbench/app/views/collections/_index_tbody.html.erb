@@ -34,7 +34,11 @@
     <span>
     <% if @collection_info[c.uuid] %>
       <% @collection_info[c.uuid][:tag_links].each do |tag_link| %>
-        <span class="label label-info removable-tag" data-tag-link-uuid="<%= tag_link.uuid %>"><%= tag_link.name %>&nbsp;<a><i class="glyphicon glyphicon-trash"></i></a></span>
+        <span class="label label-info removable-tag" data-tag-link-uuid="<%= tag_link.uuid %>"><%= tag_link.name %>
+          <% if tag_link.owner_uuid == current_user.uuid %>
+          &nbsp;<a><i class="glyphicon glyphicon-trash"></i></a>
+          <% end %>
+        </span>
       <% end %>
     <% end %>
     </span>
