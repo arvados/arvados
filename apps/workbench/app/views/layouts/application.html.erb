@@ -139,7 +139,7 @@
             <span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">
-            <% if @notifications.length > 0 %>
+            <% if (@notifications || []).length > 0 %>
               <% @notifications.each_with_index do |n, i| %>
                 <% if i > 0 %><li class="divider"></li><% end %>
                 <li class="notification"><%= n.call(self) %></li>
