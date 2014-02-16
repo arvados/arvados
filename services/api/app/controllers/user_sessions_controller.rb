@@ -29,7 +29,7 @@ class UserSessionsController < ApplicationController
                  tail_kind: 'email',
                  tail_uuid: omniauth['info']['email'],
                  head_kind: 'arvados#user').each do |link|
-        if prefix = link.properties[:identity_url_prefix]
+        if prefix = link.properties['identity_url_prefix']
           if prefix == omniauth['info']['identity_url'][0..prefix.size-1]
             user = User.find_by_uuid(link.head_uuid)
             break if user
