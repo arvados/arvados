@@ -48,4 +48,30 @@ jQuery(function($){
         on('ajax:complete', function(e, status) {
             $('.loading').fadeOut('fast', 0);
         });
+
+    HeaderRowFixer = function(selector) {
+        var tables = $(selector);
+        this.duplicateTheadTr = function() {
+            $('>tbody', tables).each(function(){
+                $(this).prepend($('thead>tr', this).clone().css('opacity:0'));
+            });
+        }
+        this.fixThead = function() {
+            tables.each(function() {
+                var widths = [];
+                $('> tbody > tr:eq(1) > td', this).each( function(i,v){
+                    widths.push($(v).width());
+                });
+                for(i=0;i<widths.length;i++) {
+                    $('thead th:eq('+i+')', this).width(widths[i]);
+                }
+            });
+        }
+    }
+    var fixer = new HeaderRowFixer('.table-fixed-header-row');
+    fixer.fixThead();
+    fixer.duplicateTheadTr();
+    $(window).resize(function(){
+        fixer.fixThead();
+    });
 })(jQuery);
