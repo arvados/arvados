@@ -5,7 +5,7 @@ import re
 import subprocess
 import errno
 import sys
-import arvados.collection
+from arvados.collection import *
 
 def clear_tmpdir(path=None):
     """
