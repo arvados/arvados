@@ -34,6 +34,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :collections
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   root :to => 'users#welcome'
+  match '/related_objects' => 'related_objects#index'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)

@@ -119,16 +119,21 @@
         </li>
 
         <% if current_user %>
-        <!-- XXX placeholder for this when search is implemented
+        <!-- XXX placeholder for this when search is implemented -->
         <li>
+	  <%= form_tag("/related_objects", method: "get") do %>
+	    <%= text_field_tag(:q) %>
+	    <%= submit_tag("Search") %>
+	  <% end %>
+	  <!--
           <form class="navbar-form" role="search">
             <div class="input-group" style="width: 220px">
               <input type="text" class="form-control" placeholder="search">
               <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
             </div>
           </form>
+          -->
         </li>
-        -->
 
         <!-- XXX placeholder for this when persistent selection is implemented
         <li class="dropdown">
