@@ -1,7 +1,7 @@
 # Arvados Workbench Docker container.
 
 FROM arvados/passenger
-MAINTAINER Ward Vandewege <ward@clinicalfuture.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # Update Arvados source
 RUN /bin/mkdir -p /usr/src/arvados/apps

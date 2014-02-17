@@ -88,6 +88,12 @@ Deploying
    * controller.$API_HOSTNAME
    * workbench.$API_HOSTNAME
 
-2. The `run.sh` script in this directory will start all Arvados
-   servers on your machine.
+2. The `arvdock` script in this directory is used to start, stop and
+   restart Arvados servers on your machine. Example usages:
 
+   * `arvdock start`
+   * `arvdock stop`
+   * `arvdock restart`
+   * `arvdock start --api --sso` to start just the API and SSO services.
+   * `arvdock start --workbench=8000` starts just the Workbench service on port 8000.
+   * `arvdock stop --keep` to stop just the Keep services.

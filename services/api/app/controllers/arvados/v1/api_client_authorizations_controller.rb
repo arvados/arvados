@@ -2,6 +2,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   accept_attribute_as_json :scopes, Array
   before_filter :current_api_client_is_trusted
   before_filter :admin_required, :only => :create_system_auth
+  skip_before_filter :render_404_if_no_object, :only => :create_system_auth
 
   def self._create_system_auth_requires_parameters
     {

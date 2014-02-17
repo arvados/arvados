@@ -129,3 +129,17 @@ ul.arvados-nav li ul li {
 li.notification {
     padding: 10px;
 }
+.arvados-nav-container {
+    top: 70px; 
+    height: calc(100% - 70px); 
+    overflow: auto; 
+    z-index: 2;
+}
+
+.arvados-nav-active {
+    background: rgb(66, 139, 202);
+}
+
+.arvados-nav-active a {
+    color: white;
+}

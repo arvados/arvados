@@ -22,7 +22,7 @@
       </td><td>
         <%= render_editable_attribute ob, 'name' %>
       </td><td>
-        <%= link_to_if_arvados_object ob.owner_uuid %>
+        <%= link_to_if_arvados_object ob.owner_uuid, friendly_name: true %>
       </td><td>
         <%= ob.components.collect { |k,v| k.to_s }.join(", ") %>
       </td>

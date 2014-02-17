@@ -19,13 +19,13 @@ h2. Create a new script
 Change to your git directory and create a new script in "crunch_scripts/".
 
 <notextile>
-<pre><code>$ <span class="userinput">cd you/crunch_scripts</span>
-$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
+<pre><code>~$ <span class="userinput">cd <b>you</b>/crunch_scripts</span>
+~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
 #!/usr/bin/env python
 
 print "hello world"
 EOF</span>
-$ <span class="userinput">chmod +x hello-world.py</span>
+~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hello-world.py</span>
 </code></pre>
 </notextile>
 
@@ -34,14 +34,14 @@ h2. Using arv-crunch-job to run the job in your VM
 Instead of a git commit hash, we provide the path to the directory in the "script_version" parameter.  The script specified in "script" will actually be searched for in the "crunch_scripts/" subdirectory of the directory specified "script_version".  Although we are running the script locally, the script still requires access to the Arvados API server and Keep storage service. The job will be recorded in the Arvados job history, and visible in Workbench.
 
 <notextile>
-<pre><code>$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
+<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
  "script":"hello-world.py",
  "script_version":"/home/you/you",
  "script_parameters":{}
 }
 EOF</span>
-$ <span class="userinput">arv-crunch-job --job "$(cat the_job)"</span>
+~/<b>you</b>/crunch_scripts</span>$ <span class="userinput">arv-crunch-job --job "$(cat ~/the_job)"</span>
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  check slurm allocation
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  node localhost - 1 slots
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  start
@@ -75,7 +75,7 @@ bc. 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
 The script's output is captured in the log, which is useful for print statement debugging. However, although this script returned a status code of 0 (success), the job failed.  Why?  For a job to complete successfully scripts must explicitly add their output to Keep, and then tell Arvados about it.  Here is a second try:
 
 <notextile>
-<pre><code>$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
+<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
 #!/usr/bin/env python
 
 import arvados
@@ -97,15 +97,15 @@ arvados.current_task().set_output(out_collection)
 
 # Done!
 EOF</span>
-$ <span class="userinput">chmod +x hello-world-fixed.py</span>
-$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
+~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hello-world-fixed.py</span>
+~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
  "script":"hello-world-fixed.py",
  "script_version":"/home/you/you",
  "script_parameters":{}
 }
 EOF</span>
-$ <span class="userinput">arv-crunch-job --job "$(cat the_job)"</span>
+~/<b>you</b>/crunch_scripts$ <span class="userinput">arv-crunch-job --job "$(cat ~/the_job)"</span>
 2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  check slurm allocation
 2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  node localhost - 1 slots
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  start
@@ -134,7 +134,7 @@ $ <span class="userinput">arv-crunch-job --job "$(cat the_job)"</span>
 The job succeeded, with output in Keep object @576c44d762ba241b0a674aa43152b52a+53@.  Let's look at our output:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get 576c44d762ba241b0a674aa43152b52a+53/hello.txt</span>
+<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">arv keep get 576c44d762ba241b0a674aa43152b52a+53/hello.txt</span>
 hello world
 </code></pre>
 </notextile>
@@ -151,6 +151,6 @@ h3. Testing job scripts without SDKs and Keep access
 
 Read and write data to @/tmp/@ instead of Keep. This only works with the Python SDK.
 
-notextile. <pre><code>$ <span class="userinput">export KEEP_LOCAL_STORE=/tmp</span></code></pre>
+notextile. <pre><code>~$ <span class="userinput">export KEEP_LOCAL_STORE=/tmp</span></code></pre>
 
 Next, "parallel tasks.":tutorial-parallel.html

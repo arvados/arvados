@@ -24,4 +24,8 @@ class PipelineInstance < ArvadosBase
   def attributes_for_display
     super.reject { |k,v| k == 'components' }
   end
+
+  def self.creatable?
+    false
+  end
 end

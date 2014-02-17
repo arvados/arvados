@@ -29,7 +29,7 @@ For your first job, you will run the "hash" crunch script using the Arvados syst
 Crunch jobs are described using JSON objects.  For example:
 
 <notextile>
-<pre><code>$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
+<pre><code>~$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
 {
  "script": "hash",
  "script_version": "arvados:master",
@@ -46,13 +46,13 @@ EOF
 * @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@
 * @>the_job@ redirects standard output to a file called @the_job@
 * @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
-* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench through _Access %(rarr)&rarr;% Repositories_.
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench under _Compute %(rarr)&rarr;% Code repositories_.
 * @"script_parameters"@ are provided to the script.  In this case, the input is the locator for the collection that we inspected in the previous section.
 
 Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv -h job create --job "$(cat the_job)"</span>
+<pre><code>~$ <span class="userinput">arv job create --job "$(cat the_job)"</span>
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-1pm1t02dezhupss",
  "kind":"arvados#job",
@@ -98,22 +98,22 @@ The job is new queued and will start running as soon as it reaches the front of 
 
 h2. Monitor job progress
 
-Go to Workbench, and use the menu to navigate to _Compute %(rarr)&rarr;% Jobs_. The job you submitted can be identified by the *uuid* row, which will match the "uuid" field of the JSON object returned when the job was created.
+Go to the Workbench dashboard.  Your job should be at the top of the "Recent jobs" table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
 
-Hit "Refresh" until it finishes.  Successful completion is indicated by a green check mark in the *status* column.
+On the command line, you can access log messages while the job runs using @arv job log_tail_follow@:
 
-You can access log messages while the job runs using @arv job log_tail_follow@:
-
-notextile. <pre><code>$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-xxxxxxxxxxxxxxx</span></code></pre>
+notextile. <pre><code>~$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-xxxxxxxxxxxxxxx</span></code></pre>
 
 This will print out the last several lines of the log for that job.
 
 h2. Inspect the job output
 
-You can access the job output under the *output* column of the _Compute %(rarr)&rarr;% Jobs_ page.  Alternately, you can use @arv job get@ to access a JSON object describing the output:
+On the workbench dashboard, look for the *Output* column of the *Recent jobs* table.  Click on the link under *Output* for your job to go to the files page with the job output.  The files page lists all the files that were output by the job.  Click on the link under the *files* column to view a file, or click on the download icon <span class="glyphicon glyphicon-download-alt"></span> to download the output file.
+
+On the command line, you can use @arv job get@ to access a JSON object describing the output:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv -h job get --uuid qr1hi-8i9sb-xxxxxxxxxxxxxxx</span>
+<pre><code>~$ <span class="userinput">arv job get --uuid qr1hi-8i9sb-xxxxxxxxxxxxxxx</span>
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-1pm1t02dezhupss",
  "kind":"arvados#job",
@@ -162,15 +162,15 @@ You can access the job output under the *output* column of the _Compute %(rarr)&
 Now you can list the files in the collection:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54</span>
-. 78b268d1e03d87f8270bdee9d5d427c5+61 0:61:md5sum.txt
+<pre><code>~$ <span class="userinput">arv keep ls 880b55fb4470b148a447ff38cacdd952+54</span>
+md5sum.txt
 </code></pre>
 </notextile>
 
 This collection consists of the @md5sum.txt@ file.  Use @arv keep get@ to show the contents of the @md5sum.txt@ file:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
+<pre><code>~$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>
@@ -179,10 +179,12 @@ This md5 hash matches the md5 hash which we computed earlier.
 
 h2. The job log
 
-When the job completes, you can access the job log.  The keep identifier listed in the @"log"@ field from @arv job get@ specifies a collection.  You can list the files in the collection:
+When the job completes, you can access the job log.  On the workbench dashboard, this is the link under the *Log* column of the *Recent jobs* table.
+
+On the command line, the keep identifier listed in the @"log"@ field from @arv job get@ specifies a collection.  You can list the files in the collection:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep ls xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91</span>
+<pre><code>~$ <span class="userinput">arv keep ls xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91</span>
 qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt
 </code></pre>
 </notextile>
@@ -190,7 +192,7 @@ qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt
 The log collection consists of one log file named with the job id.  You can access it using @arv keep get@:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91/qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt</span>
+<pre><code>~$ <span class="userinput">arv keep get xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91/qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt</span>
 2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  check slurm allocation
 2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  node compute13 - 8 slots
 2013-12-16_20:44:36 qr1hi-8i9sb-1pm1t02dezhupss 7575  start

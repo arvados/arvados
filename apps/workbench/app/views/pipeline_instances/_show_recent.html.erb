@@ -1,6 +1,6 @@
 <%= content_for :tab_line_buttons do %>
 <%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
-  <%= submit_tag 'Compare selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
+  <%= submit_tag 'Compare 2 or 3 selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
   &nbsp;
 <% end rescue nil %>
 <% end %>
@@ -85,13 +85,16 @@
 var showhide_compare = function() {
     var form = $('form#compare')[0];
     $('input[type=hidden][name="uuids[]"]', form).remove();
-    $('input[type=submit]', form).prop('disabled',true);
-    $('input[name="uuids[]"]').each(function(){
-        if(this.checked) {
-            $('input[type=submit]', form).prop('disabled',false).show();
-            $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
-        }
-    });
+    $('input[type=submit]', form).prop('disabled',true).show();
+    var checked_inputs = $('input[name="uuids[]"]:checked');
+    if (checked_inputs.length >= 2 && checked_inputs.length <= 3) {
+        checked_inputs.each(function(){
+            if(this.checked) {
+                $('input[type=submit]', form).prop('disabled',false).show();
+                $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
+            }
+        });
+    }
 };
 $('form input[name="uuids[]"]').on('click', showhide_compare);
 showhide_compare();

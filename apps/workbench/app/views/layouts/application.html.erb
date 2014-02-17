@@ -60,18 +60,6 @@
     display: none;
     }
     }
-    .arvados-nav-container {
-    top: 70px; 
-    height: calc(100% - 70px); 
-    overflow: auto; 
-    z-index: 2;
-    }
-    .arvados-nav-active {
-    background: rgb(66, 139, 202);
-    }
-    .arvados-nav-active a {
-    color: white;
-    }
   </style>
 </head>
 <body>
@@ -207,10 +195,10 @@
                         ['specimens'],
                         ['collections', 'Files'],
                         ['links', 'Metadata']]],
-              ['Compute', [['pipeline_templates', 'Pipelines'],
+              ['Compute', [['pipeline_templates'],
                            ['repositories', 'Code repositories'],
                            ['virtual_machines']]],
-              ['Activity', [['pipeline_instances', 'Recent pipelines'],
+              ['Activity', [['pipeline_instances', 'Recent pipeline instances'],
                             ['jobs', 'Recent jobs']]],
               ['System', [['users'],
                          ['groups'],

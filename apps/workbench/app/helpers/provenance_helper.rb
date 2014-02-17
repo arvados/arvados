@@ -25,16 +25,8 @@ module ProvenanceHelper
     end
 
     def determine_fillcolor(n)
-      bgcolor = ""
-      case n
-      when 1
-        bgcolor = "style=filled,fillcolor=\"#88ff88\""
-      when 2
-        bgcolor = "style=filled,fillcolor=\"#8888ff\""
-      when 3
-        bgcolor = "style=filled,fillcolor=\"#88ffff\""
-      end
-      bgcolor
+      fillcolor = %w(aaaaaa aaffaa aaaaff aaaaaa ffaaaa)[n || 0] || 'aaaaaa'
+      "style=filled,fillcolor=\"##{fillcolor}\""
     end
 
     def describe_node(uuid)
