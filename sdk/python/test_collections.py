@@ -208,9 +208,6 @@ class LocalCollectionGzipDecompressionTest(unittest.TestCase):
                          "decompression returned %d lines instead of %d" % (got, n_lines_in))
 
 class NormalizedCollectionTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
     def runTest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
@@ -257,3 +254,81 @@ class NormalizedCollectionTest(unittest.TestCase):
         m8 = """./a\\040b\\040c 59ca0efa9f5633cb0371bbc0355478d8+13 0:13:hello\\040world.txt
 """
         self.assertEqual(arvados.CollectionReader(m8).manifest_text(), m8)
+
+class LocatorsAndRangesTest(unittest.TestCase):
+    def runTest(self):
+        blocks2 = [['a', 10, 0],
+                  ['b', 10, 10],
+                  ['c', 10, 20],
+                  ['d', 10, 30],
+                  ['e', 10, 40],
+                  ['f', 10, 50]]
+
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  2,  2), [['a', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 12, 2), [['b', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 22, 2), [['c', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 32, 2), [['d', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 42, 2), [['e', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 52, 2), [['f', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 62, 2), [])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, -2, 2), [])
+        
+        blocks3 = [['a', 10, 0],
+                  ['b', 10, 10],
+                  ['c', 10, 20],
+                  ['d', 10, 30],
+                  ['e', 10, 40],
+                  ['f', 10, 50],
+                  ['g', 10, 60]]
+
+        self.assertEqual(arvados.locators_and_ranges(blocks3,  2,  2), [['a', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 12, 2), [['b', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 22, 2), [['c', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 32, 2), [['d', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 42, 2), [['e', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 52, 2), [['f', 10, 2, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks3, 62, 2), [['g', 10, 2, 2]])
+
+
+        blocks = [['a', 10, 0],
+                  ['b', 15, 10],
+                  ['c', 5, 25]]
+        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 0), [])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 5), [['a', 10, 0, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 3, 5), [['a', 10, 3, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 10), [['a', 10, 0, 10]])
+        
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 11), [['a', 10, 0, 10],
+                                                                      ['b', 15, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 11), [['a', 10, 1, 9],
+                                                                      ['b', 15, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 25), [['a', 10, 0, 10],
+                                                                      ['b', 15, 0, 15]])
+        
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 30), [['a', 10, 0, 10],
+                                                                      ['b', 15, 0, 15],
+                                                                      ['c', 5, 0, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 1, 30), [['a', 10, 1, 9],
+                                                                      ['b', 15, 0, 15],
+                                                                      ['c', 5, 0, 5]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 0, 31), [['a', 10, 0, 10],
+                                                                      ['b', 15, 0, 15],
+                                                                      ['c', 5, 0, 5]])
+        
+        self.assertEqual(arvados.locators_and_ranges(blocks, 15, 5), [['b', 15, 5, 5]])
+        
+        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 17), [['a', 10, 8, 2],
+                                                                      ['b', 15, 0, 15]])
+
+        self.assertEqual(arvados.locators_and_ranges(blocks, 8, 20), [['a', 10, 8, 2],
+                                                                      ['b', 15, 0, 15],
+                                                                      ['c', 5, 0, 3]])
+        
+        self.assertEqual(arvados.locators_and_ranges(blocks, 26, 2), [['c', 5, 1, 2]])
+        
+        self.assertEqual(arvados.locators_and_ranges(blocks, 9, 15), [['a', 10, 9, 1],
+                                                                      ['b', 15, 0, 14]])        
+        self.assertEqual(arvados.locators_and_ranges(blocks, 10, 15), [['b', 15, 0, 15]])
+        self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [['b', 15, 1, 14],
+                                                                       ['c', 5, 0, 1]])
+

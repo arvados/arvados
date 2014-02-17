@@ -27,25 +27,57 @@ BLOCKSIZE = 1
 OFFSET = 2
 SEGMENTSIZE = 3
 
-def locators_and_ranges(data_locators, range_start, range_size):
-    '''returns list of [block locator, blocksize, segment offset, segment size] that satisfies the range'''
+def locators_and_ranges(data_locators, range_start, range_size, debug=False):
+    '''
+    Get blocks that are covered by the range
+    data_locators: list of [locator, block_size, block_start], assumes that blocks are in order and contigous
+    range_start: start of range
+    range_size: size of range
+    returns list of [block locator, blocksize, segment offset, segment size] that satisfies the range
+    '''
+    if range_size == 0:
+        return []
     resp = []
     range_start = long(range_start)
     range_size = long(range_size)
     range_end = range_start + range_size
     block_start = 0L
-    for locator, block_size, block_start in data_locators:
+
+    hi = len(data_locators)
+    lo = 0
+    i = int((hi + lo) / 2)
+    block_size = data_locators[i][BLOCKSIZE]
+    block_start = data_locators[i][OFFSET]
+    block_end = block_start + block_size
+    if debug: print '---'
+    while not (range_start >= block_start and range_start <= block_end):
+        if lo == i:
+            break
+        if range_start > block_start:
+            lo = i
+        else:
+            hi = i
+        i = int((hi + lo) / 2)
+        if debug: print lo, i, hi
+        block_size = data_locators[i][BLOCKSIZE]
+        block_start = data_locators[i][OFFSET]
         block_end = block_start + block_size
-        if range_end < block_start:
+    
+    while i < len(data_locators):
+        locator, block_size, block_start = data_locators[i]
+        block_end = block_start + block_size
+        if debug:
+            print locator, "range_start", range_start, "block_start", block_start, "range_end", range_end, "block_end", block_end
+        if range_end <= block_start:
             # range ends before this block starts, so don't look at any more locators
             break
-        if range_start > block_end:
+        if range_start >= block_end:
             # range starts after this block ends, so go to next block
             next
         elif range_start >= block_start and range_end <= block_end:
             # range starts and ends in this block
             resp.append([locator, block_size, range_start - block_start, range_size])
-        elif range_start >= block_start:
+        elif range_start >= block_start and range_end > block_end:
             # range starts in this block
             resp.append([locator, block_size, range_start - block_start, block_end - range_start])
         elif range_start < block_start and range_end > block_end:
@@ -55,6 +87,7 @@ def locators_and_ranges(data_locators, range_start, range_size):
             # range starts in a previous block and ends in this block
             resp.append([locator, block_size, 0L, range_end - block_start])
         block_start = block_end
+        i += 1
     return resp
 
 
