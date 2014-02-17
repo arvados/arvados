@@ -51,19 +51,15 @@ class LocalCollectionReaderTest(unittest.TestCase):
                     [3, '.', 'foo.txt', 'foo'],
                     [3, './baz', 'baz.txt', 'baz']]
         self.assertEqual(got,
-                         expected,
-                         'resulting file list is not what I expected')
+                         expected)
         stream0 = cr.all_streams()[0]
-        self.assertEqual(stream0.read(0),
+        self.assertEqual(stream0.readfrom(0, 0),
                          '',
                          'reading zero bytes should have returned empty string')
-        self.assertEqual(stream0.read(2**26),
+        self.assertEqual(stream0.readfrom(0, 2**26),
                          'foobar',
                          'reading entire stream failed')
-        self.assertEqual(stream0.read(2**26),
-                         None,
-                         'reading past end of stream should have returned None')
-        self.assertEqual(stream0.read(0),
+        self.assertEqual(stream0.readfrom(2**26, 0),
                          '',
                          'reading zero bytes should have returned empty string')
 
@@ -91,24 +87,19 @@ class LocalCollectionManifestSubsetTest(unittest.TestCase):
                         arvados.Keep.put("bar"))),
                       [[2, '.', 'ar.txt', 'ar'],
                        [2, '.', 'fo.txt', 'fo'],                       
-                       [1, '.', 'ob.txt', 'o'],
-                       [1, '.', 'ob.txt', 'b'],
-                       [0, '.', 'zero.txt', ''],])
+                       [2, '.', 'ob.txt', 'ob'],
+                       [0, '.', 'zero.txt', '']])
+
     def _runTest(self, collection, expected):
         cr = arvados.CollectionReader(collection)
-        manifest_subsets = []
         for s in cr.all_streams():
-            for f in s.all_files():
-                manifest_subsets += [f.as_manifest()]
-        expect_i = 0
-        for m in manifest_subsets:
-            cr = arvados.CollectionReader(m)
-            for f in cr.all_files():
-                got = [f.size(), f.stream_name(), f.name(), "".join(f.readall(2**26))]
-                self.assertEqual(got,
-                                 expected[expect_i],
-                                 'all_files|as_manifest did not preserve manifest contents: got %s expected %s' % (got, expected[expect_i]))
-                expect_i += 1
+            for ex in expected:
+                if ex[0] == s:
+                    f = s.files()[ex[2]]
+                    got = [f.size(), f.stream_name(), f.name(), "".join(f.readall(2**26))]
+                    self.assertEqual(got,
+                                     ex,
+                                     'all_files|as_manifest did not preserve manifest contents: got %s expected %s' % (got, ex))
 
 class LocalCollectionReadlineTest(unittest.TestCase):
     def setUp(self):
@@ -138,6 +129,10 @@ class LocalCollectionEmptyFileTest(unittest.TestCase):
         cw = arvados.CollectionWriter()
         cw.start_new_file('zero.txt')
         cw.write('')
+
+        print 'stuff'
+
+        self.assertEqual(cw.manifest_text(), ". 0:0:zero.txt\n")
         self.check_manifest_file_sizes(cw.manifest_text(), [0])
         cw = arvados.CollectionWriter()
         cw.start_new_file('zero.txt')
@@ -148,6 +143,7 @@ class LocalCollectionEmptyFileTest(unittest.TestCase):
         cw.start_new_file('zero.txt')
         cw.write('')
         self.check_manifest_file_sizes(cw.manifest_text(), [1,0,0])
+
     def check_manifest_file_sizes(self, manifest_text, expect_sizes):
         cr = arvados.CollectionReader(manifest_text)
         got_sizes = []
@@ -272,6 +268,23 @@ class LocatorsAndRangesTest(unittest.TestCase):
         self.assertEqual(arvados.locators_and_ranges(blocks2, 52, 2), [['f', 10, 2, 2]])
         self.assertEqual(arvados.locators_and_ranges(blocks2, 62, 2), [])
         self.assertEqual(arvados.locators_and_ranges(blocks2, -2, 2), [])
+
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  0,  2), [['a', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 10, 2), [['b', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 20, 2), [['c', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 30, 2), [['d', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 40, 2), [['e', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 50, 2), [['f', 10, 0, 2]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 60, 2), [])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, -2, 2), [])
+
+        self.assertEqual(arvados.locators_and_ranges(blocks2,  9,  2), [['a', 10, 9, 1], ['b', 10, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 19, 2), [['b', 10, 9, 1], ['c', 10, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 29, 2), [['c', 10, 9, 1], ['d', 10, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 39, 2), [['d', 10, 9, 1], ['e', 10, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 49, 2), [['e', 10, 9, 1], ['f', 10, 0, 1]])
+        self.assertEqual(arvados.locators_and_ranges(blocks2, 59, 2), [['f', 10, 9, 1]])
+
         
         blocks3 = [['a', 10, 0],
                   ['b', 10, 10],
@@ -331,4 +344,110 @@ class LocatorsAndRangesTest(unittest.TestCase):
         self.assertEqual(arvados.locators_and_ranges(blocks, 10, 15), [['b', 15, 0, 15]])
         self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [['b', 15, 1, 14],
                                                                        ['c', 5, 0, 1]])
+
+class FileStreamTest(unittest.TestCase):
+    class MockStreamReader(object):
+        def __init__(self, content):
+            self.content = content
+
+        def readfrom(self, start, size):
+            return self.content[start:start+size]
+
+    def runTest(self):
+        content = 'abcdefghijklmnopqrstuvwxyz0123456789'
+        msr = FileStreamTest.MockStreamReader(content)
+        segments = [[0, 10, 0],
+                    [10, 15, 10],
+                    [25, 5, 25]]
+        
+        sfr = arvados.StreamFileReader(msr, segments, "test")
+
+        self.assertEqual(sfr.name(), "test")
+        self.assertEqual(sfr.size(), 30)
+
+        self.assertEqual(sfr.readfrom(0, 30), content[0:30])
+        self.assertEqual(sfr.readfrom(2, 30), content[2:30])
+
+        self.assertEqual(sfr.readfrom(2, 8), content[2:10])
+        self.assertEqual(sfr.readfrom(0, 10), content[0:10])
+
+        self.assertEqual(sfr.tell(), 0)
+        self.assertEqual(sfr.read(5), content[0:5])
+        self.assertEqual(sfr.tell(), 5)
+        self.assertEqual(sfr.read(5), content[5:10])
+        self.assertEqual(sfr.tell(), 10)
+        self.assertEqual(sfr.read(5), content[10:15])
+        self.assertEqual(sfr.tell(), 15)
+        self.assertEqual(sfr.read(5), content[15:20])
+        self.assertEqual(sfr.tell(), 20)
+        self.assertEqual(sfr.read(5), content[20:25])
+        self.assertEqual(sfr.tell(), 25)
+        self.assertEqual(sfr.read(5), content[25:30])
+        self.assertEqual(sfr.tell(), 30)
+        self.assertEqual(sfr.read(5), '')
+        self.assertEqual(sfr.tell(), 30)
+
+        segments = [[26, 10, 0],
+                    [0, 15, 10],
+                    [15, 5, 25]]
+        
+        sfr = arvados.StreamFileReader(msr, segments, "test")
+
+        self.assertEqual(sfr.size(), 30)
+
+        self.assertEqual(sfr.readfrom(0, 30), content[26:36] + content[0:20])
+        self.assertEqual(sfr.readfrom(2, 30), content[28:36] + content[0:20])
+
+        self.assertEqual(sfr.readfrom(2, 8), content[28:36])
+        self.assertEqual(sfr.readfrom(0, 10), content[26:36])
+
+        self.assertEqual(sfr.tell(), 0)
+        self.assertEqual(sfr.read(5), content[26:31])
+        self.assertEqual(sfr.tell(), 5)
+        self.assertEqual(sfr.read(5), content[31:36])
+        self.assertEqual(sfr.tell(), 10)
+        self.assertEqual(sfr.read(5), content[0:5])
+        self.assertEqual(sfr.tell(), 15)
+        self.assertEqual(sfr.read(5), content[5:10])
+        self.assertEqual(sfr.tell(), 20)
+        self.assertEqual(sfr.read(5), content[10:15])
+        self.assertEqual(sfr.tell(), 25)
+        self.assertEqual(sfr.read(5), content[15:20])
+        self.assertEqual(sfr.tell(), 30)
+        self.assertEqual(sfr.read(5), '')
+        self.assertEqual(sfr.tell(), 30)
+
+
+class StreamReaderTest(unittest.TestCase):
+
+    class MockKeep(object):
+        def __init__(self, content):
+            self.content = content
+
+        def get(self, locator):
+            return self.content[locator]
+
+    def runTest(self):
+        keepblocks = {'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10': 'abcdefghij', 
+                      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15': 'klmnopqrstuvwxy', 
+                      'cccccccccccccccccccccccccccccccc+5': 'z0123'}
+        mk = StreamReaderTest.MockKeep(keepblocks)
+
+        sr = arvados.StreamReader([".", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15", "cccccccccccccccccccccccccccccccc+5", "0:30:foo"], mk)
+
+        content = 'abcdefghijklmnopqrstuvwxyz0123456789'
+
+        self.assertEqual(sr.readfrom(0, 30), content[0:30])
+        self.assertEqual(sr.readfrom(2, 30), content[2:30])
+
+        self.assertEqual(sr.readfrom(2, 8), content[2:10])
+        self.assertEqual(sr.readfrom(0, 10), content[0:10])
+
+        self.assertEqual(sr.readfrom(0, 5), content[0:5])
+        self.assertEqual(sr.readfrom(5, 5), content[5:10])
+        self.assertEqual(sr.readfrom(10, 5), content[10:15])
+        self.assertEqual(sr.readfrom(15, 5), content[15:20])
+        self.assertEqual(sr.readfrom(20, 5), content[20:25])
+        self.assertEqual(sr.readfrom(25, 5), content[25:30])
+        self.assertEqual(sr.readfrom(30, 5), '')
 
