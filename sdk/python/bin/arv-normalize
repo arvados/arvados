@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(os.path.basename(sys.argv[0]))
 
 parser = argparse.ArgumentParser(
-    description='Normalize contents of a manifest')
+    description='Read manifest on standard input and put normalized manifest on standard output.')
 
 args = parser.parse_args()
 

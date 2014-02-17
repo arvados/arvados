@@ -61,9 +61,19 @@ class Collection < ArvadosModel
       @files = []
       return
     end
+
+    normalized_manifest = ""
+    IO.popen(['arv-normalize'], 'w+b') do |io|
+      io.write manifest_text
+      io.close_write
+      while buf = io.read(2**20)
+        normalized_manifest += buf
+      end
+    end
+
     @data_size = 0
     @files = []
-    manifest_text.split("\n").each do |stream|
+    normalized_manifest.split("\n").each do |stream|
       toks = stream.split(" ")
 
       stream = toks[0].gsub /\\(\\|[0-7]{3})/ do |escape_sequence|
@@ -94,7 +104,11 @@ class Collection < ArvadosModel
               else $1.to_i(8).chr
               end
             end
-            @files << [stream, filename, re[2].to_i]
+            if @files > 0 and @files[-1][0] == stream and @files[-1][1] == filename
+              @files[-1][2] += re[2].to_i
+            else
+              @files << [stream, filename, re[2].to_i]
+            end
           end
         end
       end
