@@ -24,5 +24,5 @@ import arvados
 
 cr = arvados.CollectionReader(arvados.Keep.get(args.locator))
 
-for f in rc.all_files():
+for f in cr.all_files():
     print(f.stream_name() + "/" + f.name())

@@ -250,18 +250,19 @@ class KeepClient(object):
         """Put a block into the cache."""
         if self.check_cache(locator) != None:
             return
-        self.cache_lock.acquire()
+        self._cache_lock.acquire()
         try:
             # first check cache size and delete stuff from the end if necessary
             sm = sum([len(a[1]) for a in self._cache]) + len(data)
-            while sum > self._cache_max:
+            while sm > self._cache_max:
+		print sm, self._cache_max
                 del self._cache[-1]
                 sm = sum([len(a[1]) for a in self._cache]) + len(data)
 
             # now add the new block at the front of the list
             self._cache.insert(0, [locator, data])
         finally:
-            self.cache_lock.release()
+            self._cache_lock.release()
 
     def check_cache(self, locator):
         """Get a block from the cache.  Also moves the block to the front of the list."""
