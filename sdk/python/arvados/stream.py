@@ -129,6 +129,16 @@ class StreamFileReader(object):
             self._filepos += len(data)
         return data
 
+    def readfrom(self, start, size):
+        """Read up to 'size' bytes from the stream, starting at 'start'"""
+        if size == 0:
+            return ''
+
+        data = []
+        for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.segments, start, size):
+            data += self._stream.readfrom(locator+segmentoffset, segmentsize)
+        return data.join()
+
     def readall(self, size=2**20):
         while True:
             data = self.read(size)
@@ -248,4 +258,13 @@ class StreamReader(object):
         for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.data_locators, self._pos, size):
             data += Keep.get(locator)[segmentoffset:segmentoffset+segmentsize]
         self._pos += len(data)
+        return data
+
+    def readfrom(self, start, size):
+        """Read up to 'size' bytes from the stream, starting at 'start'"""
+        if size == 0:
+            return ''
+        data = ''
+        for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.data_locators, start, size):
+            data += Keep.get(locator)[segmentoffset:segmentoffset+segmentsize]
         return data
