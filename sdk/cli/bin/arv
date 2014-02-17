@@ -36,7 +36,7 @@ case ARGV[0]
 when 'keep'
   ARGV.shift
   @sub = ARGV.shift
-  if ['get', 'put', 'ls'].index @sub then
+  if ['get', 'put', 'ls', 'normalize'].index @sub then
     # Native Arvados
     exec `which arv-#{@sub}`.strip, *ARGV
   elsif ['less', 'check'].index @sub then
