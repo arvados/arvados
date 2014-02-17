@@ -274,7 +274,7 @@ class KeepClient(object):
                     self._cache.insert(0, n)
                     return n[1]   
         finally:
-            self.cache_lock.release()
+            self._cache_lock.release()
         return None            
 
     @staticmethod
