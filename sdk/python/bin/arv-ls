@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('locator', type=str,
                     help="""
-Collection locator, optionally with a file path or prefix.
+Collection locator
 """)
 
 parser.add_argument('-s', action='store_true', help="""List file sizes, in KiB.""")
