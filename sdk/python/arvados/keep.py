@@ -142,7 +142,7 @@ class KeepClient(object):
     def shuffled_service_roots(self, hash):
         if self.service_roots == None:
             self.lock.acquire()
-            keep_disks = api().keep_disks().list().execute()['items']
+            keep_disks = arvados.api().keep_disks().list().execute()['items']
             roots = (("http%s://%s:%d/" %
                       ('s' if f['service_ssl_flag'] else '',
                        f['service_host'],
