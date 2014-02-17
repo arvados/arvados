@@ -1,0 +1,197 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+import llfuse
+import errno
+import stat
+import threading
+import arvados
+import argparse
+import pprint
+
+from time import time
+from llfuse import FUSEError
+
+class Directory(object):
+    def __init__(self, inode, parent):
+        self.inode = inode
+        self.parent = parent
+        self.entries = {}
+
+    def __getitem__(self, item):
+        return self.entries[item]
+
+    def __setitem__(self, key, item):
+        self.entries[key] = item
+
+    def __iter__(self):
+        return self.entries.iterkeys()
+
+    def __contains__(self, k):
+        return k in self.entries
+
+    def size(self):
+        return 0
+
+class FileHandle(object):
+    def __init__(self, fh, entry):
+        self.fh = fh
+        self.entry = entry
+
+class Operations(llfuse.Operations):
+
+   def __init__(self, collection):
+        super(Operations, self).__init__()
+        #self.api = arvados.api('v1')
+
+        # dict of inodes to collection entry
+        self._inodes = {}
+
+        i = 1
+        self.root = Directory(i, i)
+        self._inodes[i] = self.root
+
+        for s in collection.all_streams():
+            cwd = self.root
+            for part in s.name().split('/'):
+                if part != '':
+                    if part not in cwd:
+                        i += 1
+                        cwd[part] = Directory(cwd.inode, i)
+                        self._inodes[i] = cwd[part]
+                    cwd = cwd[part]
+            for k, v in s.files().items():
+                i += 1
+                cwd[k] = v
+                self._inodes[i] = cwd[k]
+
+        # dict of inode to filehandle
+        self._filehandles = {}
+        self._filehandles_lock = threading.Lock()
+        self._filehandles_counter = 1
+
+   def access(self, inode, mode, ctx):
+       return True
+   
+   def getattr(self, inode):
+       entry = self._inodes[inode]
+
+       entry = llfuse.EntryAttributes()
+       entry.st_ino = inode
+       entry.generation = 0
+       entry.entry_timeout = 300
+       entry.attr_timeout = 300
+
+       entry.st_mode = 0444
+       entry.st_nlink = 0
+       entry.st_uid = 0
+       entry.st_gid = 0
+       entry.st_rdev = 0
+
+       entry.st_size = entry.size()
+       
+       entry.st_blksize = 512
+       entry.st_blocks = 1
+       entry.st_atime = 0
+       entry.st_mtime = 0
+       entry.st_ctime = 0
+       
+       return entry
+
+   def lookup(self, parent_inode, name):
+       inode = None
+
+       if name == '.':
+           inode = parent_inode
+       else:
+           if parent_inode in self._inodes:
+               p = self._inodes[parent_inode]
+               if name == '..':
+                   inode = p.parent
+               elif name in p:
+                   inode = p[name].inode
+                   
+       if inode != None:
+           return self.getattr(inode)
+       else:
+           raise llfuse.FUSEError(errno.ENOENT)
+   
+
+   def forget(self, inode_list):
+       pass
+
+
+   def open(self, inode, flags):
+       pass
+
+   def read(self, fh, off, size):
+       pass
+
+   def release(self, fh):
+       pass
+
+   def opendir(self, inode):
+       if inode in self._inodes:
+           p = self._inodes[inode]
+       else:
+           raise llfuse.FUSEError(errno.ENOENT)
+
+       self._filehandles_lock.lock()
+       try:
+           fh = self._filehandles_counter
+           self._filehandles_counter += 1
+           self._filehandles[fh] = FileHandle(fh, p)
+           return fh
+       finally:
+           self._filehandles_lock.unlock()
+
+   def readdir(self, fh, off):
+       self._filehandles_lock.lock()
+       try:
+           handle = self._filehandles[fh]
+       finally:
+           self._filehandles_lock.unlock()
+
+       ent = list(handle.entry.entries.items())
+       e = off
+       while e < len(ent):
+           e += 1
+           yield (ent[e][0], self.getattr(ent[e][1].inode), e)
+
+   def releasedir(self, fh):
+       self._filehandles_lock.lock()
+       try:
+           del self._filehandles[fh]
+       finally:
+           self._filehandles_lock.unlock()
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(
+        description='Mount Keep data under the local filesystem.')
+    parser.add_argument('mountpoint', type=str,
+                        help="""Mount point.""")
+
+    parser.add_argument('--collection', type=str, action='append',
+                        help="""Collection locator""")
+
+    args = parser.parse_args()
+
+    # for testing only!
+    manifest = open('/home/peter/work/arvados/sdk/python/testdata/jlake_manifest').read()
+    
+    operations = Operations(arvados.CollectionReader(manifest))
+
+    #operations = Operations(arvados.CollectionReader(arvados.Keep.get(args.collection)))
+    
+    llfuse.init(operations, args.mountpoint, [ b'fsname=keepfuse' ])
+    
+    try:
+        llfuse.main()
+    except:
+        llfuse.close(unmount=False)
+        raise
+
+    llfuse.close()
