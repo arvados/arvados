@@ -51,12 +51,17 @@ class FileHandle(object):
 
 class Operations(llfuse.Operations):
 
-    def __init__(self, collection):
+    def __init__(self, collection, uid, gid):
         super(Operations, self).__init__()
         #self.api = arvados.api('v1')
 
         # dict of inodes to collection entry
         self._inodes = {}
+
+        self.uid = uid
+        self.gid = gid
+        
+        #print "root_parent", root_parent, "llfuse.ROOT_INODE", llfuse.ROOT_INODE
 
         i = llfuse.ROOT_INODE
         self.root = Directory(i, i)
@@ -94,19 +99,21 @@ class Operations(llfuse.Operations):
 
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
-            entry.st_mode |= stat.S_IFDIR
+            entry.st_mode |= stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH | stat.S_IFDIR
         else:
             entry.st_mode |= stat.S_IFREG
 
         entry.st_nlink = 1
-        entry.st_uid = 0
-        entry.st_gid = 0
+        entry.st_uid = self.uid
+        entry.st_gid = self.gid
         entry.st_rdev = 0
 
         entry.st_size = e.size()
 
-        entry.st_blksize = 512
-        entry.st_blocks = 1
+        entry.st_blksize = 1024
+        entry.st_blocks = e.size()/1024
+        if e.size()/1024 != 0:
+            entry.st_blocks += 1
         entry.st_atime = 0
         entry.st_mtime = 0
         entry.st_ctime = 0
@@ -147,19 +154,21 @@ class Operations(llfuse.Operations):
         return fh
 
     def read(self, fh, off, size):
+        #print "read", fh, off, size
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
-        with llfuse.lock_released:
-            try:
+        try:
+            with llfuse.lock_released:
                 return handle.entry.reader.readfrom(off, size)
-            except:
-                raise llfuse.FUSEError(errno.EIO)
+        except:
+            raise llfuse.FUSEError(errno.EIO)
 
     def release(self, fh):
-        del self._filehandles[fh]
+        if fh in self._filehandles:
+            del self._filehandles[fh]
 
     def opendir(self, inode):
         #print "opendir: inode", inode
@@ -174,7 +183,11 @@ class Operations(llfuse.Operations):
 
         fh = self._filehandles_counter
         self._filehandles_counter += 1
-        self._filehandles[fh] = FileHandle(fh, [('.', p), ('..', self._inodes[p.parent])] + list(p.entries.items()))
+        if p.parent in self._inodes:
+            parent = self._inodes[p.parent]
+        else:
+            parent = None
+        self._filehandles[fh] = FileHandle(fh, [('.', p), ('..', parent)] + list(p.entries.items()))
         return fh
 
     def readdir(self, fh, off):
@@ -199,22 +212,23 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
         description='Mount Keep data under the local filesystem.')
-    parser.add_argument('mountpoint', type=str,
-                        help="""Mount point.""")
-
-    parser.add_argument('--collection', type=str, action='append',
-                        help="""Collection locator""")
+    parser.add_argument('mountpoint', type=str, help="""Mount point.""")
+    parser.add_argument('--collection', type=str, required=True, help="""Collection locator""")
+    parser.add_argument('--debug', action='store_true', help="""Debug mode""")
 
     args = parser.parse_args()
 
     # for testing only!
-    manifest = open('/home/peter/work/arvados/sdk/python/testdata/jlake_manifest').read()
-    
-    operations = Operations(arvados.CollectionReader(manifest))
+    #manifest = open('/home/peter/arvados/sdk/python/testdata/jlake_manifest').read()
+    #operations = Operations(arvados.CollectionReader(manifest), os.getuid(), os.getgid())
 
-    #operations = Operations(arvados.CollectionReader(arvados.Keep.get(args.collection)))
+    operations = Operations(arvados.CollectionReader(arvados.Keep.get(args.collection)), os.getuid(), os.getgid())
     
-    llfuse.init(operations, args.mountpoint, [ b'fsname=keepfuse', 'debug' ])
+    opts = []
+    if args.debug:
+        opts += ['debug']
+
+    llfuse.init(operations, args.mountpoint, opts)
     
     try:
         llfuse.main()
