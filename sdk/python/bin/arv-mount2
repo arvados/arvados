@@ -35,6 +35,15 @@ class Directory(object):
     def size(self):
         return 0
 
+class File(object):
+    def __init__(self, inode, parent, reader):
+        self.inode = inode
+        self.parent = parent
+        self.reader = reader
+
+    def size(self):
+        return self.reader.size()
+
 class FileHandle(object):
     def __init__(self, fh, entry):
         self.fh = fh
@@ -42,7 +51,7 @@ class FileHandle(object):
 
 class Operations(llfuse.Operations):
 
-   def __init__(self, collection):
+    def __init__(self, collection):
         super(Operations, self).__init__()
         #self.api = arvados.api('v1')
 
@@ -56,15 +65,15 @@ class Operations(llfuse.Operations):
         for s in collection.all_streams():
             cwd = self.root
             for part in s.name().split('/'):
-                if part != '':
+                if part != '' and part != '.':
                     if part not in cwd:
                         i += 1
-                        cwd[part] = Directory(cwd.inode, i)
+                        cwd[part] = Directory(i, cwd.inode)
                         self._inodes[i] = cwd[part]
                     cwd = cwd[part]
             for k, v in s.files().items():
                 i += 1
-                cwd[k] = v
+                cwd[k] = File(i, cwd.inode, v)
                 self._inodes[i] = cwd[k]
 
         # dict of inode to filehandle
@@ -72,100 +81,137 @@ class Operations(llfuse.Operations):
         self._filehandles_lock = threading.Lock()
         self._filehandles_counter = 1
 
-   def access(self, inode, mode, ctx):
-       return True
+    def access(self, inode, mode, ctx):
+        return True
    
-   def getattr(self, inode):
-       entry = self._inodes[inode]
+    def getattr(self, inode):
+        e = self._inodes[inode]
 
-       entry = llfuse.EntryAttributes()
-       entry.st_ino = inode
-       entry.generation = 0
-       entry.entry_timeout = 300
-       entry.attr_timeout = 300
+        entry = llfuse.EntryAttributes()
+        entry.st_ino = inode
+        entry.generation = 0
+        entry.entry_timeout = 300
+        entry.attr_timeout = 300
 
-       entry.st_mode = 0444
-       entry.st_nlink = 0
-       entry.st_uid = 0
-       entry.st_gid = 0
-       entry.st_rdev = 0
+        entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
+        if isinstance(e, Directory):
+            entry.st_mode |= stat.S_IFDIR
+        else:
+            entry.st_mode |= stat.S_IFREG
 
-       entry.st_size = entry.size()
-       
-       entry.st_blksize = 512
-       entry.st_blocks = 1
-       entry.st_atime = 0
-       entry.st_mtime = 0
-       entry.st_ctime = 0
-       
-       return entry
+        entry.st_nlink = 1
+        entry.st_uid = 0
+        entry.st_gid = 0
+        entry.st_rdev = 0
 
-   def lookup(self, parent_inode, name):
-       inode = None
+        entry.st_size = e.size()
 
-       if name == '.':
-           inode = parent_inode
-       else:
-           if parent_inode in self._inodes:
-               p = self._inodes[parent_inode]
-               if name == '..':
-                   inode = p.parent
-               elif name in p:
-                   inode = p[name].inode
-                   
-       if inode != None:
-           return self.getattr(inode)
-       else:
-           raise llfuse.FUSEError(errno.ENOENT)
+        entry.st_blksize = 512
+        entry.st_blocks = 1
+        entry.st_atime = 0
+        entry.st_mtime = 0
+        entry.st_ctime = 0
+
+        return entry
+
+    def lookup(self, parent_inode, name):
+        #print "lookup: parent_inode", parent_inode, "name", name
+        inode = None
+
+        if name == '.':
+            inode = parent_inode
+        else:
+            if parent_inode in self._inodes:
+                p = self._inodes[parent_inode]
+                if name == '..':
+                    inode = p.parent
+                elif name in p:
+                    inode = p[name].inode
+
+        if inode != None:
+            return self.getattr(inode)
+        else:
+            raise llfuse.FUSEError(errno.ENOENT)
    
+    def open(self, inode, flags):
+        if inode in self._inodes:
+            p = self._inodes[inode]
+        else:
+            raise llfuse.FUSEError(errno.ENOENT)
 
-   def forget(self, inode_list):
-       pass
+        self._filehandles_lock.acquire()
+        try:
+            fh = self._filehandles_counter
+            self._filehandles_counter += 1
+            self._filehandles[fh] = FileHandle(fh, p)
+            return fh
+        finally:
+            self._filehandles_lock.release()       
 
+    def read(self, fh, off, size):
+        self._filehandles_lock.acquire()
+        try:
+            if fh in self._filehandles:
+                handle = self._filehandles[fh]
+            else:
+                raise llfuse.FUSEError(errno.EBADF)
+        finally:
+            self._filehandles_lock.release()
 
-   def open(self, inode, flags):
-       pass
+        try:
+            return handle.entry.reader.readfrom(off, size)
+        except:
+            raise llfuse.FUSEError(errno.EPIPE)
 
-   def read(self, fh, off, size):
-       pass
+    def release(self, fh):
+        self._filehandles_lock.acquire()
+        try:
+            del self._filehandles[fh]
+        finally:
+            self._filehandles_lock.release()
 
-   def release(self, fh):
-       pass
+    def opendir(self, inode):
+        #print "opendir: inode", inode
 
-   def opendir(self, inode):
-       if inode in self._inodes:
-           p = self._inodes[inode]
-       else:
-           raise llfuse.FUSEError(errno.ENOENT)
+        if inode in self._inodes:
+            p = self._inodes[inode]
+        else:
+            raise llfuse.FUSEError(errno.ENOENT)
 
-       self._filehandles_lock.lock()
-       try:
-           fh = self._filehandles_counter
-           self._filehandles_counter += 1
-           self._filehandles[fh] = FileHandle(fh, p)
-           return fh
-       finally:
-           self._filehandles_lock.unlock()
+        self._filehandles_lock.acquire()
+        try:
+            fh = self._filehandles_counter
+            self._filehandles_counter += 1
+            self._filehandles[fh] = FileHandle(fh, list(p.entries.items()))
+            return fh
+        finally:
+            self._filehandles_lock.release()
 
-   def readdir(self, fh, off):
-       self._filehandles_lock.lock()
-       try:
-           handle = self._filehandles[fh]
-       finally:
-           self._filehandles_lock.unlock()
+    def readdir(self, fh, off):
+        #print "readdir: fh", fh, "off", off
 
-       ent = list(handle.entry.entries.items())
-       e = off
-       while e < len(ent):
-           e += 1
-           yield (ent[e][0], self.getattr(ent[e][1].inode), e)
+        self._filehandles_lock.acquire()
+        try:
+            if fh in self._filehandles:
+                handle = self._filehandles[fh]
+            else:
+                raise llfuse.FUSEError(errno.EBADF)
+        finally:
+            self._filehandles_lock.release()
 
-   def releasedir(self, fh):
-       self._filehandles_lock.lock()
-       try:
-           del self._filehandles[fh]
-       finally:
-           self._filehandles_lock.unlock()
+        #print "handle.entry", handle.entry
+
+        e = off
+        while e < len(handle.entry):
+            yield (handle.entry[e][0], self.getattr(handle.entry[e][1].inode), e+1)
+            e += 1
+
+    def releasedir(self, fh):
+        self._filehandles_lock.acquire()
+        try:
+            del self._filehandles[fh]
+        finally:
+            self._filehandles_lock.release()
 
 if __name__ == '__main__':
 
@@ -180,7 +226,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # for testing only!
-    manifest = open('/home/peter/work/arvados/sdk/python/testdata/jlake_manifest').read()
+    manifest = open('/home/tetron/work/arvados/sdk/python/testdata/jlake_manifest').read()
     
     operations = Operations(arvados.CollectionReader(manifest))
 
@@ -191,7 +237,7 @@ if __name__ == '__main__':
     try:
         llfuse.main()
     except:
-        llfuse.close(unmount=False)
+        llfuse.close(unmount=True)
         raise
 
     llfuse.close()
