@@ -58,7 +58,7 @@ class Operations(llfuse.Operations):
         # dict of inodes to collection entry
         self._inodes = {}
 
-        i = 1
+        i = llfuse.ROOT_INODE
         self.root = Directory(i, i)
         self._inodes[i] = self.root
 
@@ -78,7 +78,6 @@ class Operations(llfuse.Operations):
 
         # dict of inode to filehandle
         self._filehandles = {}
-        self._filehandles_lock = threading.Lock()
         self._filehandles_counter = 1
 
     def access(self, inode, mode, ctx):
@@ -139,36 +138,28 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.ENOENT)
 
-        self._filehandles_lock.acquire()
-        try:
-            fh = self._filehandles_counter
-            self._filehandles_counter += 1
-            self._filehandles[fh] = FileHandle(fh, p)
-            return fh
-        finally:
-            self._filehandles_lock.release()       
+        if isinstance(p, Directory):
+            raise llfuse.FUSEError(errno.EISDIR)
+
+        fh = self._filehandles_counter
+        self._filehandles_counter += 1
+        self._filehandles[fh] = FileHandle(fh, p)
+        return fh
 
     def read(self, fh, off, size):
-        self._filehandles_lock.acquire()
-        try:
-            if fh in self._filehandles:
-                handle = self._filehandles[fh]
-            else:
-                raise llfuse.FUSEError(errno.EBADF)
-        finally:
-            self._filehandles_lock.release()
+        if fh in self._filehandles:
+            handle = self._filehandles[fh]
+        else:
+            raise llfuse.FUSEError(errno.EBADF)
 
-        try:
-            return handle.entry.reader.readfrom(off, size)
-        except:
-            raise llfuse.FUSEError(errno.EPIPE)
+        with llfuse.lock_released:
+            try:
+                return handle.entry.reader.readfrom(off, size)
+            except:
+                raise llfuse.FUSEError(errno.EIO)
 
     def release(self, fh):
-        self._filehandles_lock.acquire()
-        try:
-            del self._filehandles[fh]
-        finally:
-            self._filehandles_lock.release()
+        del self._filehandles[fh]
 
     def opendir(self, inode):
         #print "opendir: inode", inode
@@ -178,26 +169,21 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.ENOENT)
 
-        self._filehandles_lock.acquire()
-        try:
-            fh = self._filehandles_counter
-            self._filehandles_counter += 1
-            self._filehandles[fh] = FileHandle(fh, list(p.entries.items()))
-            return fh
-        finally:
-            self._filehandles_lock.release()
+        if not isinstance(p, Directory):
+            raise llfuse.FUSEError(errno.ENOTDIR)
+
+        fh = self._filehandles_counter
+        self._filehandles_counter += 1
+        self._filehandles[fh] = FileHandle(fh, [('.', p), ('..', self._inodes[p.parent])] + list(p.entries.items()))
+        return fh
 
     def readdir(self, fh, off):
         #print "readdir: fh", fh, "off", off
 
-        self._filehandles_lock.acquire()
-        try:
-            if fh in self._filehandles:
-                handle = self._filehandles[fh]
-            else:
-                raise llfuse.FUSEError(errno.EBADF)
-        finally:
-            self._filehandles_lock.release()
+        if fh in self._filehandles:
+            handle = self._filehandles[fh]
+        else:
+            raise llfuse.FUSEError(errno.EBADF)
 
         #print "handle.entry", handle.entry
 
@@ -207,11 +193,7 @@ class Operations(llfuse.Operations):
             e += 1
 
     def releasedir(self, fh):
-        self._filehandles_lock.acquire()
-        try:
-            del self._filehandles[fh]
-        finally:
-            self._filehandles_lock.release()
+        del self._filehandles[fh]
 
 if __name__ == '__main__':
 
@@ -226,13 +208,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # for testing only!
-    manifest = open('/home/tetron/work/arvados/sdk/python/testdata/jlake_manifest').read()
+    manifest = open('/home/peter/work/arvados/sdk/python/testdata/jlake_manifest').read()
     
     operations = Operations(arvados.CollectionReader(manifest))
 
     #operations = Operations(arvados.CollectionReader(arvados.Keep.get(args.collection)))
     
-    llfuse.init(operations, args.mountpoint, [ b'fsname=keepfuse' ])
+    llfuse.init(operations, args.mountpoint, [ b'fsname=keepfuse', 'debug' ])
     
     try:
         llfuse.main()
