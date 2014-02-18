@@ -1,4 +1,4 @@
-<% content_for :breadcrumbs do '' end %>
+<% content_for :breadcrumbs do raw '<!-- -->' end %>
 
 <% n_files = @required_user_agreements.collect(&:files).flatten(1).count %>
 <% content_for :page_title do %>

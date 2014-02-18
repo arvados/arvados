@@ -131,6 +131,7 @@ end
 # this program, that is, not the pipeline component parameters).
 
 p = Trollop::Parser.new do
+  version __FILE__
   opt(:dry_run,
       "Do not start any new jobs or wait for existing jobs to finish. Just find out whether jobs are finished, queued, or running for each component.",
       :type => :boolean,
@@ -447,7 +448,7 @@ class WhRunPipelineInstance
             if candidate_job[:success]
               unless @options[:no_reuse_finished]
                 job = candidate_job
-                debuglog "component #{cname} satisfied by job #{job[:uuid]} version #{job[:script_version]}"
+                $stderr.puts "using #{job[:uuid]} (finished at #{job[:finished_at]}) for component #{cname}"
                 c[:job] = job
               end
             else
@@ -457,7 +458,7 @@ class WhRunPipelineInstance
           end
           if not c[:job] and second_place_job
             job = second_place_job
-            debuglog "component #{cname} satisfied by job #{job[:uuid]} version #{job[:script_version]}"
+            $stderr.puts "using #{job[:uuid]} (running since #{job[:started_at]}) for component #{cname}"
             c[:job] = job
           end
           if not c[:job]
@@ -543,6 +544,7 @@ class WhRunPipelineInstance
 
     if @options[:status_text] != '/dev/null'
       File.open(@options[:status_text], 'w') do |f|
+        f.puts ""
         f.puts "#{Time.now} -- pipeline_instance #{@instance[:uuid]}"
         namewidth = @components.collect { |cname, c| cname.size }.max
         @components.each do |cname, c|

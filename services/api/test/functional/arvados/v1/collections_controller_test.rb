@@ -11,14 +11,24 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
   test "should create" do
     authorize_with :active
+    test_collection = {
+      manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
+      uuid: "d30fe8ae534397864cb96c544f4cf102"
+    }
     post :create, {
-      collection: {
-        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
-      }
+      collection: test_collection
     }
     assert_response :success
     assert_nil assigns(:objects)
+
+    get :show, {
+      id: "d30fe8ae534397864cb96c544f4cf102"
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    resp = JSON.parse(@response.body)
+    assert_equal 'd30fe8ae534397864cb96c544f4cf102+47', resp['uuid']
+    assert_equal test_collection[:manifest_text], resp['manifest_text']
   end
 
   test "create with owner_uuid set to owned group" do

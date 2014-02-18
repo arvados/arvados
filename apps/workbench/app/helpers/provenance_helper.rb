@@ -111,46 +111,45 @@ module ProvenanceHelper
 
     def script_param_edges(job, prefix, sp)
       gr = ""
-      if sp and not sp.empty?
-        case sp
-        when Hash
-          sp.each do |k, v|
-            if prefix.size > 0
-              k = prefix + "::" + k.to_s
-            end
-            gr += script_param_edges(job, k.to_s, v)
+      case sp
+      when Hash
+        sp.each do |k, v|
+          if prefix.size > 0
+            k = prefix + "::" + k.to_s
           end
-        when Array
-          i = 0
-          node = ""
-          sp.each do |v|
-            if GenerateGraph::collection_uuid(v)
-              gr += script_param_edges(job, "#{prefix}[#{i}]", v)
-            elsif @opts[:all_script_parameters]
-              node += "', '" unless node == ""
-              node = "['" if node == ""
-              node += "#{v}"
-            end
-            i += 1
-          end
-          unless node == ""
-            node += "']"
-            #puts node
-            #id = "#{job[:uuid]}_#{prefix}"
-            gr += "\"#{node}\" [label=\"#{node}\"];\n"
-            gr += edge(job_uuid(job), node, {:label => prefix})        
-          end
-        else
-          m = GenerateGraph::collection_uuid(sp)
-          #puts "#{m} pdata is #{@pdata[m.intern]}"
-          if m and (@pdata[m.intern] or (not @opts[:pdata_only]))
-            gr += edge(job_uuid(job), m, {:label => prefix})
-            gr += generate_provenance_edges(m)
+          gr += script_param_edges(job, k.to_s, v)
+        end
+      when Array
+        i = 0
+        node = ""
+        sp.each do |v|
+          if GenerateGraph::collection_uuid(v)
+            gr += script_param_edges(job, "#{prefix}[#{i}]", v)
           elsif @opts[:all_script_parameters]
-            #id = "#{job[:uuid]}_#{prefix}"
-            gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
-            gr += edge(job_uuid(job), sp, {:label => prefix})
+            node += "', '" unless node == ""
+            node = "['" if node == ""
+            node += "#{v}"
           end
+          i += 1
+        end
+        unless node == ""
+          node += "']"
+          #puts node
+          #id = "#{job[:uuid]}_#{prefix}"
+          gr += "\"#{node}\" [label=\"#{node}\"];\n"
+          gr += edge(job_uuid(job), node, {:label => prefix})        
+        end
+      when String
+        return '' if sp.empty?
+        m = GenerateGraph::collection_uuid(sp)
+        #puts "#{m} pdata is #{@pdata[m.intern]}"
+        if m and (@pdata[m.intern] or (not @opts[:pdata_only]))
+          gr += edge(job_uuid(job), m, {:label => prefix})
+          gr += generate_provenance_edges(m)
+        elsif @opts[:all_script_parameters]
+          #id = "#{job[:uuid]}_#{prefix}"
+          gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
+          gr += edge(job_uuid(job), sp, {:label => prefix})
         end
       end
       gr
@@ -309,17 +308,17 @@ edge [fontsize=10];
 
   def self.find_collections(sp)
     c = []
-    if sp and not sp.empty?
-      case sp
-      when Hash
-        sp.each do |k, v|
-          c.concat(find_collections(v))
-        end
-      when Array
-        sp.each do |v|
-          c.concat(find_collections(v))
-        end
-      else
+    case sp
+    when Hash
+      sp.each do |k, v|
+        c.concat(find_collections(v))
+      end
+    when Array
+      sp.each do |v|
+        c.concat(find_collections(v))
+      end
+    when String
+      if !sp.empty?
         m = GenerateGraph::collection_uuid(sp)
         if m
           c << m

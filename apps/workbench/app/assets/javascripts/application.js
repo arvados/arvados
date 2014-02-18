@@ -48,4 +48,40 @@ jQuery(function($){
         on('ajax:complete', function(e, status) {
             $('.loading').fadeOut('fast', 0);
         });
+
+    HeaderRowFixer = function(selector) {
+        this.duplicateTheadTr = function() {
+            $(selector).each(function() {
+                var the_table = this;
+                if ($('>tbody>tr:first>th', the_table).length > 0)
+                    return;
+                $('>tbody', the_table).
+                    prepend($('>thead>tr', the_table).
+                            clone().
+                            css('opacity', 0));
+            });
+        }
+        this.fixThead = function() {
+            $(selector).each(function() {
+                var widths = [];
+                $('> tbody > tr:eq(1) > td', this).each( function(i,v){
+                    widths.push($(v).width());
+                });
+                for(i=0;i<widths.length;i++) {
+                    $('thead th:eq('+i+')', this).width(widths[i]);
+                }
+            });
+        }
+    }
+    
+    var fixer = new HeaderRowFixer('.table-fixed-header-row');
+    fixer.duplicateTheadTr();
+    fixer.fixThead();
+    $(window).resize(function(){
+        fixer.fixThead();
+    });
+    $(document).on('ajax:complete', function(e, status) {
+        fixer.duplicateTheadTr();
+        fixer.fixThead();
+    });
 })(jQuery);

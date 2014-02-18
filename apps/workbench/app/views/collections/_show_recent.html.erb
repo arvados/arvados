@@ -15,7 +15,7 @@
 
 <div style="padding-right: 1em">
 
-<table id="collections-index" class="topalign table table-condensed table-fixedlayout">
+<table id="collections-index" class="topalign table table-condensed table-fixedlayout table-fixed-header-row">
   <colgroup>
     <col width="10%" />
     <col width="36%" />
@@ -40,7 +40,7 @@
 </table>
 </div>
 
-<% content_for :js do %>
+<% content_for :footer_js do %>
 $(document).on('click', 'form[data-remote] input[type=submit]', function() {
   $('table#collections-index tbody').fadeTo(200, 0.3);
   return true;
