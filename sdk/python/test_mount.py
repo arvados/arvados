@@ -96,3 +96,58 @@ class FuseMountTest(unittest.TestCase):
 
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)
+
+class FuseMagicTest(unittest.TestCase):
+    def setUp(self):
+        self.keeptmp = tempfile.mkdtemp()
+        os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
+
+        cw = arvados.CollectionWriter()
+
+        cw.start_new_file('thing1.txt')
+        cw.write("data 1")
+
+        self.testcollection = cw.finish()
+
+    def runTest(self):
+        # Create the request handler
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+
+        self.mounttmp = tempfile.mkdtemp()
+
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        # now check some stuff
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertEqual(d1, [])
+
+        d2 = os.listdir(os.path.join(self.mounttmp, self.testcollection))
+        d2.sort()
+        self.assertEqual(d2, ['thing1.txt'])
+
+        d3 = os.listdir(self.mounttmp)
+        d3.sort()
+        self.assertEqual(d3, [self.testcollection])
+        
+        files = {}
+        files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
+
+        for k, v in files.items():
+            with open(os.path.join(self.mounttmp, k)) as f:
+                self.assertEqual(f.read(), v)
+        
+
+    def tearDown(self):
+        # llfuse.close is buggy, so use fusermount instead.
+        #llfuse.close(unmount=True)
+        subprocess.call(["fusermount", "-u", self.mounttmp])
+
+        os.rmdir(self.mounttmp)
+        shutil.rmtree(self.keeptmp)
