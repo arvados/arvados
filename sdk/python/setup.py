@@ -16,12 +16,13 @@ setup(name='arvados-python-client',
         'bin/arv-get',
         'bin/arv-put',
         'bin/arv-mount',
+        'bin/arv-ls',
         ],
       install_requires=[
         'python-gflags',
         'google-api-python-client',
         'httplib2',
         'urllib3',
-        'fusepy',
+	'llfuse'
         ],
       zip_safe=False)
