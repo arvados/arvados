@@ -294,7 +294,7 @@ class Operations(llfuse.Operations):
 
     def statfs(self):
         st = llfuse.StatvfsData()
-        st.f_bsize = 4096
+        st.f_bsize = 1024 * 1024
         st.f_blocks = 0
         st.f_files = 0
 

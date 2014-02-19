@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 from arvados.fuse import * 
+import arvados
+
 
 if __name__ == '__main__':
+    api = arvados.api()
+
     # Handle command line parameters
     parser = argparse.ArgumentParser(
         description='Mount Keep data under the local filesystem.')
