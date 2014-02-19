@@ -1,15 +1,15 @@
 from setuptools import setup
 import subprocess
 
-minor_version = subprocess.check_output(
-    ['git', 'log', '--format=format:%ct.%h', '-n1', '.'])
+minor_version = '%%MINOR_VERSION%%'
 
 setup(name='arvados-python-client',
       version='0.1.' + minor_version,
       description='Arvados client library',
       author='Arvados',
       author_email='info@arvados.org',
-      url="https://github.com/curoverse/arvados.git",
+      url="https://arvados.org",
+      download_url="https://github.com/curoverse/arvados.git",
       license='Apache 2.0',
       packages=['arvados'],
       scripts=[
