@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+#
+# FUSE driver for Arvados Keep
+#
+
 import os
 import sys
 
@@ -15,6 +19,11 @@ from time import time
 from llfuse import FUSEError
 
 class Directory(object):
+    '''Generic directory object, backed by a dict.
+    Consists of a set of entries with the key representing the filename
+    and the value referencing a File or Directory object.
+    '''
+
     def __init__(self, parent_inode):
         self.inode = None
         self.parent_inode = parent_inode
@@ -39,20 +48,24 @@ class Directory(object):
         return 0
 
 class MagicDirectory(Directory):
-    def __init__(self, parent_inode, ops):
+    '''A special directory that logically contains the set of all extant
+    keep locators.  When a file is referenced by lookup(), it is tested
+    to see if it is a valid keep locator to a manifest, and if so, loads the manifest
+    contents as a subdirectory of this directory with the locator as the directory name.
+    Since querying a list of all extant keep locators is impractical, only loaded collections 
+    are visible to readdir().'''
+
+    def __init__(self, parent_inode, inodes):
         super(MagicDirectory, self).__init__(parent_inode)
-        self.ops = ops
+        self.inodes = inodes
 
     def __contains__(self, k):
-        #print 'contains',k
         if k in self._entries:
             return True
         try:
             if arvados.Keep.get(k):
-                #print 'in keep'
                 return True
             else:
-                #print 'not in keep'
                 return False
         except Exception as e:
             #print 'exception keep', e
@@ -61,11 +74,13 @@ class MagicDirectory(Directory):
     def __getitem__(self, item):
         if item not in self._entries:
             collection = arvados.CollectionReader(arvados.Keep.get(item))
-            self._entries[item] = self.ops.add_entry(Directory(self.inode))
-            self.ops.load_collection(self._entries[item], collection)
+            self._entries[item] = self.inodes.add_entry(Directory(self.inode))
+            self.inodes.load_collection(self._entries[item], collection)
         return self._entries[item]
 
 class File(object):
+    '''Wraps a StreamFileReader for use by Directory.'''
+
     def __init__(self, parent_inode, reader):
         self.inode = None
         self.parent_inode = parent_inode
@@ -75,41 +90,39 @@ class File(object):
         return self.reader.size()
 
 class FileHandle(object):
+    '''Connects a numeric file handle to a File or Directory object that has 
+    been opened by the client.'''
+
     def __init__(self, fh, entry):
         self.fh = fh
         self.entry = entry
 
-class Operations(llfuse.Operations):
+class Inodes(object):
+    '''Manage the set of inodes.  This is the mapping from a numeric id 
+    to a concrete File or Directory object'''
 
-    def __init__(self, collection, uid, gid):
-        super(Operations, self).__init__()
-        #self.api = arvados.api('v1')
+    def __init__(self):
+        self._entries = {}
+        self._counter = llfuse.ROOT_INODE
 
-        # dict of inodes to collection entry
-        self.inodes = {}
+    def __getitem__(self, item):
+        return self._entries[item]
 
-        self.uid = uid
-        self.gid = gid
-        
-        #print "root_parent", root_parent, "llfuse.ROOT_INODE", llfuse.ROOT_INODE
+    def __setitem__(self, key, item):
+        self._entries[key] = item
 
-        if collection:
-            self.inodes_counter = llfuse.ROOT_INODE
-            self.root = Directory(self.inodes_counter)
-            self.root.inode = self.inodes_counter
-            self.inodes[self.root.inode] = self.root
-            self.load_collection(self.root, collection)
-        else:
-            self.inodes_counter = llfuse.ROOT_INODE
-            self.root = MagicDirectory(self.inodes_counter, self)
-            self.root.inode = self.inodes_counter
-            self.inodes[self.root.inode] = self.root            
+    def __iter__(self):
+        return self._entries.iterkeys()
 
-        # dict of inode to filehandle
-        self._filehandles = {}
-        self._filehandles_counter = 1
+    def items(self):
+        return self._entries.items()
+
+    def __contains__(self, k):
+        return k in self._entries
 
     def load_collection(self, parent_dir, collection):
+        '''parent_dir is the Directory object that will be populated by the collection.
+        collection is the arvados.CollectionReader to use as the source'''
         for s in collection.all_streams():
             cwd = parent_dir
             for part in s.name().split('/'):
@@ -121,10 +134,31 @@ class Operations(llfuse.Operations):
                 cwd[k] = self.add_entry(File(cwd.inode, v))
 
     def add_entry(self, entry):
-        self.inodes_counter += 1
-        entry.inode = self.inodes_counter
-        self.inodes[entry.inode] = entry
-        return entry
+        entry.inode = self._counter
+        self._entries[entry.inode] = entry
+        self._counter += 1
+        return entry    
+
+class Operations(llfuse.Operations):
+    '''This is the main interface with llfuse.  The methods on this object are
+    called by llfuse threads to service FUSE events to query and read from 
+    the file system.
+
+    llfuse has its own global lock which is acquired before calling a request handler,
+    so request handlers do not run concurrently unless the lock is explicitly released 
+    with llfuse.lock_released.'''
+
+    def __init__(self, uid, gid):
+        super(Operations, self).__init__()
+
+        self.inodes = Inodes()
+        self.uid = uid
+        self.gid = gid
+        
+        # dict of inode to filehandle
+        self._filehandles = {}
+        self._filehandles_counter = 1
+
 
     def access(self, inode, mode, ctx):
         return True
@@ -267,24 +301,19 @@ class Operations(llfuse.Operations):
         st.f_frsize = 0
         return st
 
+    # The llfuse documentation recommends only overloading functions that
+    # are actually implemented, as the default implementation will raise ENOSYS.
+    # However, there is a bug in the llfuse default implementation of create()
+    # "create() takes exactly 5 positional arguments (6 given)" which will crash
+    # arv-mount.
+    # The workaround is to implement it with the proper number of parameters,
+    # and then everything works out.
     def create(self, p1, p2, p3, p4, p5):
-        raise llfuse.FUSEError(errno.EROFS)
-
-    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
-        raise llfuse.FUSEError(errno.EROFS)
-
-    def unlink(self, parent_inode, name):
-        raise llfuse.FUSEError(errno.EROFS)
-
-    def rmdir(self, parent_inode, name):
-        raise llfuse.FUSEError(errno.EROFS)
-
-    def symlink(self, inode_parent, name, target, ctx):
         raise llfuse.FUSEError(errno.EROFS)
 
 
 if __name__ == '__main__':
-
+    # Handle command line parameters
     parser = argparse.ArgumentParser(
         description='Mount Keep data under the local filesystem.')
     parser.add_argument('mountpoint', type=str, help="""Mount point.""")
@@ -293,19 +322,28 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.collection != None:
-        collection = arvados.CollectionReader(arvados.Keep.get(args.collection))
-    else:
-        collection = None
+    # Create the request handler
+    operations = Operations(os.getuid(), os.getgid())
 
-    operations = Operations(collection, os.getuid(), os.getgid())
-    
+    if args.collection != None:
+        # Set up the request handler with the collection at the root
+        e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
+        operations.inodes.load_collection(e, arvados.CollectionReader(arvados.Keep.get(args.collection)))
+    else:
+        # Set up the request handler with the 'magic directory' at the root
+        operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+
+    # FUSE options, see mount.fuse(8)
     opts = []
+
+    # Enable FUSE debugging (logs each FUSE request)
     if args.debug:
         opts += ['debug']
-
-    llfuse.init(operations, args.mountpoint, opts)
     
+    # Initialize the fuse connection
+    llfuse.init(operations, args.mountpoint, opts)
+
+    # Run the main loop
     try:
         llfuse.main()
     except:
