@@ -60,10 +60,10 @@ def getjobparam(*args):
     return current_job()['script_parameters'].get(*args)
 
 def get_job_param_mount(*args):
-    return os.join(os.environ['TASK_KEEPMOUNT'], current_job()['script_parameters'].get(*args))
+    return os.path.join(os.environ['TASK_KEEPMOUNT'], current_job()['script_parameters'].get(*args))
 
 def get_task_param_mount(*args):
-    return os.join(os.environ['TASK_KEEPMOUNT'], current_task()['parameters'].get(*args))
+    return os.path.join(os.environ['TASK_KEEPMOUNT'], current_task()['parameters'].get(*args))
 
 class JobTask(object):
     def __init__(self, parameters=dict(), runtime_constraints=dict()):
