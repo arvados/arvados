@@ -2,7 +2,7 @@
 
 from arvados.fuse import * 
 import arvados
-
+import subprocess
 
 if __name__ == '__main__':
     api = arvados.api()
@@ -13,6 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('mountpoint', type=str, help="""Mount point.""")
     parser.add_argument('--collection', type=str, help="""Collection locator""")
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
+    parser.add_argument('--exec', type=str, help="""Mount, run a command, then unmount and exit""")
 
     args = parser.parse_args()
 
@@ -32,16 +33,22 @@ if __name__ == '__main__':
 
     # Enable FUSE debugging (logs each FUSE request)
     if args.debug:
-        opts += ['debug']
+        opts += ['debug']    
     
     # Initialize the fuse connection
     llfuse.init(operations, args.mountpoint, opts)
 
-    # Run the main loop
-    #try:
-    llfuse.main()
-    #except:
-    #    llfuse.close(unmount=True)
-    #    raise
-    #
-    #llfuse.close(unmount=True)
+    if args.exec:
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        rc = subprocess.call(args.exec)
+
+        subprocess.call(["fusermount", "-u", args.mountpoint])
+
+        return rc
+    else:
+        llfuse.main()
