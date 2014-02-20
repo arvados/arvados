@@ -15,29 +15,22 @@
 
 <div style="padding-right: 1em">
 
-<table id="collections-index" class="topalign table table-condensed table-fixedlayout">
-  <colgroup>
-    <col width="10%" />
-    <col width="36%" />
-    <col width="22%" />
-    <col width="8%" />
-    <col width="16%" />
-    <col width="8%" />
-  </colgroup>
-  <thead>
-    <tr class="contain-align-left">
-      <th>uuid</th>
-      <th>contents</th>
-      <th>owner</th>
-      <th>age</th>
-      <th>tags</th>
-      <th>storage</th>
-    </tr>
-  </thead>
-  <tbody>
-    <%= render partial: 'index_tbody' %>
-  </tbody>
-</table>
+<% @related_objs.each do |obj_class, related_objs| %>
+  <h1><%= obj_class.pluralize %></h1>
+  <table id="collections-index" class="topalign table table-condensed table-fixedlayout">
+    <thead>
+      <tr class="contain-align-left">
+	<th>uuid</th>
+	<th>owner</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%= render partial: 'index_tbody',
+	         locals: {related_objs: related_objs} %>
+    </tbody>
+  </table>
+<% end %>
+
 </div>
 
 <% content_for :js do %>
