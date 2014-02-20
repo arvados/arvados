@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser.add_argument('mountpoint', type=str, help="""Mount point.""")
     parser.add_argument('--collection', type=str, help="""Collection locator""")
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
-    parser.add_argument('--exec', type=str, help="""Mount, run a command, then unmount and exit""")
+    parser.add_argument('--exec', type=str, help="""Mount, run a command, then unmount and exit""", dest="ex")
 
     args = parser.parse_args()
 
@@ -38,17 +38,20 @@ if __name__ == '__main__':
     # Initialize the fuse connection
     llfuse.init(operations, args.mountpoint, opts)
 
-    if args.exec:
+    if args.ex:
         t = threading.Thread(None, lambda: llfuse.main())
         t.start()
 
         # wait until the driver is finished initializing
         operations.initlock.wait()
 
-        rc = subprocess.call(args.exec)
+        try:
+            rc = subprocess.call(args.ex, shell=True)
+        except:
+            rc = 255
+        finally:
+            subprocess.call(["fusermount", "-u", args.mountpoint])
 
-        subprocess.call(["fusermount", "-u", args.mountpoint])
-
-        return rc
+        exit(rc)
     else:
         llfuse.main()
