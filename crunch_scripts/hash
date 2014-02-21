@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python                                                                                                                                                                            
 
 import arvados
 import hashlib
+import os
 
-arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True)
+arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=True)
 
 this_job = arvados.current_job()
 this_task = arvados.current_task()
-this_task_input = this_task['parameters']['input']
 
 if 'algorithm' in this_job['script_parameters']:
     alg = this_job['script_parameters']['algorithm']
@@ -15,18 +15,18 @@ else:
     alg = 'md5'
 digestor = hashlib.new(alg)
 
-input_file = list(arvados.CollectionReader(this_task_input).all_files())[0]
-while True:
-    buf = input_file.read(2**20)
-    if len(buf) == 0:
-        break
-    digestor.update(buf)
+input_file = arvados.get_task_param_mount('input')
+
+with open(input_file) as f:
+    while True:
+        buf = f.read(2**20)
+        if len(buf) == 0:
+            break
+        digestor.update(buf)
 
 hexdigest = digestor.hexdigest()
 
-file_name = input_file.name()
-if input_file.stream_name() != '.':
-    file_name = os.join(input_file.stream_name(), file_name)
+file_name = '/'.join(this_task['parameters']['input'].split('/')[1:])
 
 out = arvados.CollectionWriter()
 out.set_current_file_name("md5sum.txt")
