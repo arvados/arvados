@@ -16,15 +16,28 @@ h3. Installation
 
 If you are logged in to an Arvados VM, the Python SDK should be installed.
 
-To use the Python SDK elsewhere, build and install the package using the arvados source tree.
+To use the Python SDK elsewhere, you can either install the Python SDK via PyPI or build and install the package using the arvados source tree.
+
+h4. Option 1: install with PyPI
+
+<notextile>
+<pre>
+$ <code class="userinput">pip install arvados-python-client</code>
+</pre>
+</notextile>
+
+h4. Option 2: build and install from source
 
 <notextile>
 <pre>
 $ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
 $ <code class="userinput">cd arvados/sdk/python</code>
+$ <code class="userinput">./build.sh</code>
 $ <code class="userinput">sudo python setup.py install</code>
 </pre>
 </notextile>
+
+h4. Test installation
 
 If the SDK is installed and your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.basedoc}}/user/reference/api-tokens.html for details), @import arvados@ should produce no errors:
 
