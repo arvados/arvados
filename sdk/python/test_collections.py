@@ -42,7 +42,7 @@ class LocalCollectionReaderTest(unittest.TestCase):
         os.environ['KEEP_LOCAL_STORE'] = '/tmp'
         LocalCollectionWriterTest().runTest()
     def runTest(self):
-        cr = arvados.CollectionReader('23ca013983d6239e98931cc779e68426+114')
+        cr = arvados.CollectionReader('d6c3b8e571f1b81ebb150a45ed06c884+114')
         got = []
         for s in cr.all_streams():
             for f in s.all_files():
@@ -68,7 +68,7 @@ class LocalCollectionManifestSubsetTest(unittest.TestCase):
         os.environ['KEEP_LOCAL_STORE'] = '/tmp'
         LocalCollectionWriterTest().runTest()
     def runTest(self):
-        self._runTest('23ca013983d6239e98931cc779e68426+114',
+        self._runTest('d6c3b8e571f1b81ebb150a45ed06c884+114',
                       [[3, '.',     'bar.txt', 'bar'],
                        [3, '.',     'foo.txt', 'foo'],
                        [3, './baz', 'baz.txt', 'baz']])
@@ -130,8 +130,6 @@ class LocalCollectionEmptyFileTest(unittest.TestCase):
         cw.start_new_file('zero.txt')
         cw.write('')
 
-        print 'stuff'
-
         self.assertEqual(cw.manifest_text(), ". 0:0:zero.txt\n")
         self.check_manifest_file_sizes(cw.manifest_text(), [0])
         cw = arvados.CollectionWriter()
@@ -166,6 +164,7 @@ class LocalCollectionBZ2DecompressionTest(unittest.TestCase):
         bz2_manifest = cw.manifest_text()
 
         cr = arvados.CollectionReader(bz2_manifest)
+
         got = 0
         for x in list(cr.all_files())[0].readlines():
             self.assertEqual(x, "abc\n", "decompression returned wrong data: %s" % x)
@@ -451,3 +450,24 @@ class StreamReaderTest(unittest.TestCase):
         self.assertEqual(sr.readfrom(25, 5), content[25:30])
         self.assertEqual(sr.readfrom(30, 5), '')
 
+class ExtractFileTest(unittest.TestCase):
+    def runTest(self):
+        m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 0:41:md6sum.txt
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md7sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 47:80:md8sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt"""
+
+        m2 = arvados.CollectionReader(m1)
+
+        self.assertEqual(m2.manifest_text(),
+                         ". 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt 43:41:md6sum.txt 84:43:md7sum.txt 6:37:md8sum.txt 84:43:md8sum.txt 83:1:md9sum.txt 0:43:md9sum.txt 84:36:md9sum.txt\n")
+
+        self.assertEqual(arvados.CollectionReader(m1).all_streams()[0].files()['md5sum.txt'].as_manifest(),
+                         ". 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt\n")
+        self.assertEqual(arvados.CollectionReader(m1).all_streams()[0].files()['md6sum.txt'].as_manifest(),
+                         ". 085c37f02916da1cad16f93c54d899b7+41 0:41:md6sum.txt\n")
+        self.assertEqual(arvados.CollectionReader(m1).all_streams()[0].files()['md7sum.txt'].as_manifest(),
+                         ". 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md7sum.txt\n")
+        self.assertEqual(arvados.CollectionReader(m1).all_streams()[0].files()['md9sum.txt'].as_manifest(),
+                         ". 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt\n")

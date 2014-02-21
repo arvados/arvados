@@ -57,8 +57,7 @@ def normalize_stream(s, stream):
         if len(stream[f]) == 0:
             stream_tokens.append("0:0:{0}".format(fout))            
 
-    return stream_tokens
-    
+    return stream_tokens    
 
 def normalize(collection):
     streams = {}
@@ -121,13 +120,9 @@ class CollectionReader(object):
         # now regenerate the manifest text based on the normalized stream
 
         #print "normalizing", self._manifest_text
-        self._manifest_text = ''
-        for stream in self._streams:
-            self._manifest_text += stream[0].replace(' ', '\\040')
-            for t in stream[1:]:
-                self._manifest_text += (" " + t.replace(' ', '\\040'))
-            self._manifest_text += "\n"
-        #print "result     ", self._manifest_text
+        self._manifest_text = ''.join([StreamReader(stream).manifest_text() for stream in self._streams])
+        #print "result", self._manifest_text
+
 
     def all_streams(self):
         self._populate()
@@ -275,19 +270,21 @@ class CollectionWriter(object):
     def finish(self):
         return Keep.put(self.manifest_text())
 
-
     def manifest_text(self):
         self.finish_current_stream()
         manifest = ''
+
         for stream in self._finished_streams:
             if not re.search(r'^\.(/.*)?$', stream[0]):
                 manifest += './'
             manifest += stream[0].replace(' ', '\\040')
-            for locator in stream[1]:
-                manifest += " %s" % locator
-            for sfile in stream[2]:
-                manifest += " %d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040'))
+            manifest += ' ' + ' '.join(stream[1])
+            manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
+        
+        #print 'writer',manifest
+        #print 'after reader',CollectionReader(manifest).manifest_text()
+
         return CollectionReader(manifest).manifest_text()
 
     def data_locators(self):

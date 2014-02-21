@@ -193,8 +193,14 @@ class StreamFileReader(object):
         if data != '':
             yield data
 
+    def as_manifest(self):
+        manifest_text = ['.']
+        manifest_text.extend([d[LOCATOR] for d in self._stream._data_locators])
+        manifest_text.extend(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], self.name().replace(' ', '\\040')) for seg in self.segments])
+        return arvados.CollectionReader(' '.join(manifest_text) + '\n').manifest_text()
+
 class StreamReader(object):
-    def __init__(self, tokens, keep=None, debug=False):
+    def __init__(self, tokens, keep=None, debug=False, _empty=False):
         self._stream_name = None
         self._data_locators = []
         self._files = collections.OrderedDict()
@@ -258,3 +264,11 @@ class StreamReader(object):
         for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._data_locators, start, size):
             data += self._keep.get(locator)[segmentoffset:segmentoffset+segmentsize]
         return data
+    
+    def manifest_text(self):
+        manifest_text = [self.name().replace(' ', '\\040')]
+        manifest_text.extend([d[LOCATOR] for d in self._data_locators])
+        manifest_text.extend([' '.join(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], f.name().replace(' ', '\\040')) 
+                                        for seg in f.segments])
+                              for f in self._files.values()])
+        return ' '.join(manifest_text) + '\n'
