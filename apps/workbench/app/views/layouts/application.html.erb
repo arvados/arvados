@@ -118,18 +118,15 @@
         </li>
         -->
 
-        <!-- XXX placeholder for this when persistent selection is implemented
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown">
             <span class="glyphicon glyphicon-paperclip"></span>
-            <span class="badge badge-alert"><%= @selection_count %></span>
+            <span class="badge" id="persistent-selection-count"></span>
             <span class="caret"></span>
           </a>
-          <ul class="dropdown-menu" role="menu">
-              <li style="padding: 10px">No selections.</li>
+          <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
           </ul>
         </li>
-        -->
 
         <% if current_user.is_active %>
         <li class="dropdown notification-menu">

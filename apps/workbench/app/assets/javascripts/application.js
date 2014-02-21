@@ -41,13 +41,82 @@ jQuery(function($){
         }
         targets.fadeToggle(200);
     });
+
+    var add_selection = function(v) {
+        var lst = JSON.parse(localStorage.persistentSelection);
+        lst.push(v);
+        localStorage.persistentSelection = JSON.stringify(lst);
+        update_count();
+    };
+
+    var remove_selection = function(v) {
+        var lst = JSON.parse(localStorage.persistentSelection);
+        var i = jQuery.inArray(v, lst);
+        if (i > -1) {
+            lst.splice(i, 1);
+        }
+        localStorage.persistentSelection = JSON.stringify(lst);
+        update_count();
+    };
+
+    var remove_selection_click = function(e) {
+        remove_selection($(this).attr('name'));
+    };
+
+    var update_count = function(e) {
+        var lst = JSON.parse(localStorage.persistentSelection);
+        $("#persistent-selection-count").text(lst.length);
+
+        if (lst.length > 0) {
+            $('#persistent-selection-list').empty();
+            for (var i = 0; i < lst.length; i++) {
+                $('#persistent-selection-list').append("<li role=\"presentation\"><span><a href=\"#\">" + lst[i] + "</a>"
+                                                       + "<a href=\"#\" class=\"remove-selection\" name=\"" + lst[i] + "\">" 
+                                                       + "<span class=\"glyphicon glyphicon-trash pull-right\"></span>"
+                                                       + "</a></span></li>");
+            }
+        } else {
+            $('#persistent-selection-list').html("<li role=\"presentation\">No selections.</li>");
+        }
+
+        var checkboxes = $('.persistent-selection:checkbox');
+        for (i = 0; i < checkboxes.length; i++) {
+            if (jQuery.inArray($(checkboxes[i]).val(), lst) > -1) {
+                checkboxes[i].checked = true;
+            }
+            else {
+                checkboxes[i].checked = false;
+            }
+        }
+        
+        $('.remove-selection').on('click', remove_selection_click);
+    };
+
     $(document).
         on('ajax:send', function(e, xhr) {
             $('.loading').fadeTo('fast', 1);
         }).
         on('ajax:complete', function(e, status) {
             $('.loading').fadeOut('fast', 0);
+        }).
+        on('change', '.persistent-selection:checkbox', function(e) {
+            console.log($(this));
+            console.log($(this).val());
+
+            if (!localStorage.persistentSelection) {
+                localStorage.persistentSelection = JSON.stringify([]);
+            }
+            
+            var inc = 0;
+            if ($(this).is(":checked")) {
+                add_selection($(this).val());
+            }
+            else {
+                remove_selection($(this).val());
+            }
         });
+
+    $(window).on('load storage', update_count);
 
     HeaderRowFixer = function(selector) {
         this.duplicateTheadTr = function() {
