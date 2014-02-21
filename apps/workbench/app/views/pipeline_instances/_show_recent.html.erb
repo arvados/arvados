@@ -39,7 +39,7 @@
 
     <tr data-object-uuid="<%= ob.uuid %>">
       <td>
-        <%= check_box_tag 'uuids[]', ob.uuid, false %>
+        <%= check_box_tag 'uuids[]', ob.uuid, false, :class => 'persistent-selection' %>
       </td><td>
         <% if ob.success %>
         <span class="label label-success">success</span>

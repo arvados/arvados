@@ -100,8 +100,8 @@ jQuery(function($){
             $('.loading').fadeOut('fast', 0);
         }).
         on('change', '.persistent-selection:checkbox', function(e) {
-            console.log($(this));
-            console.log($(this).val());
+            //console.log($(this));
+            //console.log($(this).val());
 
             if (!localStorage.persistentSelection) {
                 localStorage.persistentSelection = JSON.stringify([]);

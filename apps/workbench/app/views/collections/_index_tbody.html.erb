@@ -2,6 +2,9 @@
 
 <tr class="collection">
   <td>
+    <%= check_box_tag 'uuids[]', c.uuid, false, :class => 'persistent-selection' %>
+  </td>
+  <td>
     <%= link_to_if_arvados_object c.uuid %>
   </td>
   <td>
