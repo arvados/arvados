@@ -42,14 +42,6 @@
     padding-top: 1.25em;
     }
 
-    /* Setting the height needs to be fixed with javascript. */
-    .dropdown-menu {
-    padding-right: 20px;
-    max-height: 440px;
-    width: 400px;
-    overflow-y: auto;
-    }
-
     @media (min-width: 768px) {
     .left-nav {
     position: fixed;
@@ -93,7 +85,12 @@
               <span class="glyphicon glyphicon-arrow-right"></span>
             </li>
             <li>
-<%= link_to controller.breadcrumb_page_name, request.fullpath %>
+              <%= link_to controller.breadcrumb_page_name, request.fullpath %>
+            </li>
+            <li style="padding: 14px 0 14px">
+              <%= form_tag do |f| %>
+                <%= render :partial => "selection_checkbox", :locals => {:object => @object} %>
+              <% end %>
             </li>
           <% end %>
         <% end %>
@@ -125,6 +122,7 @@
             <span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
+            <li><table style="width:100%"></table></li>
           </ul>
         </li>
 

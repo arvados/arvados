@@ -275,6 +275,10 @@ class ArvadosBase < ActiveRecord::Base
     (name if self.respond_to? :name) || uuid
   end
 
+  def selection_label
+    friendly_link_name
+  end
+
   protected
 
   def forget_uuid!

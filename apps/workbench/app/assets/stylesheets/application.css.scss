@@ -159,11 +159,27 @@ table.table-fixed-header-row tbody {
     top:1.5em;
 }
 
+/* Setting the height needs to be fixed with javascript. */
+.dropdown-menu {
+    padding-right: 20px;
+    max-height: 440px;
+    width: 400px;
+    overflow-y: auto;
+}
+
+#persistent-selection-list {
+    width: 500px;
+}
+
 #persistent-selection-list li {
     margin-left: 1em;
     padding: 3px 20px;
     font-weight: normal;
     line-height: 1.42857;
     color: rgb(51, 51, 51);
-    border-bottom: 1px solid rgb(221, 221, 221)
+    
+}
+
+#persistent-selection-list li table tr {
+  border-bottom: 1px solid rgb(221, 221, 221);
 }

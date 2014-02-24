@@ -30,7 +30,7 @@
     <% @objects.each do |object| %>
     <tr data-object-uuid="<%= object.uuid %>">
       <td>
-        <%= check_box_tag 'uuids[]', object.uuid, false, :class => 'persistent-selection' %>
+        <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
       </td>
 
       <% object.attributes_for_display.each do |attr, attrvalue| %>

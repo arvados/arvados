@@ -2,7 +2,7 @@
 
 <tr class="collection">
   <td>
-    <%= check_box_tag 'uuids[]', c.uuid, false, :class => 'persistent-selection' %>
+    <%= render :partial => "selection_checkbox", :locals => {:object => c} %>
   </td>
   <td>
     <%= link_to_if_arvados_object c.uuid %>

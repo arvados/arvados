@@ -1,5 +1,6 @@
 <table class="table table-condensed table-fixedlayout">
   <colgroup>
+    <col width="4%" />
     <col width="35%" />
     <col width="40%" />
     <col width="15%" />
@@ -16,6 +17,16 @@
     <% if @object then @object.files.sort_by{|f|[f[0],f[1]]}.each do |file| %>
     <% file_path = "#{file[0]}/#{file[1]}" %>
     <tr>
+      <td>
+        <% fp2 = file_path[2..-1] if file_path[0..1] == './' %>
+        <% fp2 ||= file_path %>
+<%= check_box_tag 'uuids[]', @object.uuid+file_path, false, {
+  :class => 'persistent-selection', 
+  :friendly_type => "File",
+  :friendly_name => "#{@object.uuid}/#{fp2}",
+  :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}" 
+      } %>
+      </td>
       <td>
         <%= file[0] %>
       </td>
