@@ -50,7 +50,7 @@ if __name__ == '__main__':
         except:
             rc = 255
         finally:
-            subprocess.call(["fusermount", "-u", args.mountpoint])
+            subprocess.call(["fusermount", "-u", "-z", args.mountpoint])
 
         exit(rc)
     else:
