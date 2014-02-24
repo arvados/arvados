@@ -54,7 +54,7 @@ set -e
 while sleep 60
 do
   cd /path/to/arvados/services/api
-  setuidgid www-data env RAILS_ENV=production /usr/local/rvm/bin/rvm 2.0.0 do bundle exec ./script/import_commits.rb 2>&1
+  setuidgid www-data env RAILS_ENV=production /usr/local/rvm/bin/rvm-exec 2.0.0 bundle exec ./script/import_commits.rb 2>&1
 done
 </pre>
 
@@ -97,5 +97,6 @@ fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
 # export ARVADOS_API_HOST_INSECURE=yes
 
 cd /path/to/arvados/services/api
-RAILS_ENV=production /usr/local/rvm/bin/rvm 2.0.0 do bundle exec ./script/crunch-dispatch.rb 2>&1
+export RAILS_ENV=production
+exec /usr/local/rvm/bin/rvm-exec 2.0.0 bundle exec ./script/crunch-dispatch.rb 2>&1
 </pre>
