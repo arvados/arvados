@@ -13,7 +13,7 @@
       <th>d/l</th>
     </tr>
   </thead><tbody>
-    <% if @object then @object.files.sort_by{|f|f[1]}.each do |file| %>
+    <% if @object then @object.files.sort_by{|f|[f[0],f[1]]}.each do |file| %>
     <% file_path = "#{file[0]}/#{file[1]}" %>
     <tr>
       <td>

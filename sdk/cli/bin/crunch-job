@@ -84,6 +84,7 @@ unless (defined $ENV{"CRUNCH_TMP"}) {
   }
 }
 $ENV{"JOB_WORK"} = $ENV{"CRUNCH_TMP"} . "/work";
+$ENV{"CRUNCH_INSTALL"} = "$ENV{CRUNCH_TMP}/opt";
 $ENV{"CRUNCH_WORK"} = $ENV{"JOB_WORK"}; # deprecated
 mkdir ($ENV{"JOB_WORK"});
 
@@ -331,6 +332,16 @@ my $skip_install = ($local_job && $Job->{script_version} =~ m{^/});
 if ($skip_install)
 {
   $ENV{"CRUNCH_SRC"} = $Job->{script_version};
+  system("virtualenv", "$ENV{CRUNCH_TMP}/opt") == 0
+      or croak ("virtualenv $ENV{CRUNCH_TMP}/opt failed: exit ".($?>>8));
+  for my $src_path ("$ENV{CRUNCH_SRC}/arvados/sdk/python",
+                    "$ENV{CRUNCH_SRC}/sdk/python") {
+    if (-d $src_path) {
+      system ("cd $src_path && \$CRUNCH_TMP/opt/bin/python setup.py install")
+          == 0
+          or croak ("setup.py in $src_path failed: exit ".($?>>8));
+    }
+  }
 }
 else
 {
@@ -367,7 +378,6 @@ else
 
   $ENV{"CRUNCH_SRC_COMMIT"} = $Job->{script_version};
   $ENV{"CRUNCH_SRC"} = "$ENV{CRUNCH_TMP}/src";
-  $ENV{"CRUNCH_INSTALL"} = "$ENV{CRUNCH_TMP}/opt";
 
   my $commit;
   my $git_archive;
@@ -546,8 +556,10 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $ENV{"TASK_SLOT_NODE"} = $slot[$childslot]->{node}->{name};
     $ENV{"TASK_SLOT_NUMBER"} = $slot[$childslot]->{cpu};
     $ENV{"TASK_WORK"} = $ENV{"JOB_WORK"}."/".$slot[$childslot]->{cpu};
+    $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}."/keep";
     $ENV{"TASK_TMPDIR"} = $ENV{"TASK_WORK"}; # deprecated
     $ENV{"CRUNCH_NODE_SLOTS"} = $slot[$childslot]->{node}->{ncpus};
+    $ENV{"PATH"} = $ENV{"CRUNCH_INSTALL"} . "/bin:" . $ENV{"PATH"};
 
     $ENV{"GZIP"} = "-n";
 
@@ -561,7 +573,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     my $build_script_to_send = "";
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
-        ."mkdir -p $ENV{JOB_WORK} $ENV{CRUNCH_TMP} $ENV{TASK_WORK} "
+        ."mkdir -p $ENV{JOB_WORK} $ENV{CRUNCH_TMP} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
 	."&& cd $ENV{CRUNCH_TMP} ";
     if ($build_script)
     {
@@ -574,7 +586,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $ENV{"PYTHONPATH"} =~ s{^}{$ENV{CRUNCH_SRC}/arvados/sdk/python:}; # xxx hack
     $ENV{"PYTHONPATH"} =~ s{$}{:/usr/local/arvados/src/sdk/python}; # xxx hack
     $command .=
-        "&& exec $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+        "&& exec arv-mount $ENV{TASK_KEEPMOUNT} --exec $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
     exit (111);
@@ -1371,6 +1383,14 @@ my $pwd;
 chomp ($pwd = `pwd`);
 my $install_dir = $ENV{"CRUNCH_INSTALL"} || "$pwd/opt";
 mkdir $install_dir;
+
+shell_or_die ("virtualenv", $install_dir);
+for my $src_path ("$destdir/arvados/sdk/python", "$destdir/sdk/python") {
+  if (-d $src_path) {
+    shell_or_die ("cd $src_path && $install_dir/bin/python setup.py install");
+  }
+}
+
 if (-e "$destdir/crunch_scripts/install") {
     shell_or_die ("$destdir/crunch_scripts/install", $install_dir);
 } elsif (!-e "./install.sh" && -e "./tests/autotests.sh") {

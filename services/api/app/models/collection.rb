@@ -65,8 +65,19 @@ class Collection < ArvadosModel
       @files = []
       return
     end
+
+    #normalized_manifest = ""
+    #IO.popen(['arv-normalize'], 'w+b') do |io|
+    #  io.write manifest_text
+    #  io.close_write
+    #  while buf = io.read(2**20)
+    #    normalized_manifest += buf
+    #  end
+    #end
+
     @data_size = 0
-    @files = []
+    tmp = {}
+
     manifest_text.split("\n").each do |stream|
       toks = stream.split(" ")
 
@@ -98,9 +109,21 @@ class Collection < ArvadosModel
               else $1.to_i(8).chr
               end
             end
-            @files << [stream, filename, re[2].to_i]
+            fn = stream + '/' + filename
+            i = re[2].to_i
+            if tmp[fn]
+              tmp[fn] += i
+            else
+              tmp[fn] = i
+            end
           end
         end
+      end
+
+      @files = []
+      tmp.each do |k, v|
+        re = k.match(/^(.+)\/(.+)/)
+        @files << [re[1], re[2], v]
       end
     end
   end

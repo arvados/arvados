@@ -59,20 +59,29 @@ def current_job():
 def getjobparam(*args):
     return current_job()['script_parameters'].get(*args)
 
+def get_job_param_mount(*args):
+    return os.path.join(os.environ['TASK_KEEPMOUNT'], current_job()['script_parameters'].get(*args))
+
+def get_task_param_mount(*args):
+    return os.path.join(os.environ['TASK_KEEPMOUNT'], current_task()['parameters'].get(*args))
+
 class JobTask(object):
     def __init__(self, parameters=dict(), runtime_constraints=dict()):
         print "init jobtask %s %s" % (parameters, runtime_constraints)
 
 class job_setup:
     @staticmethod
-    def one_task_per_input_file(if_sequence=0, and_end_task=True):
+    def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False):
         if if_sequence != current_task()['sequence']:
             return
         job_input = current_job()['script_parameters']['input']
         cr = CollectionReader(job_input)
         for s in cr.all_streams():
             for f in s.all_files():
-                task_input = f.as_manifest()
+                if input_as_path:
+                    task_input = os.path.join(job_input, s.name(), f.name())
+                else:
+                    task_input = f.as_manifest()
                 new_task_attrs = {
                     'job_uuid': current_job()['uuid'],
                     'created_by_job_task_uuid': current_task()['uuid'],

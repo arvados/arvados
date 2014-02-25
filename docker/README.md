@@ -75,25 +75,20 @@ Building
         $ make workbench-image
         $ make sso-image
 
-Deploying
----------
+Running
+-------
 
-1. Make sure the `ARVADOS_DNS_SERVER` has been provisioned with the
-   following DNS entries, resolving to the appropriate IP addresses
-   where each service will be deployed.
+The `arvdock` script in this directory is used to start, stop and
+restart Arvados servers on your machine.  The simplest and easiest way
+to use it is `./arvdock start` to start the full complement of Arvados
+servers, and `./arvdock stop` and `./arvdock restart` to stop and
+restart all servers, respectively.
 
-   * $API_HOSTNAME
-   * keep0.$API_HOSTNAME
-   * compute0.$API_HOSTNAME
-   * controller.$API_HOSTNAME
-   * workbench.$API_HOSTNAME
+Developers who are working on individual servers can start, stop or
+restart just those containers, e.g.:
 
-2. The `arvdock` script in this directory is used to start, stop and
-   restart Arvados servers on your machine. Example usages:
+* `./arvdock start --api --sso` to start just the API and SSO services.
+* `./arvdock stop --keep` to stop just the Keep services.
+* `./arvdock restart --workbench=8000` restarts just the Workbench service on port 8000.
 
-   * `arvdock start`
-   * `arvdock stop`
-   * `arvdock restart`
-   * `arvdock start --api --sso` to start just the API and SSO services.
-   * `arvdock start --workbench=8000` starts just the Workbench service on port 8000.
-   * `arvdock stop --keep` to stop just the Keep services.
+For a full set of arguments, use `./arvdock --help`.
