@@ -90,21 +90,7 @@ In this example we will use @c1bad4b39ca5a924e481008009d94e32+210@ which we adde
 
 The command @arv keep get@ fetches the contents of the locator @c1bad4b39ca5a924e481008009d94e32+210@.  This is a locator for a collection data block, so it fetches the contents of the collection.  In this example, this collection consists of a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, <code>204e43b8a1185621ca55a94839582e6f+67108864</code>, <code>b9677abbac956bd3e86b1deb28dfac03+67108864</code>, <code>fc15aff2a762b13f521baf042140acec+67108864</code>, <code>323d2a3ce20370c4ca1d3462a344f8fd+25885655</code>.
 
-Let's use @arv keep get@ to download the first datablock:
-
-notextile. <pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep get 204e43b8a1185621ca55a94839582e6f+67108864 &gt; block1</span></code></pre>
-
-Let's look at the size and compute the md5 hash of @block1@:
-
-<notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">ls -l block1</span>
--rw-r--r-- 1 you group 67108864 Dec  9 20:14 block1
-/scratch/<b>you</b>$ <span class="userinput">md5sum block1</span>
-204e43b8a1185621ca55a94839582e6f  block1
-</code></pre>
-</notextile>
-
-Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864</code> of:
+Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864</code> consists of:
 * the md5 hash @204e43b8a1185621ca55a94839582e6f@ which matches the md5 hash of @block1@
 * a size hint @67108864@ which matches the size of @block1@
 
@@ -114,7 +100,7 @@ Next, let's use @arv keep get@ to download and reassemble @var-GS000016015-ASM.t
 <pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep get c1bad4b39ca5a924e481008009d94e32+210/var-GS000016015-ASM.tsv.bz2 .</span>
 </code></pre>
 
-This downloads the file @var-GS000016015-ASM.tsv.bz2@ described by collection @c1bad4b39ca5a924e481008009d94e32+210@ from Keep and places it into the local directory.  Now that we have the file, we can compute the md5 hash of the complete file:
+This downloads the file <code>var-GS000016015-ASM.tsv.bz2</code> described by collection <code>c1bad4b39ca5a924e481008009d94e32+210</code> from Keep and places it into the local directory.  Now that we have the file, we can compute the md5 hash of the complete file:
 
 <notextile>
 <pre><code>/scratch/<b>you</b>$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>

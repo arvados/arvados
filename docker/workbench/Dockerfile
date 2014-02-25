@@ -12,7 +12,8 @@ RUN touch /usr/src/arvados/apps/workbench/log/production.log && \
     touch /usr/src/arvados/apps/workbench/db/production.sqlite3 && \
     bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
     cd /usr/src/arvados/apps/workbench && \
-    rake assets:precompile
+    rake assets:precompile && \
+    chown -R www-data:www-data /usr/src/arvados/apps/workbench
 
 # Configure Apache
 ADD generated/apache2_vhost /etc/apache2/sites-available/workbench
