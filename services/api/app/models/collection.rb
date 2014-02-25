@@ -119,12 +119,12 @@ class Collection < ArvadosModel
           end
         end
       end
+    end
 
-      @files = []
-      tmp.each do |k, v|
-        re = k.match(/^(.+)\/(.+)/)
-        @files << [re[1], re[2], v]
-      end
+    @files = []
+    tmp.each do |k, v|
+      re = k.match(/^(.+)\/(.+)/)
+      @files << [re[1], re[2], v]
     end
   end
 
