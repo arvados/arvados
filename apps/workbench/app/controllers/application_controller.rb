@@ -107,10 +107,11 @@ class ApplicationController < ActionController::Base
   end
 
   def create
-    @object ||= model_class.new params[model_class.to_s.underscore.singularize.to_sym]
+    @object ||= model_class.new params[model_class.to_s.underscore.singularize]
     @object.save!
 
     respond_to do |f|
+      f.json { render json: @object }
       f.html {
         redirect_to(params[:return_to] || @object)
       }
@@ -121,6 +122,7 @@ class ApplicationController < ActionController::Base
   def destroy
     if @object.destroy
       respond_to do |f|
+        f.json { render json: @object }
         f.html {
           redirect_to(params[:return_to] || :back)
         }

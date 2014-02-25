@@ -6,6 +6,7 @@
 table.pipeline-components-table {
   width: 100%;
   table-layout: fixed;
+  overflow: hidden;
 }
 
 table.pipeline-components-table thead th {
@@ -15,15 +16,20 @@ table.pipeline-components-table div.progress {
   margin-bottom: 0;
 }
 
+table.pipeline-components-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 <% end %>
 
 <% if @object.active != nil %>
 <table class="table pipeline-components-table">
   <colgroup>
     <col style="width: 15%" />
-    <col style="width: 35%" />
-    <col style="width: 15%" />
-    <col style="width: 35%" />
+    <col style="width: 20%" />
+    <col style="width: 20%" />
+    <col style="width: 45%" />
   </colgroup>
   <thead>
     <tr>
@@ -88,9 +94,9 @@ setInterval(function(){$('a.refresh').click()}, 30000);
 <table class="table pipeline-components-table" style="margin-top: -.1em">
   <colgroup>
     <col style="width: 15%" />
-    <col style="width: 35%" />
-    <col style="width: 15%" />
-    <col style="width: 35%" />
+    <col style="width: 20%" />
+    <col style="width: 20%" />
+    <col style="width: 45%" />
   </colgroup>
 
   <thead>
@@ -129,12 +135,12 @@ setInterval(function(){$('a.refresh').click()}, 30000);
 
     <% if sp.length > 1 %>
     <tr>
-      <td></td>
-      <td></td>
+      <td style="border-top: none"></td>
+      <td style="border-top: none"></td>
 
       <% sp[1..-1].each do |p| %>
-        <%= p[0] %>
-        <%= p[1] %>
+        <td style="border-top: none"><%= p[0] %></td>
+        <td style="border-top: none"><%= p[1] %></td>
       <% end %>
     </tr>
   <% end %>
