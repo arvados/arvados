@@ -12,9 +12,17 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   test "should create" do
     authorize_with :active
     test_collection = {
-      manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
-      uuid: "d30fe8ae534397864cb96c544f4cf102"
+      manifest_text: <<-EOS
+. d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt
+. acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:bar.txt
+. acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:bar.txt
+./baz acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:bar.txt
+EOS
     }
+    test_collection[:uuid] =
+      Digest::MD5.hexdigest(test_collection[:manifest_text]) +
+      '+' +
+      test_collection[:manifest_text].length.to_s
     post :create, {
       collection: test_collection
     }
@@ -22,13 +30,36 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_nil assigns(:objects)
 
     get :show, {
-      id: "d30fe8ae534397864cb96c544f4cf102"
+      id: test_collection[:uuid]
     }
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal 'd30fe8ae534397864cb96c544f4cf102+47', resp['uuid']
+    assert_equal test_collection[:uuid], resp['uuid']
     assert_equal test_collection[:manifest_text], resp['manifest_text']
+    assert_equal 9, resp['data_size']
+    assert_equal [['.', 'foo.txt', 0],
+                  ['.', 'bar.txt', 6],
+                  ['./baz', 'bar.txt', 3]], resp['files']
+  end
+
+  test "list of files is correct for empty manifest" do
+    authorize_with :active
+    test_collection = {
+      manifest_text: "",
+      uuid: "d41d8cd98f00b204e9800998ecf8427e+0"
+    }
+    post :create, {
+      collection: test_collection
+    }
+    assert_response :success
+
+    get :show, {
+      id: "d41d8cd98f00b204e9800998ecf8427e+0"
+    }
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal [], resp['files']
   end
 
   test "create with owner_uuid set to owned group" do

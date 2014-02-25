@@ -127,17 +127,23 @@ class Node < ArvadosModel
   def start!(ping_url_method)
     ensure_permission_to_update
     ping_url = ping_url_method.call({ uuid: self.uuid, ping_secret: self.info[:ping_secret] })
-    ec2_args = ["--user-data '#{ping_url}'",
-                "-t c1.xlarge -n 1",
-                Rails.configuration.compute_node_ec2run_args,
-                Rails.configuration.compute_node_ami
-               ]
-    ec2run_cmd = ["ec2-run-instances",
-                  "--client-token", self.uuid,
-                  ec2_args].flatten.join(' ')
-    ec2spot_cmd = ["ec2-request-spot-instances",
-                   "-p #{Rails.configuration.compute_node_spot_bid} --type one-time",
-                   ec2_args].flatten.join(' ')
+    if (Rails.configuration.compute_node_ec2run_args rescue false) and
+       (Rails.configuration.compute_node_ami rescue false)
+      ec2_args = ["--user-data '#{ping_url}'",
+                  "-t c1.xlarge -n 1",
+                  Rails.configuration.compute_node_ec2run_args,
+                  Rails.configuration.compute_node_ami
+                 ]
+      ec2run_cmd = ["ec2-run-instances",
+                    "--client-token", self.uuid,
+                    ec2_args].flatten.join(' ')
+      ec2spot_cmd = ["ec2-request-spot-instances",
+                     "-p #{Rails.configuration.compute_node_spot_bid} --type one-time",
+                     ec2_args].flatten.join(' ')
+    else
+      ec2run_cmd = ''
+      ec2spot_cmd = ''
+    end
     self.info[:ec2_run_command] = ec2run_cmd
     self.info[:ec2_spot_command] = ec2spot_cmd
     self.info[:ec2_start_command] = ec2spot_cmd

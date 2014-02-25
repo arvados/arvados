@@ -91,6 +91,11 @@ form.small-form-margin {
     padding: 2px 20px;
 }*/
 
+.left-nav ul ul li > div {
+    margin-left: 1.5em;
+    text-indent: -1.5em;
+}
+
 ul.arvados-nav {
     list-style: none;
     padding-left: 0em;
@@ -126,14 +131,34 @@ ul.arvados-nav li ul li {
     display:inline-block;
 }
 
+td.add-tag-button {
+    white-space: normal;
+}
+td.add-tag-button .add-tag-button {
+    margin-right: 4px;
+    opacity: 0.2;
+}
+td.add-tag-button .add-tag-button:hover {
+    opacity: 1;
+}
+span.removable-tag-container {
+    line-height: 1.6;
+}
+.label.removable-tag a {
+    color: #fff;
+    cursor: pointer;
+}
+
 li.notification {
     padding: 10px;
 }
 .arvados-nav-container {
     top: 70px; 
-    height: calc(100% - 70px); 
     overflow: auto; 
     z-index: 2;
+}
+.arvados-nav {
+    padding-top: 70px;
 }
 
 .arvados-nav-active {
@@ -141,6 +166,9 @@ li.notification {
 }
 
 .arvados-nav-active a {
+    color: white;
+}
+.arvados-nav-active a:hover {
     color: white;
 }
 
