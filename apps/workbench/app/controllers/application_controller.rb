@@ -107,8 +107,9 @@ class ApplicationController < ActionController::Base
   end
 
   def create
-    @object ||= model_class.new params[model_class.to_s.singularize.to_sym]
+    @object ||= model_class.new params[model_class.to_s.underscore.singularize.to_sym]
     @object.save!
+
     respond_to do |f|
       f.html {
         redirect_to(params[:return_to] || @object)

@@ -1,7 +1,22 @@
+<% content_for :css do %>
+  .playbutton {
+  color: white;
+  background: gray;
+  border: 0px;
+  border-radius: 3px;
+  padding: 0px 3px;
+  }
+  .playbutton:hover {
+  color: white;
+  background: blackh;
+  }
+<% end %>
+
 <table class="table table-hover">
   <thead>
     <tr class="contain-align-left">
       <th>
+      </th><th>
 	id
       </th><th>
 	name
@@ -17,6 +32,14 @@
     <% @objects.sort_by { |ob| ob[:created_at] }.reverse.each do |ob| %>
 
     <tr>
+      <td>
+        <%= form_tag '/pipeline_instances' do |f| %>
+          <%= hidden_field :pipeline_instance, :pipeline_template_uuid, :value => ob.uuid %>
+          <%= button_tag nil, {class: 'playbutton'} do %>
+            <span class="glyphicon glyphicon-play"></span>
+          <% end %>
+        <% end %>
+      </td>
       <td>
         <%= link_to_if_arvados_object ob %>
       </td><td>

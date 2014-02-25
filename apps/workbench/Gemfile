@@ -43,7 +43,7 @@ gem 'less-rails'
 # gem 'capistrano'
 
 # To use debugger
-# gem 'debugger'
+#gem 'byebug'
 
 gem 'rvm-capistrano', :group => :test
 
