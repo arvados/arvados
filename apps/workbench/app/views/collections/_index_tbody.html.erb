@@ -31,14 +31,14 @@
   </td>
   <td class="add-tag-button">
     <a class="btn btn-xs btn-info add-tag-button pull-right" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
-    <span>
+    <span class="removable-tag-container">
     <% if @collection_info[c.uuid] %>
       <% @collection_info[c.uuid][:tag_links].each do |tag_link| %>
         <span class="label label-info removable-tag" data-tag-link-uuid="<%= tag_link.uuid %>"><%= tag_link.name %>
           <% if tag_link.owner_uuid == current_user.uuid %>
           &nbsp;<a title="Delete tag"><i class="glyphicon glyphicon-trash"></i></a>
           <% end %>
-        </span>
+        </span>&nbsp;
       <% end %>
     <% end %>
     </span>

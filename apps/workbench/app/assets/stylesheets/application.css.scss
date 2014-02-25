@@ -136,8 +136,8 @@ td.add-tag-button .add-tag-button {
 td.add-tag-button .add-tag-button:hover {
     opacity: 1;
 }
-.label.removable-tag {
-    margin-top: .2em;
+span.removable-tag-container {
+    line-height: 1.6;
 }
 .label.removable-tag a {
     color: #fff;

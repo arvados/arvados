@@ -83,7 +83,7 @@ jQuery(function($){
                 parent().
                 find('>span').
                 append(new_tag_span).
-                append(' ');
+                append('&nbsp; ');
             $.ajax($(this).attr('data-remote-href'),
                            {dataType: 'json',
                             type: $(this).attr('data-remote-method'),
