@@ -3,31 +3,37 @@
     padding-left: 1em;
     padding-right: 1em;
   }
+table.pipeline-components-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
 table.pipeline-components-table thead th {
   text-align: bottom;
 }
 table.pipeline-components-table div.progress {
   margin-bottom: 0;
 }
-<% end %>
-<br />
 
+<% end %>
+
+<% if @object.active != nil %>
 <table class="table pipeline-components-table">
   <colgroup>
-    <col width="15%" />
-    <col width="15%" />
-    <col width="35%" />
-    <col width="35%" />
+    <col style="width: 15%" />
+    <col style="width: 35%" />
+    <col style="width: 15%" />
+    <col style="width: 35%" />
   </colgroup>
   <thead>
     <tr>
       <th>
         component
       </th><th>
+        script, version
+      </th><th>
         progress
         <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
-      </th><th>
-        script, version
       </th><th>
         output
       </th>
@@ -43,6 +49,9 @@ table.pipeline-components-table div.progress {
         <%= pj[:name] %>
         <% end %>
       </td><td>
+        <%= pj[:script] %>
+        <br /><span class="deemphasize"><%= pj[:script_version] %></span>
+      </td><td>
         <%= pj[:progress_bar] %>
         <% if pj[:job].andand[:cancelled_at] %>
         <span class="pull-right label label-warning">cancelled</span>
@@ -51,9 +60,6 @@ table.pipeline-components-table div.progress {
         <% elsif pj[:result] == 'queued' %>
         <span class="pull-right label">queued</span>
         <% end %>
-      </td><td>
-        <%= pj[:script] %>
-        <br /><span class="deemphasize"><%= pj[:script_version] %></span>
       </td><td>
         <%= link_to_if_arvados_object pj[:output] %>
       </td>
@@ -71,4 +77,69 @@ setInterval(function(){$('a.refresh').click()}, 30000);
 <% end %>
 <% end %>
 
-<pre><%= JSON.pretty_generate @object.attributes %></pre>
+<% else %>
+
+  <%= form_tag @object, :method => :put do |f| %>
+
+  <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
+  <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right'} %>
+  <% end %>
+
+<table class="table pipeline-components-table" style="margin-top: -.1em">
+  <colgroup>
+    <col style="width: 15%" />
+    <col style="width: 35%" />
+    <col style="width: 15%" />
+    <col style="width: 35%" />
+  </colgroup>
+
+  <thead>
+    <tr>
+      <th>
+        component
+      </th><th>
+        script, version
+      </th><th>
+        parameter
+      </th><th>
+        input
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+  <% @object.components.each do |k, v| %>
+
+    <% sp = v[:script_parameters].collect do |k, v| [k, v] end %>
+
+    <tr>
+      <td><%= k %></td>
+
+      <td><%= v[:script] %>
+        <br /><span class="deemphasize"> <%= v[:script_version] %></span>
+      </td>
+
+      <td>
+        <%= sp[0][0] %>
+      </td>
+
+      <td>
+        <%= sp[0][1] %>
+      </td>
+      </tr>
+
+    <% if sp.length > 1 %>
+    <tr>
+      <td></td>
+      <td></td>
+
+      <% sp[1..-1].each do |p| %>
+        <%= p[0] %>
+        <%= p[1] %>
+      <% end %>
+    </tr>
+  <% end %>
+  <% end %>
+  </tbody>
+  </table>
+  
+<% end %>

@@ -45,6 +45,12 @@ class PipelineInstancesController < ApplicationController
   end
 
   def show
+    if @object.components.empty? and @object.pipeline_template_uuid
+      template = PipelineTemplate.find(@object.pipeline_template_uuid)
+      @object.components= template.components
+      @object.save
+    end
+
     @pipelines = [@object]
 
     if params[:compare]
