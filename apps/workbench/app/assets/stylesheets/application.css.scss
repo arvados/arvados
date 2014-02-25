@@ -126,6 +126,24 @@ ul.arvados-nav li ul li {
     display:inline-block;
 }
 
+td.add-tag-button {
+    white-space: normal;
+}
+td.add-tag-button .add-tag-button {
+    margin-right: 4px;
+    opacity: 0.2;
+}
+td.add-tag-button .add-tag-button:hover {
+    opacity: 1;
+}
+span.removable-tag-container {
+    line-height: 1.6;
+}
+.label.removable-tag a {
+    color: #fff;
+    cursor: pointer;
+}
+
 li.notification {
     padding: 10px;
 }
