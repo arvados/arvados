@@ -126,8 +126,7 @@ class ApplicationController < ActionController::Base
         if attr == :any
           if value.is_a?(Array) and
               value.length == 2 and
-              value[0] == 'contains' and
-              model_class.columns.collect(&:name).index('name') then
+              value[0] == 'contains' then
             ilikes = []
             model_class.searchable_columns.each do |column|
               ilikes << "#{table_name}.#{column} ilike ?"
@@ -135,6 +134,8 @@ class ApplicationController < ActionController::Base
             end
             if ilikes.any?
               conditions[0] << ' and (' + ilikes.join(' or ') + ')'
+            else
+              conditions[0] << ' and 0=1'
             end
           end
         elsif attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
