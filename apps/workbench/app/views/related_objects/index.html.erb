@@ -1,0 +1,53 @@
+<% if @objects.empty? %>
+
+<br/>
+<p style="text-align: center">
+  Nothing to display.
+</p>
+
+<% else %>
+
+<table class="table table-condensed arv-index">
+  <thead>
+    <tr>
+      <th>
+        object
+      </th>
+      <th>
+        detail
+      </th>
+      <th>
+        owner
+      </th>
+      <th>
+        age
+      </th>
+    </tr>
+  </thead>
+      
+  <tbody>
+    <% @objects.each do |object| %>
+    <tr data-object-uuid="<%= object.uuid %>">
+      <td>
+        <%= link_to_if_arvados_object object, friendly_name: true %>
+      </td>
+      <td>
+        <% @detail_for[object.uuid][0..3].each do |detail| %>
+        <%= detail %><br />
+        <% end %>
+      </td>
+      <td>
+        <%= link_to_if_arvados_object object.owner_uuid, friendly_name: true %>
+      </td>
+      <td>
+        <%= distance_of_time_in_words object.created_at, Time.now %>
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+
+  <tfoot>
+  </tfoot>
+</table>
+
+<% end %>

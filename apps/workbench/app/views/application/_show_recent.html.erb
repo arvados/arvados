@@ -11,7 +11,7 @@
 <table class="table table-condensed arv-index">
   <thead>
     <tr>
-      <% @objects.first.attributes_for_display.each do |attr, attrvalue| %>
+      <% controller.attributes_for_display.each do |attr| %>
       <% next if attr_blacklist.index(" "+attr) %>
       <th class="arv-attr-<%= attr %>">
         <%= controller.model_class.attribute_info[attr.to_sym].andand[:column_heading] or attr.sub /_uuid/, '' %>
@@ -26,8 +26,10 @@
   <tbody>
     <% @objects.each do |object| %>
     <tr data-object-uuid="<%= object.uuid %>">
-      <% object.attributes_for_display.each do |attr, attrvalue| %>
+      <% controller.attributes_for_display.each do |attr| %>
       <% next if attr_blacklist.index(" "+attr) %>
+      <% if object.respond_to? attr %>
+      <% attrvalue = object.send attr %>
       <td class="arv-object-<%= object.class.to_s %> arv-attr-<%= attr %>">
         <% if attr == 'uuid' %>
         <%= link_to_if_arvados_object object %>
@@ -42,6 +44,9 @@
         <%= link_to_if_arvados_object(attrvalue, { referring_object: @object, link_text: raw('<i class="icon-hand-right"></i>') }) if resource_class_for_uuid(attrvalue, {referring_object: @object}) %>
         <% end %>
       </td>
+      <% else %>
+      <td></td>
+      <% end %>
       <% end %>
       <td>
         <%= render partial: 'delete_object_button', locals: {object:object} %>

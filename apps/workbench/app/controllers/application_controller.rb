@@ -145,6 +145,14 @@ class ApplicationController < ActionController::Base
     controller_name.classify.constantize
   end
 
+  def attributes_for_display
+    @objects.first.attributes_for_display.collect { |k,v| k }
+  end
+
+  def breadcrumb_controller_name
+    model_class.to_s.pluralize.underscore.gsub('_', ' ')
+  end
+
   def breadcrumb_page_name
     (@breadcrumb_page_name ||
      (@object.friendly_link_name if @object.respond_to? :friendly_link_name))

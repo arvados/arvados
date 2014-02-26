@@ -89,15 +89,15 @@
           <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
           <li>
             <%= link_to(
-                        controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
-                        url_for({controller: params[:controller]})) %>
+                controller.breadcrumb_controller_name,
+                url_for({controller: params[:controller]})) %>
           </li>
           <% if params[:action] != 'index' %>
             <li class="nav-separator">
               <span class="glyphicon glyphicon-arrow-right"></span>
             </li>
             <li>
-<%= link_to controller.breadcrumb_page_name, request.fullpath %>
+              <%= link_to controller.breadcrumb_page_name, request.fullpath %>
             </li>
           <% end %>
         <% end %>
@@ -111,11 +111,19 @@
         </li>
 
         <% if current_user %>
-        <!-- XXX placeholder for this when search is implemented -->
         <li>
-	  <%= form_tag("/related_objects", method: "get") do %>
-	    <%= text_field_tag(:q) %>
-	    <%= submit_tag("Search") %>
+	  <%= form_tag related_objects_path,
+              method: 'get',
+              class: 'navbar-form',
+              role: 'search' do %>
+            <div class="input-group" style="width: 220px">
+	      <%= text_field_tag(:q, params[:q], class: 'form-control', placeholder: 'Search') %>
+              <span class="input-group-btn">
+                <%= button_tag(class: 'btn btn-info') do %>
+                <span class="glyphicon glyphicon-search"></span>
+                <% end %>
+	      </span>
+            </div>
 	  <% end %>
 	  <!--
           <form class="navbar-form" role="search">

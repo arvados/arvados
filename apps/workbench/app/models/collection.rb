@@ -13,6 +13,14 @@ class Collection < ArvadosBase
     false
   end
 
+  def attributes_for_display
+    attributes.select { |k,v|
+      %w(uuid owner_uuid).index k
+    }.sort_by { |k,v|
+      attribute_sortkey[k] or k
+    }
+  end
+
   def self.creatable?
     false
   end
