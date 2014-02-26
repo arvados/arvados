@@ -108,39 +108,59 @@ module ApplicationHelper
   def render_editable_subattribute(object, attr, subattr, template, htmloptions={})
     attrvalue = object.send(attr)
     subattr.each do |k|
-      attrvalue = attrvalue[k]
+      if attrvalue and attrvalue.is_a? Hash
+        attrvalue = attrvalue[k]
+      else
+        break
+      end
     end
 
     datatype = nil
     if template
+      puts "Template is #{template.class} #{template.is_a? Hash} #{template}"
       if template.is_a? Hash
         if template[:output_of]
-          return "Output of \"#{template[:output_of]}\""
+          return raw("<span class='label label-default'>#{template[:output_of]}</span>")
         elsif template[:datatype]
           datatype = template[:datatype]
         end
-      elsif attrvalue == nil
-        attrvalue = template
       end
     end
 
     return attrvalue if !object.attribute_editable? attr
 
     if not datatype
-      dataclass = ArvadosBase.resource_class_for_uuid(attrvalue)
+      dataclass = ArvadosBase.resource_class_for_uuid(template)
       if dataclass
         datatype = 'select'
       else
-        if /^\d+$/.match(attrvalue) 
-          datatype = 'number'
-        elsif
-          datatype = 'text'
+        if template.is_a? Array
+          # ?!?
+        elsif template.is_a? String
+          if /^\d+$/.match(template)
+            datatype = 'number'
+          else
+            datatype = 'text'
+          end
         end
       end
     end
 
-    subattr.insert(0, attr)
     id = "#{object.uuid}-#{subattr.join('-')}"
+    dn = "[#{attr}]"
+    subattr.each do |a|
+      dn += "[#{a}]"
+    end
+
+    if dataclass
+      items = []
+      dataclass.where(uuid: attrvalue).each do |item|
+        items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      end
+      dataclass.limit(19).each do |item|
+        items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      end
+    end
 
     lt = link_to attrvalue, '#', {
       "data-emptytext" => "none",
@@ -148,17 +168,21 @@ module ApplicationHelper
       "data-type" => datatype,
       "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
       "data-title" => "Update #{subattr[-1].to_s.titleize}",
-      "data-name" => subattr.to_json,
+      "data-name" => dn,
+      "data-value" => attrvalue,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       :class => "editable",
       :id => id
     }.merge(htmloptions)
 
-    lt += raw(%{
-<script>
-  $('##{id}').editable({source: select_#{dataclass}_source});
-</script>})
+    lt += raw(<<EOF
 
+<script>
+    add_form_selection_sources(#{items.to_json});
+    $('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });
+</script>
+EOF
+)
     lt 
   end
 end

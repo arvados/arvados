@@ -4,8 +4,9 @@
 /** Javascript for local persistent selection. */
 
 get_selection_list = null;
+form_selection_sources = {};
 
-(function($){
+jQuery(function($){
     var storage = localStorage; // sessionStorage
 
     get_selection_list = function() {
@@ -110,4 +111,49 @@ get_selection_list = null;
 
 
     $(window).on('load storage', update_count);
-})(jQuery);
+});
+
+add_form_selection_sources = null;
+select_form_sources  = null;
+
+(function() {
+    var form_selection_sources = {};
+    add_form_selection_sources = function (src) {
+        for (var i = 0; i < src.length; i++) {
+            var t = form_selection_sources[src[i].type];
+            if (!t) {
+                t = form_selection_sources[src[i].type] = {};
+            }
+            if (!t[src[i].uuid]) {
+                t[src[i].uuid] = src[i];
+            }
+        }
+    };
+
+    select_form_sources = function(type) {
+        var ret = [];
+
+        if (get_selection_list) {
+            var lst = get_selection_list();
+            if (lst.length > 0) {
+                ret.push({text: "--- Selections ---", value: ""});
+
+                for (var i = 0; i < lst.length; i++) {
+                    if (lst[i].type == type) {
+                        ret.push({text: lst[i].name, value: lst[i].uuid})
+                    }
+                }
+            }
+        }
+        ret.push({text: "--- Recent ---", value: ""});
+
+        var t = form_selection_sources[type];
+        for (var key in t) {
+            if (t.hasOwnProperty(key)) {
+                var obj = t[key];
+                ret.push({text: obj.name, value: obj.uuid})
+            }
+        }
+        return ret;
+    };
+})();

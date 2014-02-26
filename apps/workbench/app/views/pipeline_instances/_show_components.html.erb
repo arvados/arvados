@@ -23,19 +23,6 @@ table.pipeline-components-table td {
 
 <% end %>
 
-<% content_for :js do %>
-  function select_Collection_source() {
-    var ret = [];
-    var lst = get_selection_list();
-    for (var i = 0; i < lst.length; i++) {
-      if (lst[i].type == 'Collection') {
-        ret.push({text: lst[i].name, value: lst[i].uuid})
-      }
-    }
-    return ret;
-  };
-<% end %>
-
 <% if @object.active != nil %>
 <table class="table pipeline-components-table">
   <colgroup>
@@ -62,11 +49,23 @@ table.pipeline-components-table td {
     <% render_pipeline_jobs.each do |pj| %>
     <tr>
       <td>
+        <% label = if pj[:job].andand[:uuid] 
+                       if pj[:job][:running]
+                         'label-info'
+                       elsif pj[:job][:success]
+                         'label-success'
+                       else
+                         'label-danger'
+                       end 
+                     else
+                       'label-default'
+                     end %>
         <% if pj[:job].andand[:uuid] %>
-        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]) %>
+        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]), class: "label #{label}" %>
         <% else %>
-        <%= pj[:name] %>
+          <span class="label <%= label %>"><%= pj[:name] %></span>
         <% end %>
+        </span>
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
@@ -117,7 +116,7 @@ setInterval(function(){$('a.refresh').click()}, 30000);
       <th>
         component
       </th><th>
-        script, version
+        script
       </th><th>
         parameter
       </th><th>
@@ -129,32 +128,28 @@ setInterval(function(){$('a.refresh').click()}, 30000);
     <% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
     <% template.components.each do |k, v| %>
 
-    <% sp = v[:script_parameters].collect do |k, v| [k, v] end %>
+    <% sp = v[:script_parameters].collect do |x, y| [x, y] end %>
 
     <tr>
-      <td><%= k %></td>
+      <td><span class="label label-default"><%= k %></span></td>
 
-      <td><%= v[:script] %>
-        <br /><span class="deemphasize"> <%= v[:script_version] %></span>
-      </td>
+      <td><%= v[:script] %></td>
 
-      <td>
-        <%= sp[0][0] %>
-      </td>
+      <td>script_version</td>
 
       <td>
-        <%= render_editable_subattribute @object, :components, [k, :script_parameters, sp[0][0].to_sym], sp[0][1] %>
+        <%= render_editable_subattribute @object, :components, [k, :script_version], v[:script_version] %>
       </td>
-      </tr>
+    </tr>
 
-    <% if sp.length > 1 %>
+    <% if sp.length > 0 %>
     <tr>
       <td style="border-top: none"></td>
       <td style="border-top: none"></td>
 
-      <% sp[1..-1].each do |p| %>
+      <% sp.each do |p| %>
         <td><%= p[0] %></td>
-        <td><%= p[1] %></td>
+        <td><%= render_editable_subattribute @object, :components, [k, :script_parameters, p[0].to_sym], p[1] %></td>
       <% end %>
     </tr>
   <% end %>
