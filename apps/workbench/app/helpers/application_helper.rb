@@ -3,6 +3,10 @@ module ApplicationHelper
     controller.current_user
   end
 
+  def self.match_uuid(uuid)
+    /^([0-9a-z]{5})-([0-9a-z]{5})-([0-9a-z]{15})$/.match(uuid.to_s)
+  end
+
   def current_api_host
     Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
   end
@@ -99,5 +103,62 @@ module ApplicationHelper
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       :class => "editable"
     }.merge(htmloptions)
+  end
+
+  def render_editable_subattribute(object, attr, subattr, template, htmloptions={})
+    attrvalue = object.send(attr)
+    subattr.each do |k|
+      attrvalue = attrvalue[k]
+    end
+
+    datatype = nil
+    if template
+      if template.is_a? Hash
+        if template[:output_of]
+          return "Output of \"#{template[:output_of]}\""
+        elsif template[:datatype]
+          datatype = template[:datatype]
+        end
+      elsif attrvalue == nil
+        attrvalue = template
+      end
+    end
+
+    return attrvalue if !object.attribute_editable? attr
+
+    if not datatype
+      dataclass = ArvadosBase.resource_class_for_uuid(attrvalue)
+      if dataclass
+        datatype = 'select'
+      else
+        if /^\d+$/.match(attrvalue) 
+          datatype = 'number'
+        elsif
+          datatype = 'text'
+        end
+      end
+    end
+
+    subattr.insert(0, attr)
+    id = "#{object.uuid}-#{subattr.join('-')}"
+
+    lt = link_to attrvalue, '#', {
+      "data-emptytext" => "none",
+      "data-placement" => "bottom",
+      "data-type" => datatype,
+      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
+      "data-title" => "Update #{subattr[-1].to_s.titleize}",
+      "data-name" => subattr.to_json,
+      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+      :class => "editable",
+      :id => id
+    }.merge(htmloptions)
+
+    lt += raw(%{
+<script>
+  $('##{id}').editable({source: select_#{dataclass}_source});
+</script>})
+
+    lt 
   end
 end

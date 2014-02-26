@@ -23,6 +23,19 @@ table.pipeline-components-table td {
 
 <% end %>
 
+<% content_for :js do %>
+  function select_Collection_source() {
+    var ret = [];
+    var lst = get_selection_list();
+    for (var i = 0; i < lst.length; i++) {
+      if (lst[i].type == 'Collection') {
+        ret.push({text: lst[i].name, value: lst[i].uuid})
+      }
+    }
+    return ret;
+  };
+<% end %>
+
 <% if @object.active != nil %>
 <table class="table pipeline-components-table">
   <colgroup>
@@ -113,7 +126,8 @@ setInterval(function(){$('a.refresh').click()}, 30000);
     </tr>
   </thead>
   <tbody>
-  <% @object.components.each do |k, v| %>
+    <% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
+    <% template.components.each do |k, v| %>
 
     <% sp = v[:script_parameters].collect do |k, v| [k, v] end %>
 
@@ -129,7 +143,7 @@ setInterval(function(){$('a.refresh').click()}, 30000);
       </td>
 
       <td>
-        <%= sp[0][1] %>
+        <%= render_editable_subattribute @object, :components, [k, :script_parameters, sp[0][0].to_sym], sp[0][1] %>
       </td>
       </tr>
 
@@ -139,8 +153,8 @@ setInterval(function(){$('a.refresh').click()}, 30000);
       <td style="border-top: none"></td>
 
       <% sp[1..-1].each do |p| %>
-        <td style="border-top: none"><%= p[0] %></td>
-        <td style="border-top: none"><%= p[1] %></td>
+        <td><%= p[0] %></td>
+        <td><%= p[1] %></td>
       <% end %>
     </tr>
   <% end %>

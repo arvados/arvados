@@ -24,6 +24,7 @@ class ApplicationController < ActionController::Base
 
   def unprocessable(message=nil)
     @errors ||= []
+
     @errors << message if message
     render_error status: 422
   end

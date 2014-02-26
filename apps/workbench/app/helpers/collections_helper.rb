@@ -4,4 +4,8 @@ module CollectionsHelper
       {source: x.tail_uuid, target: x.head_uuid, type: x.name}
     end
   end
+
+  def self.match(uuid)
+    /^([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?$/.match(uuid.to_s)
+  end
 end

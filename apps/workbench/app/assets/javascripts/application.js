@@ -21,7 +21,7 @@
 //= require bootstrap3-editable/bootstrap-editable
 //= require_tree .
 
-(function($){
+jQuery(function($){
     $.ajaxSetup({
         headers: {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
@@ -140,4 +140,4 @@
         fixer.duplicateTheadTr();
         fixer.fixThead();
     });
-})(jQuery);
+});
