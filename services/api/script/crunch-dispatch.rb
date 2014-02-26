@@ -40,14 +40,36 @@ class Dispatcher
     @todo = Job.queue
   end
 
+  def sinfo
+    @@slurm_version ||= Gem::Version.new(`sinfo --version`.match(/\b[\d\.]+\b/)[0])
+    if Gem::Version.new('2.3') <= @@slurm_version
+      `sinfo --noheader -o '%n:%t'`.strip
+    else
+      # Expand rows with hostname ranges (like "foo[1-3,5,9-12]:idle")
+      # into multiple rows with one hostname each.
+      `sinfo --noheader -o '%N:%t'`.split("\n").collect do |line|
+        tokens = line.split ":"
+        if (re = tokens[0].match /^(.*?)\[([-,\d]+)\]$/)
+          re[2].split(",").collect do |range|
+            range = range.split("-").collect(&:to_i)
+            (range[0]..range[-1]).collect do |n|
+              [re[1] + n.to_s, tokens[1..-1]].join ":"
+            end
+          end
+        else
+          tokens.join ":"
+        end
+      end.flatten.join "\n"
+    end
+  end
+
   def update_node_status
     if Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
       @nodes_in_state = {idle: 0, alloc: 0, down: 0}
       @node_state ||= {}
       node_seen = {}
       begin
-        `sinfo --noheader -o '%n:%t'`.
-          split("\n").
+        sinfo.split("\n").
           each do |line|
           re = line.match /(\S+?):+(idle|alloc|down)/
           next if !re

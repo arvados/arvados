@@ -9,10 +9,12 @@ import sys
 
 parser = argparse.ArgumentParser(
     description='Copy data from the local filesystem to Keep.')
+
 parser.add_argument('paths', metavar='path', type=str, nargs='*',
                     help="""
 Local file or directory. Default: read from standard input.
 """)
+
 parser.add_argument('--max-manifest-depth', type=int, metavar='N', default=-1,
                     help="""
 Maximum depth of directory tree to represent in the manifest
@@ -21,45 +23,55 @@ as a single stream in the manifest. If N=0, the manifest will contain
 a single stream. Default: -1 (unlimited), i.e., exactly one manifest
 stream per filesystem directory that contains files.
 """)
+
 group = parser.add_mutually_exclusive_group()
+
 group.add_argument('--as-stream', action='store_true', dest='stream',
                    help="""
 Synonym for --stream.
 """)
+
 group.add_argument('--stream', action='store_true',
                    help="""
 Store the file content and display the resulting manifest on
 stdout. Do not write the manifest to Keep or save a Collection object
 in Arvados.
 """)
+
 group.add_argument('--as-manifest', action='store_true', dest='manifest',
                    help="""
 Synonym for --manifest.
 """)
+
 group.add_argument('--in-manifest', action='store_true', dest='manifest',
                    help="""
 Synonym for --manifest.
 """)
+
 group.add_argument('--manifest', action='store_true',
                    help="""
 Store the file data and resulting manifest in Keep, save a Collection
 object in Arvados, and display the manifest locator (Collection uuid)
 on stdout. This is the default behavior.
 """)
+
 group.add_argument('--as-raw', action='store_true', dest='raw',
                    help="""
 Synonym for --raw.
 """)
+
 group.add_argument('--raw', action='store_true',
                    help="""
 Store the file content and display the data block locators on stdout,
 separated by commas, with a trailing newline. Do not store a
 manifest.
 """)
+
 parser.add_argument('--use-filename', type=str, default=None, dest='filename',
                     help="""
 Synonym for --filename.
 """)
+
 parser.add_argument('--filename', type=str, default=None,
                     help="""
 Use the given filename in the manifest, instead of the name of the
@@ -67,6 +79,7 @@ local file. This is useful when "-" or "/dev/stdin" is given as an
 input file. It can be used only if there is exactly one path given and
 it is not a directory. Implies --manifest.
 """)
+
 group = parser.add_mutually_exclusive_group()
 group.add_argument('--progress', action='store_true',
                    help="""
@@ -74,11 +87,13 @@ Display human-readable progress on stderr (bytes and, if possible,
 percentage of total data size). This is the default behavior when
 stderr is a tty.
 """)
+
 group.add_argument('--no-progress', action='store_true',
                    help="""
 Do not display human-readable progress on stderr, even if stderr is a
 tty.
 """)
+
 group.add_argument('--batch-progress', action='store_true',
                    help="""
 Display machine-readable progress on stderr (bytes and, if known,
@@ -129,6 +144,7 @@ class CollectionWriterWithProgress(arvados.CollectionWriter):
                               self.bytes_expected >> 20, pct))
         else:
             sys.stderr.write('\r%d ' % self.bytes_flushed)
+
     def manifest_text(self, *args, **kwargs):
         manifest_text = (super(CollectionWriterWithProgress, self)
                          .manifest_text(*args, **kwargs))

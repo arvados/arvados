@@ -2,3 +2,4 @@
 /dist/
 /*.egg-info
 /tmp
+setup.py

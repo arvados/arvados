@@ -2,4 +2,4 @@ google-api-python-client==1.2
 httplib2==0.8
 python-gflags==2.0
 urllib3==1.7.1
-fusepy==2.0.2
+llfuse==0.40

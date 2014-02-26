@@ -19,7 +19,7 @@ class CollectionsController < ApplicationController
     @collection_info = {}
     @collections.each do |c|
       @collection_info[c.uuid] = {
-        tags: [],
+        tag_links: [],
         wanted: false,
         wanted_by_me: false,
         provenance: [],
@@ -31,7 +31,7 @@ class CollectionsController < ApplicationController
       info = @collection_info[link.head_uuid]
       case link.link_class
       when 'tag'
-        info[:tags] << link.name
+        info[:tag_links] << link
       when 'resources'
         info[:wanted] = true
         info[:wanted_by_me] ||= link.tail_uuid == current_user.uuid

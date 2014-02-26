@@ -36,10 +36,10 @@ case ARGV[0]
 when 'keep'
   ARGV.shift
   @sub = ARGV.shift
-  if ['get', 'put'].index @sub then
+  if ['get', 'put', 'ls', 'normalize'].index @sub then
     # Native Arvados
     exec `which arv-#{@sub}`.strip, *ARGV
-  elsif ['ls', 'less', 'check'].index @sub then
+  elsif ['less', 'check'].index @sub then
     # wh* shims
     exec `which wh#{@sub}`.strip, *ARGV
   else

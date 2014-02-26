@@ -1,6 +1,6 @@
 <% @collections.each do |c| %>
 
-<tr class="collection">
+<tr class="collection" data-object-uuid="<%= c.uuid %>">
   <td>
     <%= link_to_if_arvados_object c.uuid %>
   </td>
@@ -21,11 +21,6 @@
     <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
   </td>
   <td>
-    <% if @collection_info[c.uuid] %>
-      <%= @collection_info[c.uuid][:tags].uniq.join ', ' %>
-    <% end %>
-  </td>
-  <td>
     <% if @collection_info[c.uuid][:wanted_by_me] %>
       <span class="label label-info">2&times;</span>
     <% elsif @collection_info[c.uuid][:wanted] %>
@@ -33,6 +28,20 @@
     <% else %>
       <span class="label">cache</span>
     <% end %>
+  </td>
+  <td class="add-tag-button">
+    <a class="btn btn-xs btn-info add-tag-button pull-right" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
+    <span class="removable-tag-container">
+    <% if @collection_info[c.uuid] %>
+      <% @collection_info[c.uuid][:tag_links].each do |tag_link| %>
+        <span class="label label-info removable-tag" data-tag-link-uuid="<%= tag_link.uuid %>"><%= tag_link.name %>
+          <% if tag_link.owner_uuid == current_user.uuid %>
+          &nbsp;<a title="Delete tag"><i class="glyphicon glyphicon-trash"></i></a>
+          <% end %>
+        </span>&nbsp;
+      <% end %>
+    <% end %>
+    </span>
   </td>
 </tr>
 
