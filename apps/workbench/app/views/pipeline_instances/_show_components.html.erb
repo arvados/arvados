@@ -27,12 +27,18 @@ td.required {
 
 <% end %>
 
+<% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
+<% if template %>
+  <h2><%= template.name %></h2>
+<% end %>
+
 <% if @object.active != nil %>
 <table class="table pipeline-components-table">
   <colgroup>
     <col style="width: 15%" />
     <col style="width: 20%" />
-    <col style="width: 20%" />
+    <col style="width: 12%" />
+    <col style="width: 8%" />
     <col style="width: 45%" />
   </colgroup>
   <thead>
@@ -45,6 +51,7 @@ td.required {
         progress
         <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
       </th><th>
+      </th><th>
         output
       </th>
     </tr>
@@ -54,33 +61,36 @@ td.required {
     <tr>
       <td>
         <% label = if pj[:job].andand[:uuid] 
-                       if pj[:job][:running]
-                         'label-info'
-                       elsif pj[:job][:success]
-                         'label-success'
-                       else
-                         'label-danger'
-                       end 
-                     else
-                       'label-default'
-                     end %>
+             if pj[:job][:success] == true
+               'label-success'
+             elsif pj[:job][:success] == false
+               'label-danger'
+             elsif pj[:job][:running] == true
+               'label-info'
+             else
+               'label-default'
+             end
+           else
+             'label-default'
+         end %>
         <% if pj[:job].andand[:uuid] %>
         <%= link_to pj[:name], job_url(id: pj[:job][:uuid]), class: "label #{label}" %>
         <% else %>
           <span class="label <%= label %>"><%= pj[:name] %></span>
         <% end %>
-        </span>
+
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
       </td><td>
         <%= pj[:progress_bar] %>
+      </td><td>
         <% if pj[:job].andand[:cancelled_at] %>
-        <span class="pull-right label label-warning">cancelled</span>
+        <span class="label label-warning">cancelled</span>
         <% elsif pj[:failed] %>
-        <span class="pull-right label label-warning">failed</span>
+        <span class="label label-danger">failed</span>
         <% elsif pj[:result] == 'queued' %>
-        <span class="pull-right label">queued</span>
+        <span class="label">queued</span>
         <% end %>
       </td><td>
         <%= link_to_if_arvados_object pj[:output] %>
@@ -129,7 +139,6 @@ setInterval(function(){$('a.refresh').click()}, 30000);
     </tr>
   </thead>
   <tbody>
-    <% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
     <% template.components.each do |k, template_value| %>
 
     <tr>
