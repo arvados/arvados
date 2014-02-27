@@ -118,13 +118,13 @@ module ApplicationHelper
     datatype = nil
     required = true
     if template
-      puts "Template is #{template.class} #{template.is_a? Hash} #{template}"
+      #puts "Template is #{template.class} #{template.is_a? Hash} #{template}"
       if template.is_a? Hash
         if template[:output_of]
           return raw("<span class='label label-default'>#{template[:output_of]}</span>")
         end
-        if template[:datatype]
-          datatype = template[:datatype]
+        if template[:dataclass]
+          dataclass = template[:dataclass]
         end
         if template[:optional] != nil
           required = (template[:optional] != "true")
@@ -137,19 +137,31 @@ module ApplicationHelper
 
     return attrvalue if !object.attribute_editable? attr
 
-    if not datatype
-      dataclass = ArvadosBase.resource_class_for_uuid(template)
-      if dataclass
-        datatype = 'select'
-      else
-        if template.is_a? Array
-          # ?!?
-        elsif template.is_a? String
-          if /^\d+$/.match(template)
-            datatype = 'number'
-          else
-            datatype = 'text'
-          end
+    if not dataclass
+      rsc = template
+      if template.is_a? Hash
+        if template[:value]
+          rsc = template[:value]
+        elsif template[:default]
+          rsc = template[:default]
+        end
+      end
+
+      dataclass = ArvadosBase.resource_class_for_uuid(rsc)
+    end
+
+    if dataclass && dataclass.is_a?(Class)
+      datatype = 'select'
+    elsif dataclass == 'number'
+      datatype = 'number'
+    else
+      if template.is_a? Array
+        # ?!?
+      elsif template.is_a? String
+        if /^\d+$/.match(template)
+          datatype = 'number'
+        else
+          datatype = 'text'
         end
       end
     end
@@ -164,12 +176,13 @@ module ApplicationHelper
       attrvalue = attrvalue.strip
     end
 
-    if dataclass
+    if dataclass and dataclass.is_a? Class
       items = []
-      dataclass.where(uuid: attrvalue).each do |item|
-        items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
-      end
-      dataclass.limit(19).each do |item|
+      items.append({name: attrvalue, uuid: attrvalue, type: dataclass.to_s})
+      #dataclass.where(uuid: attrvalue).each do |item|
+      #  items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      #end
+      dataclass.limit(10).each do |item|
         items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       end
     end
@@ -183,6 +196,7 @@ module ApplicationHelper
       "data-name" => dn,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       "data-showbuttons" => "false",
+      "data-value" => attrvalue,
       :class => "editable #{'required' if required}",
       :id => id
     }.merge(htmloptions)

@@ -104,7 +104,7 @@ setInterval(function(){$('a.refresh').click()}, 30000);
   <%= form_tag @object, :method => :put do |f| %>
 
   <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
-  <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right'} %>
+  <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
   <% end %>
 
 <table class="table pipeline-components-table" style="margin-top: -.1em">
