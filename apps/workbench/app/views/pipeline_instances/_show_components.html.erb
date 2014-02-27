@@ -21,6 +21,10 @@ table.pipeline-components-table td {
   text-overflow: ellipsis;
 }
 
+td.required {
+  background: #ffdddd;
+}
+
 <% end %>
 
 <% if @object.active != nil %>
@@ -120,39 +124,37 @@ setInterval(function(){$('a.refresh').click()}, 30000);
       </th><th>
         parameter
       </th><th>
-        input
+        value
       </th>
     </tr>
   </thead>
   <tbody>
     <% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
-    <% template.components.each do |k, v| %>
-
-    <% sp = v[:script_parameters].collect do |x, y| [x, y] end %>
+    <% template.components.each do |k, template_value| %>
 
     <tr>
       <td><span class="label label-default"><%= k %></span></td>
 
-      <td><%= v[:script] %></td>
+      <td><%= render_editable_subattribute @object, :components, [k, :script], template_value[:script] %></td>
 
-      <td>script_version</td>
+      <td>script version</td>
 
       <td>
-        <%= render_editable_subattribute @object, :components, [k, :script_version], v[:script_version] %>
+        <%= render_editable_subattribute @object, :components, [k, :script_version], template_value[:script_version] %>
       </td>
     </tr>
 
-    <% if sp.length > 0 %>
-    <tr>
-      <td style="border-top: none"></td>
-      <td style="border-top: none"></td>
-
-      <% sp.each do |p| %>
-        <td><%= p[0] %></td>
-        <td><%= render_editable_subattribute @object, :components, [k, :script_parameters, p[0].to_sym], p[1] %></td>
+    <% if template_value[:script_parameters].length > 0 %>
+      <% template_value[:script_parameters].each do |p, tv| %>
+        <tr>
+          <td style="border-top: none"></td>
+          <td style="border-top: none"></td>
+          
+          <td class="property-edit-row"><%= p %></td>
+          <td class="property-edit-row"><%= render_editable_subattribute @object, :components, [k, :script_parameters, p.to_sym], tv %></td>
       <% end %>
-    </tr>
-  <% end %>
+      </tr>
+    <% end %>
   <% end %>
   </tbody>
   </table>

@@ -57,6 +57,8 @@ class PipelineInstancesController < ApplicationController
               if param_value.is_a? Hash
                 if param_value[:value]
                   pipeline[component_name][:script_parameters][param_name] = param_value[:value]
+                elsif param_value[:default]
+                  pipeline[component_name][:script_parameters][param_name] = param_value[:default]
                 elsif param_value[:optional] and param_value.length == 1
                     pipeline[component_name][:script_parameters][param_name] = ""
                 else

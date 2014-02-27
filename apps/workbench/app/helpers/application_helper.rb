@@ -116,13 +116,21 @@ module ApplicationHelper
     end
 
     datatype = nil
+    required = true
     if template
       puts "Template is #{template.class} #{template.is_a? Hash} #{template}"
       if template.is_a? Hash
         if template[:output_of]
           return raw("<span class='label label-default'>#{template[:output_of]}</span>")
-        elsif template[:datatype]
+        end
+        if template[:datatype]
           datatype = template[:datatype]
+        end
+        if template[:optional] != nil
+          required = (template[:optional] != "true")
+        end
+        if template[:required] != nil
+          required = template[:required]
         end
       end
     end
@@ -152,6 +160,10 @@ module ApplicationHelper
       dn += "[#{a}]"
     end
 
+    if attrvalue.is_a? String
+      attrvalue = attrvalue.strip
+    end
+
     if dataclass
       items = []
       dataclass.where(uuid: attrvalue).each do |item|
@@ -169,20 +181,22 @@ module ApplicationHelper
       "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
       "data-title" => "Update #{subattr[-1].to_s.titleize}",
       "data-name" => dn,
-      "data-value" => attrvalue,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
-      :class => "editable",
+      "data-showbuttons" => "false",
+      :class => "editable #{'required' if required}",
       :id => id
     }.merge(htmloptions)
 
-    lt += raw(<<EOF
+    lt += raw('<script>')
+    
+    if items and items.length > 0
+      lt += raw("add_form_selection_sources(#{items.to_json});\n")
+    end
 
-<script>
-    add_form_selection_sources(#{items.to_json});
-    $('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });
-</script>
-EOF
-)
+    lt += raw("$('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
+
+    lt += raw("</script>")
+
     lt 
   end
 end
