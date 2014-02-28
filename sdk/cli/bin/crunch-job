@@ -1373,10 +1373,13 @@ open STDOUT, ">", "$destdir.log";
 open STDERR, ">&STDOUT";
 
 mkdir $destdir;
-open TARX, "|-", "tar", "-C", $destdir, "-xf", "-";
-print TARX <DATA>;
-if(!close(TARX)) {
-  die "'tar -C $destdir -xf -' exited $?: $!";
+my @git_archive_data = <DATA>;
+if (@git_archive_data) {
+  open TARX, "|-", "tar", "-C", $destdir, "-xf", "-";
+  print TARX @git_archive_data;
+  if(!close(TARX)) {
+    die "'tar -C $destdir -xf -' exited $?: $!";
+  }
 }
 
 my $pwd;
