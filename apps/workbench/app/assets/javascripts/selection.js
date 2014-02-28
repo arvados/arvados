@@ -40,7 +40,6 @@ jQuery(function($){
     };
 
     var remove_selection_click = function(e) {
-        //remove_selection($(this).attr('name'));
         remove_selection($(this).val());
     };
 
@@ -49,23 +48,26 @@ jQuery(function($){
         update_count();
     }
 
+    var combine_selected_files_into_collection = function () {
+        
+    }
+
     var update_count = function(e) {
         var lst = get_selection_list();
         $("#persistent-selection-count").text(lst.length);
 
         if (lst.length > 0) {
-            $('#persistent-selection-list').html('<li><a href="#" class="btn pull-right" id="clear_selections_button">Clear selections</a></li>'
-                                                 +'<li class="notification"><table style="width: 100%"></table></li>');
+            $('#selection-form-content').html('<li><input type="submit" name="combine_selected_files_into_collection" id="combine_selected_files_into_collection" value="Combine selected collections and files into a new collection"/></li>'
+                                                 + '<li><a href="#" id="clear_selections_button">Clear selections</a></li>'
+                                                 + '<li class="notification"><table style="width: 100%"></table></li>');
             for (var i = 0; i < lst.length; i++) {
-                $('#persistent-selection-list > li > table').append("<tr>"
+                $('#selection-form-content > li > table').append("<tr>"
                                                        + "<td>"
-                                                       + "<form>"
-                                                       + "<input class='remove-selection' type='checkbox' value='" + lst[i].uuid + "' checked='true'></input>"
-                                                       + "</form>"
+                                                       + "<input class='remove-selection' name='selection[]' type='checkbox' value='" + lst[i].uuid + "' checked='true'></input>"
                                                        + "</td>"
 
                                                        + "<td>"
-                                                       + "<span style='padding-left: 1em'><a href=\"" + lst[i].href + "\">" + lst[i].name + "</a></span>"
+                                                       + "<div style='padding-left: 1em'><a href=\"" + lst[i].href + "\">" + lst[i].name + "</a></div>"
                                                        + "</td>"
 
                                                        + "<td style=\"vertical-align: top\">"
@@ -93,6 +95,7 @@ jQuery(function($){
         
         $('.remove-selection').on('click', remove_selection_click);
         $('#clear_selections_button').on('click', clear_selections);
+        $('#combine_selected_files_into_collection').on('click', combine_selected_files_into_collection);
     };
 
     $(document).

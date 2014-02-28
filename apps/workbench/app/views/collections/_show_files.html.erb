@@ -19,14 +19,13 @@
     <% file_path = "#{file[0]}/#{file[1]}" %>
     <tr>
       <td>
-        <% fp2 = file_path[2..-1] if file_path[0..1] == './' %>
-        <% fp2 ||= file_path %>
-<%= check_box_tag 'uuids[]', @object.uuid+file_path, false, {
-  :class => 'persistent-selection', 
-  :friendly_type => "File",
-  :friendly_name => "#{@object.uuid}/#{fp2}",
-  :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}" 
-      } %>
+        <% puts "#{file[0]} #{file[1]} #{file_path}" %>
+        <%= check_box_tag 'uuids[]', @object.uuid+file_path, false, {
+              :class => 'persistent-selection', 
+              :friendly_type => "File",
+              :friendly_name => "#{@object.uuid}/#{file_path}",
+              :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}" 
+            } %>
       </td>
       <td>
         <%= file[0] %>

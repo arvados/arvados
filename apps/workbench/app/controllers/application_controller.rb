@@ -4,7 +4,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_clear
   around_filter :thread_with_mandatory_api_token, :except => [:render_exception, :render_not_found]
   around_filter :thread_with_optional_api_token
-  before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
+  before_filter :find_object_by_uuid, :except => [:index, :post, :render_exception, :render_not_found]
   before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
   before_filter :check_user_notifications, :except => [:render_exception, :render_not_found]
   theme :select_theme
