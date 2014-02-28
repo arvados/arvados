@@ -332,11 +332,10 @@ my $skip_install = ($local_job && $Job->{script_version} =~ m{^/});
 if ($skip_install)
 {
   $ENV{"CRUNCH_SRC"} = $Job->{script_version};
-  system("virtualenv", "$ENV{CRUNCH_TMP}/opt") == 0
-      or croak ("virtualenv $ENV{CRUNCH_TMP}/opt failed: exit ".($?>>8));
-  for my $src_path ("$ENV{CRUNCH_SRC}/arvados/sdk/python",
-                    "$ENV{CRUNCH_SRC}/sdk/python") {
+  for my $src_path ("$ENV{CRUNCH_SRC}/arvados/sdk/python") {
     if (-d $src_path) {
+      system("virtualenv", "$ENV{CRUNCH_TMP}/opt") == 0
+          or croak ("virtualenv $ENV{CRUNCH_TMP}/opt failed: exit ".($?>>8));
       system ("cd $src_path && ./build.sh && \$CRUNCH_TMP/opt/bin/python setup.py install")
           == 0
           or croak ("setup.py in $src_path failed: exit ".($?>>8));
@@ -1387,9 +1386,9 @@ chomp ($pwd = `pwd`);
 my $install_dir = $ENV{"CRUNCH_INSTALL"} || "$pwd/opt";
 mkdir $install_dir;
 
-shell_or_die ("virtualenv", $install_dir);
-for my $src_path ("$destdir/arvados/sdk/python", "$destdir/sdk/python") {
+for my $src_path ("$destdir/arvados/sdk/python") {
   if (-d $src_path) {
+    shell_or_die ("virtualenv", $install_dir);
     shell_or_die ("cd $src_path && ./build.sh && $install_dir/bin/python setup.py install");
   }
 }
