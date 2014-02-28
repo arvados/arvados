@@ -91,11 +91,6 @@ form.small-form-margin {
     padding: 2px 20px;
 }*/
 
-.left-nav ul ul li > div {
-    margin-left: 1.5em;
-    text-indent: -1.5em;
-}
-
 ul.arvados-nav {
     list-style: none;
     padding-left: 0em;
@@ -154,11 +149,9 @@ li.notification {
 }
 .arvados-nav-container {
     top: 70px; 
+    height: calc(100% - 70px); 
     overflow: auto; 
     z-index: 2;
-}
-.arvados-nav {
-    padding-top: 70px;
 }
 
 .arvados-nav-active {
@@ -166,9 +159,6 @@ li.notification {
 }
 
 .arvados-nav-active a {
-    color: white;
-}
-.arvados-nav-active a:hover {
     color: white;
 }
 

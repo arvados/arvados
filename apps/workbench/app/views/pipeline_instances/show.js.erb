@@ -1,0 +1,4 @@
+<% self.formats = [:html] %>
+var new_content = "<%= escape_javascript(render template: 'pipeline_instances/show') %>";
+if ($('div.body-content').html() != new_content)
+   $('div.body-content').html(new_content);
