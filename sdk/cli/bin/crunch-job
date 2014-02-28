@@ -337,7 +337,7 @@ if ($skip_install)
   for my $src_path ("$ENV{CRUNCH_SRC}/arvados/sdk/python",
                     "$ENV{CRUNCH_SRC}/sdk/python") {
     if (-d $src_path) {
-      system ("cd $src_path && \$CRUNCH_TMP/opt/bin/python setup.py install")
+      system ("cd $src_path && ./build.sh && \$CRUNCH_TMP/opt/bin/python setup.py install")
           == 0
           or croak ("setup.py in $src_path failed: exit ".($?>>8));
     }
