@@ -59,7 +59,7 @@ class PipelineInstancesController < ApplicationController
                   pipeline[component_name][:script_parameters][param_name] = param_value[:value]
                 elsif param_value[:default]
                   pipeline[component_name][:script_parameters][param_name] = param_value[:default]
-                elsif param_value[:optional] and param_value.length == 1
+                elsif param_value[:optional] != nil or param_value[:required] != nil
                     pipeline[component_name][:script_parameters][param_name] = ""
                 else
                   pipeline[component_name][:script_parameters][param_name] = param_value
