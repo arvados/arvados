@@ -32,7 +32,7 @@
     padding-top: 70px; /* 70px to make the container go all the way to the bottom of the navbar */
     }
 
-    body > div.container-fluid > div.col-sm-10.col-sm-offset-2 {
+    body > div.container-fluid > div.col-sm-9.col-sm-offset-3 {
     overflow: auto;
     }
 
@@ -49,20 +49,16 @@
     width: 400px;
     overflow-y: auto;
     }
-    @media (min-width: 768px) {
-        .left-nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100%;
-            padding-left: 0;
-        }
-    }
 
+    @media (min-width: 768px) {
+    .left-nav {
+    position: fixed;
+    }
+    }
     @media (max-width: 767px) {
-        .breadcrumbs {
-            display: none;
-        }
+    .breadcrumbs {
+    display: none;
+    }
     }
   </style>
 </head>
@@ -179,12 +175,12 @@
   </div>
 
   <div class="container-fluid">
-      <div class="col-sm-10 col-sm-offset-2">
-        <div id="content">
+      <div class="col-sm-9 col-sm-offset-3">
+        <div id="content" class="body-content">
           <%= yield %>
         </div>
       </div>
-      <div class="col-sm-2 left-nav">
+      <div class="col-sm-3 left-nav">
         <div class="arvados-nav-container">
         <% if current_user.andand.is_active %>
         <div class="well">
@@ -193,13 +189,13 @@
             <a href="/">Dashboard</a>
           </li>
 
-          <% [['Data', [['collections', 'Collections (data&nbsp;files)'],
+          <% [['Data', [['collections', 'Collections (data files)'],
                         ['humans'],
                         ['traits'],
                         ['specimens'],
                         ['links']]],
-              ['Activity', [['pipeline_instances',],
-                            ['jobs']]],
+              ['Activity', [['pipeline_instances', 'Recent pipeline instances'],
+                            ['jobs', 'Recent jobs']]],
               ['Compute', [['pipeline_templates'],
                            ['repositories', 'Code repositories'],
                            ['virtual_machines']]],
@@ -212,11 +208,9 @@
               <% j[1].each do |k| %>
                 <% unless k[0] == 'users' and !current_user.andand.is_admin %>
                   <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
-                    <div>
-                      <a href="/<%= k[0] %>">
-                        <%= if k[1] then raw(k[1]) else k[0].capitalize.gsub('_', ' ') end %>
-                      </a>
-                    </div>
+                    <a href="/<%= k[0] %>">
+                      <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                    </a>
                   </li>
                 <% end %>
               <% end %>
