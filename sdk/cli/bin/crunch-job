@@ -1390,7 +1390,7 @@ mkdir $install_dir;
 shell_or_die ("virtualenv", $install_dir);
 for my $src_path ("$destdir/arvados/sdk/python", "$destdir/sdk/python") {
   if (-d $src_path) {
-    shell_or_die ("cd $src_path && $install_dir/bin/python setup.py install");
+    shell_or_die ("cd $src_path && ./build.sh && $install_dir/bin/python setup.py install");
   }
 }
 
