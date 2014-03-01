@@ -1,5 +1,5 @@
 exclude: ["Rakefile", "tmp", "vendor"]
-baseurl: /doc
+baseurl: file:///home/tetron/work/arvados/doc/.site
 arvados_api_host: qr1hi.arvadosapi.com
 
 navbar:
