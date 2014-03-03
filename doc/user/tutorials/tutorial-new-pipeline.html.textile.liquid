@@ -128,7 +128,7 @@ Notice that the pipeline definition explicitly specifies the Keep locator for th
 What if we want to run the pipeline on a different input block?  One option is to define a new pipeline template, but would potentially result in clutter with many pipeline templates defined for one-off jobs.  Instead, you can override values in the input of the component like this:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-d1hrv-vxzkp38nlde9yyr do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af</span>
+<pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-d1hrv-vxzkp38nlde9yyr do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af+242</span>
 2013-12-17 20:31:24 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 queued 2013-12-17T20:31:24Z
 filter  -                           -
