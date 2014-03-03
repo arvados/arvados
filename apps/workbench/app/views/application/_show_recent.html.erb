@@ -8,9 +8,12 @@
 
 <% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at' %>
 
+<%= form_tag do |f| %>
+
 <table class="table table-condensed arv-index">
   <thead>
     <tr>
+      <th></th>
       <% @objects.first.attributes_for_display.each do |attr, attrvalue| %>
       <% next if attr_blacklist.index(" "+attr) %>
       <th class="arv-attr-<%= attr %>">
@@ -26,6 +29,10 @@
   <tbody>
     <% @objects.each do |object| %>
     <tr data-object-uuid="<%= object.uuid %>">
+      <td>
+        <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
+      </td>
+
       <% object.attributes_for_display.each do |attr, attrvalue| %>
       <% next if attr_blacklist.index(" "+attr) %>
       <td class="arv-object-<%= object.class.to_s %> arv-attr-<%= attr %>">
@@ -53,5 +60,7 @@
   <tfoot>
   </tfoot>
 </table>
+
+<% end %>
 
 <% end %>

@@ -45,6 +45,38 @@ class PipelineInstancesController < ApplicationController
   end
 
   def show
+    if @object.components.empty? and @object.pipeline_template_uuid
+      template = PipelineTemplate.find(@object.pipeline_template_uuid)
+      pipeline = {}
+      template.components.each do |component_name, component_props|
+        pipeline[component_name] = {}
+        component_props.each do |k, v|
+          if k == :script_parameters
+            pipeline[component_name][:script_parameters] = {}
+            v.each do |param_name, param_value|
+              if param_value.is_a? Hash
+                if param_value[:value]
+                  pipeline[component_name][:script_parameters][param_name] = param_value[:value]
+                elsif param_value[:default]
+                  pipeline[component_name][:script_parameters][param_name] = param_value[:default]
+                elsif param_value[:optional] != nil or param_value[:required] != nil
+                    pipeline[component_name][:script_parameters][param_name] = ""
+                else
+                  pipeline[component_name][:script_parameters][param_name] = param_value
+                end
+              else
+                pipeline[component_name][:script_parameters][param_name] = param_value
+              end
+            end
+          else
+            pipeline[component_name][k] = v
+          end
+        end
+      end
+      @object.components= pipeline
+      @object.save
+    end
+
     @pipelines = [@object]
 
     if params[:compare]
@@ -140,6 +172,15 @@ class PipelineInstancesController < ApplicationController
   def compare_pane_list 
     %w(Compare Graph)
   end 
+
+  def update
+    updates = params[@object.class.to_s.underscore.singularize.to_sym]
+    if updates["components"]
+      require 'deep_merge/rails_compat'
+      updates["components"] = updates["components"].deeper_merge(@object.components)
+    end
+    super
+  end
 
   protected
   def for_comparison v

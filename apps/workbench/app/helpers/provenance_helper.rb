@@ -9,7 +9,7 @@ module ProvenanceHelper
     end
 
     def self.collection_uuid(uuid)
-      m = /^([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?$/.match(uuid.to_s)
+      m = CollectionsHelper.match(uuid)
       if m
         #if m[2]
         return m[1]

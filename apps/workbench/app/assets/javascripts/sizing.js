@@ -11,14 +11,14 @@ function graph_zoom(divId, svgId, scale) {
 }
 
 function smart_scroll_fixup(s) {
-    console.log(s);
+    //console.log(s);
     if (s != null && s.type == 'shown.bs.tab') {
         s = [s.target];
     }
     else {
         s = $(".smart-scroll");
     }
-    console.log(s);
+    //console.log(s);
     for (var i = 0; i < s.length; i++) {
         a = s[i];
         var h = window.innerHeight - a.getBoundingClientRect().top - 20;

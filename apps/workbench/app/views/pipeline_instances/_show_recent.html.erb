@@ -39,7 +39,7 @@
 
     <tr data-object-uuid="<%= ob.uuid %>">
       <td>
-        <%= check_box_tag 'uuids[]', ob.uuid, false %>
+        <%= check_box_tag 'uuids[]', ob.uuid, false, :class => 'persistent-selection' %>
       </td><td>
         <% if ob.success %>
         <span class="label label-success">success</span>
@@ -57,15 +57,17 @@
       </td>
     </tr>
     <tr>
-      <td style="border-top: 0;" colspan="3">
+      <td style="border-top: 0;" colspan="2">
       </td>
-      <td style="border-top: 0; opacity: 0.5;" colspan="4">
+      <td style="border-top: 0; opacity: 0.5;" colspan="5">
         <% ob.components.each do |cname, c| %>
         <% status = if !(c.is_a?(Hash) && c[:job].is_a?(Hash))
                       nil
-                    elsif c[:job][:success]
+                    elsif c[:job][:success] == true
                       'success'
-                    elsif c[:job][:running]
+                    elsif c[:job][:success] == false
+                      'danger'
+                    elsif c[:job][:running] == true
                       'info'
                     else
                       'warning'

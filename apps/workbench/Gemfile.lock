@@ -51,6 +51,7 @@ GEM
     coffee-script-source (1.6.3)
     commonjs (0.2.7)
     daemon_controller (1.1.7)
+    deep_merge (1.0.1)
     erubis (2.7.0)
     execjs (2.0.2)
     highline (1.6.20)
@@ -153,6 +154,7 @@ DEPENDENCIES
   bootstrap-sass (~> 3.1.0)
   bootstrap-x-editable-rails
   coffee-rails (~> 3.2.0)
+  deep_merge
   httpclient
   jquery-rails
   less

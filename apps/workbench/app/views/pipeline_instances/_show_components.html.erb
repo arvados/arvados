@@ -3,31 +3,54 @@
     padding-left: 1em;
     padding-right: 1em;
   }
+table.pipeline-components-table {
+  width: 100%;
+  table-layout: fixed;
+  overflow: hidden;
+}
+
 table.pipeline-components-table thead th {
   text-align: bottom;
 }
 table.pipeline-components-table div.progress {
   margin-bottom: 0;
 }
-<% end %>
-<br />
 
+table.pipeline-components-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+td.required {
+  background: #ffdddd;
+}
+
+<% end %>
+
+<% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
+<% if template %>
+  <h2><%= template.name %></h2>
+<% end %>
+
+<% if @object.active != nil %>
 <table class="table pipeline-components-table">
   <colgroup>
-    <col width="15%" />
-    <col width="15%" />
-    <col width="35%" />
-    <col width="35%" />
+    <col style="width: 15%" />
+    <col style="width: 20%" />
+    <col style="width: 12%" />
+    <col style="width: 8%" />
+    <col style="width: 45%" />
   </colgroup>
   <thead>
     <tr>
       <th>
         component
       </th><th>
+        script, version
+      </th><th>
         progress
         <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
       </th><th>
-        script, version
       </th><th>
         output
       </th>
@@ -37,23 +60,38 @@ table.pipeline-components-table div.progress {
     <% render_pipeline_jobs.each do |pj| %>
     <tr>
       <td>
+        <% label = if pj[:job].andand[:uuid] 
+             if pj[:job][:success] == true
+               'label-success'
+             elsif pj[:job][:success] == false
+               'label-danger'
+             elsif pj[:job][:running] == true
+               'label-info'
+             else
+               'label-default'
+             end
+           else
+             'label-default'
+         end %>
         <% if pj[:job].andand[:uuid] %>
-        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]) %>
+        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]), class: "label #{label}" %>
         <% else %>
-        <%= pj[:name] %>
+          <span class="label <%= label %>"><%= pj[:name] %></span>
         <% end %>
-      </td><td>
-        <%= pj[:progress_bar] %>
-        <% if pj[:job].andand[:cancelled_at] %>
-        <span class="pull-right label label-warning">cancelled</span>
-        <% elsif pj[:failed] %>
-        <span class="pull-right label label-warning">failed</span>
-        <% elsif pj[:result] == 'queued' %>
-        <span class="pull-right label">queued</span>
-        <% end %>
+
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
+      </td><td>
+        <%= pj[:progress_bar] %>
+      </td><td>
+        <% if pj[:job].andand[:cancelled_at] %>
+        <span class="label label-warning">cancelled</span>
+        <% elsif pj[:failed] %>
+        <span class="label label-danger">failed</span>
+        <% elsif pj[:result] == 'queued' %>
+        <span class="label">queued</span>
+        <% end %>
       </td><td>
         <%= link_to_if_arvados_object pj[:output] %>
       </td>
@@ -67,8 +105,67 @@ table.pipeline-components-table div.progress {
 
 <% if @object.active %>
 <% content_for :js do %>
-setInterval(function(){$('a.refresh').click()}, 30000);
+setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
 <% end %>
 
-<pre><%= JSON.pretty_generate @object.attributes %></pre>
+<% else %>
+
+  <%= form_tag @object, :method => :put do |f| %>
+
+  <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
+  <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+  <% end %>
+
+<table class="table pipeline-components-table" style="margin-top: -.1em">
+  <colgroup>
+    <col style="width: 15%" />
+    <col style="width: 20%" />
+    <col style="width: 20%" />
+    <col style="width: 45%" />
+  </colgroup>
+
+  <thead>
+    <tr>
+      <th>
+        component
+      </th><th>
+        script
+      </th><th>
+        parameter
+      </th><th>
+        value
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <% template.components.each do |k, template_value| %>
+
+    <tr>
+      <td><span class="label label-default"><%= k %></span></td>
+
+      <td><%= render_editable_subattribute @object, :components, [k, :script], template_value[:script] %></td>
+
+      <td>script version</td>
+
+      <td>
+        <%= render_editable_subattribute @object, :components, [k, :script_version], template_value[:script_version] %>
+      </td>
+    </tr>
+
+    <% if template_value[:script_parameters].length > 0 %>
+      <% template_value[:script_parameters].each do |p, tv| %>
+        <tr>
+          <td style="border-top: none"></td>
+          <td style="border-top: none"></td>
+          
+          <td class="property-edit-row"><%= p %></td>
+          <td class="property-edit-row"><%= render_editable_subattribute @object, :components, [k, :script_parameters, p.to_sym], tv %></td>
+      <% end %>
+      </tr>
+    <% end %>
+  <% end %>
+  </tbody>
+  </table>
+  
+<% end %>

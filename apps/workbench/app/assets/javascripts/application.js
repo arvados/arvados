@@ -41,6 +41,7 @@ jQuery(function($){
         }
         targets.fadeToggle(200);
     });
+
     $(document).
         on('ajax:send', function(e, xhr) {
             $('.loading').fadeTo('fast', 1);
@@ -139,4 +140,4 @@ jQuery(function($){
         fixer.duplicateTheadTr();
         fixer.fixThead();
     });
-})(jQuery);
+});

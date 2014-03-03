@@ -1,0 +1,8 @@
+<%if object %>
+<%= check_box_tag 'uuids[]', object.uuid, false, {
+  :class => 'persistent-selection', 
+  :friendly_type => object.class.name,
+  :friendly_name => object.selection_label,
+  :href => "#{url_for controller: object.class.name.tableize, action: 'show', id: object.uuid }" 
+} %>
+<% end %>

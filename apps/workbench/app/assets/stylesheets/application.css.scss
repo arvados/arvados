@@ -176,3 +176,19 @@ table.table-fixed-header-row tbody {
     position:relative;
     top:1.5em;
 }
+
+/* Setting the height needs to be fixed with javascript. */
+.dropdown-menu {
+    padding-right: 20px;
+    max-height: 440px;
+    width: 400px;
+    overflow-y: auto;
+}
+
+#persistent-selection-list {
+    width: 500px;
+}
+
+#persistent-selection-list li table tr {
+  border-top: 1px solid rgb(221, 221, 221);
+}

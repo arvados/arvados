@@ -43,9 +43,19 @@ module PipelineInstancesHelper
 
   def render_pipeline_job pj
     if pj[:percent_done]
-      pj[:progress_bar] = raw("<div class=\"progress\" style=\"width:100px\"><span class=\"progress-bar progress-bar-success\" style=\"width:#{pj[:percent_done]}%\"></span><span class=\"progress-bar\" style=\"width:#{pj[:percent_running]}%\"></span></div>")
+      pj[:progress_bar] = raw <<EOF
+<div class="progress" style="width:100px">
+  <span class="progress-bar progress-bar-success" style="width:#{pj[:percent_done]}%"></span>
+  <span class="progress-bar" style="width:#{pj[:percent_running]}%"></span>
+</div>
+EOF
     elsif pj[:progress]
-      raw("<div class=\"progress\" style=\"width:100px\"><span class=\"progress-bar\" style=\"width:#{pj[:progress]*100}%\"></span></div>")
+      raw <<EOF
+<div class="progress" style="width:100px">
+<span class="progress-bar" style="width:#{pj[:progress]*100}%">
+</span>
+</div>
+EOF
     end
     pj[:output_link] = link_to_if_arvados_object pj[:output]
     pj[:job_link] = link_to_if_arvados_object pj[:job][:uuid]

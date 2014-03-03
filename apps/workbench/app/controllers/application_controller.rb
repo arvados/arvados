@@ -24,6 +24,7 @@ class ApplicationController < ActionController::Base
 
   def unprocessable(message=nil)
     @errors ||= []
+
     @errors << message if message
     render_error status: 422
   end
@@ -109,6 +110,7 @@ class ApplicationController < ActionController::Base
   def create
     @object ||= model_class.new params[model_class.to_s.underscore.singularize]
     @object.save!
+
     respond_to do |f|
       f.json { render json: @object }
       f.html {

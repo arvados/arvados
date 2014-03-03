@@ -1,5 +1,6 @@
 $.fn.editable.defaults.ajaxOptions = {type: 'put', dataType: 'json'};
 $.fn.editable.defaults.send = 'always';
+//$.fn.editable.defaults.mode = 'inline';
 $.fn.editable.defaults.params = function (params) {
     var a = {};
     var key = params.pk.key;
