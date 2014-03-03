@@ -1,3 +1,10 @@
+<% content_for :css do %>
+.file-list-inline-image {
+  height: 4em; 
+  width: auto
+}
+<% end %>
+
 <table class="table table-condensed table-fixedlayout">
   <colgroup>
     <col width="4%" />
@@ -34,7 +41,7 @@
 
       <td>
         <%= link_to((if /\.(jpg|jpeg|gif|png)$/.match(file[1]) then
-                       image_tag "#{url_for @object}/#{file_path}"
+                       image_tag "#{url_for @object}/#{file_path}", class: "file-list-inline-image"
                      else
                        file[1]
                      end), 
