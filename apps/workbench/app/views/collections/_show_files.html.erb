@@ -21,7 +21,13 @@
       </td>
 
       <td>
-        <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %>
+        <%= link_to((if /\.(jpg|jpeg|gif|png)$/.match(file[1]) then
+                       image_tag "#{url_for @object}/#{file_path}"
+                     else
+                       file[1]
+                     end), 
+                    {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, 
+                    {title: 'View in browser'}) %>
       </td>
 
       <td style="text-align:right">
