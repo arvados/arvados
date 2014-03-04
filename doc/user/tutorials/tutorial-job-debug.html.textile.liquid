@@ -75,7 +75,7 @@ bc. 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
 The script's output is captured in the log, which is useful for print statement debugging. However, although this script returned a status code of 0 (success), the job failed.  Why?  For a job to complete successfully scripts must explicitly add their output to Keep, and then tell Arvados about it.  Here is a second try:
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
+<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;hello-world-fixed.py &lt;&lt;EOF
 #!/usr/bin/env python
 
 import arvados
