@@ -20,5 +20,11 @@ class ActiveSupport::TestCase
   # Add more helper methods to be used by all tests here...
 end
 
+class ActionDispatch::IntegrationTest
+  def jresponse
+    @jresponse ||= ActiveSupport::JSON.decode @response.body
+  end
+end
+
 # Ensure permissions are computed from the test fixtures.
 User.invalidate_permissions_cache

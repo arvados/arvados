@@ -86,14 +86,14 @@ rescue
 end
 log.info { "vm uuid: " + vm[:uuid] }
 
-# Look up the "all users" group (we expect uuid *-*-fffffffffffffff).
+# Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
 group = arv.group.list(where: {name: 'All users'})[:items].select do |g|
   g[:uuid].match /-f+$/
 end.first
 if not group
-  abort "Could not look up the 'all users' group with uuid '*-*-fffffffffffffff'. Stop."
+  abort "Could not look up the 'All users' group with uuid '*-*-fffffffffffffff'. Stop."
 end
-log.info { "\"all users\" group uuid: " + group[:uuid] }
+log.info { "\"All users\" group uuid: " + group[:uuid] }
 
 # Look for signs the user has already been activated / set up.
 
