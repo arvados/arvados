@@ -9,9 +9,11 @@ navorder: 1
 
 # API server setup
 
+This section describes how to set up the API server suitable for Arvados development.
+
 ## Prerequisites
 
-1. A GNU/linux (virtual) machine
+1. A GNU/Linux machine or VM
 2. A domain name for your api server
 
 ## Download the source tree
@@ -30,9 +32,15 @@ Next, configure the database:
     cp config/database.yml.sample config/database.yml
 
 Edit database.yml to your liking and make sure the database and db user exist.
-Then set up the database:
+
+Next, set up the environment:
+
+    cp config/environments/development.rb.example config/environments/development.rb
+
+Now create the database:
  
-    RAILS_ENV=production rake db:setup
+    export RAILS_ENV=development
+    rake db:setup
 
 Then set up omniauth:
 
@@ -54,7 +62,7 @@ and put it in config/initializers/secret_token.rb:
 
 Finally, edit the main configuration:
 
-    cp config/environments/production.rb.example config/environments/production.rb
+    cp config/environments/development.rb.example config/environments/development.rb
 
 First, you want to make sure that 
 
