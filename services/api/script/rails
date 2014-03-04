@@ -19,13 +19,13 @@ module Rails
                 :debugger => false,
                 :pid => File.expand_path("tmp/pids/server.pid"),
                 :config => File.expand_path("config.ru"),
-                :SSLEnable => true,
+                :SSLEnable => false,
                 :SSLVerifyClient => OpenSSL::SSL::VERIFY_NONE,
-                :SSLPrivateKey => OpenSSL::PKey::RSA.new(
-                       File.open("config/api.clinicalfuture.com.key.pem").read),
-                :SSLCertificate => OpenSSL::X509::Certificate.new(
-                       File.open("config/api.clinicalfuture.com.crt.pem").read),
-                :SSLCertName => [["CN", WEBrick::Utils::getservername]]
+                #:SSLPrivateKey => OpenSSL::PKey::RSA.new(
+                #       File.open("config/api.clinicalfuture.com.key.pem").read),
+                #:SSLCertificate => OpenSSL::X509::Certificate.new(
+                #       File.open("config/api.clinicalfuture.com.crt.pem").read),
+                #:SSLCertName => [["CN", WEBrick::Utils::getservername]]
             })
         end
     end
