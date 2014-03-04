@@ -158,7 +158,7 @@ li.notification {
     background: rgb(66, 139, 202);
 }
 
-.arvados-nav-active a {
+.arvados-nav-active a, .arvados-nav-active a:hover {
     color: white;
 }
 
