@@ -137,7 +137,12 @@ module ApplicationHelper
 
     return attrvalue if !object.attribute_editable? attr
 
-    if not dataclass
+    if dataclass
+      begin
+        dataclass = dataclass.constantize
+      rescue NameError
+      end
+    else
       rsc = template
       if template.is_a? Hash
         if template[:value]

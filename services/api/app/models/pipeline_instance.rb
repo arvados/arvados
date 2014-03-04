@@ -61,6 +61,10 @@ class PipelineInstance < ArvadosModel
     t.collect { |r| r[2] }.inject(0.0) { |sum,a| sum += a } / t.size
   end
 
+  def self.queue
+    self.where('active = true')
+  end
+
   protected
   def bootstrap_components
     if pipeline_template and (!components or components.empty?)
