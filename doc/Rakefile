@@ -3,7 +3,7 @@
 require "rubygems"
 require "colorize"
 
-Rake.application.rake_require "zenweb/tasks"
+require "zenweb/tasks"
 load "zenweb-textile.rb"
 load "zenweb-liquid.rb"
 
