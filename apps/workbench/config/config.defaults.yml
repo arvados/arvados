@@ -1,0 +1,65 @@
+# Do not use this file for site configuration. Create config.yml
+# instead (see config.yml.example).
+
+development:
+  cache_classes: false
+  whiny_nils: true
+  consider_all_requests_local: true
+  action_controller.perform_caching: false
+  action_mailer.raise_delivery_errors: false
+  active_support.deprecation: :log
+  action_dispatch.best_standards_support: :builtin
+  active_record.mass_assignment_sanitizer: :strict
+  active_record.auto_explain_threshold_in_seconds: 0.5
+  assets.compress: false
+  assets.debug: true
+  profiling_enabled: true
+  site_name: Workbench:dev
+
+production:
+  force_ssl: true
+  cache_classes: true
+  consider_all_requests_local: false
+  action_controller.perform_caching: true
+  serve_static_assets: false
+  assets.compress: true
+  assets.compile: false
+  assets.digest: true
+  i18n.fallbacks: true
+  active_support.deprecation: :notify
+  profiling_enabled: false
+
+  arvados_insecure_https: false
+
+  data_import_dir: /data/arvados-workbench-upload/data
+  data_export_dir: /data/arvados-workbench-download/data
+
+  site_name: Arvados Workbench
+
+test:
+  cache_classes: true
+  serve_static_assets: true
+  static_cache_control: public, max-age=3600
+  whiny_nils: true
+  consider_all_requests_local: true
+  action_controller.perform_caching: false
+  action_dispatch.show_exceptions: false
+  action_controller.allow_forgery_protection: false
+  action_mailer.delivery_method: :test
+  active_record.mass_assignment_sanitizer: :strict
+  active_support.deprecation: :stderr
+  profiling_enabled: false
+
+  site_name: Workbench:test
+
+common:
+  data_import_dir: /tmp/arvados-workbench-upload
+  data_export_dir: /tmp/arvados-workbench-download
+  arvados_login_base: https://arvados.local/login
+  arvados_v1_base: https://arvados.local/arvados/v1
+  arvados_insecure_https: true
+  activation_contact_link: mailto:info@arvados.org
+  arvados_docsite: http://doc.arvados.org
+  arvados_theme: default
+  show_user_agreement_inline: false
+  secret_token: ~
