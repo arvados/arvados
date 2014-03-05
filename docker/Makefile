@@ -102,7 +102,7 @@ DOCKER_BUILD = docker build -q
 
 api-image: passenger-image $(API_DEPS)
 	mkdir -p api/generated
-	tar -c -z -f api/generated/api.tar.gz -C ../services api
+	tar -c -z -f api/generated/api.tar.gz -C ../services api --exclude=api/log/*
 	$(DOCKER_BUILD) -t arvados/api api
 	echo -n "Built at $(date)" > api-image
 
