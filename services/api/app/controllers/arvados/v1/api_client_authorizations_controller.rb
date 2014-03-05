@@ -28,6 +28,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       resource_attrs[:user_id] =
         User.where(uuid: resource_attrs.delete(:owner_uuid)).first.andand.id
     end
+    resource_attrs[:api_client_id] = Thread.current[:api_client].id
     super
   end
 
