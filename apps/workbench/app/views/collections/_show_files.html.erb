@@ -1,7 +1,7 @@
 <% content_for :css do %>
 .file-list-inline-image {
-  height: 4em; 
-  width: auto
+  width: 50%;
+  height: auto; 
 }
 <% end %>
 
@@ -46,7 +46,7 @@
                        file[1]
                      end), 
                     {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, 
-                    {title: 'View in browser'}) %>
+                    {title: file_path}) %>
       </td>
 
       <td style="text-align:right">
