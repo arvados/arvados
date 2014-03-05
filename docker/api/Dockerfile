@@ -27,7 +27,8 @@ ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 ENV RAILS_ENV production
 ADD generated/config_databases.sh /tmp/config_databases.sh
 ADD generated/superuser_token /tmp/superuser_token
-RUN sh /tmp/config_databases.sh && \
+RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
+    sh /tmp/config_databases.sh && \
     rm /tmp/config_databases.sh && \
     /etc/init.d/postgresql start && \
     cd /usr/src/arvados/services/api && \

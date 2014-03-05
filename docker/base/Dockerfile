@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install prerequisite packages for Arvados
 #   * git, curl, rvm
-#   * Arvados source code in /usr/src/arvados-upstream, for preseeding gem installation
+#   * Arvados source code in /usr/src/arvados, for preseeding gem installation
 
 RUN apt-get update && \
     apt-get -q -y install -q -y openssh-server apt-utils git curl locales postgresql-server-dev-9.1 && \
@@ -16,7 +16,9 @@ RUN apt-get update && \
     /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     /usr/sbin/locale-gen && \
     curl -L https://get.rvm.io | bash -s stable --ruby=2.1.0 && \
-    git clone https://github.com/curoverse/arvados.git /usr/src/arvados-upstream
+    /bin/mkdir -p /usr/src/arvados
+
+ADD generated/arvados.tar.gz /usr/src/arvados/
 
 # Set up RVM environment. These are just the env variables created by
 # /usr/local/rvm/scripts/rvm, which can't be run from a non-login shell.
@@ -29,9 +31,9 @@ ENV PATH /usr/local/rvm/gems/ruby-2.1.0/bin:/usr/local/rvm/gems/ruby-2.1.0@globa
 # https://github.com/rubygems/rubygems.org/issues/613.
 RUN gem update --system && \
     gem install bundler && \
-    bundle install --gemfile=/usr/src/arvados-upstream/apps/workbench/Gemfile && \
-    bundle install --gemfile=/usr/src/arvados-upstream/services/api/Gemfile && \
-    bundle install --gemfile=/usr/src/arvados-upstream/doc/Gemfile
+    bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
+    bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
+    bundle install --gemfile=/usr/src/arvados/doc/Gemfile
 
 ADD generated/id_rsa.pub /root/.ssh/authorized_keys
 RUN chown root:root /root/.ssh/authorized_keys

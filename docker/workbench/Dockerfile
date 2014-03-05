@@ -7,7 +7,8 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 RUN /bin/mkdir -p /usr/src/arvados/apps
 ADD generated/workbench.tar.gz /usr/src/arvados/apps/
 
-RUN touch /usr/src/arvados/apps/workbench/log/production.log && \
+RUN bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
+    touch /usr/src/arvados/apps/workbench/log/production.log && \
     chmod 666 /usr/src/arvados/apps/workbench/log/production.log && \
     touch /usr/src/arvados/apps/workbench/db/production.sqlite3 && \
     bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \

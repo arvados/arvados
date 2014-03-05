@@ -33,7 +33,7 @@ WAREHOUSE_DEPS = warehouse/Dockerfile \
 
 SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
 
-BASE_GENERATED = base/generated
+BASE_GENERATED = base/generated/arvados.tar.gz
 
 API_GENERATED = \
         api/generated/apache2_vhost \
@@ -79,6 +79,10 @@ SSO_GENERATED_IN = \
 
 $(BASE_GENERATED): config.yml
 	./config.rb
+	mkdir -p base/generated
+	tar -c -z -f base/generated/arvados.tar.gz -C .. . \
+	  --exclude=services/api/log/* --exclude=docker/*
+
 
 $(API_GENERATED): config.yml $(API_GENERATED_IN)
 	./config.rb
