@@ -1,17 +1,18 @@
-conf = {}
+$application_config = {}
+
 %w(config.defaults config).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
   if File.exists? path
     yaml = ERB.new(IO.read path).result(binding)
     confs = YAML.load(yaml)
-    conf.merge!(confs['common'] || {})
-    conf.merge!(confs[::Rails.env.to_s] || {})
+    $application_config.merge!(confs['common'] || {})
+    $application_config.merge!(confs[::Rails.env.to_s] || {})
   end
 end
 
 Server::Application.configure do
   nils = []
-  conf.each do |k, v|
+  $application_config.each do |k, v|
     # "foo.bar: baz" --> { config.foo.bar = baz }
     cfg = config
     ks = k.split '.'

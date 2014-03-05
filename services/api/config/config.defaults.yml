@@ -63,7 +63,7 @@ common:
   compute_node_ec2run_args: -g arvados-compute
   compute_node_spot_bid: 0.11
 
-  compute_node_domain: <%= `hostname --domain`.strip %>
+  compute_node_domain: <%= `hostname`.split('.')[1..-1].join('.').strip %>
   compute_node_nameservers:
     - 192.168.1.1
   compute_node_ec2_tag_enable: false
