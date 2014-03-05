@@ -317,9 +317,12 @@ class Dispatcher
   def update_pipelines
     puts @todo_pipelines
     @todo_pipelines.each do |p|
-      puts "arv-run-pipeline-instance --no-wait --instance #{p.uuid}"
-      puts `env`
-      `arv-run-pipeline-instance --no-wait --instance #{p.uuid}`
+      pipe_auth = ApiClientAuthorization.
+        new(user: User.where('uuid=?', p.modified_by_user_uuid).first,
+            api_client_id: 0)
+      pipe_auth.save
+
+      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --no-wait --instance #{p.uuid}`
     end
   end
 

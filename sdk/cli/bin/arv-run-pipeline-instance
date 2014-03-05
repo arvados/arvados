@@ -80,13 +80,15 @@ $arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
 
 begin
   require 'rubygems'
-  require 'google/api_client'
   require 'json'
   require 'pp'
   require 'trollop'
-rescue LoadError
+  require 'google/api_client'
+rescue LoadError => l
+  puts $:
   abort <<-EOS
-#{$0}: fatal: some runtime dependencies are missing.
+#{$0}: fatal: #{l.message}
+Some runtime dependencies may be missing.
 Try: gem install pp google-api-client json trollop
   EOS
 end
