@@ -121,7 +121,8 @@ class UserSessionsController < ApplicationController
     api_client_auth = ApiClientAuthorization.
       new(user: user,
           api_client: @api_client,
-          created_by_ip_address: remote_ip)
+          created_by_ip_address: remote_ip,
+          scopes: ["all"])
     api_client_auth.save!
 
     if callback_url.index('?')

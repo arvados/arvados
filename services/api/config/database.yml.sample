@@ -1,4 +1,17 @@
 development:
   adapter: sqlite3
-  database: arvados_development.sqlite3
+  database: db/arvados_development.sqlite3
+  pool: 5
+  timeout: 5000
 
+test:
+  adapter: sqlite3
+  database: db/arvados_test.sqlite3
+  pool: 5
+  timeout: 5000
+
+production:
+  adapter: sqlite3
+  database: db/arvados_production.sqlite3
+  pool: 5
+  timeout: 5000
