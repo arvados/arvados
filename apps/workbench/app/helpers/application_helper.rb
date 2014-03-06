@@ -199,7 +199,7 @@ module ApplicationHelper
       "data-placement" => "bottom",
       "data-type" => datatype,
       "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
-      "data-title" => "Update #{subattr[-1].to_s.titleize}",
+      "data-title" => "Set value for #{subattr[-1].to_s}",
       "data-name" => dn,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       "data-showbuttons" => "false",
