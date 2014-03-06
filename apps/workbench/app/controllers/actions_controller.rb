@@ -71,6 +71,18 @@ class ActionsController < ApplicationController
     newc = Collection.new({:uuid => newuuid, :manifest_text => normalized})
     newc.save!
 
+    chash.each do |k,v|
+      l = Link.new({
+                     tail_kind: "arvados#Collection",
+                     tail_uuid: k,
+                     head_kind: "arvados#Collection", 
+                     head_uuid: newuuid,
+                     link_class: "provenance",
+                     name: "provided"
+                   })
+      l.save!
+    end
+
     '/collections/' + newc.uuid
   end
 

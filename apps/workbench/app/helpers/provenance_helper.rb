@@ -11,9 +11,11 @@ module ProvenanceHelper
     def self.collection_uuid(uuid)
       m = CollectionsHelper.match(uuid)
       if m
-        #if m[2]
-        return m[1]
-        #else
+        if m[2]
+          return m[1]+m[2]
+        else
+          return m[1]
+        end
         #  Collection.where(uuid: ['contains', m[1]]).each do |u|
         #    puts "fixup #{uuid} to #{u.uuid}"
         #    return u.uuid

@@ -48,18 +48,14 @@ jQuery(function($){
         update_count();
     }
 
-    var combine_selected_files_into_collection = function () {
-        
-    }
-
     var update_count = function(e) {
         var lst = get_selection_list();
         $("#persistent-selection-count").text(lst.length);
-
         if (lst.length > 0) {
             $('#selection-form-content').html('<li><input type="submit" name="combine_selected_files_into_collection" id="combine_selected_files_into_collection" value="Combine selected collections and files into a new collection"/></li>'
                                                  + '<li><a href="#" id="clear_selections_button">Clear selections</a></li>'
                                                  + '<li class="notification"><table style="width: 100%"></table></li>');
+
             for (var i = 0; i < lst.length; i++) {
                 $('#selection-form-content > li > table').append("<tr>"
                                                        + "<td>"
@@ -77,7 +73,7 @@ jQuery(function($){
                                                        + "</tr>");
             }
         } else {
-            $('#persistent-selection-list').html("<li class='notification empty'>No selections.</li>");
+            $('#selection-form-content').html("<li class='notification empty'>No selections.</li>");
         }
 
         var checkboxes = $('.persistent-selection:checkbox');
@@ -95,7 +91,6 @@ jQuery(function($){
         
         $('.remove-selection').on('click', remove_selection_click);
         $('#clear_selections_button').on('click', clear_selections);
-        $('#combine_selected_files_into_collection').on('click', combine_selected_files_into_collection);
     };
 
     $(document).
