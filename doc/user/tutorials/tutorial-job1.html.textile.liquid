@@ -10,7 +10,7 @@ h1. Running a crunch job
 
 This tutorial introduces the concepts and use of the Crunch job system using the @arv@ command line tool and Arvados Workbench.
 
-*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
+*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
 
 In "retrieving data using Keep,":tutorial-keep.html we downloaded a file from Keep and did some computation with it (specifically, computing the md5 hash of the complete file).  While a straightforward way to accomplish a computational task, there are several obvious drawbacks to this approach:
 * Large files require significant time to download.
@@ -91,7 +91,7 @@ Use @arv job create@ to actually submit the job.  It should print out a JSON obj
 </code></pre>
 </notextile>
 
-The job is new queued and will start running as soon as it reaches the front of the queue.  Fields to pay attention to include:
+The job is now queued and will start running as soon as it reaches the front of the queue.  Fields to pay attention to include:
 
  * @"uuid"@ is the unique identifier for this specific job
  * @"script_version"@ is the actual revision of the script used.  This is useful if the version was described using the "repository:branch" format.

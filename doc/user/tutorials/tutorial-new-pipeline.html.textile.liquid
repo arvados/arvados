@@ -10,7 +10,7 @@ h1. Constructing a Crunch pipeline
 
 A pipeline in Arvados is a collection of crunch scripts, in which the output from one script may be used as the input to another script.
 
-*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
+*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
 
 h2. Create a new script
 
@@ -41,7 +41,7 @@ Next, create a file that contains the pipeline definition:
       "script_parameters":{
         "input": "887cd41e9c613463eab2f0d885c6dd96+83"
       },
-      "script_version":"tetron:master"
+      "script_version":"you:master"
     },
     "filter":{
       "script":"0-filter.py",
@@ -50,7 +50,7 @@ Next, create a file that contains the pipeline definition:
           "output_of":"do_hash"
         }
       },
-      "script_version":"tetron:master"
+      "script_version":"you:master"
     }
   }
 }
@@ -128,7 +128,7 @@ Notice that the pipeline definition explicitly specifies the Keep locator for th
 What if we want to run the pipeline on a different input block?  One option is to define a new pipeline template, but would potentially result in clutter with many pipeline templates defined for one-off jobs.  Instead, you can override values in the input of the component like this:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-d1hrv-vxzkp38nlde9yyr do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af</span>
+<pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-d1hrv-vxzkp38nlde9yyr do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af+242</span>
 2013-12-17 20:31:24 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 queued 2013-12-17T20:31:24Z
 filter  -                           -
