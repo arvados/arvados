@@ -40,7 +40,7 @@
       </td>
 
       <td>
-        <%= link_to((if /\.(jpg|jpeg|gif|png)$/.match(file[1]) then
+        <%= link_to((if /\.(jpg|jpeg|gif|png|svg)$/i.match(file[1]) then
                        image_tag "#{url_for @object}/#{file_path}", class: "file-list-inline-image"
                      else
                        file[1]
