@@ -183,7 +183,9 @@ module ApplicationHelper
 
     if dataclass and dataclass.is_a? Class
       items = []
-      items.append({name: attrvalue, uuid: attrvalue, type: dataclass.to_s})
+      if attrvalue and !attrvalue.empty?
+        items.append({name: attrvalue, uuid: attrvalue, type: dataclass.to_s})
+      end
       #dataclass.where(uuid: attrvalue).each do |item|
       #  items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       #end
@@ -206,7 +208,7 @@ module ApplicationHelper
       :id => id
     }.merge(htmloptions)
 
-    lt += raw('<script>')
+    lt += raw("\n<script>")
     
     if items and items.length > 0
       lt += raw("add_form_selection_sources(#{items.to_json});\n")

@@ -182,6 +182,11 @@ class PipelineInstancesController < ApplicationController
     super
   end
 
+  def index
+    @objects ||= model_class.limit(20).all
+    super
+  end
+
   protected
   def for_comparison v
     if v.is_a? Hash or v.is_a? Array

@@ -10,12 +10,11 @@
 <table class="table table-condensed table-fixedlayout">
   <colgroup>
     <col width="5%" />
-    <col width="10%" />
-    <col width="20%" />
-    <col width="10%" />
-    <col width="30%" />
     <col width="15%" />
-    <col width="10%" />
+    <col width="25%" />
+    <col width="20%" />
+    <col width="15%" />
+    <col width="20%" />
   </colgroup>
   <thead>
     <tr class="contain-align-left">
@@ -24,7 +23,7 @@
 	Status
       </th><th>
 	Instance
-      </th><th colspan="2">
+      </th><th>
 	Template
       </th><th>
 	Owner
@@ -41,12 +40,8 @@
       <td>
         <%= check_box_tag 'uuids[]', ob.uuid, false, :class => 'persistent-selection' %>
       </td><td>
-        <% if ob.success %>
-        <span class="label label-success">success</span>
-        <% elsif ob.active %>
-        <span class="label label-info">active</span>
-        <% end %>
-      </td><td colspan="2">
+        <%= render partial: 'pipeline_status_label', locals: {:p => ob} %>
+      </td><td colspan="1">
         <%= link_to_if_arvados_object ob, friendly_name: true %>
       </td><td>
         <%= link_to_if_arvados_object ob.pipeline_template_uuid, friendly_name: true %>
@@ -61,18 +56,11 @@
       </td>
       <td style="border-top: 0; opacity: 0.5;" colspan="5">
         <% ob.components.each do |cname, c| %>
-        <% status = if !(c.is_a?(Hash) && c[:job].is_a?(Hash))
-                      nil
-                    elsif c[:job][:success] == true
-                      'success'
-                    elsif c[:job][:success] == false
-                      'danger'
-                    elsif c[:job][:running] == true
-                      'info'
-                    else
-                      'warning'
-                    end %>
-        <span class="label label-<%= status || 'default' %>"><%= cname.to_s %></span>
+          <% if c[:job] %>
+            <%= render partial: "job_status_label", locals: {:j => c[:job], :title => cname.to_s } %>
+          <% else %>
+            <span class="label label-default"><%= cname.to_s %></span>            
+          <% end %>
         <% end %>
       </td>
     </tr>

@@ -136,7 +136,10 @@ select_form_sources  = null;
         if (get_selection_list) {
             var lst = get_selection_list();
             if (lst.length > 0) {
-                ret.push({text: "--- Selections ---", value: ""});
+                var text = "&horbar; Selections &horbar;";
+                var span = document.createElement('span');
+                span.innerHTML = text;
+                ret.push({text: span.innerHTML, value: "***invalid***"});
 
                 for (var i = 0; i < lst.length; i++) {
                     if (lst[i].type == type) {
@@ -145,7 +148,11 @@ select_form_sources  = null;
                 }
             }
         }
-        ret.push({text: "--- Recent ---", value: ""});
+
+        var text = "&horbar; Recent &horbar;";
+        var span = document.createElement('span');
+        span.innerHTML = text;
+        ret.push({text: span.innerHTML, value: "***invalid***"});
 
         var t = form_selection_sources[type];
         for (var key in t) {

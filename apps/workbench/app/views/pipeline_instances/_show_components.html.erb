@@ -28,8 +28,11 @@ td.required {
 <% end %>
 
 <% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
-<% if template %>
-  <h2><%= template.name %></h2>
+<%= content_for :content_top do %>
+  <% if template %>
+    <h2><%= template.name %></h2>
+  <% end %>
+  
 <% end %>
 
 <% if @object.active != nil %>
@@ -38,7 +41,7 @@ td.required {
     <col style="width: 15%" />
     <col style="width: 20%" />
     <col style="width: 12%" />
-    <col style="width: 8%" />
+    <col style="width: 12%" />
     <col style="width: 45%" />
   </colgroup>
   <thead>
@@ -60,38 +63,21 @@ td.required {
     <% render_pipeline_jobs.each do |pj| %>
     <tr>
       <td>
-        <% label = if pj[:job].andand[:uuid] 
-             if pj[:job][:success] == true
-               'label-success'
-             elsif pj[:job][:success] == false
-               'label-danger'
-             elsif pj[:job][:running] == true
-               'label-info'
-             else
-               'label-default'
-             end
-           else
-             'label-default'
-         end %>
+        <% job_status = render(partial: 'job_status_label', 
+                               locals: { :j => pj[:job], :title => pj[:name] }) %>
         <% if pj[:job].andand[:uuid] %>
-        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]), class: "label #{label}" %>
+          <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
         <% else %>
-          <span class="label <%= label %>"><%= pj[:name] %></span>
+          <%= job_status %>
         <% end %>
-
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
       </td><td>
         <%= pj[:progress_bar] %>
       </td><td>
-        <% if pj[:job].andand[:cancelled_at] %>
-        <span class="label label-warning">cancelled</span>
-        <% elsif pj[:failed] %>
-        <span class="label label-danger">failed</span>
-        <% elsif pj[:result] == 'queued' %>
-        <span class="label">queued</span>
-        <% end %>
+        <%= render(partial: 'job_status_label', 
+                               locals: { :j => pj[:job] }) %>
       </td><td>
         <%= link_to_if_arvados_object pj[:output] %>
       </td>
@@ -99,7 +85,7 @@ td.required {
     <% end %>
   </tbody>
   <tfoot>
-    <tr><td colspan="4"></td></tr>
+    <tr><td colspan="5"></td></tr>
   </tfoot>
 </table>
 
@@ -111,10 +97,15 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 
 <% else %>
 
-  <%= form_tag @object, :method => :put do |f| %>
+  <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
 
-  <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
-  <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+  <% content_for :tab_line_buttons do %>
+    <%= form_tag @object, :method => :put do |f| %>
+      
+      <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
+
+      <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+    <% end %>
   <% end %>
 
 <table class="table pipeline-components-table" style="margin-top: -.1em">

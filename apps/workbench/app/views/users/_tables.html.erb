@@ -73,31 +73,11 @@
 </td>
 
 <td>
-  <% if j.success %>
-    <span class="label label-success">finished</span>
-  <% elsif j.success == false %>
-    <span class="label label-danger">failed</span>
-  <% elsif j.finished_at %>
-    <span class="label">finished?</span>
-  <% elsif j.started_at %>
-    <span class="label label-info">running</span>
-  <% else %>
-    <span class="label">queued</span>
-  <% end %>
+  <%= render partial: 'job_status_label', locals: {:j => j} %>
 </td>
 <td>
-  <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
   <div class="inline-progress-container">
-    <div class="progress">
-      <span class="progress-bar progress-bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;">
-      </span>
-      <span class="progress-bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%;">
-      </span>
-      <% if j.success == false %>
-      <span class="progress-bar progress-bar-danger" style="width: <%= tasks_summary[:failed] * percent_total_tasks rescue 0 %>%;">
-      </span>
-      <% end %>
-    </div>
+  <%= render partial: 'job_progress', locals: {:j => j} %>
   </div>
 </td>
 
@@ -153,39 +133,14 @@
           </td>
 
           <td>
-            <% if p.success %>
-              <span class="label label-success">finished</span>
-            <% elsif p.success == false %>
-              <span class="label label-danger">failed</span>
-            <% elsif p.active and p.modified_at < 30.minutes.ago %>
-              <span class="label label-info">stopped</span>
-            <% elsif p.active %>
-              <span class="label label-info">running</span>
-            <% else %>
-              <span class="label">queued</span>
-            <% end %>
-          </td>
-          <td>
-            <% summary = pipeline_summary p %>
-            <div class="inline-progress-container">
-              <div class="progress">
-                <span class="progress-bar progress-bar-success" style="width: <%= summary[:percent_done] %>%;">
-                </span>
-                <% if p.success == false %>
-                <span class="progress-bar progress-bar-danger" style="width: <%= 100.0 - summary[:percent_done] %>%;">
-                </span>
-                <% else %>
-                <span class="progress-bar" style="width: <%= summary[:percent_running] %>%;">
-                </span>
-                <span class="progress-bar progress-bar-info" style="width: <%= summary[:percent_queued] %>%;">
-                </span>
-                <span class="progress-bar progress-bar-danger" style="width: <%= summary[:percent_failed] %>%;">
-                </span>
-                <% end %>
-              </div>
-            </div>
+            <%= render partial: 'pipeline_status_label', locals: {:p => p} %>
           </td>
 
+          <td>
+            <div class="inline-progress-container">
+              <%= render partial: 'pipeline_progress', locals: {:p => p} %>
+            </div>
+          </td>
         </tr>
       <% end %>
     </table>

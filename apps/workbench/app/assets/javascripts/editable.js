@@ -9,3 +9,9 @@ $.fn.editable.defaults.params = function (params) {
     a[key][params.name] = params.value;
     return a;
 };
+
+$.fn.editable.defaults.validate = function (value) {
+    if (value == "***invalid***") {
+        return "Invalid selection";
+    }
+}

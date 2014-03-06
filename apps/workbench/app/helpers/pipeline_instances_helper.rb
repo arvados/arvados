@@ -1,30 +1,4 @@
 module PipelineInstancesHelper
-  def pipeline_summary object=nil
-    object ||= @object
-    ret = {todo:0, running:0, queued:0, done:0, failed:0, total:0}
-    object.components.values.each do |c|
-      ret[:total] += 1
-      case
-      when !c[:job]
-        ret[:todo] += 1
-      when c[:job][:success]
-        ret[:done] += 1
-      when c[:job][:failed]
-        ret[:failed] += 1
-      when c[:job][:finished_at]
-        ret[:running] += 1      # XXX finished but !success and !failed??
-      when c[:job][:started_at]
-        ret[:running] += 1
-      else
-        ret[:queued] += 1
-      end
-    end
-    ret.merge! Hash[ret.collect do |k,v|
-                      [('percent_' + k.to_s).to_sym,
-                       ret[:total]<1 ? 0 : (100.0*v/ret[:total]).floor]
-                    end]
-    ret
-  end
 
   def pipeline_jobs object=nil
     object ||= @object
@@ -42,25 +16,12 @@ module PipelineInstancesHelper
   end
 
   def render_pipeline_job pj
-    if pj[:percent_done]
-      pj[:progress_bar] = raw <<EOF
-<div class="progress" style="width:100%">
-  <span class="progress-bar progress-bar-success" style="width:#{pj[:percent_done]}%"></span>
-  <span class="progress-bar" style="width:#{pj[:percent_running]}%"></span>
-</div>
-EOF
-    elsif pj[:progress]
-      raw <<EOF
-<div class="progress" style="width:100%">
-<span class="progress-bar" style="width:#{pj[:progress]*100}%">
-</span>
-</div>
-EOF
-    end
+    pj[:progress_bar] = render partial: 'job_progress', locals: {:j => pj[:job]}
     pj[:output_link] = link_to_if_arvados_object pj[:output]
     pj[:job_link] = link_to_if_arvados_object pj[:job][:uuid]
     pj
   end
+
 
   protected
 

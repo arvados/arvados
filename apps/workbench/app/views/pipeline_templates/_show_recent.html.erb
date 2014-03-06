@@ -1,14 +1,13 @@
 <% content_for :css do %>
   .playbutton {
   color: white;
-  background: gray;
+  background: rgb(91, 192, 222);
   border: 0px;
   border-radius: 3px;
-  padding: 0px 3px;
+  padding: 0px 3px;  
   }
   .playbutton:hover {
-  color: white;
-  background: blackh;
+  background: rgb(57, 179, 215);
   }
 <% end %>
 
@@ -35,7 +34,7 @@
       <td>
         <%= form_tag '/pipeline_instances' do |f| %>
           <%= hidden_field :pipeline_instance, :pipeline_template_uuid, :value => ob.uuid %>
-          <%= button_tag nil, {class: 'playbutton'} do %>
+          <%= button_tag nil, {class: 'playbutton', title: "Run #{ob.name}"} do %>
             <span class="glyphicon glyphicon-play"></span>
           <% end %>
         <% end %>

@@ -1,0 +1,20 @@
+<% percent_total_tasks = 100 / (j[:tasks_summary][:done] + j[:tasks_summary][:running] + j[:tasks_summary][:failed] + j[:tasks_summary][:todo]) rescue 0 %>
+
+<% if defined? scaleby %>
+  <% percent_total_tasks *= scaleby %>
+<% end %>
+
+<% if not defined? scaleby %>
+  <div class="progress">
+<% end %>
+
+<span class="progress-bar progress-bar-success" style="width: <%= j[:tasks_summary][:done] * percent_total_tasks rescue 0 %>%;">
+</span>
+<span class="progress-bar progress-bar-danger" style="width: <%= j[:tasks_summary][:failed] * percent_total_tasks rescue 0 %>%;">
+</span>
+<span class="progress-bar" style="width: <%= j[:tasks_summary][:running] * percent_total_tasks rescue 0 %>%;">
+</span>
+
+<% if not defined? scaleby %>
+</div>
+<% end %>
