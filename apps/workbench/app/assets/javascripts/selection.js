@@ -52,14 +52,17 @@ jQuery(function($){
         var lst = get_selection_list();
         $("#persistent-selection-count").text(lst.length);
         if (lst.length > 0) {
-            $('#selection-form-content').html('<li><input type="submit" name="combine_selected_files_into_collection" id="combine_selected_files_into_collection" value="Combine selected collections and files into a new collection"/></li>'
-                                                 + '<li><a href="#" id="clear_selections_button">Clear selections</a></li>'
-                                                 + '<li class="notification"><table style="width: 100%"></table></li>');
+            $('#selection-form-content').html(
+                '<li><a href="#" id="clear_selections_button">Clear selections</a></li>'
+                    + '<li><input type="submit" name="combine_selected_files_into_collection" '
+                    + ' id="combine_selected_files_into_collection" '
+                    + ' value="Combine selected collections and files into a new collection" /></li>'
+                    + '<li class="notification"><table style="width: 100%"></table></li>');
 
             for (var i = 0; i < lst.length; i++) {
                 $('#selection-form-content > li > table').append("<tr>"
                                                        + "<td>"
-                                                       + "<input class='remove-selection' name='selection[]' type='checkbox' value='" + lst[i].uuid + "' checked='true'></input>"
+                                                       + "<input class='remove-selection' name='selection[]' type='checkbox' value='" + lst[i].uuid + "' checked='true' data-stoppropagation='true' />"
                                                        + "</td>"
 
                                                        + "<td>"
@@ -109,6 +112,10 @@ jQuery(function($){
 
 
     $(window).on('load storage', update_count);
+
+    $('#selection-form-content').on("click", function(e) {
+        e.stopPropagation();
+    });
 });
 
 add_form_selection_sources = null;

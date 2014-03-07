@@ -1,10 +1,13 @@
 class ActionsController < ApplicationController
+
+  skip_before_filter :find_object_by_uuid, only: :post
+
   def combine_selected_files_into_collection
     lst = []
     files = []
     params["selection"].each do |s|
       m = CollectionsHelper.match(s)
-      if m[1] and m[2]
+      if m and m[1] and m[2]
         lst.append(m[1] + m[2])
         files.append(m)
       end
@@ -73,9 +76,9 @@ class ActionsController < ApplicationController
 
     chash.each do |k,v|
       l = Link.new({
-                     tail_kind: "arvados#Collection",
+                     tail_kind: "arvados#collection",
                      tail_uuid: k,
-                     head_kind: "arvados#Collection", 
+                     head_kind: "arvados#collection", 
                      head_uuid: newuuid,
                      link_class: "provenance",
                      name: "provided"
@@ -83,12 +86,12 @@ class ActionsController < ApplicationController
       l.save!
     end
 
-    '/collections/' + newc.uuid
+    redirect_to controller: 'collections', action: :show, id: newc.uuid
   end
 
   def post
     if params["combine_selected_files_into_collection"]
-      redirect_to combine_selected_files_into_collection
+      combine_selected_files_into_collection
     else
       redirect_to :back
     end

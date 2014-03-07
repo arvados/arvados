@@ -16,34 +16,38 @@
     </tr>
   </thead><tbody>
     <% if @object then @object.files.sort_by{|f|[f[0],f[1]]}.each do |file| %>
-    <% file_path = "#{file[0]}/#{file[1]}" %>
-    <tr>
-      <td>
-        <%= check_box_tag 'uuids[]', @object.uuid+'/'+file_path, false, {
-              :class => 'persistent-selection', 
-              :friendly_type => "File",
-              :friendly_name => "#{@object.uuid}/#{file_path}",
-              :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}" 
-            } %>
-      </td>
-      <td>
-        <%= file[0] %>
-      </td>
+      <% f0 = file[0] %>
+      <% f0 = '' if f0 == '.' %>
+      <% f0 = f0[2..-1] if f0[0..1] == './' %>
+      <% f0 += '/' if not f0.empty? %>
+      <% file_path = "#{f0}#{file[1]}" %>
+      <tr>
+        <td>
+          <%= check_box_tag 'uuids[]', @object.uuid+'/'+file_path, false, {
+                :class => 'persistent-selection', 
+                :friendly_type => "File",
+                :friendly_name => "#{@object.uuid}/#{file_path}",
+                :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}" 
+              } %>
+        </td>
+        <td>
+          <%= file[0] %>
+        </td>
 
-      <td>
-        <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %>
-      </td>
+        <td>
+          <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %>
+        </td>
 
-      <td style="text-align:right">
-        <%= raw(human_readable_bytes_html(file[2])) %>
-      </td>
+        <td style="text-align:right">
+          <%= raw(human_readable_bytes_html(file[2])) %>
+        </td>
 
-      <td>
-        <div style="display:inline-block">
-          <%= link_to raw('<i class="glyphicon glyphicon-download-alt"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'btn btn-info btn-sm', title: 'Download'} %>
-        </div>
-      </td>
-    </tr>
+        <td>
+          <div style="display:inline-block">
+            <%= link_to raw('<i class="glyphicon glyphicon-download-alt"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'btn btn-info btn-sm', title: 'Download'} %>
+          </div>
+        </td>
+      </tr>
     <% end; end %>
   </tbody>
 </table>
