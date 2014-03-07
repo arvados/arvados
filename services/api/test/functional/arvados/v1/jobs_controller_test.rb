@@ -103,4 +103,78 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response :success
   end
+
+  test "search jobs by uuid with >= query" do
+    authorize_with :active
+    get :index, {
+      where: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+    assert_equal false, !!found.index('zzzzz-8i9sb-4cf0nhn6xte809j')
+  end
+
+  test "search jobs by uuid with <= query" do
+    authorize_with :active
+    get :index, {
+      where: [['uuid', '<=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+    assert_equal true, !!found.index('zzzzz-8i9sb-4cf0nhn6xte809j')
+  end
+
+  test "search jobs by uuid with >= and <= query" do
+    authorize_with :active
+    get :index, {
+      where: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7'],
+              ['uuid', '<=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found, ['zzzzz-8i9sb-pshmckwoma9plh7']
+  end
+
+  test "search jobs by uuid with < query" do
+    authorize_with :active
+    get :index, {
+      where: [['uuid', '<', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal false, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+    assert_equal true, !!found.index('zzzzz-8i9sb-4cf0nhn6xte809j')
+  end
+
+  test "search jobs by uuid with like query" do
+    authorize_with :active
+    get :index, {
+      where: [['uuid', 'like', '%hmckwoma9pl%']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found, ['zzzzz-8i9sb-pshmckwoma9plh7']
+  end
+
+  test "search jobs by uuid with 'in' query" do
+    authorize_with :active
+    get :index, {
+      where: [['uuid', 'in', ['zzzzz-8i9sb-4cf0nhn6xte809j',
+                              'zzzzz-8i9sb-pshmckwoma9plh7']]]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal found.sort, ['zzzzz-8i9sb-4cf0nhn6xte809j',
+                              'zzzzz-8i9sb-pshmckwoma9plh7']
+  end
+
+  test "search jobs by nonexistent column with < query" do
+    authorize_with :active
+    get :index, {
+      where: [['is_borked', '<', 'fizzbuzz']]
+    }
+    assert_response 422
+  end
 end

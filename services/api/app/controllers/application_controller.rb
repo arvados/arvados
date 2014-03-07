@@ -107,20 +107,48 @@ class ApplicationController < ActionController::Base
   def load_where_param
     if params[:where].nil? or params[:where] == ""
       @where = {}
-    elsif params[:where].is_a? Hash
+    elsif params[:where].is_a? Hash or params[:where].is_a? Array
       @where = params[:where]
     elsif params[:where].is_a? String
       begin
-        @where = Oj.load(params[:where], symbol_keys: true)
+        @where = Oj.load(params[:where])
       rescue
         raise ArgumentError.new("Could not parse \"where\" param as an object")
       end
     end
+    @where = @where.with_indifferent_access if @where.is_a? Hash
   end
 
   def find_objects_for_index
     @objects ||= model_class.readable_by(current_user)
-    if !@where.empty?
+    apply_where_limit_order_params
+  end
+
+  def apply_where_limit_order_params
+    if @where.is_a? Array and @where.any?
+      cond_out = []
+      param_out = []
+      @where.each do |attr, operator, operand|
+        if !model_class.searchable_columns.index attr.to_s
+          raise ArgumentError.new("Invalid attribute '#{attr}' in condition")
+        end
+        case operator.downcase
+        when '=', '<', '<=', '>', '>=', 'like'
+          if operand.is_a? String
+            cond_out << "#{table_name}.#{attr} #{operator} ?"
+            param_out << operand
+          end
+        when 'in'
+          if operand.is_a? Array
+            cond_out << "#{table_name}.#{attr} IN (?)"
+            param_out << operand
+          end
+        end
+      end
+      if cond_out.any?
+        @objects = @objects.where(cond_out.join(' AND '), *param_out)
+      end
+    elsif @where.is_a? Hash and @where.any?
       conditions = ['1=1']
       @where.each do |attr,value|
         if attr == :any
