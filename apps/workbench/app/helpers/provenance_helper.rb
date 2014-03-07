@@ -7,7 +7,7 @@ module ProvenanceHelper
       @visited = {}
       @jobs = {}
     end
-
+    
     def self.collection_uuid(uuid)
       m = CollectionsHelper.match(uuid)
       if m
@@ -32,11 +32,16 @@ module ProvenanceHelper
     end
 
     def describe_node(uuid)
+      uuid = uuid.to_sym
       bgcolor = determine_fillcolor @opts[:pips][uuid] if @opts[:pips]
 
       rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
       if rsc
-        href = "/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}"
+        href = Rails.application.routes.url_helpers.url_for ({:controller => rsc.to_s.tableize, 
+                                                               :action => :show, 
+                                                               :id => uuid.to_s, 
+                                                               :host => @opts[:request].host, 
+                                                               :port => @opts[:request].port})
       
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
@@ -46,11 +51,12 @@ module ProvenanceHelper
             #puts "empty!"
             return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
           end
+          puts "#{uuid.class} #{@pdata[uuid]}"
           if @pdata[uuid] 
             #puts @pdata[uuid]
             if @pdata[uuid][:name]
               return "\"#{uuid}\" [label=\"#{@pdata[uuid][:name]}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
-            else
+            else              
               files = nil
               if @pdata[uuid].respond_to? :files
                 files = @pdata[uuid].files
@@ -69,6 +75,7 @@ module ProvenanceHelper
                 if i < files.length
                   label += "\\n&vellip;"
                 end
+                #puts "#{uuid} #{label} #{files}"
                 return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
               end
             end  
@@ -101,7 +108,7 @@ module ProvenanceHelper
         gr = "\"#{head}\" -> \"#{tail}\""
       end
       if extra.length > 0
-        gr += "["
+        gr += " ["
         extra.each do |k, v|
           gr += "#{k}=\"#{v}\","
         end
@@ -211,6 +218,8 @@ module ProvenanceHelper
               gr += edge(job_uuid(job), job[:script_version], {:label => "script_version"})
             end
           end
+        elsif rsc == Link
+          # do nothing
         else
           gr += describe_node(uuid)
         end
@@ -218,8 +227,14 @@ module ProvenanceHelper
 
       @pdata.each do |k, link|
         if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
+          href = Rails.application.routes.url_helpers.url_for ({:controller => Link.to_s.tableize, 
+                                                                 :action => :show, 
+                                                                 :id => link[:uuid], 
+                                                                 :host => @opts[:request].host, 
+                                                                 :port => @opts[:request].port})
+
           gr += describe_node(link[:tail_uuid])
-          gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => "/links/#{link[:uuid]}"}) 
+          gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => href}) 
           gr += generate_provenance_edges(link[:tail_uuid])
         end
       end
@@ -232,7 +247,12 @@ module ProvenanceHelper
     def describe_jobs
       gr = ""
       @jobs.each do |k, v|
-        gr += "\"#{k}\" [href=\"/jobs?"
+        href = Rails.application.routes.url_helpers.url_for ({:controller => Job.to_s.tableize, 
+                                                               :action => :index, 
+                                                               :host => @opts[:request].host, 
+                                                               :port => @opts[:request].port})
+
+        gr += "\"#{k}\" [href=\"#{href}?"
         
         n = 0
         v.each do |u|
@@ -243,11 +263,11 @@ module ProvenanceHelper
         gr += "\",label=\""
         
         if @opts[:combine_jobs] == :script_only
-          gr += uuid = "#{v[0][:script]}"
+          gr += "#{v[0][:script]}"
         elsif @opts[:combine_jobs] == :script_and_version
-          gr += uuid = "#{v[0][:script]}"
+          gr += "#{v[0][:script]}" # Just show the name but the nodes will be distinct
         else
-          gr += uuid = "#{v[0][:script]}\\n#{v[0][:finished_at]}"
+          gr += "#{v[0][:script]}\\n#{v[0][:finished_at]}"
         end
         gr += "\",#{determine_fillcolor n}];\n"
       end
@@ -291,8 +311,8 @@ edge [fontsize=10];
     gr += "}"
     svg = ""
 
-    #puts gr
-
+    puts gr
+    
     require 'open3'
 
     Open3.popen2("dot", "-Tsvg") do |stdin, stdout, wait_thr|

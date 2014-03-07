@@ -88,6 +88,7 @@ class PipelineInstancesController < ApplicationController
     provenance, pips = graph(@pipelines)
 
     @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
+      :request => request,
       :all_script_parameters => true, 
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
@@ -159,6 +160,7 @@ class PipelineInstancesController < ApplicationController
     @pipelines = @objects
 
     @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
+      :request => request,
       :all_script_parameters => true, 
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
