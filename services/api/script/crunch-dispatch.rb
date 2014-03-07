@@ -145,15 +145,16 @@ class Dispatcher
             api_client_id: 0)
       job_auth.save
 
-      cmd_args << (ENV['CRUNCH_JOB_BIN'] || `which crunch-job`.strip)
+      crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
+      if crunch_job_bin == ''
+        raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
+      end
+
+      cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
       cmd_args << job_auth.api_token
       cmd_args << '--job'
       cmd_args << job.uuid
-
-      if cmd_args[0] == ''
-        raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
-      end
 
       commit = Commit.where(sha1: job.script_version).first
       if commit

@@ -29,7 +29,7 @@
           <tr>
             <td>
               <small>
-		<%= link_to j.script[0..31], job_path(j.uuid) %>
+		<%= link_to((j.script.andand[0..31] || j.uuid), job_path(j.uuid)) %>
               </small>
             </td>
 
