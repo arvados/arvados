@@ -202,6 +202,22 @@ if $options[:run_here] == $options[:submit]
   abort "#{$0}: syntax error: you must supply either --run-here or --submit."
 end
 
+# Suppress SSL certificate checks if ARVADOS_API_HOST_INSECURE
+
+module Kernel
+  def suppress_warnings
+    original_verbosity = $VERBOSE
+    $VERBOSE = nil
+    result = yield
+    $VERBOSE = original_verbosity
+    return result
+  end
+end
+
+if ENV['ARVADOS_API_HOST_INSECURE']
+  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+end
+
 # Set up the API client.
 
 $client ||= Google::APIClient.
