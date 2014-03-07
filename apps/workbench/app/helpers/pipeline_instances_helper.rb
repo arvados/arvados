@@ -28,7 +28,25 @@ module PipelineInstancesHelper
   def pipeline_jobs_newschool object
     ret = []
     i = -1
-    object.components.each do |cname, c|
+
+    comp = []
+
+    template = PipelineTemplate.find(@object.pipeline_template_uuid) rescue nil
+    if template
+      order = PipelineTemplatesHelper::sort_components(template.components)
+      order.each do |k|
+        if object.components[k]
+          comp.push([k, object.components[k]])
+        end
+      end
+    else
+      object.components.each do |k, v|
+        comp.push([k, v])
+      end
+    end
+
+    comp.each do |cname, c|
+      puts cname, c
       i += 1
       pj = {index: i, name: cname}
       pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}

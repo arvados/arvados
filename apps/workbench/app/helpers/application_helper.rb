@@ -106,12 +106,14 @@ module ApplicationHelper
   end
 
   def render_editable_subattribute(object, attr, subattr, template, htmloptions={})
-    attrvalue = object.send(attr)
-    subattr.each do |k|
-      if attrvalue and attrvalue.is_a? Hash
-        attrvalue = attrvalue[k]
-      else
-        break
+    if object
+      attrvalue = object.send(attr)
+      subattr.each do |k|
+        if attrvalue and attrvalue.is_a? Hash
+          attrvalue = attrvalue[k]
+        else
+          break
+        end
       end
     end
 
@@ -135,6 +137,7 @@ module ApplicationHelper
       end
     end
 
+    return template if !object
     return attrvalue if !object.attribute_editable? attr
 
     if dataclass

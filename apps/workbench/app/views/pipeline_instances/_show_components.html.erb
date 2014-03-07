@@ -1,38 +1,13 @@
 <% content_for :css do %>
-  .pipeline_color_legend {
-    padding-left: 1em;
-    padding-right: 1em;
-  }
-table.pipeline-components-table {
-  width: 100%;
-  table-layout: fixed;
-  overflow: hidden;
-}
-
-table.pipeline-components-table thead th {
-  text-align: bottom;
-}
-table.pipeline-components-table div.progress {
-  margin-bottom: 0;
-}
-
-table.pipeline-components-table td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-td.required {
-  background: #ffdddd;
-}
 
 <% end %>
 
-<% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
+<% template = PipelineTemplate.find(@object.pipeline_template_uuid) rescue nil %>
+
 <%= content_for :content_top do %>
   <% if template %>
     <h2><%= template.name %></h2>
   <% end %>
-  
 <% end %>
 
 <% if @object.active != nil %>
@@ -108,55 +83,6 @@ setInterval(function(){$('a.refresh').click()}, 15000);
     <% end %>
   <% end %>
 
-<table class="table pipeline-components-table" style="margin-top: -.1em">
-  <colgroup>
-    <col style="width: 15%" />
-    <col style="width: 20%" />
-    <col style="width: 20%" />
-    <col style="width: 45%" />
-  </colgroup>
-
-  <thead>
-    <tr>
-      <th>
-        component
-      </th><th>
-        script
-      </th><th>
-        parameter
-      </th><th>
-        value
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <% template.components.each do |k, template_value| %>
-
-    <tr>
-      <td><span class="label label-default"><%= k %></span></td>
-
-      <td><%= render_editable_subattribute @object, :components, [k, :script], template_value[:script] %></td>
-
-      <td>script version</td>
-
-      <td>
-        <%= render_editable_subattribute @object, :components, [k, :script_version], template_value[:script_version] %>
-      </td>
-    </tr>
-
-    <% if template_value[:script_parameters].length > 0 %>
-      <% template_value[:script_parameters].each do |p, tv| %>
-        <tr>
-          <td style="border-top: none"></td>
-          <td style="border-top: none"></td>
-          
-          <td class="property-edit-row"><%= p %></td>
-          <td class="property-edit-row"><%= render_editable_subattribute @object, :components, [k, :script_parameters, p.to_sym], tv %></td>
-      <% end %>
-      </tr>
-    <% end %>
-  <% end %>
-  </tbody>
-  </table>
+  <%= render partial: 'pipeline_templates/show_components_template', locals: {:template => template, :obj => @object} %>
   
 <% end %>
