@@ -137,8 +137,17 @@ module ApplicationHelper
       end
     end
 
-    return template if !object
-    return attrvalue if !object.attribute_editable? attr
+    rsc = template
+    if template.is_a? Hash
+      if template[:value]
+        rsc = template[:value]
+      elsif template[:default]
+        rsc = template[:default]
+      end
+    end
+
+    return link_to_if_arvados_object(rsc) if !object
+    return link_to_if_arvados_object(attrvalue) if !object.attribute_editable? attr
 
     if dataclass
       begin
@@ -146,15 +155,6 @@ module ApplicationHelper
       rescue NameError
       end
     else
-      rsc = template
-      if template.is_a? Hash
-        if template[:value]
-          rsc = template[:value]
-        elsif template[:default]
-          rsc = template[:default]
-        end
-      end
-
       dataclass = ArvadosBase.resource_class_for_uuid(rsc)
     end
 
