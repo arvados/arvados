@@ -10,7 +10,6 @@ import errno
 import stat
 import threading
 import arvados
-import argparse
 import pprint
 
 from time import time

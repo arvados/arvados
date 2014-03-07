@@ -10,7 +10,7 @@ h1. Writing a Crunch script
 
 In this tutorial, we will write the "hash" script demonstrated in the first tutorial.
 
-*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.basedoc}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.basedoc}}/user/getting_started/check-environment.html*
+*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
 
 This tutorial uses *@you@* to denote your username.  Replace *@you@* with your user name in all the following examples.
 
@@ -65,6 +65,11 @@ Add the following code to compute the md5 hash of each file in a collection:
 Make the file executable:
 
 notextile. <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
+
+{% include 'notebox_begin' %}
+The below steps describe how to execute the script after committing changes to git. To test the script locally, please see the "debugging a crunch script":tutorial-job-debug.html page.
+
+{% include 'notebox_end' %}
 
 Next, add the file to @git@ staging.  This tells @git@ that the file should be included on the next commit.
 

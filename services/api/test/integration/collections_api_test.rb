@@ -3,10 +3,6 @@ require 'test_helper'
 class CollectionsApiTest < ActionDispatch::IntegrationTest
   fixtures :all
 
-  def jresponse
-    @jresponse ||= ActiveSupport::JSON.decode @response.body
-  end
-
   test "should get index" do
     get "/arvados/v1/collections", {:format => :json}, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active).api_token}"}
     assert_response :success

@@ -27,7 +27,7 @@
           <tr>
             <td>
               <small>
-		<%= link_to j.script[0..31], job_path(j.uuid) %>
+		<%= link_to((j.script.andand[0..31] || j.uuid), job_path(j.uuid)) %>
               </small>
             </td>
 
@@ -250,7 +250,30 @@
 </div>
 
 <% else %>
-  <%= image_tag "dax.png", style: "max-width=40%" %>
+
+  <div class="row-fluid">
+    <div class="col-sm-4">
+      <%= image_tag "dax.png", style: "max-width:100%" %>
+    </div>
+    <div class="col-sm-8">
+      <h2>Welcome to Arvados, <%= current_user.first_name %>!</h2>
+      <div class="well">
+	<p>
+	  Your account must be activated by an Arvados administrator.  If this
+	  is your first time accessing Arvados and would like to request
+	  access, or you believe you are seeing the page in error, please 
+	  <%= link_to "contact us", Rails.configuration.activation_contact_link %>.  
+	  You should receive an email at the address you used to log in when
+	  your account is activated.  In the mean time, you can 
+	  <%= link_to "learn more about Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %>,
+	  and <%= link_to "read the Arvados user guide", "http://doc.arvados.org/user" %>.
+	</p>
+	<p style="padding-bottom: 1em">
+	  <%= link_to raw('Contact us &#x2709;'),
+	      Rails.configuration.activation_contact_link, class: "pull-right btn btn-primary" %></p>
+      </div>
+    </div>
+  </div>
 <% end %>
 
 <% content_for :js do %>

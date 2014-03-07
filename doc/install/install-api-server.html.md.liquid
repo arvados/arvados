@@ -20,9 +20,13 @@ Please follow the instructions on the [Download page](https://arvados.org/projec
 
 ## Configure the API server
 
-First configure the database:
+First install the gems:
 
     cd arvados/services/api
+    bundle install
+
+Next, configure the database:
+
     cp config/database.yml.sample config/database.yml
 
 Edit database.yml to your liking and make sure the database and db user exist.
@@ -48,11 +52,9 @@ and put it in config/initializers/secret_token.rb:
 
     Server::Application.config.secret_token = 'your-new-secret-here'
 
-Finally, edit your
+Finally, edit the main configuration:
 
-    environments/production.rb
-
-file. 
+    cp config/environments/production.rb.example config/environments/production.rb
 
 First, you want to make sure that 
 
