@@ -56,3 +56,5 @@ gem 'test_after_commit', :group => :test
 
 gem 'google-api-client', '~> 0.6.3'
 gem 'trollop'
+
+gem 'arvados-cli', '>= 0.1.20140307112652'
