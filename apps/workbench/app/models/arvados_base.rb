@@ -87,6 +87,9 @@ class ArvadosBase < ActiveRecord::Base
   def self.order(*args)
     ArvadosResourceList.new(self).order(*args)
   end
+  def self.filter(*args)
+    ArvadosResourceList.new(self).filter(*args)
+  end
   def self.where(*args)
     ArvadosResourceList.new(self).where(*args)
   end
