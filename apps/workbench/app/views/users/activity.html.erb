@@ -1,0 +1,58 @@
+<% content_for :css do %>
+table#users-activity-table th {
+    overflow-x: hidden;
+}
+<% end %>
+<table class="table table-bordered table-condensed table-fixedlayout" id="users-activity-table">
+  <colgroup>
+    <col width="28%" />
+  </colgroup>
+  <% @spans.each do |_| %>
+  <colgroup>
+    <% 3.times do %>
+    <col width="<%= (72 / @spans.count / 3).floor %>%" />
+    <% end %>
+  </colgroup>
+  <% end %>
+
+  <tr>
+    <th rowspan="2">User</th>
+    <% @spans.each do |span, start_at, end_at| %>
+    <th colspan="3" title="<%= start_at.to_s.sub(/ .*/, '') %> to <%= (end_at-1.second).to_s.sub(/ .*/, '') %>"><%= span %></th>
+    <% end %>
+  </tr>
+  <tr>
+    <% @spans.each do |span, _| %>
+    <th>Logins</th>
+    <th>Jobs</th>
+    <th>Pipelines</th>
+    <% end %>
+  </tr>
+
+  <% @users.each do |user| %>
+  <tr>
+    <td>
+      <small>
+	<%= link_to_if_arvados_object user, friendly_name: true %>
+      </small>
+    </td>
+
+    <% @spans.each do |span, _| %>
+    <% ['logins', 'jobs', 'pipeline_instances'].each do |type| %>
+    <td>
+      <small>
+	<%= @user_activity[user.uuid][span + " " + type].to_s %>
+      </small>
+    </td>
+    <% end %>
+    <% end %>
+  </tr>
+  <% end %>
+</table>
+
+<% content_for :footer_js do %>
+$('#users-activity-table td small').each(function(){
+    if ($(this).html().trim() == '0')
+	$(this).css('opacity', '0.3');
+});
+<% end %>
