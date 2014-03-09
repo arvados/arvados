@@ -107,7 +107,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "search jobs by uuid with >= query" do
     authorize_with :active
     get :index, {
-      where: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+      filters: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
@@ -118,7 +118,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "search jobs by uuid with <= query" do
     authorize_with :active
     get :index, {
-      where: [['uuid', '<=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+      filters: [['uuid', '<=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
@@ -129,7 +129,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "search jobs by uuid with >= and <= query" do
     authorize_with :active
     get :index, {
-      where: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7'],
+      filters: [['uuid', '>=', 'zzzzz-8i9sb-pshmckwoma9plh7'],
               ['uuid', '<=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
     assert_response :success
@@ -140,7 +140,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "search jobs by uuid with < query" do
     authorize_with :active
     get :index, {
-      where: [['uuid', '<', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+      filters: [['uuid', '<', 'zzzzz-8i9sb-pshmckwoma9plh7']]
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
@@ -151,7 +151,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "search jobs by uuid with like query" do
     authorize_with :active
     get :index, {
-      where: [['uuid', 'like', '%hmckwoma9pl%']]
+      filters: [['uuid', 'like', '%hmckwoma9pl%']]
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
@@ -161,8 +161,8 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "search jobs by uuid with 'in' query" do
     authorize_with :active
     get :index, {
-      where: [['uuid', 'in', ['zzzzz-8i9sb-4cf0nhn6xte809j',
-                              'zzzzz-8i9sb-pshmckwoma9plh7']]]
+      filters: [['uuid', 'in', ['zzzzz-8i9sb-4cf0nhn6xte809j',
+                                'zzzzz-8i9sb-pshmckwoma9plh7']]]
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
@@ -173,7 +173,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "search jobs by nonexistent column with < query" do
     authorize_with :active
     get :index, {
-      where: [['is_borked', '<', 'fizzbuzz']]
+      filters: [['is_borked', '<', 'fizzbuzz']]
     }
     assert_response 422
   end
