@@ -55,11 +55,15 @@ module ApplicationHelper
         link_name = link_uuid
 
         if opts[:friendly_name]
-          begin
-            link_name = resource_class.find(link_uuid).friendly_link_name
-          rescue RuntimeError
-            # If that lookup failed, the link will too. So don't make one.
-            return attrvalue
+          if attrvalue.respond_to? :friendly_link_name
+            link_name = attrvalue.friendly_link_name
+          else
+            begin
+              link_name = resource_class.find(link_uuid).friendly_link_name
+            rescue RuntimeError
+              # If that lookup failed, the link will too. So don't make one.
+              return attrvalue
+            end
           end
         end
         if opts[:with_class_name]
