@@ -13,6 +13,9 @@
 development:
 
 production:
+  # At minimum, you need a nice long randomly generated secret_token here.
+  secret_token: ~
+
   uuid_prefix: bogus
 
   # This is suitable for AWS; see common section below for a static example.
@@ -32,6 +35,7 @@ test:
   uuid_prefix: zzzzz
 
 common:
+  secret_token: ~
   compute_node_nameservers:
     - 192.168.0.1
     - 172.16.0.1

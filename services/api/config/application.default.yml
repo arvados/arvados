@@ -41,6 +41,7 @@ test:
   active_record.mass_assignment_sanitizer: :strict
 
 common:
+  secret_token: ~
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
 
   git_repositories_dir: /var/cache/git
