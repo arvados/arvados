@@ -52,6 +52,8 @@ navbar:
       - sdk/python/sdk-python.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
+    - Perl:
+      - sdk/perl/index.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
