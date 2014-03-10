@@ -34,6 +34,9 @@ ArvadosWorkbench::Application.routes.draw do
   match '/collections/graph' => 'collections#graph'
   resources :collections
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
+
+  post 'actions' => 'actions#post'
+
   root :to => 'users#welcome'
 
   # Send unroutable requests to an arbitrary controller

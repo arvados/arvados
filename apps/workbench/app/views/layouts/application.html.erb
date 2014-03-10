@@ -121,7 +121,10 @@
             <span class="badge" id="persistent-selection-count"></span>
             <span class="caret"></span>
           </a>
-          <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
+            <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
+              <%= form_tag '/actions' do %>
+              <div id="selection-form-content"></div>
+              <% end %>
           </ul>
         </li>
 
