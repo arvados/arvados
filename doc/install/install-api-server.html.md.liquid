@@ -5,18 +5,20 @@ title: Install the API server
 navorder: 1
 ...
 
-{% include 'alert_stub' %}
-
 # API server setup
 
-## Prerequisites
+## Prerequisites:
 
-1. A GNU/linux (virtual) machine
+1. A GNU/Linux (virtual) machine
 2. A domain name for your api server
+3. Ruby >= 2.0.0
+4. Bundler
 
 ## Download the source tree
 
-Please follow the instructions on the [Download page](https://arvados.org/projects/arvados/wiki/Download) in the wiki.
+    git clone https://github.com/curoverse/arvados.git
+
+See also: [Downloading the source code](https://arvados.org/projects/arvados/wiki/Download) on the Arvados wiki.
 
 ## Configure the API server
 
@@ -27,61 +29,58 @@ First install the gems:
 
 Next, configure the database:
 
-    cp config/database.yml.sample config/database.yml
+    cp -i config/database.yml.sample config/database.yml
 
-Edit database.yml to your liking and make sure the database and db user exist.
+Edit `database.yml` to your liking and make sure the database and db user exist.
 Then set up the database:
  
     RAILS_ENV=production rake db:setup
 
 Then set up omniauth:
 
-    cp config/initializers/omniauth.rb.example config/initializers/omniauth.rb
+    cp -i config/initializers/omniauth.rb.example config/initializers/omniauth.rb
 
-Edit config/initializers/omniauth.rb. Choose an *APP_SECRET* and *APP_ID*. Also set
-*CUSTOM_PROVIDER_URL*.
+Edit `config/initializers/omniauth.rb`. Choose an *APP_SECRET* and
+*APP_ID*. Also set *CUSTOM_PROVIDER_URL*.
 
 Make sure your Omniauth provider knows about your *APP_ID* and *APP_SECRET*
 combination.
 
-You also need to update config/initializers/secret_token.rb. Generate a new secret with
+You also need to update `config/initializers/secret_token.rb`.
+Generate a new secret with
 
     rake secret
 
-and put it in config/initializers/secret_token.rb:
+and put it in `config/initializers/secret_token.rb`:
 
     Server::Application.config.secret_token = 'your-new-secret-here'
 
-Finally, edit the main configuration:
+Edit the main configuration:
 
-    cp config/environments/production.rb.example config/environments/production.rb
+    cp -i config/config.yml.example config/config.yml
 
-First, you want to make sure that 
+First, you want to make sure that
 
-    config.uuid_prefix
+    uuid_prefix
 
-is set to a unique 5-digit hex string. You can replace the 'cfi-aws-0' string
-with a string of your choice to make that happen.
+is set to a unique 5-character alphanumeric string. An example is
+given that generates a 5-character string based on a hash of your
+hostname.
 
-The *config.uuid_prefix* string is a unique identifier for your API server. It
-also serves as the first part of the hostname for your API server, for instance
+The `uuid_prefix` is a unique identifier for your API server. It also
+serves as the first part of the hostname for your API server, for
+instance
 
     {{ site.arvados_api_host }}
 
-You should use your own domain instead of arvadosapi.com
+For a development site, use your own domain instead of arvadosapi.com.
 
-Second, unless you are running on AWS, you will want to change the definition of
+You will also want to change `compute_node_nameservers` to suit your
+environment.
 
-    config.compute_node_nameservers
-
-If you know your nameservers and they are fixed, you can hardcode them, and
-make sure to remove the code that tries to look them up from the AWS metadata:
-
-    config.compute_node_nameservers = ['1.2.3.4','2.3.4.5','3.4.5.6']
-    #require 'net/http'
-    #config.compute_node_nameservers = ['local', 'public'].collect do |iface|
-    #  Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
-    #end << '172.16.0.23'
+Consult `config.defaults.yml` for a full list of configuration
+options. Always put your local configuration in `config.yml` instead
+of editing `config.defaults.yml`.
 
 ## Apache/Passenger
 

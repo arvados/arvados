@@ -84,12 +84,15 @@ def normalize(collection):
 
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
-        if re.search(r'^[a-f0-9]{32}\+\d+(\+\S)*$', manifest_locator_or_text):
+        if re.search(r'^[a-f0-9]{32}(\+\d+)?(\+\S+)*$', manifest_locator_or_text):
             self._manifest_locator = manifest_locator_or_text
             self._manifest_text = None
-        else:
+        elif re.search(r'^\S+( [a-f0-9]{32,}(\+\S+)*)*( \d+:\d+:\S+)+\n', manifest_locator_or_text):
             self._manifest_text = manifest_locator_or_text
             self._manifest_locator = None
+        else:
+            raise errors.ArgumentError(
+                "Argument to CollectionReader must be a manifest or a collection UUID")
         self._streams = None
 
     def __enter__(self):

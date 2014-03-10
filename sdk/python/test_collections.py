@@ -42,7 +42,7 @@ class LocalCollectionReaderTest(unittest.TestCase):
         os.environ['KEEP_LOCAL_STORE'] = '/tmp'
         LocalCollectionWriterTest().runTest()
     def runTest(self):
-        cr = arvados.CollectionReader('d6c3b8e571f1b81ebb150a45ed06c884+114')
+        cr = arvados.CollectionReader('d6c3b8e571f1b81ebb150a45ed06c884+114+Xzizzle')
         got = []
         for s in cr.all_streams():
             for f in s.all_files():

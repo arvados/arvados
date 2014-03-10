@@ -8,13 +8,7 @@ class Node < ArvadosModel
 
   MAX_SLOTS = 64
 
-  @@confdir = if Rails.configuration.respond_to? :dnsmasq_conf_dir
-                Rails.configuration.dnsmasq_conf_dir
-              elsif File.exists? '/etc/dnsmasq.d/.'
-                '/etc/dnsmasq.d'
-              else
-                nil
-              end
+  @@confdir = Rails.configuration.dnsmasq_conf_dir
   @@domain = Rails.configuration.compute_node_domain rescue `hostname --domain`.strip
   @@nameservers = Rails.configuration.compute_node_nameservers
 
@@ -127,8 +121,8 @@ class Node < ArvadosModel
   def start!(ping_url_method)
     ensure_permission_to_update
     ping_url = ping_url_method.call({ uuid: self.uuid, ping_secret: self.info[:ping_secret] })
-    if (Rails.configuration.compute_node_ec2run_args rescue false) and
-       (Rails.configuration.compute_node_ami rescue false)
+    if (Rails.configuration.compute_node_ec2run_args and
+        Rails.configuration.compute_node_ami)
       ec2_args = ["--user-data '#{ping_url}'",
                   "-t c1.xlarge -n 1",
                   Rails.configuration.compute_node_ec2run_args,
