@@ -3,7 +3,6 @@ layout: default
 navsection: userguide
 navmenu: Tutorials
 title: "Writing a Crunch script"
-
 ...
 
 h1. Writing a Crunch script
@@ -25,7 +24,7 @@ First, you should do some basic configuration for git (you only need to do this 
 ~$ <span class="userinput">git config --global user.email <b>you</b>@example.com</span></code></pre>
 </notextile>
 
-On the Arvados Workbench, navigate to _Compute %(rarr)&rarr;% Code repositories._  You should see two repositories, one named "arvados" (under the *name* column) and a second with your user name.  Next to *name* is the column *push_url*.  Copy the *push_url* cell associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:<b>you</b>.git</code></notextile>.
+On the Arvados Workbench, navigate to "Compute %(rarr)&rarr;% Code repositories":http://{{site.arvados_workbench_host}}/repositiories .  You should see a repository with your user name listed in the *name* column.  Next to *name* is the column *push_url*.  Copy the *push_url* value associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:<b>you</b>.git</code></notextile>.
 
 Next, on the Arvados virtual machine, clone your git repository:
 
@@ -67,7 +66,7 @@ Make the file executable:
 notextile. <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
 
 {% include 'notebox_begin' %}
-The below steps describe how to execute the script after committing changes to git. To test the script locally, please see the "debugging a crunch script":tutorial-job-debug.html page.
+The steps below describe how to execute the script after committing changes to git. To test the script locally, please see the "debugging a crunch script":{{site.baseurl}}/user/topics/tutorial-job-debug.html page.
 
 {% include 'notebox_end' %}
 
@@ -96,13 +95,13 @@ To git@git.qr1hi.arvadosapi.com:you.git
  * [new branch]      master -> master</code></pre>
 </notextile>
 
-You should now be able to run your script using Crunch, similar to how we did it in the "first tutorial.":tutorial-job1.html  The field @"script_version"@ should be @you:master@ to tell Crunch to run the script at the head of the "master" git branch, which you just uploaded.
+You should now be able to run your script using Crunch, as described in "running a crunch job on the command line.":tutorial-job1.html  The field @"script_version"@ should be <notextile><code><b>you</b>:master</code></notextile> to tell Crunch to run the script at the head of the "master" git branch, which you just pushed to the repository.
 
 <notextile>
 <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
  "script": "hash.py",
- "script_version": "you:master",
+ "script_version": "<b>you</b>:master",
  "script_parameters":
  {
   "input": "c1bad4b39ca5a924e481008009d94e32+210"
@@ -126,4 +125,6 @@ EOF</span>
 </code></pre>
 </notextile>
 
-Next, "debugging a crunch script.":tutorial-job-debug.html
+<hr>
+
+Next, "writing a crunch pipeline.":tutorial-new-pipeline.html
