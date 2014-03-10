@@ -1,5 +1,5 @@
-# Do not use this file for site configuration. Create config.yml
-# instead (see config.yml.example).
+# Do not use this file for site configuration. Create application.yml
+# instead (see application.yml.example).
 
 development:
   force_ssl: false

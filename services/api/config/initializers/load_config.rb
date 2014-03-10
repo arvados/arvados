@@ -1,6 +1,6 @@
 $application_config = {}
 
-%w(config.defaults config).each do |cfgfile|
+%w(application.default application).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
   if File.exists? path
     yaml = ERB.new(IO.read path).result(binding)
@@ -37,7 +37,8 @@ Server::Application.configure do
     raise <<EOS
 Refusing to start in #{::Rails.env.to_s} mode with missing configuration.
 
-The following configuration settings must be specified in config/config.yml:
+The following configuration settings must be specified in
+config/application.yml:
 * #{nils.join "\n* "}
 
 EOS

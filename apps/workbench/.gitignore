@@ -22,7 +22,7 @@
 /config/environments/development.rb
 /config/environments/test.rb
 /config/environments/production.rb
-/config/config.yml
+/config/application.yml
 
 /config/piwik.yml
 

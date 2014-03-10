@@ -18,7 +18,7 @@
 /config/api.clinicalfuture.com.*
 /config/database.yml
 /config/initializers/omniauth.rb
-/config/config.yml
+/config/application.yml
 
 # asset cache
 /public/assets/
