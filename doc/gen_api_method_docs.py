@@ -5,7 +5,7 @@
 # Generate docs for Arvados methods.
 #
 # This script will retrieve the discovery document at
-# https://localhost:9900/discovery/v1/apis/arvados/v1/rest
+# https://$ARVADOS_API_HOST/discovery/v1/apis/arvados/v1/rest
 # and will generate Textile documentation files in the current
 # directory.
 
@@ -20,22 +20,32 @@ p = argparse.ArgumentParser(description='Generate Arvados API method documentati
 
 p.add_argument('--host',
                type=str,
-               default='localhost',
                help="The hostname or IP address of the API server")
 
 p.add_argument('--port',
                type=int,
-               default=9900,
                help="The port of the API server")
 
 p.add_argument('--output-dir',
                type=str,
-               default='.',
+               default='./api/methods',
                help="Directory in which to write output files.")
 
-args = p.parse_args()
+p.add_argument('--backup-suffix',
+               type=str,
+               default='~',
+               help="""
+Suffix to append to filename when creating backup files. (Specify the
+empty string to avoid making backup files.)
+""")
 
-api_url = 'https://{host}:{port}/discovery/v1/apis/arvados/v1/rest'.format(**vars(args))
+args = p.parse_args()
+if not args.host:
+    args.host = os.environ.get('ARVADOS_API_HOST', 'localhost')
+if args.port:
+    args.host += ':' + str(args.port)
+
+api_url = 'https://{host}/discovery/v1/apis/arvados/v1/rest'.format(**vars(args))
 
 r = requests.get(api_url, verify=False)
 if r.status_code != 200:
@@ -50,22 +60,23 @@ api = r.json()
 resource_num = 0
 for resource in sorted(api[u'resources']):
     resource_num = resource_num + 1
-    out_fname = os.path.join(args.output_dir, resource + '.textile')
-    if os.path.exists(out_fname):
-        backup_name = out_fname + '.old'
+    out_fname = os.path.join(args.output_dir, resource + '.html.textile.liquid')
+    if os.path.exists(out_fname) and args.backup_suffix != '':
+        backup_name = out_fname + '~'
         try:
             os.rename(out_fname, backup_name)
         except OSError as e:
-            print "WARNING: could not back up {1} as {2}: {3}".format(
-                out_fname, backup_name, e)
+            raise Exception("Could not back up {1} as {2}: {3}".format(
+                    out_fname, backup_name, e))
     outf = open(out_fname, 'w')
     outf.write(
 """---
+layout: default
 navsection: api
 navmenu: API Methods
 title: "{resource}"
-navorder: {resource_num}
----
+
+...
 
 h1. {resource}
 
