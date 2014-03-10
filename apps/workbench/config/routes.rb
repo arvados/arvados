@@ -19,6 +19,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :users do
     get 'home', :on => :member
     get 'welcome', :on => :collection
+    post 'sudo', :on => :member
   end
   resources :logs
   resources :factory_jobs
