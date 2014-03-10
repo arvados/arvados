@@ -18,7 +18,13 @@ table#users-activity-table th {
   <tr>
     <th rowspan="2">User</th>
     <% @spans.each do |span, start_at, end_at| %>
-    <th colspan="3" title="<%= start_at.to_s.sub(/ .*/, '') %> to <%= (end_at-1.second).to_s.sub(/ .*/, '') %>"><%= span %></th>
+    <th colspan="3">
+      <%= span %>
+      <br />
+      <%= start_at.strftime('%b %-d') %>
+      -
+      <%= (end_at-1.second).strftime('%b %-d') %>
+    </th>
     <% end %>
   </tr>
   <tr>

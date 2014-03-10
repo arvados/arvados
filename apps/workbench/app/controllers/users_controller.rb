@@ -19,14 +19,13 @@ class UsersController < ApplicationController
       pipeline_instances: {}
     }
     @spans = [['This week', Time.now.beginning_of_week, Time.now],
-              ['Last week', 1.week.ago.beginning_of_week, nil],
+              ['Last week',
+               Time.now.beginning_of_week.advance(weeks:-1),
+               Time.now.beginning_of_week],
               ['This month', Time.now.beginning_of_month, Time.now],
-              ['Last month', 1.month.ago.beginning_of_month, nil]].
-      collect do |span|
-      span[2] ||= span[1].advance(months: 1) if span[0].match /month/
-      span[2] ||= span[1].advance(weeks: 1) if span[0].match /week/
-      span
-    end
+              ['Last month',
+               1.month.ago.beginning_of_month,
+               Time.now.beginning_of_month]]
     @spans.each do |span, threshold_start, threshold_end|
       @activity[:logins][span] = Log.
         filter([[:event_type, '=', 'login'],
