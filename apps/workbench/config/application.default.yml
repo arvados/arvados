@@ -49,6 +49,7 @@ test:
   active_record.mass_assignment_sanitizer: :strict
   active_support.deprecation: :stderr
   profiling_enabled: false
+  secret_token: <%= rand(2**256).to_s(36) %>
 
   site_name: Workbench:test
 
