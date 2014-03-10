@@ -24,7 +24,15 @@ end
 #   Returns 'true' if IP forwarding is enabled in the kernel
 #
 def ip_forwarding_enabled?
-  %x(/sbin/sysctl --values net.ipv4.ip_forward) == "1\n"
+  %x(/sbin/sysctl -n net.ipv4.ip_forward) == "1\n"
+end
+
+def debootstrap_ok?
+  return system '/usr/sbin/debootstrap --version > /dev/null 2>&1'
+end
+
+def docker_ok?
+  return system 'docker images > /dev/null 2>&1'
 end
 
 def find_ssh_key key_name
@@ -68,12 +76,19 @@ if docker_path.empty?
   warn "Installation instructions for a variety of platforms can be found at"
   warn "http://docs.docker.io/en/latest/installation/"
   exit
-elsif not system 'docker images > /dev/null 2>&1'
+elsif not docker_ok?
   warn "WARNING: docker could not be run."
   warn "Please make sure that:"
   warn "  * You have permission to read and write /var/run/docker.sock"
   warn "  * a 'cgroup' volume is mounted on your machine"
   warn "  * the docker daemon is running"
+  exit
+end
+
+# Check that debootstrap is installed.
+if not debootstrap_ok?
+  warn "Installing debootstrap."
+  sudo '/usr/bin/apt-get', 'install', 'debootstrap'
 end
 
 # Generate a config.yml if it does not exist
@@ -108,7 +123,8 @@ end
 
 # If all prerequisites are met, go ahead and build.
 if ip_forwarding_enabled? and
-    not docker_path.empty? and
+    docker_ok? and
+    debootstrap_ok? and
     File.exists? 'config.yml'
   warn "Building Arvados."
   system '/usr/bin/make', *ARGV
