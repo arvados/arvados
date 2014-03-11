@@ -105,7 +105,7 @@ class CollectionsController < ApplicationController
       puts request
       @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg", 
                                                             {:request => request,
-                                                              :direction => :top_down, 
+                                                              :direction => :bottom_up, 
                                                               :combine_jobs => :script_only}) rescue nil
       @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg", 
                                                                {:request => request,

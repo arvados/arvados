@@ -12,29 +12,30 @@ navorder: 1
 1. A GNU/Linux (virtual) machine
 2. A domain name for your api server
 3. Ruby >= 2.0.0
-4. Bundler
+4. Bundler: `gem install bundler`
+5. Curl libraries: `sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev`
 
 ## Download the source tree
 
     git clone https://github.com/curoverse/arvados.git
+    cd arvados
 
 See also: [Downloading the source code](https://arvados.org/projects/arvados/wiki/Download) on the Arvados wiki.
 
+## Install gem dependencies
+
+    cd services/api && bundle install
+
 ## Configure the API server
 
-First install the gems:
-
-    cd arvados/services/api
-    bundle install
-
-Next, configure the database:
+Configure the database:
 
     cp -i config/database.yml.sample config/database.yml
 
-Edit `database.yml` to your liking and make sure the database and db user exist.
-Then set up the database:
+Edit `config/database.yml` to your liking and make sure the database
+and db user exist. Then set up the database:
  
-    RAILS_ENV=production rake db:setup
+    RAILS_ENV=production bundle exec rake db:setup
 
 Then set up omniauth:
 
@@ -46,41 +47,35 @@ Edit `config/initializers/omniauth.rb`. Choose an *APP_SECRET* and
 Make sure your Omniauth provider knows about your *APP_ID* and *APP_SECRET*
 combination.
 
-You also need to update `config/initializers/secret_token.rb`.
-Generate a new secret with
+Edit the main configuration.
 
-    rake secret
+    cp -i config/application.yml.example config/application.yml
 
-and put it in `config/initializers/secret_token.rb`:
-
-    Server::Application.config.secret_token = 'your-new-secret-here'
-
-Edit the main configuration:
-
-    cp -i config/config.yml.example config/config.yml
-
-First, you want to make sure that
-
-    uuid_prefix
-
-is set to a unique 5-character alphanumeric string. An example is
-given that generates a 5-character string based on a hash of your
-hostname.
-
-The `uuid_prefix` is a unique identifier for your API server. It also
-serves as the first part of the hostname for your API server, for
-instance
+First, choose a unique 5-character alphanumeric string to use as your
+`uuid_prefix`. An example is given that generates a 5-character string
+based on a hash of your hostname. The `uuid_prefix` is a unique
+identifier for your API server. It also serves as the first part of
+the hostname for your API server:
 
     {{ site.arvados_api_host }}
 
 For a development site, use your own domain instead of arvadosapi.com.
 
+You also need to install a secret_token for signing cookies. Generate
+a new secret:
+
+    rake secret
+
+Put it in `config/application.yml` in the production or common section:
+
+    secret_token: your-new-secret-here
+
 You will also want to change `compute_node_nameservers` to suit your
 environment.
 
-Consult `config.defaults.yml` for a full list of configuration
-options. Always put your local configuration in `config.yml` instead
-of editing `config.defaults.yml`.
+Consult `application.default.yml` for a full list of configuration
+options. Always put your local configuration in `application.yml`
+instead of editing `application.default.yml`.
 
 ## Apache/Passenger
 

@@ -95,8 +95,8 @@ navbar:
       - admin/cheat_sheet.html.textile.liquid
   installguide:
     - Install:
-      - install/install-api-server.html.md.liquid
       - install/index.html.md.liquid
+      - install/install-api-server.html.md.liquid
       - install/install-workbench-app.html.md.liquid
       - install/client.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
