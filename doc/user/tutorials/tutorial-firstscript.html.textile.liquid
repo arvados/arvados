@@ -98,7 +98,8 @@ h2. Create a pipeline template
 Next, create a file that contains the pipeline definition:
 
 <notextile>
-<pre><code>$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
+<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cd ~</span>
+~$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
 {
   "name":"My first pipeline",
   "components":{
@@ -120,7 +121,7 @@ EOF
 
 * @cat@ is a standard Unix utility that simply copies standard input to standard output
 * @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@
-* @>the_job@ redirects standard output to a file called @the_job@
+* @>the_pipeline@ redirects standard output to a file called @the_pipeline@
 * @"name"@ is a human-readable name for the pipeline
 * @"components"@ is a set of scripts that make up the pipeline
 * The component is listed with a human-readable name (@"do_hash"@ in this example)
@@ -131,7 +132,7 @@ EOF
 Now, use @arv pipeline_template create@ tell Arvados about your pipeline template:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat the_pipeline)"</span>
+<pre><code>~$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat the_pipeline)"</span>
 </code></pre>
 </notextile>
 
