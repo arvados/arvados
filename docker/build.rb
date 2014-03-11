@@ -35,22 +35,20 @@ def docker_ok?
   return system 'docker images > /dev/null 2>&1'
 end
 
-def find_ssh_key key_name
-  # If the user already has a key loaded in their agent, use one of those
-  agent_keys = `ssh-add -l`
-  if agent_keys.empty?
-    # Use a key named arvados_{key_name}_id_rsa, generating
-    # a passphraseless key if necessary.
-    ssh_key_file = "#{ENV['HOME']}/.ssh/arvados_#{key_name}_id_rsa"
-    unless File.exists? ssh_key_file
-      system 'ssh_keygen', '-f', ssh_key_file, '-P', ''
-    end
-  else
-    # choose an agent key at random
-    ssh_key_file = agent_keys.split("\n").first.split[2]
+# find_or_create_ssh_key arvados_name
+#   Return the SSH public key appropriate for this Arvados instance,
+#   generating one if necessary.
+#
+def find_or_create_ssh_key arvados_name
+  ssh_key_file = "#{ENV['HOME']}/.ssh/arvados_#{arvados_name}_id_rsa"
+  unless File.exists? ssh_key_file
+    system 'ssh-keygen',
+           '-f', ssh_key_file,
+           '-C', "arvados@#{arvados_name}",
+           '-P', ''
   end
 
-  return File.exists?("#{ssh_key_file}.pub") ? "#{ssh_key_file}.pub" : nil
+  return "#{ssh_key_file}.pub"
 end
 
 if not ip_forwarding_enabled?
@@ -91,8 +89,8 @@ if not debootstrap_ok?
   sudo '/usr/bin/apt-get', 'install', 'debootstrap'
 end
 
-# Generate a config.yml if it does not exist
-if not File.exists? 'config.yml'
+# Generate a config.yml if it does not exist or is empty
+if not File.size? 'config.yml'
   print "Generating config.yml.\n"
   print "Arvados needs to know the email address of the administrative user,\n"
   print "so that when that user logs in they are automatically made an admin.\n"
@@ -111,7 +109,7 @@ if not File.exists? 'config.yml'
     config = YAML.load_file 'config.yml.example'
     config['API_AUTO_ADMIN_USER'] = admin_email_address
     config['API_HOSTNAME'] = generate_api_hostname
-    config['PUBLIC_KEY_PATH'] = find_ssh_key(config['API_HOSTNAME'])
+    config['PUBLIC_KEY_PATH'] = find_or_create_ssh_key(config['API_HOSTNAME'])
     config.each_key do |var|
       if var.end_with?('_PW') or var.end_with?('_SECRET')
         config[var] = rand(2**256).to_s(36)

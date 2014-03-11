@@ -6,6 +6,10 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 # Update Arvados source
 RUN /bin/mkdir -p /usr/src/arvados/apps
 ADD generated/workbench.tar.gz /usr/src/arvados/apps/
+ADD generated/secret_token.rb /usr/src/arvados/apps/workbench/config/initializers/secret_token.rb
+ADD generated/production.rb /usr/src/arvados/apps/workbench/config/environments/production.rb
+ADD passenger.conf /etc/apache2/conf.d/passenger
+
 
 RUN bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
     touch /usr/src/arvados/apps/workbench/log/production.log && \
@@ -22,11 +26,6 @@ RUN \
   a2dissite default && \
   a2ensite workbench && \
   a2enmod rewrite
-
-# Set up the production environment
-ADD generated/secret_token.rb /usr/src/arvados/apps/workbench/config/initializers/secret_token.rb
-ADD generated/production.rb /usr/src/arvados/apps/workbench/config/environments/production.rb
-ADD passenger.conf /etc/apache2/conf.d/passenger
 
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 

@@ -11,7 +11,9 @@ ENV DEBIAN_FRONTEND noninteractive
 #   * Arvados source code in /usr/src/arvados, for preseeding gem installation
 
 RUN apt-get update && \
-    apt-get -q -y install -q -y openssh-server apt-utils git curl locales postgresql-server-dev-9.1 && \
+    apt-get -q -y install -q -y openssh-server apt-utils git curl \
+    	     libcurl3 libcurl3-gnutls libcurl4-openssl-dev locales \
+	     postgresql-server-dev-9.1 && \
     /bin/mkdir -p /root/.ssh && \
     /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     /usr/sbin/locale-gen && \
