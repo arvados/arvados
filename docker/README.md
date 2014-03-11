@@ -39,27 +39,17 @@ Prerequisites
      none   /cgroup    cgroup    defaults    0    0
      $ sudo mount /cgroup
 	 </pre>
-
-  3. Enable IPv4 forwarding:
-
-     <pre>
-     $ grep ipv4.ip_forward /etc/sysctl.conf
-     net.ipv4.ip_forward=1
-     $ sudo sysctl net.ipv4.ip_forward=1
-     </pre>
 	 
-  4. [Download and run a docker binary from docker.io.](http://docs.docker.io/en/latest/installation/binaries/)
+  3. [Download and run a docker binary from docker.io.](http://docs.docker.io/en/latest/installation/binaries/)
 
-* Ruby (any version)
+* Ruby (version 1.9.3 or greater)
 
 * sudo privileges to run `debootstrap`
 
 Building
 --------
 
-1. Copy `config.yml.example` to `config.yml` and edit it with settings
-   for your installation.
-2. Run `make` to build the following Docker images:
+Type `./build.sh` to configure and build the following Docker images:
 
    * arvados/api       - the Arvados API server
    * arvados/doc       - Arvados documentation
@@ -67,13 +57,10 @@ Building
    * arvados/workbench - the Arvados console
    * arvados/sso       - the Arvados single-signon authentication server
 
-   You may also build Docker images for individual Arvados services:
-
-        $ make api-image
-        $ make doc-image
-        $ make warehouse-image
-        $ make workbench-image
-        $ make sso-image
+`build.sh` will generate reasonable defaults for all configuration
+settings.  If you want more control over the way Arvados is
+configured, first copy `config.yml.example` to `config.yml` and edit
+it with appropriate configuration settings, and then run `./build.sh`.
 
 Running
 -------
