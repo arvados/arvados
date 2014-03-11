@@ -11,6 +11,7 @@
     <link href="{{ site.baseurl }}/css/bootstrap.css" rel="stylesheet">
     <link href="{{ site.baseurl }}/css/nav-list.css" rel="stylesheet">
     <link href="{{ site.baseurl }}/css/badges.css" rel="stylesheet">
+    <link href="{{ site.baseurl }}/css/code.css" rel="stylesheet">
     <style>
       html {
       height:100%;
@@ -52,15 +53,12 @@
       text-align: center;
       margin-bottom: 1em;
       }
-      .userinput {
-      color: #d14;
-      }
       :target {
       padding-top: 61px;
       margin-top: -61px;
       }
     </style>
-    <link href="{{ site.baseurl }}/css/bootstrap-responsive.min.css" rel="stylesheet">
+    
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
         <script src="../assets/js/html5shiv.js"></script>
@@ -77,7 +75,9 @@
       <div class="row">
         {% include 'navbar_left' %}
         <div class="col-sm-9">
+          <h1>{{ page.title }}</h1>
           {{ content }}
+          {% include 'webring' %}
         </div>
       </div>
 
