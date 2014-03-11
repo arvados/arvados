@@ -2,10 +2,8 @@
 layout: default
 navsection: userguide
 navmenu: Tutorials
-title: "Writing a Crunch script"
+title: "Writing a pipeline"
 ...
-
-h1. Writing a Crunch script
 
 In this tutorial, we will write the "hash" script demonstrated in the first tutorial.
 
@@ -95,36 +93,46 @@ To git@git.qr1hi.arvadosapi.com:you.git
  * [new branch]      master -> master</code></pre>
 </notextile>
 
-You should now be able to run your script using Crunch, as described in "running a crunch job on the command line.":tutorial-job1.html  The field @"script_version"@ should be <notextile><code><b>you</b>:master</code></notextile> to tell Crunch to run the script at the head of the "master" git branch, which you just pushed to the repository.
+h2. Create a pipeline template
+
+Next, create a file that contains the pipeline definition:
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
+<pre><code>$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
 {
- "script": "hash.py",
- "script_version": "<b>you</b>:master",
- "script_parameters":
- {
-  "input": "c1bad4b39ca5a924e481008009d94e32+210"
- }
+  "name":"My first pipeline",
+  "components":{
+    "do_hash":{
+      "script":"hash.py",
+      "script_parameters":{
+        "input":{
+          "required": true,
+          "dataclass": "Collection"
+        }
+      },
+      "script_version":"you:master"
+    }
+  }
 }
-EOF</span>
-~/<b>you</b>/crunch_scripts$ <span class="userinput">arv job create --job "$(cat ~/the_job)"</span>
-{
- ...
- "uuid":"qr1hi-xxxxx-xxxxxxxxxxxxxxx"
- ...
-}
-~/<b>you</b>/crunch_scripts$ <span class="userinput">arv job get --uuid qr1hi-xxxxx-xxxxxxxxxxxxxxx</span>
-{
- ...
- "output":"880b55fb4470b148a447ff38cacdd952+54",
- ...
-}
-~/<b>you</b>/crunch_scripts$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
+EOF
+</span></code></pre>
+</notextile>
+
+* @cat@ is a standard Unix utility that simply copies standard input to standard output
+* @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@
+* @>the_job@ redirects standard output to a file called @the_job@
+* @"name"@ is a human-readable name for the pipeline
+* @"components"@ is a set of scripts that make up the pipeline
+* The component is listed with a human-readable name (@"do_hash"@ in this example)
+* @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench under "Compute %(rarr)&rarr;% Code repositories":http://{{site.arvados_workbench_host}}/repositiories .
+* @"script_parameters"@ describes the parameters for the script.  In this example, there is one parameter called @input@ which is @required@ and is a @Collection@.
+
+Now, use @arv pipeline_template create@ tell Arvados about your pipeline template:
+
+<notextile>
+<pre><code>$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat the_pipeline)"</span>
 </code></pre>
 </notextile>
 
-<hr>
-
-Next, "writing a crunch pipeline.":tutorial-new-pipeline.html
+Your new pipeline template will appear on the "Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;templates":http://{{ site.arvados_workbench_host }}/pipeline_instances page.  You can run the "pipeline using workbench":tutorial-pipeline-workbench.html

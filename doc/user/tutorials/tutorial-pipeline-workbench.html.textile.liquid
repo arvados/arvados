@@ -1,8 +1,15 @@
 ---
 layout: default
 navsection: userguide
-navmenu: Tutorials
 title: "Running a pipeline using Workbench"
 ...
 
-h1. Running a pipeline using Workbench
+# Go to "Collections":http://{{ site.arvados_workbench_host }}/collections
+# Go to the search box <span class="glyphicon glyphicon-search"></span> and search for "tutorial".
+# This should yield a collection with the contents "var-GS000016015-ASM.tsv.bz2"
+# Click on the check box to the left of "var-GS000016015-ASM.tsv.bz2".  This puts the collection in your persistent selection list.  Click on the paperclip <span class="glyphicon glyphicon-paperclip"></span> in the upper right to see your selections.
+# Click on "Pipeline templates":http://{{ site.arvados_workbench_host }}/pipeline_templates
+# Look for a pipeline named "Tutorial pipeline"
+# Click on the play button <span class="glyphicon glyphicon-play"></span> on the left.  This will take you to the new pipeline page.
+# Next to "input" click on "none" to set the input value.  At the top of the list will be the collection that you selected in step 4.
+# You can now click on "Run pipeline" in the upper right to start the pipeline.

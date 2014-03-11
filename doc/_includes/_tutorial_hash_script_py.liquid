@@ -10,11 +10,14 @@ import arvados      # Import the Arvados sdk module
 arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True, 
                                           input_as_path=True)
 
-# Create the object that will actually compute the md5 hash
+# Create the message digest object that will compute the md5 hash
 digestor = hashlib.new('md5')
 
-# Get the input file for the task and open it for reading
-with open(arvados.get_task_param_mount('input')) as f:
+# Get the input file for the task
+input_file = arvados.get_task_param_mount('input')
+
+# Open the input file for reading
+with open(input_file) as f:
     while True:
         buf = f.read(2**20)      # read a 1 megabyte block from the file
         if len(buf) == 0:        # break when there is no more data left
