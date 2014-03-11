@@ -41,7 +41,7 @@ Next, add the file to @git@ staging, commit and push:
 You should now be able to run your new script using Crunch, with "script" referring to our new "run-md5sum.py" script.
 
 <notextile>
-<pre><code>$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
+<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_pipeline &lt;&lt;EOF
 {
   "name":"Run external md5sum program",
   "components":{
@@ -53,16 +53,12 @@ You should now be able to run your new script using Crunch, with "script" referr
           "dataclass": "Collection"
         }
       },
-      "script_version":"you:master"
+      "script_version":"<b>you</b>:master"
     }
   }
 }
 EOF
-</span></code></pre>
-</notextile>
-
-<notextile>
-<pre><code>$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat the_pipeline)"</span>
+</span>~/<b>you</b>/crunch_scripts$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat ~/the_pipeline)"</span>
 </code></pre>
 </notextile>
 
