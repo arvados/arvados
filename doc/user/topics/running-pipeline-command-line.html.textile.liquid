@@ -4,7 +4,7 @@ navsection: userguide
 title: "Running a pipeline on the command line"
 ...
 
-Run the pipeline using @arv pipeline run@, using the UUID that you received from @arv pipeline create@:
+It is possible run pipelines on the command line using @arv pipeline run@ using the UUID that you received from @arv pipeline create@:
 
 <notextile>
 <pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-p5p6p-xxxxxxxxxxxxxxx</span>
@@ -31,7 +31,7 @@ The Keep locators of the output of each of @"do_hash"@ and @"filter"@ component 
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 504938460ef369cd275e4ef58994cffe bob.txt
 8f3b36aff310e06f3c5b9e95678ff77a carol.txt
-$ <span class="userinput">arv keep get 735ac35adf430126cf836547731f3af6+56</span>
+$ <span class="userinput">arv keep get 735ac35adf430126cf836547731f3af6+56/0-filter.txt</span>
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 </code></pre>
 </notextile>
@@ -53,7 +53,7 @@ Notice that the pipeline definition explicitly specifies the Keep locator for th
 </code></pre>
 </notextile>
 
-What if we want to run the pipeline on a different input block?  One option is to define a new pipeline template, but would potentially result in clutter with many pipeline templates defined for one-off jobs.  Instead, you can override values in the input of the component like this:
+You can specify values for pipeline component script_parameters like this:
 
 <notextile>
 <pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-d1hrv-vxzkp38nlde9yyr do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af+242</span>
@@ -78,9 +78,11 @@ filter  qr1hi-8i9sb-j347g1sqovdh0op fb728f0ffe152058fa64b9aeed344cb5+54
 Now check the output:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep ls -s fb728f0ffe152058fa64b9aeed344cb5+54</span>
-0 0-filter.txt
+<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
+44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
+$ <span class="userinput">arv keep get fb728f0ffe152058fa64b9aeed344cb5+54/0-filter.txt</span>
+
 </code></pre>
 </notextile>
 
-Here the filter script output is empty, so none of the files in the collection have hash code that start with 0.
+Since none of the files in the collection have hash code that start with 0, output of the filter component is empty.

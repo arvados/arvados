@@ -4,7 +4,7 @@ navsection: userguide
 title: "Parallel Crunch tasks"
 ...
 
-In the tutorial "writing a crunch script,":tutorial-firstscript.html our script used a "for" loop to compute the md5 hashes for each file in sequence.  This approach, while simple, is not able to take advantage of the compute cluster with multiple nodes and cores to speed up computation by running tasks in parallel.  This tutorial will demonstrate how to create parallel Crunch tasks.
+In the previous tutorials, we used @arvados.job_setup.one_task_per_input_file()@ to automatically parallelize our jobs by creating a separate task per file.  For some types of jobs, you may need to split the work up differently, for example creating tasks to process different segments of a single large file.  In this this tutorial will demonstrate how to create Crunch tasks directly.
 
 Start by entering the @crunch_scripts@ directory of your git repository:
 
@@ -65,7 +65,7 @@ EOF</span>
 Because the job ran in parallel, each instance of parallel-hash creates a separate @md5sum.txt@ as output.  Arvados automatically collates theses files into a single collection, which is the output of the job:
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162</span>
+<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">arv keep ls e2ccd204bca37c77c0ba59fc470cd0f7+162</span>
 md5sum.txt
 md5sum.txt
 md5sum.txt
@@ -76,9 +76,4 @@ md5sum.txt
 </code></pre>
 </notextile>
 
-h2. The one job per file pattern
-
-This example demonstrates how to schedule a new task per file.  Because this is a common pattern, the Crunch Python API contains a convenience function to "queue a task for each input file":{{site.baseurl}}/sdk/python/crunch-utility-libraries.html#one_task_per_input which reduces the amount of boilerplate code required to handle parallel jobs.
-
-Next, "Constructing a Crunch pipeline":tutorial-new-pipeline.html
 
