@@ -23,6 +23,16 @@ Let's use @arv keep get@ to download the first datablock:
 notextile. <pre><code>~$ <span class="userinput">cd /scratch/<b>you</b></span>
 /scratch/<b>you</b>$ <span class="userinput">arv keep get 204e43b8a1185621ca55a94839582e6f+67108864 &gt; block1</span></code></pre>
 
+{% include 'notebox_begin' %}
+
+When you run this command, you may get this API warning:
+
+notextile. <pre><code>WARNING:root:API lookup failed for collection 204e43b8a1185621ca55a94839582e6f+67108864 (&lt;class 'apiclient.errors.HttpError'&gt;: &lt;HttpError 404 when requesting https://qr1hi.arvadosapi.com/arvados/v1/collections/204e43b8a1185621ca55a94839582e6f%2B67108864?alt=json returned "Not Found"&gt;)</code></pre>
+
+This happens because @arv keep get@ tries to find a collection with this identifier.  When that fails, it emits this warning, then looks for a datablock instead, which succeeds.
+
+{% include 'notebox_end' %}
+
 Let's look at the size and compute the md5 hash of @block1@:
 
 <notextile>
