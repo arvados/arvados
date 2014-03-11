@@ -40,11 +40,13 @@ You can run this pipeline from the command line using @arv pipeline run@, fillin
 2013-12-16 14:08:40 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
 do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 queued 2013-12-16T14:08:40Z
 filter  -                           -
+
 2013-12-16 14:08:51 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 e2ccd204bca37c77c0ba59fc470cd0f7+162
+do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 8e1b6acdd3f2f1da722538127c5c6202+56
 filter  qr1hi-8i9sb-w5k40fztqgg9i2x queued 2013-12-16T14:08:50Z
+
 2013-12-16 14:09:01 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 e2ccd204bca37c77c0ba59fc470cd0f7+162
+do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 8e1b6acdd3f2f1da722538127c5c6202+56
 filter  qr1hi-8i9sb-w5k40fztqgg9i2x 735ac35adf430126cf836547731f3af6+56
 </code></pre>
 </notextile>
@@ -56,11 +58,11 @@ Arvados adds each pipeline component to the job queue as its dependencies are sa
 The Keep locators of the output of each of @"do_hash"@ and @"filter"@ component are available from the output log shown above.  The output is also available on the Workbench by navigating to %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;instances %(rarr)&rarr;% pipeline uuid under the *id* column %(rarr)&rarr;% components.
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162/md5sum.txt</span>
+<pre><code>~$ <span class="userinput">arv keep get 8e1b6acdd3f2f1da722538127c5c6202+56/md5sum.txt</span>
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 504938460ef369cd275e4ef58994cffe bob.txt
 8f3b36aff310e06f3c5b9e95678ff77a carol.txt
-$ <span class="userinput">arv keep get 735ac35adf430126cf836547731f3af6+56/0-filter.txt</span>
+~$ <span class="userinput">arv keep get 735ac35adf430126cf836547731f3af6+56/0-filter.txt</span>
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 </code></pre>
 </notextile>
@@ -69,7 +71,7 @@ Indeed, the filter has picked out just the "alice" file as having a hash that st
 
 h3. Running a pipeline with different parameters
 
-Notice that the pipeline definition explicitly specifies the Keep locator for the input:
+Notice that the pipeline template explicitly specifies the Keep locator for the input:
 
 <notextile>
 <pre><code>...
@@ -85,32 +87,32 @@ Notice that the pipeline definition explicitly specifies the Keep locator for th
 You can specify values for pipeline component script_parameters like this:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv pipeline run --template qr1hi-d1hrv-vxzkp38nlde9yyr do_hash::input=33a9f3842b01ea3fdf27cc582f5ea2af+242</span>
+<pre><code>~$ <span class="userinput">arv pipeline run --template qr1hi-p5p6p-xxxxxxxxxxxxxxx do_hash::input=c1bad4b39ca5a924e481008009d94e32+210</span>
 2013-12-17 20:31:24 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 queued 2013-12-17T20:31:24Z
 filter  -                           -
+
 2013-12-17 20:31:34 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 {:done=>1, :running=>1, :failed=>0, :todo=>0}
 filter  -                           -
-2013-12-17 20:31:44 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 {:done=>1, :running=>1, :failed=>0, :todo=>0}
-filter  -                           -
+
 2013-12-17 20:31:55 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54
 filter  qr1hi-8i9sb-j347g1sqovdh0op queued 2013-12-17T20:31:55Z
+
 2013-12-17 20:32:05 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54
-filter  qr1hi-8i9sb-j347g1sqovdh0op fb728f0ffe152058fa64b9aeed344cb5+54
+filter  qr1hi-8i9sb-j347g1sqovdh0op 490cd451c8108824b8a17e3723e1f236+19
 </code></pre>
 </notextile>
 
 Now check the output:
 
 <notextile>
-<pre><code>$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
+<pre><code>~$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
-$ <span class="userinput">arv keep get fb728f0ffe152058fa64b9aeed344cb5+54/0-filter.txt</span>
-
+~$ <span class="userinput">arv keep get 490cd451c8108824b8a17e3723e1f236+19/0-filter.txt</span>
+~$
 </code></pre>
 </notextile>
 
