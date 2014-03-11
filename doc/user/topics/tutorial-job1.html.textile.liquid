@@ -125,7 +125,7 @@ On the command line, you can use @arv job get@ to access a JSON object describin
  "cancelled_by_user_uuid":null,
  "started_at":"2013-12-16T20:44:36Z",
  "finished_at":"2013-12-16T20:44:53Z",
- "output":"880b55fb4470b148a447ff38cacdd952+54",
+ "output":"dd755dbc8d49a67f4fe7dc843e4f10a6+54",
  "success":true,
  "running":false,
  "is_locked_by_uuid":"qr1hi-tpzed-9zdpkpni2yddge6",
@@ -145,12 +145,12 @@ On the command line, you can use @arv job get@ to access a JSON object describin
 </code></pre>
 </notextile>
 
-* @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.  Because the output of Arvados jobs should be deterministic, the known expected output is <code>880b55fb4470b148a447ff38cacdd952+54</code>.
+* @"output"@ is the unique identifier for this specific job's output.  This is a Keep collection.  Because the output of Arvados jobs should be deterministic, the known expected output is <code>dd755dbc8d49a67f4fe7dc843e4f10a6+54</code>.
 
 Now you can list the files in the collection:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv keep ls 880b55fb4470b148a447ff38cacdd952+54</span>
+<pre><code>~$ <span class="userinput">arv keep ls dd755dbc8d49a67f4fe7dc843e4f10a6+54</span>
 md5sum.txt
 </code></pre>
 </notextile>
@@ -158,8 +158,8 @@ md5sum.txt
 This collection consists of the @md5sum.txt@ file.  Use @arv keep get@ to show the contents of the @md5sum.txt@ file:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
+<pre><code>~$ <span class="userinput">arv keep get dd755dbc8d49a67f4fe7dc843e4f10a6+54/md5sum.txt</span>
+44b8ae3fde7a8a88d2f7ebd237625b4f ./var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>
 
@@ -209,13 +209,13 @@ The log collection consists of one log file named with the job id.  You can acce
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 1 running, 0 todo
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 child 7716 on compute13.1 exit 0 signal 0 success=true
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 success in 13 seconds
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 output 880b55fb4470b148a447ff38cacdd952+54
+2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 output dd755dbc8d49a67f4fe7dc843e4f10a6+54
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  wait for last 0 children to finish
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 2 done, 0 running, 0 todo
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  release job allocation
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  Freeze not implemented
 2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  collate
-2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  output 880b55fb4470b148a447ff38cacdd952+54
+2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  output dd755dbc8d49a67f4fe7dc843e4f10a6+54+K@qr1hi
 2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  finish
 </code></pre>
 </notextile>
