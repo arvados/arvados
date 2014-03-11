@@ -519,12 +519,13 @@ class WhRunPipelineInstance
                 if p.is_a? Hash and p[:output_of] == cname.to_s
                   debuglog "parameter #{c2name}::#{pname} == #{c[:job][:output]}"
                   c2[:script_parameters][pname] = c[:job][:output]
+                  moretodo = true
                 end
               end
             end
           elsif c[:job][:running] ||
               (!c[:job][:started_at] && !c[:job][:cancelled_at])
-            moretodo ||= true
+            moretodo = true
           elsif c[:job][:cancelled_at]
             debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
           end
