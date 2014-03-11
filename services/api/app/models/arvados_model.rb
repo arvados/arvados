@@ -136,7 +136,7 @@ class ArvadosModel < ActiveRecord::Base
 
   def update_modified_by_fields
     self.created_at ||= Time.now
-    self.owner_uuid ||= current_default_owner
+    self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
     self.modified_at = Time.now
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil

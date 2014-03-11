@@ -13,6 +13,8 @@ logger = logging.getLogger(os.path.basename(sys.argv[0]))
 parser = argparse.ArgumentParser(
     description='Read manifest on standard input and put normalized manifest on standard output.')
 
+parser.add_argument('--extract', type=str, help="The file to extract from the input manifest")
+
 args = parser.parse_args()
 
 import arvados
@@ -21,4 +23,17 @@ r = sys.stdin.read()
     
 cr = arvados.CollectionReader(r)
 
-print cr.manifest_text()
+if args.extract:
+    i = args.extract.rfind('/')
+    if i == -1:
+        stream = '.'
+        fn = args.extract
+    else:
+        stream = args.extract[:i]
+        fn = args.extract[(i+1):]
+    for s in cr.all_streams():
+        if s.name() == stream:
+            if fn in s.files():
+                sys.stdout.write(s.files()[fn].as_manifest())
+else:
+    sys.stdout.write(cr.manifest_text())

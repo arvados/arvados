@@ -22,6 +22,7 @@ from keep import *
 from stream import *
 import config
 import errors
+import util
 
 def normalize_stream(s, stream):
     stream_tokens = [s]

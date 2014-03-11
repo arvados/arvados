@@ -35,24 +35,12 @@
         <i class="icon-plus-sign expand-collapse-row" data-id="<%= j.uuid %>" style="cursor: pointer"></i>
       </td>
       <td>
-        <% if j.success == false %>
-        <span class="badge badge-warning" title="fail">&#x2716;</span>
-        <% elsif j.success %>
-        <span class="badge badge-success" title="success">&#x2714;</span>
-        <% elsif j.running %>
-        <span class="badge badge-info" title="running">&#x2708;</span>
-        <% else %>
-        <span class="badge" title="queued">&#x2709;</span>
-        <% end %>
+        <%= render partial: 'job_status_label', locals: {:j => j} %>
       </td>
       <td>
-        <% if j.started_at and not j.finished_at %>
-        <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
-        <div class="progress" style="margin-bottom: 0">
-          <div class="bar bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;"></div>
-          <div class="bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%; opacity: 0.3"></div>
+        <div class="inline-progress-container">
+          <%= render partial: 'job_progress', locals: {:j => j} %>
         </div>
-        <% end %>
       </td>
       <td>
         <%= link_to_if_arvados_object j.uuid %>

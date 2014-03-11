@@ -16,9 +16,9 @@ class PipelineInstance < ArvadosBase
       end
     end
   end
-
+  
   def attribute_editable?(attr)
-    attr == 'name'
+    attr.to_sym == :name || (attr.to_sym == :components and self.active == nil)
   end
 
   def attributes_for_display

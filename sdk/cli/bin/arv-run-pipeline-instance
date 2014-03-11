@@ -2,8 +2,8 @@
 
 # == Synopsis
 #
-#  wh-run-pipeline-instance --template pipeline-template-uuid [options] [--] [parameters]
-#  wh-run-pipeline-instance --instance pipeline-instance-uuid [options]
+#  arv-run-pipeline-instance --template pipeline-template-uuid [options] [--] [parameters]
+#  arv-run-pipeline-instance --instance pipeline-instance-uuid [options]
 #
 # Satisfy a pipeline template by finding or submitting a mapreduce job
 # for each pipeline component.
@@ -21,7 +21,7 @@
 #                 to finish. Just find out whether jobs are finished,
 #                 queued, or running for each component
 #
-# [--create-instance-only] Do not try to satisfy any components. Just
+# [--submit] Do not try to satisfy any components. Just
 #                          create an instance, print its UUID to
 #                          stdout, and exit.
 #
@@ -80,13 +80,15 @@ $arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
 
 begin
   require 'rubygems'
-  require 'google/api_client'
   require 'json'
   require 'pp'
   require 'trollop'
-rescue LoadError
+  require 'google/api_client'
+rescue LoadError => l
+  puts $:
   abort <<-EOS
-#{$0}: fatal: some runtime dependencies are missing.
+#{$0}: fatal: #{l.message}
+Some runtime dependencies may be missing.
 Try: gem install pp google-api-client json trollop
   EOS
 end
@@ -173,8 +175,12 @@ p = Trollop::Parser.new do
       "UUID of pipeline instance.",
       :short => :none,
       :type => :string)
-  opt(:create_instance_only,
+  opt(:submit,
       "Do not try to satisfy any components. Just create a pipeline instance and output its UUID.",
+      :short => :none,
+      :type => :boolean)
+  opt(:run_here,
+      "Manage the pipeline in process.",
       :short => :none,
       :type => :boolean)
   stop_on [:'--']
@@ -185,11 +191,31 @@ end
 $debuglevel = $options[:debug_level] || ($options[:debug] && 1) || 0
 
 if $options[:instance]
-  if $options[:template] or $options[:create_instance_only]
-    abort "#{$0}: syntax error: --instance cannot be combined with --template or --create-instance-only."
+  if $options[:template] or $options[:submit]
+    abort "#{$0}: syntax error: --instance cannot be combined with --template or --submit."
   end
 elsif not $options[:template]
   abort "#{$0}: syntax error: you must supply a --template or --instance."
+end
+
+if $options[:run_here] == $options[:submit]
+  abort "#{$0}: syntax error: you must supply either --run-here or --submit."
+end
+
+# Suppress SSL certificate checks if ARVADOS_API_HOST_INSECURE
+
+module Kernel
+  def suppress_warnings
+    original_verbosity = $VERBOSE
+    $VERBOSE = nil
+    result = yield
+    $VERBOSE = original_verbosity
+    return result
+  end
+end
+
+if ENV['ARVADOS_API_HOST_INSECURE']
+  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
 end
 
 # Set up the API client.
@@ -498,7 +524,7 @@ class WhRunPipelineInstance
             end
           elsif c[:job][:running] ||
               (!c[:job][:started_at] && !c[:job][:cancelled_at])
-            moretodo ||= !@options[:no_wait]
+            moretodo ||= true
           elsif c[:job][:cancelled_at]
             debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
           end
@@ -507,6 +533,11 @@ class WhRunPipelineInstance
       @instance[:components] = @components
       @instance[:active] = moretodo
       report_status
+
+      if @options[:no_wait]
+        moretodo = false
+      end
+
       if moretodo
         begin
           sleep 10
@@ -516,7 +547,26 @@ class WhRunPipelineInstance
         end
       end
     end
-    @instance[:success] = @components.reject { |cname,c| c[:job] and c[:job][:success] }.empty?
+
+    ended = 0
+    succeeded = 0
+    failed = 0
+    @components.each do |cname, c|
+      if c[:job]
+        if c[:job][:finished_at]
+          ended += 1
+          if c[:job][:success] == true
+            succeeded += 1
+          end
+        end
+      end
+    end
+    
+    if ended == @components.length
+      @instance[:active] = false
+      @instance[:success] = (succeeded == @components.length)
+    end
+
     @instance.save
   end
 
@@ -579,7 +629,7 @@ begin
   end
   runner.apply_parameters(p.leftovers)
   runner.setup_instance
-  if $options[:create_instance_only]
+  if $options[:submit]
     runner.instance.save
     puts runner.instance[:uuid]
   else

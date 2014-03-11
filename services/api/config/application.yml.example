@@ -1,0 +1,41 @@
+# Copy this file to application.yml and edit to suit.
+#
+# Consult application.default.yml for the full list of configuration
+# settings.
+#
+# The order of precedence is:
+# 1. config/environments/{RAILS_ENV}.rb (deprecated)
+# 2. Section in application.yml corresponding to RAILS_ENV (e.g., development)
+# 3. Section in application.yml called "common"
+# 4. Section in application.default.yml corresponding to RAILS_ENV
+# 5. Section in application.default.yml called "common"
+
+development:
+
+production:
+  # At minimum, you need a nice long randomly generated secret_token here.
+  secret_token: ~
+
+  uuid_prefix: bogus
+
+  # This is suitable for AWS; see common section below for a static example.
+  compute_node_nameservers: <%=
+    require 'net/http'
+    ['local', 'public'].collect do |iface|
+      Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
+    end << '172.16.0.23'
+  %>
+  # You must customize these. See config.defaults.yml for information.
+  compute_node_ami: ~
+  compute_node_ec2_tag_enable: ~
+  compute_node_domain: ~
+  compute_node_spot_bid: ~
+
+test:
+  uuid_prefix: zzzzz
+
+common:
+  secret_token: ~
+  compute_node_nameservers:
+    - 192.168.0.1
+    - 172.16.0.1

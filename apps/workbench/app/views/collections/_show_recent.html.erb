@@ -15,8 +15,11 @@
 
 <div style="padding-right: 1em">
 
+<%= form_tag do |f| %>
+
 <table id="collections-index" class="topalign table table-condensed table-fixedlayout table-fixed-header-row">
   <colgroup>
+    <col width="4%" />
     <col width="10%" />
     <col width="36%" />
     <col width="15%" />
@@ -26,6 +29,7 @@
   </colgroup>
   <thead>
     <tr class="contain-align-left">
+      <th></th>
       <th>uuid</th>
       <th>contents</th>
       <th>owner</th>
@@ -38,6 +42,9 @@
     <%= render partial: 'index_tbody' %>
   </tbody>
 </table>
+
+<% end %>
+
 </div>
 
 <% content_for :footer_js do %>

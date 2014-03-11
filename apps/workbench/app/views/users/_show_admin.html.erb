@@ -1,0 +1,7 @@
+<p>As an admin, you can log in as this user. When you&rsquo;ve
+finished, you will need to log out and log in again with your own
+account.</p>
+
+<blockquote>
+<%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
+</blockquote>

@@ -19,6 +19,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :users do
     get 'home', :on => :member
     get 'welcome', :on => :collection
+    post 'sudo', :on => :member
   end
   resources :logs
   resources :factory_jobs
@@ -33,6 +34,9 @@ ArvadosWorkbench::Application.routes.draw do
   match '/collections/graph' => 'collections#graph'
   resources :collections
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
+
+  post 'actions' => 'actions#post'
+
   root :to => 'users#welcome'
 
   # Send unroutable requests to an arbitrary controller

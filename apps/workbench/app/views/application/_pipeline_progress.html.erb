@@ -1,0 +1,8 @@
+<% component_frac = 1.0 / p.components.length %>
+<div class="progress">
+  <% p.components.each do |k,c| %>
+    <% if c[:job] %>
+      <%= render partial: "job_progress", locals: {:j => c[:job], :scaleby => component_frac } %>
+    <% end %>
+  <% end %>
+</div>
