@@ -2,8 +2,10 @@ ArvadosWorkbench::Application.routes.draw do
   themes_for_rails
 
   resources :keep_disks
-  resources :user_agreements
-  put '/user_agreements/sign' => 'user_agreements#sign'
+  resources :user_agreements do
+    put 'sign', on: :collection
+    get 'signatures', on: :collection
+  end
   get '/user_agreements/signatures' => 'user_agreements#signatures'
   resources :nodes
   resources :humans
