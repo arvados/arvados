@@ -6,6 +6,7 @@ require 'yaml'
 def sudo(*cmd)
   # user can pass a single list in as an argument
   # to allow usage like: sudo %w(apt-get install foo)
+  warn "You may need to enter your password here."
   if cmd.length == 1 and cmd[0].class == Array
     cmd = cmd[0]
   end
@@ -53,7 +54,7 @@ end
 
 if not ip_forwarding_enabled?
   warn "NOTE: IP forwarding must be enabled in the kernel."
-  warn "Turning IP forwarding on. You may be asked to enter your password."
+  warn "Turning IP forwarding on now."
   sudo %w(/sbin/sysctl net.ipv4.ip_forward=1)
 end
 
