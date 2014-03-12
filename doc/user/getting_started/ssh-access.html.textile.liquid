@@ -1,12 +1,8 @@
 ---
 layout: default
 navsection: userguide
-navmenu: Getting Started
 title: Accessing an Arvados VM over ssh
-
 ...
-
-h1. Accessing an Arvados Virtual Machine over ssh
 
 Arvados requires a public @ssh@ key in order to securely log in to an Arvados VM instance, or to access an Arvados @git@ repository.
 
@@ -133,7 +129,7 @@ h1(#workbench). Adding your key to Arvados Workbench
 
 h3. From the workbench dashboard
 
-If you have no @ssh@ keys registered, there should be a notification asking you to provide your @ssh@ public key.  On the Workbench dashboard (in this guide, this is "https://workbench.{{ site.arvados_api_host }}/":https://workbench.{{ site.arvados_api_host }}/ ), look for the envelope icon <span class="glyphicon glyphicon-envelope"></span> <span class="badge badge-alert">1</span> in upper right corner (the number indicates there are new notifications).  Click on this icon and a dropdown menu should appear with a message asking you to add your public key.  Paste your public key into the text area provided and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
+If you have no @ssh@ keys registered, there should be a notification asking you to provide your @ssh@ public key.  On the Workbench dashboard (in this guide, this is "https://{{ site.arvados_workbench_host }}/":https://{{ site.arvados_workbench_host }}/ ), look for the envelope icon <span class="glyphicon glyphicon-envelope"></span> <span class="badge badge-alert">1</span> in upper right corner (the number indicates there are new notifications).  Click on this icon and a dropdown menu should appear with a message asking you to add your public key.  Paste your public key into the text area provided and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
 
 h3. Alternate way to add ssh keys
 
@@ -184,6 +180,7 @@ Since the above command line is cumbersome, it can be greatly simplfied by addin
 <notextile>
 <pre><code class="userinput">Host *.arvados
   ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} $SSH_PROXY_FLAGS %h
+  User <b>you</b>
   ForwardAgent yes
   ForwardX11 no
 </code></pre>
@@ -191,7 +188,7 @@ Since the above command line is cumbersome, it can be greatly simplfied by addin
 
 This will recognize any host ending in ".arvados" and automatically apply the proxy, user and forwarding settings from the configuration file, allowing you to log in with a much simpler command:
 
-notextile. <pre><code>$ <span class="userinput">ssh <b>you@shell</b>.arvados</span></code></pre>
+notextile. <pre><code>$ <span class="userinput">ssh <b>shell</b>.arvados</span></code></pre>
 
 h2(#windowsvm). Logging in using PuTTY (Windows)
 

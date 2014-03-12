@@ -2,34 +2,17 @@
 
 import arvados
 
-arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True)
-this_task = arvados.current_task()
+# Automatically parallelize this job by running one task per file.
+arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=True)
 
-# Get the input collection for this task
-this_task_input = this_task['parameters']['input']
+# Get the input file for the task
+input_file = arvados.get_task_param_mount('input')
 
-# Create a CollectionReader to access the collection
-input_collection = arvados.CollectionReader(this_task_input)
+# Run the external 'md5sum' program on the input file
+stdoutdata, stderrdata = arvados.util.run_command(['md5sum', input_file])
 
-# Get the name of the first file in the collection
-input_file = list(input_collection.all_files())[0].name()
-
-# Extract the file to a temporary directory
-# Returns the directory that the file was written to
-input_dir = arvados.util.collection_extract(this_task_input,
-        'tmp',
-        files=[input_file],
-        decompress=False)
-
-# Run the external 'md5sum' program on the input file, with the current working
-# directory set to the location the input file was extracted to.
-stdoutdata, stderrdata = arvados.util.run_command(
-        ['md5sum', input_file],
-        cwd=input_dir)
-
-# Save the standard output (stdoutdata) "md5sum.txt" in the output collection
+# Save the standard output (stdoutdata) to "md5sum.txt" in the output collection
 out = arvados.CollectionWriter()
 out.set_current_file_name("md5sum.txt")
 out.write(stdoutdata)
-
-this_task.set_output(out.finish())
+arvados.current_task().set_output(out.finish())

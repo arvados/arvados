@@ -1,12 +1,8 @@
 ---
 layout: default
 navsection: userguide
-navmenu: Tutorials
 title: "Using GATK with Arvados"
-
 ...
-
-h1. Using GATK with Arvados
 
 This tutorial demonstrates how to use the Genome Analysis Toolkit (GATK) with Arvados. In this example we will install GATK and then create a VariantFiltration job to assign pass/fail scores to variants in a VCF file.
 
@@ -14,7 +10,7 @@ This tutorial demonstrates how to use the Genome Analysis Toolkit (GATK) with Ar
 
 h2. Installing GATK
 
-Download the GATK binary tarball[1] -- e.g., @GenomeAnalysisTK-2.6-4.tar.bz2@ -- and "copy it to your Arvados VM":tutorial-keep.html.
+Download the GATK binary tarball[1] -- e.g., @GenomeAnalysisTK-2.6-4.tar.bz2@ -- and "copy it to your Arvados VM":{{site.baseurl}}/user/tutorials/tutorial-keep.html.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv keep put GenomeAnalysisTK-2.6-4.tar.bz2</span>

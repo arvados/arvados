@@ -3,6 +3,15 @@
 require "rubygems"
 require "colorize"
 
+task :generate do
+  vars = ['baseurl', 'arvados_api_host', 'arvados_workbench_host']
+  vars.each do |v|
+    if ENV[v]
+      website.config.h[v] = ENV[v]
+    end
+  end
+end
+
 require "zenweb/tasks"
 load "zenweb-textile.rb"
 load "zenweb-liquid.rb"
