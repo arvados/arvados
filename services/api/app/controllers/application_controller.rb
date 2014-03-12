@@ -265,7 +265,7 @@ class ApplicationController < ActionController::Base
       if supplied_token
         api_client_auth = ApiClientAuthorization.
           includes(:api_client, :user).
-          where('api_token=? and (expires_at is null or expires_at > now())', supplied_token).
+          where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied_token).
           first
         if api_client_auth.andand.user
           session[:user_id] = api_client_auth.user.id
@@ -395,13 +395,15 @@ class ApplicationController < ActionController::Base
   end
 
   def render *opts
-    response = opts.first[:json]
-    if response.is_a?(Hash) &&
-        params[:_profile] &&
-        Thread.current[:request_starttime]
-      response[:_profile] = {
-         request_time: Time.now - Thread.current[:request_starttime]
-      }
+    if opts.first
+      response = opts.first[:json]
+      if response.is_a?(Hash) &&
+          params[:_profile] &&
+          Thread.current[:request_starttime]
+        response[:_profile] = {
+          request_time: Time.now - Thread.current[:request_starttime]
+        }
+      end
     end
     super *opts
   end
