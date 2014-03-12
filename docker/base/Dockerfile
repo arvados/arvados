@@ -17,7 +17,8 @@ RUN apt-get update && \
     /bin/mkdir -p /root/.ssh && \
     /bin/sed -ri 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     /usr/sbin/locale-gen && \
-    curl -L https://get.rvm.io | bash -s stable --ruby=2.1.0 && \
+    curl -L https://get.rvm.io | bash -s stable && \
+    /usr/local/rvm/bin/rvm install 2.1.0 && \
     /bin/mkdir -p /usr/src/arvados
 
 ADD generated/arvados.tar.gz /usr/src/arvados/
