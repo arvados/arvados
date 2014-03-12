@@ -39,6 +39,7 @@ test:
   action_mailer.delivery_method: :test
   active_support.deprecation: :stderr
   active_record.mass_assignment_sanitizer: :strict
+  uuid_prefix: zzzzz
 
 common:
   secret_token: ~
@@ -83,4 +84,4 @@ common:
   # In the default configuration, authentication happens through the Arvados SSO
   # server, which uses openid against Google's servers, so in that case this
   # should be an address associated with a Google account.
-  auto_admin_user: ~
+  auto_admin_user: false

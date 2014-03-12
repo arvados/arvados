@@ -25,17 +25,9 @@ production:
       Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
     end << '172.16.0.23'
   %>
-  # You must customize these. See application.default.yml for information.
-  compute_node_ami: ~
-  compute_node_ec2_tag_enable: ~
-  compute_node_domain: ~
-  compute_node_spot_bid: ~
 
 test:
   uuid_prefix: zzzzz
+  secret_token: <%= rand(2**512).to_s(36) %>
 
 common:
-  secret_token: ~
-  compute_node_nameservers:
-    - 192.168.0.1
-    - 172.16.0.1
