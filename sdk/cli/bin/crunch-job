@@ -73,6 +73,7 @@ use Arvados;
 use Getopt::Long;
 use IPC::Open2;
 use IO::Select;
+use File::Temp;
 
 $ENV{"TMPDIR"} ||= "/tmp";
 unless (defined $ENV{"CRUNCH_TMP"}) {
@@ -165,11 +166,8 @@ else
 }
 $job_id = $Job->{'uuid'};
 
-# $metastream = Warehouse::Stream->new(whc => new Warehouse);
-# $metastream->clear;
-# $metastream->name('.');
-# $metastream->write_start($job_id . '.log.txt');
-
+my $keep_logfile = $job_id . '.log.txt';
+my $local_logfile = File::Temp->new();
 
 $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
@@ -1079,7 +1077,7 @@ sub collate_output
   }
   if (!defined $joboutput) {
     my $s = IO::Select->new($child_out);
-    sysread($child_out, $joboutput, 64 * 1024 * 1024) if $s->can_read(0);
+    sysread($child_out, $joboutput, 64 * 1024 * 1024) if $s->can_read(5);
   }
   $child_in->close;
   waitpid($pid, 0);
@@ -1158,8 +1156,9 @@ sub Log				# ($jobstep_id, $logmessage)
   }
   print STDERR ((-t STDERR) ? ($datetime." ".$message) : $message);
 
-  # return if !$metastream;
-  # $metastream->write_data ($datetime . " " . $message);
+  if ($metastream) {
+    print $metastream $datetime . " " . $message;
+  }
 }
 
 
@@ -1187,20 +1186,18 @@ sub cleanup
 
 sub save_meta
 {
-#  my $justcheckpoint = shift; # false if this will be the last meta saved
-#  my $m = $metastream;
-#  $m = $m->copy if $justcheckpoint;
-#  $m->write_finish;
-#  my $whc = Warehouse->new;
-#  my $loglocator = $whc->store_block ($m->as_string);
-#  $arv->{'collections'}->{'create'}->execute('collection' => {
-#    'uuid' => $loglocator,
-#    'manifest_text' => $m->as_string,
-#  });
-#  undef $metastream if !$justcheckpoint; # otherwise Log() will try to use it
-#  Log (undef, "log manifest is $loglocator");
-#  $Job->{'log'} = $loglocator;
-#  $Job->update_attributes('log', $loglocator) if $job_has_uuid;
+  my $justcheckpoint = shift; # false if this will be the last meta saved
+  return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
+
+  $local_logfile->flush;
+  my $cmd = "arv keep put --filename $keep_logfile ". $local_logfile->filename;
+  my $loglocator = `$cmd`;
+  die "system $cmd failed: $?" if $?;
+
+  $local_logfile = undef;   # the temp file is automatically deleted
+  Log (undef, "log manifest is $loglocator");
+  $Job->{'log'} = $loglocator;
+  $Job->update_attributes('log', $loglocator) if $job_has_uuid;
 }
 
 
