@@ -19,7 +19,8 @@ production:
   uuid_prefix: bogus
 
   # This is suitable for AWS; see common section below for a static example.
-  compute_node_nameservers: <%=
+  #
+  #compute_node_nameservers: <%#
     require 'net/http'
     ['local', 'public'].collect do |iface|
       Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
@@ -31,3 +32,10 @@ test:
   secret_token: <%= rand(2**512).to_s(36) %>
 
 common:
+
+  # Git repositories must be readable by api server, or you won't be
+  # able to submit crunch jobs. To pass the test suites, put a clone
+  # of the arvados tree in {git_repositories_dir}/arvados.git or
+  # {git_repositories_dir}/arvados/.git
+  #
+  #git_repositories_dir: /var/cache/git
