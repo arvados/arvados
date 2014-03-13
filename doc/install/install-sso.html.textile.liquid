@@ -1,0 +1,23 @@
+---
+layout: default
+navsection: installguide
+title: Install Single Sign On (SSO) server
+...
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/sso-devise-omniauth-provider.git</span>
+~$ <span class="userinput">cd sso-devise-omniauth-provider</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">bundle install</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">rake db:create</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">rake db:migrate</span>
+~/sso-devise-omniauth-provider$ <span class="userinput">rake secret</span>
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+~/sso-devise-omniauth-provider$ <span class="userinput">rails console</span>
+irb(main):001:0&gt; <span class="userinput">c = Client.new</span>
+irb(main):002:0&gt; <span class="userinput">c.name = "joshid"</span>
+irb(main):003:0&gt; <span class="userinput">c.app_id = "arvados-server"</span>
+irb(main):004:0&gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+irb(main):005:0&gt; <span class="userinput">c.save!</span>
+irb(main):006:0&gt; <span class="userinput">quit</span>
+</code></pre>
+</notextile>

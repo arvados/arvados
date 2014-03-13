@@ -104,6 +104,7 @@ navbar:
   installguide:
     - Install:
       - install/index.html.md.liquid
+      - install/install-sso.html.textile.liquid
       - install/install-api-server.html.md.liquid
       - install/install-workbench-app.html.md.liquid
       - install/client.html.textile.liquid
