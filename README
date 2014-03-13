@@ -1,14 +1,19 @@
 Welcome to Arvados!
 
-The main Arvados web site is https://arvados.org
+The main Arvados web site is 
+  https://arvados.org
 
-The Arvados public wiki is located at https://arvados.org/projects/arvados/wiki
+The Arvados public wiki is located at 
+  https://arvados.org/projects/arvados/wiki
 
-The Arvados bug tracker is located at https://arvados.org/projects/arvados/issues
+The Arvados public bug tracker is located at 
+  https://arvados.org/projects/arvados/issues
 
-For support see http://doc.arvados.org/user/getting_started/community.html
+For support see 
+  http://doc.arvados.org/user/getting_started/community.html
 
-Installation documentation is located at http://doc.arvados.org/install
+Installation documentation is located at 
+  http://doc.arvados.org/install
 
 If you wish to build the documentation yourself, follow the instructions in
 doc/README to build the documentation, then consult the "Install Guide".
