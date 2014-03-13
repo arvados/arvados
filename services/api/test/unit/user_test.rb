@@ -1,10 +1,8 @@
 require 'test_helper'
 
 class UserTest < ActiveSupport::TestCase
-  # test "the truth" do
-  #   assert true
-  # end
 
+	# The fixture services/api/test/fixtures/users.yml serves as the input for this test case
 	setup do
 		@all_users = User.find(:all)
 
