@@ -331,7 +331,8 @@ class Arvados::V1::SchemaController < ApplicationController
           if httpMethod and
               route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
               !d_methods[action.to_sym] and
-              ctl_class.action_methods.include? action
+              ctl_class.action_methods.include? action and
+              ![:show, :index, :destroy].include?(action.to_sym)
             method = {
               id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
               path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
