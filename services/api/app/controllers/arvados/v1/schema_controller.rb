@@ -222,6 +222,14 @@ class Arvados::V1::SchemaController < ApplicationController
                   minimum: 0,
                   location: "query",
                 },
+                offset: {
+                  type: "integer",
+                  description: "Number of #{k.to_s.underscore.pluralize} to skip before first returned record.",
+                  default: 0,
+                  format: "int32",
+                  minimum: 0,
+                  location: "query",
+                },
                 where: {
                   type: "object",
                   description: "Conditions for filtering #{k.to_s.underscore.pluralize}.",
