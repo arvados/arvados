@@ -1,23 +1,23 @@
 ---
 layout: default
 navsection: installguide
-title: Install the Arvados workbench application
+title: Install the Arvados Workbench application
 ...
 
 h2. Prerequisites
 
 # A GNU/linux (virtual) machine (can be shared with the API server)
-# A hostname for your workbench application
+# A hostname for your Workbench application
 
 h2. Download the source tree
 
 Please follow the instructions on the "Download page":https://arvados.org/projects/arvados/wiki/Download in the wiki.
 
-The workbench application is in @arvados/apps/workbench@.
+The Workbench application is in @arvados/apps/workbench@.
 
 h2. Configure the Workbench application
 
-You need to update @config/initializers/secret_token.rb@. Generate a new secret:
+This application needs a secret token. Generate a new secret:
 
 <notextile>
 <pre><code>~/arvados/apps/workbench$ <span class="userinput">rake secret</span>
@@ -25,17 +25,12 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 </code></pre>
 </notextile>
 
-and put it in @config/initializers/secret_token.rb@
+Copy @config/application.yml.example@ to @config/application.yml@ and edit it appropriately for your environment.
 
-<notextile><pre><code><span class="userinput">Server::Application.config.secret_token = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-</span></code></pre>
-</notextile>
-
-Adjust the following fields in your @environments/production.rb@ file.
-
-* @config.site_name@ can be the URL of your workbench install.
-* @config.arvados_login_base@ and @config.arvados_v1_base@ should point to your "API server":install-api-server.html 
-* If you choose not to use https, make sure to also set @config.force_ssl = false@ in the API server's @production.rb@ file.
+* Set @secret_token@ to the string you generated with @rake secret@.
+* Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html
+* @site_name@ can be any string to identify this Workbench.
+* Assuming that the SSL certificate you use for development isn't signed by a CA, make sure @arvados_insecure_https@ is @true@.
 
 Copy @config/piwik.yml.example@ to @config/piwik.yml@ and edit to suit.
 
