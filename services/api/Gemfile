@@ -5,7 +5,13 @@ gem 'rails', '~> 3.2.0'
 # Bundle edge Rails instead:
 # gem 'rails',     :git => 'git://github.com/rails/rails.git'
 
-#gem 'sqlite3'
+group :test, :development do
+  gem 'sqlite3'
+end
+
+# This might not be needed in :test and :development, but we load it
+# anyway to make sure it always gets in Gemfile.lock and to help
+# reveal install problems sooner rather than later.
 gem 'pg'
 
 # Start using multi_json once we are on Rails 3.2;
