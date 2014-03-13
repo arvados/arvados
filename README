@@ -1,0 +1,8 @@
+Welcome to Arvados!
+
+See COPYING for information about licensing.
+
+Installation documentation is located at http://doc.arvados.org/install
+
+If you wish to build the documentation yourself, follow the instructions in
+doc/README to build the documentation, then consult the "Install Guide".
