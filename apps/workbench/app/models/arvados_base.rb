@@ -61,13 +61,16 @@ class ArvadosBase < ActiveRecord::Base
     attr_reader :kind
     @columns
   end
+
   def self.column(name, sql_type = nil, default = nil, null = true)
     ActiveRecord::ConnectionAdapters::Column.new(name.to_s, default, sql_type.to_s, null)
   end
+
   def self.attribute_info
     self.columns
     @attribute_info
   end
+
   def self.find(uuid, opts={})
     if uuid.class != String or uuid.length < 27 then
       raise 'argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx'
@@ -84,24 +87,31 @@ class ArvadosBase < ActiveRecord::Base
     end
     new.private_reload(hash)
   end
+
   def self.order(*args)
     ArvadosResourceList.new(self).order(*args)
   end
+
   def self.filter(*args)
     ArvadosResourceList.new(self).filter(*args)
   end
+
   def self.where(*args)
     ArvadosResourceList.new(self).where(*args)
   end
+
   def self.limit(*args)
     ArvadosResourceList.new(self).limit(*args)
   end
+
   def self.eager(*args)
     ArvadosResourceList.new(self).eager(*args)
   end
+
   def self.all(*args)
     ArvadosResourceList.new(self).all(*args)
   end
+
   def save
     obdata = {}
     self.class.columns.each do |col|
@@ -131,8 +141,11 @@ class ArvadosBase < ActiveRecord::Base
       end
     end
 
+    @new_record = false
+
     self
   end
+
   def save!
     self.save or raise Exception.new("Save failed")
   end
@@ -172,6 +185,7 @@ class ArvadosBase < ActiveRecord::Base
     @links = $arvados_api_client.api Link, '', { _method: 'GET', where: o, eager: true }
     @links = $arvados_api_client.unpack_api_response(@links)
   end
+
   def all_links
     return @all_links if @all_links
     res = $arvados_api_client.api Link, '', {
@@ -184,9 +198,11 @@ class ArvadosBase < ActiveRecord::Base
     }
     @all_links = $arvados_api_client.unpack_api_response(res)
   end
+
   def reload
     private_reload(self.uuid)
   end
+
   def private_reload(uuid_or_hash)
     raise "No such object" if !uuid_or_hash
     if uuid_or_hash.is_a? Hash
@@ -209,8 +225,14 @@ class ArvadosBase < ActiveRecord::Base
       end
     end
     @all_links = nil
+    @new_record = false
     self
   end
+
+  def to_param
+    uuid
+  end
+
   def dup
     super.forget_uuid!
   end
@@ -276,6 +298,10 @@ class ArvadosBase < ActiveRecord::Base
 
   def friendly_link_name
     (name if self.respond_to? :name) || uuid
+  end
+
+  def selection_label
+    friendly_link_name
   end
 
   protected

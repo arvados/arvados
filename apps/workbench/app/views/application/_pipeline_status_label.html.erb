@@ -1,0 +1,13 @@
+<% if p.success %>
+  <span class="label label-success">finished</span>
+<% elsif p.success == false %>
+  <span class="label label-danger">failed</span>
+<% elsif p.active %>
+  <span class="label label-info">running</span>
+<% else %>
+  <% if (p.components.select do |k,v| v[:job] end).length == 0 %>
+    <span class="label label-default">not started</span>
+  <% else %>
+    <span class="label label-default">not running</span>
+  <% end %>
+<% end %>

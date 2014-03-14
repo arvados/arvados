@@ -24,6 +24,7 @@ class ApplicationController < ActionController::Base
 
   def unprocessable(message=nil)
     @errors ||= []
+
     @errors << message if message
     render_error status: 422
   end
@@ -109,6 +110,7 @@ class ApplicationController < ActionController::Base
   def create
     @object ||= model_class.new params[model_class.to_s.underscore.singularize]
     @object.save!
+
     respond_to do |f|
       f.json { render json: @object }
       f.html {
@@ -319,14 +321,14 @@ class ApplicationController < ActionController::Base
     }
   }
 
-  @@notification_tests.push lambda { |controller, current_user|
-    Job.limit(1).where(created_by: current_user.uuid).each do
-      return nil
-    end
-    return lambda { |view|
-      view.render partial: 'notifications/jobs_notification'
-    }
-  }
+  #@@notification_tests.push lambda { |controller, current_user|
+  #  Job.limit(1).where(created_by: current_user.uuid).each do
+  #    return nil
+  #  end
+  #  return lambda { |view|
+  #    view.render partial: 'notifications/jobs_notification'
+  #  }
+  #}
 
   @@notification_tests.push lambda { |controller, current_user|
     Collection.limit(1).where(created_by: current_user.uuid).each do

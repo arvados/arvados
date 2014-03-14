@@ -1,33 +1,34 @@
 <% content_for :css do %>
-  .pipeline_color_legend {
-    padding-left: 1em;
-    padding-right: 1em;
-  }
-table.pipeline-components-table thead th {
-  text-align: bottom;
-}
-table.pipeline-components-table div.progress {
-  margin-bottom: 0;
-}
-<% end %>
-<br />
 
+<% end %>
+
+<% template = PipelineTemplate.find(@object.pipeline_template_uuid) rescue nil %>
+
+<%= content_for :content_top do %>
+  <% if template %>
+    <h2><%= template.name %></h2>
+  <% end %>
+<% end %>
+
+<% if @object.active != nil %>
 <table class="table pipeline-components-table">
   <colgroup>
-    <col width="15%" />
-    <col width="15%" />
-    <col width="35%" />
-    <col width="35%" />
+    <col style="width: 15%" />
+    <col style="width: 20%" />
+    <col style="width: 12%" />
+    <col style="width: 12%" />
+    <col style="width: 45%" />
   </colgroup>
   <thead>
     <tr>
       <th>
         component
       </th><th>
+        script, version
+      </th><th>
         progress
         <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
       </th><th>
-        script, version
       </th><th>
         output
       </th>
@@ -37,23 +38,21 @@ table.pipeline-components-table div.progress {
     <% render_pipeline_jobs.each do |pj| %>
     <tr>
       <td>
+        <% job_status = render(partial: 'job_status_label', 
+                               locals: { :j => pj[:job], :title => pj[:name] }) %>
         <% if pj[:job].andand[:uuid] %>
-        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]) %>
+          <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
         <% else %>
-        <%= pj[:name] %>
-        <% end %>
-      </td><td>
-        <%= pj[:progress_bar] %>
-        <% if pj[:job].andand[:cancelled_at] %>
-        <span class="pull-right label label-warning">cancelled</span>
-        <% elsif pj[:failed] %>
-        <span class="pull-right label label-warning">failed</span>
-        <% elsif pj[:result] == 'queued' %>
-        <span class="pull-right label">queued</span>
+          <%= job_status %>
         <% end %>
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
+      </td><td>
+        <%= pj[:progress_bar] %>
+      </td><td>
+        <%= render(partial: 'job_status_label', 
+                               locals: { :j => pj[:job] }) %>
       </td><td>
         <%= link_to_if_arvados_object pj[:output] %>
       </td>
@@ -61,14 +60,29 @@ table.pipeline-components-table div.progress {
     <% end %>
   </tbody>
   <tfoot>
-    <tr><td colspan="4"></td></tr>
+    <tr><td colspan="5"></td></tr>
   </tfoot>
 </table>
 
 <% if @object.active %>
 <% content_for :js do %>
-setInterval(function(){$('a.refresh').click()}, 30000);
+setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
 <% end %>
 
-<pre><%= JSON.pretty_generate @object.attributes %></pre>
+<% else %>
+
+  <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
+
+  <% content_for :tab_line_buttons do %>
+    <%= form_tag @object, :method => :put do |f| %>
+      
+      <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
+
+      <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+    <% end %>
+  <% end %>
+
+  <%= render partial: 'pipeline_templates/show_components_template', locals: {:template => template, :obj => @object} %>
+  
+<% end %>

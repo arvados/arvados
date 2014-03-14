@@ -1,5 +1,7 @@
 # errors.py - Arvados-specific exceptions.
 
+class ArgumentError(Exception):
+    pass
 class SyntaxError(Exception):
     pass
 class AssertionError(Exception):

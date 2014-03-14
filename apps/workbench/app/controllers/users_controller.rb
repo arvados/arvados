@@ -1,6 +1,7 @@
 class UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity]
   skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
+  before_filter :ensure_current_user_is_admin, only: :sudo
 
   def welcome
     if current_user
@@ -54,6 +55,23 @@ class UsersController < ApplicationController
     @users = @users.sort_by do |a|
       [-@user_activity[a.uuid].values.inject(:+), a.full_name]
     end
+  end
+
+  def show_pane_list
+    if current_user.andand.is_admin
+      super | %w(Admin)
+    else
+      super
+    end
+  end
+
+  def sudo
+    resp = $arvados_api_client.api(ApiClientAuthorization, '', {
+                                     api_client_authorization: {
+                                       owner_uuid: @object.uuid
+                                     }
+                                   })
+    redirect_to root_url(api_token: resp[:api_token])
   end
 
   def home

@@ -39,7 +39,7 @@ class ApplicationController < ActionController::Base
     if @object.save
       show
     else
-      render_error "Save failed"
+      raise "Save failed"
     end
   end
 
@@ -50,7 +50,7 @@ class ApplicationController < ActionController::Base
     if @object.update_attributes attrs_to_update
       show
     else
-      render_error "Update failed"
+      raise "Update failed"
     end
   end
 
@@ -88,7 +88,9 @@ class ApplicationController < ActionController::Base
 
   def render_error(e)
     logger.error e.inspect
-    logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
+    if e.respond_to? :backtrace and e.backtrace
+      logger.error e.backtrace.collect { |x| x + "\n" }.join('')
+    end
     if @object and @object.errors and @object.errors.full_messages and not @object.errors.full_messages.empty?
       errors = @object.errors.full_messages
     else
@@ -151,8 +153,10 @@ class ApplicationController < ActionController::Base
         when '=', '<', '<=', '>', '>=', 'like'
           if operand.is_a? String
             cond_out << "#{table_name}.#{attr} #{operator} ?"
-            if operator.match(/[<=>]/) and
-                model_class.attribute_column(attr).type == :datetime
+            if (# any operator that operates on value rather than
+                # representation:
+                operator.match(/[<=>]/) and
+                model_class.attribute_column(attr).type == :datetime)
               operand = Time.parse operand
             end
             param_out << operand
@@ -313,7 +317,7 @@ class ApplicationController < ActionController::Base
       if supplied_token
         api_client_auth = ApiClientAuthorization.
           includes(:api_client, :user).
-          where('api_token=? and (expires_at is null or expires_at > now())', supplied_token).
+          where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied_token).
           first
         if api_client_auth.andand.user
           session[:user_id] = api_client_auth.user.id
@@ -444,13 +448,15 @@ class ApplicationController < ActionController::Base
   end
 
   def render *opts
-    response = opts.first[:json]
-    if response.is_a?(Hash) &&
-        params[:_profile] &&
-        Thread.current[:request_starttime]
-      response[:_profile] = {
-         request_time: Time.now - Thread.current[:request_starttime]
-      }
+    if opts.first
+      response = opts.first[:json]
+      if response.is_a?(Hash) &&
+          params[:_profile] &&
+          Thread.current[:request_starttime]
+        response[:_profile] = {
+          request_time: Time.now - Thread.current[:request_starttime]
+        }
+      end
     end
     super *opts
   end

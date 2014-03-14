@@ -2,6 +2,9 @@
 
 <tr class="collection" data-object-uuid="<%= c.uuid %>">
   <td>
+    <%= render :partial => "selection_checkbox", :locals => {:object => c} %>
+  </td>
+  <td>
     <%= link_to_if_arvados_object c.uuid %>
   </td>
   <td>
