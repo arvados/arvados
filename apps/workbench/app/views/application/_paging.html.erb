@@ -5,9 +5,25 @@ padding-left: 1em;
 padding-right: 1em;
 background-color: whitesmoke;
 }
+.paging-number {
+display: inline-block;
+min-width: 1.2em;
+}
 <% end %>
 
 <% if results.result_offset != nil and results.result_limit != nil and results.items_available != nil %>
+<div class="index-paging">
+  Displaying <%= results.result_offset+1 %> &ndash; 
+  <%= if results.result_offset + results.result_limit > results.items_available 
+        results.items_available 
+      else 
+        results.result_offset + results.result_limit 
+      end %>
+ out of <%= results.items_available %>
+</div>
+
+<% if not (results.result_offset == 0 and results.items_available <= results.result_limit) %>
+  
 <div class="index-paging">
 
 <% if results.result_offset > 0 %>
@@ -21,7 +37,6 @@ background-color: whitesmoke;
 <% end %>
 
 <% this_offset = results.result_offset %>
-<% this_page = results.result_offset / results.result_limit %>
 
 <% if (results.result_offset + results.result_limit) < results.items_available %>
   <% next_offset = results.result_offset + results.result_limit %>
@@ -43,27 +58,42 @@ background-color: whitesmoke;
 <% end %>
 </span>
 
-<% n = this_page - 10 %>
-<% if n >= 0 %>
-  <% last = this_page + 10 %>
-  &hellip;
-<% else %>
-  <% n = 0 %>
-  <% last = 20 %>
+<% first = this_offset - (10 * results.result_limit) %>
+<% last = this_offset + (11 * results.result_limit) %>
+
+<% lastpage_offset = (results.items_available / results.result_limit) * results.result_limit %>
+
+<% if last > results.items_available %>
+  <% first -= (last - lastpage_offset) %>
+  <% last -= (last - results.items_available) %>
 <% end %>
 
-<% i = n * results.result_limit %>
-<% while i < results.items_available and n < last %>
-<% if n != this_page %>
-  <%= link_to "#{n+1}", {:id => @object, :offset => i, :limit => results.result_limit} %>
+<% if first < 0 %>
+  <% d = -first %>
+  <% first += d %>
+  <% last += d %>
+<% end %>
+
+<% last = results.items_available if last > results.items_available %>
+
+<% i = first %>
+<% n = first / results.result_limit %>
+
+<% if first > 0 %>
+&hellip;
+<% end %>
+
+<% while i < last %>
+<% if i != this_offset %>
+  <%= link_to "#{n+1}", {:id => @object, :offset => i, :limit => results.result_limit}, class: 'paging-number' %>
 <% else %>
-  <%= n+1 %>
+  <span class="paging-number" style="font-weight: bold;"><%= n+1 %></span>
 <% end %>
 <% i += results.result_limit %>
 <% n += 1 %>
 <% end %>
 
-<% if i < results.items_available %>
+<% if last < results.items_available %>
 &hellip;
 <% end %>
 
@@ -84,4 +114,7 @@ background-color: whitesmoke;
 </span>
 
 </div>
+
+<% end %>
+
 <% end %>
