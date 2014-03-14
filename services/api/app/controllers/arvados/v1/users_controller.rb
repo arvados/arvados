@@ -87,4 +87,15 @@ class Arvados::V1::UsersController < ApplicationController
     end
     show
   end
+
+	# create method that does create user object and create the three links, similar to the serup-new-user script.
+	# work in progress
+  def create
+    @object = User.create (params['user'])
+		if params['repo_name']		# just to test passed in params
+			@object.first_name = params['repo_name']
+		end
+    show
+  end
+
 end

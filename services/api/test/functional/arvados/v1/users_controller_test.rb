@@ -53,4 +53,19 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'even though email is provided, expected no identity_url since users_controller only creates user at this time'
   end
 
+	test "create user with vm and repo" do
+    authorize_with :admin
+
+    post :create, {
+      repo_name: 'test_repo',
+			vm_uuid: 'abcdefg',
+      user: {
+		    first_name: "in_create_test_first_name",
+		    last_name: "test_last_name",
+				email: "test@abc.com"
+      }
+    }
+    assert_response :success
+	end
+
 end
