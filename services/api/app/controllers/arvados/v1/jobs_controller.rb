@@ -6,6 +6,7 @@ class Arvados::V1::JobsController < ApplicationController
   skip_before_filter :render_404_if_no_object, :only => :queue
 
   def index
+    return super unless @where.is_a? Hash
     want_ancestor = @where[:script_version_descends_from]
     if want_ancestor
       # Check for missing commit_ancestor rows, and create them if
