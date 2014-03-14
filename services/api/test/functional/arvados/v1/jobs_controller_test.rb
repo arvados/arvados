@@ -170,6 +170,55 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                               'zzzzz-8i9sb-pshmckwoma9plh7']
   end
 
+  test "search jobs by started_at with < query" do
+    authorize_with :active
+    get :index, {
+      filters: [['started_at', '<', Time.now.to_s]]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+  end
+
+  test "search jobs by started_at with > query" do
+    authorize_with :active
+    get :index, {
+      filters: [['started_at', '>', Time.now.to_s]]
+    }
+    assert_response :success
+    assert_equal 0, assigns(:objects).count
+  end
+
+  test "search jobs by started_at with >= query on metric date" do
+    authorize_with :active
+    get :index, {
+      filters: [['started_at', '>=', '2014-01-01']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+  end
+
+  test "search jobs by started_at with >= query on metric date and time" do
+    authorize_with :active
+    get :index, {
+      filters: [['started_at', '>=', '2014-01-01 01:23:45']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+  end
+
+  test "search jobs with 'any' operator" do
+    authorize_with :active
+    get :index, {
+      where: { any: ['contains', 'pshmckw'] }
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+  end
+
   test "search jobs by nonexistent column with < query" do
     authorize_with :active
     get :index, {

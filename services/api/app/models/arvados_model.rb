@@ -40,7 +40,7 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.searchable_columns
     self.columns.collect do |col|
-      if [:string, :text, :datetime].index(col.type) && col.name != 'owner_uuid'
+      if [:string, :text, :datetime, :integer].index(col.type) && col.name != 'owner_uuid'
         col.name
       end
     end.compact

@@ -153,8 +153,10 @@ class ApplicationController < ActionController::Base
         when '=', '<', '<=', '>', '>=', 'like'
           if operand.is_a? String
             cond_out << "#{table_name}.#{attr} #{operator} ?"
-            if operator.match(/[<=>]/) and
-                model_class.attribute_column(attr).type == :datetime
+            if (# any operator that operates on value rather than
+                # representation:
+                operator.match(/[<=>]/) and
+                model_class.attribute_column(attr).type == :datetime)
               operand = Time.parse operand
             end
             param_out << operand
