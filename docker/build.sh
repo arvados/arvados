@@ -11,4 +11,4 @@ then
     sudo apt-get -y install ruby1.9.3
 fi
 
-./build.rb $*
+build_tools/build.rb $*

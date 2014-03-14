@@ -37,6 +37,7 @@ RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
     ./script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
     chown www-data:www-data config.ru && \
     chown www-data:www-data log -R && \
+    mkdir tmp && \
     chown www-data:www-data tmp -R
 
 # Configure Apache and Passenger.

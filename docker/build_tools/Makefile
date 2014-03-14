@@ -17,6 +17,8 @@ realclean: clean
 # Dependencies for */generated files which are prerequisites
 # for building docker images.
 
+CONFIG_RB = build_tools/config.rb
+
 BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
 
 API_DEPS = api/Dockerfile $(API_GENERATED)
@@ -78,23 +80,23 @@ SSO_GENERATED_IN = \
         sso/secret_token.rb.in
 
 $(BASE_GENERATED): config.yml
-	./config.rb
+	$(CONFIG_RB)
 	mkdir -p base/generated
 	tar -c -z -f base/generated/arvados.tar.gz -C .. . \
 	  --exclude=services/api/log/* --exclude=docker/*
 
 
 $(API_GENERATED): config.yml $(API_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 $(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 $(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 # The docker build -q option suppresses verbose build output.
 # Necessary to prevent failure on building warehouse; see
