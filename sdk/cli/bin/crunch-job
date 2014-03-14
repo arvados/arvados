@@ -1071,7 +1071,7 @@ sub collate_output
     }
     else
     {
-      print $child_in "XXX fetch_block($output) failed XXX\n";
+      Log (undef, "XXX fetch_block($output) failed XXX");
       $main::success = 0;
     }
   }
@@ -1079,7 +1079,11 @@ sub collate_output
 
   if (!defined $joboutput) {
     my $s = IO::Select->new($child_out);
-    sysread($child_out, $joboutput, 64 * 1024 * 1024) if $s->can_read(5);
+    if ($s->can_read(120)) {
+      sysread($child_out, $joboutput, 64 * 1024 * 1024);
+    } else {
+      Log (undef, "timed out reading from 'arv keep put'");
+    }
   }
   waitpid($pid, 0);
 
