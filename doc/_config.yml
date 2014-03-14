@@ -40,6 +40,11 @@ navbar:
     - Reference:
       - user/reference/api-tokens.html.textile.liquid
       - user/reference/sdk-cli.html.textile.liquid
+    - Arvados License:
+      - user/copying/copying.html.textile.liquid
+      - user/copying/agpl-3.0.html
+      - user/copying/LICENSE-2.0.html
+      - user/copying/by-sa-3.0.html
   sdk:
     - Overview:
       - sdk/index.html.textile.liquid
@@ -104,8 +109,9 @@ navbar:
   installguide:
     - Install:
       - install/index.html.md.liquid
-      - install/install-api-server.html.md.liquid
-      - install/install-workbench-app.html.md.liquid
+      - install/install-sso.html.textile.liquid
+      - install/install-api-server.html.textile.liquid
+      - install/install-workbench-app.html.textile.liquid
       - install/client.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
