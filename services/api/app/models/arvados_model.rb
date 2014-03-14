@@ -40,10 +40,14 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.searchable_columns
     self.columns.collect do |col|
-      if [:string, :text].index(col.type) && col.name != 'owner_uuid'
+      if [:string, :text, :datetime, :integer].index(col.type) && col.name != 'owner_uuid'
         col.name
       end
     end.compact
+  end
+
+  def self.attribute_column attr
+    self.columns.select { |col| col.name == attr.to_s }.first
   end
 
   def eager_load_associations

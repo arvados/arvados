@@ -10,6 +10,7 @@ class ApplicationController < ActionController::Base
   before_filter :catch_redirect_hint
 
   before_filter :load_where_param, :only => :index
+  before_filter :load_filters_param, :only => :index
   before_filter :find_objects_for_index, :only => :index
   before_filter :find_object_by_uuid, :except => [:index, :create,
                                                   :render_error,
@@ -113,16 +114,65 @@ class ApplicationController < ActionController::Base
       @where = params[:where]
     elsif params[:where].is_a? String
       begin
-        @where = Oj.load(params[:where], symbol_keys: true)
+        @where = Oj.load(params[:where])
+        raise unless @where.is_a? Hash
       rescue
         raise ArgumentError.new("Could not parse \"where\" param as an object")
+      end
+    end
+    @where = @where.with_indifferent_access
+  end
+
+  def load_filters_param
+    if params[:filters].is_a? Array
+      @filters = params[:filters]
+    elsif params[:filters].is_a? String
+      begin
+        @filters = Oj.load params[:filters]
+        raise unless @filters.is_a? Array
+      rescue
+        raise ArgumentError.new("Could not parse \"filters\" param as an array")
       end
     end
   end
 
   def find_objects_for_index
     @objects ||= model_class.readable_by(current_user)
-    if !@where.empty?
+    apply_where_limit_order_params
+  end
+
+  def apply_where_limit_order_params
+    if @filters.is_a? Array and @filters.any?
+      cond_out = []
+      param_out = []
+      @filters.each do |attr, operator, operand|
+        if !model_class.searchable_columns.index attr.to_s
+          raise ArgumentError.new("Invalid attribute '#{attr}' in condition")
+        end
+        case operator.downcase
+        when '=', '<', '<=', '>', '>=', 'like'
+          if operand.is_a? String
+            cond_out << "#{table_name}.#{attr} #{operator} ?"
+            if (# any operator that operates on value rather than
+                # representation:
+                operator.match(/[<=>]/) and
+                model_class.attribute_column(attr).type == :datetime)
+              operand = Time.parse operand
+            end
+            param_out << operand
+          end
+        when 'in'
+          if operand.is_a? Array
+            cond_out << "#{table_name}.#{attr} IN (?)"
+            param_out << operand
+          end
+        end
+      end
+      if cond_out.any?
+        @objects = @objects.where(cond_out.join(' AND '), *param_out)
+      end
+    end
+    if @where.is_a? Hash and @where.any?
       conditions = ['1=1']
       @where.each do |attr,value|
         if attr == :any
@@ -402,6 +452,7 @@ class ApplicationController < ActionController::Base
 
   def self._index_requires_parameters
     {
+      filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
       order: { type: 'string', required: false }
     }
