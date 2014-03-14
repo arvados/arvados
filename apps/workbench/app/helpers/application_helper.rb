@@ -3,6 +3,10 @@ module ApplicationHelper
     controller.current_user
   end
 
+  def self.match_uuid(uuid)
+    /^([0-9a-z]{5})-([0-9a-z]{5})-([0-9a-z]{15})$/.match(uuid.to_s)
+  end
+
   def current_api_host
     Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
   end
@@ -67,7 +71,7 @@ module ApplicationHelper
         end
       end
       style_opts[:class] = (style_opts[:class] || '') + ' nowrap'
-      link_to link_name, { controller: resource_class.to_s.underscore.pluralize, action: 'show', id: link_uuid }, style_opts
+      link_to link_name, { controller: resource_class.to_s.tableize, action: 'show', id: link_uuid }, style_opts
     else
       attrvalue
     end
@@ -99,5 +103,124 @@ module ApplicationHelper
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       :class => "editable"
     }.merge(htmloptions)
+  end
+
+  def render_editable_subattribute(object, attr, subattr, template, htmloptions={})
+    if object
+      attrvalue = object.send(attr)
+      subattr.each do |k|
+        if attrvalue and attrvalue.is_a? Hash
+          attrvalue = attrvalue[k]
+        else
+          break
+        end
+      end
+    end
+
+    datatype = nil
+    required = true
+    if template
+      #puts "Template is #{template.class} #{template.is_a? Hash} #{template}"
+      if template.is_a? Hash
+        if template[:output_of]
+          return raw("<span class='label label-default'>#{template[:output_of]}</span>")
+        end
+        if template[:dataclass]
+          dataclass = template[:dataclass]
+        end
+        if template[:optional] != nil
+          required = (template[:optional] != "true")
+        end
+        if template[:required] != nil
+          required = template[:required]
+        end
+      end
+    end
+
+    rsc = template
+    if template.is_a? Hash
+      if template[:value]
+        rsc = template[:value]
+      elsif template[:default]
+        rsc = template[:default]
+      end
+    end
+
+    return link_to_if_arvados_object(rsc) if !object
+    return link_to_if_arvados_object(attrvalue) if !object.attribute_editable? attr
+
+    if dataclass
+      begin
+        dataclass = dataclass.constantize
+      rescue NameError
+      end
+    else
+      dataclass = ArvadosBase.resource_class_for_uuid(rsc)
+    end
+
+    if dataclass && dataclass.is_a?(Class)
+      datatype = 'select'
+    elsif dataclass == 'number'
+      datatype = 'number'
+    else
+      if template.is_a? Array
+        # ?!?
+      elsif template.is_a? String
+        if /^\d+$/.match(template)
+          datatype = 'number'
+        else
+          datatype = 'text'
+        end
+      end
+    end
+
+    id = "#{object.uuid}-#{subattr.join('-')}"
+    dn = "[#{attr}]"
+    subattr.each do |a|
+      dn += "[#{a}]"
+    end
+
+    if attrvalue.is_a? String
+      attrvalue = attrvalue.strip
+    end
+
+    if dataclass and dataclass.is_a? Class
+      items = []
+      if attrvalue and !attrvalue.empty?
+        items.append({name: attrvalue, uuid: attrvalue, type: dataclass.to_s})
+      end
+      #dataclass.where(uuid: attrvalue).each do |item|
+      #  items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      #end
+      dataclass.limit(10).each do |item|
+        items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      end
+    end
+
+    lt = link_to attrvalue, '#', {
+      "data-emptytext" => "none",
+      "data-placement" => "bottom",
+      "data-type" => datatype,
+      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
+      "data-title" => "Set value for #{subattr[-1].to_s}",
+      "data-name" => dn,
+      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+      "data-showbuttons" => "false",
+      "data-value" => attrvalue,
+      :class => "editable #{'required' if required}",
+      :id => id
+    }.merge(htmloptions)
+
+    lt += raw("\n<script>")
+    
+    if items and items.length > 0
+      lt += raw("add_form_selection_sources(#{items.to_json});\n")
+    end
+
+    lt += raw("$('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
+
+    lt += raw("</script>")
+
+    lt 
   end
 end

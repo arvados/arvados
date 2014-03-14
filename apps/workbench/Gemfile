@@ -43,7 +43,7 @@ gem 'less-rails'
 # gem 'capistrano'
 
 # To use debugger
-# gem 'debugger'
+#gem 'byebug'
 
 gem 'rvm-capistrano', :group => :test
 
@@ -54,3 +54,4 @@ gem 'RedCloth'
 gem 'piwik_analytics'
 gem 'httpclient'
 gem 'themes_for_rails'
+gem "deep_merge", :require => 'deep_merge/rails_compat'

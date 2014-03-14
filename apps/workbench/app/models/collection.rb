@@ -1,4 +1,5 @@
 class Collection < ArvadosBase
+
   def total_bytes
     if files
       tot = 0
@@ -24,4 +25,5 @@ class Collection < ArvadosBase
   def used_by
     $arvados_api_client.api "collections/#{self.uuid}/", "used_by"
   end
+
 end

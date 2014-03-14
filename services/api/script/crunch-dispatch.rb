@@ -38,6 +38,7 @@ class Dispatcher
 
   def refresh_todo
     @todo = Job.queue
+    @todo_pipelines = PipelineInstance.queue
   end
 
   def sinfo
@@ -144,15 +145,16 @@ class Dispatcher
             api_client_id: 0)
       job_auth.save
 
-      cmd_args << (ENV['CRUNCH_JOB_BIN'] || `which crunch-job`.strip)
+      crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
+      if crunch_job_bin == ''
+        raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
+      end
+
+      cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
       cmd_args << job_auth.api_token
       cmd_args << '--job'
       cmd_args << job.uuid
-
-      if cmd_args[0] == ''
-        raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
-      end
 
       commit = Commit.where(sha1: job.script_version).first
       if commit
@@ -313,6 +315,17 @@ class Dispatcher
     @running.delete job_done.uuid
   end
 
+  def update_pipelines
+    @todo_pipelines.each do |p|
+      pipe_auth = ApiClientAuthorization.
+        new(user: User.where('uuid=?', p.modified_by_user_uuid).first,
+            api_client_id: 0)
+      pipe_auth.save
+
+      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --instance #{p.uuid}`
+    end
+  end
+
   def run
     act_as_system_user
     @running ||= {}
@@ -337,12 +350,17 @@ class Dispatcher
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
           start_jobs
         end
+        unless @todo_pipelines.empty? or did_recently(:update_pipelines, 5.0)
+          update_pipelines
+        end
       end
       reap_children
       select(@running.values.collect { |j| [j[:stdout], j[:stderr]] }.flatten,
              [], [], 1)
     end
   end
+
+
 
   protected
 
