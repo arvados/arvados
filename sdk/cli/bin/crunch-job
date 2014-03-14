@@ -1241,65 +1241,6 @@ sub freeze
 sub thaw
 {
   croak ("Thaw not implemented");
-
-  # my $whc;
-  # my $key = shift;
-  # Log (undef, "thaw from $key");
-
-  # @jobstep = ();
-  # @jobstep_done = ();
-  # @jobstep_todo = ();
-  # @jobstep_tomerge = ();
-  # $jobstep_tomerge_level = 0;
-  # my $frozenjob = {};
-
-  # my $stream = new Warehouse::Stream ( whc => $whc,
-  #				       hash => [split (",", $key)] );
-  # $stream->rewind;
-  # while (my $dataref = $stream->read_until (undef, "\n\n"))
-  # {
-  #   if ($$dataref =~ /^job /)
-  #   {
-  #     foreach (split ("\n", $$dataref))
-  #     {
-  #	my ($k, $v) = split ("=", $_, 2);
-  #	$frozenjob->{$k} = freezeunquote ($v);
-  #     }
-  #     next;
-  #   }
-
-  #   if ($$dataref =~ /^merge (\d+) (.*)/)
-  #   {
-  #     $jobstep_tomerge_level = $1;
-  #     @jobstep_tomerge
-  #	  = map { freezeunquote ($_) } split ("\n", freezeunquote($2));
-  #     next;
-  #   }
-
-  #   my $Jobstep = { };
-  #   foreach (split ("\n", $$dataref))
-  #   {
-  #     my ($k, $v) = split ("=", $_, 2);
-  #     $Jobstep->{$k} = freezeunquote ($v) if $k;
-  #   }
-  #   $Jobstep->{'failures'} = 0;
-  #   push @jobstep, $Jobstep;
-
-  #   if ($Jobstep->{exitcode} eq "0")
-  #   {
-  #     push @jobstep_done, $#jobstep;
-  #   }
-  #   else
-  #   {
-  #     push @jobstep_todo, $#jobstep;
-  #   }
-  # }
-
-  # foreach (qw (script script_version script_parameters))
-  # {
-  #   $Job->{$_} = $frozenjob->{$_};
-  # }
-  # $Job->save if $job_has_uuid;
 }
 
 
