@@ -1075,11 +1075,12 @@ sub collate_output
       $main::success = 0;
     }
   }
+  $child_in->close;
+
   if (!defined $joboutput) {
     my $s = IO::Select->new($child_out);
     sysread($child_out, $joboutput, 64 * 1024 * 1024) if $s->can_read(5);
   }
-  $child_in->close;
   waitpid($pid, 0);
 
   if ($joboutput)
