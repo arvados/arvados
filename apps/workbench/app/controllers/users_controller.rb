@@ -19,6 +19,7 @@ class UsersController < ApplicationController
       jobs: {},
       pipeline_instances: {}
     }
+    @total_activity = {}
     @spans = [['This week', Time.now.beginning_of_week, Time.now],
               ['Last week',
                Time.now.beginning_of_week.advance(weeks:-1),
@@ -49,12 +50,17 @@ class UsersController < ApplicationController
           @user_activity[record.modified_by_user_uuid] ||= {}
           @user_activity[record.modified_by_user_uuid][span + ' ' + type.to_s] ||= 0
           @user_activity[record.modified_by_user_uuid][span + ' ' + type.to_s] += 1
+          @total_activity[span + ' ' + type.to_s] ||= 0
+          @total_activity[span + ' ' + type.to_s] += 1
         end
       end
     end
     @users = @users.sort_by do |a|
       [-@user_activity[a.uuid].values.inject(:+), a.full_name]
     end
+    # Prepend a "Total" pseudo-user to the sorted list
+    @user_activity[nil] = @total_activity
+    @users = [OpenStruct.new(uuid: nil)] + @users
   end
 
   def show_pane_list
