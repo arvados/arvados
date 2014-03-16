@@ -18,9 +18,14 @@ production:
 
   uuid_prefix: bogus
 
-  # This is suitable for AWS; see common section below for a static example.
+  # compute_node_domain: example.org
+  # compute_node_nameservers:
+  #   - 127.0.0.1
+  #   - 192.168.1.1
   #
-  #compute_node_nameservers: <%#
+  # The version below is suitable for AWS.
+  # Uncomment and change <%# to <%= to use it.
+  # compute_node_nameservers: <%#
     require 'net/http'
     ['local', 'public'].collect do |iface|
       Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
