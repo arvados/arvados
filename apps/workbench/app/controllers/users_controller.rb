@@ -71,6 +71,14 @@ class UsersController < ApplicationController
     end
   end
 
+  def index_pane_list
+    if current_user.andand.is_admin
+      super | %w(Activity)
+    else
+      super
+    end
+  end
+
   def sudo
     resp = $arvados_api_client.api(ApiClientAuthorization, '', {
                                      api_client_authorization: {
