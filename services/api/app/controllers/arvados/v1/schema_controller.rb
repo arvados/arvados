@@ -222,9 +222,14 @@ class Arvados::V1::SchemaController < ApplicationController
                   minimum: 0,
                   location: "query",
                 },
+                filters: {
+                  type: "array",
+                  description: "Conditions for filtering #{k.to_s.underscore.pluralize}.",
+                  location: "query"
+                },
                 where: {
                   type: "object",
-                  description: "Conditions for filtering #{k.to_s.underscore.pluralize}.",
+                  description: "Conditions for filtering #{k.to_s.underscore.pluralize}. (Deprecated. Use filters instead.)",
                   location: "query"
                 },
                 order: {
