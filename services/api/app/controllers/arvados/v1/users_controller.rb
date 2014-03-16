@@ -85,24 +85,27 @@ class Arvados::V1::UsersController < ApplicationController
         end
       end
     end
+
+		@object = User.find @object[:uuid]
     show
   end
 
 	# create user object and all the needed links
   def create
+		# check if default openid_prefix needs to be overridden
 		openid_prefix = 'https://www.google.com/accounts/o8/id'		# default openid prefix
-		if params[openid_prefix]
-			openid_prefix = params[openid_prefix]
+		if params[:openid_prefix]
+			openid_prefix = params[:openid_prefix]
 		end
 		login_perm_props = {identity_url_prefix: openid_prefix}
 
-puts "\n*******************************\nparams = #{params}"
-puts "\n*******************************\nlogin_perm_props = #{login_perm_props.inspect}"
+		# check if only to probe the given user parameter
+		just_probe = params[:just_probe]
 
  		@object = model_class.new resource_attrs
-  	need_to_create = false
 
 		# If user_param parameter is passed, lookup for user. If exists, skip create and create any missing links. 
+  	need_to_create = false
 		if params[:user_param]
 			begin 
 	 			@object_found = find_user_from_user_param params[:user_param]
@@ -119,9 +122,17 @@ puts "\n*******************************\nlogin_perm_props = #{login_perm_props.i
 		else		# need to create user for the given :user data
 			need_to_create = true
 		end
-	
-		if need_to_create
+
+		# if just probing, return any object found	
+		if just_probe == true 	
+			show
+			return
+		end
+
+		# create if need be, and then create or update the links as needed 
+		if need_to_create == true
 			if @object.save
+
 				# create openid login permission
 	      oid_login_perm = Link.create(link_class: 'permission',
 	                                   name: 'can_login',
@@ -142,12 +153,13 @@ puts "\n*******************************\nlogin_perm_props = #{login_perm_props.i
 		link_repo params[:repo_name]
 		vm_login_permission params[:vm_uuid]
 		link_group 
-puts "@object in the end #{@object.inspect}"
+
 		show
   end
 
 	protected 
 
+	# find the user from the given user parameter
 	def find_user_from_user_param(user_param)
 		found_object = User.find_by_uuid user_param
 		puts "found by uuid = #{found_object.inspect}"
@@ -173,11 +185,8 @@ puts "@object in the end #{@object.inspect}"
 		return found_object
 	end
 	
+	# link the repo_name passed
 	def link_repo(repo_name)
-		puts "\n*******************************\n"
-		puts "repo_name = #{repo_name}"
-		puts "and object is #{@object[:uuid]}"	
-
 		if !repo_name
 			logger.warn ("Repository name not given for #{@object[:uuid]}. Skip creating the link")
 			return
@@ -213,11 +222,8 @@ puts "@object in the end #{@object.inspect}"
 		logger.info { "repo permission: " + repo_perm[:uuid] }
 	end
 
+	# create login permission for the given vm_uuid
 	def vm_login_permission(vm_uuid)
-		puts "\n*******************************\n"
-		puts "vm_uuid = #{vm_uuid}"
-		puts "and object is #{@object[:uuid]}"		
-
 		# Look up the given virtual machine just to make sure it really exists.
 		begin
   		vm = VirtualMachine.get(uuid: vm_uuid)
@@ -236,11 +242,8 @@ puts "@object in the end #{@object.inspect}"
 		end
 	end
 
+	# add the user to the 'All users' group
 	def link_group
-		puts "\n*******************************\n"
-		puts "in link group" 
-		puts "and object is #{@object[:uuid]}"	
-
 		# Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
 		group = Group.where(name: 'All users').select do |g|
 			g[:uuid].match /-f+$/
