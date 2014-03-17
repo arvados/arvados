@@ -119,8 +119,10 @@ class Arvados::V1::UsersController < ApplicationController
 		end
 
 		# if just probing, return any object found	
-		if just_probe 	
-			show; return
+		if just_probe 
+			@object[:email] = nil	
+			show
+		  return
 		end
 
 		# create if need be, and then create or update the links as needed 
