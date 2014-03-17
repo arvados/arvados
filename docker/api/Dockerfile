@@ -11,7 +11,7 @@ MAINTAINER Tim Pierce <twp@curoverse.com>
 RUN apt-get update && \
     apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
                           supervisor && \
-    git clone git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
+    git clone --bare git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
 
 RUN /bin/mkdir -p /usr/src/arvados/services
 ADD generated/api.tar.gz /usr/src/arvados/services/
