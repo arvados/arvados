@@ -68,7 +68,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
     assert_response :success
     created = JSON.parse(@response.body)
-puts "created = #{created}"
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the newly created user'
     assert_not_nil created['email'], 'since email was given, expected non-nil email'

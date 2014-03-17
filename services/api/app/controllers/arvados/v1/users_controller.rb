@@ -185,7 +185,7 @@ class Arvados::V1::UsersController < ApplicationController
 	
 	# link the repo_name passed
 	def create_user_repo_link(repo_name)
-		if !repo_name
+		if not repo_name
 			logger.warn ("Repository name not given for #{@object[:uuid]}. Skip creating the link")
 			return
 		end
@@ -226,7 +226,7 @@ class Arvados::V1::UsersController < ApplicationController
 			vm = (vms = VirtualMachine.where(uuid: vm_uuid)) != nil ? vms.first : nil
   		#vm = VirtualMachine.where(uuid: vm_uuid)
 
-			if [] == vm
+			if not vm
 			  logger.warn "Could not look up virtual machine with uuid #{vm_uuid.inspect}"
 				return
 			end
