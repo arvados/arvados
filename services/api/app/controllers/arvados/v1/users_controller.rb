@@ -102,10 +102,6 @@ class Arvados::V1::UsersController < ApplicationController
 		# check if only to probe the given user parameter
 		just_probe = (params[:just_probe] == 'true') ? true : false;
 
-puts "\n*******************************\nparams = #{params}"
-puts "\n*******************************\nlogin_perm_props = #{login_perm_props.inspect}"
-puts "\n*******************************\njust_probe = #{just_probe}"
-
  		@object = model_class.new resource_attrs
 
 		# If user_param is passed, lookup for user. If exists, skip create and create any missing links. 
@@ -131,9 +127,15 @@ puts "\n*******************************\njust_probe = #{just_probe}"
 
 		# create if need be, and then create or update the links as needed 
 		if need_to_create
-			if @object.save
-				# create openid login permission
-	      oid_login_perm = Link.create(link_class: 'permission',
+			if @object.save		# save succeeded
+				oid_login_perm = Link.where(tail_uuid: @object[:email],
+                            				head_kind: 'arvados#user',
+                            				link_class: 'permission',
+                            				name: 'can_login')
+
+				if [] == oid_login_perm
+					# create openid login permission
+	      	oid_login_perm = Link.create(link_class: 'permission',
 	                                   name: 'can_login',
   	                                 tail_kind: 'email',
   	                                 tail_uuid: @object[:email],
@@ -141,16 +143,17 @@ puts "\n*******************************\njust_probe = #{just_probe}"
   	                                 head_uuid: @object[:uuid],
   	                                 properties: login_perm_props
   	                                )
-				logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+					logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+				end
   	  else
   	   	raise "Save failed"
   	 	end
 		end
 
 		# create links
-		link_repo params[:repo_name]
-		vm_login_permission params[:vm_uuid]
-		link_group 
+		create_user_repo_link params[:repo_name]
+		create_vm_login_permission_link params[:vm_uuid], params[:repo_name]
+		create_user_group_link 
 
 		show
   end
@@ -160,9 +163,8 @@ puts "\n*******************************\njust_probe = #{just_probe}"
 	# find the user from the given user parameter
 	def find_user_from_user_param(user_param)
 		found_object = User.find_by_uuid user_param
-		puts "found by uuid = #{found_object.inspect}"
+
 		if !found_object
-			puts "didnt find by uuid. trying email"
 			begin
 				if !user_param.match(/\w\@\w+\.\w+/)
 					logger.warn ("Given user param is not valid email format: #{user_param}")
@@ -184,31 +186,30 @@ puts "\n*******************************\njust_probe = #{just_probe}"
 	end
 	
 	# link the repo_name passed
-	def link_repo(repo_name)
+	def create_user_repo_link(repo_name)
 		if !repo_name
 			logger.warn ("Repository name not given for #{@object[:uuid]}. Skip creating the link")
 			return
 		end
 
-		# Look for existing repository access (perhaps using a different repository/user name).
-		repo_perms = Link.where(tail_uuid: @object[:uuid],
-                            head_kind: 'arvados#repository',
-                            link_class: 'permission',
-                            name: 'can_write')
-
-		if [] != repo_perms
-  		logger.warn "User already has repository access " + repo_perms.collect { |p| p[:uuid] }.inspect
-			return
-		end
-
 		# Check for an existing repository with the same name we're about to use.
-		repo = Repository.where(name: repo_name).first
+		repo = (repositories = Repository.where(name: repo_name)) != nil ? repositories.first : nil
 		if repo
-  		logger.warn "Repository already exists with name #{repo_name}: #{repo[:uuid]}"
-			return
+  		logger.warn "Repository already exists with name #{repo_name}: #{repo[:uuid]}. Will link to user."
+
+			# Look for existing repository access (perhaps using a different repository/user name).
+			repo_perms = Link.where(tail_uuid: @object[:uuid],
+    	                        head_kind: 'arvados#repository',
+    	                        head_uuid: repo[:uuid],
+    	                        link_class: 'permission',
+    	                        name: 'can_write')
+			if [] != repo_perms
+  			logger.warn "User already has repository access " + repo_perms.collect { |p| p[:uuid] }.inspect
+				return
+			end
 		end
 
-		repo ||= Repository.create(name: repo_name)
+		repo ||= Repository.create(name: repo_name)		# create repo, if does not already exist
 		logger.info { "repo uuid: " + repo[:uuid] }
 
 		repo_perm = Link.create(tail_kind: 'arvados#user',
@@ -221,33 +222,39 @@ puts "\n*******************************\njust_probe = #{just_probe}"
 	end
 
 	# create login permission for the given vm_uuid, if it does not already exist
-	def vm_login_permission(vm_uuid)
+	def create_vm_login_permission_link(vm_uuid, repo_name)
 		# Look up the given virtual machine just to make sure it really exists.
 		begin
-  		vm = VirtualMachine.get(uuid: vm_uuid)
+			vm = (vms = VirtualMachine.where(uuid: vm_uuid)) != nil ? vms.first : nil
+  		#vm = VirtualMachine.where(uuid: vm_uuid)
 
-# check vm exists 
-
-# check vm is not already linked first
-
+			if [] == vm
+			  logger.warn "Could not look up virtual machine with uuid #{vm_uuid.inspect}"
+				return
+			end
 
 			logger.info { "vm uuid: " + vm[:uuid] }
 
-			login_perm = Link.create(tail_kind: 'arvados#user',
-                               tail_uuid: @object[:uuid],
-                               head_kind: 'arvados#virtualMachine',
-                               head_uuid: vm[:uuid],
-                               link_class: 'permission',
-                               name: 'can_login',
-                               properties: {username: repo_name})
-			logger.info { "login permission: " + login_perm[:uuid] }
-		rescue
-  		logger.warn "Could not look up virtual machine with uuid #{vm_uuid.inspect}. Skip."
+			login_perm = Link.where(tail_uuid: @object[:uuid],
+                              head_uuid: vm[:uuid],
+                            	head_kind: 'arvados#virtualMachine',
+                            	link_class: 'permission',
+                            	name: 'can_login')
+			if [] == login_perm
+				login_perm = Link.create(tail_kind: 'arvados#user',
+        	                       tail_uuid: @object[:uuid],
+        	                       head_kind: 'arvados#virtualMachine',
+        	                       head_uuid: vm[:uuid],
+        	                       link_class: 'permission',
+        	                       name: 'can_login',
+        	                       properties: {username: repo_name})
+				logger.info { "login permission: " + login_perm[:uuid] }
+			end
 		end
 	end
 
 	# add the user to the 'All users' group
-	def link_group
+	def create_user_group_link
 		# Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
 		group = Group.where(name: 'All users').select do |g|
 			g[:uuid].match /-f+$/
@@ -255,20 +262,25 @@ puts "\n*******************************\njust_probe = #{just_probe}"
 
 		if not group
   		logger.warn "Could not look up the 'All users' group with uuid '*-*-fffffffffffffff'. Skip."
+			return
 		else
 			logger.info { "\"All users\" group uuid: " + group[:uuid] }
 
-			# link the user to 'All users' group, if not already linked
+			group_perm = Link.where(tail_uuid: @object[:uuid],
+															head_uuid: group[:uuid],
+                            	head_kind: 'arvados#group',
+                            	link_class: 'permission',
+                            	name: 'can_read')
 
-# check first
-
-			group_perm = Link.create(tail_kind: 'arvados#user',
-                               tail_uuid: @object[:uuid],
-                               head_kind: 'arvados#group',
-                               head_uuid: group[:uuid],
-                               link_class: 'permission',
-                               name: 'can_read')
-			logger.info { "group permission: " + group_perm[:uuid] }
+			if [] == group_perm
+				group_perm = Link.create(tail_kind: 'arvados#user',
+  	                             tail_uuid: @object[:uuid],
+  	                             head_kind: 'arvados#group',
+  	                             head_uuid: group[:uuid],
+  	                             link_class: 'permission',
+  	                             name: 'can_read')
+				logger.info { "group permission: " + group_perm[:uuid] }
+			end
 		end
 	end
 
