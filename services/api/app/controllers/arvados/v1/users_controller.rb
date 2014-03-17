@@ -85,8 +85,6 @@ class Arvados::V1::UsersController < ApplicationController
         end
       end
     end
-
-		@object = User.find @object[:uuid]
     show
   end
 
@@ -283,5 +281,5 @@ class Arvados::V1::UsersController < ApplicationController
 			end
 		end
 	end
-
+ 
 end
