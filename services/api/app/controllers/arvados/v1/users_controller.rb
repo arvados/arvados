@@ -92,25 +92,26 @@ class Arvados::V1::UsersController < ApplicationController
 
 	# create user object and all the needed links
   def create
-		# check if default openid_prefix needs to be overridden
-		openid_prefix = 'https://www.google.com/accounts/o8/id'		# default openid prefix
-		if params[:openid_prefix]
+		if params[:openid_prefix]		# check if default openid_prefix needs to be overridden
 			openid_prefix = params[:openid_prefix]
+		else 
+			openid_prefix = 'https://www.google.com/accounts/o8/id'		# default openid prefix
 		end
 		login_perm_props = {identity_url_prefix: openid_prefix}
 
 		# check if only to probe the given user parameter
-		just_probe = params[:just_probe]
+		just_probe = (params[:just_probe] == 'true') ? true : false;
+
+puts "\n*******************************\nparams = #{params}"
+puts "\n*******************************\nlogin_perm_props = #{login_perm_props.inspect}"
+puts "\n*******************************\njust_probe = #{just_probe}"
 
  		@object = model_class.new resource_attrs
 
-		# If user_param parameter is passed, lookup for user. If exists, skip create and create any missing links. 
-  	need_to_create = false
+		# If user_param is passed, lookup for user. If exists, skip create and create any missing links. 
 		if params[:user_param]
 			begin 
 	 			@object_found = find_user_from_user_param params[:user_param]
-			rescue Exception => e
-			 raise e
 		  end
 
 			if !@object_found
@@ -124,15 +125,13 @@ class Arvados::V1::UsersController < ApplicationController
 		end
 
 		# if just probing, return any object found	
-		if just_probe == true 	
-			show
-			return
+		if just_probe 	
+			show; return
 		end
 
 		# create if need be, and then create or update the links as needed 
-		if need_to_create == true
+		if need_to_create
 			if @object.save
-
 				# create openid login permission
 	      oid_login_perm = Link.create(link_class: 'permission',
 	                                   name: 'can_login',
@@ -142,7 +141,6 @@ class Arvados::V1::UsersController < ApplicationController
   	                                 head_uuid: @object[:uuid],
   	                                 properties: login_perm_props
   	                                )
-
 				logger.info { "openid login permission: " + oid_login_perm[:uuid] }
   	  else
   	   	raise "Save failed"
@@ -222,11 +220,17 @@ class Arvados::V1::UsersController < ApplicationController
 		logger.info { "repo permission: " + repo_perm[:uuid] }
 	end
 
-	# create login permission for the given vm_uuid
+	# create login permission for the given vm_uuid, if it does not already exist
 	def vm_login_permission(vm_uuid)
 		# Look up the given virtual machine just to make sure it really exists.
 		begin
   		vm = VirtualMachine.get(uuid: vm_uuid)
+
+# check vm exists 
+
+# check vm is not already linked first
+
+
 			logger.info { "vm uuid: " + vm[:uuid] }
 
 			login_perm = Link.create(tail_kind: 'arvados#user',
@@ -253,6 +257,10 @@ class Arvados::V1::UsersController < ApplicationController
   		logger.warn "Could not look up the 'All users' group with uuid '*-*-fffffffffffffff'. Skip."
 		else
 			logger.info { "\"All users\" group uuid: " + group[:uuid] }
+
+			# link the user to 'All users' group, if not already linked
+
+# check first
 
 			group_perm = Link.create(tail_kind: 'arvados#user',
                                tail_uuid: @object[:uuid],
