@@ -560,11 +560,14 @@ class WhRunPipelineInstance
           if c[:job][:success] == true
             succeeded += 1
           end
+          if c[:job][:success] == false
+            failed += 1
+          end
         end
       end
     end
     
-    if ended == @components.length
+    if ended == @components.length or failed > 0
       @instance[:active] = false
       @instance[:success] = (succeeded == @components.length)
     end
