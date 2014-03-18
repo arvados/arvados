@@ -1,4 +1,5 @@
 require 'test_helper'
+load 'test/functional/arvados/v1/git_setup.rb'
 
 class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
@@ -226,4 +227,6 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response 422
   end
+
+
 end

@@ -330,7 +330,7 @@ class Dispatcher
             api_client_id: 0)
       pipe_auth.save
 
-      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --instance #{p.uuid}`
+      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --debug --debug-level=3 --instance #{p.uuid}`
     end
   end
 
