@@ -226,8 +226,6 @@ class Arvados::V1::UsersController < ApplicationController
 		# Look up the given virtual machine just to make sure it really exists.
 		begin
 			vm = (vms = VirtualMachine.where(uuid: vm_uuid)) != nil ? vms.first : nil
-  		#vm = VirtualMachine.where(uuid: vm_uuid)
-
 			if not vm
 			  logger.warn "Could not look up virtual machine with uuid #{vm_uuid.inspect}"
 				return
