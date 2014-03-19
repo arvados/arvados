@@ -63,9 +63,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
 	test "create user with user, vm and repo as input" do
     authorize_with :admin
+		repo_name = 'test_repo'
 
     post :create, {
-      repo_name: 'test_repo',
+      repo_name: repo_name,
 			vm_uuid: 'no_such_vm',
       user: {
 		    uuid: "is_this_correct",		    
@@ -85,7 +86,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		# since no such vm exists, expect only three new links: oid_login_perm, repo link and link add user to 'All users' group
 		verify_num_links @all_links_at_start, 3
 
-		verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', created['uuid'], 'arvados#repository', true
+		verify_link_exists_for_type 'Repository', 'permission', 'can_write', repo_name, created['uuid'], 'arvados#repository', true
 
 		verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
 	end
@@ -115,9 +116,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		
     authorize_with :admin
 
-		# it would be desirable to use inactive_user['uuid'] instead of hard coding user_param
     post :create, {
-      user_param: 'zzzzz-tpzed-x9kqpd79egh49c7',
+      user_param: inactive_user['uuid'],
       repo_name: 'test_repo',
 			vm_uuid: 'no_such_vm',
       user: {}
@@ -234,7 +234,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :create, {
       repo_name: 'test_repo',
-			vm_uuid: 'zzzzz-2x53u-382brsig8rp3064',
+			vm_uuid: @vm_uuid,
       user: {
 				first_name: "in_create_test_first_name",
 		    last_name: "test_last_name",
@@ -256,7 +256,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
 
 
-		verify_link_exists_for_type 'VirtualMachine', 'permission', 'can_login', 'zzzzz-2x53u-382brsig8rp3064', created['uuid'], 'arvados#virtualMachine', false
+		verify_link_exists_for_type 'VirtualMachine', 'permission', 'can_login', @vm_uuid, created['uuid'], 'arvados#virtualMachine', false
 	end
 
 	def verify_num_links (original_links, expected_num_additional_links)
