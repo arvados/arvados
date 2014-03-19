@@ -18,3 +18,11 @@ common:
   arvados_login_base: https://arvados.local:3000/login
   arvados_v1_base: https://arvados.local:3000/arvados/v1
   arvados_insecure_https: true
+
+test:
+  # When you run the Workbench's integration tests, it starts the API server
+  # as a dependency.  These settings should match the API server's Rails
+  # defaults.  If you adjust those, change these settings to match.
+  arvados_login_base: https://localhost:3001/login
+  arvados_v1_base: https://localhost:3001/arvados/v1
+  arvados_insecure_https: true
