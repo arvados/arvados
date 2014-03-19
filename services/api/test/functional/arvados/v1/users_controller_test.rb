@@ -251,12 +251,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		# expect 4 new links: oid_login_perm, repo link, vm link and link add user to 'All users' group. 
 		verify_num_links @all_links_at_start, 4
 
-		link_to_verify = {'link_class' => 'permission',
-	                 		'name' => 'can_login',
-  	               		'tail_uuid' => created['email'],
-  	               		'head_kind' => 'arvados#user'}
-		verify_link_exists link_to_verify
-
 		verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', created['uuid'], 'arvados#repository', true
 
 		verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
@@ -269,14 +263,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		links_now = Link.all
 		assert_equal original_links.size+expected_num_additional_links, Link.all.size, 
 							"Expected #{expected_num_additional_links.inspect} more links"
-	end
-
-	def verify_link_exists (link)
-			links = Link.where(link_class: link['link_class'],
-              				   name: link['name'],
-             					   tail_uuid: link['tail_uuid'],
-				                 head_kind: link['head_kind'])
-			assert links.size > 0, "expected one or more links with the given criteria"
 	end
 
 	def verify_link_exists_for_type(class_name, link_class, link_name, head_uuid, tail_uuid, head_kind, fetch_object)
