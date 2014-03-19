@@ -6,11 +6,11 @@ class Arvados::V1::JobsController < ApplicationController
   skip_before_filter :render_404_if_no_object, :only => :queue
 
   def create
-    puts resource_attrs
     r = Commit.find_commit_range(current_user,
                                  resource_attrs[:repository],
                                  resource_attrs[:minimum_script_version],
-                                 resource_attrs[:script_version])    
+                                 resource_attrs[:script_version],
+                                 resource_attrs[:exclude_script_versions])
     if !resource_attrs[:nondeterministic]
       Job.readable_by(current_user).where(script: resource_attrs[:script],
                                           script_version: r).
@@ -24,6 +24,10 @@ class Arvados::V1::JobsController < ApplicationController
     if r
       resource_attrs[:script_version] = r[0]
     end
+
+    # Don't pass these on to activerecord
+    resource_attrs.delete(:minimum_script_version)
+    resource_attrs.delete(:exclude_script_versions)
     super
   end
 
