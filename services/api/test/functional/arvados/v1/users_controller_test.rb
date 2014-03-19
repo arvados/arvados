@@ -162,6 +162,24 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
 	end
 
+	test "create user with user_param and user which will be ignored" do
+    authorize_with :admin
+
+    post :create, {
+      user_param: 'abc@xyz.com',
+      repo_name: 'test_repo',
+			vm_uuid: 'no_such_vm',
+      user: {
+				email: 'will_be_ignored@xyz.om'
+			}
+    }
+
+    assert_response :success
+    response_object = JSON.parse(@response.body)
+    assert_not_nil response_object['uuid'], 'expected non-null uuid for the newly created user'
+    assert_equal response_object['email'], 'abc@xyz.com', 'expecting user_param as email'
+	end
+
 	test "create user with valid email user_param, vm and repo as input with opt.n" do
     authorize_with :admin
 

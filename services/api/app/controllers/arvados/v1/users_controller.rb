@@ -109,6 +109,7 @@ class Arvados::V1::UsersController < ApplicationController
 		  end
 
 			if !@object_found
+				@object = User.new		# when user_param is used, it will be used as user object
 				@object[:email] = params[:user_param]				
   	 		need_to_create = true
 			else
