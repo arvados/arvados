@@ -23,6 +23,12 @@ group :assets do
   gem 'uglifier', '>= 1.0.3'
 end
 
+group :test do
+  gem 'rvm-capistrano'
+  gem 'selenium-webdriver'
+  gem 'capybara'
+end
+
 gem 'jquery-rails'
 gem 'bootstrap-sass', '~> 3.1.0'
 gem 'bootstrap-x-editable-rails'
@@ -44,8 +50,6 @@ gem 'less-rails'
 
 # To use debugger
 #gem 'byebug'
-
-gem 'rvm-capistrano', :group => :test
 
 gem 'passenger', :group => :production
 gem 'andand'
