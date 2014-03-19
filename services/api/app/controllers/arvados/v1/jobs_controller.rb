@@ -11,11 +11,16 @@ class Arvados::V1::JobsController < ApplicationController
                                  resource_attrs[:minimum_script_version],
                                  resource_attrs[:script_version],
                                  resource_attrs[:exclude_script_versions])
-    if !resource_attrs[:nondeterministic]
+    if !resource_attrs[:nondeterministic] and !resource_attrs[:no_reuse]
+      # Search for jobs where the script_version is in the list of commits
+      # returned by find_commit_range
       Job.readable_by(current_user).where(script: resource_attrs[:script],
                                           script_version: r).
         each do |j|
-        if j.nondeterministic != true and j.success != false and j.script_parameters == resource_attrs[:script_parameters]
+        if j.nondeterministic != true and 
+            j.success != false and 
+            j.script_parameters == resource_attrs[:script_parameters]
+          # We can re-use this job
           @object = j
           return show
         end
@@ -26,8 +31,10 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     # Don't pass these on to activerecord
+    resource_attrs.delete(:repository)
     resource_attrs.delete(:minimum_script_version)
     resource_attrs.delete(:exclude_script_versions)
+    resource_attrs.delete(:no_reuse)
     super
   end
 
