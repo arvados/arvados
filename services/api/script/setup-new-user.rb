@@ -24,10 +24,6 @@ If creating a new user record, require authentication from an OpenID \
 with this OpenID prefix *and* a matching email address in order to \
 claim the account.
   eos
-  opt :force, <<-eos
-Continue even if sanity checks raise flags: the given user is already \
-active, the given repository already exists, etc.
-  eos
   opt :n, 'Do not change anything, just probe'
 end
 
