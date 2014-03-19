@@ -194,10 +194,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
     response_object = JSON.parse(@response.body)
     assert_nil response_object['uuid'], 'expected null uuid since no object created due to just probe'
-    assert_nil response_object['email'], 'expecting null email'
 	end
 
-	test "create user twice and check links are not recreated" do
+	test "create user twice with user param and check links are not recreated" do
     authorize_with :admin
 
     post :create, {
@@ -219,6 +218,34 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       repo_name: 'test_repo',
 			vm_uuid: 'no_such_vm',
       user: {}
+    }
+
+    assert_response :success
+    response_object2 = JSON.parse(@response.body)
+    assert_equal response_object['uuid'], response_object2['uuid'], 'expected same uuid as first create operation'
+    assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
+		verify_num_links @all_links_at_start, 3		# openid, group, and repo links. no vm link
+	end
+
+	test "create user twice with user object as input and check links are not recreated" do
+    authorize_with :admin
+
+    post :create, {
+      repo_name: 'test_repo',
+      user: {
+				email: 'abc@xyz.com'
+			}
+    }
+
+    assert_response :success
+    response_object = JSON.parse(@response.body)
+    assert_not_nil response_object['uuid'], 'expected non-null uuid for the newly created user'
+    assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
+		verify_num_links @all_links_at_start, 3		# openid, group, and repo links. no vm link
+
+		# create again
+	  post :create, user: {
+			email: 'abc@xyz.com'
     }
 
     assert_response :success

@@ -105,9 +105,8 @@ class Arvados::V1::UsersController < ApplicationController
 		# If user_param is passed, lookup for user. If exists, skip create and create any missing links. 
 		if params[:user_param]
 			begin 
-	 			@object_found = find_user_from_user_param params[:user_param]
+	 			@object_found = find_user_from_input params[:user_param], params[:user_param]
 		  end
-
 			if !@object_found
 				@object = User.new		# when user_param is used, it will be used as user object
 				@object[:email] = params[:user_param]				
@@ -115,13 +114,17 @@ class Arvados::V1::UsersController < ApplicationController
 			else
 				@object = @object_found
 			end
-		else		# need to create user for the given :user data
-			need_to_create = true
+		else		# need to create user for the given user data
+	 		@object_found = find_user_from_input @object[:uuid], @object[:email]
+			if !@object_found
+  	 		need_to_create = true
+			else
+				@object = @object_found
+			end
 		end
 
 		# if just probing, return any object found	
 		if just_probe 
-			@object[:email] = nil	
 			show
 		  return
 		end
@@ -137,13 +140,13 @@ class Arvados::V1::UsersController < ApplicationController
 				if [] == oid_login_perm
 					# create openid login permission
 	      	oid_login_perm = Link.create(link_class: 'permission',
-	                                   name: 'can_login',
-  	                                 tail_kind: 'email',
-  	                                 tail_uuid: @object[:email],
-  	                                 head_kind: 'arvados#user',
-  	                                 head_uuid: @object[:uuid],
-  	                                 properties: login_perm_props
-  	                                )
+	                                   	 name: 'can_login',
+  	                                 	 tail_kind: 'email',
+  	                                   tail_uuid: @object[:email],
+  	                                   head_kind: 'arvados#user',
+  	                                   head_uuid: @object[:uuid],
+  	                                   properties: login_perm_props
+  	                                	)
 					logger.info { "openid login permission: " + oid_login_perm[:uuid] }
 				end
   	  else
@@ -162,20 +165,25 @@ class Arvados::V1::UsersController < ApplicationController
 	protected 
 
 	# find the user from the given user parameter
-	def find_user_from_user_param(user_param)
-		found_object = User.find_by_uuid user_param
+	def find_user_from_input(user_uuid, user_email)
+		if user_uuid
+			found_object = User.find_by_uuid user_uuid
+		end
 
 		if !found_object
 			begin
-				if !user_param.match(/\w\@\w+\.\w+/)
-					logger.warn ("Given user param is not valid email format: #{user_param}")
+				if !user_email
+					return
+				end
+
+				if !user_email.match(/\w\@\w+\.\w+/)
+					logger.warn ("Given user param is not valid email format: #{user_email}")
 					raise ArgumentError.new "User param is not of valid email format. Stop"
 				else
-          found_objects = User.where('email=?', user_param)  
-       
+          found_objects = User.where('email=?', user_email)  
 				 	if found_objects.size > 1
-						logger.warn ("Found #{found_objects.size} users with email #{user_param}. Stop.")
-						raise ArgumentError.new "Found #{found_objects.size} users with email #{user_param}. Stop."
+						logger.warn ("Found #{found_objects.size} users with email #{user_email}. Stop.")
+						raise ArgumentError.new "Found #{found_objects.size} users with email #{user_email}. Stop."
 					elsif found_objects.size == 1
 						found_object = found_objects.first
 					end
