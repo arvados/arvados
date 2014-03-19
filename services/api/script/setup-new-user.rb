@@ -37,9 +37,8 @@ require 'arvados'
 arv = Arvados.new(api_version: 'v1')
 
 begin
-	new_user = arv.user.create(user_param: user_arg, repo_name: user_repo_name, vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix, user: {})
-	log.warn new_user
+  new_user = arv.user.create(user_param: user_arg, repo_name: user_repo_name, vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix, user: {})
+  log.warn new_user
 rescue Exception => e #Arvados::TransactionFailedError
-	log.warn e.message
+  log.warn e.message
 end
-
