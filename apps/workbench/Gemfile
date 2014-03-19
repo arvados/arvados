@@ -27,6 +27,7 @@ group :test do
   gem 'rvm-capistrano'
   gem 'selenium-webdriver'
   gem 'capybara'
+  gem 'poltergeist'
 end
 
 gem 'jquery-rails'

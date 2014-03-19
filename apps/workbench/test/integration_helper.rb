@@ -1,5 +1,6 @@
 require 'test_helper'
 require 'capybara/rails'
+require 'capybara/poltergeist'
 require 'uri'
 require 'yaml'
 
@@ -42,6 +43,7 @@ class IntegrationTestRunner < MiniTest::Unit
   end
 
   def _run(args=[])
+    Capybara.javascript_driver = :poltergeist
     server_pid = Dir.chdir($ARV_API_SERVER_DIR) do |apidir|
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
