@@ -182,22 +182,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil response_object['first_name'], 'expecting no first name since it will be reset when user_param is used'
 	end
 
-	test "create user with valid email user_param, vm and repo as input with opt.n" do
-    authorize_with :admin
-
-    post :create, {
-      user_param: 'abc@xyz.com',
-      repo_name: 'test_repo',
-			vm_uuid: 'no_such_vm',
-			just_probe: 'true',
-      user: {}
-    }
-
-    assert_response :success
-    response_object = JSON.parse(@response.body)
-    assert_nil response_object['uuid'], 'expected null uuid since no object created due to just probe'
-	end
-
 	test "create user twice with user param and check links are not recreated" do
     authorize_with :admin
 

@@ -97,9 +97,6 @@ class Arvados::V1::UsersController < ApplicationController
 		end
 		login_perm_props = {identity_url_prefix: openid_prefix}
 
-		# check if only to probe the given user parameter
-		just_probe = (params[:just_probe] == 'true') ? true : false;
-
  		@object = model_class.new resource_attrs
 
 		# If user_param is passed, lookup for user. If exists, skip create and only create any missing links. 
@@ -121,12 +118,6 @@ class Arvados::V1::UsersController < ApplicationController
 			else
 				@object = @object_found
 			end
-		end
-
-		# if just probing, return any object found	
-		if just_probe 
-			show
-		  return
 		end
 
 		# create if need be, and then create or update the links as needed 

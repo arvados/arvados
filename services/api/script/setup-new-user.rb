@@ -24,7 +24,6 @@ If creating a new user record, require authentication from an OpenID \
 with this OpenID prefix *and* a matching email address in order to \
 claim the account.
   eos
-  opt :n, 'Do not change anything, just probe'
 end
 
 log.level = (ENV['DEBUG'] || opts.debug) ? Logger::DEBUG : Logger::WARN
@@ -38,7 +37,7 @@ require 'arvados'
 arv = Arvados.new(api_version: 'v1')
 
 begin
-	new_user = arv.user.create(user_param: user_arg, repo_name: user_repo_name, vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix, just_probe: opts.n, user: {})
+	new_user = arv.user.create(user_param: user_arg, repo_name: user_repo_name, vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix, user: {})
 	log.warn new_user
 rescue Exception => e #Arvados::TransactionFailedError
 	log.warn e.message
