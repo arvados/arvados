@@ -102,9 +102,9 @@ class Arvados::V1::UsersController < ApplicationController
 
  		@object = model_class.new resource_attrs
 
-		# If user_param is passed, lookup for user. If exists, skip create and create any missing links. 
+		# If user_param is passed, lookup for user. If exists, skip create and only create any missing links. 
 		if params[:user_param]
-			begin 
+			begin
 	 			@object_found = find_user_from_input params[:user_param], params[:user_param]
 		  end
 			if !@object_found
@@ -117,7 +117,7 @@ class Arvados::V1::UsersController < ApplicationController
 		else		# need to create user for the given user data
 	 		@object_found = find_user_from_input @object[:uuid], @object[:email]
 			if !@object_found
-  	 		need_to_create = true
+  	 		need_to_create = true		# use the user object sent in to create with the user
 			else
 				@object = @object_found
 			end
@@ -131,7 +131,7 @@ class Arvados::V1::UsersController < ApplicationController
 
 		# create if need be, and then create or update the links as needed 
 		if need_to_create
-			if @object.save		# save succeeded
+			if @object.save
 				oid_login_perm = Link.where(tail_uuid: @object[:email],
                             				head_kind: 'arvados#user',
                             				link_class: 'permission',
@@ -164,7 +164,7 @@ class Arvados::V1::UsersController < ApplicationController
 
 	protected 
 
-	# find the user from the given user parameter
+	# find the user from the given user parameters
 	def find_user_from_input(user_uuid, user_email)
 		if user_uuid
 			found_object = User.find_by_uuid user_uuid
@@ -290,5 +290,5 @@ class Arvados::V1::UsersController < ApplicationController
 			end
 		end
 	end
- 
+
 end
