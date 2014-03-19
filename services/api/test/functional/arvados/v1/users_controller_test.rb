@@ -86,6 +86,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		# since no such vm exists, expect only three new links: oid_login_perm, repo link and link add user to 'All users' group
 		verify_num_links @all_links_at_start, 3
 
+		verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], created['email'], 'arvados#user', false
+
 		verify_link_exists_for_type 'Repository', 'permission', 'can_write', repo_name, created['uuid'], 'arvados#repository', true
 
 		verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
@@ -208,13 +210,13 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		verify_num_links @all_links_at_start, 3		# openid, group, and repo links. no vm link
 	end
 
-	# still in progress
-	test "create user with openid_prefix" do
+	test "create user with openid prefix" do
     authorize_with :admin
 
     post :create, {
       repo_name: 'test_repo',
 			vm_uuid: 'no_such_vm',
+			openid_prefix: 'http://www.xyz.com/account',
       user: {
 				first_name: "in_create_test_first_name",
 		    last_name: "test_last_name",
@@ -227,6 +229,16 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['uuid'], 'expected non-null uuid for the newly created user'
     assert_not_nil created['email'], 'since email was given, expected non-nil email'
     assert_nil created['identity_url'], 'even though email is provided, expected no identity_url since users_controller only creates user' 
+
+		# verify links
+		# expect 3 new links: oid_login_perm, repo link, and link add user to 'All users' group. No vm link since the vm_uuid passed in is not in system
+		verify_num_links @all_links_at_start, 3
+
+		verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], created['email'], 'arvados#user', false
+
+		verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', created['uuid'], 'arvados#repository', true
+
+		verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
 	end
 
 	test "create user with user, vm and repo and verify links" do
@@ -251,10 +263,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 		# expect 4 new links: oid_login_perm, repo link, vm link and link add user to 'All users' group. 
 		verify_num_links @all_links_at_start, 4
 
+		verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], created['email'], 'arvados#user', false
+
 		verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', created['uuid'], 'arvados#repository', true
 
 		verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
-
 
 		verify_link_exists_for_type 'VirtualMachine', 'permission', 'can_login', @vm_uuid, created['uuid'], 'arvados#virtualMachine', false
 	end
