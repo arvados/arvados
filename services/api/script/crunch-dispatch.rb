@@ -309,12 +309,9 @@ class Dispatcher
     j_done[:wait_thr].value
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    jobrecord.running = false
-    if jobrecord.finished_at == nil
-      jobrecord.finished_at = Time.now
-    end
+    jobrecord.assert_finished
     jobrecord.save!
-    
+
     # Invalidate the per-job auth token
     j_done[:job_auth].update_attributes expires_at: Time.now
 
@@ -367,8 +364,6 @@ class Dispatcher
              [], [], 1)
     end
   end
-
-
 
   protected
 
