@@ -65,7 +65,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
     repo_name = 'test_repo'
 
-    post :create, {
+    post :setup, {
       repo_name: repo_name,
       vm_uuid: 'no_such_vm',
       user: {
@@ -96,13 +96,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user with user_param, vm and repo as input" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       user_param: 'not_an_existing_uuid_and_not_email_format',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
       user: {}
     }
-
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
     assert_not_nil response_errors, 'Expected error in response'
@@ -118,7 +117,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       user_param: inactive_user['uuid'],
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
@@ -135,7 +134,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user with valid email user_param, vm and repo as input" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
@@ -151,7 +150,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user with valid email user_param, no vm and repo as input" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       user_param: 'abc@xyz.com',
       user: {}
     }
@@ -165,7 +164,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user with user_param and non-empty user which will be ignored" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
@@ -185,7 +184,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user twice with user param and check links are not recreated" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
@@ -199,7 +198,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 3   # openid, group, and repo links. no vm link
 
     # create again
-    post :create, {
+    post :setup, {
       user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
@@ -216,7 +215,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user twice with user object as input and check links are not recreated" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       repo_name: 'test_repo',
       user: {
         email: 'abc@xyz.com'
@@ -244,7 +243,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user with openid prefix" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
       openid_prefix: 'http://www.xyz.com/account',
@@ -275,7 +274,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   test "create user with user, vm and repo and verify links" do
     authorize_with :admin
 
-    post :create, {
+    post :setup, {
       repo_name: 'test_repo',
       vm_uuid: @vm_uuid,
       user: {

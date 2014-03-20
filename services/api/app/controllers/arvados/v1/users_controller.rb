@@ -1,8 +1,8 @@
 class Arvados::V1::UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, only:
-    [:activate, :event_stream, :current, :system]
+    [:activate, :event_stream, :current, :system, :setup]
   skip_before_filter :render_404_if_no_object, only:
-    [:activate, :event_stream, :current, :system]
+    [:activate, :event_stream, :current, :system, :setup]
 
   def current
     @object = current_user
@@ -87,6 +87,71 @@ class Arvados::V1::UsersController < ApplicationController
     end
     show
   end
+
+  # create user object and all the needed links
+  def setup
+puts "\n*************PARAMS = #{params.inspect}"
+    if params[:openid_prefix]   # check if default openid_prefix needs to be overridden
+      openid_prefix = params[:openid_prefix]
+    else 
+      openid_prefix = Rails.configuration.openid_prefix
+    end
+    login_perm_props = {identity_url_prefix: openid_prefix}
+
+    @object = model_class.new resource_attrs
+
+    # If user_param is passed, lookup for user. If exists, skip create and only create any missing links. 
+    if params[:user_param]
+      begin
+        @object_found = find_user_from_input params[:user_param], params[:user_param]
+      end
+      if !@object_found
+        @object = User.new    # when user_param is used, it will be used as user object
+        @object[:email] = params[:user_param]       
+        need_to_create = true
+      else
+        @object = @object_found
+      end
+    else    # need to create user for the given user data
+      @object_found = find_user_from_input @object[:uuid], @object[:email]
+      if !@object_found
+        need_to_create = true   # use the user object sent in to create with the user
+      else
+        @object = @object_found
+      end
+    end
+
+    # create if need be, and then create or update the links as needed 
+    if need_to_create
+      if @object.save
+        oid_login_perm = Link.where(tail_uuid: @object[:email],
+                                    head_kind: 'arvados#user',
+                                    link_class: 'permission',
+                                    name: 'can_login')
+
+        if [] == oid_login_perm
+          # create openid login permission
+          oid_login_perm = Link.create(link_class: 'permission',
+                                       name: 'can_login',
+                                       tail_kind: 'email',
+                                       tail_uuid: @object[:email],
+                                       head_kind: 'arvados#user',
+                                       head_uuid: @object[:uuid],
+                                       properties: login_perm_props
+                                      )
+          logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+        end
+      else
+        raise "Save failed"
+      end
+    end
+
+    # create links
+    create_user_repo_link params[:repo_name]
+    create_vm_login_permission_link params[:vm_uuid], params[:repo_name]
+    create_user_group_link 
+
+    show  end
 
   # create user object and all the needed links
   def create
