@@ -40,6 +40,7 @@ navbar:
     - Reference:
       - user/reference/api-tokens.html.textile.liquid
       - user/reference/sdk-cli.html.textile.liquid
+      - user/reference/job-and-pipeline-reference.html.textile.liquid
     - Arvados License:
       - user/copying/copying.html.textile.liquid
       - user/copying/agpl-3.0.html

@@ -18,11 +18,14 @@ Arvados Documentation
   Then go to http://localhost:8000
 
 
-2. You can set 'baseurl' (the URL prefix for all internal links),
+3. You can set 'baseurl' (the URL prefix for all internal links),
 'arvados_api_host' and 'arvados_workbench_host' without changing _config.yml:
 
  $ rake generate baseurl=/example arvados_api_host=example.com
 
+To use file:/// links:
+
+ $ rake baseurl=$PWD/.site
 
 4. To delete generated files:
   $ rake realclean
