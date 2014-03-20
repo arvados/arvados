@@ -80,6 +80,7 @@ use Getopt::Long;
 use Warehouse;
 use Warehouse::Stream;
 use IPC::System::Simple qw(capturex);
+use Fcntl ':flock';
 
 $ENV{"TMPDIR"} ||= "/tmp";
 unless (defined $ENV{"CRUNCH_TMP"}) {
@@ -331,6 +332,12 @@ else
 }
 
 
+if (!$have_slurm)
+{
+  must_lock_now("$ENV{CRUNCH_TMP}/.lock", "a job is already running here.");
+}
+
+
 my $build_script;
 
 
@@ -476,6 +483,12 @@ else
     select (undef, undef, undef, 0.1);
   }
   Log (undef, "Install exited $?");
+}
+
+if (!$have_slurm)
+{
+  # Grab our lock again (we might have deleted and re-created CRUNCH_TMP above)
+  must_lock_now("$ENV{CRUNCH_TMP}/.lock", "a job is already running here.");
 }
 
 
@@ -1359,6 +1372,15 @@ sub ban_node_by_slot {
   $slot[$slotid]->{node}->{hold_until} = 60 + scalar time;
   $slot[$slotid]->{node}->{hold_count}++;
   Log (undef, "backing off node " . $slot[$slotid]->{node}->{name} . " for 60 seconds");
+}
+
+sub must_lock_now
+{
+  my ($lockfile, $error_message) = @_;
+  open L, ">", $lockfile or croak("$lockfile: $!");
+  if (!flock L, LOCK_EX|LOCK_NB) {
+    croak("Can't lock $lockfile: $error_message\n");
+  }
 }
 
 __DATA__
