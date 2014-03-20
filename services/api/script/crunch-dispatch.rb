@@ -309,7 +309,10 @@ class Dispatcher
     j_done[:wait_thr].value
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    jobrecord.assert_finished
+    jobrecord.running = false
+    jobrecord.finished_at ||= Time.now,
+    # Don't set 'jobrecord.success = false' because if the job failed to run due to an
+    # issue with crunch-job or slurm, we want the job to stay in the queue.
     jobrecord.save!
 
     # Invalidate the per-job auth token
