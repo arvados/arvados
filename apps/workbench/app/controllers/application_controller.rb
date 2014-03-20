@@ -58,7 +58,19 @@ class ApplicationController < ActionController::Base
   end
 
   def index
-    @objects ||= model_class.limit(200).all
+    if params[:limit]
+      limit = params[:limit].to_i
+    else
+      limit = 200
+    end
+
+    if params[:offset]
+      offset = params[:offset].to_i
+    else
+      offset = 0
+    end
+
+    @objects ||= model_class.limit(limit).offset(offset).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }

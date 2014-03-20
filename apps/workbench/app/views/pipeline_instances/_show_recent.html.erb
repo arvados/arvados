@@ -5,6 +5,8 @@
 <% end rescue nil %>
 <% end %>
 
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>
+
 <%= form_tag do |f| %>
 
 <table class="table table-condensed table-fixedlayout">
@@ -70,6 +72,8 @@
 </table>
 
 <% end %>
+
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>
 
 <% content_for :footer_js do %>
 var showhide_compare = function() {
