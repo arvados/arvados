@@ -43,7 +43,8 @@ Next, create a file that contains the pipeline definition:
           "dataclass": "Collection"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "repository":"<b>you</b>",
+      "script_version":"master"
     },
     "filter":{
       "script":"0-filter.py",
@@ -52,7 +53,8 @@ Next, create a file that contains the pipeline definition:
           "output_of":"do_hash"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "repository":"<b>you</b>",
+      "script_version":"master"
     }
   }
 }
@@ -69,5 +71,5 @@ Now, use @arv pipeline_template create@ tell Arvados about your pipeline templat
 </code></pre>
 </notextile>
 
-Your new pipeline template will appear on the "Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;templates":http://{{ site.arvados_workbench_host }}/pipeline_instances page.
+Your new pipeline template will appear on the "Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_instances page.
 

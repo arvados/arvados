@@ -20,9 +20,9 @@ A request to run a crunch job are is described using a JSON object.  For example
 <pre><code>~$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
 {
  "script": "hash",
- "script_version": "arvados:master",
- "script_parameters":
- {
+ "repository": "arvados",
+ "script_version": "master",
+ "script_parameters": {
   "input": "c1bad4b39ca5a924e481008009d94e32+210"
  }
 }
@@ -34,7 +34,7 @@ EOF
 * @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@
 * @>the_job@ redirects standard output to a file called @the_job@
 * @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
-* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench under "Compute %(rarr)&rarr;% Code repositories":http://{{site.arvados_workbench_host}}/repositories .
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}/repositories .
 * @"script_parameters"@ are provided to the script.  In this case, the input is the locator for the collection that we inspected in the previous section.
 
 Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
@@ -86,7 +86,7 @@ The job is now queued and will start running as soon as it reaches the front of 
 
 h2. Monitor job progress
 
-Go to the "Workbench dashboard":http://{{site.arvados_workbench_host}}.  Your job should be at the top of the "Recent jobs" table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
+Go to the "Workbench dashboard":https://{{site.arvados_workbench_host}}.  Your job should be at the top of the "Recent jobs" table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
 
 On the command line, you can access log messages while the job runs using @arv job log_tail_follow@:
 
@@ -96,7 +96,7 @@ This will print out the last several lines of the log for that job.
 
 h2. Inspect the job output
 
-On the "Workbench dashboard":http://{{site.arvados_workbench_host}}, look for the *Output* column of the *Recent jobs* table.  Click on the link under *Output* for your job to go to the files page with the job output.  The files page lists all the files that were output by the job.  Click on the link under the *files* column to view a file, or click on the download icon <span class="glyphicon glyphicon-download-alt"></span> to download the output file.
+On the "Workbench dashboard":https://{{site.arvados_workbench_host}}, look for the *Output* column of the *Recent jobs* table.  Click on the link under *Output* for your job to go to the files page with the job output.  The files page lists all the files that were output by the job.  Click on the link under the *files* column to view a file, or click on the download icon <span class="glyphicon glyphicon-download-alt"></span> to download the output file.
 
 On the command line, you can use @arv job get@ to access a JSON object describing the output:
 
