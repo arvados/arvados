@@ -93,7 +93,7 @@ class Arvados::V1::UsersController < ApplicationController
     if params[:openid_prefix]   # check if default openid_prefix needs to be overridden
       openid_prefix = params[:openid_prefix]
     else 
-      openid_prefix = 'https://www.google.com/accounts/o8/id'   # default openid prefix
+      openid_prefix = Rails.configuration.openid_prefix
     end
     login_perm_props = {identity_url_prefix: openid_prefix}
 
