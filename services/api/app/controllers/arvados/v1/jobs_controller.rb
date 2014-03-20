@@ -6,6 +6,14 @@ class Arvados::V1::JobsController < ApplicationController
   skip_before_filter :render_404_if_no_object, :only => :queue
 
   def create
+    [:repository, :script, :script_version, :script_parameters].each do |r|    
+      if !resource_attrs[r]
+        return render json: {
+          :error => "#{r} attribute must be specified"
+        }, status: :unprocessable_entity      
+      end
+    end
+
     r = Commit.find_commit_range(current_user,
                                  resource_attrs[:repository],
                                  resource_attrs[:minimum_script_version],
@@ -14,14 +22,24 @@ class Arvados::V1::JobsController < ApplicationController
     if !resource_attrs[:nondeterministic] and !resource_attrs[:no_reuse]
       # Search for jobs where the script_version is in the list of commits
       # returned by find_commit_range
+      @object = nil
       Job.readable_by(current_user).where(script: resource_attrs[:script],
                                           script_version: r).
         each do |j|
         if j.nondeterministic != true and 
             j.success != false and 
             j.script_parameters == resource_attrs[:script_parameters]
-          # We can re-use this job
-          @object = j
+          # Record the first job in the list
+          if !@object
+            @object = j
+          end
+          # Ensure that all candidate jobs actually did produce the same output
+          if @object.output != j.output
+            @object = nil
+            break
+          end
+        end
+        if @object
           return show
         end
       end
