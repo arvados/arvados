@@ -90,8 +90,8 @@ class Arvados::V1::UsersController < ApplicationController
 
   # create user object and all the needed links
   def setup
-puts "\n*************PARAMS = #{params.inspect}"
-    if params[:openid_prefix]   # check if default openid_prefix needs to be overridden
+    # check if default openid_prefix needs to be overridden
+    if params[:openid_prefix]
       openid_prefix = params[:openid_prefix]
     else 
       openid_prefix = Rails.configuration.openid_prefix
@@ -100,29 +100,14 @@ puts "\n*************PARAMS = #{params.inspect}"
 
     @object = model_class.new resource_attrs
 
-    # If user_param is passed, lookup for user. If exists, skip create and only create any missing links. 
-    if params[:user_param]
-      begin
-        @object_found = find_user_from_input params[:user_param], params[:user_param]
-      end
-      if !@object_found
-        @object = User.new    # when user_param is used, it will be used as user object
-        @object[:email] = params[:user_param]       
-        need_to_create = true
-      else
-        @object = @object_found
-      end
-    else    # need to create user for the given user data
-      @object_found = find_user_from_input @object[:uuid], @object[:email]
-      if !@object_found
-        need_to_create = true   # use the user object sent in to create with the user
-      else
-        @object = @object_found
-      end
-    end
+    # Lookup for user. If exists, only create any missing links
+    @object_found = find_user_from_input 
 
-    # create if need be, and then create or update the links as needed 
-    if need_to_create
+    if !@object_found
+      if !@object[:email]
+        raise "No email found in the input. Aborting user creation."
+      end
+
       if @object.save
         oid_login_perm = Link.where(tail_uuid: @object[:email],
                                     head_kind: 'arvados#user',
@@ -144,107 +129,41 @@ puts "\n*************PARAMS = #{params.inspect}"
       else
         raise "Save failed"
       end
+    else
+      @object = @object_found
     end
-
+    
     # create links
     create_user_repo_link params[:repo_name]
     create_vm_login_permission_link params[:vm_uuid], params[:repo_name]
     create_user_group_link 
 
-    show  end
-
-  # create user object and all the needed links
-  def create
-    if params[:openid_prefix]   # check if default openid_prefix needs to be overridden
-      openid_prefix = params[:openid_prefix]
-    else 
-      openid_prefix = Rails.configuration.openid_prefix
-    end
-    login_perm_props = {identity_url_prefix: openid_prefix}
-
-    @object = model_class.new resource_attrs
-
-    # If user_param is passed, lookup for user. If exists, skip create and only create any missing links. 
-    if params[:user_param]
-      begin
-        @object_found = find_user_from_input params[:user_param], params[:user_param]
-      end
-      if !@object_found
-        @object = User.new    # when user_param is used, it will be used as user object
-        @object[:email] = params[:user_param]       
-        need_to_create = true
-      else
-        @object = @object_found
-      end
-    else    # need to create user for the given user data
-      @object_found = find_user_from_input @object[:uuid], @object[:email]
-      if !@object_found
-        need_to_create = true   # use the user object sent in to create with the user
-      else
-        @object = @object_found
-      end
-    end
-
-    # create if need be, and then create or update the links as needed 
-    if need_to_create
-      if @object.save
-        oid_login_perm = Link.where(tail_uuid: @object[:email],
-                                    head_kind: 'arvados#user',
-                                    link_class: 'permission',
-                                    name: 'can_login')
-
-        if [] == oid_login_perm
-          # create openid login permission
-          oid_login_perm = Link.create(link_class: 'permission',
-                                       name: 'can_login',
-                                       tail_kind: 'email',
-                                       tail_uuid: @object[:email],
-                                       head_kind: 'arvados#user',
-                                       head_uuid: @object[:uuid],
-                                       properties: login_perm_props
-                                      )
-          logger.info { "openid login permission: " + oid_login_perm[:uuid] }
-        end
-      else
-        raise "Save failed"
-      end
-    end
-
-    # create links
-    create_user_repo_link params[:repo_name]
-    create_vm_login_permission_link params[:vm_uuid], params[:repo_name]
-    create_user_group_link 
-
-    show
+    show  
   end
 
   protected 
 
   # find the user from the given user parameters
-  def find_user_from_input(user_uuid, user_email)
-    if user_uuid
-      found_object = User.find_by_uuid user_uuid
+  def find_user_from_input
+    if @object[:uuid]
+      found_object = User.find_by_uuid @object[:uuid]
     end
 
     if !found_object
-      begin
-        if !user_email
-          return
-        end
-
-        if !user_email.match(/\w\@\w+\.\w+/)
-          logger.warn ("Given user param is not valid email format: #{user_email}")
-          raise ArgumentError.new "User param is not of valid email format. Stop"
-        else
-          found_objects = User.where('email=?', user_email)  
-          if found_objects.size > 1
-            logger.warn ("Found #{found_objects.size} users with email #{user_email}. Stop.")
-            raise ArgumentError.new "Found #{found_objects.size} users with email #{user_email}. Stop."
-          elsif found_objects.size == 1
-            found_object = found_objects.first
-          end
-        end
+      if !@object[:email]
+        return
       end
+=begin  
+        if found_objects.size > 1
+          logger.warn ("Found #{found_objects.size} users with email #{user_email}. Stop.")
+          raise ArgumentError.new "Found #{found_objects.size} users with email #{user_email}. Stop."
+        elsif found_objects.size == 1
+          found_object = found_objects.first
+        end
+=end
+
+      found_objects = User.where('email=?', @object[:email])  
+      found_object = found_objects.first
     end
 
     return found_object
@@ -253,28 +172,30 @@ puts "\n*************PARAMS = #{params.inspect}"
   # link the repo_name passed
   def create_user_repo_link(repo_name)
     if not repo_name
-      logger.warn ("Repository name not given for #{@object[:uuid]}. Skip creating the link")
+      logger.warn ("Repository name not given for #{@object[:uuid]}.")
       return
     end
 
     # Check for an existing repository with the same name we're about to use.
-    repo = (repositories = Repository.where(name: repo_name)) != nil ? repositories.first : nil
+    repo = (repos = Repository.where(name: repo_name)) != nil ? repos.first : nil
     if repo
-      logger.warn "Repository already exists with name #{repo_name}: #{repo[:uuid]}. Will link to user."
+      logger.warn "Repository exists for #{repo_name}: #{repo[:uuid]}."
 
-      # Look for existing repository access (perhaps using a different repository/user name).
+      # Look for existing repository access for this repo
       repo_perms = Link.where(tail_uuid: @object[:uuid],
                               head_kind: 'arvados#repository',
                               head_uuid: repo[:uuid],
                               link_class: 'permission',
                               name: 'can_write')
       if [] != repo_perms
-        logger.warn "User already has repository access " + repo_perms.collect { |p| p[:uuid] }.inspect
+        logger.warn "User already has repository access " + 
+            repo_perms.collect { |p| p[:uuid] }.inspect
         return
       end
     end
 
-    repo ||= Repository.create(name: repo_name)   # create repo, if does not already exist
+    # create repo, if does not already exist
+    repo ||= Repository.create(name: repo_name)
     logger.info { "repo uuid: " + repo[:uuid] }
 
     repo_perm = Link.create(tail_kind: 'arvados#user',
@@ -292,7 +213,7 @@ puts "\n*************PARAMS = #{params.inspect}"
     begin
       vm = (vms = VirtualMachine.where(uuid: vm_uuid)) != nil ? vms.first : nil
       if not vm
-        logger.warn "Could not look up virtual machine with uuid #{vm_uuid.inspect}"
+        logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
         return
       end
 
@@ -324,7 +245,7 @@ puts "\n*************PARAMS = #{params.inspect}"
     end.first
 
     if not group
-      logger.warn "Could not look up the 'All users' group with uuid '*-*-fffffffffffffff'. Skip."
+      logger.warn "No 'All users' group with uuid '*-*-fffffffffffffff'."
       return
     else
       logger.info { "\"All users\" group uuid: " + group[:uuid] }

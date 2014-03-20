@@ -69,7 +69,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       repo_name: repo_name,
       vm_uuid: 'no_such_vm',
       user: {
-        uuid: "is_this_correct",        
+        uuid: "this_is_agreeable",        
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
         email: "test@abc.com"
@@ -79,37 +79,40 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     created = JSON.parse(@response.body)
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the newly created user'
-    assert_equal 'is_this_correct', created['uuid']
+    assert_equal 'this_is_agreeable', created['uuid']
     assert_not_nil created['email'], 'since email was given, expected non-nil email'
-    assert_nil created['identity_url'], 'even though email isprovided, expected no identity_url since users_controller only creates user' 
+    assert_nil created['identity_url'], 'expected no identity_url' 
 
-    # since no such vm exists, expect only three new links: oid_login_perm, repo link and link add user to 'All users' group
+    # since no such vm exists, expect only three new links: 
+    # oid_login_perm, repo link and link add user to 'All users' group
     verify_num_links @all_links_at_start, 3
 
-    verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], created['email'], 'arvados#user', false
+    verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], 
+        created['email'], 'arvados#user', false
 
-    verify_link_exists_for_type 'Repository', 'permission', 'can_write', repo_name, created['uuid'], 'arvados#repository', true
+    verify_link_exists_for_type 'Repository', 'permission', 'can_write', repo_name, 
+        created['uuid'], 'arvados#repository', true
 
-    verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
+    verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', 
+        created['uuid'], 'arvados#group', true
   end
 
-  test "create user with user_param, vm and repo as input" do
+  test "create user with bogus uuid, vm and repo as input" do
     authorize_with :admin
 
     post :setup, {
-      user_param: 'not_an_existing_uuid_and_not_email_format',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {}
+      user: {uuid: 'not_an_existing_uuid_and_not_email_format'}
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
     assert_not_nil response_errors, 'Expected error in response'
-    incorrectly_formatted = response_errors.first.include?('ArgumentError: User param is not of valid email format')
+    incorrectly_formatted = response_errors.first.include?('No email found in the input')
     assert incorrectly_formatted, 'Expected not valid email format error'
   end
 
-  test "create user with existing uuid user_param, vm and repo as input" do
+  test "create user with existing uuid, vm and repo as input" do
     authorize_with :inactive
     get :current
     assert_response :success
@@ -118,10 +121,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      user_param: inactive_user['uuid'],
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {}
+      user: {uuid: inactive_user['uuid']}
     }
 
     assert_response :success
@@ -131,14 +133,13 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal inactive_user['email'], response_object['email'], 'expecting inactive user email'
   end
 
-  test "create user with valid email user_param, vm and repo as input" do
+  test "create user with valid email, vm and repo as input" do
     authorize_with :admin
 
     post :setup, {
-      user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {}
+      user: {email: 'abc@xyz.com'}
     }
 
     assert_response :success
@@ -147,12 +148,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
   end
 
-  test "create user with valid email user_param, no vm and repo as input" do
+  test "create user with valid email, no vm and repo as input" do
     authorize_with :admin
 
     post :setup, {
-      user_param: 'abc@xyz.com',
-      user: {}
+      user: {email: 'abc@xyz.com'}
     }
 
     assert_response :success    
@@ -161,34 +161,32 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
   end
 
-  test "create user with user_param and non-empty user which will be ignored" do
+  test "create user with email, first name, repo name and vm uuid" do
     authorize_with :admin
 
     post :setup, {
-      user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
       user: {
         first_name: 'test_first_name',
-        email: 'will_be_ignored@xyz.com'
+        email: 'abc@xyz.com'
       }
     }
 
     assert_response :success
     response_object = JSON.parse(@response.body)
     assert_not_nil response_object['uuid'], 'expected non-null uuid for the newly created user'
-    assert_equal response_object['email'], 'abc@xyz.com', 'expecting user_param as email'
-    assert_nil response_object['first_name'], 'expecting no first name since it will be reset when user_param is used'
+    assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
+    assert_equal 'test_first_name', response_object['first_name'], 'expecting first name'
   end
 
   test "create user twice with user param and check links are not recreated" do
     authorize_with :admin
 
     post :setup, {
-      user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {}
+      user: {email: 'abc@xyz.com'}
     }
 
     assert_response :success
@@ -207,7 +205,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     assert_response :success
     response_object2 = JSON.parse(@response.body)
-    assert_equal response_object['uuid'], response_object2['uuid'], 'expected same uuid as first create operation'
+    assert_equal response_object['uuid'], response_object2['uuid'], 
+        'expected same uuid as first create operation'
     assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
     verify_num_links @all_links_at_start, 3   # openid, group, and repo links. no vm link
   end
@@ -229,13 +228,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 3   # openid, group, and repo links. no vm link
 
     # create again
-    post :create, user: {
+    post :setup, user: {
       email: 'abc@xyz.com'
     }
 
     assert_response :success
     response_object2 = JSON.parse(@response.body)
-    assert_equal response_object['uuid'], response_object2['uuid'], 'expected same uuid as first create operation'
+    assert_equal response_object['uuid'], response_object2['uuid'], 
+        'expected same uuid as first create operation'
     assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
     verify_num_links @all_links_at_start, 3   # openid, group, and repo links. no vm link
   end
@@ -258,17 +258,21 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the newly created user'
     assert_not_nil created['email'], 'since email was given, expected non-nil email'
-    assert_nil created['identity_url'], 'even though email is provided, expected no identity_url since users_controller only creates user' 
+    assert_nil created['identity_url'], 'expected no identity_url' 
 
     # verify links
-    # expect 3 new links: oid_login_perm, repo link, and link add user to 'All users' group. No vm link since the vm_uuid passed in is not in system
+    # expect 3 new links: oid_login_perm, repo link, and link add user to 'All users' group. 
+    # No vm link since the vm_uuid passed in is not in system
     verify_num_links @all_links_at_start, 3
 
-    verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], created['email'], 'arvados#user', false
+    verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], 
+        created['email'], 'arvados#user', false
 
-    verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', created['uuid'], 'arvados#repository', true
+    verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', 
+        created['uuid'], 'arvados#repository', true
 
-    verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
+    verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', 
+      created['uuid'], 'arvados#group', true
   end
 
   test "create user with user, vm and repo and verify links" do
@@ -288,18 +292,22 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the newly created user'
     assert_not_nil created['email'], 'since email was given, expected non-nil email'
-    assert_nil created['identity_url'], 'even though email is provided, expected no identity_url since users_controller only creates user' 
+    assert_nil created['identity_url'], 'expected no identity_url' 
 
     # expect 4 new links: oid_login_perm, repo link, vm link and link add user to 'All users' group. 
     verify_num_links @all_links_at_start, 4
 
-    verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], created['email'], 'arvados#user', false
+    verify_link_exists_for_type 'User', 'permission', 'can_login', created['uuid'], 
+        created['email'], 'arvados#user', false
 
-    verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', created['uuid'], 'arvados#repository', true
+    verify_link_exists_for_type 'Repository', 'permission', 'can_write', 'test_repo', 
+        created['uuid'], 'arvados#repository', true
 
-    verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', created['uuid'], 'arvados#group', true
+    verify_link_exists_for_type 'Group', 'permission', 'can_read', 'All users', 
+        created['uuid'], 'arvados#group', true
 
-    verify_link_exists_for_type 'VirtualMachine', 'permission', 'can_login', @vm_uuid, created['uuid'], 'arvados#virtualMachine', false
+    verify_link_exists_for_type 'VirtualMachine', 'permission', 'can_login', 
+        @vm_uuid, created['uuid'], 'arvados#virtualMachine', false
   end
 
   def verify_num_links (original_links, expected_num_additional_links)
@@ -308,7 +316,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
               "Expected #{expected_num_additional_links.inspect} more links"
   end
 
-  def verify_link_exists_for_type(class_name, link_class, link_name, head_uuid, tail_uuid, head_kind, fetch_object)
+  def verify_link_exists_for_type(class_name, link_class, link_name, head_uuid, tail_uuid, 
+        head_kind, fetch_object)
     if fetch_object
       object = Object.const_get(class_name).where(name: head_uuid)
       assert [] != object, "expected a #{class_name.inspect} with the name #{head_uuid.inspect}"
@@ -320,7 +329,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                        tail_uuid: tail_uuid,
                        head_uuid: head_uuid,
                        head_kind: head_kind)
-    assert links.size > 0, "expected one or more links with the given criteria #{class_name} with #{head_uuid}"
+    assert links.size > 0, "expected one or more links for #{class_name} with #{head_uuid}"
   end
 
 end
