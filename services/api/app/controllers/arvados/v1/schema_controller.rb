@@ -222,6 +222,14 @@ class Arvados::V1::SchemaController < ApplicationController
                   minimum: 0,
                   location: "query",
                 },
+                offset: {
+                  type: "integer",
+                  description: "Number of #{k.to_s.underscore.pluralize} to skip before first returned record.",
+                  default: 0,
+                  format: "int32",
+                  minimum: 0,
+                  location: "query",
+                  },
                 filters: {
                   type: "array",
                   description: "Conditions for filtering #{k.to_s.underscore.pluralize}.",
@@ -328,7 +336,8 @@ class Arvados::V1::SchemaController < ApplicationController
           if httpMethod and
               route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
               !d_methods[action.to_sym] and
-              ctl_class.action_methods.include? action
+              ctl_class.action_methods.include? action and
+              ![:show, :index, :destroy].include?(action.to_sym)
             method = {
               id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
               path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
