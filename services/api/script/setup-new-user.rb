@@ -36,7 +36,7 @@ arv = Arvados.new(api_version: 'v1')
 
 # Look up the given user by uuid or, failing that, email address.
 begin
-  user = arv.user.get(uuid: user_arg)
+  found_user = arv.user.get(uuid: user_arg)
 rescue Arvados::TransactionFailedError
   found = arv.user.list(where: {email: ARGV[0]})[:items]
     
@@ -45,20 +45,29 @@ rescue Arvados::TransactionFailedError
       abort "About to create new user, but #{user_arg.inspect} " +
                "does not look like an email address. Stop."
     end
-           
-    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, 
-        openid_prefix: opts.openid_prefix, user: {email: user_arg})
-    log.info { "created user: " + user[:uuid] }
   elsif found.count != 1
     abort "Found #{found.count} users " +
-             "with uuid or email #{user_arg.inspect}. Stop."
+              "with uuid or email #{user_arg.inspect}. Stop."
   else
-    user = found.first
-    # Found user. Update the user links
-    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, 
-        openid_prefix: opts.openid_prefix, user: {uuid: user[:uuid]})
+    found_user = found.first
   end
-
-  puts "USER = #{user.inspect}"
-  log.info { "user uuid: " + user[:uuid] }
 end
+
+# Invoke user setup method 
+if (found_user)
+  user = {uuid: found_user[:uuid]}
+else
+  user = {email: user_arg}
+end
+
+if opts.openid_prefix
+  puts "used the -o option"
+end
+
+user = arv.user.setup(user: user, repo_name: user_repo_name, vm_uuid: vm_uuid,
+    openid_prefix: opts.openid_prefix)
+
+log.info { "user uuid: " + user[:uuid] }
+
+puts user.inspect
+
