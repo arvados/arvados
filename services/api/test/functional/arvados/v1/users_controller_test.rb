@@ -296,6 +296,34 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false
   end
 
+  test "try to create user as non admin user" do
+    authorize_with :active
+
+    post :create, {
+      user: {email: 'abc@xyz.com'}
+    }
+
+    response_body = JSON.parse(@response.body)
+    response_errors = response_body['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert (response_errors.first.include? 'PermissionDenied'), 
+          'Expected PermissionDeniedError'
+  end
+
+  test "try to setup user as non admin user" do
+    authorize_with :active
+
+    post :setup, {
+      user: {email: 'abc@xyz.com'}
+    }
+
+    response_body = JSON.parse(@response.body)
+    response_errors = response_body['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert (response_errors.first.include? 'PermissionDenied'), 
+          'Expected PermissionDeniedError'
+  end
+
   def verify_num_links (original_links, expected_additional_links)
     links_now = Link.all
     assert_equal original_links.size+expected_additional_links, Link.all.size,
