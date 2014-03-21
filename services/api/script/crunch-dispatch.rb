@@ -39,6 +39,7 @@ class Dispatcher
   def refresh_todo
     @todo = Job.queue
     @todo_pipelines = PipelineInstance.queue
+    @pipe_auth_tokens ||= { }
   end
 
   def sinfo
@@ -324,10 +325,7 @@ class Dispatcher
   end
 
   def update_pipelines
-    @pipe_auth_tokens ||= { }
     expire_tokens = @pipe_auth_tokens.dup
-    puts "1 @pipe_auth_tokens #{@pipe_auth_tokens}"
-    puts "1 expire_tokens #{expire_tokens}"
     @todo_pipelines.each do |p|
       if @pipe_auth_tokens[p.uuid].nil?
         pipe_auth = ApiClientAuthorization.
@@ -341,8 +339,6 @@ class Dispatcher
       expire_tokens.delete p.uuid
     end
 
-    puts "2 @pipe_auth_tokens #{@pipe_auth_tokens}"
-    puts "2 expire_tokens #{expire_tokens}"
     expire_tokens.each do |k, v|
       v.update_attributes expires_at: Time.now
       @pipe_auth_tokens.delete k
@@ -373,7 +369,7 @@ class Dispatcher
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
           start_jobs
         end
-        unless @todo_pipelines.empty? or did_recently(:update_pipelines, 5.0)
+        unless (@todo_pipelines.empty? and @pipe_auth_tokens.empty?) or did_recently(:update_pipelines, 5.0)
           update_pipelines
         end
       end
