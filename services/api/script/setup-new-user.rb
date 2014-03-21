@@ -62,10 +62,6 @@ else
   user = {email: user_arg}
 end
 
-if opts.openid_prefix
-  puts "used the -o option"
-end
-
 if opts.openid_prefix == default_openid_prefix
   user = arv.user.setup user: user, repo_name: user_repo_name, vm_uuid: vm_uuid
 else
