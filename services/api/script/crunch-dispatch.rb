@@ -298,7 +298,6 @@ class Dispatcher
     job_done = j_done[:job]
     $stderr.puts "dispatch: child #{pid_done} exit"
     $stderr.puts "dispatch: job #{job_done.uuid} end"
-    $redis.publish job_done.uuid, "end"
 
     # Ensure every last drop of stdout and stderr is consumed
     read_pipes
@@ -309,8 +308,17 @@ class Dispatcher
     # Wait the thread
     j_done[:wait_thr].value
 
+    jobrecord = Job.find_by_uuid(job_done.uuid)
+    jobrecord.running = false
+    jobrecord.finished_at ||= Time.now,
+    # Don't set 'jobrecord.success = false' because if the job failed to run due to an
+    # issue with crunch-job or slurm, we want the job to stay in the queue.
+    jobrecord.save!
+
     # Invalidate the per-job auth token
     j_done[:job_auth].update_attributes expires_at: Time.now
+
+    $redis.publish job_done.uuid, "end"
 
     @running.delete job_done.uuid
   end
@@ -359,8 +367,6 @@ class Dispatcher
              [], [], 1)
     end
   end
-
-
 
   protected
 

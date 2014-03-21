@@ -222,15 +222,31 @@ class ApplicationController < ActionController::Base
           where(*conditions)
       end
     end
+
     if params[:limit]
       begin
-        @objects = @objects.limit(params[:limit].to_i)
+        @limit = params[:limit].to_i
       rescue
         raise ArgumentError.new("Invalid value for limit parameter")
       end
     else
-      @objects = @objects.limit(100)
+      @limit = 100
     end
+    @objects = @objects.limit(@limit)
+
+    orders = []
+
+    if params[:offset]
+      begin
+        @objects = @objects.offset(params[:offset].to_i)
+        @offset = params[:offset].to_i
+      rescue
+        raise ArgumentError.new("Invalid value for limit parameter")
+      end
+    else
+      @offset = 0
+    end      
+
     orders = []
     if params[:order]
       params[:order].split(',').each do |order|
@@ -413,12 +429,12 @@ class ApplicationController < ActionController::Base
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",
       :self_link => "",
-      :next_page_token => "",
-      :next_link => "",
+      :offset => @offset,
+      :limit => @limit,
       :items => @objects.as_api_response(nil)
     }
     if @objects.respond_to? :except
-      @object_list[:items_available] = @objects.except(:limit).count
+      @object_list[:items_available] = @objects.except(:limit).except(:offset).count
     end
     render json: @object_list
   end

@@ -15,6 +15,11 @@ class ArvadosResourceList
     self
   end
 
+  def offset(skip)
+    @offset = skip
+    self
+  end
+
   def order(orderby_spec)
     @orderby_spec = orderby_spec
     self
@@ -51,6 +56,7 @@ class ArvadosResourceList
     }
     api_params[:eager] = '1' if @eager
     api_params[:limit] = @limit if @limit
+    api_params[:offset] = @offset if @offset
     api_params[:order] = @orderby_spec if @orderby_spec
     res = $arvados_api_client.api @resource_class, '', api_params
     @results = $arvados_api_client.unpack_api_response res
@@ -108,4 +114,13 @@ class ArvadosResourceList
   def items_available
     results.items_available if results.respond_to? :items_available
   end
+
+  def result_limit
+    results.limit if results.respond_to? :limit
+  end
+
+  def result_offset
+    results.offset if results.respond_to? :offset
+  end
+
 end

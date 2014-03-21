@@ -8,6 +8,8 @@
 
 <% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at' %>
 
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>
+
 <%= form_tag do |f| %>
 
 <table class="table table-condensed arv-index">
@@ -62,5 +64,7 @@
 </table>
 
 <% end %>
+
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>
 
 <% end %>

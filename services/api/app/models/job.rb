@@ -51,8 +51,8 @@ class Job < ArvadosModel
   end
 
   def self.queue
-    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ?',
-               nil, nil, nil).
+    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ? and success is ?',
+               nil, nil, nil, nil).
       order('priority desc, created_at')
   end
 
@@ -108,7 +108,8 @@ class Job < ArvadosModel
 
   def permission_to_update
     if is_locked_by_uuid_was and !(current_user and
-                                   current_user.uuid == is_locked_by_uuid_was)
+                                   (current_user.uuid == is_locked_by_uuid_was or
+                                    current_user.uuid == system_user.uuid))
       if script_changed? or
           script_parameters_changed? or
           script_version_changed? or

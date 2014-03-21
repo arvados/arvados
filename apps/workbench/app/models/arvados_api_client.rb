@@ -97,6 +97,14 @@ class ArvadosApiClient
         (class << ary; self; end).class_eval { attr_accessor :items_available }
         ary.items_available = j[:items_available]
       end
+      if j[:offset]
+        (class << ary; self; end).class_eval { attr_accessor :offset }
+        ary.offset = j[:offset]
+      end
+      if j[:limit]
+        (class << ary; self; end).class_eval { attr_accessor :limit }
+        ary.limit = j[:limit]
+      end
       ary
     elsif j.is_a? Hash and (kind || j[:kind])
       oclass = self.kind_class(kind || j[:kind])
