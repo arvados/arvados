@@ -5,6 +5,7 @@ require 'uri'
 require 'yaml'
 
 $ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
+SERVER_PID_PATH = 'tmp/pids/server.pid'
 
 class ActionDispatch::IntegrationTest
   # Make the Capybara DSL available in all integration tests
@@ -32,12 +33,14 @@ class ActionDispatch::IntegrationTest
 end
 
 class IntegrationTestRunner < MiniTest::Unit
-  # Launch the API server in test mode, with appropriate environment.
-  @@APIENV = {'RAILS_ENV' => 'test'}
-  ['GEM_HOME', 'GEM_PATH', 'PATH'].each { |key| @@APIENV[key] = ENV[key] }
+  # Make a hash that unsets Bundle's environment variables.
+  # We'll use this environment when we launch Bundle commands in the API
+  # server.  Otherwise, those commands will try to use Workbench's gems, etc.
+  @@APIENV = ENV.map { |(key, val)| (key =~ /^BUNDLE_/) ? [key, nil] : nil }.
+    compact.to_h
 
   def _system(*cmd)
-    if not system(@@APIENV, *cmd, {unsetenv_others: true})
+    if not system(@@APIENV, *cmd)
       raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
     end
   end
@@ -48,7 +51,11 @@ class IntegrationTestRunner < MiniTest::Unit
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')
-      `cat tmp/pids/server.pid`.to_i
+      timeout = Time.now.tv_sec + 5
+      while (not File.exists? SERVER_PID_PATH) and (Time.now.tv_sec < timeout)
+        sleep 0.2
+      end
+      IO.read(SERVER_PID_PATH).to_i
     end
     begin
       super(args)
