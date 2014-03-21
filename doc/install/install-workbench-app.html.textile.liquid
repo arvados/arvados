@@ -50,9 +50,3 @@ irb(main):001:0&gt; <span class="userinput">ApiClient.where('url_prefix like ?',
 irb(main):002:0&gt; <span class="userinput">ApiClient.find(1234).update_attributes is_trusted: true</span>
 </code></pre>
 </notextile>
-
-h2. Running tests
-
-The Workbench application includes a series of integration tests.  When you run these, it starts the API server in a test environment, with all of its fixtures loaded, then tests Workbench by starting that server and making requests against it.
-
-In addition to bundled gems, running the integration tests requires "PhantomJS":http://phantomjs.org/download.html to test JavaScript elements.  The simplest way to get started is to download one of the binary builds provided, and install the executable into one of the directories in your @$PATH@.
