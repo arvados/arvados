@@ -32,12 +32,17 @@ class ActionDispatch::IntegrationTest
 end
 
 class IntegrationTestRunner < MiniTest::Unit
-  # Launch the API server in test mode, with appropriate environment.
-  @@APIENV = {'RAILS_ENV' => 'test'}
-  ['GEM_HOME', 'GEM_PATH', 'PATH'].each { |key| @@APIENV[key] = ENV[key] }
+  # Don't try to re-use the current Bundle environment when we launch the
+  # API server.
+  @@APIENV = {
+    'BUNDLE_BIN_PATH' => nil,
+    'BUNDLE_GEMFILE' => nil,
+    'RUBYLIB' => nil,
+    'RUBYOPT' => nil,
+  }
 
   def _system(*cmd)
-    if not system(@@APIENV, *cmd, {unsetenv_others: true})
+    if not system(@@APIENV, *cmd)
       raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
     end
   end
