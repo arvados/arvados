@@ -74,6 +74,3 @@ else
 end
 
 log.info {"user uuid: " + user[:uuid]}
-
-puts user.inspect
-
