@@ -23,6 +23,8 @@ claim the account.
   eos
 end
 
+default_openid_prefix = 'https://www.google.com/accounts/o8/id'
+
 log.level = (ENV['DEBUG'] || opts.debug) ? Logger::DEBUG : Logger::WARN
     
 if ARGV.count != 3
@@ -64,10 +66,14 @@ if opts.openid_prefix
   puts "used the -o option"
 end
 
-user = arv.user.setup(user: user, repo_name: user_repo_name, vm_uuid: vm_uuid,
-    openid_prefix: opts.openid_prefix)
+if opts.openid_prefix == default_openid_prefix
+  user = arv.user.setup user: user, repo_name: user_repo_name, vm_uuid: vm_uuid
+else
+  user = arv.user.setup user: user, repo_name: user_repo_name, vm_uuid: vm_uuid,
+      openid_prefix: opts.openid_prefix
+end
 
-log.info { "user uuid: " + user[:uuid] }
+log.info {"user uuid: " + user[:uuid]}
 
 puts user.inspect
 
