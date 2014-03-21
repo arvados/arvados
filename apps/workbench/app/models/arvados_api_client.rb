@@ -109,7 +109,7 @@ class ArvadosApiClient
   def unpack_api_response(j, kind=nil)
     if j.is_a? Hash and j[:items].is_a? Array and j[:kind].match(/(_list|List)$/)
       ary = j[:items].collect { |x| unpack_api_response x, j[:kind] }
-      ArvadosApiClient.patch_paging_vars(ary, j[:items_available], j[:offset], j[:limit])
+      ArvadosApiClient::patch_paging_vars(ary, j[:items_available], j[:offset], j[:limit])
     elsif j.is_a? Hash and (kind || j[:kind])
       oclass = self.kind_class(kind || j[:kind])
       if oclass
