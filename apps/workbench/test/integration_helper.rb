@@ -36,7 +36,7 @@ class IntegrationTestRunner < MiniTest::Unit
   # Make a hash that unsets Bundle's environment variables.
   # We'll use this environment when we launch Bundle commands in the API
   # server.  Otherwise, those commands will try to use Workbench's gems, etc.
-  @@APIENV = ENV.map { |*key, val| (key =~ /^BUNDLE_/) ? [key, nil] : nil }.
+  @@APIENV = ENV.map { |(key, val)| (key =~ /^BUNDLE_/) ? [key, nil] : nil }.
     compact.to_h
 
   def _system(*cmd)
