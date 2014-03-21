@@ -34,12 +34,8 @@ end
 class IntegrationTestRunner < MiniTest::Unit
   # Don't try to re-use the current Bundle environment when we launch the
   # API server.
-  @@APIENV = {
-    'BUNDLE_BIN_PATH' => nil,
-    'BUNDLE_GEMFILE' => nil,
-    'RUBYLIB' => nil,
-    'RUBYOPT' => nil,
-  }
+  @@APIENV = ENV.map { |item| (item[0] =~ /^BUNDLE_/) ? [item[0], nil] : nil }.
+    compact.to_h
 
   def _system(*cmd)
     if not system(@@APIENV, *cmd)
