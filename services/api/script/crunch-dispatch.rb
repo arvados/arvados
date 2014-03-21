@@ -310,7 +310,7 @@ class Dispatcher
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
     jobrecord.running = false
-    jobrecord.finished_at ||= Time.now,
+    jobrecord.finished_at ||= Time.now
     # Don't set 'jobrecord.success = false' because if the job failed to run due to an
     # issue with crunch-job or slurm, we want the job to stay in the queue.
     jobrecord.save!
@@ -324,13 +324,28 @@ class Dispatcher
   end
 
   def update_pipelines
+    @pipe_auth_tokens ||= { }
+    expire_tokens = @pipe_auth_tokens.dup
+    puts "1 @pipe_auth_tokens #{@pipe_auth_tokens}"
+    puts "1 expire_tokens #{expire_tokens}"
     @todo_pipelines.each do |p|
-      pipe_auth = ApiClientAuthorization.
-        new(user: User.where('uuid=?', p.modified_by_user_uuid).first,
-            api_client_id: 0)
-      pipe_auth.save
-
+      if @pipe_auth_tokens[p.uuid].nil?
+        pipe_auth = ApiClientAuthorization.
+          new(user: User.where('uuid=?', p.modified_by_user_uuid).first,
+              api_client_id: 0)
+        pipe_auth.save
+        @pipe_auth_tokens[p.uuid] = pipe_auth
+      end
+      pipe_auth = @pipe_auth_tokens[p.uuid]
       puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --instance #{p.uuid}`
+      expire_tokens.delete p.uuid
+    end
+
+    puts "2 @pipe_auth_tokens #{@pipe_auth_tokens}"
+    puts "2 expire_tokens #{expire_tokens}"
+    expire_tokens.each do |k, v|
+      v.update_attributes expires_at: Time.now
+      @pipe_auth_tokens.delete k
     end
   end
 
