@@ -33,9 +33,10 @@ class ActionDispatch::IntegrationTest
 end
 
 class IntegrationTestRunner < MiniTest::Unit
-  # Don't try to re-use the current Bundle environment when we launch the
-  # API server.
-  @@APIENV = ENV.map { |item| (item[0] =~ /^BUNDLE_/) ? [item[0], nil] : nil }.
+  # Make a hash that unsets Bundle's environment variables.
+  # We'll use this environment when we launch Bundle commands in the API
+  # server.  Otherwise, those commands will try to use Workbench's gems, etc.
+  @@APIENV = ENV.map { |*key, val| (key =~ /^BUNDLE_/) ? [key, nil] : nil }.
     compact.to_h
 
   def _system(*cmd)
