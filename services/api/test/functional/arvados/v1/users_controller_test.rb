@@ -101,9 +101,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
+      user: {uuid: 'not_an_existing_uuid_and_not_email_format'},
       repo_name: 'test_repo',
-      vm_uuid: 'no_such_vm',
-      user: {uuid: 'not_an_existing_uuid_and_not_email_format'}
+      vm_uuid: 'no_such_vm'
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
@@ -121,9 +121,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
+      user: {uuid: inactive_user['uuid']},
       repo_name: 'test_repo',
-      vm_uuid: 'no_such_vm',
-      user: {uuid: inactive_user['uuid']}
+      vm_uuid: 'no_such_vm'
     }
 
     assert_response :success
@@ -184,9 +184,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
+      user: {email: 'abc@xyz.com'},
       vm_uuid: 'no_such_vm',
-      user: {email: 'abc@xyz.com'}
+      repo_name: 'test_repo'
     }
 
     assert_response :success
@@ -197,10 +197,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     # create again
     post :setup, {
-      user_param: 'abc@xyz.com',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {}
+      user: {email: 'abc@xyz.com'}
     }
 
     assert_response :success
@@ -279,13 +278,13 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      repo_name: 'test_repo',
-      vm_uuid: @vm_uuid,
       user: {
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
         email: "test@abc.com"
-      }
+      },
+      repo_name: 'test_repo',
+      vm_uuid: @vm_uuid
     }
     assert_response :success
     created = JSON.parse(@response.body)

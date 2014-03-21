@@ -16,10 +16,6 @@ opts = Trollop::options do
   opt :debug, <<-eos
 Show debug messages.
   eos
-  opt :create, <<-eos
-Create a new user with the given email address if an existing user \
-is not found.
-  eos
   opt :openid_prefix, <<-eos, default: 'https://www.google.com/accounts/o8/id'
 If creating a new user record, require authentication from an OpenID \
 with this OpenID prefix *and* a matching email address in order to \
@@ -58,9 +54,9 @@ rescue Arvados::TransactionFailedError
              "with uuid or email #{user_arg.inspect}. Stop."
   else
     user = found.first
-    # Found user. Update ther user links
-    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, 
-        user: {email: user[:uuid]})
+    # Found user. Update the user links
+    user = arv.user.setup(user: {email: user[:uuid]}, repo_name: user_repo_name,
+        vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix)
   end
 
   puts "USER = #{user.inspect}"

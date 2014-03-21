@@ -153,14 +153,6 @@ class Arvados::V1::UsersController < ApplicationController
       if !@object[:email]
         return
       end
-=begin  
-        if found_objects.size > 1
-          logger.warn ("Found #{found_objects.size} users with email #{user_email}. Stop.")
-          raise ArgumentError.new "Found #{found_objects.size} users with email #{user_email}. Stop."
-        elsif found_objects.size == 1
-          found_object = found_objects.first
-        end
-=end
 
       found_objects = User.where('email=?', @object[:email])  
       found_object = found_objects.first
