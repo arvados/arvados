@@ -50,17 +50,19 @@ rescue Arvados::TransactionFailedError
                "does not look like an email address. Stop."
     end
            
-    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, user: {email: user_arg})
+    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, 
+        user: {email: user_arg})
     log.info { "created user: " + user[:uuid] }
   elsif found.count != 1
     abort "Found #{found.count} users " +
              "with uuid or email #{user_arg.inspect}. Stop."
-  else 
+  else
     user = found.first
     # Found user. Update ther user links
-    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, user: {email: user[:uuid]})
+    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, 
+        user: {email: user[:uuid]})
   end
-    
+
   puts "USER = #{user.inspect}"
   log.info { "user uuid: " + user[:uuid] }
 end
