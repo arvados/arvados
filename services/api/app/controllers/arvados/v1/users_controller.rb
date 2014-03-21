@@ -99,15 +99,15 @@ class Arvados::V1::UsersController < ApplicationController
     login_perm_props = {identity_url_prefix: openid_prefix}
 
     @object = model_class.new resource_attrs
-
     # Lookup for user. If exists, only create any missing links
-    @object_found = find_user_from_input 
+    if @object[:uuid]
+      @object_found = User.find_by_uuid @object[:uuid]
+    end
 
     if !@object_found
-      if !@object[:email]
+      if !@object['email']
         raise "No email found in the input. Aborting user creation."
       end
-
       if @object.save
         oid_login_perm = Link.where(tail_uuid: @object[:email],
                                     head_kind: 'arvados#user',
@@ -134,8 +134,8 @@ class Arvados::V1::UsersController < ApplicationController
     end
     
     # create links
-    create_user_repo_link params[:repo_name]
-    create_vm_login_permission_link params[:vm_uuid], params[:repo_name]
+    create_user_repo_link params['repo_name']
+    create_vm_login_permission_link params['vm_uuid'], params['repo_name']
     create_user_group_link 
 
     show  
@@ -143,24 +143,6 @@ class Arvados::V1::UsersController < ApplicationController
 
   protected 
 
-  # find the user from the given user parameters
-  def find_user_from_input
-    if @object[:uuid]
-      found_object = User.find_by_uuid @object[:uuid]
-    end
-
-    if !found_object
-      if !@object[:email]
-        return
-      end
-
-      found_objects = User.where('email=?', @object[:email])  
-      found_object = found_objects.first
-    end
-
-    return found_object
-  end
-  
   # link the repo_name passed
   def create_user_repo_link(repo_name)
     if not repo_name

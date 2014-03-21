@@ -180,7 +180,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'test_first_name', response_object['first_name'], 'expecting first name'
   end
 
-  test "create user twice with user param and check links are not recreated" do
+  test "create user twice and check links are not recreated" do
     authorize_with :admin
 
     post :setup, {
@@ -199,7 +199,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, {
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {email: 'abc@xyz.com'}
+      user: {uuid: response_object['uuid']}
     }
 
     assert_response :success
@@ -210,7 +210,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 3   # openid, group, and repo links. no vm link
   end
 
-  test "create user twice with user object as input and check links are not recreated" do
+  test "create user twice with user email as input and check two different objects created" do
     authorize_with :admin
 
     post :setup, {
@@ -233,10 +233,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     assert_response :success
     response_object2 = JSON.parse(@response.body)
-    assert_equal response_object['uuid'], response_object2['uuid'], 
+    assert_not_equal response_object['uuid'], response_object2['uuid'], 
         'expected same uuid as first create operation'
     assert_equal response_object['email'], 'abc@xyz.com', 'expecting given email'
-    verify_num_links @all_links_at_start, 3   # openid, group, and repo links. no vm link
+#    verify_num_links @all_links_at_start, 6   # openid, group, and repo links. no vm link
   end
 
   test "create user with openid prefix" do

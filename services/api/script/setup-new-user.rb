@@ -39,7 +39,7 @@ begin
   user = arv.user.get(uuid: user_arg)
 rescue Arvados::TransactionFailedError
   found = arv.user.list(where: {email: ARGV[0]})[:items]
-         
+    
   if found.count == 0 
     if !user_arg.match(/\w\@\w+\.\w+/)
       abort "About to create new user, but #{user_arg.inspect} " +
@@ -47,7 +47,7 @@ rescue Arvados::TransactionFailedError
     end
            
     user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, 
-        user: {email: user_arg})
+        openid_prefix: opts.openid_prefix, user: {email: user_arg})
     log.info { "created user: " + user[:uuid] }
   elsif found.count != 1
     abort "Found #{found.count} users " +
@@ -55,8 +55,8 @@ rescue Arvados::TransactionFailedError
   else
     user = found.first
     # Found user. Update the user links
-    user = arv.user.setup(user: {email: user[:uuid]}, repo_name: user_repo_name,
-        vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix)
+    user = arv.user.setup(repo_name: user_repo_name, vm_uuid: vm_uuid, 
+        openid_prefix: opts.openid_prefix, user: {uuid: user[:uuid]})
   end
 
   puts "USER = #{user.inspect}"
