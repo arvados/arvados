@@ -14,7 +14,7 @@ development:
   assets.compress: false
   assets.debug: true
   profiling_enabled: true
-  site_name: Workbench:dev
+  site_name: Arvados Workbench (dev)
 
 production:
   force_ssl: true
