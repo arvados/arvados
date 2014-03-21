@@ -149,10 +149,6 @@ class ArvadosApiClient
     Rails.configuration.arvados_v1_base
   end
 
-  def arvados_schema
-    @arvados_schema ||= api 'schema', ''
-  end
-
   def discovery
     @discovery ||= api '../../discovery/v1/apis/arvados/v1/rest', ''
   end
