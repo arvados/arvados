@@ -5,6 +5,7 @@ require 'uri'
 require 'yaml'
 
 $ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
+SERVER_PID_PATH = 'tmp/pids/server.pid'
 
 class ActionDispatch::IntegrationTest
   # Make the Capybara DSL available in all integration tests
@@ -49,12 +50,11 @@ class IntegrationTestRunner < MiniTest::Unit
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')
-      pid_path = 'tmp/pids/server.pid'
       timeout = Time.now.tv_sec + 5
-      while (not File.exists? pid_path) and (Time.now.tv_sec < timeout)
+      while (not File.exists? SERVER_PID_PATH) and (Time.now.tv_sec < timeout)
         sleep 0.2
       end
-      IO.read(pid_path).to_i
+      IO.read(SERVER_PID_PATH).to_i
     end
     begin
       super(args)
