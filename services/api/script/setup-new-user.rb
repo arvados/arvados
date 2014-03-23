@@ -53,14 +53,15 @@ rescue Arvados::TransactionFailedError
   end
 end
 
-# Invoke user setup method 
+# Invoke user setup method
 if (found_user)
-  user = {uuid: found_user[:uuid]}
+  user = arv.user.setup uuid: found_user[:uuid], repo_name: user_repo_name,
+        vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix
 else
-  user = {email: user_arg}
+  user = arv.user.setup user: {email: user_arg}, repo_name: user_repo_name,
+        vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix
 end
 
-user = arv.user.setup user: user, repo_name: user_repo_name, vm_uuid: vm_uuid,
-      openid_prefix: opts.openid_prefix
-
 log.info {"user uuid: " + user[:uuid]}
+
+puts user.inspect

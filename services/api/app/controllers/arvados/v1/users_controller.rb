@@ -90,12 +90,19 @@ class Arvados::V1::UsersController < ApplicationController
 
   # create user object and all the needed links
   def setup
-    @object = model_class.new resource_attrs
+    if params[:uuid]
+      @object = User.find_by_uuid params[:uuid]
+      if !@object
+        return render_404_if_no_object
+      end
+    else
+      @object = model_class.create! resource_attrs
+    end
 
     @object = User.setup @object, params[:repo_name], params[:vm_uuid], 
         params[:openid_prefix]
 
-    show  
+    show
   end
 
 end

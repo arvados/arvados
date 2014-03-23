@@ -101,15 +101,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      user: {uuid: 'not_an_existing_uuid_and_not_email_format'},
+      uuid: 'not_an_existing_uuid_and_not_email_format',
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm'
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
     assert_not_nil response_errors, 'Expected error in response'
-    incorrectly_formatted = response_errors.first.include?('No email')
-    assert incorrectly_formatted, 'Expected not valid email format error'
+    assert (response_errors.first.include? 'Path not found'), 'Expected 404'
   end
 
   test "create user with existing uuid, vm and repo and verify links" do
