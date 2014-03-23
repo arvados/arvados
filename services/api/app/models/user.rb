@@ -145,15 +145,29 @@ class User < ArvadosModel
       user = found
     end
 
-    user.setup_links(repo_name, vm_uuid, openid_prefix)
-    return user
+    response = {user: user, oid_login_perm: oid_login_perm}
+
+    user.setup_links(repo_name, vm_uuid, openid_prefix, response)
+
+    return response
   end 
 
   # create links
-  def setup_links(repo_name, vm_uuid, openid_prefix)
-    create_user_repo_link repo_name
-    create_vm_login_permission_link vm_uuid, repo_name
-    create_user_group_links
+  def setup_links(repo_name, vm_uuid, openid_prefix, response)
+    repo_perm = create_user_repo_link repo_name
+    if repo_perm
+      response[:repo_perm] = repo_perm
+    end
+
+    vm_login_perm = create_vm_login_permission_link vm_uuid, repo_name
+    if vm_login_perm
+      response[:vm_login_perm] = vm_login_perm
+    end
+
+    group_perm = create_user_group_links
+    if group_perm
+      response[:group_perm] = group_perm
+    end
   end 
 
   protected
@@ -246,7 +260,7 @@ class User < ArvadosModel
       if repo_perms.any?
         logger.warn "User already has repository access " + 
             repo_perms.collect { |p| p[:uuid] }.inspect
-        return
+        return repo_perms.first
       end
     end
 
@@ -261,6 +275,7 @@ class User < ArvadosModel
                             link_class: 'permission',
                             name: 'can_write')
     logger.info { "repo permission: " + repo_perm[:uuid] }
+    return repo_perm
   end
 
   # create login permission for the given vm_uuid, if it does not already exist
@@ -291,6 +306,8 @@ class User < ArvadosModel
                                  properties: {username: repo_name})
         logger.info { "login permission: " + login_perm[:uuid] }
       end
+
+      return login_perm
     end
   end
 
@@ -322,6 +339,8 @@ class User < ArvadosModel
                                  name: 'can_read')
         logger.info { "group permission: " + group_perm[:uuid] }
       end
+
+      return group_perm
     end
   end
 

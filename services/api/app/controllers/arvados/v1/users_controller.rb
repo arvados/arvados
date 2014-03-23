@@ -99,10 +99,9 @@ class Arvados::V1::UsersController < ApplicationController
       @object = model_class.new resource_attrs
     end
 
-    @object = User.setup @object, params[:openid_prefix], 
+    @response = User.setup @object, params[:openid_prefix],
                 params[:repo_name], params[:vm_uuid]
-
-    show
+    render json: { kind: "arvados#HashList", items: @response }
   end
 
 end
