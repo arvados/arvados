@@ -154,7 +154,7 @@ class UserTest < ActiveSupport::TestCase
       user = User.new
       user.email = 'abc@xyz.com'
   		
-      User.setup user
+      User.setup user, 'http://openid/prefix'
     rescue ArvadosModel::PermissionDeniedError
     end
 	end

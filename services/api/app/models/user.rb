@@ -109,9 +109,8 @@ class User < ArvadosModel
     end
   end
 
-  def self.setup(user, repo_name=nil, vm_uuid=nil, openid_prefix=nil)
+  def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
     login_perm_props = {identity_url_prefix: openid_prefix}
-
     if user[:uuid]
       found = User.find_by_uuid user[:uuid]
     end
@@ -120,13 +119,14 @@ class User < ArvadosModel
       if !user[:email]
         raise "No email found in the input. Aborting user creation."
       end
+
       if user.save
         oid_login_perm = Link.where(tail_uuid: user[:email],
                                     head_kind: 'arvados#user',
                                     link_class: 'permission',
                                     name: 'can_login')
 
-        if [] == oid_login_perm
+        if !oid_login_perm.any?
           # create openid login permission
           oid_login_perm = Link.create(link_class: 'permission',
                                        name: 'can_login',
@@ -232,7 +232,8 @@ class User < ArvadosModel
     end
 
     # Check for an existing repository with the same name we're about to use.
-    repo = (repos = Repository.where(name: repo_name)) != nil ? repos.first : nil
+    repo = Repository.where(name: repo_name).first
+
     if repo
       logger.warn "Repository exists for #{repo_name}: #{repo[:uuid]}."
 
@@ -242,7 +243,7 @@ class User < ArvadosModel
                               head_uuid: repo[:uuid],
                               link_class: 'permission',
                               name: 'can_write')
-      if [] != repo_perms
+      if repo_perms.any?
         logger.warn "User already has repository access " + 
             repo_perms.collect { |p| p[:uuid] }.inspect
         return
@@ -266,7 +267,8 @@ class User < ArvadosModel
   def create_vm_login_permission_link(vm_uuid, repo_name)
     # Look up the given virtual machine just to make sure it really exists.
     begin
-      vm = (vms = VirtualMachine.where(uuid: vm_uuid)) != nil ? vms.first : nil
+      vm = VirtualMachine.where(uuid: vm_uuid).first
+
       if not vm
         logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
         return
@@ -279,7 +281,7 @@ class User < ArvadosModel
                               head_kind: 'arvados#virtualMachine',
                               link_class: 'permission',
                               name: 'can_login')
-      if [] == login_perm
+      if !login_perm.any?
         login_perm = Link.create(tail_kind: 'arvados#user',
                                  tail_uuid: self.uuid,
                                  head_kind: 'arvados#virtualMachine',
@@ -311,7 +313,7 @@ class User < ArvadosModel
                               link_class: 'permission',
                               name: 'can_read')
 
-      if [] == group_perm
+      if !group_perm.any?
         group_perm = Link.create(tail_kind: 'arvados#user',
                                  tail_uuid: self.uuid,
                                  head_kind: 'arvados#group',

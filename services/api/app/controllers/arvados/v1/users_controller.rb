@@ -96,11 +96,11 @@ class Arvados::V1::UsersController < ApplicationController
         return render_404_if_no_object
       end
     else
-      @object = model_class.create! resource_attrs
+      @object = model_class.new resource_attrs
     end
 
-    @object = User.setup @object, params[:repo_name], params[:vm_uuid], 
-        params[:openid_prefix]
+    @object = User.setup @object, params[:openid_prefix], 
+                params[:repo_name], params[:vm_uuid]
 
     show
   end
