@@ -137,5 +137,27 @@ class UserTest < ActiveSupport::TestCase
 	
 	end
 
+	test "create new user as non-admin user" do
+		Thread.current[:user] = @active_user
+
+    begin
+  		user = User.new
+	  	user.save
+    rescue ArvadosModel::PermissionDeniedError
+    end
+	end
+
+	test "setup new user as non-admin user" do
+		Thread.current[:user] = @active_user
+
+    begin
+      user = User.new
+      user.email = 'abc@xyz.com'
+  		
+      User.setup user
+    rescue ArvadosModel::PermissionDeniedError
+    end
+	end
+
 end
 

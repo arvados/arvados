@@ -183,7 +183,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       }
     }
 
-    #assert_response :success
+    assert_response :success
     response_object = JSON.parse(@response.body)
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'

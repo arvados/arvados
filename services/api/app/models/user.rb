@@ -109,12 +109,7 @@ class User < ArvadosModel
     end
   end
 
-  def self.setup(user, repo_name, vm_uuid, openid_prefix)
-    # check if default openid_prefix needs to be overridden
-    if !openid_prefix
-      openid_prefix = Rails.configuration.openid_prefix
-    end
-
+  def self.setup(user, repo_name=nil, vm_uuid=nil, openid_prefix=nil)
     login_perm_props = {identity_url_prefix: openid_prefix}
 
     if user[:uuid]

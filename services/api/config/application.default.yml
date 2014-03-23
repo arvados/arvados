@@ -99,6 +99,3 @@ common:
 
   # Version of your assets, change this if you want to expire all your assets
   assets.version: "1.0"
-
-  # default openid prefix to authenticate user
-  openid_prefix: "https://www.google.com/accounts/o8/id"
