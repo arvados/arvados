@@ -242,6 +242,7 @@ class User < ArvadosModel
   end
 
   def create_user_repo_link(repo_name)
+    # repo_name is optional
     if not repo_name
       logger.warn ("Repository name not given for #{self.uuid}.")
       return
@@ -282,13 +283,18 @@ class User < ArvadosModel
 
   # create login permission for the given vm_uuid, if it does not already exist
   def create_vm_login_permission_link(vm_uuid, repo_name)
-    # Look up the given virtual machine just to make sure it really exists.
     begin
-      vm = VirtualMachine.where(uuid: vm_uuid).first
+              
+      # vm uuid is optional
+      if vm_uuid 
+        vm = VirtualMachine.where(uuid: vm_uuid).first
 
-      if not vm
-        logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
-        return
+        if not vm
+          logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
+          raise "No vm found for #{vm_uuid}"
+        end
+      else
+        return 
       end
 
       logger.info { "vm uuid: " + vm[:uuid] }
@@ -322,7 +328,7 @@ class User < ArvadosModel
 
     if not group
       logger.warn "No 'All users' group with uuid '*-*-fffffffffffffff'."
-      return
+      raise "No 'All users' group with uuid '*-*-fffffffffffffff' is found"
     else
       logger.info { "\"All users\" group uuid: " + group[:uuid] }
 

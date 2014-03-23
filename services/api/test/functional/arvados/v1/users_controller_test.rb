@@ -64,7 +64,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       repo_name: repo_name,
-      vm_uuid: 'no_such_vm',
       user: {
         uuid: "this_is_agreeable",        
         first_name: "in_create_test_first_name",
@@ -106,7 +105,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, {
       uuid: 'not_an_existing_uuid_and_not_email_format',
       repo_name: 'test_repo',
-      vm_uuid: 'no_such_vm'
+      vm_uuid: @vm_uuid,
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
@@ -146,12 +145,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @vm_uuid, resp_obj['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
-  test "create user with valid email, vm and repo as input" do
+  test "create user with valid email and repo as input" do
     authorize_with :admin
 
     post :setup, {
       repo_name: 'test_repo',
-      vm_uuid: 'no_such_vm',
       user: {email: 'abc@xyz.com'}
     }
 
@@ -162,6 +160,40 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     # three extra links; login link, group link and repo link
     verify_num_links @all_links_at_start, 3
+  end
+
+  test "create user with valid email, repo and fake vm as input" do
+    authorize_with :admin
+
+    post :setup, {
+      repo_name: 'test_repo',
+      vm_uuid: 'no_such_vm',
+      user: {email: 'abc@xyz.com'}
+    }
+
+    response_body = JSON.parse(@response.body)
+    response_errors = response_body['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert (response_errors.first.include? "No vm found for no_such_vm"), 
+          'Expected RuntimeError: No vm found for no_such_vm'
+  end
+
+  test "create user with valid email, repo and real vm as input" do
+    authorize_with :admin
+
+    post :setup, {
+      repo_name: 'test_repo',
+      vm_uuid: @vm_uuid,
+      user: {email: 'abc@xyz.com'}
+    }
+
+    assert_response :success
+    response_object = JSON.parse(@response.body)['items']['user']
+    assert_not_nil response_object['uuid'], 'expected uuid for the new user'
+    assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
+
+    # three extra links; login link, group link and repo link
+    verify_num_links @all_links_at_start, 4
   end
 
   test "create user with valid email, no vm and repo as input" do
@@ -239,7 +271,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       repo_name: 'test_repo',
-      vm_uuid: 'no_such_vm',
       openid_prefix: 'http://www.xyz.com/account',
       user: {
         first_name: "in_create_test_first_name",
