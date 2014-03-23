@@ -114,7 +114,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert (response_errors.first.include? 'Path not found'), 'Expected 404'
   end
 
-  test "create user with existing uuid, vm and repo and verify links" do
+  test "invoke setup with existing uuid, vm and repo and verify links" do
     authorize_with :inactive
     get :current
     assert_response :success
@@ -129,14 +129,21 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success
-    response_object = JSON.parse(@response.body)['items']['user']
-    assert_not_nil response_object['uuid'], 'expected uuid for the new user'
-    assert_equal inactive_user['uuid'], response_object['uuid']
-    assert_equal inactive_user['email'], response_object['email'], 
+
+    response_items = JSON.parse(@response.body)['items']
+    resp_obj = response_items['user']
+
+    assert_not_nil resp_obj['uuid'], 'expected uuid for the new user'
+    assert_equal inactive_user['uuid'], resp_obj['uuid']
+    assert_equal inactive_user['email'], resp_obj['email'], 
         'expecting inactive user email'
 
-    # since it is an existing user, expect only 2 new links: repo and vm
-    verify_num_links @all_links_at_start, 2
+    # expect repo and vm links
+    verify_link response_items, 'repo_perm', true, 'permission', 'can_write',
+        'test_repo', resp_obj['uuid'], 'arvados#repository', true, 'Repository'
+
+    verify_link response_items, 'vm_login_perm', true, 'permission', 'can_login',
+        @vm_uuid, resp_obj['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
   test "create user with valid email, vm and repo as input" do
@@ -264,7 +271,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'group_perm', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_read',
+    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
@@ -343,7 +350,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   def verify_link(response_items, link_object_name, expect_link, link_class,
         link_name, head_uuid, tail_uuid, head_kind, fetch_object, class_name)
-
     link = response_items[link_object_name]
 
     if !expect_link 

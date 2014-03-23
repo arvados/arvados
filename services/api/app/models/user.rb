@@ -120,31 +120,33 @@ class User < ArvadosModel
         raise "No email found in the input. Aborting user creation."
       end
 
-      if user.save
-        oid_login_perm = Link.where(tail_uuid: user[:email],
-                                    head_kind: 'arvados#user',
-                                    link_class: 'permission',
-                                    name: 'can_login')
-
-        if !oid_login_perm.any?
-          # create openid login permission
-          oid_login_perm = Link.create(link_class: 'permission',
-                                       name: 'can_login',
-                                       tail_kind: 'email',
-                                       tail_uuid: user[:email],
-                                       head_kind: 'arvados#user',
-                                       head_uuid: user[:uuid],
-                                       properties: login_perm_props
-                                      )
-          logger.info { "openid login permission: " + oid_login_perm[:uuid] }
-        end
-      else
+      if !user.save
         raise "Save failed"
       end
     else
       user = found
     end
 
+    # Check opd_login_perm
+    oid_login_perm = Link.where(tail_uuid: user[:email],
+                                head_kind: 'arvados#user',
+                                link_class: 'permission',
+                                name: 'can_login')
+
+    if !oid_login_perm.any?
+      # create openid login permission
+      oid_login_perm = Link.create(link_class: 'permission',
+                                   name: 'can_login',
+                                   tail_kind: 'email',
+                                   tail_uuid: user[:email],
+                                   head_kind: 'arvados#user',
+                                   head_uuid: user[:uuid],
+                                   properties: login_perm_props
+                                  )
+      logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+    end
+
+    # create repo, vm, and group links
     response = {user: user, oid_login_perm: oid_login_perm}
 
     user.setup_links(repo_name, vm_uuid, openid_prefix, response)
