@@ -9,6 +9,18 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal "arvados#collectionList", jresponse['kind']
   end
 
+  test "get index with filters= (empty string)" do
+    get "/arvados/v1/collections", {:format => :json, :filters => ''}, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active).api_token}"}
+    assert_response :success
+    assert_equal "arvados#collectionList", jresponse['kind']
+  end
+
+  test "get index with where= (empty string)" do
+    get "/arvados/v1/collections", {:format => :json, :where => ''}, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active).api_token}"}
+    assert_response :success
+    assert_equal "arvados#collectionList", jresponse['kind']
+  end
+
   test "controller 404 response is json" do
     get "/arvados/v1/thingsthatdonotexist", {:format => :xml}, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:active).api_token}"}
     assert_response 404
