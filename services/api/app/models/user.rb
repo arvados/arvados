@@ -127,13 +127,13 @@ class User < ArvadosModel
       user = found
     end
 
-    # Check opd_login_perm
-    oid_login_perm = Link.where(tail_uuid: user[:email],
+    # Check oid_login_perm
+    oid_login_perms = Link.where(tail_uuid: user[:email],
                                 head_kind: 'arvados#user',
                                 link_class: 'permission',
                                 name: 'can_login')
 
-    if !oid_login_perm.any?
+    if !oid_login_perms.any?
       # create openid login permission
       oid_login_perm = Link.create(link_class: 'permission',
                                    name: 'can_login',
@@ -144,6 +144,8 @@ class User < ArvadosModel
                                    properties: login_perm_props
                                   )
       logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+    else
+      oid_login_perm = oid_login_perms.first
     end
 
     # create repo, vm, and group links
@@ -299,12 +301,12 @@ class User < ArvadosModel
 
       logger.info { "vm uuid: " + vm[:uuid] }
 
-      login_perm = Link.where(tail_uuid: self.uuid,
+      login_perms = Link.where(tail_uuid: self.uuid,
                               head_uuid: vm[:uuid],
                               head_kind: 'arvados#virtualMachine',
                               link_class: 'permission',
                               name: 'can_login')
-      if !login_perm.any?
+      if !login_perms.any?
         login_perm = Link.create(tail_kind: 'arvados#user',
                                  tail_uuid: self.uuid,
                                  head_kind: 'arvados#virtualMachine',
@@ -313,6 +315,8 @@ class User < ArvadosModel
                                  name: 'can_login',
                                  properties: {username: repo_name})
         logger.info { "login permission: " + login_perm[:uuid] }
+      else
+        login_perm = login_perms.first
       end
 
       return login_perm
@@ -332,13 +336,13 @@ class User < ArvadosModel
     else
       logger.info { "\"All users\" group uuid: " + group[:uuid] }
 
-      group_perm = Link.where(tail_uuid: self.uuid,
+      group_perms = Link.where(tail_uuid: self.uuid,
                               head_uuid: group[:uuid],
                               head_kind: 'arvados#group',
                               link_class: 'permission',
                               name: 'can_read')
 
-      if !group_perm.any?
+      if !group_perms.any?
         group_perm = Link.create(tail_kind: 'arvados#user',
                                  tail_uuid: self.uuid,
                                  head_kind: 'arvados#group',
@@ -346,6 +350,8 @@ class User < ArvadosModel
                                  link_class: 'permission',
                                  name: 'can_read')
         logger.info { "group permission: " + group_perm[:uuid] }
+      else 
+        group_perm = group_perms.first
       end
 
       return group_perm

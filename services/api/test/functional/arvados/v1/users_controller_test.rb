@@ -501,6 +501,99 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
           'Expected PermissionDeniedError'
   end
 
+  test "setup user in multiple steps and verify response" do
+    authorize_with :admin
+
+    post :setup, {
+      openid_prefix: 'http://www.xyz.com/account',
+      user: {
+        email: "test@abc.com"
+      }
+    }
+
+    assert_response :success
+
+    response_items = JSON.parse(@response.body)['items']
+    created = response_items['user']
+
+    assert_not_nil created['uuid'], 'expected uuid for new user'
+    assert_not_nil created['email'], 'expected non-nil email'
+    assert_equal created['email'], 'test@abc.com', 'expected input email'
+
+    # verify links; 2 new links: oid_login_perm, and 'All users' group.
+    verify_num_links @all_links_at_start, 2
+
+    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
+        created['uuid'], created['email'], 'arvados#user', false, 'User'
+
+    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+        'All users', created['uuid'], 'arvados#group', true, 'Group'
+
+    verify_link response_items, 'repo_perm', false, 'permission', 'can_write',
+        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+
+    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_login',
+        nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+
+   # invoke setup with a repository
+    post :setup, {
+      openid_prefix: 'http://www.xyz.com/account',
+      repo_name: 'new_repo',
+      uuid: created['uuid']
+    }
+
+    assert_response :success
+
+    response_items = JSON.parse(@response.body)['items']
+    created = response_items['user']
+
+    assert_equal 'test@abc.com', created['email'], 'expected input email'
+
+     # verify links
+    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
+        created['uuid'], created['email'], 'arvados#user', false, 'User'
+
+    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+        'All users', created['uuid'], 'arvados#group', true, 'Group'
+
+    verify_link response_items, 'repo_perm', true, 'permission', 'can_write',
+        'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+
+    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_login',
+        nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+
+    # invoke setup with a vm_uuid
+    post :setup, {
+      vm_uuid: @vm_uuid,
+      openid_prefix: 'http://www.xyz.com/account',
+      user: {
+        email: 'junk_email'
+      },
+      uuid: created['uuid']
+    }
+
+    assert_response :success
+
+    response_items = JSON.parse(@response.body)['items']
+    created = response_items['user']
+
+    assert_equal created['email'], 'test@abc.com', 'expected original email'
+
+    # verify links
+    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
+        created['uuid'], created['email'], 'arvados#user', false, 'User'
+
+    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+        'All users', created['uuid'], 'arvados#group', true, 'Group'
+
+    # since no repo name in input, we won't get any; even though user has one
+    verify_link response_items, 'repo_perm', false, 'permission', 'can_write',
+        'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+
+    verify_link response_items, 'vm_login_perm', true, 'permission', 'can_login',
+        @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+  end
+
   def verify_num_links (original_links, expected_additional_links)
     links_now = Link.all
     assert_equal original_links.size+expected_additional_links, Link.all.size,
@@ -512,18 +605,17 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     link = response_items[link_object_name]
 
     if !expect_link 
-      assert_nil link
+      assert_nil link, "Expected no link for #{link_object_name}"
       return
     end
 
-    assert_not_nil link
+    assert_not_nil link, "Expected link for #{link_object_name}"
 
     if fetch_object
       object = Object.const_get(class_name).where(name: head_uuid)
       assert [] != object, "expected #{class_name} with name #{head_uuid}"
       head_uuid = object.first[:uuid]
     end
-
     assert_equal link['link_class'], link_class,
         "did not find expected link_class for #{link_object_name}"
  
