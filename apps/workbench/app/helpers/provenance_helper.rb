@@ -6,6 +6,7 @@ module ProvenanceHelper
       @opts = opts
       @visited = {}
       @jobs = {}
+      @node_extra = {}
     end
     
     def self.collection_uuid(uuid)
@@ -41,7 +42,7 @@ module ProvenanceHelper
 
     def describe_node(uuid)
       uuid = uuid.to_sym
-      bgcolor = determine_fillcolor @opts[:pips][uuid] if @opts[:pips]
+      bgcolor = determine_fillcolor @opts[:pips].andand[uuid]
 
       rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
       if rsc
@@ -57,7 +58,7 @@ module ProvenanceHelper
             #puts "empty!"
             return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
           end
-          puts "#{uuid.class} #{@pdata[uuid]}"
+          #puts "#{uuid.class} #{@pdata[uuid]}"
           if @pdata[uuid] 
             #puts @pdata[uuid]
             if @pdata[uuid][:name]
@@ -82,7 +83,10 @@ module ProvenanceHelper
                   label += "\\n&vellip;"
                 end
                 #puts "#{uuid} #{label} #{files}"
-                return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
+                extra_s = @node_extra[uuid].andand.map { |k,v|
+                  "#{k}=\"#{v}\""
+                }.andand.join ","
+                return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval,#{bgcolor},#{extra_s}];\n"
               end
             end  
           end
@@ -189,27 +193,31 @@ module ProvenanceHelper
         @visited[uuid] = true
       end
 
-      #puts "visiting #{uuid}"
+      #puts "visiting #{uuid.inspect}"
 
-      if m  
+      if m
         # uuid is a collection
+        if uuid != :"d41d8cd98f00b204e9800998ecf8427e+0"
+          # not the empty collection
+
+          @pdata.each do |k, job|
+            if job[:output] == uuid.to_s
+              extra = { label: 'output' }
+              if job[:output_is_persistent]
+                extra[:label] += ' (persistent)'
+                @node_extra[uuid] ||= {}
+                @node_extra[uuid][:penwidth] = 4
+              end
+              gr += edge(uuid, job_uuid(job), extra)
+              gr += generate_provenance_edges(job[:uuid])
+            end
+            if job[:log] == uuid.to_s
+              gr += edge(uuid, job_uuid(job), {:label => "log"})
+              gr += generate_provenance_edges(job[:uuid])
+            end
+          end
+        end
         gr += describe_node(uuid)
-
-        if m == :"d41d8cd98f00b204e9800998ecf8427e+0"
-          # empty collection, don't follow any further
-          return gr
-        end
-
-        @pdata.each do |k, job|
-          if job[:output] == uuid.to_s
-            gr += edge(uuid, job_uuid(job), {:label => "output"})
-            gr += generate_provenance_edges(job[:uuid])
-          end
-          if job[:log] == uuid.to_s
-            gr += edge(uuid, job_uuid(job), {:label => "log"})
-            gr += generate_provenance_edges(job[:uuid])
-          end
-        end
       else
         # uuid is something else
         rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
@@ -313,7 +321,7 @@ edge [fontsize=10];
     gr += "}"
     svg = ""
 
-    puts gr
+    #puts gr
     
     require 'open3'
 
