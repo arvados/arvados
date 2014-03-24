@@ -11,10 +11,11 @@ class ArvadosModel < ActiveRecord::Base
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
   before_destroy :ensure_permission_to_destroy
-  before_create :update_modified_by_fields
-  before_update :maybe_update_modified_by_fields
+
+  before_validation :maybe_update_modified_by_fields
   validate :ensure_serialized_attribute_type
   validate :normalize_collection_uuids
+  validate :ensure_valid_uuids
 
   has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
 
@@ -135,7 +136,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def maybe_update_modified_by_fields
-    update_modified_by_fields if self.changed?
+    update_modified_by_fields if self.changed? or self.new_record?
   end
 
   def update_modified_by_fields
@@ -180,6 +181,24 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
+
+  def ensure_valid_uuids
+    specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
+
+    foreign_key_attributes.each do |attr|
+      begin
+        attr_value = send attr
+        r = ArvadosModel::resource_class_for_uuid attr_value if attr_value
+        if r and r.where(uuid: attr_value).count == 0 and not specials.include? attr_value
+          errors.add(attr, "'#{attr_value}' not found")
+        end
+      rescue Exception => e
+          errors.add(attr, "'#{attr_value}' error #{e}")
+      end
+    end
+  end
+
   def self.resource_class_for_uuid(uuid)
     if uuid.is_a? ArvadosModel
       return uuid.class
@@ -193,7 +212,7 @@ class ArvadosModel < ActiveRecord::Base
     resource_class = nil
 
     Rails.application.eager_load!
-    uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
+    uuid.match @@UUID_REGEX do |re|
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         if k.respond_to?(:uuid_prefix)
           if k.uuid_prefix == re[1]

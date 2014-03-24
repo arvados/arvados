@@ -36,11 +36,8 @@ class ApplicationController < ActionController::Base
 
   def create
     @object = model_class.new resource_attrs
-    if @object.save
-      show
-    else
-      raise "Save failed"
-    end
+    @object.save!
+    show
   end
 
   def update

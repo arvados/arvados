@@ -2,3 +2,8 @@ testvm:
   uuid: zzzzz-2x53u-382brsig8rp3064
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   hostname: testvm.shell
+
+testvm2:
+  uuid: zzzzz-2x53u-382brsig8rp3065
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  hostname: testvm2.shell
