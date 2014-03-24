@@ -64,6 +64,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       repo_name: repo_name,
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {
         uuid: "this_is_agreeable",        
         first_name: "in_create_test_first_name",
@@ -106,6 +107,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       uuid: 'not_an_existing_uuid_and_not_email_format',
       repo_name: 'test_repo',
       vm_uuid: @vm_uuid,
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
@@ -124,7 +126,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, {
       user: {uuid: inactive_user['uuid']},
       repo_name: 'test_repo',
-      vm_uuid: @vm_uuid
+      vm_uuid: @vm_uuid,
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success
@@ -150,7 +153,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       repo_name: 'test_repo',
-      user: {email: 'abc@xyz.com'}
+      user: {email: 'abc@xyz.com'},
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success
@@ -168,7 +172,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, {
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {email: 'abc@xyz.com'}
+      user: {email: 'abc@xyz.com'},
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     response_body = JSON.parse(@response.body)
@@ -183,6 +188,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       repo_name: 'test_repo',
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
       vm_uuid: @vm_uuid,
       user: {email: 'abc@xyz.com'}
     }
@@ -200,7 +206,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      user: {email: 'abc@xyz.com'}
+      user: {email: 'abc@xyz.com'},
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success    
@@ -216,6 +223,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'test_repo',
       vm_uuid: @vm_uuid,
       user: {
@@ -239,6 +247,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'test_repo',
       user: {
         email: 'abc@xyz.com'
@@ -252,8 +261,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 3   # openid, group, and repo. no vm
 
     # create again
-    post :setup, user: {
-      email: 'abc@xyz.com'
+    post :setup, {
+      user: {email: 'abc@xyz.com'},
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success
@@ -306,6 +316,25 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
+  test "invoke setup with no openid prefix, expect error" do
+    authorize_with :admin
+
+    post :setup, {
+      repo_name: 'test_repo',
+      user: {
+        first_name: "in_create_test_first_name",
+        last_name: "test_last_name",
+        email: "test@abc.com"
+      }
+    }
+
+    response_body = JSON.parse(@response.body)
+    response_errors = response_body['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert (response_errors.first.include? 'openid_prefix parameter is missing'),
+        'Expected ArgumentError'
+  end
+
   test "create user with user, vm and repo and verify links" do
     authorize_with :admin
 
@@ -315,8 +344,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         last_name: "test_last_name",
         email: "test@abc.com"
       },
+      vm_uuid: @vm_uuid,
       repo_name: 'test_repo',
-      vm_uuid: @vm_uuid
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
     assert_response :success
@@ -363,6 +393,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :active
 
     post :setup, {
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {email: 'abc@xyz.com'}
     }
 

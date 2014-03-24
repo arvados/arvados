@@ -99,6 +99,10 @@ class Arvados::V1::UsersController < ApplicationController
       @object = model_class.new resource_attrs
     end
 
+    if !params[:openid_prefix]
+      raise ArgumentError.new "Required openid_prefix parameter is missing."
+    end
+
     @response = User.setup @object, params[:openid_prefix],
                 params[:repo_name], params[:vm_uuid]
     render json: { kind: "arvados#HashList", items: @response }
