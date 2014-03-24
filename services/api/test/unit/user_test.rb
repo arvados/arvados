@@ -258,12 +258,6 @@ class UserTest < ActiveSupport::TestCase
     verify_user resp_user, email
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
 
-    oid_login_perm = response[:oid_login_perm]
-    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
-        resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
-        'expected identity_url_prefix not found for oid_login_perm'
-
     verify_link response[:group_perm], 'permission', 'can_read', 
         resp_user[:uuid], nil
 
@@ -278,12 +272,6 @@ class UserTest < ActiveSupport::TestCase
     resp_user = response[:user]
     verify_user resp_user, email
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
-
-    oid_login_perm = response[:oid_login_perm]
-    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
-        resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
-        'expected identity_url_prefix not found for oid_login_perm'
 
     verify_link response[:group_perm], 'permission', 'can_read', 
         resp_user[:uuid], nil

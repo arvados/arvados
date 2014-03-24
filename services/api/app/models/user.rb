@@ -111,8 +111,12 @@ class User < ArvadosModel
 
   def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
     login_perm_props = {identity_url_prefix: openid_prefix}
+
     if user.uuid
       found = User.find_by_uuid user.uuid
+      if found
+        user = found
+      end
     end
 
     if !found
@@ -120,22 +124,17 @@ class User < ArvadosModel
         raise "No email found in the input. Aborting user creation."
       end
 
-      if !user.save
-        raise "Save failed"
-      end
-    else
-      user = found
-    end
+      user.save!
+    
+      # Check oid_login_perm
+      oid_login_perms = Link.where(tail_uuid: user.email,
+                                   head_kind: 'arvados#user',
+                                   link_class: 'permission',
+                                   name: 'can_login')
 
-    # Check oid_login_perm
-    oid_login_perms = Link.where(tail_uuid: user.email,
-                                head_kind: 'arvados#user',
-                                link_class: 'permission',
-                                name: 'can_login')
-
-    if !oid_login_perms.any?
-      # create openid login permission
-      oid_login_perm = Link.create(link_class: 'permission',
+      if !oid_login_perms.any?
+        # create openid login permission
+        oid_login_perm = Link.create(link_class: 'permission',
                                    name: 'can_login',
                                    tail_kind: 'email',
                                    tail_uuid: user.email,
@@ -143,9 +142,10 @@ class User < ArvadosModel
                                    head_uuid: user.uuid,
                                    properties: login_perm_props
                                   )
-      logger.info { "openid login permission: " + oid_login_perm[:uuid] }
-    else
-      oid_login_perm = oid_login_perms.first
+        logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+      else
+        oid_login_perm = oid_login_perms.first
+      end
     end
 
     # create repo, vm, and group links

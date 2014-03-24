@@ -106,8 +106,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, {
       uuid: 'bogus_uuid',
       repo_name: 'test_repo',
-      vm_uuid: @vm_uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
+      vm_uuid: @vm_uuid
     }
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
@@ -135,7 +134,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      #uuid: 'not_an_existing_uuid_and_not_email_format',
       repo_name: 'test_repo',
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id'
@@ -174,8 +172,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, {
       uuid: inactive_user['uuid'],
       repo_name: 'test_repo',
-      vm_uuid: @vm_uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
+      vm_uuid: @vm_uuid
     }
 
     assert_response :success
@@ -230,8 +227,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       uuid: inactive_user['uuid'],
-      user: {email: 'junk_email'},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
+      user: {email: 'junk_email'}
     }
 
     assert_response :success
@@ -550,9 +546,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'test@abc.com', created['email'], 'expected input email'
 
      # verify links
-    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
-
     verify_link response_items, 'group_perm', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
@@ -580,9 +573,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal created['email'], 'test@abc.com', 'expected original email'
 
     # verify links
-    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
-
     verify_link response_items, 'group_perm', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
