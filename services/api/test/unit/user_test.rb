@@ -193,7 +193,39 @@ class UserTest < ActiveSupport::TestCase
         'Expected ArgumentError'
   end
 
-  test "setup new user with email and openid_prefix" do
+  test "setup new user with all input data" do
+    Thread.current[:user] = @admin_user
+
+    email = 'abc@xyz.com'
+    openid_prefix = 'http://openid/prefix'
+
+    user = User.new
+    user.email = email
+
+    vm = VirtualMachine.create
+
+    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+
+    resp_user = response[:user]
+    verify_user resp_user, email
+
+    oid_login_perm = response[:oid_login_perm]
+    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
+        resp_user[:uuid]
+    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+        'expected identity_url_prefix not found for oid_login_perm'
+
+    verify_link response[:group_perm], 'permission', 'can_read', 
+        resp_user[:uuid], nil
+
+    verify_link response[:repo_perm], 'permission', 'can_write', 
+        resp_user[:uuid], nil
+
+    verify_link response[:vm_login_perm], 'permission', 'can_login', 
+        resp_user[:uuid], vm.uuid
+  end
+
+  test "setup new user in multiple steps" do
     Thread.current[:user] = @admin_user
 
     email = 'abc@xyz.com'
