@@ -27,6 +27,7 @@ class Job < ArvadosModel
     t.add :started_at
     t.add :finished_at
     t.add :output
+    t.add :output_is_persistent
     t.add :success
     t.add :running
     t.add :is_locked_by_uuid
