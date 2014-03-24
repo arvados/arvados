@@ -187,10 +187,11 @@ class ArvadosModel < ActiveRecord::Base
     specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
 
     foreign_key_attributes.each do |attr|
+      next if attr == "modified_by_client_uuid"
       begin
         attr_value = send attr
         r = ArvadosModel::resource_class_for_uuid attr_value if attr_value
-        if r and r.where(uuid: attr_value).count == 0 and not specials.include? attr_value
+        if r and r.readable_by(current_user).where(uuid: attr_value).count == 0 and not specials.include? attr_value
           errors.add(attr, "'#{attr_value}' not found")
         end
       rescue Exception => e

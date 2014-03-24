@@ -29,7 +29,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       tail_uuid: users(:active).uuid,
       head_uuid: 'zzzzz-tpzed-xyzxyzxerrrorxx'
     }
-    authorize_with :active
+    authorize_with :admin
     post :create, link: link
     assert_response 422
   end
@@ -41,12 +41,12 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       head_uuid: users(:active).uuid,
       tail_uuid: 'zzzzz-tpzed-xyzxyzxerrrorxx'
     }
-    authorize_with :active
+    authorize_with :admin
     post :create, link: link
     assert_response 422
   end
 
-  test "tail must exist on update" do
+  test "tail must be visible by user" do
     link = {
       link_class: 'test',
       name: 'stuff',
@@ -55,20 +55,6 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     }
     authorize_with :active
     post :create, link: link
-    u = (ActiveSupport::JSON.decode @response.body)['uuid']
-    assert_response :success
-
-    link = {
-      tail_uuid: virtual_machines(:testvm2).uuid
-    }
-    put :update, {id: u, link: link}
-    assert_equal virtual_machines(:testvm2).uuid, (ActiveSupport::JSON.decode @response.body)['tail_uuid']
-    assert_response :success
-
-    link = {
-      tail_uuid: 'zzzzz-tpzed-xyzxyzxerrrorxx'
-    }
-    put :update, {id: u, link: link}
     assert_response 422
   end
 
