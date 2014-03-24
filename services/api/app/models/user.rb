@@ -111,12 +111,12 @@ class User < ArvadosModel
 
   def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
     login_perm_props = {identity_url_prefix: openid_prefix}
-    if user[:uuid]
-      found = User.find_by_uuid user[:uuid]
+    if user.uuid
+      found = User.find_by_uuid user.uuid
     end
 
     if !found
-      if !user[:email]
+      if !user.email
         raise "No email found in the input. Aborting user creation."
       end
 
@@ -128,7 +128,7 @@ class User < ArvadosModel
     end
 
     # Check oid_login_perm
-    oid_login_perms = Link.where(tail_uuid: user[:email],
+    oid_login_perms = Link.where(tail_uuid: user.email,
                                 head_kind: 'arvados#user',
                                 link_class: 'permission',
                                 name: 'can_login')
@@ -138,9 +138,9 @@ class User < ArvadosModel
       oid_login_perm = Link.create(link_class: 'permission',
                                    name: 'can_login',
                                    tail_kind: 'email',
-                                   tail_uuid: user[:email],
+                                   tail_uuid: user.email,
                                    head_kind: 'arvados#user',
-                                   head_uuid: user[:uuid],
+                                   head_uuid: user.uuid,
                                    properties: login_perm_props
                                   )
       logger.info { "openid login permission: " + oid_login_perm[:uuid] }
@@ -151,13 +151,13 @@ class User < ArvadosModel
     # create repo, vm, and group links
     response = {user: user, oid_login_perm: oid_login_perm}
 
-    user.setup_links(repo_name, vm_uuid, openid_prefix, response)
+    user.setup_repo_vm_links(repo_name, vm_uuid, response)
 
     return response
   end 
 
   # create links
-  def setup_links(repo_name, vm_uuid, openid_prefix, response)
+  def setup_repo_vm_links(repo_name, vm_uuid, response)
     repo_perm = create_user_repo_link repo_name
     if repo_perm
       response[:repo_perm] = repo_perm
@@ -168,7 +168,7 @@ class User < ArvadosModel
       response[:vm_login_perm] = vm_login_perm
     end
 
-    group_perm = create_user_group_links
+    group_perm = create_user_group_link
     if group_perm
       response[:group_perm] = group_perm
     end
@@ -324,7 +324,7 @@ class User < ArvadosModel
   end
 
   # add the user to the 'All users' group
-  def create_user_group_links
+  def create_user_group_link
     # Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
     group = Group.where(name: 'All users').select do |g|
       g[:uuid].match /-f+$/

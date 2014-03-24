@@ -38,7 +38,7 @@ arv = Arvados.new(api_version: 'v1')
 begin
   found_user = arv.user.get(uuid: user_arg)
 rescue Arvados::TransactionFailedError
-  found = arv.user.list(where: {email: ARGV[0]})[:items]
+  found = arv.user.list(where: {email: user_arg})[:items]
     
   if found.count == 0 
     if !user_arg.match(/\w\@\w+\.\w+/)
@@ -46,8 +46,7 @@ rescue Arvados::TransactionFailedError
                "does not look like an email address. Stop."
     end
   elsif found.count != 1
-    abort "Found #{found.count} users " +
-              "with uuid or email #{user_arg.inspect}. Stop."
+    abort "Found #{found.count} users with email. Stop."
   else
     found_user = found.first
   end

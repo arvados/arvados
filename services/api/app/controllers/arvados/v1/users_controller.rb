@@ -100,10 +100,9 @@ class Arvados::V1::UsersController < ApplicationController
         raise ArgumentError.new "Required uuid or email"
       end
       @object = model_class.new resource_attrs
-    end
-
-    if !params[:openid_prefix]
-      raise ArgumentError.new "Required openid_prefix parameter is missing."
+      if !params[:openid_prefix]
+        raise ArgumentError.new "Required openid_prefix parameter is missing."
+      end
     end
 
     @response = User.setup @object, params[:openid_prefix],
