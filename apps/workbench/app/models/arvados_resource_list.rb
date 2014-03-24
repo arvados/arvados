@@ -25,6 +25,12 @@ class ArvadosResourceList
     self
   end
 
+  def filter _filters
+    @filters ||= []
+    @filters += _filters
+    self
+  end
+
   def where(cond)
     cond = cond.dup
     cond.keys.each do |uuid_key|
@@ -58,6 +64,7 @@ class ArvadosResourceList
     api_params[:limit] = @limit if @limit
     api_params[:offset] = @offset if @offset
     api_params[:order] = @orderby_spec if @orderby_spec
+    api_params[:filters] = @filters if @filters
     res = $arvados_api_client.api @resource_class, '', api_params
     @results = $arvados_api_client.unpack_api_response res
     self
