@@ -96,6 +96,9 @@ class Arvados::V1::UsersController < ApplicationController
         return render_404_if_no_object
       end
     else
+      if !params[:user]
+        raise ArgumentError.new "Required uuid or email"
+      end
       @object = model_class.new resource_attrs
     end
 

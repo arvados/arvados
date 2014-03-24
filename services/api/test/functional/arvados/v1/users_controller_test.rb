@@ -100,11 +100,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
-  test "create user with bogus uuid, vm and repo as input" do
+  test "setup user with bogus uuid and expect error" do
     authorize_with :admin
 
     post :setup, {
-      uuid: 'not_an_existing_uuid_and_not_email_format',
+      uuid: 'bogus_uuid',
       repo_name: 'test_repo',
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id'
@@ -113,6 +113,54 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_errors = response_body['errors']
     assert_not_nil response_errors, 'Expected error in response'
     assert (response_errors.first.include? 'Path not found'), 'Expected 404'
+  end
+
+  test "setup user with bogus uuid in user and expect error" do
+    authorize_with :admin
+
+    post :setup, {
+      user: {uuid: 'bogus_uuid'},
+      repo_name: 'test_repo',
+      vm_uuid: @vm_uuid,
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
+    }
+    response_body = JSON.parse(@response.body)
+    response_errors = response_body['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert (response_errors.first.include? 'RuntimeError: No email found'),
+      'Expected RuntimeError'
+  end
+
+  test "setup user with no uuid and user, expect error" do
+    authorize_with :admin
+
+    post :setup, {
+      #uuid: 'not_an_existing_uuid_and_not_email_format',
+      repo_name: 'test_repo',
+      vm_uuid: @vm_uuid,
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
+    }
+    response_body = JSON.parse(@response.body)
+    response_errors = response_body['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert (response_errors.first.include? 'Required uuid or email'),
+        'Expected ArgumentError'
+  end
+
+  test "setup user with no uuid and email, expect error" do
+    authorize_with :admin
+
+    post :setup, {
+      user: {},
+      repo_name: 'test_repo',
+      vm_uuid: @vm_uuid,
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
+    }
+    response_body = JSON.parse(@response.body)
+    response_errors = response_body['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert (response_errors.first.include? '<RuntimeError: No email found'),
+        'Expected RuntimeError'
   end
 
   test "invoke setup with existing uuid, vm and repo and verify links" do
@@ -124,7 +172,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      user: {uuid: inactive_user['uuid']},
+      uuid: inactive_user['uuid'],
       repo_name: 'test_repo',
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id'
@@ -148,7 +196,56 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @vm_uuid, resp_obj['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
-  test "create user with valid email and repo as input" do
+  test "invoke setup with existing uuid in user, verify response" do
+    authorize_with :inactive
+    get :current
+    assert_response :success
+    inactive_user = JSON.parse(@response.body)
+    
+    authorize_with :admin
+
+    post :setup, {
+      user: {uuid: inactive_user['uuid']},
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
+    }
+
+    assert_response :success
+
+    response_items = JSON.parse(@response.body)['items']
+    resp_obj = response_items['user']
+
+    assert_not_nil resp_obj['uuid'], 'expected uuid for the new user'
+    assert_equal inactive_user['uuid'], resp_obj['uuid']
+    assert_equal inactive_user['email'], resp_obj['email'], 
+        'expecting inactive user email'
+  end
+
+  test "invoke setup with existing uuid but different email, expect original email" do
+    authorize_with :inactive
+    get :current
+    assert_response :success
+    inactive_user = JSON.parse(@response.body)
+    
+    authorize_with :admin
+
+    post :setup, {
+      uuid: inactive_user['uuid'],
+      user: {email: 'junk_email'},
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
+    }
+
+    assert_response :success
+
+    response_items = JSON.parse(@response.body)['items']
+    resp_obj = response_items['user']
+
+    assert_not_nil resp_obj['uuid'], 'expected uuid for the new user'
+    assert_equal inactive_user['uuid'], resp_obj['uuid']
+    assert_equal inactive_user['email'], resp_obj['email'], 
+        'expecting inactive user email'
+  end
+
+  test "setup user with valid email and repo as input" do
     authorize_with :admin
 
     post :setup, {
@@ -166,7 +263,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 3
   end
 
-  test "create user with valid email, repo and fake vm as input" do
+  test "setup user with fake vm and expect error" do
     authorize_with :admin
 
     post :setup, {
@@ -183,7 +280,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
           'Expected RuntimeError: No vm found for no_such_vm'
   end
 
-  test "create user with valid email, repo and real vm as input" do
+  test "setup user with valid email, repo and real vm as input" do
     authorize_with :admin
 
     post :setup, {
@@ -202,7 +299,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 4
   end
 
-  test "create user with valid email, no vm and repo as input" do
+  test "setup user with valid email, no vm and repo as input" do
     authorize_with :admin
 
     post :setup, {
@@ -219,7 +316,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 2
   end
 
-  test "create user with email, first name, repo name and vm uuid" do
+  test "setup user with email, first name, repo name and vm uuid" do
     authorize_with :admin
 
     post :setup, {
@@ -243,7 +340,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 4
   end
 
-  test "create user twice with email and check two different objects created" do
+  test "setup user twice with email and check two different objects created" do
     authorize_with :admin
 
     post :setup, {
@@ -276,7 +373,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 4
   end
 
-  test "create user with openid prefix" do
+  test "setup user with openid prefix" do
     authorize_with :admin
 
     post :setup, {
@@ -335,7 +432,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'Expected ArgumentError'
   end
 
-  test "create user with user, vm and repo and verify links" do
+  test "setup user with user, vm and repo and verify links" do
     authorize_with :admin
 
     post :setup, {
@@ -375,7 +472,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
-  test "try to create user as non admin user" do
+  test "create user as non admin user and expect error" do
     authorize_with :active
 
     post :create, {
@@ -389,7 +486,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
           'Expected PermissionDeniedError'
   end
 
-  test "try to setup user as non admin user" do
+  test "setup user as non admin user and expect error" do
     authorize_with :active
 
     post :setup, {
