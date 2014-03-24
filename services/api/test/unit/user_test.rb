@@ -143,8 +143,10 @@ class UserTest < ActiveSupport::TestCase
     begin
       user = User.new
       user.save
-    rescue ArvadosModel::PermissionDeniedError
+    rescue ArvadosModel::PermissionDeniedError => e
     end
+    assert (e.message.include? 'PermissionDeniedError'),
+        'Expected PermissionDeniedError'
   end
 
   test "setup new user as non-admin user" do
@@ -155,7 +157,132 @@ class UserTest < ActiveSupport::TestCase
       user.email = 'abc@xyz.com'
       
       User.setup user, 'http://openid/prefix'
-    rescue ArvadosModel::PermissionDeniedError
+    rescue ArvadosModel::PermissionDeniedError => e
+    end
+
+    assert (e.message.include? 'PermissionDeniedError'),
+        'Expected PermissionDeniedError'
+  end
+
+  test "setup new user with no email" do
+    Thread.current[:user] = @admin_user
+
+    begin
+      user = User.new
+      
+      User.setup user, 'http://openid/prefix'
+    rescue ArvadosModel::RuntimeError => e
+    end
+
+    assert (e.message.include? 'No email found'),
+        'Expected RuntimeError'
+  end
+
+  test "setup new user with email but no openid_prefix" do
+    Thread.current[:user] = @admin_user
+
+    begin
+      user = User.new
+      user.email = 'abc@xyz.com'
+      
+      User.setup user
+
+    rescue ArvadosModel::ArgumentError => e
+    end
+    assert (e.message.include? 'wrong number of arguments'),
+        'Expected ArgumentError'
+  end
+
+  test "setup new user with email and openid_prefix" do
+    Thread.current[:user] = @admin_user
+
+    email = 'abc@xyz.com'
+    openid_prefix = 'http://openid/prefix'
+
+    user = User.new
+    user.email = email
+
+    response = User.setup user, openid_prefix
+
+    resp_user = response[:user]
+    verify_user resp_user, email
+
+    oid_login_perm = response[:oid_login_perm]
+    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
+        resp_user[:uuid]
+    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+        'expected identity_url_prefix not found for oid_login_perm'
+
+    verify_link response[:group_perm], 'permission', 'can_read', 
+        resp_user[:uuid], nil
+
+    # invoke setup again with repo_name
+    user = User.new
+    user.uuid = resp_user[:uuid]
+
+    response = User.setup user, openid_prefix, 'test_repo'
+
+    resp_user = response[:user]
+    verify_user resp_user, email
+    assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
+
+    oid_login_perm = response[:oid_login_perm]
+    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
+        resp_user[:uuid]
+    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+        'expected identity_url_prefix not found for oid_login_perm'
+
+    verify_link response[:group_perm], 'permission', 'can_read', 
+        resp_user[:uuid], nil
+
+    verify_link response[:repo_perm], 'permission', 'can_write', 
+        resp_user[:uuid], nil
+
+    # invoke setup again with a vm_uuid
+    vm = VirtualMachine.create
+
+    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+
+    resp_user = response[:user]
+    verify_user resp_user, email
+    assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
+
+    oid_login_perm = response[:oid_login_perm]
+    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
+        resp_user[:uuid]
+    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+        'expected identity_url_prefix not found for oid_login_perm'
+
+    verify_link response[:group_perm], 'permission', 'can_read', 
+        resp_user[:uuid], nil
+
+    verify_link response[:repo_perm], 'permission', 'can_write', 
+        resp_user[:uuid], nil
+
+    verify_link response[:vm_login_perm], 'permission', 'can_login', 
+        resp_user[:uuid], vm.uuid
+  end
+
+  def verify_user resp_user, email
+    assert_not_nil resp_user, 'expected user object'
+    assert_not_nil resp_user[:uuid], 'expected user object'
+    assert_equal email, resp_user[:email], 'expected email not found'
+
+  end
+
+  def verify_link (link_object, link_class, link_name, tail_uuid, head_uuid)
+    assert_not_nil link_object, 'expected link for #{link_class} #{link_name}'
+    assert_not_nil link_object[:uuid],
+        'expected non-nil uuid for link for #{link_class} #{link_name}'
+    assert_equal link_class, link_object[:link_class], 
+        'expected link_class not found for #{link_class} #{link_name}'
+    assert_equal link_name, link_object[:name], 
+        'expected link_name not found for #{link_class} #{link_name}'
+    assert_equal tail_uuid, link_object[:tail_uuid], 
+        'expected tail_uuid not found for group_perm'
+    if head_uuid
+      assert_equal tail_uuid, link_object[:tail_uuid], 
+          'expected tail_uuid not found for group_perm'
     end
   end
 
