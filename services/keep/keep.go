@@ -2,9 +2,10 @@ package main
 
 import (
 	"bufio"
+	"crypto/md5"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 )
 
 const DEFAULT_PORT = 25107
+const BLOCKSIZE = 64 * 1024 * 1024
 
 var KeepVolumes []string
 
@@ -27,26 +29,67 @@ func main() {
 
 	// Set up REST handlers.
 	rest := mux.NewRouter()
-	rest.HandleFunc("/{hash}", GetBlock).Methods("GET")
+	rest.HandleFunc("/{hash:[0-9a-f]{32}}", GetBlockHandler).Methods("GET")
 	http.Handle("/", rest)
 
 	port := fmt.Sprintf(":%d", DEFAULT_PORT)
 	http.ListenAndServe(port, nil)
 }
 
-func GetBlock(w http.ResponseWriter, req *http.Request) {
+func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+
+	block, err := GetBlock(hash)
+	if err != nil {
+		http.Error(w, err.Error(), 404)
+		return
+	}
+
+	_, err = w.Write(block)
+	if err != nil {
+		log.Printf("GetBlockHandler: writing response: %s", err)
+	}
+
+	return
+}
+
+func GetBlock(hash string) ([]byte, error) {
+	var buf = make([]byte, BLOCKSIZE)
 
 	// Attempt to read the requested hash from a keep volume.
 	for _, vol := range KeepVolumes {
+		var f *os.File
+		var err error
+		var nread int
+
 		path := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
-		if f, err := os.Open(path); err == nil {
-			io.Copy(w, f)
-			break
-		} else {
-			log.Printf("%s: reading block %s: %s\n", vol, hash, err)
+
+		f, err = os.Open(path)
+		if err != nil {
+			log.Printf("%s: opening %s: %s\n", vol, path, err)
+			continue
 		}
+
+		nread, err = f.Read(buf)
+		if err != nil {
+			log.Printf("%s: reading %s: %s\n", vol, path, err)
+			continue
+		}
+
+		// Double check the file checksum.
+		filehash := fmt.Sprintf("%x", md5.Sum(buf[:nread]))
+		if filehash != hash {
+			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
+				vol, path, filehash)
+			continue
+		}
+
+		// Success!
+		return buf[:nread], nil
 	}
+
+	log.Printf("%s: all keep volumes failed, giving up\n", hash)
+	return buf, errors.New("not found: " + hash)
 }
 
 // FindKeepVolumes
