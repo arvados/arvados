@@ -68,6 +68,10 @@ class ArvadosResourceList
     @results
   end
 
+  def results=(r)
+    @results = r
+  end
+
   def all
     where({})
   end
