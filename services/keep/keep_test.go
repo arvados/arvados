@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,11 +10,10 @@ import (
 
 var TEST_BLOCK = []byte("The quick brown fox jumps over the lazy dog.")
 var TEST_HASH = "e4d909c290d0fb1ca068ffaddf22cbd0"
+var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 
 // Test simple block reads.
 func TestGetBlockOK(t *testing.T) {
-	var err error
-
 	defer teardown()
 
 	// Create two test Keep volumes and store a block in each of them.
@@ -23,7 +21,7 @@ func TestGetBlockOK(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, vol := range KeepVolumes {
-		if err := storeTestBlock(vol, TEST_BLOCK); err != nil {
+		if err := storeTestBlock(vol, TEST_HASH, TEST_BLOCK); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -40,15 +38,13 @@ func TestGetBlockOK(t *testing.T) {
 
 // Test block reads when one Keep volume is missing.
 func TestGetBlockOneKeepOK(t *testing.T) {
-	var err error
-
 	defer teardown()
 
 	// Two test Keep volumes, only the second has a block.
 	if err := setup(2); err != nil {
 		t.Fatal(err)
 	}
-	if err := storeTestBlock(KeepVolumes[1], TEST_BLOCK); err != nil {
+	if err := storeTestBlock(KeepVolumes[1], TEST_HASH, TEST_BLOCK); err != nil {
 		t.Fatal(err)
 	}
 
@@ -64,8 +60,6 @@ func TestGetBlockOneKeepOK(t *testing.T) {
 
 // Test block read failure.
 func TestGetBlockFail(t *testing.T) {
-	var err error
-
 	defer teardown()
 
 	// Create two empty test Keep volumes.
@@ -77,6 +71,28 @@ func TestGetBlockFail(t *testing.T) {
 	result, err := GetBlock(TEST_HASH)
 	if err == nil {
 		t.Errorf("GetBlock incorrectly returned success: ", result)
+	}
+}
+
+// Test reading a corrupt block.
+func TestGetBlockCorrupt(t *testing.T) {
+	defer teardown()
+
+	// Create two test Keep volumes and store a block in each of them,
+	// but the hash of the block does not match the filename.
+	if err := setup(2); err != nil {
+		t.Fatal(err)
+	}
+	for _, vol := range KeepVolumes {
+		if err := storeTestBlock(vol, TEST_HASH, BAD_BLOCK); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Check that GetBlock returns failure.
+	result, err := GetBlock(TEST_HASH)
+	if err == nil {
+		t.Errorf("GetBlock incorrectly returned success: %s", result)
 	}
 }
 
@@ -100,15 +116,13 @@ func teardown() {
 	}
 }
 
-func storeTestBlock(keepdir string, block []byte) error {
-	testhash := fmt.Sprintf("%x", md5.Sum(block))
-
-	blockdir := fmt.Sprintf("%s/%s", keepdir, testhash[:3])
+func storeTestBlock(keepdir string, filename string, block []byte) error {
+	blockdir := fmt.Sprintf("%s/%s", keepdir, filename[:3])
 	if err := os.MkdirAll(blockdir, 0755); err != nil {
 		return err
 	}
 
-	blockpath := fmt.Sprintf("%s/%s", blockdir, testhash)
+	blockpath := fmt.Sprintf("%s/%s", blockdir, filename)
 	if f, err := os.Create(blockpath); err == nil {
 		f.Write(block)
 		f.Close()
