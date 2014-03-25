@@ -1,47 +1,10 @@
 class Commit < ActiveRecord::Base
   require 'shellwords'
 
-  # Make sure the specified commit really exists, and return the full
-  # sha1 commit hash.
-  #
-  # Accepts anything "git rev-list" accepts, optionally (and
-  # preferably) preceded by "repo_name:".
-  #
-  # Examples: "1234567", "master", "apps:1234567", "apps:master",
-  # "apps:HEAD"
-
-  # def self.find_by_commit_ish(commit_ish)
-  #   if only_valid_chars.match(commit_ish)       
-  #     logger.warn "find_by_commit_ish called with string containing invalid characters: '#{commit_ish}'"
-  #     return nil
-  #   end
-
-  #   want_repo = nil
-  #   if commit_ish.index(':')
-  #     want_repo, commit_ish = commit_ish.split(':',2)
-  #   end
-  #   repositories.each do |repo_name, repo|
-  #     next if want_repo and want_repo != repo_name
-  #     ENV['GIT_DIR'] = repo[:git_dir]
-  #     # we're passing user input to a command line, this is a potential a security hole but I am reasonably confident that shellescape sanitizes the input adequately
-  #     IO.foreach("|git rev-list --max-count=1 --format=oneline 'origin/'#{commit_ish.shellescape} 2>/dev/null || git rev-list --max-count=1 --format=oneline ''#{commit_ish.shellescape}") do |line|
-  #       sha1, message = line.strip.split " ", 2
-  #       next if sha1.length != 40
-  #       begin
-  #         Commit.find_or_create_by_repository_name_and_sha1_and_message(repo_name, sha1, message[0..254])
-  #       rescue
-  #         logger.warn "find_or_create failed: repo_name #{repo_name} sha1 #{sha1} message #{message[0..254]}"
-  #         # Ignore cache failure. Commit is real. We should proceed.
-  #       end
-  #       return sha1
-  #     end
-  #   end
-  #   nil
-  # end
-
   def self.find_commit_range(current_user, repository, minimum, maximum, exclude)
-    only_valid_chars = /[^A-Za-z0-9_-]/
-    if only_valid_chars.match(minimum) || only_valid_chars.match(maximum) 
+    # disallow starting with '-' so verision strings can't be interpreted as command line options
+    valid_pattern = /[A-Za-z0-9_][A-Za-z0-9_-]/
+    if (minimum and !minimum.match valid_pattern) || !maximum.match valid_pattern
       logger.warn "find_commit_range called with string containing invalid characters: '#{minimum}', '#{maximum}'"
       return nil
     end
@@ -87,16 +50,18 @@ class Commit < ActiveRecord::Base
           max_hash = line.strip
         end
 
-        # If not found, nothing else to do
-        next if !max_hash
+        # If not found or string is invalid, nothing else to do
+        next if !max_hash or !max_hash.match valid_pattern
 
         resolved_exclude = nil
         if exclude
           resolved_exclude = []
           exclude.each do |e|
-            IO.foreach("|git rev-list --max-count=1 #{e}") do |line|
-              resolved_exclude.push(line.strip)
-            end  
+            if e.match valid_pattern
+              IO.foreach("|git rev-list --max-count=1 #{e}") do |line|
+                resolved_exclude.push(line.strip)
+              end
+            end
           end
         end
 
@@ -107,8 +72,8 @@ class Commit < ActiveRecord::Base
             min_hash = line.strip
           end
 
-          # If not found, nothing else to do
-          next if !min_hash
+          # If not found or string is invalid, nothing else to do
+          next if !min_hash or !min_hash.match valid_pattern
           
           # Now find all commits between them
           #puts "git rev-list #{min_hash}..#{max_hash}"

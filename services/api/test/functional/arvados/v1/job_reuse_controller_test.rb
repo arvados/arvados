@@ -13,6 +13,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     post :create, job: {
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+      repository: "foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -32,6 +33,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       script: "hash",
       minimum_script_version: "tag1",
       script_version: "master",
+      repository: "foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -50,6 +52,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     post :create, job: {
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+      repository: "foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '2'
@@ -68,6 +71,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     post :create, job: {
       script: "hash",
       script_version: "master",
+      repository: "foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '2'
@@ -86,6 +90,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     post :create, job: {
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+      repository: "foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -105,6 +110,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     post :create, job: {
       script: "hash2",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+      repository: "foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -123,6 +129,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     post :create, job: {
       script: "hash",
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+      repository: "foo",
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
         an_integer: '1'
@@ -142,6 +149,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       script: "hash",
       minimum_script_version: "31ce37fe365b3dc204300a3e4c396ad333ed0556",
       script_version: "master",
+      repository: "foo",
       exclude_script_versions: ["tag1"],
       script_parameters: {
         input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',

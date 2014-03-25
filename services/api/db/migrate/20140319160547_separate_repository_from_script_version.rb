@@ -26,5 +26,6 @@ class SeparateRepositoryFromScriptVersion < ActiveRecord::Migration
   end
 
   def down
+    raise ActiveRecord::IrreversibleMigration
   end
 end
