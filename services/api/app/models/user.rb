@@ -79,10 +79,10 @@ class User < ArvadosModel
         Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
           newgroups << [group.owner_uuid, group.uuid, 'can_manage']
         end
-        Link.where('tail_uuid in (?) and link_class = ? and head_kind = ?',
+        Link.where('tail_uuid in (?) and link_class = ? and head_uuid like ?',
                    lookup_uuids,
                    'permission',
-                   'arvados#group').each do |link|
+                   Group.uuid_like_pattern).each do |link|
           newgroups << [link.tail_uuid, link.head_uuid, link.name]
         end
         newgroups.each do |tail_uuid, head_uuid, perm_name|

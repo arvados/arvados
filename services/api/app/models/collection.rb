@@ -128,6 +128,10 @@ class Collection < ArvadosModel
     end
   end
 
+  def self.uuid_like_pattern
+    "________________________________+%"
+  end
+
   def self.normalize_uuid uuid
     hash_part = nil
     size_part = nil

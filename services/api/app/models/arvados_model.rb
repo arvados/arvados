@@ -32,7 +32,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def self.kind_class(kind)
-    kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
+    kind.match(/^arvados\#(.+)$/)[1].classify.safe_constantize rescue nil
   end
 
   def href
@@ -51,18 +51,18 @@ class ArvadosModel < ActiveRecord::Base
     self.columns.select { |col| col.name == attr.to_s }.first
   end
 
-  def eager_load_associations
-    self.class.columns.each do |col|
-      re = col.name.match /^(.*)_kind$/
-      if (re and
-          self.respond_to? re[1].to_sym and
-          (auuid = self.send((re[1] + '_uuid').to_sym)) and
-          (aclass = self.class.kind_class(self.send(col.name.to_sym))) and
-          (aobject = aclass.where('uuid=?', auuid).first))
-        self.instance_variable_set('@'+re[1], aobject)
-      end
-    end
-  end
+  # def eager_load_associations
+  #   self.class.columns.each do |col|
+  #     re = col.name.match /^(.*)_kind$/
+  #     if (re and
+  #         self.respond_to? re[1].to_sym and
+  #         (auuid = self.send((re[1] + '_uuid').to_sym)) and
+  #         (aclass = self.class.kind_class(self.send(col.name.to_sym))) and
+  #         (aobject = aclass.where('uuid=?', auuid).first))
+  #       self.instance_variable_set('@'+re[1], aobject)
+  #     end
+  #   end
+  # end
 
   def self.readable_by user
     uuid_list = [user.uuid, *user.groups_i_can(:read)]
@@ -195,9 +195,13 @@ class ArvadosModel < ActiveRecord::Base
         if k.respond_to?(:uuid_prefix)
           @@prefixes_hash[k.uuid_prefix] = k
         end
-      end      
+      end
     end
     @@prefixes_hash
+  end
+
+  def self.uuid_like_pattern
+    "_____-#{uuid_prefix}-_______________"
   end
 
   def ensure_valid_uuids

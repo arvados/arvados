@@ -164,16 +164,13 @@ class ApplicationController < ActionController::Base
           operand = [operand] unless operand.is_a? Array
           cond = []
           operand.each do |op|
-            m = op.match /arvados#(.+)/
-            begin
-              cl = m[1].classify.andand.constantize if m
+              cl = ArvadosModel::kind_class op
               if cl
                 cond << "#{table_name}.#{attr} like ?"
-                param_out << "_____-#{cl.uuid_prefix}-_______________"
+                param_out << cl.uuid_like_pattern
+              else
+                cond << "1=0"
               end
-            rescue NameError
-              cond << "1=0"
-            end
           end
           cond_out << cond.join(' OR ')
         end

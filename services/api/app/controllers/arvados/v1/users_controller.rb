@@ -58,19 +58,18 @@ class Arvados::V1::UsersController < ApplicationController
           "but is not invited"
         raise ArgumentError.new "Cannot activate without being invited."
       end
-      act_as_system_user do
-        required_uuids = Link.where(owner_uuid: system_user_uuid,
-                                    link_class: 'signature',
-                                    name: 'require',
-                                    tail_uuid: system_user_uuid,
-                                    head_kind: 'arvados#collection').
+      act_as_system_user do       
+        required_uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                                    system_user_uuid,
+                                    'signature',
+                                    'require',
+                                    system_user_uuid,
+                                    Collection.uuid_like_pattern).
           collect(&:head_uuid)
         signed_uuids = Link.where(owner_uuid: system_user_uuid,
                                   link_class: 'signature',
                                   name: 'click',
-                                  tail_kind: 'arvados#user',
                                   tail_uuid: @object.uuid,
-                                  head_kind: 'arvados#collection',
                                   head_uuid: required_uuids).
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids

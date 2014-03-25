@@ -90,5 +90,18 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_equal 0, found.count
   end
 
+  test "filter links with 'is_a' operator with collection" do
+    authorize_with :admin
+    get :index, {
+      filters: [ ['head_uuid', 'is_a', ['arvados#collection'] ] ],
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_response :success
+    found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-f0-9]{32}\+\d+/}).count
+  end
+
 
 end

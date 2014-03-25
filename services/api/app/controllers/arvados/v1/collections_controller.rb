@@ -6,11 +6,6 @@ class Arvados::V1::CollectionsController < ApplicationController
     # exist) giving the current user (or specified owner_uuid)
     # permission to read it.
     owner_uuid = resource_attrs.delete(:owner_uuid) || current_user.uuid
-    owner_kind = if owner_uuid.match(/-(\w+)-/)[1] == User.uuid_prefix
-                   'arvados#user'
-                 else
-                   'arvados#group'
-                 end
     unless current_user.can? write: owner_uuid
       logger.warn "User #{current_user.andand.uuid} tried to set collection owner_uuid to #{owner_uuid}"
       raise ArvadosModel::PermissionDeniedError
@@ -36,9 +31,7 @@ class Arvados::V1::CollectionsController < ApplicationController
           owner_uuid: owner_uuid,
           link_class: 'permission',
           name: 'can_read',
-          head_kind: 'arvados#collection',
           head_uuid: @object.uuid,
-          tail_kind: owner_kind,
           tail_uuid: owner_uuid
         }
         ActiveRecord::Base.transaction do
