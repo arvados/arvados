@@ -44,7 +44,7 @@ class Arvados::V1::JobsController < ApplicationController
 
   def cancel
     reload_object_before_update
-    @object.update_attributes cancelled_at: Time.now
+    @object.update_attributes! cancelled_at: Time.now
     show
   end
 

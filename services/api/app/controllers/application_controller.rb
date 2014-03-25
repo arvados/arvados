@@ -44,11 +44,8 @@ class ApplicationController < ActionController::Base
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
-    if @object.update_attributes attrs_to_update
-      show
-    else
-      raise "Update failed"
-    end
+    @object.update_attributes! attrs_to_update
+    show
   end
 
   def destroy

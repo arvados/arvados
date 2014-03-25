@@ -13,18 +13,21 @@ class Arvados::V1::NodesController < ApplicationController
   def self._ping_requires_parameters
     { ping_secret: true }
   end
+
   def ping
-    @object = Node.where(uuid: (params[:id] || params[:uuid])).first
-    if !@object
-      return render_not_found
-    end
-    @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
-                   ping_secret: params[:ping_secret],
-                   ec2_instance_id: params[:instance_id] })
-    if @object.info[:ping_secret] == params[:ping_secret]
-      render json: @object.as_api_response(:superuser)
-    else
-      raise "Invalid ping_secret after ping"
+    act_as_system_user do 
+      @object = Node.where(uuid: (params[:id] || params[:uuid])).first
+      if !@object
+        return render_not_found
+      end
+      @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
+                     ping_secret: params[:ping_secret],
+                     ec2_instance_id: params[:instance_id] })
+      if @object.info[:ping_secret] == params[:ping_secret]
+        render json: @object.as_api_response(:superuser)
+      else
+        raise "Invalid ping_secret after ping"
+      end
     end
   end
 
