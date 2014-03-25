@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140129184311) do
+ActiveRecord::Schema.define(:version => 20140325175653) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -70,7 +70,7 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
   create_table "collections", :force => true do |t|
     t.string   "locator"
     t.string   "owner_uuid"
-    t.datetime "created_at",                          :null => false
+    t.datetime "created_at"
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -80,7 +80,7 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
     t.string   "redundancy_confirmed_by_client_uuid"
     t.datetime "redundancy_confirmed_at"
     t.integer  "redundancy_confirmed_as"
-    t.datetime "updated_at",                          :null => false
+    t.datetime "updated_at"
     t.string   "uuid"
     t.text     "manifest_text"
   end
@@ -104,8 +104,8 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
     t.string   "repository_name"
     t.string   "sha1"
     t.string   "message"
-    t.datetime "created_at",      :null => false
-    t.datetime "updated_at",      :null => false
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   add_index "commits", ["repository_name", "sha1"], :name => "index_commits_on_repository_name_and_sha1", :unique => true
@@ -133,8 +133,8 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.text     "properties"
-    t.datetime "created_at",              :null => false
-    t.datetime "updated_at",              :null => false
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   add_index "humans", ["uuid"], :name => "index_humans_on_uuid", :unique => true
@@ -182,13 +182,15 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
     t.boolean  "running"
     t.boolean  "success"
     t.string   "output"
-    t.datetime "created_at",               :null => false
-    t.datetime "updated_at",               :null => false
+    t.datetime "created_at"
+    t.datetime "updated_at"
     t.string   "priority"
     t.string   "is_locked_by_uuid"
     t.string   "log"
     t.text     "tasks_summary"
     t.text     "runtime_constraints"
+    t.boolean  "nondeterministic"
+    t.string   "repository"
   end
 
   add_index "jobs", ["created_at"], :name => "index_jobs_on_created_at"
@@ -232,25 +234,21 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
   create_table "links", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at",              :null => false
+    t.datetime "created_at"
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "tail_uuid"
-    t.string   "tail_kind"
     t.string   "link_class"
     t.string   "name"
     t.string   "head_uuid"
     t.text     "properties"
-    t.datetime "updated_at",              :null => false
-    t.string   "head_kind"
+    t.datetime "updated_at"
   end
 
   add_index "links", ["created_at"], :name => "index_links_on_created_at"
-  add_index "links", ["head_kind"], :name => "index_links_on_head_kind"
   add_index "links", ["head_uuid"], :name => "index_links_on_head_uuid"
   add_index "links", ["modified_at"], :name => "index_links_on_modified_at"
-  add_index "links", ["tail_kind"], :name => "index_links_on_tail_kind"
   add_index "links", ["tail_uuid"], :name => "index_links_on_tail_uuid"
   add_index "links", ["uuid"], :name => "index_links_on_uuid", :unique => true
 
@@ -259,7 +257,6 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
     t.string   "owner_uuid"
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
-    t.string   "object_kind"
     t.string   "object_uuid"
     t.datetime "event_at"
     t.string   "event_type"
@@ -274,7 +271,6 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
   add_index "logs", ["event_at"], :name => "index_logs_on_event_at"
   add_index "logs", ["event_type"], :name => "index_logs_on_event_type"
   add_index "logs", ["modified_at"], :name => "index_logs_on_modified_at"
-  add_index "logs", ["object_kind"], :name => "index_logs_on_object_kind"
   add_index "logs", ["object_uuid"], :name => "index_logs_on_object_uuid"
   add_index "logs", ["summary"], :name => "index_logs_on_summary"
   add_index "logs", ["uuid"], :name => "index_logs_on_uuid", :unique => true
@@ -305,7 +301,7 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
   create_table "pipeline_instances", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at",                                 :null => false
+    t.datetime "created_at"
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -314,7 +310,7 @@ ActiveRecord::Schema.define(:version => 20140129184311) do
     t.text     "components"
     t.boolean  "success"
     t.boolean  "active",                  :default => false
-    t.datetime "updated_at",                                 :null => false
+    t.datetime "updated_at"
     t.text     "properties"
   end
 

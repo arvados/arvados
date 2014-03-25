@@ -15,11 +15,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -30,11 +28,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -72,11 +68,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:private).uuid,
         properties: {}
       }
@@ -91,11 +85,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:private).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -130,11 +122,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:private).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -149,11 +139,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:private).uuid,
         properties: {}
       }
@@ -187,11 +175,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:private).uuid,
         properties: {}
       }
@@ -202,11 +188,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:private).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:empty_lonely_group).uuid,
         properties: {}
       }
@@ -217,11 +201,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:empty_lonely_group).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }

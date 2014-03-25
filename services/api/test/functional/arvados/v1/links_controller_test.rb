@@ -7,9 +7,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       properties: {username: 'testusername'},
       link_class: 'test',
       name: 'encoding',
-      tail_kind: 'arvados#user',
       tail_uuid: users(:admin).uuid,
-      head_kind: 'arvados#virtualMachine',
       head_uuid: virtual_machines(:testvm).uuid
     }
     authorize_with :admin

@@ -6,11 +6,9 @@ user_agreement_required:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2013-12-26T19:52:21Z
   updated_at: 2013-12-26T19:52:21Z
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-000000000000000
   link_class: signature
   name: require
-  head_kind: arvados#collection
   head_uuid: b519d9cb706a29fc7ea24dbea2f05851+93
   properties: {}
 
@@ -22,11 +20,9 @@ user_agreement_readable:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#group
   tail_uuid: zzzzz-j7d0g-fffffffffffffff
   link_class: permission
   name: can_read
-  head_kind: arvados#collection
   head_uuid: b519d9cb706a29fc7ea24dbea2f05851+93
   properties: {}
 
@@ -38,11 +34,9 @@ active_user_member_of_all_users_group:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_kind: arvados#group
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -54,11 +48,9 @@ active_user_can_manage_system_owned_group:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-02-03 15:42:26 -0800
   updated_at: 2014-02-03 15:42:26 -0800
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_manage
-  head_kind: arvados#group
   head_uuid: zzzzz-j7d0g-8ulrifv67tve5sx
   properties: {}
 
@@ -70,11 +62,9 @@ user_agreement_signed_by_active:
   modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: signature
   name: click
-  head_kind: arvados#collection
   head_uuid: b519d9cb706a29fc7ea24dbea2f05851+93
   properties: {}
 
@@ -86,11 +76,9 @@ user_agreement_signed_by_inactive:
   modified_by_user_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   link_class: signature
   name: click
-  head_kind: arvados#collection
   head_uuid: b519d9cb706a29fc7ea24dbea2f05851+93
   properties: {}
 
@@ -102,11 +90,9 @@ spectator_user_member_of_all_users_group:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   link_class: permission
   name: can_read
-  head_kind: arvados#group
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -118,11 +104,9 @@ inactive_user_member_of_all_users_group:
   modified_by_user_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-x9kqpd79egh49c7
   link_class: permission
   name: can_read
-  head_kind: arvados#group
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -134,11 +118,9 @@ inactive_signed_ua_user_member_of_all_users_group:
   modified_by_user_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   modified_at: 2013-12-26T20:52:21Z
   updated_at: 2013-12-26T20:52:21Z
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   link_class: permission
   name: can_read
-  head_kind: arvados#group
   head_uuid: zzzzz-j7d0g-fffffffffffffff
   properties: {}
 
@@ -150,11 +132,9 @@ foo_file_readable_by_active:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_kind: arvados#collection
   head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   properties: {}
 
@@ -166,11 +146,9 @@ bar_file_readable_by_active:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_kind: arvados#collection
   head_uuid: fa7aeb5140e2848d39b416daeef4ffc5+45
   properties: {}
 
@@ -182,11 +160,9 @@ bar_file_readable_by_spectator:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   link_class: permission
   name: can_read
-  head_kind: arvados#collection
   head_uuid: fa7aeb5140e2848d39b416daeef4ffc5+45
   properties: {}
 
@@ -198,11 +174,9 @@ baz_file_publicly_readable:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#group
   tail_uuid: zzzzz-j7d0g-fffffffffffffff
   link_class: permission
   name: can_read
-  head_kind: arvados#collection
   head_uuid: ea10d51bcf88862dbcc36eb292017dfd+45
   properties: {}
 
@@ -214,11 +188,9 @@ barbaz_job_readable_by_spectator:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-01-24 20:42:26 -0800
   updated_at: 2014-01-24 20:42:26 -0800
-  tail_kind: arvados#user
   tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   link_class: permission
   name: can_read
-  head_kind: arvados#job
   head_uuid: zzzzz-8i9sb-cjs4pklxxjykyuq
   properties: {}
 
