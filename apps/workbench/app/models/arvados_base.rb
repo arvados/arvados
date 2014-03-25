@@ -32,9 +32,7 @@ class ArvadosBase < ActiveRecord::Base
       'modified_by_user_uuid' => '004',
       'modified_by_client_uuid' => '005',
       'name' => '050',
-      'tail_kind' => '100',
       'tail_uuid' => '100',
-      'head_kind' => '101',
       'head_uuid' => '101',
       'info' => 'zzz-000',
       'updated_at' => 'zzz-999'
@@ -160,14 +158,12 @@ class ArvadosBase < ActiveRecord::Base
       true
     end
   end
-      
+
   def links(*args)
     o = {}
     o.merge!(args.pop) if args[-1].is_a? Hash
     o[:link_class] ||= args.shift
     o[:name] ||= args.shift
-    o[:head_kind] ||= args.shift
-    o[:tail_kind] = self.kind
     o[:tail_uuid] = self.uuid
     if all_links
       return all_links.select do |m|
