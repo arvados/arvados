@@ -161,7 +161,8 @@ class ApplicationController < ActionController::Base
 
   def breadcrumb_page_name
     (@breadcrumb_page_name ||
-     (@object.friendly_link_name if @object.respond_to? :friendly_link_name))
+     (@object.friendly_link_name if @object.respond_to? :friendly_link_name) ||
+     action_name)
   end
 
   def index_pane_list

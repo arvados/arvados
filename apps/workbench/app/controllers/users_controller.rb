@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => :welcome
+  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity]
   skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
   before_filter :ensure_current_user_is_admin, only: :sudo
 
@@ -10,9 +10,70 @@ class UsersController < ApplicationController
     end
   end
 
+  def activity
+    @breadcrumb_page_name = nil
+    @users = User.all
+    @user_activity = {}
+    @activity = {
+      logins: {},
+      jobs: {},
+      pipeline_instances: {}
+    }
+    @total_activity = {}
+    @spans = [['This week', Time.now.beginning_of_week, Time.now],
+              ['Last week',
+               Time.now.beginning_of_week.advance(weeks:-1),
+               Time.now.beginning_of_week],
+              ['This month', Time.now.beginning_of_month, Time.now],
+              ['Last month',
+               1.month.ago.beginning_of_month,
+               Time.now.beginning_of_month]]
+    @spans.each do |span, threshold_start, threshold_end|
+      @activity[:logins][span] = Log.
+        filter([[:event_type, '=', 'login'],
+                [:object_kind, '=', 'arvados#user'],
+                [:created_at, '>=', threshold_start],
+                [:created_at, '<', threshold_end]])
+      @activity[:jobs][span] = Job.
+        filter([[:created_at, '>=', threshold_start],
+                [:created_at, '<', threshold_end]])
+      @activity[:pipeline_instances][span] = PipelineInstance.
+        filter([[:created_at, '>=', threshold_start],
+                [:created_at, '<', threshold_end]])
+      @activity.each do |type, act|
+        records = act[span]
+        @users.each do |u|
+          @user_activity[u.uuid] ||= {}
+          @user_activity[u.uuid][span + ' ' + type.to_s] ||= 0
+        end
+        records.each do |record|
+          @user_activity[record.modified_by_user_uuid] ||= {}
+          @user_activity[record.modified_by_user_uuid][span + ' ' + type.to_s] ||= 0
+          @user_activity[record.modified_by_user_uuid][span + ' ' + type.to_s] += 1
+          @total_activity[span + ' ' + type.to_s] ||= 0
+          @total_activity[span + ' ' + type.to_s] += 1
+        end
+      end
+    end
+    @users = @users.sort_by do |a|
+      [-@user_activity[a.uuid].values.inject(:+), a.full_name]
+    end
+    # Prepend a "Total" pseudo-user to the sorted list
+    @user_activity[nil] = @total_activity
+    @users = [OpenStruct.new(uuid: nil)] + @users
+  end
+
   def show_pane_list
     if current_user.andand.is_admin
       super | %w(Admin)
+    else
+      super
+    end
+  end
+
+  def index_pane_list
+    if current_user.andand.is_admin
+      super | %w(Activity)
     else
       super
     end
