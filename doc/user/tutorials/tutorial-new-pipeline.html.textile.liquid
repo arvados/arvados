@@ -43,7 +43,8 @@ Next, create a file that contains the pipeline definition:
           "dataclass": "Collection"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "script_version":"<b>you</b>:master",
+      "output_is_persistent":false
     },
     "filter":{
       "script":"0-filter.py",
@@ -52,7 +53,8 @@ Next, create a file that contains the pipeline definition:
           "output_of":"do_hash"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "script_version":"<b>you</b>:master",
+      "output_is_persistent":true
     }
   }
 }
