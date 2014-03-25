@@ -149,51 +149,7 @@ class UserTest < ActiveSupport::TestCase
         'Expected PermissionDeniedError'
   end
 
-  test "setup new user as non-admin user" do
-    Thread.current[:user] = @active_user
-
-    begin
-      user = User.new
-      user.email = 'abc@xyz.com'
-      
-      User.setup user, 'http://openid/prefix'
-    rescue ArvadosModel::PermissionDeniedError => e
-    end
-
-    assert (e.message.include? 'PermissionDeniedError'),
-        'Expected PermissionDeniedError'
-  end
-
-  test "setup new user with no email" do
-    Thread.current[:user] = @admin_user
-
-    begin
-      user = User.new
-      
-      User.setup user, 'http://openid/prefix'
-    rescue ArvadosModel::RuntimeError => e
-    end
-
-    assert (e.message.include? 'No email found'),
-        'Expected RuntimeError'
-  end
-
-  test "setup new user with email but no openid_prefix" do
-    Thread.current[:user] = @admin_user
-
-    begin
-      user = User.new
-      user.email = 'abc@xyz.com'
-      
-      User.setup user
-
-    rescue ArvadosModel::ArgumentError => e
-    end
-    assert (e.message.include? 'wrong number of arguments'),
-        'Expected ArgumentError'
-  end
-
-  test "setup new user with all input data" do
+  test "setup new user" do
     Thread.current[:user] = @admin_user
 
     email = 'abc@xyz.com'
@@ -201,6 +157,7 @@ class UserTest < ActiveSupport::TestCase
 
     user = User.new
     user.email = email
+    user.uuid = 'abcdefghijklmnop'
 
     vm = VirtualMachine.create
 
@@ -233,6 +190,7 @@ class UserTest < ActiveSupport::TestCase
 
     user = User.new
     user.email = email
+    user.uuid = 'abcdefghijklmnop'
 
     response = User.setup user, openid_prefix
 
@@ -249,9 +207,6 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     # invoke setup again with repo_name
-    user = User.new
-    user.uuid = resp_user[:uuid]
-
     response = User.setup user, openid_prefix, 'test_repo'
     resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email

@@ -113,7 +113,7 @@ class Arvados::V1::UsersController < ApplicationController
             raise ArgumentError.new "Required openid_prefix parameter is missing."
           end
 
-          @object = model_class.new resource_attrs
+          @object = model_class.create! resource_attrs
         end
       end
     end

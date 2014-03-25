@@ -81,6 +81,26 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url' 
 
+    # invoke setup again with the same data
+    post :setup, {
+      repo_name: repo_name,
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
+      user: {
+        uuid: "this_is_agreeable",        
+        first_name: "in_create_test_first_name",
+        last_name: "test_last_name",
+        email: "test@abc.com"
+      }
+    }
+
+    response_items = JSON.parse(@response.body)['items']
+    created = find_obj_in_resp response_items, 'User', nil
+    assert_equal 'in_create_test_first_name', created['first_name']
+    assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
+    assert_equal 'this_is_agreeable', created['uuid']
+    assert_not_nil created['email'], 'expected non-nil email'
+    assert_nil created['identity_url'], 'expected no identity_url' 
+
     # since no such vm exists, expect only three new links: 
     # arvados#user, repo link and link add user to 'All users' group
     verify_num_links @all_links_at_start, 3
