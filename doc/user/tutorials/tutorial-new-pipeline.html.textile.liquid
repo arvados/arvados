@@ -60,7 +60,7 @@ EOF
 </span></code></pre>
 </notextile>
 
-* @"output_of"@ indicates that the @input@ of the @do_hash@ component is connected to the @output@ of @filter@.  This is a _dependency_.  Arvados uses the dependencies between jobs to automatically determine the correct order to run the jobs.
+* @"output_of"@ indicates that the @output@ of the @do_hash@ component should be used as the @"input"@ parameter for the @filter@ component. Arvados determines the correct order to run the jobs when such dependencies are present.
 
 Now, use @arv pipeline_template create@ tell Arvados about your pipeline template:
 
