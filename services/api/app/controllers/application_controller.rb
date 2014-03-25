@@ -160,6 +160,22 @@ class ApplicationController < ActionController::Base
             cond_out << "#{table_name}.#{attr} IN (?)"
             param_out << operand
           end
+        when 'is_a'
+          operand = [operand] unless operand.is_a? Array
+          cond = []
+          operand.each do |op|
+            m = op.match /arvados#(.+)/
+            begin
+              cl = m[1].classify.andand.constantize if m
+              if cl
+                cond << "#{table_name}.#{attr} like ?"
+                param_out << "_____-#{cl.uuid_prefix}-_______________"
+              end
+            rescue NameError
+              cond << "1=0"
+            end
+          end
+          cond_out << cond.join(' OR ')
         end
       end
       if cond_out.any?

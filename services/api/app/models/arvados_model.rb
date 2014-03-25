@@ -187,6 +187,19 @@ class ArvadosModel < ActiveRecord::Base
 
   @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
 
+  @@prefixes_hash = nil
+  def self.uuid_prefixes
+    unless @@prefixes_hash
+      @@prefixes_hash = {}
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+        if k.respond_to?(:uuid_prefix)
+          @@prefixes_hash[k.uuid_prefix] = k
+        end
+      end      
+    end
+    @@prefixes_hash
+  end
+
   def ensure_valid_uuids
     specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
 
@@ -221,13 +234,7 @@ class ArvadosModel < ActiveRecord::Base
 
     Rails.application.eager_load!
     uuid.match @@UUID_REGEX do |re|
-      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
-        if k.respond_to?(:uuid_prefix)
-          if k.uuid_prefix == re[1]
-            return k
-          end
-        end
-      end
+      return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
     nil
   end

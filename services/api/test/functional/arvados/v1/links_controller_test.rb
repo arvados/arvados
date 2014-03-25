@@ -58,4 +58,37 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response 422
   end
 
+  test "filter links with 'is_a' operator" do
+    authorize_with :admin
+    get :index, {
+      filters: [ ['tail_uuid', 'is_a', 'arvados#user'] ]
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+  end
+
+  test "filter links with 'is_a' operator with more than one" do
+    authorize_with :admin
+    get :index, {
+      filters: [ ['tail_uuid', 'is_a', ['arvados#user', 'arvados#group'] ] ],
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-(tpzed|j7d0g)-[a-z0-9]{15}/}).count
+  end
+
+  test "filter links with 'is_a' operator with bogus type" do
+    authorize_with :admin
+    get :index, {
+      filters: [ ['tail_uuid', 'is_a', ['arvados#bogus'] ] ],
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_equal 0, found.count
+  end
+
+
 end
