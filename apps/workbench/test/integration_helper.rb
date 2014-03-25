@@ -51,14 +51,19 @@ class IntegrationTestRunner < MiniTest::Unit
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')
+      timeout = Time.now.tv_sec + 10
       begin
+        sleep 0.2
         begin
           server_pid = IO.read(SERVER_PID_PATH).to_i
+          good_pid = (server_pid > 0) and (Process.kill(0, pid) rescue false)
         rescue Errno::ENOENT
-          sleep 0.2
+          good_pid = false
         end
-      end until (not server_pid.nil?) and (server_pid > 0) and
-        (Process.kill(0, server_pid) rescue false)
+      end while (not good_pid) and (Time.now.tv_sec < timeout)
+      if not good_pid
+        raise RuntimeError, "could not find API server Rails pid"
+      end
       server_pid
     end
     begin
