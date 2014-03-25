@@ -34,7 +34,8 @@ EOF
 * @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@
 * @>the_job@ redirects standard output to a file called @the_job@
 * @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
-* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, or in the form "repository:branch" (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  You can access a list of available @git@ repositories on the Arvados workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}/repositories .
+* @"repository"@ is the git repository to search for the script version.  You can access a list of available @git@ repositories on the Arvados workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}//repositories .
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, a tag, or a branch (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
 * @"script_parameters"@ are provided to the script.  In this case, the input is the locator for the collection that we inspected in the previous section.
 
 Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
@@ -199,7 +200,7 @@ The log collection consists of one log file named with the job id.  You can acce
 2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 0 done, 1 running, 0 todo
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 child 7681 on compute13.1 exit 0 signal 0 success=true
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 success in 1 seconds
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 output 
+2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 output
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  wait for last 0 children to finish
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 0 running, 1 todo
 2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  start level 1

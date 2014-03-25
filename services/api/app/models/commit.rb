@@ -1,11 +1,19 @@
 class Commit < ActiveRecord::Base
   require 'shellwords'
 
+  def self.git_check_ref_format(e)
+    if !e or e.empty? or e[0] == '-'
+      # definitely not valid
+      false
+    else
+      `git check-ref-format --allow-onelevel #{e.shellescape}`
+      $?.success?
+    end
+  end
+
   def self.find_commit_range(current_user, repository, minimum, maximum, exclude)
-    # disallow starting with '-' so verision strings can't be interpreted as command line options
-    valid_pattern = /[A-Za-z0-9_][A-Za-z0-9_-]/
-    if (minimum and !minimum.match valid_pattern) or !maximum.match valid_pattern
-      logger.warn "find_commit_range called with string containing invalid characters: '#{minimum}', '#{maximum}'"
+    if (minimum and !git_check_ref_format(minimum)) or !git_check_ref_format(maximum)
+      logger.warn "find_commit_range called with invalid minimum or maximum: '#{minimum}', '#{maximum}'"
       return nil
     end
 
@@ -28,21 +36,13 @@ class Commit < ActiveRecord::Base
       readable = readable.where(name: repository)
     end
 
-    #puts "min #{minimum}"
-    #puts "max #{maximum}"
-    #puts "rep #{repository}"
-
     commits = []
     readable.each do |r|
       if on_disk_repos[r.name]
         ENV['GIT_DIR'] = on_disk_repos[r.name][:git_dir]
 
-        #puts "dir #{on_disk_repos[r.name][:git_dir]}"
-
         # We've filtered for invalid characters, so we can pass the contents of
         # minimum and maximum safely on the command line
-
-        #puts "git rev-list --max-count=1 #{maximum}"
 
         # Get the commit hash for the upper bound
         max_hash = nil
@@ -51,16 +51,19 @@ class Commit < ActiveRecord::Base
         end
 
         # If not found or string is invalid, nothing else to do
-        next if !max_hash or !max_hash.match valid_pattern
+        next if !max_hash or !git_check_ref_format(max_hash)
 
         resolved_exclude = nil
         if exclude
           resolved_exclude = []
           exclude.each do |e|
-            if e.match valid_pattern
+            if git_check_ref_format(e)
               IO.foreach("|git rev-list --max-count=1 #{e}") do |line|
                 resolved_exclude.push(line.strip)
               end
+            else
+              logger.warn "find_commit_range called with invalid exclude invalid characters: '#{exclude}'"
+              return nil
             end
           end
         end
@@ -73,10 +76,9 @@ class Commit < ActiveRecord::Base
           end
 
           # If not found or string is invalid, nothing else to do
-          next if !min_hash or !min_hash.match valid_pattern
+          next if !min_hash or !git_check_ref_format(min_hash)
 
           # Now find all commits between them
-          #puts "git rev-list #{min_hash}..#{max_hash}"
           IO.foreach("|git rev-list #{min_hash}..#{max_hash}") do |line|
             hash = line.strip
             commits.push(hash) if !resolved_exclude or !resolved_exclude.include? hash
