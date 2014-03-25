@@ -8,6 +8,8 @@ The Workbench application includes a series of integration tests.  When you run 
 
 In addition to bundled gems, running the integration tests requires "PhantomJS":http://phantomjs.org/download.html to test JavaScript elements.  The simplest way to get started is to download one of the binary builds provided, and install the executable into one of the directories in your @$PATH@.
 
+If you install the Workbench Bundle in deployment mode, you must also install the API server Bundle in deployment mode, and vice versa.  If your Bundle installs have mismatched modes, the integration tests will fail with "Gem not found" errors.
+
 h2. Writing tests
 
 Integration tests are written with Capybara, which drives a fully-featured Web browser to interact with Workbench exactly as a user would.
