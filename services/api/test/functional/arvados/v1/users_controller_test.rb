@@ -73,10 +73,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       }
     }
     assert_response :success
-
     response_items = JSON.parse(@response.body)['items']
-    created = response_items['user']
-
+    created = find_obj_in_resp response_items, 'User', nil
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
     assert_equal 'this_is_agreeable', created['uuid']
@@ -84,19 +82,19 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url' 
 
     # since no such vm exists, expect only three new links: 
-    # oid_login_perm, repo link and link add user to 'All users' group
+    # arvados#user, repo link and link add user to 'All users' group
     verify_num_links @all_links_at_start, 3
 
-    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
+    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
-    verify_link response_items, 'repo_perm', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
         repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_login',
+    verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
@@ -178,7 +176,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    resp_obj = response_items['user']
+    resp_obj = find_obj_in_resp response_items, 'User', nil
 
     assert_not_nil resp_obj['uuid'], 'expected uuid for the new user'
     assert_equal inactive_user['uuid'], resp_obj['uuid']
@@ -186,10 +184,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expecting inactive user email'
 
     # expect repo and vm links
-    verify_link response_items, 'repo_perm', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
         'test_repo', resp_obj['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'vm_login_perm', true, 'permission', 'can_login',
+    verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         @vm_uuid, resp_obj['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
@@ -209,7 +207,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    resp_obj = response_items['user']
+    resp_obj = find_obj_in_resp response_items, 'User', nil
 
     assert_not_nil resp_obj['uuid'], 'expected uuid for the new user'
     assert_equal inactive_user['uuid'], resp_obj['uuid']
@@ -233,7 +231,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    resp_obj = response_items['user']
+    resp_obj = find_obj_in_resp response_items, 'User', nil
 
     assert_not_nil resp_obj['uuid'], 'expected uuid for the new user'
     assert_equal inactive_user['uuid'], resp_obj['uuid']
@@ -251,7 +249,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success
-    response_object = JSON.parse(@response.body)['items']['user']
+    response_items = JSON.parse(@response.body)['items']
+    response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
 
@@ -287,7 +286,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success
-    response_object = JSON.parse(@response.body)['items']['user']
+    response_items = JSON.parse(@response.body)['items']
+    response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
 
@@ -304,7 +304,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success    
-    response_object = JSON.parse(@response.body)['items']['user']
+    response_items = JSON.parse(@response.body)['items']
+    response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
 
@@ -326,7 +327,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success
-    response_object = JSON.parse(@response.body)['items']['user']
+    response_items = JSON.parse(@response.body)['items']
+    response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
     assert_equal 'test_first_name', response_object['first_name'], 
@@ -348,7 +350,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success
-    response_object = JSON.parse(@response.body)['items']['user']
+    response_items = JSON.parse(@response.body)['items']
+    response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
     verify_num_links @all_links_at_start, 3   # openid, group, and repo. no vm
@@ -360,7 +363,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success
-    response_object2 = JSON.parse(@response.body)['items']['user']
+    response_items = JSON.parse(@response.body)['items']
+    response_object2 = find_obj_in_resp response_items, 'User', nil
     assert_not_equal response_object['uuid'], response_object2['uuid'], 
         'expected same uuid as first create operation'
     assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
@@ -385,7 +389,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    created = response_items['user']
+    created = find_obj_in_resp response_items, 'User', nil
 
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected uuid for new user'
@@ -393,19 +397,19 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url' 
 
     # verify links
-    # 3 new links: oid_login_perm, repo, and 'All users' group.
+    # 3 new links: arvados#user, repo, and 'All users' group.
     verify_num_links @all_links_at_start, 3
 
-    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
+    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
-    verify_link response_items, 'repo_perm', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
         'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_login',
+    verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
@@ -445,26 +449,26 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    created = response_items['user']
+    created = find_obj_in_resp response_items, 'User', nil
 
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected uuid for new user'
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url' 
 
-    # expect 4 new links: oid_login_perm, repo, vm and 'All users' group link
+    # expect 4 new links: arvados#user, repo, vm and 'All users' group link
     verify_num_links @all_links_at_start, 4
 
-    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
+    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
-    verify_link response_items, 'repo_perm', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
         'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'vm_login_perm', true, 'permission', 'can_login', 
+    verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login', 
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
@@ -510,25 +514,25 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    created = response_items['user']
+    created = find_obj_in_resp response_items, 'User', nil
 
     assert_not_nil created['uuid'], 'expected uuid for new user'
     assert_not_nil created['email'], 'expected non-nil email'
     assert_equal created['email'], 'test@abc.com', 'expected input email'
 
-    # verify links; 2 new links: oid_login_perm, and 'All users' group.
+    # verify links; 2 new links: arvados#user, and 'All users' group.
     verify_num_links @all_links_at_start, 2
 
-    verify_link response_items, 'oid_login_perm', true, 'permission', 'can_login',
+    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
-    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'repo_perm', false, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', false, 'permission', 'can_write',
         'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_login',
+    verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
    # invoke setup with a repository
@@ -541,18 +545,18 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    created = response_items['user']
+    created = find_obj_in_resp response_items, 'User', nil
 
     assert_equal 'test@abc.com', created['email'], 'expected input email'
 
      # verify links
-    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'repo_perm', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
         'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'vm_login_perm', false, 'permission', 'can_login',
+    verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
     # invoke setup with a vm_uuid
@@ -568,19 +572,19 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
-    created = response_items['user']
+    created = find_obj_in_resp response_items, 'User', nil
 
     assert_equal created['email'], 'test@abc.com', 'expected original email'
 
     # verify links
-    verify_link response_items, 'group_perm', true, 'permission', 'can_read',
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     # since no repo name in input, we won't get any; even though user has one
-    verify_link response_items, 'repo_perm', false, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', false, 'permission', 'can_write',
         'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
-    verify_link response_items, 'vm_login_perm', true, 'permission', 'can_login',
+    verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
@@ -590,9 +594,32 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         "Expected #{expected_additional_links.inspect} more links"
   end
 
+  def find_obj_in_resp (response_items, object_type, head_kind=nil)
+    return_obj = nil
+    response_items.each { |x|
+      if !x
+        next
+      end
+
+      if object_type == 'User'
+        if !x['head_kind']
+          return_obj = x
+          break
+        end
+      else  # looking for a link
+        if x['head_kind'] == head_kind
+          return_obj = x
+          break
+        end
+      end
+    }
+    return return_obj
+  end
+
   def verify_link(response_items, link_object_name, expect_link, link_class,
         link_name, head_uuid, tail_uuid, head_kind, fetch_object, class_name)
-    link = response_items[link_object_name]
+
+    link = find_obj_in_resp response_items, 'Link', link_object_name
 
     if !expect_link 
       assert_nil link, "Expected no link for #{link_object_name}"

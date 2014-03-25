@@ -316,10 +316,10 @@ class UserTest < ActiveSupport::TestCase
     assert_equal link_name, link_object[:name], 
         'expected link_name not found for #{link_class} #{link_name}'
     assert_equal tail_uuid, link_object[:tail_uuid], 
-        'expected tail_uuid not found for group_perm'
+        'expected tail_uuid not found for #{link_class} #{link_name}'
     if head_uuid
-      assert_equal tail_uuid, link_object[:tail_uuid], 
-          'expected tail_uuid not found for group_perm'
+      assert_equal head_uuid, link_object[:head_uuid], 
+          'expected head_uuid not found for #{link_class} #{link_name}'
     end
   end
 

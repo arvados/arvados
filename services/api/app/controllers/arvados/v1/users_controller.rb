@@ -107,7 +107,7 @@ class Arvados::V1::UsersController < ApplicationController
 
     @response = User.setup @object, params[:openid_prefix],
                 params[:repo_name], params[:vm_uuid]
-    render json: { kind: "List", items: @response }
+    render json: { kind: "arvados#HashList", items: @response }
   end
 
 end
