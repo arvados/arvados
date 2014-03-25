@@ -4,7 +4,7 @@ class Commit < ActiveRecord::Base
   def self.find_commit_range(current_user, repository, minimum, maximum, exclude)
     # disallow starting with '-' so verision strings can't be interpreted as command line options
     valid_pattern = /[A-Za-z0-9_][A-Za-z0-9_-]/
-    if (minimum and !minimum.match valid_pattern) || !maximum.match valid_pattern
+    if (minimum and !minimum.match valid_pattern) or !maximum.match valid_pattern
       logger.warn "find_commit_range called with string containing invalid characters: '#{minimum}', '#{maximum}'"
       return nil
     end
@@ -12,7 +12,7 @@ class Commit < ActiveRecord::Base
     if minimum and minimum.empty?
         minimum = nil
     end
-    
+
     if !maximum
       maximum = "HEAD"
     end
@@ -65,7 +65,7 @@ class Commit < ActiveRecord::Base
           end
         end
 
-        if minimum          
+        if minimum
           # Get the commit hash for the lower bound
           min_hash = nil
           IO.foreach("|git rev-list --max-count=1 #{minimum}") do |line|
@@ -74,12 +74,12 @@ class Commit < ActiveRecord::Base
 
           # If not found or string is invalid, nothing else to do
           next if !min_hash or !min_hash.match valid_pattern
-          
+
           # Now find all commits between them
           #puts "git rev-list #{min_hash}..#{max_hash}"
           IO.foreach("|git rev-list #{min_hash}..#{max_hash}") do |line|
             hash = line.strip
-            commits.push(hash) if !resolved_exclude or !resolved_exclude.include? hash              
+            commits.push(hash) if !resolved_exclude or !resolved_exclude.include? hash
           end
 
           commits.push(min_hash) if !resolved_exclude or !resolved_exclude.include? min_hash
