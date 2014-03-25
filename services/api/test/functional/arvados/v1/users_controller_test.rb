@@ -124,7 +124,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
     assert_not_nil response_errors, 'Expected error in response'
-    assert (response_errors.first.include? 'RuntimeError: No email found'),
+    assert (response_errors.first.include? 'ArgumentError: Require user email'),
       'Expected RuntimeError'
   end
 
@@ -139,7 +139,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
     assert_not_nil response_errors, 'Expected error in response'
-    assert (response_errors.first.include? 'Required uuid or email'),
+    assert (response_errors.first.include? 'Required uuid or user'),
         'Expected ArgumentError'
   end
 
@@ -155,8 +155,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
     assert_not_nil response_errors, 'Expected error in response'
-    assert (response_errors.first.include? '<RuntimeError: No email found'),
-        'Expected RuntimeError'
+    assert (response_errors.first.include? '<ArgumentError: Require user email'),
+        'Expected ArgumentError'
   end
 
   test "invoke setup with existing uuid, vm and repo and verify links" do

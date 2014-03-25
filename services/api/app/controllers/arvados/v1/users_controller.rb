@@ -90,6 +90,7 @@ class Arvados::V1::UsersController < ApplicationController
 
   # create user object and all the needed links
   def setup
+    @object = nil
     if params[:uuid]
       @object = User.find_by_uuid params[:uuid]
       if !@object
@@ -97,16 +98,29 @@ class Arvados::V1::UsersController < ApplicationController
       end
     else
       if !params[:user]
-        raise ArgumentError.new "Required uuid or email"
-      end
-      @object = model_class.new resource_attrs
-      if !params[:openid_prefix]
-        raise ArgumentError.new "Required openid_prefix parameter is missing."
+        raise ArgumentError.new "Required uuid or user"
+      else
+        if params[:user]['uuid']
+          @object = User.find_by_uuid params[:user]['uuid']
+        end
+
+        if !@object
+          if !params[:user]['email']
+            raise ArgumentError.new "Require user email"
+          end
+
+          if !params[:openid_prefix]
+            raise ArgumentError.new "Required openid_prefix parameter is missing."
+          end
+
+          @object = model_class.new resource_attrs
+        end
       end
     end
 
     @response = User.setup @object, params[:openid_prefix],
                 params[:repo_name], params[:vm_uuid]
+   
     render json: { kind: "arvados#HashList", items: @response }
   end
 
