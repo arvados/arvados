@@ -1,0 +1,29 @@
+{% assign n = 0 %}
+{% assign prev = "" %}
+{% assign nx = 0 %}
+{% for section in site.navbar[page.navsection] %}
+  {% for entry in section %}
+    {% for item in entry[1] %}        
+      {% assign p = site.pages[item] %}
+      {% if nx == 1 %}
+        <hr>
+        {% if prev != "" %}
+          <a href="{{ site.baseurl }}{{ prev.url }}" class="pull-left">Previous: {{ prev.title }}</a></li>
+        {% endif %}
+        <a href="{{ site.baseurl }}{{ p.url }}" class="pull-right">Next: {{ p.title }}</a></li>            
+        {% assign nx = 0 %}
+        {% assign n = 1 %}
+      {% endif %}
+      {% if p.url == page.url %}
+        {% assign nx = 1 %}
+      {% else %}
+        {% assign prev = p %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+{% endfor %}
+{% if n == 0 && prev != "" %}
+  <hr>
+  <a href="{{ site.baseurl }}{{ prev.url }}" class="pull-left">Previous: {{ prev.title }}</a></li>  
+  {% assign n = 1 %}
+{% endif %}

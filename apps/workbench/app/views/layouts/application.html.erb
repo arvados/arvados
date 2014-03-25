@@ -116,7 +116,7 @@
         -->
 
         <li class="dropdown notification-menu">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="collections-menu">
             <span class="glyphicon glyphicon-paperclip"></span>
             <span class="badge" id="persistent-selection-count"></span>
             <span class="caret"></span>
@@ -130,7 +130,7 @@
 
         <% if current_user.is_active %>
         <li class="dropdown notification-menu">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
             <span class="glyphicon glyphicon-envelope"></span>
             <span class="badge badge-alert notification-count"><%= @notification_count %></span>
             <span class="caret"></span>
@@ -149,7 +149,7 @@
         <% end %>
 
         <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="user-menu">
             <span class="glyphicon glyphicon-user"></span><span class="caret"></span>
           </a>
           <ul class="dropdown-menu" role="menu">

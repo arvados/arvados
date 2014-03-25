@@ -1,4 +1,5 @@
 require 'zenweb'
+require 'liquid'
 
 module ZenwebLiquid
   VERSION = '0.0.1'
@@ -15,7 +16,6 @@ module Zenweb
     ##
     # Render a page's liquid and return the intermediate result
     def liquid template, content, page, binding = TOPLEVEL_BINDING
-      require 'liquid'
       Liquid::Template.file_system = Liquid::LocalFileSystem.new(File.join(File.dirname(Rake.application().rakefile), "_includes"))
       unless defined? @liquid_template
         @liquid_template = Liquid::Template.parse(template)
@@ -37,5 +37,36 @@ module Zenweb
       
       @liquid_template.render(vars)
     end
+  end
+
+  class LiquidCode < Liquid::Include
+    Syntax = /(#{Liquid::QuotedFragment}+)(\s+(?:as)\s+(#{Liquid::QuotedFragment}+))?/o
+
+    def initialize(tag_name, markup, tokens)
+      Liquid::Tag.instance_method(:initialize).bind(self).call(tag_name, markup, tokens)
+
+      if markup =~ Syntax
+        @template_name = $1
+        @language = $3
+        @attributes    = {}
+      else
+        raise SyntaxError.new("Error in tag 'code' - Valid syntax: include '[code_file]' as '[language]'")
+      end
+    end
+    
+    def render(context)
+      require 'coderay'
+
+      partial = load_cached_partial(context)
+      html = ''
+
+      context.stack do
+        html = CodeRay.scan(partial.root.nodelist.join, @language).div
+      end
+
+      html
+    end
+
+    Liquid::Template.register_tag('code', LiquidCode)    
   end
 end

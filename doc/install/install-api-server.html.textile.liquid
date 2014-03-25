@@ -1,0 +1,128 @@
+---
+layout: default
+navsection: installguide
+title: Install the API server
+...
+
+h2. Prerequisites:
+
+# A GNU/Linux (virtual) machine
+# A domain name for your api server
+# Ruby >= 2.0.0
+# Bundler: @gem install bundler@
+# Curl libraries: @sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev@
+
+h2. Download the source tree
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
+</code></pre></notextile>
+
+See also: "Downloading the source code:https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
+
+h2. Install gem dependencies
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd arvados/services/api</span>
+~/arvados/services/api$ <span class="userinput">bundle install</span>
+</code></pre></notextile>
+
+h2. Configure the API server
+
+Edit the main configuration:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/application.yml.example config/application.yml</span>
+</code></pre></notextile>
+
+Choose a unique 5-character alphanumeric string to use as your @uuid_prefix@. An example is given that generates a 5-character string based on a hash of your hostname. The @uuid_prefix@ is a unique identifier for your API server. It also serves as the first part of the hostname for your API server.
+
+For a development site, use your own domain instead of arvadosapi.com.
+
+Make sure a clone of the arvados repository exists in @git_repositories_dir@:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">sudo mkdir -p /var/cache/git</span>
+~/arvados/services/api$ <span class="userinput">sudo git clone --bare ../../.git /var/cache/git/arvados.git</span>
+</code></pre></notextile>
+
+Generate a new secret token for signing cookies:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">rake secret
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</code></pre></notextile>
+
+Put it in @config/application.yml@ in the production or common section:
+
+<notextile>
+<pre><code><span class="userinput">    secret_token: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</span>
+</code></pre>
+</notextile>
+
+Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
+
+Configure the database:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/database.yml.sample config/database.yml</span>
+</code></pre></notextile>
+
+By default, the development database will use the sqlite3 driver, so no configuration is necessary.  If you wish to use mysql or postgres, edit @config/database.yml@ to your liking and make sure the database and db user exist. Then initialize the database:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=development bundle exec rake db:setup</span>
+</code></pre></notextile>
+
+Set up omniauth:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/initializers/omniauth.rb.example config/initializers/omniauth.rb
+</code></pre></notextile>
+
+Edit @config/initializers/omniauth.rb@. Set @APP_SECRET@ to the value of @app_secret@ from "installing the single sign on server":install-sso.html .
+
+You can now run the development server:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">rails server
+</code></pre></notextile>
+
+h3. Apache/Passenger (optional)
+
+You can use "Passenger":https://www.phusionpassenger.com/ for deployment. Point it to the services/api directory in the source tree.
+
+To enable streaming so users can monitor crunch jobs in real time, add to your Passenger configuration in Apache:
+
+<notextile>
+<pre><code><span class="userinput">PassengerBufferResponse off</span>
+</code></pre>
+</notextile>
+
+h2. Add an admin user
+
+Point browser to the API endpoint. Log in with a google account.
+
+In the rails console:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">rails console</span>
+irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.find(1)</span>
+irb(main):002:0&gt; <span class="userinput">Thread.current[:user].is_admin = true</span>
+irb(main):003:0&gt; <span class="userinput">User.find(1).update_attributes is_admin: true, is_active: true</span>
+irb(main):004:0&gt; <span class="userinput">User.find(1).is_admin</span>
+=&gt; true
+</code></pre></notextile>
+
+h2. Create an API token
+
+In rails console:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">rails console</span>
+irb(main):001:0&gt; <span class="userinput">a = ApiClient.new(owner_uuid:'0')</span>
+irb(main):002:0&gt; <span class="userinput">a.save!</span>
+irb(main):003:0&gt; <span class="userinput">x = ApiClientAuthorization.new(api_client_id:a.id, user_id:1)</span>
+irb(main):004:0&gt; <span class="userinput">x.save</span>
+irb(main):005:0&gt; <span class="userinput">x.api_token</span>
+</code></pre></notextile>

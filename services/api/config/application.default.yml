@@ -39,6 +39,7 @@ test:
   action_mailer.delivery_method: :test
   active_support.deprecation: :stderr
   active_record.mass_assignment_sanitizer: :strict
+  uuid_prefix: zzzzz
 
 common:
   secret_token: ~
@@ -64,7 +65,7 @@ common:
   compute_node_ec2run_args: -g arvados-compute
   compute_node_spot_bid: 0.11
 
-  compute_node_domain: <%= `hostname`.split('.')[1..-1].join('.').strip %>
+  compute_node_domain: false
   compute_node_nameservers:
     - 192.168.1.1
   compute_node_ec2_tag_enable: false
@@ -83,4 +84,18 @@ common:
   # In the default configuration, authentication happens through the Arvados SSO
   # server, which uses openid against Google's servers, so in that case this
   # should be an address associated with a Google account.
-  auto_admin_user: ~
+  auto_admin_user: false
+
+  ## Set Time.zone default to the specified zone and make Active
+  ## Record auto-convert to this zone.  Run "rake -D time" for a list
+  ## of tasks for finding time zone names. Default is UTC.
+  #time_zone: Central Time (US & Canada)
+
+  ## Default encoding used in templates for Ruby 1.9.
+  encoding: utf-8
+
+  # Enable the asset pipeline
+  assets.enabled: true
+
+  # Version of your assets, change this if you want to expire all your assets
+  assets.version: "1.0"

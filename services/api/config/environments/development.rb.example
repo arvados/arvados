@@ -38,43 +38,4 @@ Server::Application.configure do
 
   config.force_ssl = false
 
-  config.git_repositories_dir = '/var/cache/git'
-
-  config.crunch_job_wrapper = :none
-  config.crunch_job_user = 'crunch' # if false, do not set uid when running jobs
-
-  # The web service must be able to create/write this file, and
-  # crunch-job must be able to stat() it.
-  config.crunch_refresh_trigger = '/tmp/crunch_refresh_trigger'
-
-  # config.dnsmasq_conf_dir = '/etc/dnsmasq.d'
-
-  # config.compute_node_ami = 'ami-cbca41a2'
-  # config.compute_node_ec2run_args = '-g arvados-compute'
-  # config.compute_node_spot_bid = 0.11
-
-  # config.compute_node_domain = `hostname --domain`.strip
-
-  # config.compute_node_nameservers = ['1.2.3.4', '1.2.3.5']
-  config.compute_node_nameservers = ['192.168.201.3']
-
-  config.uuid_prefix('development@' + `hostname`.strip)
-
-  # Authentication stub: hard code pre-approved API tokens.
-  # config.accept_api_token = { rand(2**256).to_s(36) => true }
-  config.accept_api_token = {}
-
-  config.new_users_are_active = false
-  config.admin_notifier_email_from = 'arvados@example.com'
-  config.email_subject_prefix = '[ARVADOS] '
-
-  # Visitors to the API server will be redirected to the workbench
-  config.workbench_address = "http://localhost:3000/"
-
-  # The e-mail address of the user you would like to become marked as an admin
-  # user on their first login.
-  # In the default configuration, authentication happens through the Arvados SSO
-  # server, which uses openid against Google's servers, so in that case this
-  # should be an address associated with a Google account.
-  config.auto_admin_user = ''
 end

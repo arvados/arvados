@@ -21,10 +21,6 @@ module Rails
                 :config => File.expand_path("config.ru"),
                 :SSLEnable => true,
                 :SSLVerifyClient => OpenSSL::SSL::VERIFY_NONE,
-                :SSLPrivateKey => OpenSSL::PKey::RSA.new(
-                       File.open("config/api.clinicalfuture.com.key.pem").read),
-                :SSLCertificate => OpenSSL::X509::Certificate.new(
-                       File.open("config/api.clinicalfuture.com.crt.pem").read),
                 :SSLCertName => [["CN", WEBrick::Utils::getservername]]
             })
         end

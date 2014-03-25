@@ -51,10 +51,14 @@ with "--".
         # wait until the driver is finished initializing
         operations.initlock.wait()
 
+        rc = 255
         try:
             rc = subprocess.call(args.exec_args, shell=False)
-        except:
-            rc = 255
+        except OSError as e:
+            sys.stderr.write('arv-mount: %s -- exec %s\n' % (str(e), args.exec_args))
+            rc = e.errno
+        except Exception as e:
+            sys.stderr.write('arv-mount: %s\n' % str(e))
         finally:
             subprocess.call(["fusermount", "-u", "-z", args.mountpoint])
 

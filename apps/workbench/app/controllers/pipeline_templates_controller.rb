@@ -1,10 +1,7 @@
 class PipelineTemplatesController < ApplicationController
   
   def show
-    @objects = [] 
-    PipelineInstance.where(pipeline_template_uuid: @object.uuid).each do |pipeline|
-      @objects.push(pipeline)
-    end
+    @objects = PipelineInstance.where(pipeline_template_uuid: @object.uuid)
     super
   end
 

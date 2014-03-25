@@ -11,6 +11,8 @@
   }
 <% end %>
 
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>
+
 <table class="table table-hover">
   <thead>
     <tr class="contain-align-left">
@@ -54,3 +56,5 @@
 
   </tbody>
 </table>
+
+<%= render partial: "paging", locals: {results: @objects, object: @object} %>

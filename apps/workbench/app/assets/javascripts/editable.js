@@ -23,3 +23,12 @@ $.fn.editable.defaults.validate = function (value) {
         return "Invalid selection";
     }
 }
+
+$.fn.editabletypes.text.defaults.tpl = '<input type="text" name="editable-text">'
+
+$.fn.editableform.buttons = '\
+<button type="submit" class="btn btn-primary btn-sm editable-submit" \
+  id="editable-submit"><i class="glyphicon glyphicon-ok"></i></button>\
+<button type="button" class="btn btn-default btn-sm editable-cancel" \
+  id="editable-cancel"><i class="glyphicon glyphicon-remove"></i></button>\
+'

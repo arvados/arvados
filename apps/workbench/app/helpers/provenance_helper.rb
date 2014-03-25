@@ -26,6 +26,14 @@ module ProvenanceHelper
       end
     end
 
+    def url_for u
+      p = { :host => @opts[:request].host, 
+        :port => @opts[:request].port,
+        :protocol => @opts[:request].protocol }
+      p.merge! u
+      Rails.application.routes.url_helpers.url_for (p)      
+    end 
+
     def determine_fillcolor(n)
       fillcolor = %w(aaaaaa aaffaa aaaaff aaaaaa ffaaaa)[n || 0] || 'aaaaaa'
       "style=filled,fillcolor=\"##{fillcolor}\""
@@ -37,11 +45,9 @@ module ProvenanceHelper
 
       rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
       if rsc
-        href = Rails.application.routes.url_helpers.url_for ({:controller => rsc.to_s.tableize, 
-                                                               :action => :show, 
-                                                               :id => uuid.to_s, 
-                                                               :host => @opts[:request].host, 
-                                                               :port => @opts[:request].port})
+        href = url_for ({:controller => rsc.to_s.tableize, 
+                          :action => :show, 
+                          :id => uuid.to_s })
       
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
@@ -80,8 +86,8 @@ module ProvenanceHelper
               end
             end  
           end
-          return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\",#{bgcolor}];\n"
         end
+        return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\",#{bgcolor}];\n"
       end
       "\"#{uuid}\" [#{bgcolor}];\n"
     end
@@ -227,11 +233,9 @@ module ProvenanceHelper
 
       @pdata.each do |k, link|
         if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
-          href = Rails.application.routes.url_helpers.url_for ({:controller => Link.to_s.tableize, 
-                                                                 :action => :show, 
-                                                                 :id => link[:uuid], 
-                                                                 :host => @opts[:request].host, 
-                                                                 :port => @opts[:request].port})
+          href = url_for ({:controller => Link.to_s.tableize, 
+                            :action => :show, 
+                            :id => link[:uuid] })
 
           gr += describe_node(link[:tail_uuid])
           gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => href}) 
@@ -247,10 +251,8 @@ module ProvenanceHelper
     def describe_jobs
       gr = ""
       @jobs.each do |k, v|
-        href = Rails.application.routes.url_helpers.url_for ({:controller => Job.to_s.tableize, 
-                                                               :action => :index, 
-                                                               :host => @opts[:request].host, 
-                                                               :port => @opts[:request].port})
+        href = url_for ({:controller => Job.to_s.tableize, 
+                          :action => :index })
 
         gr += "\"#{k}\" [href=\"#{href}?"
         

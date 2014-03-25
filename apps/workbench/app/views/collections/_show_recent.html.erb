@@ -13,11 +13,13 @@
 </div>
 <% end %>
 
+<%= render partial: "paging", locals: {results: @collections, object: @object} %>
+
 <div style="padding-right: 1em">
 
 <%= form_tag do |f| %>
 
-<table id="collections-index" class="topalign table table-condensed table-fixedlayout table-fixed-header-row">
+<table id="collections-index" class="topalign table table-condensed table-fixedlayout"> <!-- table-fixed-header-row -->
   <colgroup>
     <col width="4%" />
     <col width="10%" />
@@ -46,6 +48,8 @@
 <% end %>
 
 </div>
+
+<%= render partial: "paging", locals: {results: @collections, object: @object} %>
 
 <% content_for :footer_js do %>
 $(document).on('click', 'form[data-remote] input[type=submit]', function() {

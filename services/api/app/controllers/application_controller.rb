@@ -10,6 +10,7 @@ class ApplicationController < ActionController::Base
   before_filter :catch_redirect_hint
 
   before_filter :load_where_param, :only => :index
+  before_filter :load_filters_param, :only => :index
   before_filter :find_objects_for_index, :only => :index
   before_filter :find_object_by_uuid, :except => [:index, :create,
                                                   :render_error,
@@ -38,7 +39,7 @@ class ApplicationController < ActionController::Base
     if @object.save
       show
     else
-      render_error "Save failed"
+      raise "Save failed"
     end
   end
 
@@ -49,7 +50,7 @@ class ApplicationController < ActionController::Base
     if @object.update_attributes attrs_to_update
       show
     else
-      render_error "Update failed"
+      raise "Update failed"
     end
   end
 
@@ -87,7 +88,9 @@ class ApplicationController < ActionController::Base
 
   def render_error(e)
     logger.error e.inspect
-    logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
+    if e.respond_to? :backtrace and e.backtrace
+      logger.error e.backtrace.collect { |x| x + "\n" }.join('')
+    end
     if @object and @object.errors and @object.errors.full_messages and not @object.errors.full_messages.empty?
       errors = @object.errors.full_messages
     else
@@ -111,16 +114,65 @@ class ApplicationController < ActionController::Base
       @where = params[:where]
     elsif params[:where].is_a? String
       begin
-        @where = Oj.load(params[:where], symbol_keys: true)
+        @where = Oj.load(params[:where])
+        raise unless @where.is_a? Hash
       rescue
         raise ArgumentError.new("Could not parse \"where\" param as an object")
+      end
+    end
+    @where = @where.with_indifferent_access
+  end
+
+  def load_filters_param
+    if params[:filters].is_a? Array
+      @filters = params[:filters]
+    elsif params[:filters].is_a? String and !params[:filters].empty?
+      begin
+        @filters = Oj.load params[:filters]
+        raise unless @filters.is_a? Array
+      rescue
+        raise ArgumentError.new("Could not parse \"filters\" param as an array")
       end
     end
   end
 
   def find_objects_for_index
     @objects ||= model_class.readable_by(current_user)
-    if !@where.empty?
+    apply_where_limit_order_params
+  end
+
+  def apply_where_limit_order_params
+    if @filters.is_a? Array and @filters.any?
+      cond_out = []
+      param_out = []
+      @filters.each do |attr, operator, operand|
+        if !model_class.searchable_columns.index attr.to_s
+          raise ArgumentError.new("Invalid attribute '#{attr}' in condition")
+        end
+        case operator.downcase
+        when '=', '<', '<=', '>', '>=', 'like'
+          if operand.is_a? String
+            cond_out << "#{table_name}.#{attr} #{operator} ?"
+            if (# any operator that operates on value rather than
+                # representation:
+                operator.match(/[<=>]/) and
+                model_class.attribute_column(attr).type == :datetime)
+              operand = Time.parse operand
+            end
+            param_out << operand
+          end
+        when 'in'
+          if operand.is_a? Array
+            cond_out << "#{table_name}.#{attr} IN (?)"
+            param_out << operand
+          end
+        end
+      end
+      if cond_out.any?
+        @objects = @objects.where(cond_out.join(' AND '), *param_out)
+      end
+    end
+    if @where.is_a? Hash and @where.any?
       conditions = ['1=1']
       @where.each do |attr,value|
         if attr == :any
@@ -170,15 +222,31 @@ class ApplicationController < ActionController::Base
           where(*conditions)
       end
     end
+
     if params[:limit]
       begin
-        @objects = @objects.limit(params[:limit].to_i)
+        @limit = params[:limit].to_i
       rescue
         raise ArgumentError.new("Invalid value for limit parameter")
       end
     else
-      @objects = @objects.limit(100)
+      @limit = 100
     end
+    @objects = @objects.limit(@limit)
+
+    orders = []
+
+    if params[:offset]
+      begin
+        @objects = @objects.offset(params[:offset].to_i)
+        @offset = params[:offset].to_i
+      rescue
+        raise ArgumentError.new("Invalid value for limit parameter")
+      end
+    else
+      @offset = 0
+    end      
+
     orders = []
     if params[:order]
       params[:order].split(',').each do |order|
@@ -265,7 +333,7 @@ class ApplicationController < ActionController::Base
       if supplied_token
         api_client_auth = ApiClientAuthorization.
           includes(:api_client, :user).
-          where('api_token=? and (expires_at is null or expires_at > now())', supplied_token).
+          where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied_token).
           first
         if api_client_auth.andand.user
           session[:user_id] = api_client_auth.user.id
@@ -361,12 +429,12 @@ class ApplicationController < ActionController::Base
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",
       :self_link => "",
-      :next_page_token => "",
-      :next_link => "",
+      :offset => @offset,
+      :limit => @limit,
       :items => @objects.as_api_response(nil)
     }
     if @objects.respond_to? :except
-      @object_list[:items_available] = @objects.except(:limit).count
+      @object_list[:items_available] = @objects.except(:limit).except(:offset).count
     end
     render json: @object_list
   end
@@ -384,6 +452,7 @@ class ApplicationController < ActionController::Base
 
   def self._index_requires_parameters
     {
+      filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
       order: { type: 'string', required: false }
     }
@@ -395,13 +464,15 @@ class ApplicationController < ActionController::Base
   end
 
   def render *opts
-    response = opts.first[:json]
-    if response.is_a?(Hash) &&
-        params[:_profile] &&
-        Thread.current[:request_starttime]
-      response[:_profile] = {
-         request_time: Time.now - Thread.current[:request_starttime]
-      }
+    if opts.first
+      response = opts.first[:json]
+      if response.is_a?(Hash) &&
+          params[:_profile] &&
+          Thread.current[:request_starttime]
+        response[:_profile] = {
+          request_time: Time.now - Thread.current[:request_starttime]
+        }
+      end
     end
     super *opts
   end

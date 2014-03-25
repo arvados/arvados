@@ -1,0 +1,27 @@
+table.code {
+    font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+    display: block;
+    padding: 9.5px;
+    margin: 0px 0px 10px;
+    font-size: 13px;
+    line-height: 1.42857;
+    color: rgb(51, 51, 51);
+    word-break: break-all;
+    word-wrap: break-word;
+    background-color: rgb(245, 245, 245);
+    border: 1px solid rgb(204, 204, 204);
+    border-radius: 4px 4px 4px 4px;
+}
+
+table.code tr td {
+    white-space: pre;
+}
+
+table.code tr td:nth-child(2) {
+    color: #d14;
+    padding-left: .5em;
+}
+
+.userinput {
+    color: #d14;
+}
