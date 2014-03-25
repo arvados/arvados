@@ -91,7 +91,6 @@ class Arvados::V1::UsersController < ApplicationController
   # create user object and all the needed links
   def setup
     @object = nil
-    #object_found = false
     if params[:uuid]
       @object = User.find_by_uuid params[:uuid]
       if !@object

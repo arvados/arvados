@@ -48,7 +48,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :create, user: {
       first_name: "test_first_name",
       last_name: "test_last_name",
-      email: "test@abc.com"
+      email: "foo@example.com"
     }
     assert_response :success
     created = JSON.parse(@response.body)
@@ -69,7 +69,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         uuid: "this_is_agreeable",        
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
-        email: "test@abc.com"
+        email: "foo@example.com"
       }
     }
     assert_response :success
@@ -106,7 +106,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         uuid: "this_is_agreeable",
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
-        email: "test@abc.com"
+        email: "foo@example.com"
       }
     }
 
@@ -278,7 +278,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       repo_name: 'test_repo',
-      user: {email: 'abc@xyz.com'},
+      user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
@@ -286,7 +286,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
-    assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
+    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
     # three extra links; login link, group link and repo link
     verify_num_links @all_links_at_start, 3
@@ -298,7 +298,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     post :setup, {
       repo_name: 'test_repo',
       vm_uuid: 'no_such_vm',
-      user: {email: 'abc@xyz.com'},
+      user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
@@ -316,14 +316,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       repo_name: 'test_repo',
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       vm_uuid: @vm_uuid,
-      user: {email: 'abc@xyz.com'}
+      user: {email: 'foo@example.com'}
     }
 
     assert_response :success
     response_items = JSON.parse(@response.body)['items']
     response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
-    assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
+    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
     # three extra links; login link, group link and repo link
     verify_num_links @all_links_at_start, 4
@@ -333,7 +333,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      user: {email: 'abc@xyz.com'},
+      user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
@@ -341,7 +341,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
-    assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
+    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
     # two extra links; login link and group link
     verify_num_links @all_links_at_start, 2
@@ -356,7 +356,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       vm_uuid: @vm_uuid,
       user: {
         first_name: 'test_first_name',
-        email: 'abc@xyz.com'
+        email: 'foo@example.com'
       }
     }
 
@@ -364,7 +364,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
-    assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
+    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
     assert_equal 'test_first_name', response_object['first_name'], 
         'expecting first name'
 
@@ -379,7 +379,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'test_repo',
       user: {
-        email: 'abc@xyz.com'
+        email: 'foo@example.com'
       }
     }
 
@@ -387,12 +387,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
-    assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
+    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
     verify_num_links @all_links_at_start, 3   # openid, group, and repo. no vm
 
     # create again
     post :setup, {
-      user: {email: 'abc@xyz.com'},
+      user: {email: 'foo@example.com'},
       openid_prefix: 'https://www.google.com/accounts/o8/id'
     }
 
@@ -401,7 +401,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_object2 = find_obj_in_resp response_items, 'User', nil
     assert_not_equal response_object['uuid'], response_object2['uuid'], 
         'expected same uuid as first create operation'
-    assert_equal response_object['email'], 'abc@xyz.com', 'expected given email'
+    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
     # extra login link only
     verify_num_links @all_links_at_start, 4
@@ -412,11 +412,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       repo_name: 'test_repo',
-      openid_prefix: 'http://www.xyz.com/account',
+      openid_prefix: 'http://www.example.com/account',
       user: {
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
-        email: "test@abc.com"
+        email: "foo@example.com"
       }
     }
 
@@ -455,7 +455,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       user: {
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
-        email: "test@abc.com"
+        email: "foo@example.com"
       }
     }
 
@@ -473,7 +473,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       user: {
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
-        email: "test@abc.com"
+        email: "foo@example.com"
       },
       vm_uuid: @vm_uuid,
       repo_name: 'test_repo',
@@ -510,7 +510,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :active
 
     post :create, {
-      user: {email: 'abc@xyz.com'}
+      user: {email: 'foo@example.com'}
     }
 
     response_body = JSON.parse(@response.body)
@@ -525,7 +525,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     post :setup, {
       openid_prefix: 'https://www.google.com/accounts/o8/id',
-      user: {email: 'abc@xyz.com'}
+      user: {email: 'foo@example.com'}
     }
 
     response_body = JSON.parse(@response.body)
@@ -539,9 +539,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     post :setup, {
-      openid_prefix: 'http://www.xyz.com/account',
+      openid_prefix: 'http://www.example.com/account',
       user: {
-        email: "test@abc.com"
+        email: "foo@example.com"
       }
     }
 
@@ -552,7 +552,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     assert_not_nil created['uuid'], 'expected uuid for new user'
     assert_not_nil created['email'], 'expected non-nil email'
-    assert_equal created['email'], 'test@abc.com', 'expected input email'
+    assert_equal created['email'], 'foo@example.com', 'expected input email'
 
     # verify links; 2 new links: arvados#user, and 'All users' group.
     verify_num_links @all_links_at_start, 2
@@ -571,7 +571,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
    # invoke setup with a repository
     post :setup, {
-      openid_prefix: 'http://www.xyz.com/account',
+      openid_prefix: 'http://www.example.com/account',
       repo_name: 'new_repo',
       uuid: created['uuid']
     }
@@ -581,7 +581,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     created = find_obj_in_resp response_items, 'User', nil
 
-    assert_equal 'test@abc.com', created['email'], 'expected input email'
+    assert_equal 'foo@example.com', created['email'], 'expected input email'
 
      # verify links
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
@@ -596,7 +596,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     # invoke setup with a vm_uuid
     post :setup, {
       vm_uuid: @vm_uuid,
-      openid_prefix: 'http://www.xyz.com/account',
+      openid_prefix: 'http://www.example.com/account',
       user: {
         email: 'junk_email'
       },
@@ -608,7 +608,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     created = find_obj_in_resp response_items, 'User', nil
 
-    assert_equal created['email'], 'test@abc.com', 'expected original email'
+    assert_equal created['email'], 'foo@example.com', 'expected original email'
 
     # verify links
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',

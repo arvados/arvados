@@ -152,7 +152,7 @@ class UserTest < ActiveSupport::TestCase
   test "setup new user" do
     Thread.current[:user] = @admin_user
 
-    email = 'abc@xyz.com'
+    email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
 
     user = User.new
@@ -185,7 +185,7 @@ class UserTest < ActiveSupport::TestCase
   test "setup new user in multiple steps" do
     Thread.current[:user] = @admin_user
 
-    email = 'abc@xyz.com'
+    email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
 
     user = User.new
