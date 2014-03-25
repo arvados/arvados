@@ -206,23 +206,23 @@ class UserTest < ActiveSupport::TestCase
 
     response = User.setup user, openid_prefix, 'test_repo', vm.uuid
 
-    resp_user = response[:user]
+    resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
 
-    oid_login_perm = response[:oid_login_perm]
+    oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
     assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
         'expected identity_url_prefix not found for oid_login_perm'
 
-    verify_link response[:group_perm], 'permission', 'can_read', 
-        resp_user[:uuid], nil
+    group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
+    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
-    verify_link response[:repo_perm], 'permission', 'can_write', 
-        resp_user[:uuid], nil
+    repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
+    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
 
-    verify_link response[:vm_login_perm], 'permission', 'can_login', 
-        resp_user[:uuid], vm.uuid
+    vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
+    verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
 
   test "setup new user in multiple steps" do
@@ -236,57 +236,74 @@ class UserTest < ActiveSupport::TestCase
 
     response = User.setup user, openid_prefix
 
-    resp_user = response[:user]
+    resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
 
-    oid_login_perm = response[:oid_login_perm]
+    oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
     assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
         'expected identity_url_prefix not found for oid_login_perm'
 
-    verify_link response[:group_perm], 'permission', 'can_read', 
-        resp_user[:uuid], nil
+    group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
+    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     # invoke setup again with repo_name
     user = User.new
     user.uuid = resp_user[:uuid]
 
     response = User.setup user, openid_prefix, 'test_repo'
-
-    resp_user = response[:user]
+    resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
 
-    verify_link response[:group_perm], 'permission', 'can_read', 
-        resp_user[:uuid], nil
+    group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
+    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
-    verify_link response[:repo_perm], 'permission', 'can_write', 
-        resp_user[:uuid], nil
+    repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
+    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
 
     # invoke setup again with a vm_uuid
     vm = VirtualMachine.create
 
     response = User.setup user, openid_prefix, 'test_repo', vm.uuid
 
-    resp_user = response[:user]
+    resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
 
-    verify_link response[:group_perm], 'permission', 'can_read', 
-        resp_user[:uuid], nil
+    group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
+    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
-    verify_link response[:repo_perm], 'permission', 'can_write', 
-        resp_user[:uuid], nil
+    repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
+    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
 
-    verify_link response[:vm_login_perm], 'permission', 'can_login', 
-        resp_user[:uuid], vm.uuid
+    vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
+    verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
 
-  def verify_user resp_user, email
+  def find_obj_in_resp (response, object_type, head_kind=nil)
+    return_obj = nil
+    response.each { |x|
+      if x.class.name == object_type
+        if head_kind
+          if x.head_kind == head_kind
+            return_obj = x
+            break
+          end
+        else
+          return_obj = x
+          break
+        end
+      end
+    }
+    return return_obj
+  end
+
+  def verify_user (resp_user, email)
     assert_not_nil resp_user, 'expected user object'
-    assert_not_nil resp_user[:uuid], 'expected user object'
-    assert_equal email, resp_user[:email], 'expected email not found'
+    assert_not_nil resp_user['uuid'], 'expected user object'
+    assert_equal email, resp_user['email'], 'expected email not found'
 
   end
 

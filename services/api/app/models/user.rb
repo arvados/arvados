@@ -148,30 +148,16 @@ class User < ArvadosModel
       end
     end
 
-    # create repo, vm, and group links
-    response = {user: user, oid_login_perm: oid_login_perm}
-
-    user.setup_repo_vm_links(repo_name, vm_uuid, response)
-
-    return response
+    return [user, oid_login_perm] + user.setup_repo_vm_links(repo_name, vm_uuid)
   end 
 
   # create links
-  def setup_repo_vm_links(repo_name, vm_uuid, response)
+  def setup_repo_vm_links(repo_name, vm_uuid)
     repo_perm = create_user_repo_link repo_name
-    if repo_perm
-      response[:repo_perm] = repo_perm
-    end
-
     vm_login_perm = create_vm_login_permission_link vm_uuid, repo_name
-    if vm_login_perm
-      response[:vm_login_perm] = vm_login_perm
-    end
-
     group_perm = create_user_group_link
-    if group_perm
-      response[:group_perm] = group_perm
-    end
+
+    return [repo_perm, vm_login_perm, group_perm].compact
   end 
 
   protected
