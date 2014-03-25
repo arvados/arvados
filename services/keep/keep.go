@@ -28,10 +28,18 @@ func main() {
 	}
 
 	// Set up REST handlers.
+	//
+	// Start with a router that will route each URL path to an
+	// appropriate handler.
+	//
 	rest := mux.NewRouter()
 	rest.HandleFunc("/{hash:[0-9a-f]{32}}", GetBlockHandler).Methods("GET")
+
+	// Tell the built-in HTTP server to direct all requests to the REST
+	// router.
 	http.Handle("/", rest)
 
+	// Start listening for requests.
 	port := fmt.Sprintf(":%d", DEFAULT_PORT)
 	http.ListenAndServe(port, nil)
 }
@@ -77,6 +85,12 @@ func GetBlock(hash string) ([]byte, error) {
 		}
 
 		// Double check the file checksum.
+		//
+		// TODO(twp): this condition probably represents a bad disk and
+		// should raise major alarm bells for an administrator: e.g.
+		// they should be sent directly to an event manager at high
+		// priority or logged as urgent problems.
+		//
 		filehash := fmt.Sprintf("%x", md5.Sum(buf[:nread]))
 		if filehash != hash {
 			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",

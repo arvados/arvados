@@ -98,8 +98,8 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 // setup
 //     Create KeepVolumes for testing.
-func setup(nkeeps int) error {
-	KeepVolumes = make([]string, 2)
+func setup(num_volumes int) error {
+	KeepVolumes = make([]string, num_volumes)
 	for i := range KeepVolumes {
 		if dir, err := ioutil.TempDir(os.TempDir(), "keeptest"); err == nil {
 			KeepVolumes[i] = dir + "/keep"
