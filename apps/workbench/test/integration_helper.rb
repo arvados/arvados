@@ -51,11 +51,15 @@ class IntegrationTestRunner < MiniTest::Unit
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')
-      timeout = Time.now.tv_sec + 5
-      while (not File.exists? SERVER_PID_PATH) and (Time.now.tv_sec < timeout)
-        sleep 0.2
-      end
-      IO.read(SERVER_PID_PATH).to_i
+      begin
+        begin
+          server_pid = IO.read(SERVER_PID_PATH).to_i
+        rescue Errno::ENOENT
+          sleep 0.2
+        end
+      end until (not server_pid.nil?) and (server_pid > 0) and
+        (Process.kill(0, server_pid) rescue false)
+      server_pid
     end
     begin
       super(args)
