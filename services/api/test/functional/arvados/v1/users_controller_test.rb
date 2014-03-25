@@ -74,6 +74,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
     assert_response :success
     response_items = JSON.parse(@response.body)['items']
+
     created = find_obj_in_resp response_items, 'User', nil
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
@@ -81,27 +82,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url' 
 
-    # invoke setup again with the same data
-    post :setup, {
-      repo_name: repo_name,
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
-      user: {
-        uuid: "this_is_agreeable",        
-        first_name: "in_create_test_first_name",
-        last_name: "test_last_name",
-        email: "test@abc.com"
-      }
-    }
-
-    response_items = JSON.parse(@response.body)['items']
-    created = find_obj_in_resp response_items, 'User', nil
-    assert_equal 'in_create_test_first_name', created['first_name']
-    assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
-    assert_equal 'this_is_agreeable', created['uuid']
-    assert_not_nil created['email'], 'expected non-nil email'
-    assert_nil created['identity_url'], 'expected no identity_url' 
-
-    # since no such vm exists, expect only three new links: 
     # arvados#user, repo link and link add user to 'All users' group
     verify_num_links @all_links_at_start, 3
 
@@ -116,6 +96,40 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+
+    # invoke setup again with the same data
+    post :setup, {
+      repo_name: repo_name,
+      vm_uuid: @vm_uuid,
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
+      user: {
+        uuid: "this_is_agreeable",
+        first_name: "in_create_test_first_name",
+        last_name: "test_last_name",
+        email: "test@abc.com"
+      }
+    }
+
+    response_items = JSON.parse(@response.body)['items']
+
+    created = find_obj_in_resp response_items, 'User', nil
+    assert_equal 'in_create_test_first_name', created['first_name']
+    assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
+    assert_equal 'this_is_agreeable', created['uuid']
+    assert_not_nil created['email'], 'expected non-nil email'
+    assert_nil created['identity_url'], 'expected no identity_url'
+
+    # arvados#user, repo link and link add user to 'All users' group
+    verify_num_links @all_links_at_start, 4
+
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+        repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
+
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+        'All users', created['uuid'], 'arvados#group', true, 'Group'
+
+    verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
+        @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
   test "setup user with bogus uuid and expect error" do

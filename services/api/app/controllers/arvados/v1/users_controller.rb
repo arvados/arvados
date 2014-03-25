@@ -91,17 +91,22 @@ class Arvados::V1::UsersController < ApplicationController
   # create user object and all the needed links
   def setup
     @object = nil
+    #object_found = false
     if params[:uuid]
       @object = User.find_by_uuid params[:uuid]
       if !@object
         return render_404_if_no_object
       end
+      object_found = true
     else
       if !params[:user]
         raise ArgumentError.new "Required uuid or user"
       else
         if params[:user]['uuid']
           @object = User.find_by_uuid params[:user]['uuid']
+          if @object
+            object_found = true
+          end
         end
 
         if !@object
@@ -118,9 +123,13 @@ class Arvados::V1::UsersController < ApplicationController
       end
     end
 
-    @response = User.setup @object, params[:openid_prefix],
-                params[:repo_name], params[:vm_uuid]
-   
+    if object_found
+      @response = @object.setup_repo_vm_links params[:repo_name], params[:vm_uuid]
+    else
+      @response = User.setup @object, params[:openid_prefix],
+                    params[:repo_name], params[:vm_uuid]
+    end
+
     render json: { kind: "arvados#HashList", items: @response }
   end
 

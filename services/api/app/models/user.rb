@@ -133,7 +133,7 @@ class User < ArvadosModel
       oid_login_perm = oid_login_perms.first
     end
 
-    return [user, oid_login_perm] + user.setup_repo_vm_links(repo_name, vm_uuid)
+    return [oid_login_perm] + user.setup_repo_vm_links(repo_name, vm_uuid)
   end 
 
   # create links
@@ -142,7 +142,7 @@ class User < ArvadosModel
     vm_login_perm = create_vm_login_permission_link vm_uuid, repo_name
     group_perm = create_user_group_link
 
-    return [repo_perm, vm_login_perm, group_perm].compact
+    return [repo_perm, vm_login_perm, group_perm, self].compact
   end 
 
   protected
