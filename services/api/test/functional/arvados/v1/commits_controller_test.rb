@@ -48,24 +48,38 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
     a = Commit.find_commit_range(users(:active), nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', ['tag1'])
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
-    touchdir = Dir.mktmpdir()
+    Dir.mktmpdir do |touchdir|
+      # invalid input to maximum
+      a = Commit.find_commit_range(users(:active), nil, nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", nil)
+      assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'maximum' parameter of find_commit_range is exploitable"
+      assert_equal nil, a
 
-  # invalid input
-    a = Commit.find_commit_range(users(:active), nil, nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", nil)
-    assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'maximum' parameter of find_commit_range is exploitable"
-    assert_equal nil, a
+      # invalid input to maximum
+      a = Commit.find_commit_range(users(:active), nil, nil, "$(uname>#{touchdir}/uh_oh)", nil)
+      assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'maximum' parameter of find_commit_range is exploitable"
+      assert_equal nil, a
 
-  # invalid input
-    a = Commit.find_commit_range(users(:active), nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", "31ce37fe365b3dc204300a3e4c396ad333ed0556", nil)
-    assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'minimum' parameter of find_commit_range is exploitable"
-    assert_equal nil, a
+      # invalid input to minimum
+      a = Commit.find_commit_range(users(:active), nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556 ; touch #{touchdir}/uh_oh", "31ce37fe365b3dc204300a3e4c396ad333ed0556", nil)
+      assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'minimum' parameter of find_commit_range is exploitable"
+      assert_equal nil, a
 
-  # invalid input
-    a = Commit.find_commit_range(users(:active), nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["4fe459abe02d9b365932b8f5dc419439ab4e2577 ; touch #{touchdir}/uh_oh"])
-    assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'excludes' parameter of find_commit_range is exploitable"
-    assert_equal nil, a
+      # invalid input to minimum
+      a = Commit.find_commit_range(users(:active), nil, "$(uname>#{touchdir}/uh_oh)", "31ce37fe365b3dc204300a3e4c396ad333ed0556", nil)
+      assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'minimum' parameter of find_commit_range is exploitable"
+      assert_equal nil, a
 
-    FileUtils.remove_entry touchdir
+      # invalid input to 'excludes'
+      a = Commit.find_commit_range(users(:active), nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["4fe459abe02d9b365932b8f5dc419439ab4e2577 ; touch #{touchdir}/uh_oh"])
+      assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'excludes' parameter of find_commit_range is exploitable"
+      assert_equal nil, a
+
+      # invalid input to 'excludes'
+      a = Commit.find_commit_range(users(:active), nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["$(uname>#{touchdir}/uh_oh)"])
+      assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'excludes' parameter of find_commit_range is exploitable"
+      assert_equal nil, a
+
+    end
 
   end
 

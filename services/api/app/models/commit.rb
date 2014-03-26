@@ -2,7 +2,7 @@ class Commit < ActiveRecord::Base
   require 'shellwords'
 
   def self.git_check_ref_format(e)
-    if !e or e.empty? or e[0] == '-'
+    if !e or e.empty? or e[0] == '-' or e[0] == '$'
       # definitely not valid
       false
     else
@@ -46,7 +46,7 @@ class Commit < ActiveRecord::Base
 
         # Get the commit hash for the upper bound
         max_hash = nil
-        IO.foreach("|git rev-list --max-count=1 #{maximum}") do |line|
+        IO.foreach("|git rev-list --max-count=1 #{maximum.shellescape}") do |line|
           max_hash = line.strip
         end
 
@@ -58,7 +58,7 @@ class Commit < ActiveRecord::Base
           resolved_exclude = []
           exclude.each do |e|
             if git_check_ref_format(e)
-              IO.foreach("|git rev-list --max-count=1 #{e}") do |line|
+              IO.foreach("|git rev-list --max-count=1 #{e.shellescape}") do |line|
                 resolved_exclude.push(line.strip)
               end
             else
@@ -71,7 +71,7 @@ class Commit < ActiveRecord::Base
         if minimum
           # Get the commit hash for the lower bound
           min_hash = nil
-          IO.foreach("|git rev-list --max-count=1 #{minimum}") do |line|
+          IO.foreach("|git rev-list --max-count=1 #{minimum.shellescape}") do |line|
             min_hash = line.strip
           end
 
@@ -79,7 +79,7 @@ class Commit < ActiveRecord::Base
           next if !min_hash or !git_check_ref_format(min_hash)
 
           # Now find all commits between them
-          IO.foreach("|git rev-list #{min_hash}..#{max_hash}") do |line|
+          IO.foreach("|git rev-list #{min_hash.shellescape}..#{max_hash.shellescape}") do |line|
             hash = line.strip
             commits.push(hash) if !resolved_exclude or !resolved_exclude.include? hash
           end
