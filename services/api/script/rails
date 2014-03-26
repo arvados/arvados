@@ -21,11 +21,11 @@ module Rails
                 :config => File.expand_path("config.ru"),
                 :SSLEnable => true,
                 :SSLVerifyClient => OpenSSL::SSL::VERIFY_NONE,
-                :SSLCertName => [["CN", WEBrick::Utils::getservername]]
+                :SSLCertName => [["CN", "#{WEBrick::Utils::getservername} #{Time.now().to_s}"]]
             })
         end
     end
-end 
+end
 ######### /SSL
 
 
