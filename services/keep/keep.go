@@ -44,6 +44,36 @@ func main() {
 	http.ListenAndServe(port, nil)
 }
 
+// FindKeepVolumes
+//     Returns a list of Keep volumes mounted on this system.
+//
+//     A Keep volume is a normal or tmpfs volume with a /keep
+//     directory at the top level of the mount point.
+//
+func FindKeepVolumes() []string {
+	vols := make([]string, 0)
+
+	if f, err := os.Open("/proc/mounts"); err != nil {
+		log.Fatal("could not read /proc/mounts: ", err)
+	} else {
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			args := strings.Fields(scanner.Text())
+			dev, mount := args[0], args[1]
+			if (dev == "tmpfs" || strings.HasPrefix(dev, "/dev/")) && mount != "/" {
+				keep := mount + "/keep"
+				if st, err := os.Stat(keep); err == nil && st.IsDir() {
+					vols = append(vols, keep)
+				}
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+	}
+	return vols
+}
+
 func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
@@ -86,13 +116,13 @@ func GetBlock(hash string) ([]byte, error) {
 
 		// Double check the file checksum.
 		//
-		// TODO(twp): this condition probably represents a bad disk and
-		// should raise major alarm bells for an administrator: e.g.
-		// they should be sent directly to an event manager at high
-		// priority or logged as urgent problems.
-		//
 		filehash := fmt.Sprintf("%x", md5.Sum(buf[:nread]))
 		if filehash != hash {
+			// TODO(twp): this condition probably represents a bad disk and
+			// should raise major alarm bells for an administrator: e.g.
+			// they should be sent directly to an event manager at high
+			// priority or logged as urgent problems.
+			//
 			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
 				vol, path, filehash)
 			continue
@@ -102,36 +132,6 @@ func GetBlock(hash string) ([]byte, error) {
 		return buf[:nread], nil
 	}
 
-	log.Printf("%s: all keep volumes failed, giving up\n", hash)
+	log.Printf("%s: not found on any volumes, giving up\n", hash)
 	return buf, errors.New("not found: " + hash)
-}
-
-// FindKeepVolumes
-//     Returns a list of Keep volumes mounted on this system.
-//
-//     A Keep volume is a normal or tmpfs volume with a /keep
-//     directory at the top level of the mount point.
-//
-func FindKeepVolumes() []string {
-	vols := make([]string, 0)
-
-	if f, err := os.Open("/proc/mounts"); err != nil {
-		log.Fatal("could not read /proc/mounts: ", err)
-	} else {
-		scanner := bufio.NewScanner(f)
-		for scanner.Scan() {
-			args := strings.Fields(scanner.Text())
-			dev, mount := args[0], args[1]
-			if (dev == "tmpfs" || strings.HasPrefix(dev, "/dev/")) && mount != "/" {
-				keep := mount + "/keep"
-				if st, err := os.Stat(keep); err == nil && st.IsDir() {
-					vols = append(vols, keep)
-				}
-			}
-		}
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
-		}
-	}
-	return vols
 }
