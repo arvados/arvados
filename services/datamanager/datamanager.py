@@ -128,7 +128,7 @@ def buildCollectionsList():
   else:
     collections_list_response = arv.collections().list(limit=args.max_api_results).execute()
 
-    print ('Returned %d of %d results' %
+    print ('Returned %d of %d collections.' %
            (len(collections_list_response['items']),
             collections_list_response['items_available']))
 
