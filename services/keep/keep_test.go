@@ -17,13 +17,9 @@ func TestGetBlockOK(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes and store a block in each of them.
-	if err := setup(2); err != nil {
-		t.Fatal(err)
-	}
+	setup(t, 2)
 	for _, vol := range KeepVolumes {
-		if err := storeTestBlock(vol, TEST_HASH, TEST_BLOCK); err != nil {
-			t.Fatal(err)
-		}
+		store(t, vol, TEST_HASH, TEST_BLOCK)
 	}
 
 	// Check that GetBlock returns success.
@@ -41,12 +37,8 @@ func TestGetBlockOneKeepOK(t *testing.T) {
 	defer teardown()
 
 	// Two test Keep volumes, only the second has a block.
-	if err := setup(2); err != nil {
-		t.Fatal(err)
-	}
-	if err := storeTestBlock(KeepVolumes[1], TEST_HASH, TEST_BLOCK); err != nil {
-		t.Fatal(err)
-	}
+	setup(t, 2)
+	store(t, KeepVolumes[1], TEST_HASH, TEST_BLOCK)
 
 	// Check that GetBlock returns success.
 	result, err := GetBlock(TEST_HASH)
@@ -63,9 +55,7 @@ func TestGetBlockFail(t *testing.T) {
 	defer teardown()
 
 	// Create two empty test Keep volumes.
-	if err := setup(2); err != nil {
-		t.Fatal(err)
-	}
+	setup(t, 2)
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
@@ -80,13 +70,9 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 	// Create two test Keep volumes and store a block in each of them,
 	// but the hash of the block does not match the filename.
-	if err := setup(2); err != nil {
-		t.Fatal(err)
-	}
+	setup(t, 2)
 	for _, vol := range KeepVolumes {
-		if err := storeTestBlock(vol, TEST_HASH, BAD_BLOCK); err != nil {
-			t.Fatal(err)
-		}
+		store(t, vol, TEST_HASH, BAD_BLOCK)
 	}
 
 	// Check that GetBlock returns failure.
@@ -98,28 +84,33 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 // setup
 //     Create KeepVolumes for testing.
-func setup(num_volumes int) error {
+//
+func setup(t *testing.T, num_volumes int) {
 	KeepVolumes = make([]string, num_volumes)
 	for i := range KeepVolumes {
 		if dir, err := ioutil.TempDir(os.TempDir(), "keeptest"); err == nil {
 			KeepVolumes[i] = dir + "/keep"
 		} else {
-			return err
+			t.Fatal(err)
 		}
 	}
-	return nil
 }
 
+// teardown
+//     Cleanup to perform after each test.
+//
 func teardown() {
 	for _, vol := range KeepVolumes {
 		os.RemoveAll(path.Dir(vol))
 	}
 }
 
-func storeTestBlock(keepdir string, filename string, block []byte) error {
+// store
+//
+func store(t *testing.T, keepdir string, filename string, block []byte) error {
 	blockdir := fmt.Sprintf("%s/%s", keepdir, filename[:3])
 	if err := os.MkdirAll(blockdir, 0755); err != nil {
-		return err
+		t.Fatal(err)
 	}
 
 	blockpath := fmt.Sprintf("%s/%s", blockdir, filename)
@@ -127,7 +118,7 @@ func storeTestBlock(keepdir string, filename string, block []byte) error {
 		f.Write(block)
 		f.Close()
 	} else {
-		return err
+		t.Fatal(err)
 	}
 
 	return nil
