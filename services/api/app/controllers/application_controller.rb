@@ -126,7 +126,7 @@ class ApplicationController < ActionController::Base
   def load_filters_param
     if params[:filters].is_a? Array
       @filters = params[:filters]
-    elsif params[:filters].is_a? String
+    elsif params[:filters].is_a? String and !params[:filters].empty?
       begin
         @filters = Oj.load params[:filters]
         raise unless @filters.is_a? Array

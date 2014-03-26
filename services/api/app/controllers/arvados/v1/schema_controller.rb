@@ -1,29 +1,10 @@
 class Arvados::V1::SchemaController < ApplicationController
+  skip_before_filter :find_objects_for_index
   skip_before_filter :find_object_by_uuid
   skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope_all
 
-  def show
-    classes = Rails.cache.fetch 'arvados_v1_schema' do
-      Rails.application.eager_load!
-      classes = {}
-      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
-        classes[k] = k.columns.collect do |col|
-          if k.serialized_attributes.has_key? col.name
-            { name: col.name,
-              type: k.serialized_attributes[col.name].object_class.to_s }
-          else
-            { name: col.name,
-              type: col.type }
-          end
-        end
-      end
-      classes
-    end
-    render json: classes
-  end
-
-  def discovery_rest_description
+  def index
     expires_in 24.hours, public: true
     discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!

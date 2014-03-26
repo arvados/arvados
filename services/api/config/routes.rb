@@ -79,7 +79,6 @@ Server::Application.routes.draw do
 
   namespace :arvados do
     namespace :v1 do
-      match '/schema' => 'schema#show'
       match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
       match '/keep_disks/ping' => 'keep_disks#ping', :as => :ping_keep_disk
       match '/links/from/:tail_uuid' => 'links#index', :as => :arvados_v1_links_from
@@ -90,6 +89,7 @@ Server::Application.routes.draw do
       post '/jobs/:uuid/cancel' => 'jobs#cancel'
       match '/users/:uuid/event_stream' => 'users#event_stream'
       post '/users/:uuid/activate' => 'users#activate'
+      post '/users/setup' => 'users#setup'
       match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
       match '/virtual_machines/:uuid/logins' => 'virtual_machines#logins'
       post '/api_client_authorizations/create_system_auth' => 'api_client_authorizations#create_system_auth'
@@ -129,7 +129,7 @@ Server::Application.routes.draw do
   match '/login', :to => 'user_sessions#login'
   match '/logout', :to => 'user_sessions#logout'
 
-  match '/discovery/v1/apis/arvados/v1/rest', :to => 'arvados/v1/schema#discovery_rest_description'
+  match '/discovery/v1/apis/arvados/v1/rest', :to => 'arvados/v1/schema#index'
 
   match '/static/login_failure', :to => 'static#login_failure', :as => :login_failure
 
