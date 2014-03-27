@@ -5,40 +5,53 @@ class Arvados::V1::JobsController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => :queue
   skip_before_filter :render_404_if_no_object, :only => :queue
 
-  def index
-    return super unless @where.is_a? Hash
-    want_ancestor = @where[:script_version_descends_from]
-    if want_ancestor
-      # Check for missing commit_ancestor rows, and create them if
-      # possible.
-      @objects.
-        dup.
-        includes(:commit_ancestors). # I wish Rails would let me
-                                     # specify here which
-                                     # commit_ancestors I am
-                                     # interested in.
-        each do |o|
-        if o.commit_ancestors.
-            select { |ca| ca.ancestor == want_ancestor }.
-            empty? and !o.script_version.nil?
-          begin
-            o.commit_ancestors << CommitAncestor.find_or_create_by_descendant_and_ancestor(o.script_version, want_ancestor)
-          rescue
+  def create
+    [:repository, :script, :script_version, :script_parameters].each do |r|    
+      if !resource_attrs[r]
+        return render json: {
+          :error => "#{r} attribute must be specified"
+        }, status: :unprocessable_entity      
+      end
+    end
+
+    r = Commit.find_commit_range(current_user,
+                                 resource_attrs[:repository],
+                                 resource_attrs[:minimum_script_version],
+                                 resource_attrs[:script_version],
+                                 resource_attrs[:exclude_script_versions])
+    if !resource_attrs[:nondeterministic] and !resource_attrs[:no_reuse]
+      # Search for jobs where the script_version is in the list of commits
+      # returned by find_commit_range
+      @object = nil
+      Job.readable_by(current_user).where(script: resource_attrs[:script],
+                                          script_version: r).
+        each do |j|
+        if j.nondeterministic != true and 
+            j.success != false and 
+            j.script_parameters == resource_attrs[:script_parameters]
+          # Record the first job in the list
+          if !@object
+            @object = j
+          end
+          # Ensure that all candidate jobs actually did produce the same output
+          if @object.output != j.output
+            @object = nil
+            break
           end
         end
-        o.commit_ancestors.
-          select { |ca| ca.ancestor == want_ancestor }.
-          select(&:is).
-          first
+        if @object
+          return show
+        end
       end
-      # Now it is safe to do an .includes().where() because we are no
-      # longer interested in jobs that have other ancestors but not
-      # want_ancestor.
-      @objects = @objects.
-        includes(:commit_ancestors).
-        where('commit_ancestors.ancestor = ? and commit_ancestors.is = ?',
-              want_ancestor, true)
     end
+    if r
+      resource_attrs[:script_version] = r[0]
+    end
+
+    # Don't pass these on to activerecord
+    resource_attrs.delete(:minimum_script_version)
+    resource_attrs.delete(:exclude_script_versions)
+    resource_attrs.delete(:no_reuse)
     super
   end
 
