@@ -6,10 +6,8 @@ account.</p>
 <%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
 </blockquote>
 
-<p>As an admin, you can deactivate this user.</p>
+<p>As an admin, you can deactivate and reset this user. This will remove all repository/VM permissions for the user. If you "setup" the user again, the user will have to sign the user agreement again.</p>
 
 <blockquote>
 <%=  link_to "Deactivate #{@object.full_name}", { action: 'unsetup', id: @object.uuid }, { confirm: "Are you sure you want to deactivate #{@object.full_name}?", method: 'post' } %>
 </blockquote>
-
-
