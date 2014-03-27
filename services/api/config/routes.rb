@@ -90,6 +90,7 @@ Server::Application.routes.draw do
       match '/users/:uuid/event_stream' => 'users#event_stream'
       post '/users/:uuid/activate' => 'users#activate'
       post '/users/setup' => 'users#setup'
+      post '/users/:uuid/unsetup' => 'users#unsetup'
       match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
       match '/virtual_machines/:uuid/logins' => 'virtual_machines#logins'
       post '/api_client_authorizations/create_system_auth' => 'api_client_authorizations#create_system_auth'

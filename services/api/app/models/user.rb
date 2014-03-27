@@ -145,6 +145,50 @@ class User < ArvadosModel
     return [repo_perm, vm_login_perm, group_perm, self].compact
   end 
 
+  # delete user signatures, login, repo, and vm perms, and mark as inactive
+  def unsetup
+    # delete oid_login_perms for this user
+    oid_login_perms = Link.where(tail_uuid: self.email,
+                                 head_kind: 'arvados#user',
+                                 link_class: 'permission',
+                                 name: 'can_login')
+    oid_login_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete repo_perms for this user
+    repo_perms = Link.where(tail_uuid: self.uuid,
+                            head_kind: 'arvados#repository',
+                            link_class: 'permission',
+                            name: 'can_write')
+    repo_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete vm_login_perms for this user
+    vm_login_perms = Link.where(tail_uuid: self.uuid,
+                                head_kind: 'arvados#virtualMachine',
+                                link_class: 'permission',
+                                name: 'can_login')
+    vm_login_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete any signatures by this user
+    signed_uuids = Link.where(link_class: 'signature',
+                              tail_kind: 'arvados#user',
+                              tail_uuid: self.uuid)
+    signed_uuids.each do |sign|
+      Link.delete sign
+    end
+
+    # mark the user as inactive
+    self.is_active = false
+    self.save!
+
+    return self
+  end 
+
   protected
 
   def permission_to_update

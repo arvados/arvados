@@ -1,8 +1,8 @@
 class Arvados::V1::UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, only:
-    [:activate, :event_stream, :current, :system, :setup]
+    [:activate, :event_stream, :current, :system, :setup, :unsetup]
   skip_before_filter :render_404_if_no_object, only:
-    [:activate, :event_stream, :current, :system, :setup]
+    [:activate, :event_stream, :current, :system, :setup, :unsetup]
 
   def current
     @object = current_user
@@ -130,6 +130,22 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     render json: { kind: "arvados#HashList", items: @response }
+  end
+
+  # delete user agreements, vm, repository, login links; set state to inactive
+  def unsetup
+    if current_user.andand.is_admin && params[:uuid]
+      @object = User.find_by_uuid params[:uuid]
+    else
+      @object = current_user
+    end
+
+    if !@object
+      return render_404_if_no_object
+    end
+
+    @object = @object.unsetup
+    show
   end
 
 end

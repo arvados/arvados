@@ -546,7 +546,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     }
 
     assert_response :success
-
     response_items = JSON.parse(@response.body)['items']
     created = find_obj_in_resp response_items, 'User', nil
 
@@ -622,6 +621,76 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
+  test "setup and unsetup user" do
+    authorize_with :admin
+
+    post :setup, {
+      repo_name: 'test_repo',
+      vm_uuid: @vm_uuid,
+      user: {email: 'foo@example.com'},
+      openid_prefix: 'https://www.google.com/accounts/o8/id'
+    }
+
+    assert_response :success
+    response_items = JSON.parse(@response.body)['items']
+    created = find_obj_in_resp response_items, 'User', nil
+    assert_not_nil created['uuid'], 'expected uuid for the new user'
+    assert_equal created['email'], 'foo@example.com', 'expected given email'
+
+    # 4 extra links: login, group, repo and vm
+    verify_num_links @all_links_at_start, 4
+
+    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
+        created['uuid'], created['email'], 'arvados#user', false, 'User'
+
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+        'All users', created['uuid'], 'arvados#group', true, 'Group'
+
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
+
+    verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
+        @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+
+    verify_link_existence created['uuid'], created['email'], true, true, true, false
+
+    # now unsetup this user
+    post :unsetup, uuid: created['uuid']
+    assert_response :success
+
+    created2 = JSON.parse(@response.body)
+    assert_not_nil created2['uuid'], 'expected uuid for the newly created user'
+    assert_equal created['uuid'], created2['uuid'], 'expected uuid not found'
+    
+    verify_link_existence created['uuid'], created['email'], false, false, false, false
+  end
+
+  test "unsetup active user" do
+    authorize_with :active
+    get :current
+    assert_response :success
+    active_user = JSON.parse(@response.body)
+    assert_not_nil active_user['uuid'], 'expected uuid for the active user'
+    assert active_user['is_active'], 'expected is_active for active user'
+
+    verify_link_existence active_user['uuid'], active_user['email'],
+          false, false, false, true
+
+    authorize_with :admin
+
+    # now unsetup this user
+    post :unsetup, uuid: active_user['uuid']
+    assert_response :success
+
+    response_user = JSON.parse(@response.body)
+    assert_not_nil response_user['uuid'], 'expected uuid for the upsetup user'
+    assert_equal active_user['uuid'], response_user['uuid'], 'expected uuid not found'
+    assert !response_user['is_active'], 'expected user to be inactive'
+
+    verify_link_existence response_user['uuid'], response_user['email'],
+          false, false, false, false
+  end
+
   def verify_num_links (original_links, expected_additional_links)
     links_now = Link.all
     assert_equal original_links.size+expected_additional_links, Link.all.size,
@@ -683,4 +752,48 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         "did not find expected head_uuid for #{link_object_name}"
   end
 
+  def verify_link_existence uuid, email, expect_oid_login_perms,
+        expect_repo_perms, expect_vm_perms, expect_signatures
+    # verify that all links are deleted for the user
+    oid_login_perms = Link.where(tail_uuid: email,
+                                 head_kind: 'arvados#user',
+                                 link_class: 'permission',
+                                 name: 'can_login')
+    if expect_oid_login_perms
+      assert oid_login_perms.any?, "expected oid_login_perms"
+    else
+      assert !oid_login_perms.any?, "expected all oid_login_perms deleted"
+    end
+
+    repo_perms = Link.where(tail_uuid: uuid,
+                              head_kind: 'arvados#repository',
+                              link_class: 'permission',
+                              name: 'can_write')
+    if expect_repo_perms
+      assert repo_perms.any?, "expected repo_perms"
+    else
+      assert !repo_perms.any?, "expected all repo_perms deleted"
+    end
+
+    vm_login_perms = Link.where(tail_uuid: uuid,
+                              head_kind: 'arvados#virtualMachine',
+                              link_class: 'permission',
+                              name: 'can_login')
+    if expect_vm_perms
+      assert vm_login_perms.any?, "expected vm_login_perms"
+    else
+      assert !vm_login_perms.any?, "expected all vm_login_perms deleted"
+    end
+
+    signed_uuids = Link.where(link_class: 'signature',
+                                  tail_kind: 'arvados#user',
+                                  tail_uuid: uuid)
+          
+    if expect_signatures
+      assert signed_uuids.any?, "expected singnatures"
+    else
+      assert !signed_uuids.any?, "expected all singnatures deleted"
+    end
+
+  end
 end
