@@ -136,7 +136,7 @@ class Arvados::V1::UsersController < ApplicationController
   # delete user agreements, vm, repository, login links; set state to inactive
   def unsetup
     @object = User.find_by_uuid params[:uuid]
-    @object = @object.unsetup
+    @object.unsetup
     show
   end
 

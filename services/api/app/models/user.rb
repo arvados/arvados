@@ -185,8 +185,6 @@ class User < ArvadosModel
     # mark the user as inactive
     self.is_active = false
     self.save!
-
-    return self
   end 
 
   protected
