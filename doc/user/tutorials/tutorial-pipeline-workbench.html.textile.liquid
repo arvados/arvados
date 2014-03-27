@@ -6,20 +6,19 @@ title: "Running a pipeline using Workbench"
 
 notextile. <div class="spaced-out">
 
-# Go to "Collections":https://{{ site.arvados_workbench_host }}/collections .
-# On the collections page, go to the search box <span class="glyphicon glyphicon-search"></span> and search for "tutorial".
-# This should yield a collection with the contents "var-GS000016015-ASM.tsv.bz2"
-# Click on the check box to the left of "var-GS000016015-ASM.tsv.bz2".  This puts the collection in your persistent selection list.  Click on the paperclip <span class="glyphicon glyphicon-paperclip"></span> in the upper right to get a dropdown menu listing your current selections.
-# Go to "Pipeline templates":https://{{ site.arvados_workbench_host }}/pipeline_templates .
-# Look for a pipeline named "Tutorial pipeline".
-# Click on the play button <span class="glyphicon glyphicon-play"></span> to the left of "Tutorial pipeline".  This will take you to a new page to configure the pipeline.
-# Under *parameter* look for "input".  Set the value of "input" by clicking on on "none" to get a editing popup.  At the top of the selection list in the editing popup will be the collection that you selected in step 4.
-# You can now click on "Run pipeline" in the upper right to start the pipeline.
-# This will reload the page with the pipeline queued to run.
+# Go to "Collections":https://{{ site.arvados_workbench_host }}/collections (*Data* %(rarr)&rarr;% *Collections (data files)*).
+# On the Collections page, go to the search box <span class="glyphicon glyphicon-search"></span> and search for "tutorial".
+# The results should include a collection with the contents *var-GS000016015-ASM.tsv.bz2*.
+# Click on the check box to the left of *var-GS000016015-ASM.tsv.bz2*.  This puts the collection in your persistent selection list.  You can click on the paperclip <span class="glyphicon glyphicon-paperclip"></span> in the upper right to review your current selections.
+# Go to "Pipeline templates":https://{{ site.arvados_workbench_host }}/pipeline_templates (*Compute* %(rarr)&rarr;% *Pipeline templates*).
+# Look for a pipeline named *Tutorial pipeline*.
+# Click on the play button <span class="glyphicon glyphicon-play"></span> to the left of *Tutorial pipeline*.  This will take you to a new page to configure the pipeline.
+# Under the *parameter* column, look for *input*.  Set the value of *input* by clicking on *none* to get a selection popup.  The collection that you selected in step 4 will be at the top of that pulldown menu.  Select that collection in the pulldown menu.
+# You can now click on the *Run pipeline* button in the upper right to start the pipeline.  A new page shows the pipeline status, queued to run.
 # The page refreshes automatically every 15 seconds.  You should see the pipeline running, and then finish successfully.
-# Once it is finished, click on the link under the *output* column.  This will take you to the collection page for the output of this pipeline.
-# Click on "md5sum.txt" to see the actual file that is the output of this pipeline.
-# On the collection page, click on the "Provenance graph" tab to see a graphical representation of the data elements and pipelines that were involved in generating this file.
+# Once the pipeline is finished, click on the link under the *output* column.  This will take you to the collection page for the output of this pipeline.
+# Click on *md5sum.txt* to see the actual file that is the output of this pipeline.
+# Go back to the collection page for the result.  Click on the *Provenance graph* tab to see a graph illustrating the collections and scripts that were used to generate this file.
 
 notextile. </div>
 
