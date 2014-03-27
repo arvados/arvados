@@ -39,7 +39,6 @@ class Dispatcher
   def refresh_todo
     @todo = Job.queue
     @todo_pipelines = PipelineInstance.queue
-    @pipe_auth_tokens ||= { }
   end
 
   def sinfo
@@ -327,12 +326,9 @@ class Dispatcher
   def update_pipelines
     expire_tokens = @pipe_auth_tokens.dup
     @todo_pipelines.each do |p|
-      if @pipe_auth_tokens[p.uuid].nil?
-        pipe_auth = ApiClientAuthorization.
-          new(user: User.where('uuid=?', p.modified_by_user_uuid).first,
-              api_client_id: 0)
-        pipe_auth.save
-        @pipe_auth_tokens[p.uuid] = pipe_auth
+        pipe_auth = (@pipe_auth_tokens[p.uuid] ||= ApiClientAuthorization.
+                     create(user: User.where('uuid=?', p.modified_by_user_uuid).first,
+                         api_client_id: 0))
       end
       pipe_auth = @pipe_auth_tokens[p.uuid]
       puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --instance #{p.uuid}`
@@ -348,6 +344,7 @@ class Dispatcher
   def run
     act_as_system_user
     @running ||= {}
+    @pipe_auth_tokens ||= { }
     $stderr.puts "dispatch: ready"
     while !$signal[:term] or @running.size > 0
       read_pipes
