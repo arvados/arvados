@@ -5,7 +5,7 @@ class SeparateRepositoryFromScriptVersion < ActiveRecord::Migration
     c = pt.components
     c.each do |k, v|
       commit_ish = v["script_version"]
-      if commit_ish.index(':')
+      if commit_ish.andand.index(':')
         want_repo, commit_ish = commit_ish.split(':',2)
         v[:repository] = want_repo
         v[:script_version] = commit_ish
