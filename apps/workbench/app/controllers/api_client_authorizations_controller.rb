@@ -7,7 +7,7 @@ class ApiClientAuthorizationsController < ApplicationController
     filtered = m.to_ary.reject do |x|
       x.api_client_id == 0 or (x.expires_at and x.expires_at < Time.now) rescue false
     end
-    ArvadosApiClient.patch_paging_vars(filtered, items_available, offset, limit)
+    ArvadosApiClient::patch_paging_vars(filtered, items_available, offset, limit)
     @objects = ArvadosResourceList.new(ApiClientAuthorization)
     @objects.results= filtered
     super

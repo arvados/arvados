@@ -33,7 +33,6 @@ layout: default
 navsection: api
 navmenu: Schema
 title: {resource}
-navorder: {navorder}
 ---
 
 h1. {resource}
@@ -42,7 +41,7 @@ A **{resource}** represents...
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":/api/methods.html
+        See "REST methods for working with Arvados resources":{{{{site.baseurl}}}}/api/methods.html
 
 API endpoint base: @https://{{{{ site.arvados_api_host }}}}/arvados/v1/{res_api_endpoint}@
 

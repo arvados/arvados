@@ -109,6 +109,42 @@ class User < ArvadosModel
     end
   end
 
+  def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
+    login_perm_props = {identity_url_prefix: openid_prefix}
+
+    # Check oid_login_perm
+    oid_login_perms = Link.where(tail_uuid: user.email,
+                                   head_kind: 'arvados#user',
+                                   link_class: 'permission',
+                                   name: 'can_login')
+
+    if !oid_login_perms.any?
+      # create openid login permission
+      oid_login_perm = Link.create(link_class: 'permission',
+                                   name: 'can_login',
+                                   tail_kind: 'email',
+                                   tail_uuid: user.email,
+                                   head_kind: 'arvados#user',
+                                   head_uuid: user.uuid,
+                                   properties: login_perm_props
+                                  )
+      logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+    else
+      oid_login_perm = oid_login_perms.first
+    end
+
+    return [oid_login_perm] + user.setup_repo_vm_links(repo_name, vm_uuid)
+  end 
+
+  # create links
+  def setup_repo_vm_links(repo_name, vm_uuid)
+    repo_perm = create_user_repo_link repo_name
+    vm_login_perm = create_vm_login_permission_link vm_uuid, repo_name
+    group_perm = create_user_group_link
+
+    return [repo_perm, vm_login_perm, group_perm, self].compact
+  end 
+
   protected
 
   def permission_to_update
@@ -177,4 +213,120 @@ class User < ArvadosModel
     upstream_path.delete start
     merged
   end
+
+  def create_user_repo_link(repo_name)
+    # repo_name is optional
+    if not repo_name
+      logger.warn ("Repository name not given for #{self.uuid}.")
+      return
+    end
+
+    # Check for an existing repository with the same name we're about to use.
+    repo = Repository.where(name: repo_name).first
+
+    if repo
+      logger.warn "Repository exists for #{repo_name}: #{repo[:uuid]}."
+
+      # Look for existing repository access for this repo
+      repo_perms = Link.where(tail_uuid: self.uuid,
+                              head_kind: 'arvados#repository',
+                              head_uuid: repo[:uuid],
+                              link_class: 'permission',
+                              name: 'can_write')
+      if repo_perms.any?
+        logger.warn "User already has repository access " + 
+            repo_perms.collect { |p| p[:uuid] }.inspect
+        return repo_perms.first
+      end
+    end
+
+    # create repo, if does not already exist
+    repo ||= Repository.create(name: repo_name)
+    logger.info { "repo uuid: " + repo[:uuid] }
+
+    repo_perm = Link.create(tail_kind: 'arvados#user',
+                            tail_uuid: self.uuid,
+                            head_kind: 'arvados#repository',
+                            head_uuid: repo[:uuid],
+                            link_class: 'permission',
+                            name: 'can_write')
+    logger.info { "repo permission: " + repo_perm[:uuid] }
+    return repo_perm
+  end
+
+  # create login permission for the given vm_uuid, if it does not already exist
+  def create_vm_login_permission_link(vm_uuid, repo_name)
+    begin
+              
+      # vm uuid is optional
+      if vm_uuid 
+        vm = VirtualMachine.where(uuid: vm_uuid).first
+
+        if not vm
+          logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
+          raise "No vm found for #{vm_uuid}"
+        end
+      else
+        return 
+      end
+
+      logger.info { "vm uuid: " + vm[:uuid] }
+
+      login_perms = Link.where(tail_uuid: self.uuid,
+                              head_uuid: vm[:uuid],
+                              head_kind: 'arvados#virtualMachine',
+                              link_class: 'permission',
+                              name: 'can_login')
+      if !login_perms.any?
+        login_perm = Link.create(tail_kind: 'arvados#user',
+                                 tail_uuid: self.uuid,
+                                 head_kind: 'arvados#virtualMachine',
+                                 head_uuid: vm[:uuid],
+                                 link_class: 'permission',
+                                 name: 'can_login',
+                                 properties: {username: repo_name})
+        logger.info { "login permission: " + login_perm[:uuid] }
+      else
+        login_perm = login_perms.first
+      end
+
+      return login_perm
+    end
+  end
+
+  # add the user to the 'All users' group
+  def create_user_group_link
+    # Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
+    group = Group.where(name: 'All users').select do |g|
+      g[:uuid].match /-f+$/
+    end.first
+
+    if not group
+      logger.warn "No 'All users' group with uuid '*-*-fffffffffffffff'."
+      raise "No 'All users' group with uuid '*-*-fffffffffffffff' is found"
+    else
+      logger.info { "\"All users\" group uuid: " + group[:uuid] }
+
+      group_perms = Link.where(tail_uuid: self.uuid,
+                              head_uuid: group[:uuid],
+                              head_kind: 'arvados#group',
+                              link_class: 'permission',
+                              name: 'can_read')
+
+      if !group_perms.any?
+        group_perm = Link.create(tail_kind: 'arvados#user',
+                                 tail_uuid: self.uuid,
+                                 head_kind: 'arvados#group',
+                                 head_uuid: group[:uuid],
+                                 link_class: 'permission',
+                                 name: 'can_read')
+        logger.info { "group permission: " + group_perm[:uuid] }
+      else 
+        group_perm = group_perms.first
+      end
+
+      return group_perm
+    end
+  end
+
 end
