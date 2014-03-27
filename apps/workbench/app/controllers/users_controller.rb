@@ -140,7 +140,7 @@ class UsersController < ApplicationController
 
   def unsetup
     if current_user.andand.is_admin
-      @object.unsetup @object
+      @object.unsetup
     end
     show
   end

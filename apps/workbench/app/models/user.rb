@@ -39,9 +39,10 @@ class User < ArvadosBase
     [self.first_name, self.last_name].compact.join ' '
   end
 
-  def unsetup user
-    res = $arvados_api_client.api(user.class, "/#{user.uuid}/unsetup", {})
-    $arvados_api_client.unpack_api_response(res)
+  def unsetup
+    self.private_reload($arvados_api_client.api(self.class,
+                                                "/#{self.uuid}/unsetup",
+                                                {}))
   end
 
 end
