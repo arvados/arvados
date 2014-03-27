@@ -9,7 +9,7 @@ account.</p>
 <p>As an admin, you can deactivate this user.</p>
 
 <blockquote>
-<%=  link_to "Deactivate #{@object.full_name}", { action: 'unsetup', id: @object.uuid }, { confirm: "Are you sure you want to deactivate #{@object.full_name}?", method: 'get' } %>
+<%=  link_to "Deactivate #{@object.full_name}", { action: 'unsetup', id: @object.uuid }, { confirm: "Are you sure you want to deactivate #{@object.full_name}?", method: 'post' } %>
 </blockquote>
 
 
