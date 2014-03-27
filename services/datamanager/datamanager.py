@@ -5,6 +5,7 @@ import arvados
 import argparse
 import pprint
 import re
+import urllib2
 
 from collections import defaultdict
 from math import log
@@ -54,54 +55,6 @@ class CollectionInfo:
       CollectionInfo(uuid)
     return CollectionInfo.all_by_uuid[uuid]
   
-
-def nonNegativeIntegerFromString(s, base):
-  """Returns the value s represents in the specified base as long as it is greater than zero, otherwise None."""
-  try:
-    value = int(s, base)
-    if value >= 0:
-      return value
-  except ValueError:
-    pass  # We'll cover this in the next line.
-  return None
-
-# TODO(misha): Add tests.
-BLOCK_HASH_LENGTH = 32
-def hashAndSizeFromBlockLocator(candidate):
-  """Returns the [integer hash, integer size] from a block locator.
-
-  The returned hash will be None iff this is not a valid block locator.
-  The returned size will be None if this is not a valid block locator
-  or it is a valid block locator which does not specify the size.
-
-  A valid block locator is a non-negative integer (the hash) encoded
-  in 32 hex digits. After that it may be followed by a '+' in which
-  case the '+' should be followed by the non-negative size (decimal
-  encoded). Potentially followed by a '+' and more stuff.
-
-  Source: https://arvados.org/projects/arvados/wiki/Keep_manifest_format
-"""
-  NOT_A_BLOCK_LOCATOR = [None,None]
-  block_locator_tokens = candidate.split('+')
-
-  if len(block_locator_tokens) == 0:
-    return NOT_A_BLOCK_LOCATOR
-
-  hash_candidate = block_locator_tokens[0]
-  if len(hash_candidate) != BLOCK_HASH_LENGTH:
-    return NOT_A_BLOCK_LOCATOR
-
-  block_hash = nonNegativeIntegerFromString(hash_candidate, 16)
-  if not block_hash:
-    return NOT_A_BLOCK_LOCATOR
-
-  block_size = None
-  if len(block_locator_tokens) > 1:
-    block_size = nonNegativeIntegerFromString(block_locator_tokens[1], 10)
-    if not block_size:
-      return NOT_A_BLOCK_LOCATOR
-
-  return block_hash, block_size
 
 def extractUuid(candidate):
   """ Returns a canonical (hash+size) uuid from a valid uuid, or None if candidate is not a valid uuid."""
@@ -255,6 +208,29 @@ def reportUserDiskUsage():
             fileSizeFormat(usage[WEIGHTED_PERSIST_SIZE_COL])))
 
 
+def getKeepServers():
+  response = arv.keep_disks().list().execute()
+  return [[keep_server['service_host'], keep_server['service_port']]
+          for keep_server in response['items']]
+
+
+def getKeepBlocks(keep_servers):
+  blocks = []
+  for host,port in keep_servers:
+    response = urllib2.urlopen('http://%s:%d/index' % (host, port))
+    blocks.append([line.split(' ')
+                   for line in response.read().split('\n')
+                   if line])
+  return blocks
+
+
+def computeReplication(keep_blocks):
+  block_to_replication = defaultdict(lambda: 0)
+  for server_blocks in keep_blocks:
+    for block_uuid, _ in server_blocks:
+      block_to_replication[block_uuid] += 1
+  return block_to_replication
+
 
 # This is the main flow here
 
@@ -320,3 +296,15 @@ NUM_COLS = 4
 user_to_usage = defaultdict(lambda : [0,]*NUM_COLS)
 
 reportUserDiskUsage()
+
+print 'Getting Keep Servers'
+keep_servers = getKeepServers()
+
+print keep_servers
+
+print 'Getting Blocks from each Keep Server.'
+keep_blocks = getKeepBlocks(keep_servers)
+
+block_to_replication = computeReplication(keep_blocks)
+
+print 'average replication level is %f' % (float(sum(block_to_replication.values())) / len(block_to_replication))
