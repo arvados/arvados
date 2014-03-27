@@ -5,3 +5,11 @@ account.</p>
 <blockquote>
 <%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
 </blockquote>
+
+<p>As an admin, you can deactivate this user.</p>
+
+<blockquote>
+<%=  link_to "Deactivate #{@object.full_name}", { action: 'unsetup', id: @object.uuid }, { confirm: "Are you sure you want to deactivate #{@object.full_name}?", method: 'get' } %>
+</blockquote>
+
+

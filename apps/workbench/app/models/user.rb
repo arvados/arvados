@@ -38,4 +38,10 @@ class User < ArvadosBase
   def friendly_link_name
     [self.first_name, self.last_name].compact.join ' '
   end
+
+  def unsetup user
+    res = $arvados_api_client.api(user.class, "/#{user.uuid}/unsetup", {})
+    $arvados_api_client.unpack_api_response(res)
+  end
+
 end
