@@ -530,9 +530,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     response_body = JSON.parse(@response.body)
     response_errors = response_body['errors']
+puts "\n*********response_errors = #{response_errors.inspect}"
     assert_not_nil response_errors, 'Expected error in response'
-    assert (response_errors.first.include? 'PermissionDenied'), 
-          'Expected PermissionDeniedError'
+    assert (response_errors.first.include? 'Forbidden'), 
+          'Expected Forbidden error'
   end
 
   test "setup user in multiple steps and verify response" do
