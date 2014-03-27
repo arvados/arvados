@@ -1,9 +1,10 @@
 class Arvados::V1::UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, only:
-    [:activate, :event_stream, :current, :system, :setup, :unsetup]
+    [:activate, :event_stream, :current, :system, :setup]
   skip_before_filter :render_404_if_no_object, only:
-    [:activate, :event_stream, :current, :system, :setup, :unsetup]
-
+    [:activate, :event_stream, :current, :system, :setup]
+  before_filter :admin_required, only: [:setup, :unsetup]
+  
   def current
     @object = current_user
     show
