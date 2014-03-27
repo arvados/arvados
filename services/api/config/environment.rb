@@ -4,3 +4,4 @@ require 'josh_id'
 
 # Initialize the rails application
 Server::Application.initialize!
+Rails.cache.clear

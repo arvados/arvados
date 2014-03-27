@@ -36,6 +36,7 @@ class Job < ArvadosModel
     t.add :dependencies
     t.add :log_stream_href
     t.add :log_buffer
+    t.add :nondeterministic
   end
 
   def assert_finished
@@ -56,6 +57,11 @@ class Job < ArvadosModel
       order('priority desc, created_at')
   end
 
+  def self.running
+    self.where('running = ?', true).
+      order('priority desc, created_at')
+  end
+
   protected
 
   def foreign_key_attributes
@@ -70,7 +76,7 @@ class Job < ArvadosModel
       return true
     end
     if new_record? or script_version_changed?
-      sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
+      sha1 = Commit.find_commit_range(current_user, nil, nil, self.script_version, nil)[0] rescue nil
       if sha1
         self.script_version = sha1
       else
