@@ -150,27 +150,32 @@ class Dispatcher
         raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
       end
 
+      require 'shellwords'
+
+      arvados_internal = Rails.configuration.git_internal_dir
+      if not File.exists? arvados_internal
+        $stderr.puts `mkdir -p #{arvados_internal.shellescape} && cd #{arvados_internal.shellescape} && git init --bare`
+      end
+
+      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository + '.git')
+      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository, '.git') unless File.exists? src_repo
+
+      unless src_repo
+        $stderr.puts "dispatch: #{File.join Rails.configuration.git_repositories_dir, job.repository} doesn't exist"
+        sleep 1
+        untake(job)
+        next
+      end
+
+      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch --no-tags #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
+
       cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
       cmd_args << job_auth.api_token
       cmd_args << '--job'
       cmd_args << job.uuid
-
-      commit = Commit.where(sha1: job.script_version).first
-      if commit
-        cmd_args << '--git-dir'
-        if File.exists?(File.
-                        join(Rails.configuration.git_repositories_dir,
-                             commit.repository_name + '.git'))
-          cmd_args << File.
-            join(Rails.configuration.git_repositories_dir,
-                 commit.repository_name + '.git')
-        else
-          cmd_args << File.
-            join(Rails.configuration.git_repositories_dir,
-                 commit.repository_name, '.git')
-        end
-      end
+      cmd_args << '--git-dir'
+      cmd_args << arvados_internal
 
       $stderr.puts "dispatch: #{cmd_args.join ' '}"
 

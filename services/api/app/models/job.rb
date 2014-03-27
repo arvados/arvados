@@ -37,6 +37,7 @@ class Job < ArvadosModel
     t.add :log_stream_href
     t.add :log_buffer
     t.add :nondeterministic
+    t.add :repository
   end
 
   def assert_finished

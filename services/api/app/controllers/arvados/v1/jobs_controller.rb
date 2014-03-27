@@ -49,7 +49,6 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     # Don't pass these on to activerecord
-    resource_attrs.delete(:repository)
     resource_attrs.delete(:minimum_script_version)
     resource_attrs.delete(:exclude_script_versions)
     resource_attrs.delete(:no_reuse)

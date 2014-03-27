@@ -139,6 +139,7 @@ class Commit < ActiveRecord::Base
       next if repo.match /^\./
       git_dir = File.join(@gitdirbase,
                           repo.match(/\.git$/) ? repo : File.join(repo, '.git'))
+      next if git_dir == Rails.configuration.git_internal_dir
       repo_name = repo.sub(/\.git$/, '')
       @repositories[repo_name] = {git_dir: git_dir}
     end

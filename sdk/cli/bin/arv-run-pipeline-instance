@@ -433,6 +433,7 @@ class WhRunPipelineInstance
           job = JobCache.create({:script => c[:script],
                             :script_parameters => c[:script_parameters],
                             :script_version => c[:script_version],
+                            :repository => c[:repository],
                             :minimum_script_version => c[:minimum_script_version],
                             :exclude_script_versions => c[:exclude_minimum_script_versions],
                             :nondeterministic => c[:nondeterministic],
