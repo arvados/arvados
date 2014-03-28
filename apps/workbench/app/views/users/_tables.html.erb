@@ -35,7 +35,7 @@
 
 	    <td>
 	      <small>
-		<% if j.success %>
+		<% if j.success and j.output %>
 
 		  <a href="<%= collection_path(j.output) %>">
 		    <% Collection.limit(1).where(uuid: j.output).each do |c| %>
@@ -162,7 +162,7 @@
         <span class="glyphicon glyphicon-search"></span>
         <% end %>
       </span>
-    </div>  
+    </div>
     <% end %>
   </div>
   <% if not current_user.andand.is_active or @my_collections.empty? %>
@@ -223,10 +223,10 @@
 	<p>
 	  Your account must be activated by an Arvados administrator.  If this
 	  is your first time accessing Arvados and would like to request
-	  access, or you believe you are seeing the page in error, please 
-	  <%= link_to "contact us", Rails.configuration.activation_contact_link %>.  
+	  access, or you believe you are seeing the page in error, please
+	  <%= link_to "contact us", Rails.configuration.activation_contact_link %>.
 	  You should receive an email at the address you used to log in when
-	  your account is activated.  In the mean time, you can 
+	  your account is activated.  In the mean time, you can
 	  <%= link_to "learn more about Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %>,
 	  and <%= link_to "read the Arvados user guide", "http://doc.arvados.org/user" %>.
 	</p>

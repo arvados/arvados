@@ -1,9 +1,10 @@
 class Arvados::V1::UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, only:
-    [:activate, :event_stream, :current, :system]
+    [:activate, :event_stream, :current, :system, :setup]
   skip_before_filter :render_404_if_no_object, only:
-    [:activate, :event_stream, :current, :system]
-
+    [:activate, :event_stream, :current, :system, :setup]
+  before_filter :admin_required, only: [:setup, :unsetup]
+  
   def current
     @object = current_user
     show
@@ -87,4 +88,56 @@ class Arvados::V1::UsersController < ApplicationController
     end
     show
   end
+
+  # create user object and all the needed links
+  def setup
+    @object = nil
+    if params[:uuid]
+      @object = User.find_by_uuid params[:uuid]
+      if !@object
+        return render_404_if_no_object
+      end
+      object_found = true
+    else
+      if !params[:user]
+        raise ArgumentError.new "Required uuid or user"
+      else
+        if params[:user]['uuid']
+          @object = User.find_by_uuid params[:user]['uuid']
+          if @object
+            object_found = true
+          end
+        end
+
+        if !@object
+          if !params[:user]['email']
+            raise ArgumentError.new "Require user email"
+          end
+
+          if !params[:openid_prefix]
+            raise ArgumentError.new "Required openid_prefix parameter is missing."
+          end
+
+          @object = model_class.create! resource_attrs
+        end
+      end
+    end
+
+    if object_found
+      @response = @object.setup_repo_vm_links params[:repo_name], params[:vm_uuid]
+    else
+      @response = User.setup @object, params[:openid_prefix],
+                    params[:repo_name], params[:vm_uuid]
+    end
+
+    render json: { kind: "arvados#HashList", items: @response }
+  end
+
+  # delete user agreements, vm, repository, login links; set state to inactive
+  def unsetup
+    reload_object_before_update
+    @object.unsetup
+    show
+  end
+
 end

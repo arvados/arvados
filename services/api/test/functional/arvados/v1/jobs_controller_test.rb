@@ -1,12 +1,16 @@
 require 'test_helper'
+load 'test/functional/arvados/v1/git_setup.rb'
 
 class Arvados::V1::JobsControllerTest < ActionController::TestCase
+
+  include GitSetup
 
   test "submit a job" do
     authorize_with :active
     post :create, job: {
       script: "hash",
       script_version: "master",
+      repository: "foo",
       script_parameters: {}
     }
     assert_response :success
@@ -24,6 +28,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       script: "hash",
       script_version: "master",
       script_parameters: {},
+      repository: "foo",
       started_at: Time.now,
       finished_at: Time.now,
       running: false,
@@ -228,4 +233,6 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response 422
   end
+
+
 end
