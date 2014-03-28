@@ -4,7 +4,7 @@ class Arvados::V1::UsersController < ApplicationController
   skip_before_filter :render_404_if_no_object, only:
     [:activate, :event_stream, :current, :system, :setup]
   before_filter :admin_required, only: [:setup, :unsetup]
-  
+
   def current
     @object = current_user
     show
@@ -29,7 +29,7 @@ class Arvados::V1::UsersController < ApplicationController
       end
     end
   end
-      
+
   def event_stream
     channel = current_user.andand.uuid
     if current_user.andand.is_admin

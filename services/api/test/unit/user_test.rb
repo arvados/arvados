@@ -7,11 +7,11 @@ class UserTest < ActiveSupport::TestCase
     @all_users = User.find(:all)
 
     @all_users.each do |user|
-      if user.is_admin && user.is_active 
+      if user.is_admin && user.is_active
         @admin_user = user
       elsif user.is_active && !user.is_admin
         @active_user = user
-      elsif !user.is_active && !user.is_invited 
+      elsif !user.is_active && !user.is_invited
         @uninvited_user = user
       end
     end
@@ -81,7 +81,7 @@ class UserTest < ActiveSupport::TestCase
     assert_equal found_user.identity_url, user.identity_url
   end
 
-  test "create new user" do 
+  test "create new user" do
     Thread.current[:user] = @admin_user   # set admin user as the current user
 
     user = User.new
@@ -103,7 +103,7 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(user.first_name, 'first_name_for_newly_created_user_updated')
   end
 
-  test "update existing user" do 
+  test "update existing user" do
     Thread.current[:user] = @active_user    # set active user as current user
     @active_user.first_name = "first_name_changed"
     @active_user.save
@@ -119,22 +119,22 @@ class UserTest < ActiveSupport::TestCase
     @active_user = User.find(@active_user.id)   # get the user back
     assert_equal(@active_user.first_name, 'first_name_changed_by_admin_for_active_user')
   end
-  
-  test "delete a user and verify" do 
+
+  test "delete a user and verify" do
     active_user_uuid = @active_user.uuid
 
-    Thread.current[:user] = @admin_user     
+    Thread.current[:user] = @admin_user
     @active_user.delete
 
     found_deleted_user = false
-    User.find(:all).each do |user| 
-      if user.uuid == active_user_uuid 
+    User.find(:all).each do |user|
+      if user.uuid == active_user_uuid
         found_deleted_user = true
         break
-      end     
+      end
     end
     assert !found_deleted_user, "found deleted user: "+active_user_uuid
-  
+
   end
 
   test "create new user as non-admin user" do
@@ -266,14 +266,14 @@ class UserTest < ActiveSupport::TestCase
     assert_not_nil link_object, 'expected link for #{link_class} #{link_name}'
     assert_not_nil link_object[:uuid],
         'expected non-nil uuid for link for #{link_class} #{link_name}'
-    assert_equal link_class, link_object[:link_class], 
+    assert_equal link_class, link_object[:link_class],
         'expected link_class not found for #{link_class} #{link_name}'
-    assert_equal link_name, link_object[:name], 
+    assert_equal link_name, link_object[:name],
         'expected link_name not found for #{link_class} #{link_name}'
-    assert_equal tail_uuid, link_object[:tail_uuid], 
+    assert_equal tail_uuid, link_object[:tail_uuid],
         'expected tail_uuid not found for #{link_class} #{link_name}'
     if head_uuid
-      assert_equal head_uuid, link_object[:head_uuid], 
+      assert_equal head_uuid, link_object[:head_uuid],
           'expected head_uuid not found for #{link_class} #{link_name}'
     end
   end

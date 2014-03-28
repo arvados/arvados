@@ -17,7 +17,9 @@ func TestGetBlockOK(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes and store a block in each of them.
-	setup(t, 2)
+	KeepVolumes = setup(t, 2)
+	fmt.Println("KeepVolumes = ", KeepVolumes)
+
 	for _, vol := range KeepVolumes {
 		store(t, vol, TEST_HASH, TEST_BLOCK)
 	}
@@ -37,7 +39,7 @@ func TestGetBlockOneKeepOK(t *testing.T) {
 	defer teardown()
 
 	// Two test Keep volumes, only the second has a block.
-	setup(t, 2)
+	KeepVolumes = setup(t, 2)
 	store(t, KeepVolumes[1], TEST_HASH, TEST_BLOCK)
 
 	// Check that GetBlock returns success.
@@ -55,7 +57,7 @@ func TestGetBlockFail(t *testing.T) {
 	defer teardown()
 
 	// Create two empty test Keep volumes.
-	setup(t, 2)
+	KeepVolumes = setup(t, 2)
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
@@ -70,7 +72,7 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 	// Create two test Keep volumes and store a block in each of them,
 	// but the hash of the block does not match the filename.
-	setup(t, 2)
+	KeepVolumes = setup(t, 2)
 	for _, vol := range KeepVolumes {
 		store(t, vol, TEST_HASH, BAD_BLOCK)
 	}
@@ -82,18 +84,78 @@ func TestGetBlockCorrupt(t *testing.T) {
 	}
 }
 
+// Test finding Keep volumes.
+func TestFindKeepVolumes(t *testing.T) {
+	defer teardown()
+
+	// Initialize two keep volumes.
+	var tempVols []string = setup(t, 2)
+
+	// Set up a bogus PROC_MOUNTS file.
+	if f, err := ioutil.TempFile("", "keeptest"); err == nil {
+		for _, vol := range tempVols {
+			fmt.Fprintf(f, "tmpfs %s tmpfs opts\n", path.Dir(vol))
+		}
+		f.Close()
+		PROC_MOUNTS = f.Name()
+
+		// Check that FindKeepVolumes finds the temp volumes.
+		resultVols := FindKeepVolumes()
+		if len(tempVols) != len(resultVols) {
+			t.Fatalf("set up %d volumes, FindKeepVolumes found %d\n",
+				len(tempVols), len(resultVols))
+		}
+		for i := range tempVols {
+			if tempVols[i] != resultVols[i] {
+				t.Errorf("FindKeepVolumes returned %s, expected %s\n",
+					resultVols[i], tempVols[i])
+			}
+		}
+
+		os.Remove(f.Name())
+	}
+}
+
+// Test that FindKeepVolumes returns an empty slice when no Keep volumes
+// are present.
+func TestFindKeepVolumesFail(t *testing.T) {
+	defer teardown()
+
+	// Set up a bogus PROC_MOUNTS file with no Keep vols.
+	if f, err := ioutil.TempFile("", "keeptest"); err == nil {
+		fmt.Fprintln(f, "rootfs / rootfs opts 0 0")
+		fmt.Fprintln(f, "sysfs /sys sysfs opts 0 0")
+		fmt.Fprintln(f, "proc /proc proc opts 0 0")
+		fmt.Fprintln(f, "udev /dev devtmpfs opts 0 0")
+		fmt.Fprintln(f, "devpts /dev/pts devpts opts 0 0")
+		f.Close()
+		PROC_MOUNTS = f.Name()
+
+		// Check that FindKeepVolumes returns an empty array.
+		resultVols := FindKeepVolumes()
+		if len(resultVols) != 0 {
+			t.Fatalf("FindKeepVolumes returned %v", resultVols)
+		}
+
+		os.Remove(PROC_MOUNTS)
+	}
+}
+
 // setup
 //     Create KeepVolumes for testing.
+//     Returns a slice of pathnames to temporary Keep volumes.
 //
-func setup(t *testing.T, num_volumes int) {
-	KeepVolumes = make([]string, num_volumes)
-	for i := range KeepVolumes {
+func setup(t *testing.T, num_volumes int) []string {
+	vols := make([]string, num_volumes)
+	for i := range vols {
 		if dir, err := ioutil.TempDir(os.TempDir(), "keeptest"); err == nil {
-			KeepVolumes[i] = dir + "/keep"
+			vols[i] = dir + "/keep"
+			os.Mkdir(vols[i], 0755)
 		} else {
 			t.Fatal(err)
 		}
 	}
+	return vols
 }
 
 // teardown
