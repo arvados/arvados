@@ -17,7 +17,7 @@ Next, using @nano@ or your favorite Unix text editor, create a new file called @
 
 notextile. <pre>~/<b>you</b>/crunch_scripts$ <code class="userinput">nano parallel-hash.py</code></pre>
 
-Add the following code to compute the md5 hash of each file in a
+Add the following code to compute the md5 hash of each file in a collection:
 
 <notextile> {% code 'parallel_hash_script_py' as python %} </notextile>
 
@@ -69,9 +69,7 @@ Because the job ran in parallel, each instance of parallel-hash creates a separa
 
 <notextile>
 <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">arv keep ls e2ccd204bca37c77c0ba59fc470cd0f7+162</span>
-md5sum.txt
-md5sum.txt
-md5sum.txt
+./md5sum.txt
 ~/<b>you</b>/crunch_scripts$ <span class="userinput">arv keep get e2ccd204bca37c77c0ba59fc470cd0f7+162/md5sum.txt</span>
 0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
 504938460ef369cd275e4ef58994cffe bob.txt
