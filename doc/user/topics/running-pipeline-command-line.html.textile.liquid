@@ -40,34 +40,34 @@ EOF</span>
 You can run this pipeline from the command line using @arv pipeline run@, filling in the UUID that you received from @arv pipeline_template create@:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv pipeline run --template qr1hi-p5p6p-xxxxxxxxxxxxxxx</span>
+<pre><code>~$ <span class="userinput">arv pipeline run --run-here --template qr1hi-p5p6p-xxxxxxxxxxxxxxx</span>
 2013-12-16 14:08:40 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
 do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 queued 2013-12-16T14:08:40Z
 filter  -                           -
 
 2013-12-16 14:08:51 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 8e1b6acdd3f2f1da722538127c5c6202+56
+do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 1ed9ed18ef31ad21bcabcfeff7777bae+162
 filter  qr1hi-8i9sb-w5k40fztqgg9i2x queued 2013-12-16T14:08:50Z
 
 2013-12-16 14:09:01 +0000 -- pipeline_instance qr1hi-d1hrv-vxzkp38nlde9yyr
-do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 8e1b6acdd3f2f1da722538127c5c6202+56
-filter  qr1hi-8i9sb-w5k40fztqgg9i2x 735ac35adf430126cf836547731f3af6+56
+do_hash qr1hi-8i9sb-hoyc2u964ecv1s6 1ed9ed18ef31ad21bcabcfeff7777bae+162
+filter  qr1hi-8i9sb-w5k40fztqgg9i2x d3bcc2ee0f0ea31049000c721c0f3a2a+56
 </code></pre>
 </notextile>
 
-This instantiates your pipeline and displays a live feed of its status.  The new pipeline instance will also show up on the Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;instances page.
+This instantiates your pipeline and displays a live feed of its status.  The new pipeline instance will also show up on Workbench *Activity* %(rarr)&rarr;% *Recent&nbsp;pipeline&nbsp;instances* page.
 
 Arvados adds each pipeline component to the job queue as its dependencies are satisfied (or immediately if it has no dependencies) and finishes when all components are completed or failed and there is no more work left to do.
 
-The Keep locators of the output of each of @"do_hash"@ and @"filter"@ component are available from the output log shown above.  The output is also available on the Workbench by navigating to %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;instances %(rarr)&rarr;% pipeline uuid under the *id* column %(rarr)&rarr;% components.
+The Keep locators of the output of each of @"do_hash"@ and @"filter"@ component are available from the output log shown above.  The output is also available on the Workbench by navigating to *Activity* %(rarr)&rarr;% *Recent&nbsp;pipeline&nbsp;instances* %(rarr)&rarr;% pipeline UUID under the *Instance* column %(rarr)&rarr;% *output* column.
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv keep get 8e1b6acdd3f2f1da722538127c5c6202+56/md5sum.txt</span>
-0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
-504938460ef369cd275e4ef58994cffe bob.txt
-8f3b36aff310e06f3c5b9e95678ff77a carol.txt
-~$ <span class="userinput">arv keep get 735ac35adf430126cf836547731f3af6+56/0-filter.txt</span>
-0f1d6bcf55c34bed7f92a805d2d89bbf alice.txt
+<pre><code>~$ <span class="userinput">arv keep get 1ed9ed18ef31ad21bcabcfeff7777bae+162/md5sum.txt</span>
+0f1d6bcf55c34bed7f92a805d2d89bbf 887cd41e9c613463eab2f0d885c6dd96+83/./alice.txt
+504938460ef369cd275e4ef58994cffe 887cd41e9c613463eab2f0d885c6dd96+83/./bob.txt
+8f3b36aff310e06f3c5b9e95678ff77a 887cd41e9c613463eab2f0d885c6dd96+83/./carol.txt
+~$ <span class="userinput">arv keep get d3bcc2ee0f0ea31049000c721c0f3a2a+56/0-filter.txt</span>
+0f1d6bcf55c34bed7f92a805d2d89bbf 887cd41e9c613463eab2f0d885c6dd96+83/./alice.txt
 </code></pre>
 </notextile>
 
@@ -91,7 +91,7 @@ Notice that the pipeline template explicitly specifies the Keep locator for the 
 You can specify values for pipeline component script_parameters like this:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv pipeline run --template qr1hi-p5p6p-xxxxxxxxxxxxxxx do_hash::input=c1bad4b39ca5a924e481008009d94e32+210</span>
+<pre><code>~$ <span class="userinput">arv pipeline run --run-here --template qr1hi-p5p6p-xxxxxxxxxxxxxxx do_hash::input=c1bad4b39ca5a924e481008009d94e32+210</span>
 2013-12-17 20:31:24 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
 do_hash qr1hi-8i9sb-rffhuay4jryl2n2 queued 2013-12-17T20:31:24Z
 filter  -                           -
@@ -101,11 +101,11 @@ do_hash qr1hi-8i9sb-rffhuay4jryl2n2 {:done=>1, :running=>1, :failed=>0, :todo=>0
 filter  -                           -
 
 2013-12-17 20:31:55 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 50cafdb29cc21dd6eaec85ba9e0c6134+56
 filter  qr1hi-8i9sb-j347g1sqovdh0op queued 2013-12-17T20:31:55Z
 
 2013-12-17 20:32:05 +0000 -- pipeline_instance qr1hi-d1hrv-tlkq20687akys8e
-do_hash qr1hi-8i9sb-rffhuay4jryl2n2 880b55fb4470b148a447ff38cacdd952+54
+do_hash qr1hi-8i9sb-rffhuay4jryl2n2 50cafdb29cc21dd6eaec85ba9e0c6134+56
 filter  qr1hi-8i9sb-j347g1sqovdh0op 490cd451c8108824b8a17e3723e1f236+19
 </code></pre>
 </notextile>
@@ -113,10 +113,10 @@ filter  qr1hi-8i9sb-j347g1sqovdh0op 490cd451c8108824b8a17e3723e1f236+19
 Now check the output:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
-44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
+<pre><code>~$ <span class="userinput">arv keep get 50cafdb29cc21dd6eaec85ba9e0c6134+56/md5sum.txt</span>
+44b8ae3fde7a8a88d2f7ebd237625b4f c1bad4b39ca5a924e481008009d94e32+210/./var-GS000016015-ASM.tsv.bz2
 ~$ <span class="userinput">arv keep get 490cd451c8108824b8a17e3723e1f236+19/0-filter.txt</span>
 </code></pre>
 </notextile>
 
-Since none of the files in the collection have hash code that start with 0, output of the filter component is empty.
+Since none of the files in the collection have hash code that start with 0, the output of the filter component is empty.
