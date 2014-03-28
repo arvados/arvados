@@ -455,7 +455,7 @@ class WhRunPipelineInstance
           if (c[:job][:running] or
               not (c[:job][:finished_at] or c[:job][:cancelled_at]))
             # Job is running so update copy of job record
-            c[:job] = JobCache.get(c[:job][:uuid])            
+            c[:job] = JobCache.get(c[:job][:uuid])
           end
 
           if c[:job][:success]
@@ -547,7 +547,7 @@ class WhRunPipelineInstance
         end
       end
     end
-    
+
     if ended == @components.length or failed > 0
       @instance[:active] = false
       @instance[:success] = (succeeded == @components.length)

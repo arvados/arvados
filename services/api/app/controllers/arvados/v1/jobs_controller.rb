@@ -6,11 +6,11 @@ class Arvados::V1::JobsController < ApplicationController
   skip_before_filter :render_404_if_no_object, :only => :queue
 
   def create
-    [:repository, :script, :script_version, :script_parameters].each do |r|    
+    [:repository, :script, :script_version, :script_parameters].each do |r|
       if !resource_attrs[r]
         return render json: {
           :error => "#{r} attribute must be specified"
-        }, status: :unprocessable_entity      
+        }, status: :unprocessable_entity
       end
     end
 
@@ -26,8 +26,8 @@ class Arvados::V1::JobsController < ApplicationController
       Job.readable_by(current_user).where(script: resource_attrs[:script],
                                           script_version: r).
         each do |j|
-        if j.nondeterministic != true and 
-            j.success != false and 
+        if j.nondeterministic != true and
+            j.success != false and
             j.script_parameters == resource_attrs[:script_parameters]
           # Record the first job in the list
           if !@object
