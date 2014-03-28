@@ -1,4 +1,4 @@
-# Do not use this file for site configuration. Create config.yml
+# Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
 
 development:
@@ -14,7 +14,7 @@ development:
   assets.compress: false
   assets.debug: true
   profiling_enabled: true
-  site_name: Workbench:dev
+  site_name: Arvados Workbench (dev)
 
 production:
   force_ssl: true
@@ -50,6 +50,14 @@ test:
   active_support.deprecation: :stderr
   profiling_enabled: false
   secret_token: <%= rand(2**256).to_s(36) %>
+
+  # When you run the Workbench's integration tests, it starts the API
+  # server as a dependency.  These settings should match the API
+  # server's Rails defaults.  If you adjust those, change these
+  # settings in application.yml to match.
+  arvados_login_base: https://localhost:3001/login
+  arvados_v1_base: https://localhost:3001/arvados/v1
+  arvados_insecure_https: true
 
   site_name: Workbench:test
 

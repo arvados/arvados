@@ -12,7 +12,19 @@ class CollectionsController < ApplicationController
                       Collection.where(any: ['contains', params[:search]])).
         uniq { |c| c.uuid }
     else
-      @collections = Collection.limit(100)
+      if params[:limit]
+        limit = params[:limit].to_i
+      else
+        limit = 100
+      end
+
+      if params[:offset]
+        offset = params[:offset].to_i
+      else
+        offset = 0
+      end
+
+      @collections = Collection.limit(limit).offset(offset)
     end
     @links = Link.limit(1000).
       where(head_uuid: @collections.collect(&:uuid))

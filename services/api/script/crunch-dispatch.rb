@@ -150,27 +150,32 @@ class Dispatcher
         raise "No CRUNCH_JOB_BIN env var, and crunch-job not in path."
       end
 
+      require 'shellwords'
+
+      arvados_internal = Rails.configuration.git_internal_dir
+      if not File.exists? arvados_internal
+        $stderr.puts `mkdir -p #{arvados_internal.shellescape} && cd #{arvados_internal.shellescape} && git init --bare`
+      end
+
+      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository + '.git')
+      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository, '.git') unless File.exists? src_repo
+
+      unless src_repo
+        $stderr.puts "dispatch: #{File.join Rails.configuration.git_repositories_dir, job.repository} doesn't exist"
+        sleep 1
+        untake(job)
+        next
+      end
+
+      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch --no-tags #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
+
       cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
       cmd_args << job_auth.api_token
       cmd_args << '--job'
       cmd_args << job.uuid
-
-      commit = Commit.where(sha1: job.script_version).first
-      if commit
-        cmd_args << '--git-dir'
-        if File.exists?(File.
-                        join(Rails.configuration.git_repositories_dir,
-                             commit.repository_name + '.git'))
-          cmd_args << File.
-            join(Rails.configuration.git_repositories_dir,
-                 commit.repository_name + '.git')
-        else
-          cmd_args << File.
-            join(Rails.configuration.git_repositories_dir,
-                 commit.repository_name, '.git')
-        end
-      end
+      cmd_args << '--git-dir'
+      cmd_args << arvados_internal
 
       $stderr.puts "dispatch: #{cmd_args.join ' '}"
 
@@ -298,7 +303,6 @@ class Dispatcher
     job_done = j_done[:job]
     $stderr.puts "dispatch: child #{pid_done} exit"
     $stderr.puts "dispatch: job #{job_done.uuid} end"
-    $redis.publish job_done.uuid, "end"
 
     # Ensure every last drop of stdout and stderr is consumed
     read_pipes
@@ -309,26 +313,41 @@ class Dispatcher
     # Wait the thread
     j_done[:wait_thr].value
 
+    jobrecord = Job.find_by_uuid(job_done.uuid)
+    jobrecord.running = false
+    jobrecord.finished_at ||= Time.now
+    # Don't set 'jobrecord.success = false' because if the job failed to run due to an
+    # issue with crunch-job or slurm, we want the job to stay in the queue.
+    jobrecord.save!
+
     # Invalidate the per-job auth token
     j_done[:job_auth].update_attributes expires_at: Time.now
+
+    $redis.publish job_done.uuid, "end"
 
     @running.delete job_done.uuid
   end
 
   def update_pipelines
+    expire_tokens = @pipe_auth_tokens.dup
     @todo_pipelines.each do |p|
-      pipe_auth = ApiClientAuthorization.
-        new(user: User.where('uuid=?', p.modified_by_user_uuid).first,
-            api_client_id: 0)
-      pipe_auth.save
-
+      pipe_auth = (@pipe_auth_tokens[p.uuid] ||= ApiClientAuthorization.
+                   create(user: User.where('uuid=?', p.modified_by_user_uuid).first,
+                          api_client_id: 0))
       puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --instance #{p.uuid}`
+      expire_tokens.delete p.uuid
+    end
+
+    expire_tokens.each do |k, v|
+      v.update_attributes expires_at: Time.now
+      @pipe_auth_tokens.delete k
     end
   end
 
   def run
     act_as_system_user
     @running ||= {}
+    @pipe_auth_tokens ||= { }
     $stderr.puts "dispatch: ready"
     while !$signal[:term] or @running.size > 0
       read_pipes
@@ -350,7 +369,7 @@ class Dispatcher
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
           start_jobs
         end
-        unless @todo_pipelines.empty? or did_recently(:update_pipelines, 5.0)
+        unless (@todo_pipelines.empty? and @pipe_auth_tokens.empty?) or did_recently(:update_pipelines, 5.0)
           update_pipelines
         end
       end
@@ -359,8 +378,6 @@ class Dispatcher
              [], [], 1)
     end
   end
-
-
 
   protected
 

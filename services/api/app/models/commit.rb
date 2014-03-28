@@ -1,36 +1,101 @@
 class Commit < ActiveRecord::Base
   require 'shellwords'
 
-  # Make sure the specified commit really exists, and return the full
-  # sha1 commit hash.
-  #
-  # Accepts anything "git rev-list" accepts, optionally (and
-  # preferably) preceded by "repo_name:".
-  #
-  # Examples: "1234567", "master", "apps:1234567", "apps:master",
-  # "apps:HEAD"
-
-  def self.find_by_commit_ish(commit_ish)
-    want_repo = nil
-    if commit_ish.index(':')
-      want_repo, commit_ish = commit_ish.split(':',2)
+  def self.git_check_ref_format(e)
+    if !e or e.empty? or e[0] == '-' or e[0] == '$'
+      # definitely not valid
+      false
+    else
+      `git check-ref-format --allow-onelevel #{e.shellescape}`
+      $?.success?
     end
-    repositories.each do |repo_name, repo|
-      next if want_repo and want_repo != repo_name
-      ENV['GIT_DIR'] = repo[:git_dir]
-      IO.foreach("|git rev-list --max-count=1 --format=oneline 'origin/'#{commit_ish.shellescape} 2>/dev/null || git rev-list --max-count=1 --format=oneline ''#{commit_ish.shellescape}") do |line|
-        sha1, message = line.strip.split " ", 2
-        next if sha1.length != 40
-        begin
-          Commit.find_or_create_by_repository_name_and_sha1_and_message(repo_name, sha1, message[0..254])
-        rescue
-          logger.warn "find_or_create failed: repo_name #{repo_name} sha1 #{sha1} message #{message[0..254]}"
-          # Ignore cache failure. Commit is real. We should proceed.
+  end
+
+  def self.find_commit_range(current_user, repository, minimum, maximum, exclude)
+    if (minimum and !git_check_ref_format(minimum)) or !git_check_ref_format(maximum)
+      logger.warn "find_commit_range called with invalid minimum or maximum: '#{minimum}', '#{maximum}'"
+      return nil
+    end
+
+    if minimum and minimum.empty?
+        minimum = nil
+    end
+
+    if !maximum
+      maximum = "HEAD"
+    end
+
+    # Get list of actual repository directories under management
+    on_disk_repos = repositories
+
+    # Get list of repository objects readable by user
+    readable = Repository.readable_by(current_user)
+
+    # filter repository objects on requested repository name
+    if repository
+      readable = readable.where(name: repository)
+    end
+
+    commits = []
+    readable.each do |r|
+      if on_disk_repos[r.name]
+        ENV['GIT_DIR'] = on_disk_repos[r.name][:git_dir]
+
+        # We've filtered for invalid characters, so we can pass the contents of
+        # minimum and maximum safely on the command line
+
+        # Get the commit hash for the upper bound
+        max_hash = nil
+        IO.foreach("|git rev-list --max-count=1 #{maximum.shellescape}") do |line|
+          max_hash = line.strip
         end
-        return sha1
+
+        # If not found or string is invalid, nothing else to do
+        next if !max_hash or !git_check_ref_format(max_hash)
+
+        resolved_exclude = nil
+        if exclude
+          resolved_exclude = []
+          exclude.each do |e|
+            if git_check_ref_format(e)
+              IO.foreach("|git rev-list --max-count=1 #{e.shellescape}") do |line|
+                resolved_exclude.push(line.strip)
+              end
+            else
+              logger.warn "find_commit_range called with invalid exclude invalid characters: '#{exclude}'"
+              return nil
+            end
+          end
+        end
+
+        if minimum
+          # Get the commit hash for the lower bound
+          min_hash = nil
+          IO.foreach("|git rev-list --max-count=1 #{minimum.shellescape}") do |line|
+            min_hash = line.strip
+          end
+
+          # If not found or string is invalid, nothing else to do
+          next if !min_hash or !git_check_ref_format(min_hash)
+
+          # Now find all commits between them
+          IO.foreach("|git rev-list #{min_hash.shellescape}..#{max_hash.shellescape}") do |line|
+            hash = line.strip
+            commits.push(hash) if !resolved_exclude or !resolved_exclude.include? hash
+          end
+
+          commits.push(min_hash) if !resolved_exclude or !resolved_exclude.include? min_hash
+        else
+          commits.push(max_hash) if !resolved_exclude or !resolved_exclude.include? max_hash
+        end
       end
     end
-    nil
+
+    if !commits or commits.empty?
+      nil
+    else
+      commits
+    end
   end
 
   # Import all commits from configured git directory into the commits
@@ -59,6 +124,10 @@ class Commit < ActiveRecord::Base
     end
   end
 
+  def self.refresh_repositories
+    @repositories = nil
+  end
+
   protected
 
   def self.repositories
@@ -70,6 +139,7 @@ class Commit < ActiveRecord::Base
       next if repo.match /^\./
       git_dir = File.join(@gitdirbase,
                           repo.match(/\.git$/) ? repo : File.join(repo, '.git'))
+      next if git_dir == Rails.configuration.git_internal_dir
       repo_name = repo.sub(/\.git$/, '')
       @repositories[repo_name] = {git_dir: git_dir}
     end

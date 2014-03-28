@@ -8,9 +8,9 @@
       {% if nx == 1 %}
         <hr>
         {% if prev != "" %}
-          <a href="{{ site.baseurl }}{{ prev.url }}" class="pull-left">Previous: {{ prev.title }}</a></li>
+          <a href="{{ site.baseurl }}{{ prev.url }}" class="pull-left">Previous: {{ prev.title }}</a>
         {% endif %}
-        <a href="{{ site.baseurl }}{{ p.url }}" class="pull-right">Next: {{ p.title }}</a></li>            
+        <a href="{{ site.baseurl }}{{ p.url }}" class="pull-right">Next: {{ p.title }}</a>
         {% assign nx = 0 %}
         {% assign n = 1 %}
       {% endif %}
@@ -24,6 +24,6 @@
 {% endfor %}
 {% if n == 0 && prev != "" %}
   <hr>
-  <a href="{{ site.baseurl }}{{ prev.url }}" class="pull-left">Previous: {{ prev.title }}</a></li>  
+  <a href="{{ site.baseurl }}{{ prev.url }}" class="pull-left">Previous: {{ prev.title }}</a>
   {% assign n = 1 %}
 {% endif %}

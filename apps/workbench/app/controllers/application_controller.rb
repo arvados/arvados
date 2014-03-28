@@ -58,7 +58,19 @@ class ApplicationController < ActionController::Base
   end
 
   def index
-    @objects ||= model_class.limit(200).all
+    if params[:limit]
+      limit = params[:limit].to_i
+    else
+      limit = 200
+    end
+
+    if params[:offset]
+      offset = params[:offset].to_i
+    else
+      offset = 0
+    end
+
+    @objects ||= model_class.limit(limit).offset(offset).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -149,7 +161,8 @@ class ApplicationController < ActionController::Base
 
   def breadcrumb_page_name
     (@breadcrumb_page_name ||
-     (@object.friendly_link_name if @object.respond_to? :friendly_link_name))
+     (@object.friendly_link_name if @object.respond_to? :friendly_link_name) ||
+     action_name)
   end
 
   def index_pane_list

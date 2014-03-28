@@ -1,29 +1,10 @@
 class Arvados::V1::SchemaController < ApplicationController
+  skip_before_filter :find_objects_for_index
   skip_before_filter :find_object_by_uuid
   skip_before_filter :render_404_if_no_object
   skip_before_filter :require_auth_scope_all
 
-  def show
-    classes = Rails.cache.fetch 'arvados_v1_schema' do
-      Rails.application.eager_load!
-      classes = {}
-      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
-        classes[k] = k.columns.collect do |col|
-          if k.serialized_attributes.has_key? col.name
-            { name: col.name,
-              type: k.serialized_attributes[col.name].object_class.to_s }
-          else
-            { name: col.name,
-              type: col.type }
-          end
-        end
-      end
-      classes
-    end
-    render json: classes
-  end
-
-  def discovery_rest_description
+  def index
     expires_in 24.hours, public: true
     discovery = Rails.cache.fetch 'arvados_v1_rest_discovery' do
       Rails.application.eager_load!
@@ -37,7 +18,7 @@ class Arvados::V1::SchemaController < ApplicationController
         generatedAt: Time.now.iso8601,
         title: "Arvados API",
         description: "The API to interact with Arvados.",
-        documentationLink: "https://redmine.clinicalfuture.com/projects/arvados/",
+        documentationLink: "http://doc.arvados.org/api/index.html",
         protocol: "rest",
         baseUrl: root_url + "/arvados/v1/",
         basePath: "/arvados/v1/",
@@ -222,6 +203,14 @@ class Arvados::V1::SchemaController < ApplicationController
                   minimum: 0,
                   location: "query",
                 },
+                offset: {
+                  type: "integer",
+                  description: "Number of #{k.to_s.underscore.pluralize} to skip before first returned record.",
+                  default: 0,
+                  format: "int32",
+                  minimum: 0,
+                  location: "query",
+                  },
                 filters: {
                   type: "array",
                   description: "Conditions for filtering #{k.to_s.underscore.pluralize}.",
@@ -328,7 +317,8 @@ class Arvados::V1::SchemaController < ApplicationController
           if httpMethod and
               route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
               !d_methods[action.to_sym] and
-              ctl_class.action_methods.include? action
+              ctl_class.action_methods.include? action and
+              ![:show, :index, :destroy].include?(action.to_sym)
             method = {
               id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
               path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),

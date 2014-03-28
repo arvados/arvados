@@ -36,6 +36,8 @@ class Job < ArvadosModel
     t.add :dependencies
     t.add :log_stream_href
     t.add :log_buffer
+    t.add :nondeterministic
+    t.add :repository
   end
 
   def assert_finished
@@ -51,8 +53,13 @@ class Job < ArvadosModel
   end
 
   def self.queue
-    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ?',
-               nil, nil, nil).
+    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ? and success is ?',
+               nil, nil, nil, nil).
+      order('priority desc, created_at')
+  end
+
+  def self.running
+    self.where('running = ?', true).
       order('priority desc, created_at')
   end
 
@@ -70,7 +77,7 @@ class Job < ArvadosModel
       return true
     end
     if new_record? or script_version_changed?
-      sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
+      sha1 = Commit.find_commit_range(current_user, nil, nil, self.script_version, nil)[0] rescue nil
       if sha1
         self.script_version = sha1
       else
@@ -108,7 +115,8 @@ class Job < ArvadosModel
 
   def permission_to_update
     if is_locked_by_uuid_was and !(current_user and
-                                   current_user.uuid == is_locked_by_uuid_was)
+                                   (current_user.uuid == is_locked_by_uuid_was or
+                                    current_user.uuid == system_user.uuid))
       if script_changed? or
           script_parameters_changed? or
           script_version_changed? or
