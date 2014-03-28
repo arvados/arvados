@@ -426,6 +426,9 @@ class WhRunPipelineInstance
       moretodo = false
       @components.each do |cname, c|
         job = nil
+        # Is the job satisfying this component already known to be
+        # finished? (Already meaning "before we query API server about
+        # the job's current state")
         c_already_finished = (c[:job] &&
                               c[:job][:uuid] &&
                               !c[:job][:success].nil?)
@@ -471,10 +474,12 @@ class WhRunPipelineInstance
               end
             end
             unless c_already_finished
+              # This is my first time discovering that the job
+              # succeeded. (At the top of this loop, I was still
+              # waiting for it to finish.)
               if c[:output_is_persistent]
-                # This is my first time discovering that the job
-                # succeeded. I need to make sure a resources/wants
-                # link is in place to protect the output from garbage
+                # I need to make sure a resources/wants link is in
+                # place to protect the output from garbage
                 # collection. (Normally Crunch does this for me, but
                 # here I might be reusing the output of someone else's
                 # job and I need to make sure it's understood that the
