@@ -34,7 +34,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Attributes'
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//a[@data-name="is_active"]') do
-      assert_equal text, "true", "Expected user's is_active to be true"
+      assert_equal "true", text, "Expected user's is_active to be true"
     end
 
     # go to Admin tab
@@ -45,18 +45,19 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_button 'Deactivate Active User'
 
     # Click Ok in the confirm dialog
+=begin
     sleep(0.1)
-
     popup = page.driver.window_handles.last
     page.within_window popup do
       assert has_text? 'Are you sure you want to deactivate Active User'
       click_button "Ok"
     end
+=end
 
     # Should now be back in the Attributes tab for the user
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//a[@data-name="is_active"]') do
-      assert_equal text, "false", "Expected user's is_active to be false after unsetup"
+      assert_equal "false", text, "Expected user's is_active to be false after unsetup"
     end
 
   end
