@@ -415,7 +415,7 @@ else
 	or croak ("git clone $repo failed: exit ".($?>>8));
     system("cd $ENV{CRUNCH_SRC} && git config clean.requireForce false");
   }
-  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q origin`;
+  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q --tags origin`;
 
   # If this looks like a subversion r#, look for it in git-svn commit messages
 
