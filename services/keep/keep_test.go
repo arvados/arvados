@@ -112,7 +112,7 @@ func TestFindKeepVolumes(t *testing.T) {
 			}
 		}
 
-		os.Remove(PROC_MOUNTS)
+		os.Remove(f.Name())
 	}
 }
 
