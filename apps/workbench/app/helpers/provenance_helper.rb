@@ -17,11 +17,6 @@ module ProvenanceHelper
         else
           return m[1]
         end
-        #  Collection.where(uuid: ['contains', m[1]]).each do |u|
-        #    puts "fixup #{uuid} to #{u.uuid}"
-        #    return u.uuid
-        #  end
-        #end
       else
         nil
       end
@@ -52,15 +47,11 @@ module ProvenanceHelper
       
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
-          #puts uuid
-          if uuid == :"d41d8cd98f00b204e9800998ecf8427e+0"
+          if Collection.is_empty_blob_locator? uuid.to_s
             # special case
-            #puts "empty!"
             return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
           end
-          #puts "#{uuid.class} #{@pdata[uuid]}"
           if @pdata[uuid] 
-            #puts @pdata[uuid]
             if @pdata[uuid][:name]
               return "\"#{uuid}\" [label=\"#{@pdata[uuid][:name]}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
             else              
@@ -82,7 +73,6 @@ module ProvenanceHelper
                 if i < files.length
                   label += "\\n&vellip;"
                 end
-                #puts "#{uuid} #{label} #{files}"
                 extra_s = @node_extra[uuid].andand.map { |k,v|
                   "#{k}=\"#{v}\""
                 }.andand.join ","
@@ -153,20 +143,16 @@ module ProvenanceHelper
         end
         unless node == ""
           node += "']"
-          #puts node
-          #id = "#{job[:uuid]}_#{prefix}"
           gr += "\"#{node}\" [label=\"#{node}\"];\n"
           gr += edge(job_uuid(job), node, {:label => prefix})        
         end
       when String
         return '' if sp.empty?
         m = GenerateGraph::collection_uuid(sp)
-        #puts "#{m} pdata is #{@pdata[m.intern]}"
         if m and (@pdata[m.intern] or (not @opts[:pdata_only]))
           gr += edge(job_uuid(job), m, {:label => prefix})
           gr += generate_provenance_edges(m)
         elsif @opts[:all_script_parameters]
-          #id = "#{job[:uuid]}_#{prefix}"
           gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
           gr += edge(job_uuid(job), sp, {:label => prefix})
         end
@@ -182,8 +168,6 @@ module ProvenanceHelper
       uuid = uuid.intern if uuid
 
       if (not uuid) or uuid.empty? or @visited[uuid]
-
-        #puts "already @visited #{uuid}"
         return ""
       end
 
@@ -193,13 +177,9 @@ module ProvenanceHelper
         @visited[uuid] = true
       end
 
-      #puts "visiting #{uuid.inspect}"
-
       if m
         # uuid is a collection
-        if uuid != :"d41d8cd98f00b204e9800998ecf8427e+0"
-          # not the empty collection
-
+        if not Collection.is_empty_blob_locator? uuid.to_s
           @pdata.each do |k, job|
             if job[:output] == uuid.to_s
               extra = { label: 'output' }
@@ -250,8 +230,6 @@ module ProvenanceHelper
           gr += generate_provenance_edges(link[:tail_uuid])
         end
       end
-
-      #puts "finished #{uuid}"
 
       gr
     end
@@ -308,8 +286,6 @@ edge [fontsize=10];
       gr += "edge [dir=back];"
     end
 
-    #puts "@pdata is #{pdata}"
-
     g = GenerateGraph.new(pdata, opts)
 
     pdata.each do |k, v|
@@ -321,8 +297,6 @@ edge [fontsize=10];
     gr += "}"
     svg = ""
 
-    #puts gr
-    
     require 'open3'
 
     Open3.popen2("dot", "-Tsvg") do |stdin, stdout, wait_thr|
