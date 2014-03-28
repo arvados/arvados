@@ -24,7 +24,7 @@ claim the account.
 end
 
 log.level = (ENV['DEBUG'] || opts.debug) ? Logger::DEBUG : Logger::WARN
-    
+
 if ARGV.count != 3
   Trollop::die "required arguments are missing"
 end
@@ -39,8 +39,8 @@ begin
   found_user = arv.user.get(uuid: user_arg)
 rescue Arvados::TransactionFailedError
   found = arv.user.list(where: {email: user_arg})[:items]
-    
-  if found.count == 0 
+
+  if found.count == 0
     if !user_arg.match(/\w\@\w+\.\w+/)
       abort "About to create new user, but #{user_arg.inspect} " +
                "does not look like an email address. Stop."

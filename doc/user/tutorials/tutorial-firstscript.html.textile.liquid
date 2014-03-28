@@ -112,7 +112,8 @@ Next, create a file that contains the pipeline definition:
         }
       },
       "repository":"<b>you</b>",
-      "script_version":"master"
+      "script_version":"master",
+      "output_is_persistent":true
     }
   }
 }
@@ -128,8 +129,9 @@ EOF
 * The component is listed with a human-readable name (@"do_hash"@ in this example)
 * @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
 * @"repository"@ is the git repository to search for the script version.  You can access a list of available @git@ repositories on the Arvados workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}//repositories .
-* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, a tag, or a branch (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.  
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, a tag, or a branch (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
 * @"script_parameters"@ describes the parameters for the script.  In this example, there is one parameter called @input@ which is @required@ and is a @Collection@.
+* @"output_is_persistent"@ indicates whether the output of the job is considered valuable. If this value is false (or not given), the output will be treated as intermediate data and eventually deleted to reclaim disk space.
 
 Now, use @arv pipeline_template create@ tell Arvados about your pipeline template:
 
