@@ -41,36 +41,36 @@ h3. Examples
 
 Run the script "crunch_scripts/hash.py" in the repository "you" using the "master" branch head.  Arvados is allowed to re-use a previous job if the script_version of the past job is the same as the "master" branch head (i.e. there have not been any subsequent commits to "master").
 
-<pre>
+<notextile><pre>
 {
   "script": "hash.py",
-  "repository": "you",
+  "repository": "<b>you</b>",
   "script_version": "master",
   "script_parameters": {
     "input": "c1bad4b39ca5a924e481008009d94e32+210"
   }
 }
-</pre>
+</pre></notextile>
 
 Run using exactly the version "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5". Arvados is allowed to re-use a previous job if the script_version of that job is also "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5".
 
-<pre>
+<notextile><pre>
 {
   "script": "hash.py",
-  "repository": "you",
+  "repository": "<b>you</b>",
   "script_version": "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5",
   "script_parameters": {
     "input": "c1bad4b39ca5a924e481008009d94e32+210"
   }
 }
-</pre>
+</pre></notextile>
 
 Arvados is allowed to re-use a previous job if the script_version of the past job is between "earlier_version_tag" and the head of the "master" branch (inclusive), but not "blacklisted_version_tag".  If there are no previous jobs, run the job using the head of the "master" branch as specified in "script_version".
 
-<pre>
+<notextile><pre>
 {
   "script": "hash.py",
-  "repository": "you",
+  "repository": "<b>you</b>",
   "minimum_script_version": "earlier_version_tag",
   "script_version": "master",
   "exclude_script_versions", ["blacklisted_version_tag"],
@@ -78,21 +78,21 @@ Arvados is allowed to re-use a previous job if the script_version of the past jo
     "input": "c1bad4b39ca5a924e481008009d94e32+210"
   }
 }
-</pre>
+</pre></notextile>
 
 Run the script "crunch_scripts/monte-carlo.py" in the repository "you" using the "master" branch head.  Because it is marked as "nondeterministic", never re-use previous jobs, and never re-use this job.
 
-<pre>
+<notextile><pre>
 {
   "script": "monte-carlo.py",
-  "repository": "you",
+  "repository": "<b>you</b>",
   "script_version": "master",
   "nondeterministic": true,
   "script_parameters": {
     "input": "c1bad4b39ca5a924e481008009d94e32+210"
   }
 }
-</pre>
+</pre></notextile>
 
 h2. Pipelines
 
@@ -122,13 +122,13 @@ h3. Examples
 
 This a pipeline named "Filter md5 hash values" with two components, "do_hash" and "filter".  The "input" script parameter of the "do_hash" component is required to be filled in by the user, and the expected data type is "Collection".  This also specifies that the "input" script parameter of the "filter" component is the output of "do_hash", so "filter" will not run until "do_hash" completes successfully.  When the pipeline runs, past jobs that meet the criteria described above may be substituted for either or both components to avoid redundant computation.
 
-<pre>
+<notextile><pre>
 {
   "name": "Filter md5 hash values",
   "components": {
     "do_hash": {
       "script": "hash.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": {
         "input": {
@@ -139,7 +139,7 @@ This a pipeline named "Filter md5 hash values" with two components, "do_hash" an
     },
     "filter": {
       "script": "0-filter.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": {
         "input": {
@@ -149,23 +149,23 @@ This a pipeline named "Filter md5 hash values" with two components, "do_hash" an
     }
   }
 }
-</pre>
+</pre></notextile>
 
 This pipeline consists of three components.  The components "thing1" and "thing2" both depend on "cat_in_the_hat".  Once the "cat_in_the_hat" job is complete, both "thing1" and "thing2" can run in parallel, because they do not depend on each other.
 
-<pre>
+<notextile><pre>
 {
   "name": "Wreck the house",
   "components": {
     "cat_in_the_hat": {
       "script": "cat.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": { }
     },
     "thing1": {
       "script": "thing1.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": {
         "input": {
@@ -175,7 +175,7 @@ This pipeline consists of three components.  The components "thing1" and "thing2
     },
     "thing2": {
       "script": "thing2.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": {
         "input": {
@@ -185,29 +185,29 @@ This pipeline consists of three components.  The components "thing1" and "thing2
     },
   }
 }
-</pre>
+</pre></notextile>
 
 This pipeline consists of three components.  The component "cleanup" depends on "thing1" and "thing2".  Both "thing1" and "thing2" are started immediately and can run in parallel, because they do not depend on each other, but "cleanup" cannot begin until both "thing1" and "thing2" have completed.
 
-<pre>
+<notextile><pre>
 {
   "name": "Clean the house",
   "components": {
     "thing1": {
       "script": "thing1.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": { }
     },
     "thing2": {
       "script": "thing2.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": { }
     },
     "cleanup": {
       "script": "cleanup.py",
-      "repository": "you",
+      "repository": "<b>you</b>",
       "script_version": "master",
       "script_parameters": {
         "mess1": {
@@ -220,4 +220,4 @@ This pipeline consists of three components.  The component "cleanup" depends on 
     }
   }
 }
-</pre>
+</pre></notextile>
