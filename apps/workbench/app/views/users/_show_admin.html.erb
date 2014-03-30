@@ -11,3 +11,14 @@ account.</p>
 <blockquote>
 <%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', confirm: "Are you sure you want to deactivate #{@object.full_name}?"%>
 </blockquote>
+
+<p>As an admin, you can setup this user. Please input a VM and repository for the user. If you had previously provided any of these items, they are pre-filled for you and you can leave them as is if you would like to reuse them.</p>
+
+<blockquote>
+
+<div>
+<%= button_to "Setup #{@object.full_name}", setup_user_url(id: @object.uuid), {class: 'btn btn-primary',  'data-toggle' => 'modal', 'data-target' => '#modal-window'}  %>
+ <%= render :partial => 'setup_popup' %>
+</div>
+
+</blockquote>

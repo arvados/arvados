@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity]
   skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
-  before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup]
+  before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
   def welcome
     if current_user
@@ -141,6 +141,13 @@ class UsersController < ApplicationController
   def unsetup
     if current_user.andand.is_admin
       @object.unsetup
+    end
+    show
+  end
+
+  def setup
+    if current_user.andand.is_admin
+      @object.setup
     end
     show
   end

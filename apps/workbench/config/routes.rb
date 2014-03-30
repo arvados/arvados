@@ -23,6 +23,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'welcome', :on => :collection
     get 'activity', :on => :collection
     post 'sudo', :on => :member
+    post 'setup', :on => :member
     post 'unsetup', :on => :member
   end
   resources :logs
