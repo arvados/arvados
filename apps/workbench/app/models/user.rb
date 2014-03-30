@@ -45,4 +45,10 @@ class User < ArvadosBase
                                                 {}))
   end
 
+  def setup
+    $arvados_api_client.api(self.class,
+                            "/setup",
+                            {uuid: self.uuid})
+  end
+
 end

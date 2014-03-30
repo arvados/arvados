@@ -18,6 +18,7 @@
 //= require bootstrap/tooltip
 //= require bootstrap/popover
 //= require bootstrap/collapse
+//= require bootstrap/modal
 //= require bootstrap3-editable/bootstrap-editable
 //= require_tree .
 
