@@ -17,7 +17,7 @@ Next, using @nano@ or your favorite Unix text editor, create a new file called @
 
 notextile. <pre>~/<b>you</b>/crunch_scripts$ <code class="userinput">nano parallel-hash.py</code></pre>
 
-Add the following code to compute the md5 hash of each file in a 
+Add the following code to compute the md5 hash of each file in a
 
 <notextile> {% code 'parallel_hash_script_py' as python %} </notextile>
 
@@ -40,7 +40,7 @@ You should now be able to run your new script using Crunch, with "script" referr
 <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
  "script": "parallel-hash.py",
- "repository": "<b>you</b>",
+ "repository": "$USER",
  "script_version": "master",
  "script_parameters":
  {
@@ -62,6 +62,8 @@ EOF</span>
 }
 </code></pre>
 </notextile>
+
+(Your shell should automatically fill in @$USER@ with your login name.  The job JSON that gets saved should have @"repository"@ pointed at your personal git repository.)
 
 Because the job ran in parallel, each instance of parallel-hash creates a separate @md5sum.txt@ as output.  Arvados automatically collates theses files into a single collection, which is the output of the job:
 

@@ -109,7 +109,7 @@ Next, create a file that contains the pipeline definition:
           "dataclass": "Collection"
         }
       },
-      "repository":"<b>you</b>",
+      "repository":"$USER",
       "script_version":"master",
       "output_is_persistent":true
     }
@@ -125,7 +125,7 @@ EOF
 * @"name"@ is a human-readable name for the pipeline.
 * @"components"@ is a set of scripts that make up the pipeline.
 * The component is listed with a human-readable name (@"do_hash"@ in this example).
-* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}/repositories.
+* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}/repositories.  Your shell should automatically fill in @$USER@ with your login name, so that the final JSON has @"repository"@ pointed at your personal git repository.
 * @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit git revision hash, a tag, or a branch (in which case it will use the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
 * @"script"@ specifies the filename of the script to run.  Crunch expects to find this in the @crunch_scripts/@ subdirectory of the git repository.
 * @"script_parameters"@ describes the parameters for the script.  In this example, there is one parameter called @input@ which is @required@ and is a @Collection@.
