@@ -1,6 +1,1 @@
-$("#modal-window").html("<%= escape_javascript(render 'setup_popup') %>");
-
-function save_user () {
-  $('#modal-window').modal('hide'); 
-  repo_name = document.getElementById ("repository_name").value;
-};
+$("#modal-window").html("<%= escape_javascript(render partial: 'setup_popup') %>");
