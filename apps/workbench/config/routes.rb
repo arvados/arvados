@@ -7,6 +7,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'signatures', on: :collection
   end
   get '/user_agreements/signatures' => 'user_agreements#signatures'
+  get 'users/setup_popup' => 'users#setup_popup', :as => :setup_popup
   resources :nodes
   resources :humans
   resources :traits
