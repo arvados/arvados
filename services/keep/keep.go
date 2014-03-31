@@ -19,6 +19,15 @@ var PROC_MOUNTS = "/proc/mounts"
 
 var KeepVolumes []string
 
+type KeepError struct {
+	HTTPCode     int
+	ErrorMessage string
+}
+
+func (e *KeepError) Error() string {
+	return e.ErrorMessage
+}
+
 func main() {
 	// Look for local keep volumes.
 	KeepVolumes = FindKeepVolumes()
@@ -36,6 +45,7 @@ func main() {
 	//
 	rest := mux.NewRouter()
 	rest.HandleFunc("/{hash:[0-9a-f]{32}}", GetBlockHandler).Methods("GET")
+	rest.HandleFunc("/{hash:[0-9a-f]{32}}", PutBlockHandler).Methods("PUT")
 
 	// Tell the built-in HTTP server to direct all requests to the REST
 	// router.
@@ -93,6 +103,26 @@ func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	return
 }
 
+func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
+	hash := mux.Vars(req)["hash"]
+
+	// Read the block data to be stored.
+	// TODO(twp): decide what to do when the input stream contains
+	// more than BLOCKSIZE bytes.
+	//
+	var nread int
+	buf := make([]string, BLOCKSIZE)
+	if nread, err := req.Body.Read(buf); err == nil {
+		if err := PutBlock(buf[:nread], hash); err == nil {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			http.Error(w, err.Error(), err.HTTPCode)
+		}
+	} else {
+		http.Error(w, err.Error(), 500)
+	}
+}
+
 func GetBlock(hash string) ([]byte, error) {
 	var buf = make([]byte, BLOCKSIZE)
 
@@ -135,5 +165,77 @@ func GetBlock(hash string) ([]byte, error) {
 	}
 
 	log.Printf("%s: not found on any volumes, giving up\n", hash)
-	return buf, errors.New("not found: " + hash)
+	return buf, KeepError{404, "not found: " + hash}
+}
+
+/* PutBlock(block, hash)
+   Stores the BLOCK (identified by the content id HASH) in Keep.
+
+   The MD5 checksum of the block must be identical to the content id HASH.
+   If not, an error is returned.
+
+   PutBlock stores the BLOCK in each of the available Keep volumes.
+   If any volume fails, an error is signaled on the back end.  A write
+   error is returned only if all volumes fail.
+
+   On success, PutBlock returns nil.
+   On failure, it returns a KeepError with one of the following codes:
+
+   400 Collision
+         -- A different object already exists in Keep with the same hash.
+            This check provides protection against (unlikely) MD5 collisions.
+   401 MD5Fail
+         -- The MD5 hash of the BLOCK does not match the argument HASH.
+   503 Full
+         -- There was not enough space left in any Keep volume to store
+            the object.
+   500 Fail
+         -- The object could not be stored for some other reason (e.g.
+            all writes failed). The text of the error message should
+            provide as much detail as possible.
+*/
+
+func PutBlock(block []string, hash string) error {
+	// Check that BLOCK's checksum matches HASH.
+	if md5.Sum(block) != hash {
+		return KeepError{401, "MD5Fail"}
+	}
+
+	// any_success will be set to true upon a successful block write.
+	any_success := false
+	for _, vol := range KeepVolumes {
+		var f *os.File
+		var err error
+		var nread int
+
+		path := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
+
+		f, err = os.OpenFile(path, os.O_CREATE, 0644)
+		if err != nil {
+			// if the block already exists, just skip to the next volume.
+			if os.IsExist(err) {
+				any_success = true
+				continue
+			} else {
+				// Open failed for some other reason.
+				log.Fprintf("%s: writing to %s: %s\n", vol, path, err)
+				continue
+			}
+		}
+
+		if nwrite, err := f.Write(block); err == nil {
+			f.Close()
+			any_success = true
+			continue
+		} else {
+			log.Fprintf("%s: writing to %s: %s\n", vol, path, err)
+			continue
+		}
+	}
+
+	if any_success {
+		return nil
+	} else {
+		return KeepError{500, "Fail"}
+	}
 }
