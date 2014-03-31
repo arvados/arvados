@@ -4,12 +4,9 @@
   </div>
 
   <div class="modal-body">
-       <form method="POST" class="form-horizontal" onsubmit="return false">
-           <input id="repository_name" maxlength="250" name="repositoryname" type="text">
-       </form>
+  <%= form_tag setup_user_url(id: @object.uuid), method: 'get', remote: true, class: 'form-search' do %>
+      <input id="repo_name" maxlength="250" name="repo_name" type="text">
+      <button type="submit" class="btn">Submit</button>
+      <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>  </div>  
+  <% end %>
   </div>
-  <div class="modal-footer">
-    <button id="save-button" class="btn" onclick="save_user()">Save</button>
-    <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
-  </div>
-
