@@ -47,7 +47,7 @@ Next, create a file that contains the pipeline definition:
       "script_version":"master",
       "output_is_persistent":false
     },
-    "filter":{
+    "do_filter":{
       "script":"0-filter.py",
       "script_parameters":{
         "input":{
@@ -64,13 +64,13 @@ EOF
 </span></code></pre>
 </notextile>
 
-* @"output_of"@ indicates that the @output@ of the @do_hash@ component should be used as the @"input"@ parameter for the @filter@ component. Arvados determines the correct order to run the jobs when such dependencies are present.
+* @"output_of"@ indicates that the @output@ of the @do_hash@ component is connected to the @"input"@ of @do_filter@.  This is a _dependency_.  Arvados uses the dependencies between jobs to automatically determine the correct order to run the jobs.
 
-Now, use @arv pipeline_template create@ tell Arvados about your pipeline template:
+Now, use @arv pipeline_template create@ to register your pipeline template in Arvados:
 
 <notextile>
 <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat ~/the_pipeline)"</span>
 </code></pre>
 </notextile>
 
-Your new pipeline template will appear on the "Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_instances page.
+Your new pipeline template will appear on the Workbench "Compute %(rarr)&rarr;% Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_instances page.
