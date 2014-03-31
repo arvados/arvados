@@ -15,11 +15,6 @@ account.</p>
 <p>As an admin, you can setup this user. Please input a VM and repository for the user. If you had previously provided any of these items, they are pre-filled for you and you can leave them as is if you would like to reuse them.</p>
 
 <blockquote>
-
-<div>
-<a href="#" class="btn btn-primary" data-toggle="modal"
-   data-target="#modal-window">Setup <%= "#{@object.full_name}" %> </a>
- <%= render :partial => 'setup_popup' %>
-</div>
-
+<%= link_to "Setup #{@object.full_name}", setup_popup_path,  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#modal-window'}  %>
+<div id="modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
 </blockquote>

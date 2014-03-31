@@ -48,7 +48,7 @@ class User < ArvadosBase
   def setup
     $arvados_api_client.api(self.class,
                             "/setup",
-                            {uuid: self.uuid})
+                            {uuid: self.uuid, repo_name: 'abcdefg'})
   end
 
 end

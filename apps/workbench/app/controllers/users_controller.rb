@@ -152,4 +152,11 @@ class UsersController < ApplicationController
     show
   end
 
+  def setup_popup
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
 end
