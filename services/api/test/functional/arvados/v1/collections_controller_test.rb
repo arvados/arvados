@@ -20,6 +20,15 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     end
   end
 
+  test "items.count == items_available" do
+    authorize_with :active
+    get :index, limit: 100000
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal resp['items_available'], assigns(:objects).length
+    assert_equal resp['items_available'], resp['items'].count
+  end
+
   test "get index with limit=2 offset=99999" do
     # Assume there are not that many test fixtures.
     authorize_with :active
