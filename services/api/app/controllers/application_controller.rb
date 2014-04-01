@@ -434,7 +434,9 @@ class ApplicationController < ActionController::Base
       :items => @objects.as_api_response(nil)
     }
     if @objects.respond_to? :except
-      @object_list[:items_available] = @objects.except(:limit).except(:offset).count
+      @object_list[:items_available] = @objects.
+        except(:limit).except(:offset).
+        count(:id, distinct: true)
     end
     render json: @object_list
   end
