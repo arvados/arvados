@@ -27,6 +27,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     resp = JSON.parse(@response.body)
     assert_equal resp['items_available'], assigns(:objects).length
     assert_equal resp['items_available'], resp['items'].count
+    unique_uuids = resp['items'].collect { |i| i['uuid'] }.compact
+    assert_equal unique_uuids.count, resp['items'].count
   end
 
   test "get index with limit=2 offset=99999" do
