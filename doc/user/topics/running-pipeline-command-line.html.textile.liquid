@@ -16,7 +16,8 @@ In "Writing a pipeline":{{ site.baseurl }}/user/tutorials/tutorial-firstscript.h
       "script_parameters":{
         "input": "887cd41e9c613463eab2f0d885c6dd96+83"
       },
-      "script_version":"<b>you</b>:master"
+      "repository":"<b>you</b>",
+      "script_version":"master"
     },
     "filter":{
       "script":"0-filter.py",
@@ -25,7 +26,8 @@ In "Writing a pipeline":{{ site.baseurl }}/user/tutorials/tutorial-firstscript.h
           "output_of":"do_hash"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "repository":"<b>you</b>",
+      "script_version":"master"
     }
   }
 }
@@ -112,7 +114,6 @@ Now check the output:
 <pre><code>~$ <span class="userinput">arv keep get 880b55fb4470b148a447ff38cacdd952+54/md5sum.txt</span>
 44b8ae3fde7a8a88d2f7ebd237625b4f var-GS000016015-ASM.tsv.bz2
 ~$ <span class="userinput">arv keep get 490cd451c8108824b8a17e3723e1f236+19/0-filter.txt</span>
-~$
 </code></pre>
 </notextile>
 

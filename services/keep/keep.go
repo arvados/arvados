@@ -15,6 +15,8 @@ import (
 const DEFAULT_PORT = 25107
 const BLOCKSIZE = 64 * 1024 * 1024
 
+var PROC_MOUNTS = "/proc/mounts"
+
 var KeepVolumes []string
 
 func main() {
@@ -53,8 +55,8 @@ func main() {
 func FindKeepVolumes() []string {
 	vols := make([]string, 0)
 
-	if f, err := os.Open("/proc/mounts"); err != nil {
-		log.Fatal("could not read /proc/mounts: ", err)
+	if f, err := os.Open(PROC_MOUNTS); err != nil {
+		log.Fatalf("opening %s: %s\n", PROC_MOUNTS, err)
 	} else {
 		scanner := bufio.NewScanner(f)
 		for scanner.Scan() {

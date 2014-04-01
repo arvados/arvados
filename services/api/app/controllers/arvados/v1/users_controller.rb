@@ -3,6 +3,7 @@ class Arvados::V1::UsersController < ApplicationController
     [:activate, :event_stream, :current, :system, :setup]
   skip_before_filter :render_404_if_no_object, only:
     [:activate, :event_stream, :current, :system, :setup]
+  before_filter :admin_required, only: [:setup, :unsetup]
 
   def current
     @object = current_user
@@ -28,7 +29,7 @@ class Arvados::V1::UsersController < ApplicationController
       end
     end
   end
-      
+
   def event_stream
     channel = current_user.andand.uuid
     if current_user.andand.is_admin
@@ -130,6 +131,13 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     render json: { kind: "arvados#HashList", items: @response }
+  end
+
+  # delete user agreements, vm, repository, login links; set state to inactive
+  def unsetup
+    reload_object_before_update
+    @object.unsetup
+    show
   end
 
 end

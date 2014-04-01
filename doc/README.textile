@@ -18,6 +18,12 @@ h2. 1. Generate HTML pages
 arvados/doc$ rake
 </pre>
 
+Alternately, to make the documentation browsable on the local filesystem:
+
+<pre>
+arvados/doc$ rake generate baseurl=$PWD/.site
+</pre>
+
 h2. 2. Preview HTML pages
 
 <pre>

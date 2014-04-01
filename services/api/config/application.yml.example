@@ -37,10 +37,5 @@ test:
   secret_token: <%= rand(2**512).to_s(36) %>
 
 common:
-
-  # Git repositories must be readable by api server, or you won't be
-  # able to submit crunch jobs. To pass the test suites, put a clone
-  # of the arvados tree in {git_repositories_dir}/arvados.git or
-  # {git_repositories_dir}/arvados/.git
-  #
   #git_repositories_dir: /var/cache/git
+  #git_internal_dir: /var/cache/arvados/internal.git

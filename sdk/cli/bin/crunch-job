@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# -*- mode: perl; perl-indent-level: 2; -*-
+# -*- mode: perl; perl-indent-level: 2; indent-tabs-mode: nil; -*-
 
 =head1 NAME
 
@@ -415,7 +415,7 @@ else
 	or croak ("git clone $repo failed: exit ".($?>>8));
     system("cd $ENV{CRUNCH_SRC} && git config clean.requireForce false");
   }
-  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q origin`;
+  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q --tags origin`;
 
   # If this looks like a subversion r#, look for it in git-svn commit messages
 
@@ -583,7 +583,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $ENV{"TASK_SLOT_NODE"} = $slot[$childslot]->{node}->{name};
     $ENV{"TASK_SLOT_NUMBER"} = $slot[$childslot]->{cpu};
     $ENV{"TASK_WORK"} = $ENV{"JOB_WORK"}."/$id.$$";
-    $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}."/keep";
+    $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}.".keep";
     $ENV{"TASK_TMPDIR"} = $ENV{"TASK_WORK"}; # deprecated
     $ENV{"CRUNCH_NODE_SLOTS"} = $slot[$childslot]->{node}->{ncpus};
     $ENV{"PATH"} = $ENV{"CRUNCH_INSTALL"} . "/bin:" . $ENV{"PATH"};
@@ -766,6 +766,16 @@ if ($Job->{'output'})
       'uuid' => $Job->{'output'},
       'manifest_text' => $manifest_text,
     });
+    if ($Job->{'output_is_persistent'}) {
+      $arv->{'links'}->{'create'}->execute('link' => {
+        'tail_kind' => 'arvados#user',
+        'tail_uuid' => $User->{'uuid'},
+        'head_kind' => 'arvados#collection',
+        'head_uuid' => $Job->{'output'},
+        'link_class' => 'resources',
+        'name' => 'wants',
+      });
+    }
   };
   if ($@) {
     Log (undef, "Failed to register output manifest: $@");

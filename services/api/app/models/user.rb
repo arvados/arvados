@@ -134,7 +134,7 @@ class User < ArvadosModel
     end
 
     return [oid_login_perm] + user.setup_repo_vm_links(repo_name, vm_uuid)
-  end 
+  end
 
   # create links
   def setup_repo_vm_links(repo_name, vm_uuid)
@@ -143,7 +143,49 @@ class User < ArvadosModel
     group_perm = create_user_group_link
 
     return [repo_perm, vm_login_perm, group_perm, self].compact
-  end 
+  end
+
+  # delete user signatures, login, repo, and vm perms, and mark as inactive
+  def unsetup
+    # delete oid_login_perms for this user
+    oid_login_perms = Link.where(tail_uuid: self.email,
+                                 head_kind: 'arvados#user',
+                                 link_class: 'permission',
+                                 name: 'can_login')
+    oid_login_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete repo_perms for this user
+    repo_perms = Link.where(tail_uuid: self.uuid,
+                            head_kind: 'arvados#repository',
+                            link_class: 'permission',
+                            name: 'can_write')
+    repo_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete vm_login_perms for this user
+    vm_login_perms = Link.where(tail_uuid: self.uuid,
+                                head_kind: 'arvados#virtualMachine',
+                                link_class: 'permission',
+                                name: 'can_login')
+    vm_login_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete any signatures by this user
+    signed_uuids = Link.where(link_class: 'signature',
+                              tail_kind: 'arvados#user',
+                              tail_uuid: self.uuid)
+    signed_uuids.each do |sign|
+      Link.delete sign
+    end
+
+    # mark the user as inactive
+    self.is_active = false
+    self.save!
+  end
 
   protected
 
@@ -234,7 +276,7 @@ class User < ArvadosModel
                               link_class: 'permission',
                               name: 'can_write')
       if repo_perms.any?
-        logger.warn "User already has repository access " + 
+        logger.warn "User already has repository access " +
             repo_perms.collect { |p| p[:uuid] }.inspect
         return repo_perms.first
       end
@@ -257,9 +299,9 @@ class User < ArvadosModel
   # create login permission for the given vm_uuid, if it does not already exist
   def create_vm_login_permission_link(vm_uuid, repo_name)
     begin
-              
+
       # vm uuid is optional
-      if vm_uuid 
+      if vm_uuid
         vm = VirtualMachine.where(uuid: vm_uuid).first
 
         if not vm
@@ -267,7 +309,7 @@ class User < ArvadosModel
           raise "No vm found for #{vm_uuid}"
         end
       else
-        return 
+        return
       end
 
       logger.info { "vm uuid: " + vm[:uuid] }
@@ -321,7 +363,7 @@ class User < ArvadosModel
                                  link_class: 'permission',
                                  name: 'can_read')
         logger.info { "group permission: " + group_perm[:uuid] }
-      else 
+      else
         group_perm = group_perms.first
       end
 

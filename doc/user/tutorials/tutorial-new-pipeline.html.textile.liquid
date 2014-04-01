@@ -43,7 +43,9 @@ Next, create a file that contains the pipeline definition:
           "dataclass": "Collection"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "repository":"<b>you</b>",
+      "script_version":"master",
+      "output_is_persistent":false
     },
     "filter":{
       "script":"0-filter.py",
@@ -52,7 +54,9 @@ Next, create a file that contains the pipeline definition:
           "output_of":"do_hash"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "repository":"<b>you</b>",
+      "script_version":"master",
+      "output_is_persistent":true
     }
   }
 }
@@ -60,7 +64,7 @@ EOF
 </span></code></pre>
 </notextile>
 
-* @"output_of"@ indicates that the @input@ of the @do_hash@ component is connected to the @output@ of @filter@.  This is a _dependency_.  Arvados uses the dependencies between jobs to automatically determine the correct order to run the jobs.
+* @"output_of"@ indicates that the @output@ of the @do_hash@ component should be used as the @"input"@ parameter for the @filter@ component. Arvados determines the correct order to run the jobs when such dependencies are present.
 
 Now, use @arv pipeline_template create@ tell Arvados about your pipeline template:
 
@@ -69,5 +73,4 @@ Now, use @arv pipeline_template create@ tell Arvados about your pipeline templat
 </code></pre>
 </notextile>
 
-Your new pipeline template will appear on the "Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;templates":http://{{ site.arvados_workbench_host }}/pipeline_templates page.
-
+Your new pipeline template will appear on the "Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_instances page.
