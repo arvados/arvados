@@ -146,10 +146,17 @@ class UsersController < ApplicationController
   end
 
   def setup
-    if current_user.andand.is_admin
-      @object.setup
+    respond_to do |format|
+      if current_user.andand.is_admin
+        if @object.setup
+          format.js
+        else
+          self.render_error status: 422
+        end
+      else
+        self.render_error status: 422
+      end
     end
-    show
   end
 
   def setup_popup
