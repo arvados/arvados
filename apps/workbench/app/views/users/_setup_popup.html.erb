@@ -3,11 +3,11 @@
   </div>
 
   <div class="modal-body">
-    <%= uuid = @object.uuid %>
-    <%= disable_email = @object.uuid? %>
-    <%= identity_url_prefix = @current_selections[:identiry_url_prefix] %>
-    <%= selected_repo = @current_selections[:repo_name] %>
-    <%= selected_vm = @current_selections[:vm_uuid] %>
+    <% uuid = @object.uuid %>
+    <% disable_email = @object.uuid? %>
+    <% identity_url_prefix = @current_selections[:identiry_url_prefix] %>
+    <% selected_repo = @current_selections[:repo_name] %>
+    <% selected_vm = @current_selections[:vm_uuid] %>
 
     <%= form_tag setup_user_url(id: uuid), method: 'get', remote: true, class: 'form-search' do %>    
       <div>
@@ -51,8 +51,8 @@
         </tbody></table>
       </div>
       <div align="left">
-        <button type="submit" class="btn">Submit</button>
-        <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+        <button type="submit" class="btn btn-primary" autofocus>Submit</button>
+        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Cancel</button>
       </div>
     <% end %>
   </div>
