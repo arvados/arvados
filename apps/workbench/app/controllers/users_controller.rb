@@ -175,6 +175,7 @@ class UsersController < ApplicationController
   end
 
   def setup_popup
+    @vms = VirtualMachine.all.results
     respond_to do |format|
       format.html
       format.js

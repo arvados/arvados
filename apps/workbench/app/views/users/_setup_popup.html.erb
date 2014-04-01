@@ -1,10 +1,10 @@
- <div class="modal-header">
+  <div class="modal-header">
     <h3 id="myModalLabel">Information you had already provided is prefilled for you. You may change it as needed.</h3>
   </div>
 
   <div class="modal-body">
     <%= uuid = @object.uuid %>
-    <%= disable_email = false %>
+    <%= disable_email = @object.uuid? %>
     <%= form_tag setup_user_url(id: uuid), method: 'get', remote: true, class: 'form-search' do %>    
       <div>
         <table><tbody>
@@ -32,7 +32,13 @@
           </tr>
           <tr>
             <td> Virtual Machine : </td>
-            <td> <input id="vm_uuid" maxlength="250" name="vm_uuid" type="text">
+            <td>
+              <select name="vm_uuid">
+                <% @vms.each do |vm| %>
+                  <option value=<%=vm.uuid%> > <%=vm.hostname%> </option>
+                <% end %>
+              </select>
+            </td>
           </tr>
         </tbody></table>
       </div>
