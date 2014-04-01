@@ -151,16 +151,18 @@ def reportMostPopularCollections():
 
 def buildMaps():
   for collection_uuid,collection_info in CollectionInfo.all_by_uuid.items():
-    for block_uuid in collection_info.block_uuids:
+    # Add the block holding the manifest itself for all calculations
+    block_uuids = collection_info.block_uuids.union([collection_uuid,])
+    for block_uuid in block_uuids:
       block_to_collections[block_uuid].add(collection_uuid)
       block_to_readers[block_uuid].update(collection_info.reader_uuids)
       block_to_persisters[block_uuid].update(collection_info.persister_uuids)
     for reader_uuid in collection_info.reader_uuids:
       reader_to_collections[reader_uuid].add(collection_uuid)
-      reader_to_blocks[reader_uuid].update(collection_info.block_uuids)
+      reader_to_blocks[reader_uuid].update(block_uuids)
     for persister_uuid in collection_info.persister_uuids:
       persister_to_collections[persister_uuid].add(collection_uuid)
-      persister_to_blocks[persister_uuid].update(collection_info.block_uuids)
+      persister_to_blocks[persister_uuid].update(block_uuids)
 
 
 def itemsByValueLength(original):
