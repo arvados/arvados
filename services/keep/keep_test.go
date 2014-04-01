@@ -12,13 +12,16 @@ var TEST_BLOCK = []byte("The quick brown fox jumps over the lazy dog.")
 var TEST_HASH = "e4d909c290d0fb1ca068ffaddf22cbd0"
 var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 
+// ========================================
+// GetBlock tests.
+// ========================================
+
 // Test simple block reads.
 func TestGetBlockOK(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes and store a block in each of them.
 	KeepVolumes = setup(t, 2)
-	fmt.Println("KeepVolumes = ", KeepVolumes)
 
 	for _, vol := range KeepVolumes {
 		store(t, vol, TEST_HASH, TEST_BLOCK)
@@ -81,6 +84,42 @@ func TestGetBlockCorrupt(t *testing.T) {
 	result, err := GetBlock(TEST_HASH)
 	if err == nil {
 		t.Errorf("GetBlock incorrectly returned success: %s", result)
+	}
+}
+
+// ========================================
+// PutBlock tests
+// ========================================
+
+// Test simple block stores.
+
+func TestPutBlockOK(t *testing.T) {
+	defer teardown()
+
+	// Create two test Keep volumes.
+	KeepVolumes = setup(t, 2)
+
+	// Check that PutBlock stores the data as expected.
+	err := PutBlock(TEST_BLOCK, TEST_HASH)
+	if err == nil {
+		t.Log("err is nil")
+	}
+	if err != nil {
+		t.Fatalf("PutBlock: %v", err)
+	}
+
+	var result []byte
+	result, err = GetBlock(TEST_HASH)
+	t.Log("result = %v", result)
+	t.Log("err = %v", err)
+
+	if err != nil {
+		t.Fatalf("GetBlock: %s", err.Error())
+	}
+	if string(result) != string(TEST_BLOCK) {
+		t.Error("PutBlock/GetBlock mismatch")
+		t.Fatalf("PutBlock stored '%s', GetBlock retrieved '%s'",
+			string(TEST_BLOCK), string(result))
 	}
 }
 
@@ -168,6 +207,7 @@ func teardown() {
 }
 
 // store
+//     Low-level code to write Keep blocks directly to disk for testing.
 //
 func store(t *testing.T, keepdir string, filename string, block []byte) error {
 	blockdir := fmt.Sprintf("%s/%s", keepdir, filename[:3])

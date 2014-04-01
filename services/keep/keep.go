@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 )
 
@@ -116,7 +115,8 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 		if err := PutBlock(buf[:nread], hash); err == nil {
 			w.WriteHeader(http.StatusOK)
 		} else {
-			http.Error(w, err.Error(), err.HTTPCode)
+			ke := err.(*KeepError)
+			http.Error(w, ke.Error(), ke.HTTPCode)
 		}
 	} else {
 		log.Println("error reading request: ", err)
@@ -133,17 +133,17 @@ func GetBlock(hash string) ([]byte, error) {
 		var err error
 		var nread int
 
-		path := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
+		blockFilename := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
 
-		f, err = os.Open(path)
+		f, err = os.Open(blockFilename)
 		if err != nil {
-			log.Printf("%s: opening %s: %s\n", vol, path, err)
+			log.Printf("%s: opening %s: %s\n", vol, blockFilename, err)
 			continue
 		}
 
 		nread, err = f.Read(buf)
 		if err != nil {
-			log.Printf("%s: reading %s: %s\n", vol, path, err)
+			log.Printf("%s: reading %s: %s\n", vol, blockFilename, err)
 			continue
 		}
 
@@ -157,7 +157,7 @@ func GetBlock(hash string) ([]byte, error) {
 			// priority or logged as urgent problems.
 			//
 			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
-				vol, path, filehash)
+				vol, blockFilename, filehash)
 			continue
 		}
 
@@ -193,7 +193,7 @@ func GetBlock(hash string) ([]byte, error) {
             provide as much detail as possible.
 */
 
-func PutBlock(block []byte, hash string) *KeepError {
+func PutBlock(block []byte, hash string) error {
 	// Check that BLOCK's checksum matches HASH.
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
@@ -205,14 +205,15 @@ func PutBlock(block []byte, hash string) *KeepError {
 	any_success := false
 	for _, vol := range KeepVolumes {
 
-		bFilename := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
-		if err := os.MkdirAll(path.Dir(bFilename), 0755); err != nil {
+		blockDir := fmt.Sprintf("%s/%s", vol, hash[0:3])
+		if err := os.MkdirAll(blockDir, 0755); err != nil {
 			log.Printf("%s: could not create directory %s: %s",
-				hash, path.Dir(bFilename), err)
+				hash, blockDir, err)
 			continue
 		}
 
-		f, err := os.OpenFile(bFilename, os.O_CREATE|os.O_WRONLY, 0644)
+		blockFilename := fmt.Sprintf("%s/%s", blockDir, hash)
+		f, err := os.OpenFile(blockFilename, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			// if the block already exists, just skip to the next volume.
 			if os.IsExist(err) {
@@ -220,7 +221,7 @@ func PutBlock(block []byte, hash string) *KeepError {
 				continue
 			} else {
 				// Open failed for some other reason.
-				log.Printf("%s: creating %s: %s\n", vol, bFilename, err)
+				log.Printf("%s: creating %s: %s\n", vol, blockFilename, err)
 				continue
 			}
 		}
@@ -230,7 +231,7 @@ func PutBlock(block []byte, hash string) *KeepError {
 			any_success = true
 			continue
 		} else {
-			log.Printf("%s: writing to %s: %s\n", vol, bFilename, err)
+			log.Printf("%s: writing to %s: %s\n", vol, blockFilename, err)
 			continue
 		}
 	}
