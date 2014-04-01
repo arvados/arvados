@@ -100,19 +100,11 @@ func TestPutBlockOK(t *testing.T) {
 	KeepVolumes = setup(t, 2)
 
 	// Check that PutBlock stores the data as expected.
-	err := PutBlock(TEST_BLOCK, TEST_HASH)
-	if err == nil {
-		t.Log("err is nil")
-	}
-	if err != nil {
+	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
 		t.Fatalf("PutBlock: %v", err)
 	}
 
-	var result []byte
-	result, err = GetBlock(TEST_HASH)
-	t.Log("result = %v", result)
-	t.Log("err = %v", err)
-
+	result, err := GetBlock(TEST_HASH)
 	if err != nil {
 		t.Fatalf("GetBlock: %s", err.Error())
 	}
@@ -120,6 +112,58 @@ func TestPutBlockOK(t *testing.T) {
 		t.Error("PutBlock/GetBlock mismatch")
 		t.Fatalf("PutBlock stored '%s', GetBlock retrieved '%s'",
 			string(TEST_BLOCK), string(result))
+	}
+}
+
+// Test storing a block when only one volume (of many) is not available.
+func TestPutBlockOneVol(t *testing.T) {
+	defer teardown()
+
+	// Create two test Keep volumes, but cripple one of them.
+	KeepVolumes = setup(t, 2)
+	os.Chmod(KeepVolumes[0], 000)
+
+	// Check that PutBlock stores the data as expected.
+	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+		t.Fatalf("PutBlock: %v", err)
+	}
+
+	result, err := GetBlock(TEST_HASH)
+	if err != nil {
+		t.Fatalf("GetBlock: %s", err.Error())
+	}
+	if string(result) != string(TEST_BLOCK) {
+		t.Error("PutBlock/GetBlock mismatch")
+		t.Fatalf("PutBlock stored '%s', GetBlock retrieved '%s'",
+			string(TEST_BLOCK), string(result))
+	}
+}
+
+// TestPutBlockCorrupt
+//     Check that PutBlock returns an error if passed a block and hash that
+//     do not match.
+//
+func TestPutBlockCorrupt(t *testing.T) {
+	defer teardown()
+
+	// Create two test Keep volumes.
+	KeepVolumes = setup(t, 2)
+
+	// Check that PutBlock returns the expected error when the hash does
+	// not match the block.
+	if err := PutBlock(BAD_BLOCK, TEST_HASH); err == nil {
+		t.Error("PutBlock succeeded despite a block mismatch")
+	} else {
+		ke := err.(*KeepError)
+		if ke.HTTPCode != 401 || ke.Err.Error() != "MD5Fail" {
+			t.Errorf("PutBlock returned the wrong error (%v)", ke)
+		}
+	}
+
+	// Confirm that GetBlock fails to return anything.
+	if result, err := GetBlock(TEST_HASH); err == nil {
+		t.Errorf("GetBlock succeded after a corrupt block store, returned '%s'",
+			string(result))
 	}
 }
 
