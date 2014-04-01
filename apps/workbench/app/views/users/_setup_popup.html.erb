@@ -1,12 +1,44 @@
  <div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-    <h3 id="myModalLabel">Modal header</h3>
+    <h3 id="myModalLabel">Information you had already provided is prefilled for you. You may change it as needed.</h3>
   </div>
 
   <div class="modal-body">
-  <%= form_tag setup_user_url(id: @object.uuid), method: 'get', remote: true, class: 'form-search' do %>
-      <input id="repo_name" maxlength="250" name="repo_name" type="text">
-      <button type="submit" class="btn">Submit</button>
-      <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>  </div>  
-  <% end %>
+    <%= uuid = @object.uuid %>
+    <%= disable_email = @object.uuid? %>
+    <%= form_tag setup_user_url(id: uuid), method: 'get', remote: true, class: 'form-search' do %>    
+      <div>
+        <table><tbody>
+          <tr>
+            <% if disable_email %>
+              <td> Email : </td>
+              <td> <input id="email" maxlength="250" name="email" type="text" disabled=<%=disable_email%> > </td>
+            <% else %>
+              <td> Email : </td>
+              <td> <input id="email" maxlength="250" name="email" type="text" > </td>
+            <% end %>
+          </tr>
+          <tr>
+            <% if disable_email %>
+              <td> Openid Prefix : </td>
+              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" disabled=<%=disable_email%> > </td>
+            <% else %>
+              <td> Openid Prefix : </td>
+              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text"> </td>
+            <% end %>
+          </tr>
+          <tr>
+            <td> Repository Name : </td>
+            <td> <input id="repo_name" maxlength="250" name="repo_name" type="text">
+          </tr>
+          <tr>
+            <td> Virtual Machine : </td>
+            <td> <input id="vm_uuid" maxlength="250" name="vm_uuid" type="text">
+          </tr>
+        </tbody></table>
+      </div>
+      <div align="left">
+        <button type="submit" class="btn">Submit</button>
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      </div>
+    <% end %>
   </div>
