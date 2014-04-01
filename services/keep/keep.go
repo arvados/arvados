@@ -220,7 +220,7 @@ func PutBlock(block []byte, hash string) *KeepError {
 				continue
 			} else {
 				// Open failed for some other reason.
-				log.Printf("%s: creatingb %s: %s\n", vol, bFilename, err)
+				log.Printf("%s: creating %s: %s\n", vol, bFilename, err)
 				continue
 			}
 		}
