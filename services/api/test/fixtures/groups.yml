@@ -26,3 +26,8 @@ all_users:
   uuid: zzzzz-j7d0g-fffffffffffffff
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   name: All users
+
+testusergroup_admins:
+  uuid: zzzzz-j7d0g-48foin4vonvc2at
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: Administrators of a subset of users
