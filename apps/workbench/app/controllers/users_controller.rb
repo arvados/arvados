@@ -176,10 +176,60 @@ class UsersController < ApplicationController
 
   def setup_popup
     @vms = VirtualMachine.all.results
+
+    @current_selections = find_current_links @object
+
     respond_to do |format|
       format.html
       format.js
     end
+  end
+
+  protected
+
+  def find_current_links user
+    current_selections = {}
+
+    if !user
+      return current_selections
+    end
+
+    # oid login perm
+    oid_login_perms = Link.where(tail_uuid: user.email,
+                                   head_kind: 'arvados#user',
+                                   link_class: 'permission',
+                                   name: 'can_login')
+
+    if oid_login_perms.any?
+      identiry_url_prefix = oid_login_perms.first.identity_url_prefix
+      current_selections[:identiry_url_prefix] = identiry_url_prefix
+    end
+
+    # repo perm
+    repo_perms = Link.where(tail_uuid: user.uuid,
+                            head_kind: 'arvados#repository',
+                            link_class: 'permission',
+                            name: 'can_write')
+    if repo_perms.any?
+      repo_uuid = repo_perms.first.head_uuid
+      repos = Repository.where(head_uuid: repo_uuid)
+      if repos.any?
+        repo_name = repos.first.name
+        current_selections[:repo_name] = repo_name
+      end
+    end
+
+    # vm login perm
+    vm_login_perms = Link.where(tail_uuid: user.uuid,
+                              head_kind: 'arvados#virtualMachine',
+                              link_class: 'permission',
+                              name: 'can_login')
+    if vm_login_perms.any?
+      vm_uuid = vm_login_perms.first.head_uuid
+      current_selections[:vm_uuid] = vm_uuid
+    end
+
+    return current_selections
   end
 
 end
