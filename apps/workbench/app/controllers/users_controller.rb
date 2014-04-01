@@ -148,7 +148,22 @@ class UsersController < ApplicationController
   def setup
     respond_to do |format|
       if current_user.andand.is_admin
-        if @object.setup
+        setup_params = {}
+        if params['uuid'] && params['uuid'].size>0
+          setup_params[:uuid] = params['uuid']
+        end
+        if params['email'] && params['email'].size>0
+          user = {email: params['email'], openid_prefix: params['openid_prefix']}
+          setup_params[:user] = user
+        end
+        if params['repo_name'] && params['repo_name'].size>0
+          setup_params[:repo_name] = params['repo_name']
+        end
+        if params['vm_uuid'] && params['vm_uuid'].size>0
+          setup_params[:vm_uuid] = params['vm_uuid']
+        end
+
+        if User.setup setup_params
           format.js
         else
           self.render_error status: 422

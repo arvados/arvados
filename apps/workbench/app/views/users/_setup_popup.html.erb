@@ -4,7 +4,7 @@
 
   <div class="modal-body">
     <%= uuid = @object.uuid %>
-    <%= disable_email = @object.uuid? %>
+    <%= disable_email = false %>
     <%= form_tag setup_user_url(id: uuid), method: 'get', remote: true, class: 'form-search' do %>    
       <div>
         <table><tbody>
