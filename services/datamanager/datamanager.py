@@ -182,21 +182,29 @@ def reportBusiestUsers():
     print '%s reading %d collections.' % (persister, len(collections))
 
 
+def blockDiskUsage(block_uuid):
+  """Returns the disk usage of a block given its uuid.
+
+  Will return 0 before reading the contents of the keep servers.
+  """
+  return byteSizeFromValidUuid(block_uuid) * block_to_replication[block_uuid]
+
+
 def reportUserDiskUsage():
   for user, blocks in reader_to_blocks.items():
     user_to_usage[user][UNWEIGHTED_READ_SIZE_COL] = sum(map(
-        byteSizeFromValidUuid,
+        blockDiskUsage,
         blocks))
     user_to_usage[user][WEIGHTED_READ_SIZE_COL] = sum(map(
-        lambda block_uuid:(float(byteSizeFromValidUuid(block_uuid))/
+        lambda block_uuid:(float(blockDiskUsage(block_uuid))/
                                  len(block_to_readers[block_uuid])),
         blocks))
   for user, blocks in persister_to_blocks.items():
     user_to_usage[user][UNWEIGHTED_PERSIST_SIZE_COL] = sum(map(
-        byteSizeFromValidUuid,
+        blockDiskUsage,
         blocks))
     user_to_usage[user][WEIGHTED_PERSIST_SIZE_COL] = sum(map(
-        lambda block_uuid:(float(byteSizeFromValidUuid(block_uuid))/
+        lambda block_uuid:(float(blockDiskUsage(block_uuid))/
                                  len(block_to_persisters[block_uuid])),
         blocks))
   print ('user: unweighted readable block size, weighted readable block size, '
@@ -297,8 +305,6 @@ WEIGHTED_PERSIST_SIZE_COL = 3
 NUM_COLS = 4
 user_to_usage = defaultdict(lambda : [0,]*NUM_COLS)
 
-reportUserDiskUsage()
-
 print 'Getting Keep Servers'
 keep_servers = getKeepServers()
 
@@ -310,3 +316,5 @@ keep_blocks = getKeepBlocks(keep_servers)
 block_to_replication = computeReplication(keep_blocks)
 
 print 'average replication level is %f' % (float(sum(block_to_replication.values())) / len(block_to_replication))
+
+reportUserDiskUsage()
