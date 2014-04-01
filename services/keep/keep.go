@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -20,12 +21,12 @@ var PROC_MOUNTS = "/proc/mounts"
 var KeepVolumes []string
 
 type KeepError struct {
-	HTTPCode     int
-	ErrorMessage string
+	HTTPCode int
+	Err      error
 }
 
 func (e *KeepError) Error() string {
-	return e.ErrorMessage
+	return fmt.Sprintf("Error %d: %s", e.HTTPCode, e.Err.Error())
 }
 
 func main() {
@@ -110,8 +111,7 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 	// TODO(twp): decide what to do when the input stream contains
 	// more than BLOCKSIZE bytes.
 	//
-	var nread int
-	buf := make([]string, BLOCKSIZE)
+	buf := make([]byte, BLOCKSIZE)
 	if nread, err := req.Body.Read(buf); err == nil {
 		if err := PutBlock(buf[:nread], hash); err == nil {
 			w.WriteHeader(http.StatusOK)
@@ -119,6 +119,7 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, err.Error(), err.HTTPCode)
 		}
 	} else {
+		log.Println("error reading request: ", err)
 		http.Error(w, err.Error(), 500)
 	}
 }
@@ -165,7 +166,7 @@ func GetBlock(hash string) ([]byte, error) {
 	}
 
 	log.Printf("%s: not found on any volumes, giving up\n", hash)
-	return buf, KeepError{404, "not found: " + hash}
+	return buf, &KeepError{404, errors.New("not found: " + hash)}
 }
 
 /* PutBlock(block, hash)
@@ -181,9 +182,6 @@ func GetBlock(hash string) ([]byte, error) {
    On success, PutBlock returns nil.
    On failure, it returns a KeepError with one of the following codes:
 
-   400 Collision
-         -- A different object already exists in Keep with the same hash.
-            This check provides protection against (unlikely) MD5 collisions.
    401 MD5Fail
          -- The MD5 hash of the BLOCK does not match the argument HASH.
    503 Full
@@ -195,22 +193,26 @@ func GetBlock(hash string) ([]byte, error) {
             provide as much detail as possible.
 */
 
-func PutBlock(block []string, hash string) error {
+func PutBlock(block []byte, hash string) *KeepError {
 	// Check that BLOCK's checksum matches HASH.
-	if md5.Sum(block) != hash {
-		return KeepError{401, "MD5Fail"}
+	blockhash := fmt.Sprintf("%x", md5.Sum(block))
+	if blockhash != hash {
+		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
+		return &KeepError{401, errors.New("MD5Fail")}
 	}
 
 	// any_success will be set to true upon a successful block write.
 	any_success := false
 	for _, vol := range KeepVolumes {
-		var f *os.File
-		var err error
-		var nread int
 
-		path := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
+		bFilename := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
+		if err := os.MkdirAll(path.Dir(bFilename), 0755); err != nil {
+			log.Printf("%s: could not create directory %s: %s",
+				hash, path.Dir(bFilename), err)
+			continue
+		}
 
-		f, err = os.OpenFile(path, os.O_CREATE, 0644)
+		f, err := os.OpenFile(bFilename, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			// if the block already exists, just skip to the next volume.
 			if os.IsExist(err) {
@@ -218,17 +220,17 @@ func PutBlock(block []string, hash string) error {
 				continue
 			} else {
 				// Open failed for some other reason.
-				log.Fprintf("%s: writing to %s: %s\n", vol, path, err)
+				log.Printf("%s: creatingb %s: %s\n", vol, bFilename, err)
 				continue
 			}
 		}
 
-		if nwrite, err := f.Write(block); err == nil {
+		if _, err := f.Write(block); err == nil {
 			f.Close()
 			any_success = true
 			continue
 		} else {
-			log.Fprintf("%s: writing to %s: %s\n", vol, path, err)
+			log.Printf("%s: writing to %s: %s\n", vol, bFilename, err)
 			continue
 		}
 	}
@@ -236,6 +238,7 @@ func PutBlock(block []string, hash string) error {
 	if any_success {
 		return nil
 	} else {
-		return KeepError{500, "Fail"}
+		log.Printf("all Keep volumes failed")
+		return &KeepError{500, errors.New("Fail")}
 	}
 }
