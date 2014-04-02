@@ -5,9 +5,16 @@
 <% content_for :tab_line_buttons do %>
 
 <% if controller.model_class.creatable? %>
-<%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", 
-    { action: 'create', return_to: request.url }, 
-    { class: 'btn btn-primary pull-right' } %>
+  <% if controller.model_class.name != 'User' %>
+    <%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", 
+      { action: 'create', return_to: request.url }, 
+      { class: 'btn btn-primary pull-right' } %>
+  <% else %>
+    <%= link_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", setup_user_popup_path,  
+      {class: 'btn btn-primary pull-right', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#modal-window'}  %>
+    <div id="modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+  <% end %>
+
 <% end %>
 
 <% end %>

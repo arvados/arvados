@@ -1,18 +1,23 @@
   <div class="modal-body">
-    <% uuid = @object.uuid %>
-    <% disable_email =  @object.uuid? %>
+    <% if @object%>
+      <% uuid = @object.uuid %>
+      <% email = @object.email %>
+    <% end %>
+    <% disable_email = uuid != nil %>
     <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
     <% disable_url_prefix = (identity_url_prefix != nil) %>
     <% selected_repo = @current_selections[:repo_name] %>
     <% selected_vm = @current_selections[:vm_uuid] %>
     
-    <%= form_tag setup_user_url(id: uuid), {id: 'setup_form', name: 'setup_form', method: 'get', class: 'form-search', remote: true, onSubmit: "validate(); return false;"} do %>    
+<% puts "\n\n **************** setup_user_url = #{setup_user_url.inspect}" %>
+    <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get', class: 'form-search', remote: true} do %>
+      <input id="user_uuid" maxlength="250" name="user_uuid" type="hidden" value="<%=uuid%>">
       <div>
         <table><tbody>
           <tr>
             <% if disable_email %>
               <td> Email </td>
-              <td> <input id="email" maxlength="250" name="email" type="text" value="<%=@object.email%>" disabled=true > </td>
+              <td> <input id="email" maxlength="250" name="email" type="text" value="<%=email%>" disabled=true > </td>
             <% else %>
               <td> Email </td>
               <td> <input id="email" maxlength="250" name="email" type="text" > </td>
