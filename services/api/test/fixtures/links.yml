@@ -158,6 +158,38 @@ foo_file_readable_by_active:
   head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   properties: {}
 
+foo_file_readable_by_active_duplicate_permission:
+  uuid: zzzzz-o0j2j-2qlmhgothiur55r
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_kind: arvados#user
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_read
+  head_kind: arvados#collection
+  head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  properties: {}
+
+foo_file_readable_by_active_redundant_permission_via_private_group:
+  uuid: zzzzz-o0j2j-5s8ry7sn6bwxb7w
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_kind: arvados#group
+  tail_uuid: zzzzz-j7d0g-22xp1wpjul508rk
+  link_class: permission
+  name: can_read
+  head_kind: arvados#collection
+  head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  properties: {}
+
 bar_file_readable_by_active:
   uuid: zzzzz-o0j2j-8hppiuduf8eqdng
   owner_uuid: zzzzz-tpzed-000000000000000

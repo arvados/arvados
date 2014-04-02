@@ -20,6 +20,17 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     end
   end
 
+  test "items.count == items_available" do
+    authorize_with :active
+    get :index, limit: 100000
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal resp['items_available'], assigns(:objects).length
+    assert_equal resp['items_available'], resp['items'].count
+    unique_uuids = resp['items'].collect { |i| i['uuid'] }.compact.uniq
+    assert_equal unique_uuids.count, resp['items'].count
+  end
+
   test "get index with limit=2 offset=99999" do
     # Assume there are not that many test fixtures.
     authorize_with :active
@@ -205,7 +216,7 @@ EOS
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
-    assert_equal 1, assigns(:objects).count
+    assert_equal 1, found.count
     assert_equal true, !!found.index('1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
   end
 
