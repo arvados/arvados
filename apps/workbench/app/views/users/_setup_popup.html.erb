@@ -2,6 +2,7 @@
     <% uuid = @object.uuid %>
     <% disable_email =  @object.uuid? %>
     <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
+    <% disable_url_prefix = (identity_url_prefix != nil) %>
     <% selected_repo = @current_selections[:repo_name] %>
     <% selected_vm = @current_selections[:vm_uuid] %>
     
@@ -11,16 +12,16 @@
           <tr>
             <% if disable_email %>
               <td> Email </td>
-              <td> <input id="email" maxlength="250" name="email" type="text" value="<%=@object.email%>" disabled=<%=disable_email%> > </td>
+              <td> <input id="email" maxlength="250" name="email" type="text" value="<%=@object.email%>" disabled=true > </td>
             <% else %>
               <td> Email </td>
               <td> <input id="email" maxlength="250" name="email" type="text" > </td>
             <% end %>
           </tr>
           <tr>
-            <% if disable_email %>
-              <td> Identity URL Prefix </td>
-              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" value="<%=identity_url_prefix%>" disabled=<%=disable_email%> > </td>
+            <% if disable_url_prefix %>
+              <td> Identity URL Prefix &nbsp </td>
+              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" value="<%=identity_url_prefix%>" disabled=true > </td>
             <% else %>
               <td> Openid Prefix </td>
               <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" value="https://www.google.com/accounts/o8/id"> </td>
@@ -34,6 +35,11 @@
             <td> Virtual Machine </td>
             <td>
               <select name="vm_uuid">
+                <% if selected_vm %>
+                  <option value=""> Choose One: </option>
+                <% else %>
+                  <option value="" selected> Choose One: </option>
+                <% end %>
                 <% @vms.each do |vm| %>
                   <% if selected_vm == vm.uuid %>
                     <option value=<%=vm.uuid%> selected> <%=vm.hostname%> </option>
@@ -46,7 +52,8 @@
           </tr>
         </tbody></table>
       </div>
-      <div align="left">
+      <div align="center">
+        <br/>
         <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
         <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Cancel</button>
       </div>
