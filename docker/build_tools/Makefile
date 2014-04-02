@@ -110,27 +110,27 @@ api-image: passenger-image $(API_DEPS)
 	mkdir -p api/generated
 	tar -c -z -f api/generated/api.tar.gz -C ../services api --exclude=api/log/*
 	$(DOCKER_BUILD) -t arvados/api api
-	echo -n "Built at $(date)" > api-image
+	date >api-image
 
 doc-image: base-image $(DOC_DEPS)
 	mkdir -p doc/generated
 	tar -c -z -f doc/generated/doc.tar.gz -C .. doc
 	$(DOCKER_BUILD) -t arvados/doc doc
-	echo -n "Built at $(date)" > doc-image
+	date >doc-image
 
 workbench-image: passenger-image $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated
 	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
 	$(DOCKER_BUILD) -t arvados/workbench workbench
-	echo -n "Built at $(date)" > workbench-image
+	date >workbench-image
 
 warehouse-image: base-image $(WAREHOUSE_DEPS)
 	$(DOCKER_BUILD) -t arvados/warehouse warehouse
-	echo -n "Built at $(date)" > warehouse-image
+	date >warehouse-image
 
 sso-image: passenger-image $(SSO_DEPS)
 	$(DOCKER_BUILD) -t arvados/sso sso
-	echo -n "Built at $(date)" > sso-image
+	date >sso-image
 
 # ============================================================
 # The arvados/base image is the base Debian image plus packages
@@ -138,13 +138,12 @@ sso-image: passenger-image $(SSO_DEPS)
 
 passenger-image: base-image
 	$(DOCKER_BUILD) -t arvados/passenger passenger
-	echo -n "Built at $(date)" > passenger-image
+	date >passenger-image
 
 base-image: debian-image $(BASE_DEPS)
 	$(DOCKER_BUILD) -t arvados/base base
-	echo -n "Built at $(date)" > base-image
+	date >base-image
 
 debian-image:
 	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
-	echo -n "Built at $(date)" > debian-image
-
+	date >debian-image
