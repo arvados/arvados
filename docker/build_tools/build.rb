@@ -163,7 +163,7 @@ def install_docker
   linux_release = %x(lsb_release --release).split.last
   linux_version = linux_distro + " " + linux_release
   kernel_release = `uname -r`
-  
+
   case linux_distro
   when 'Ubuntu'
     if not linux_release.match '^1[234]\.'
@@ -209,7 +209,7 @@ end
 
 
 if __FILE__ == $PROGRAM_NAME
-  options = { :makefile => Dir.pwd + "/build_tools/Makefile" }
+  options = { :makefile => File.join(File.dirname(__FILE__), 'Makefile') }
   OptionParser.new do |opts|
     opts.on('-m', '--makefile MAKEFILE-PATH',
             'Path to the Makefile used to build Arvados Docker images') do |mk|
