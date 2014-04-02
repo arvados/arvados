@@ -24,7 +24,7 @@ end
 # For each *.in file in the docker directories, substitute any
 # @@variables@@ found in the file with the appropriate config
 # variable. Support up to 10 levels of nesting.
-# 
+#
 # TODO(twp): add the *.in files directory to the source tree, and
 # when expanding them, add them to the "generated" directory with
 # the same tree structure as in the original source. Then all
@@ -58,6 +58,10 @@ Dir.glob('*/*.in') do |template_file|
       output.write(line)
     end
   end
+  # Copy the owner's read+execute bits to group and other.
+  owner_perms = output.stat.mode & 0700
+  group_perms = (owner_perms & 0500) >> 3
+  output.chmod(owner_perms | group_perms | (group_perms >> 3))
   output.close
 end
 
