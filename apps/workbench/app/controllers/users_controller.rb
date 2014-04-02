@@ -149,12 +149,15 @@ class UsersController < ApplicationController
     respond_to do |format|
       if current_user.andand.is_admin
         setup_params = {}
-        if params['uuid'] && params['uuid'].size>0
-          setup_params[:uuid] = params['uuid']
+        if params['user_uuid'] && params['user_uuid'].size>0
+          setup_params[:uuid] = params['user_uuid']
         end
         if params['email'] && params['email'].size>0
-          user = {email: params['email'], openid_prefix: params['openid_prefix']}
+          user = {email: params['email']}
           setup_params[:user] = user
+        end
+        if params['openid_prefix'] && params['openid_prefix'].size>0
+          setup_params[:openid_prefix] = params['openid_prefix']
         end
         if params['repo_name'] && params['repo_name'].size>0
           setup_params[:repo_name] = params['repo_name']
