@@ -4,18 +4,20 @@
 
 <% content_for :tab_line_buttons do %>
 
-<% if controller.model_class.creatable? %>
-  <% if controller.model_class.name != 'User' %>
-    <%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", 
-      { action: 'create', return_to: request.url }, 
-      { class: 'btn btn-primary pull-right' } %>
-  <% else %>
-    <%= link_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", setup_user_popup_path,  
-      {class: 'btn btn-primary pull-right', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#modal-window'}  %>
-    <div id="modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
-  <% end %>
+  <% if controller.model_class.creatable? %>
 
-<% end %>
+    <% if controller.model_class.name == 'User' %>
+      <%= link_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", setup_user_popup_path,
+        {class: 'btn btn-primary pull-right', :remote => true, 'data-toggle' =>  "modal", 
+          'data-target' => '#modal-window', return_to: request.url}  %>
+      <div id="modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+    <% else %>
+      <%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}", 
+        { action: 'create', return_to: request.url }, 
+        { class: 'btn btn-primary pull-right' } %>
+    <% end %>
+
+  <% end %>
 
 <% end %>
 
