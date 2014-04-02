@@ -12,6 +12,22 @@ task :generate do
   end
 end
 
+task :linkchecker => [:realclean, :generate]
+
+task :linkchecker do
+  Dir.chdir(".site")
+  `which linkchecker`
+  if $? == 0
+    ignore_urls = ['', 'javascript', 'mailto',
+                   'oftc.net', 'putty.org','google.com', 'fsf.org',
+                   'arvadosapi.com', 'arvados.org', 'sourceforge.net',
+                   'chiark.greenend.org.uk', 'github.io' ]
+    system "linkchecker index.html " + ignore_urls.join(' --ignore-url=')
+  else
+    puts "Warning: linkchecker not found, skipping".colorize(:light_red)
+  end
+end
+
 require "zenweb/tasks"
 load "zenweb-textile.rb"
 load "zenweb-liquid.rb"
