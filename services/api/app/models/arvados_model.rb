@@ -38,9 +38,14 @@ class ArvadosModel < ActiveRecord::Base
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
   end
 
-  def self.searchable_columns
+  def self.searchable_columns operator
+    textonly_operator = !operator.match(/[<=>]/)
     self.columns.collect do |col|
-      if [:string, :text, :datetime, :integer].index(col.type) && col.name != 'owner_uuid'
+      if col.name == 'owner_uuid'
+        nil
+      elsif [:string, :text].index(col.type)
+        col.name
+      elsif !textonly_operator and [:datetime, :integer].index(col.type)
         col.name
       end
     end.compact

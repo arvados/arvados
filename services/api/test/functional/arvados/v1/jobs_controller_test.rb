@@ -223,7 +223,8 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
-    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+    assert_equal 0, found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+    assert_equal 1, found.count
   end
 
   test "search jobs by nonexistent column with < query" do

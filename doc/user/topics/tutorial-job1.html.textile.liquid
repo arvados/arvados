@@ -8,40 +8,42 @@ This tutorial introduces how to run individual Crunch jobs using the @arv@ comma
 
 *This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
 
-You will create a job to run the "hash" crunch script.  The "hash" script computes the md5 hash of each file in a collection.
+You will create a job to run the "hash" Crunch script.  The "hash" script computes the md5 hash of each file in a collection.
 
 h2. Jobs
 
-Crunch pipelines consist of one or more jobs.  A "job" is a single run of a specific version of a crunch script with a specific input.  You an also run jobs individually.
+Crunch pipelines consist of one or more jobs.  A "job" is a single run of a specific version of a Crunch script with a specific input.  You can also run jobs individually.
 
-A request to run a crunch job are is described using a JSON object.  For example:
+A request to run a Crunch job are is described using a JSON object.  For example:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cat &gt;the_job &lt;&lt;EOF
+<pre><code>~$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
  "script": "hash",
  "repository": "arvados",
  "script_version": "master",
  "script_parameters": {
   "input": "c1bad4b39ca5a924e481008009d94e32+210"
- }
+ },
+ "no_reuse": "true"
 }
 EOF
 </code></pre>
 </notextile>
 
-* @cat@ is a standard Unix utility that simply copies standard input to standard output
-* @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@
-* @>the_job@ redirects standard output to a file called @the_job@
-* @"script"@ specifies the name of the script to run.  The script is searched for in the "crunch_scripts/" subdirectory of the @git@ checkout specified by @"script_version"@.
-* @"repository"@ is the git repository to search for the script version.  You can access a list of available @git@ repositories on the Arvados workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}//repositories .
-* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit @git@ revision hash, a tag, or a branch (in which case it will take the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
-* @"script_parameters"@ are provided to the script.  In this case, the input is the locator for the collection that we inspected in the previous section.
+* @cat@ is a standard Unix utility that writes a sequence of input to standard output.
+* @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@.
+* @>~/the_job@ redirects standard output to a file called @~/the_job@.
+* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "*Compute* %(rarr)&rarr;% *Code repositories*":https://{{site.arvados_workbench_host}}/repositories.
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit git revision hash, a tag, or a branch (in which case it will use the most recent commit on the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
+* @"script"@ specifies the name of the script to run.  The script is searched for in the @crunch_scripts/@ subdirectory of the git repository.
+* @"script_parameters"@ are provided to the script.  In this case, the input is the PGP data Collection that we "put in Keep earlier":{{site.baseurl}}/user/tutorials/tutorial-keep.html.
+* Setting the @"no_reuse"@ flag tells Crunch not to reuse work from past jobs.  This helps ensure that you can watch a new Job process for the rest of this tutorial, without reusing output from a past run that you made, or somebody else marked as public.  (If you want to experiment, after the first run below finishes, feel free to edit this job to remove the @"no_reuse"@ line and resubmit it.  See what happens!)
 
 Use @arv job create@ to actually submit the job.  It should print out a JSON object which describes the newly created job:
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv job create --job "$(cat the_job)"</span>
+<pre><code>~$ <span class="userinput">arv job create --job "$(cat ~/the_job)"</span>
 {
  "href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-1pm1t02dezhupss",
  "kind":"arvados#job",
@@ -82,12 +84,12 @@ Use @arv job create@ to actually submit the job.  It should print out a JSON obj
 
 The job is now queued and will start running as soon as it reaches the front of the queue.  Fields to pay attention to include:
 
- * @"uuid"@ is the unique identifier for this specific job
+ * @"uuid"@ is the unique identifier for this specific job.
  * @"script_version"@ is the actual revision of the script used.  This is useful if the version was described using the "repository:branch" format.
 
 h2. Monitor job progress
 
-Go to the "Workbench dashboard":https://{{site.arvados_workbench_host}}.  Your job should be at the top of the "Recent jobs" table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
+Go to the "Workbench dashboard":https://{{site.arvados_workbench_host}} and visit *Activity* %(rarr)&rarr;% *Recent jobs*.  Your job should be near the top of the table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
 
 On the command line, you can access log messages while the job runs using @arv job log_tail_follow@:
 
@@ -97,7 +99,7 @@ This will print out the last several lines of the log for that job.
 
 h2. Inspect the job output
 
-On the "Workbench dashboard":https://{{site.arvados_workbench_host}}, look for the *Output* column of the *Recent jobs* table.  Click on the link under *Output* for your job to go to the files page with the job output.  The files page lists all the files that were output by the job.  Click on the link under the *files* column to view a file, or click on the download icon <span class="glyphicon glyphicon-download-alt"></span> to download the output file.
+On the "Workbench dashboard":https://{{site.arvados_workbench_host}}, look for the *Output* column of the *Recent jobs* table.  Click on the link under *Output* for your job to go to the files page with the job output.  The files page lists all the files that were output by the job.  Click on the link under the *file* column to view a file, or click on the download icon <span class="glyphicon glyphicon-download-alt"></span> to download the output file.
 
 On the command line, you can use @arv job get@ to access a JSON object describing the output:
 
@@ -152,7 +154,7 @@ Now you can list the files in the collection:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv keep ls dd755dbc8d49a67f4fe7dc843e4f10a6+54</span>
-md5sum.txt
+./md5sum.txt
 </code></pre>
 </notextile>
 
@@ -164,59 +166,58 @@ This collection consists of the @md5sum.txt@ file.  Use @arv keep get@ to show t
 </code></pre>
 </notextile>
 
-This md5 hash matches the md5 hash which we computed earlier.
+This md5 hash matches the md5 hash which we "computed earlier":{{site.baseurl}}/user/tutorials/tutorial-keep.html.
 
 h2. The job log
 
-When the job completes, you can access the job log.  On the workbench dashboard, this is the link under the *Log* column of the *Recent jobs* table.
+When the job completes, you can access the job log.  On the Workbench, visit *Activity* %(rarr)&rarr;% *Recent jobs* %(rarr)&rarr;% your job's UUID under the *uuid* column %(rarr)&rarr;% the collection link on the *log* row.
 
-On the command line, the keep identifier listed in the @"log"@ field from @arv job get@ specifies a collection.  You can list the files in the collection:
+On the command line, the Keep identifier listed in the @"log"@ field from @arv job get@ specifies a collection.  You can list the files in the collection:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv keep ls xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91</span>
-qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt
+./qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt
 </code></pre>
 </notextile>
 
-The log collection consists of one log file named with the job id.  You can access it using @arv keep get@:
+The log collection consists of one log file named with the job's UUID.  You can access it using @arv keep get@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv keep get xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx+91/qr1hi-8i9sb-xxxxxxxxxxxxxxx.log.txt</span>
-2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  check slurm allocation
-2013-12-16_20:44:35 qr1hi-8i9sb-1pm1t02dezhupss 7575  node compute13 - 8 slots
-2013-12-16_20:44:36 qr1hi-8i9sb-1pm1t02dezhupss 7575  start
-2013-12-16_20:44:36 qr1hi-8i9sb-1pm1t02dezhupss 7575  Install revision d9cd657b733d578ac0d2167dd75967aa4f22e0ac
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  Clean-work-dir exited 0
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  Install exited 0
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script hash
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script_version d9cd657b733d578ac0d2167dd75967aa4f22e0ac
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  script_parameters {"input":"c1bad4b39ca5a924e481008009d94e32+210"}
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  runtime_constraints {"max_tasks_per_node":0}
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  start level 0
-2013-12-16_20:44:37 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 0 done, 0 running, 1 todo
-2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 job_task qr1hi-ot0gb-23c1k3kwrf8da62
-2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 child 7681 started on compute13.1
-
-2013-12-16_20:44:38 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 0 done, 1 running, 0 todo
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 child 7681 on compute13.1 exit 0 signal 0 success=true
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 success in 1 seconds
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 0 output
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  wait for last 0 children to finish
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 0 running, 1 todo
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  start level 1
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 0 running, 1 todo
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 job_task qr1hi-ot0gb-iwr0o3unqothg28
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 child 7716 started on compute13.1
-2013-12-16_20:44:39 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 1 done, 1 running, 0 todo
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 child 7716 on compute13.1 exit 0 signal 0 success=true
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 success in 13 seconds
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575 1 output dd755dbc8d49a67f4fe7dc843e4f10a6+54
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  wait for last 0 children to finish
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  status: 2 done, 0 running, 0 todo
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  release job allocation
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  Freeze not implemented
-2013-12-16_20:44:52 qr1hi-8i9sb-1pm1t02dezhupss 7575  collate
-2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  output dd755dbc8d49a67f4fe7dc843e4f10a6+54+K@qr1hi
-2013-12-16_20:44:53 qr1hi-8i9sb-1pm1t02dezhupss 7575  finish
+2013-12-16_20:44:35 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  check slurm allocation
+2013-12-16_20:44:35 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  node compute13 - 8 slots
+2013-12-16_20:44:36 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  start
+2013-12-16_20:44:36 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  Install revision d9cd657b733d578ac0d2167dd75967aa4f22e0ac
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  Clean-work-dir exited 0
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  Install exited 0
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  script hash
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  script_version d9cd657b733d578ac0d2167dd75967aa4f22e0ac
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  script_parameters {"input":"c1bad4b39ca5a924e481008009d94e32+210"}
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  runtime_constraints {"max_tasks_per_node":0}
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  start level 0
+2013-12-16_20:44:37 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  status: 0 done, 0 running, 1 todo
+2013-12-16_20:44:38 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 0 job_task qr1hi-ot0gb-23c1k3kwrf8da62
+2013-12-16_20:44:38 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 0 child 7681 started on compute13.1
+2013-12-16_20:44:38 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  status: 0 done, 1 running, 0 todo
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 0 child 7681 on compute13.1 exit 0 signal 0 success=true
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 0 success in 1 seconds
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 0 output
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  wait for last 0 children to finish
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  status: 1 done, 0 running, 1 todo
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  start level 1
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  status: 1 done, 0 running, 1 todo
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 1 job_task qr1hi-ot0gb-iwr0o3unqothg28
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 1 child 7716 started on compute13.1
+2013-12-16_20:44:39 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  status: 1 done, 1 running, 0 todo
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 1 child 7716 on compute13.1 exit 0 signal 0 success=true
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 1 success in 13 seconds
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575 1 output dd755dbc8d49a67f4fe7dc843e4f10a6+54
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  wait for last 0 children to finish
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  status: 2 done, 0 running, 0 todo
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  release job allocation
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  Freeze not implemented
+2013-12-16_20:44:52 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  collate
+2013-12-16_20:44:53 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  output dd755dbc8d49a67f4fe7dc843e4f10a6+54+K@qr1hi
+2013-12-16_20:44:53 qr1hi-8i9sb-xxxxxxxxxxxxxxx 7575  finish
 </code></pre>
 </notextile>
