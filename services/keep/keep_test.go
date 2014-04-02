@@ -16,7 +16,9 @@ var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 // GetBlock tests.
 // ========================================
 
-// Test simple block reads.
+// TestGetBlockOK
+//     Test that a simple block read can be executed successfully.
+//
 func TestGetBlockOK(t *testing.T) {
 	defer teardown()
 
@@ -37,7 +39,10 @@ func TestGetBlockOK(t *testing.T) {
 	}
 }
 
-// Test block reads when one Keep volume is missing.
+// TestGetBlockOneKeepOK
+//     Test that block reads succeed even when the block is found only
+//     on one Keep volume.
+//
 func TestGetBlockOneKeepOK(t *testing.T) {
 	defer teardown()
 
@@ -55,8 +60,10 @@ func TestGetBlockOneKeepOK(t *testing.T) {
 	}
 }
 
-// Test block read failure.
-func TestGetBlockFail(t *testing.T) {
+// TestGetBlockMissing
+//     GetBlock must return an error when the block is not found.
+//
+func TestGetBlockMissing(t *testing.T) {
 	defer teardown()
 
 	// Create two empty test Keep volumes.
@@ -69,7 +76,10 @@ func TestGetBlockFail(t *testing.T) {
 	}
 }
 
-// Test reading a corrupt block.
+// TestGetBlockCorrupt
+//     GetBlock must return an error when a corrupted block is requested
+//     (the contents of the file do not checksum to its hash).
+//
 func TestGetBlockCorrupt(t *testing.T) {
 	defer teardown()
 
@@ -91,8 +101,9 @@ func TestGetBlockCorrupt(t *testing.T) {
 // PutBlock tests
 // ========================================
 
-// Test simple block stores.
-
+// TestPutBlockOK
+//     PutBlock can perform a simple block write and returns success.
+//
 func TestPutBlockOK(t *testing.T) {
 	defer teardown()
 
@@ -115,7 +126,10 @@ func TestPutBlockOK(t *testing.T) {
 	}
 }
 
-// Test storing a block when only one volume (of many) is not available.
+// TestPutBlockOneVol
+//     PutBlock still returns success even when only one of the known
+//     volumes is online.
+//
 func TestPutBlockOneVol(t *testing.T) {
 	defer teardown()
 
@@ -167,7 +181,10 @@ func TestPutBlockCorrupt(t *testing.T) {
 	}
 }
 
-// Test finding Keep volumes.
+// TestFindKeepVolumes
+//     Confirms that FindKeepVolumes finds tmpfs volumes with "/keep"
+//     directories at the top level.
+//
 func TestFindKeepVolumes(t *testing.T) {
 	defer teardown()
 
@@ -199,8 +216,9 @@ func TestFindKeepVolumes(t *testing.T) {
 	}
 }
 
-// Test that FindKeepVolumes returns an empty slice when no Keep volumes
-// are present.
+// TestFindKeepVolumesFail
+//     When no Keep volumes are present, FindKeepVolumes returns an empty slice.
+//
 func TestFindKeepVolumesFail(t *testing.T) {
 	defer teardown()
 
@@ -223,6 +241,10 @@ func TestFindKeepVolumesFail(t *testing.T) {
 		os.Remove(PROC_MOUNTS)
 	}
 }
+
+// ========================================
+// Helper functions for unit tests.
+// ========================================
 
 // setup
 //     Create KeepVolumes for testing.
