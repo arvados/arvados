@@ -198,4 +198,15 @@ EOS
     assert_nil resp['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'] # foo
   end
 
+  test "search collections with 'any' operator" do
+    authorize_with :active
+    get :index, {
+      where: { any: ['contains', '7f9102c395f4ffc5e3'] }
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal 1, assigns(:objects).count
+    assert_equal true, !!found.index('1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
+  end
+
 end
