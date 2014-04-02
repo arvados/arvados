@@ -1,15 +1,11 @@
-  <div class="modal-header">
-    <h3 id="myModalLabel">Information you had already provided is prefilled for you. You may change it as needed.</h3>
-  </div>
-
   <div class="modal-body">
     <% uuid = @object.uuid %>
-    <% disable_email = @object.uuid? %>
-    <% identity_url_prefix = @current_selections[:identiry_url_prefix] %>
+    <% disable_email =  @object.uuid? %>
+    <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
     <% selected_repo = @current_selections[:repo_name] %>
     <% selected_vm = @current_selections[:vm_uuid] %>
-
-    <%= form_tag setup_user_url(id: uuid), method: 'get', remote: true, class: 'form-search' do %>    
+    
+    <%= form_tag setup_user_url(id: uuid), {id: 'setup_form', name: 'setup_form', method: 'get', class: 'form-search', remote: true, onSubmit: "validate(); return false;"} do %>    
       <div>
         <table><tbody>
           <tr>
@@ -27,7 +23,7 @@
               <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" value="<%=identity_url_prefix%>" disabled=<%=disable_email%> > </td>
             <% else %>
               <td> Openid Prefix </td>
-              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text"> </td>
+              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" value="https://www.google.com/accounts/o8/id"> </td>
             <% end %>
           </tr>
           <tr>
@@ -51,8 +47,24 @@
         </tbody></table>
       </div>
       <div align="left">
-        <button type="submit" class="btn btn-primary" autofocus>Submit</button>
+        <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
         <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Cancel</button>
       </div>
     <% end %>
   </div>
+
+<script>
+  var $input = $('input:text'),
+  $register = $('#register');    
+  $register.attr('disabled', true);
+
+  $input.keyup(function() {
+    var trigger = false;
+    $input.each(function() {
+        if (!$(this).val()) {
+            trigger = true;
+        }
+    });
+    trigger ? $register.attr('disabled', true) : $register.removeAttr('disabled');
+  });
+</script>
