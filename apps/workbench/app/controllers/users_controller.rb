@@ -201,8 +201,8 @@ class UsersController < ApplicationController
                                    name: 'can_login')
 
     if oid_login_perms.any?
-      identiry_url_prefix = oid_login_perms.first.identity_url_prefix
-      current_selections[:identiry_url_prefix] = identiry_url_prefix
+      prefix_properties = oid_login_perms.first.properties
+      current_selections[:identity_url_prefix] = prefix_properties[:identity_url_prefix]
     end
 
     # repo perm
