@@ -1061,11 +1061,12 @@ sub process_stderr
 sub fetch_block
 {
   my $hash = shift;
-  my ($child_out, $child_in, $output_block);
+  my ($child_out, $output_block);
 
-  my $pid = open2($child_out, $child_in, 'arv', 'keep', 'get', $hash);
-  sysread($child_out, $output_block, 64 * 1024 * 1024);
-  waitpid($pid, 0);
+  my $cmd = "arv keep get \Q$hash\E";
+  open($keep, '-|', $cmd) or die "fetch_block: $cmd: $!"
+  sysread($keep, $output_block, 64 * 1024 * 1024);
+  close $keep;
   return $output_block;
 }
 
