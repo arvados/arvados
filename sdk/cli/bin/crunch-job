@@ -758,7 +758,7 @@ if ($job_has_uuid) {
 if ($Job->{'output'})
 {
   eval {
-    my $manifest_text = `arv keep get $Job->{'output'}`;
+    my $manifest_text = `arv keep get \Q$Job->{'output'}\E`;
     $arv->{'collections'}->{'create'}->execute('collection' => {
       'uuid' => $Job->{'output'},
       'manifest_text' => $manifest_text,
@@ -1223,7 +1223,8 @@ sub save_meta
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
   $local_logfile->flush;
-  my $cmd = "arv keep put --filename $keep_logfile ". $local_logfile->filename;
+  my $cmd = "arv keep put --filename \Q$keep_logfile\E "
+      . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;
 
