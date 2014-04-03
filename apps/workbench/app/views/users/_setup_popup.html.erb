@@ -70,14 +70,19 @@
 
 <script>
   var $input = $('input:text'),
-  $register = $('#register');    
-  $register.attr('disabled', true);
+  $register = $('#register');
+
+  var email_value = document.forms["setup_form"]["email"].value;
+  var prefix_value = document.forms["setup_form"]["openid_prefix"].value;
+  if (email_value == null || email_value == "" || prefix_value == null || prefix_value == "") {
+    $register.attr('disabled', true);
+  }
+
   $input.keyup(function() {
     var trigger = false;
 
     var email_value = document.forms["setup_form"]["email"].value;
     var prefix_value = document.forms["setup_form"]["openid_prefix"].value;
-
     if (email_value == null || email_value == "" || prefix_value == null || prefix_value == "") {
       trigger = true;
     }
