@@ -1064,7 +1064,7 @@ sub fetch_block
   my ($child_out, $output_block);
 
   my $cmd = "arv keep get \Q$hash\E";
-  open($keep, '-|', $cmd) or die "fetch_block: $cmd: $!"
+  open($keep, '-|', $cmd) or die "fetch_block: $cmd: $!";
   sysread($keep, $output_block, 64 * 1024 * 1024);
   close $keep;
   return $output_block;
