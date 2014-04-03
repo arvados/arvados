@@ -72,3 +72,4 @@ common:
   arvados_theme: default
   show_user_agreement_inline: false
   secret_token: ~
+  default_openid_prefix: https://www.google.com/accounts/o8/id
