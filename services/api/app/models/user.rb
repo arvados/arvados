@@ -320,7 +320,16 @@ class User < ArvadosModel
                               head_kind: 'arvados#virtualMachine',
                               link_class: 'permission',
                               name: 'can_login')
-      if !login_perms.any?
+
+      perm_exists = false
+      login_perms.each do |perm|
+        if perm.properties[:username] == repo_name
+          perm_exists = true
+          break
+        end
+      end
+
+      if !perm_exists
         login_perm = Link.create(tail_kind: 'arvados#user',
                                  tail_uuid: self.uuid,
                                  head_kind: 'arvados#virtualMachine',
