@@ -3,7 +3,7 @@
 require "rubygems"
 require "colorize"
 
-task :generate do
+task :generate => [ :realclean, 'sdk/python/arvados/index.html' ] do
   vars = ['baseurl', 'arvados_api_host', 'arvados_workbench_host']
   vars.each do |v|
     if ENV[v]
@@ -12,38 +12,33 @@ task :generate do
   end
 end
 
-task :linkchecker => [:realclean, :generate]
-
-task :linkchecker do
-  Dir.chdir(".site")
-  `which linkchecker`
+file "sdk/python/arvados/index.html" do |t|
+  `which epydoc`
   if $? == 0
-    ignore_urls = ['', 'javascript', 'mailto',
-                   'oftc.net', 'putty.org','google.com', 'fsf.org',
-                   'arvadosapi.com', 'arvados.org', 'sourceforge.net',
-                   'chiark.greenend.org.uk', 'github.io' ]
-    system "linkchecker index.html " + ignore_urls.join(' --ignore-url=')
+    `epydoc --html --parse-only -o sdk/python/arvados ../sdk/python/arvados/`
   else
-    puts "Warning: linkchecker not found, skipping".colorize(:light_red)
+    puts "Warning: epydoc not found, Python documentation will not be generated".colorize(:light_red)
   end
+end
+
+task :linkchecker => [ :generate ] do
+  Dir.chdir(".site") do
+    `which linkchecker`
+    if $? == 0
+      system "linkchecker index.html --ignore-url='!file://'"
+    else
+      puts "Warning: linkchecker not found, skipping run".colorize(:light_red)
+    end
+  end
+end
+
+task :clean do
+  rm_rf "sdk/python/arvados"
 end
 
 require "zenweb/tasks"
 load "zenweb-textile.rb"
 load "zenweb-liquid.rb"
-
-file "sdk/python/arvados/index.html" do |t|
-  `which epydoc`
-  if $? == 0
-    `epydoc --html -o sdk/python/arvados arvados`
-    Dir["sdk/python/arvados/*"].each do |f|
-      puts f
-      $website.pages[f] = Zenweb::Page.new($website, f)
-    end
-  else
-    puts "Warning: epydoc not found, Python documentation will not be generated".colorize(:light_red)
-  end
-end
 
 task :extra_wirings do
   $website.pages["sdk/python/python.html.textile.liquid"].depends_on("sdk/python/arvados/index.html")

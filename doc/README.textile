@@ -6,13 +6,13 @@ Here's how to build the HTML pages locally so you can preview your updates befor
 
 Additional information is available on the "'Documentation' page on the Arvados wiki":https://arvados.org/projects/arvados/wiki/Documentation.
 
-h2. 0. Install dependencies
+h2. Install dependencies
 
 <pre>
 arvados/doc$ bundle install
 </pre>
 
-h2. 1. Generate HTML pages
+h2. Generate HTML pages
 
 <pre>
 arvados/doc$ rake
@@ -24,18 +24,18 @@ Alternately, to make the documentation browsable on the local filesystem:
 arvados/doc$ rake generate baseurl=$PWD/.site
 </pre>
 
-h2. 2. Run linkchecker
+h2. Run linkchecker
 
 If you have "Linkchecker":http://wummel.github.io/linkchecker/ installed on
 your system, you can run it against the documentation:
 
 <pre>
-arvados/doc$ rake linkchecker baseurl=$PWD/.site
+arvados/doc$ rake linkchecker baseurl=file://$PWD/.site
 </pre>
 
 Please note that this will regenerate your $PWD/.site directory.
 
-h2. 2. Preview HTML pages
+h2. Preview HTML pages
 
 <pre>
 arvados/doc$ rake run
@@ -46,7 +46,7 @@ arvados/doc$ rake run
 
 Preview the rendered pages at "http://localhost:8000":http://localhost:8000.
 
-h2. 3. Publish HTML pages inside Workbench
+h2. Publish HTML pages inside Workbench
 
 (or some other web site)
 
@@ -62,7 +62,7 @@ Make the docs appear at {workbench_host}/doc by creating a symbolic link in Work
 arvados/doc$ ln -sn ../../../doc/.site ../apps/workbench/public/doc
 </pre>
 
-h2. 4. Delete generated files
+h2. Delete generated files
 
 <pre>
 arvados/doc$ rake realclean
