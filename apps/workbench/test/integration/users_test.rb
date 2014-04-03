@@ -1,5 +1,5 @@
 require 'integration_helper'
-#require "selenium-webdriver"
+require "selenium-webdriver"
 #require 'headless'
 
 class UsersTest < ActionDispatch::IntegrationTest
@@ -48,7 +48,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     assert page.has_text? 'zzzzz-tpzed-d9tiejq69daie8f'
 
-    click_on 'Add a new user'
+    click_link 'Add a new user'
     
     # for now just check that we are back in Users -> List page
     assert page.has_text? 'zzzzz-tpzed-d9tiejq69daie8f'
@@ -111,7 +111,7 @@ end
   end
 
   test "setup the active user" do
-    Capybara.current_driver = Capybara.javascript_driver
+    Capybara.current_driver = :selenium
     visit page_with_token('admin_trustedclient')
 
     click_link 'Users'
@@ -121,29 +121,77 @@ end
     # click on active user
     click_link 'zzzzz-tpzed-xurymjxw79nv3jz'
 
-    # go to Admin tab
+    # Setup user
     click_link 'Admin'
-    assert page.has_text? 'As an admin, you can deactivate and reset this user'
+    assert page.has_text? 'As an admin, you can setup'
 
-=begin
-    # Click on Setup button
-    click_button 'Setup Active User'
+    click_link 'Setup Active User'
 
-    # Click Ok in the confirm dialog
     sleep(0.1)
-
-    popup = page.driver.window_handles.last
+    popup = page.driver.browser.window_handles.last
     page.within_window popup do
-      assert has_text? 'Are you sure you want to deactivate Active User'
-      fill_in "email", :with => "test@example.com"
-      click_button "Ok"
+      assert has_text? 'Virtual Machine'
+      fill_in "repo_name", :with => "test_repo"
+      click_button "Submit"
     end
 
-    # Should now be back in the Attributes tab for the user
+    sleep(0.1)
     assert page.has_text? 'modified_by_client_uuid'
 
-    puts "\n\n************* page now = \n#{page.body}"
-=end
+    click_link 'Metadata'
+    assert page.has_text? '(Repository: test_repo)'
+    assert !(page.has_text? '(VirtualMachine:)')
+
+    # Click on Setup button again and this time also choose a VM
+    click_link 'Admin'
+    click_link 'Setup Active User'
+
+    sleep(0.1)
+    popup = page.driver.browser.window_handles.last
+    page.within_window popup do
+      fill_in "repo_name", :with => "second_test_repo"
+      select("testvm.shell", :from => 'vm_uuid')
+      click_button "Submit"
+    end
+
+    sleep(0.1)
+    assert page.has_text? 'modified_by_client_uuid'
+
+    click_link 'Metadata'
+    assert page.has_text? '(Repository: second_test_repo)'
+    assert page.has_text? '(VirtualMachine: testvm.shell)'
+
+    # unsetup user and verify all the above links are deleted
+    click_link 'Admin'
+    click_button 'Deactivate Active User'
+    page.driver.browser.switch_to.alert.accept
+    sleep(0.1)
+
+#    popup = page.driver.browser.window_handles.last
+
+    click_link 'Metadata'
+    assert !(page.has_text? '(Repository: test_repo)')
+    assert !(page.has_text? '(Repository: second_test_repo)')
+    assert !(page.has_text? '(VirtualMachine: testvm.shell)')
+
+    # setup user again and verify links present
+    click_link 'Admin'
+    click_link 'Setup Active User'
+
+    sleep(0.1)
+    popup = page.driver.browser.window_handles.last
+    page.within_window popup do
+      fill_in "repo_name", :with => "second_test_repo"
+      select("testvm.shell", :from => 'vm_uuid')
+      click_button "Submit"
+    end
+
+    sleep(0.1)
+    assert page.has_text? 'modified_by_client_uuid'
+
+    click_link 'Metadata'
+    assert page.has_text? '(Repository: second_test_repo)'
+    assert page.has_text? '(VirtualMachine: testvm.shell)'
   end
 
 end
