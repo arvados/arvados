@@ -84,9 +84,7 @@
     var email_disabled = document.forms["setup_form"]["email"].disabled;
     var email_value = document.forms["setup_form"]["email"].value;
     var prefix_value = document.forms["setup_form"]["openid_prefix"].value;
-    if (email_disabled == true) {
-      trigger = false;
-    } else if (email_value == null || email_value == "" || prefix_value == null || prefix_value == "") {
+    if ((email_disabled == false) && (email_value == null || email_value == "" || prefix_value == null || prefix_value == "")) {
       trigger = true;
     }
 
