@@ -5,7 +5,6 @@
     <% end %>
     <% disable_email = uuid != nil %>
     <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
-    <% disable_url_prefix = (identity_url_prefix != nil) %>
     <% selected_repo = @current_selections[:repo_name] %>
     <% selected_vm = @current_selections[:vm_uuid] %>
     
@@ -25,7 +24,7 @@
             <% end %>
           </tr>
           <tr>
-            <% if disable_url_prefix %>
+            <% if disable_email %>
               <td> Identity URL Prefix &nbsp </td>
               <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" 
                     value="<%=identity_url_prefix%>" disabled=true > </td>
@@ -72,18 +71,22 @@
   var $input = $('input:text'),
   $register = $('#register');
 
+  var email_disabled = document.forms["setup_form"]["email"].disabled;
   var email_value = document.forms["setup_form"]["email"].value;
   var prefix_value = document.forms["setup_form"]["openid_prefix"].value;
-  if (email_value == null || email_value == "" || prefix_value == null || prefix_value == "") {
+  if ((email_disabled == false) && (email_value == null || email_value == "" || prefix_value == null || prefix_value == "")) {
     $register.attr('disabled', true);
   }
 
   $input.keyup(function() {
     var trigger = false;
 
+    var email_disabled = document.forms["setup_form"]["email"].disabled;
     var email_value = document.forms["setup_form"]["email"].value;
     var prefix_value = document.forms["setup_form"]["openid_prefix"].value;
-    if (email_value == null || email_value == "" || prefix_value == null || prefix_value == "") {
+    if (email_disabled == true) {
+      trigger = false;
+    } else if (email_value == null || email_value == "" || prefix_value == null || prefix_value == "") {
       trigger = true;
     }
 
