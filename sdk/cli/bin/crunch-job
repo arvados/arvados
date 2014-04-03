@@ -1071,7 +1071,7 @@ sub process_stderr
 sub fetch_block
 {
   my $hash = shift;
-  my ($child_out, $output_block);
+  my ($keep, $child_out, $output_block);
 
   my $cmd = "arv keep get \Q$hash\E";
   open($keep, '-|', $cmd) or die "fetch_block: $cmd: $!";
