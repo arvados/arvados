@@ -9,14 +9,16 @@
     <% selected_repo = @current_selections[:repo_name] %>
     <% selected_vm = @current_selections[:vm_uuid] %>
     
-    <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get', class: 'form-search', remote: true} do %>
+    <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get', 
+                    class: 'form-search', remote: true} do %>
       <input id="user_uuid" maxlength="250" name="user_uuid" type="hidden" value="<%=uuid%>">
       <div>
         <table><tbody>
           <tr>
             <% if disable_email %>
               <td> Email </td>
-              <td> <input id="email" maxlength="250" name="email" type="text" value="<%=email%>" disabled=true > </td>
+              <td> <input id="email" maxlength="250" name="email" type="text" value="<%=email%>" 
+                    disabled=true > </td>
             <% else %>
               <td> Email </td>
               <td> <input id="email" maxlength="250" name="email" type="text" > </td>
@@ -25,10 +27,12 @@
           <tr>
             <% if disable_url_prefix %>
               <td> Identity URL Prefix &nbsp </td>
-              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" value="<%=identity_url_prefix%>" disabled=true > </td>
+              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" 
+                    value="<%=identity_url_prefix%>" disabled=true > </td>
             <% else %>
               <td> Openid Prefix </td>
-              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" value="https://www.google.com/accounts/o8/id"> </td>
+              <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" 
+                    value="<%= Rails.configuration.default_openid_prefix %>"> </td>
             <% end %>
           </tr>
           <tr>
