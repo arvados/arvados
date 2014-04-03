@@ -113,7 +113,7 @@ EOF</span>
 2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  check slurm allocation
 2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  node localhost - 1 slots
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  start
-2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script hello-world.py
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script hello-world-fixed.py
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script_version /home/<b>you</b>/<b>you</b>
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script_parameters {}
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  runtime_constraints {"max_tasks_per_node":0}
@@ -130,10 +130,12 @@ EOF</span>
 2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  Freeze not implemented
 2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  collate
 2013-12-12_21:57:02 qr1hi-8i9sb-79260ykfew5trzl 31578  output 576c44d762ba241b0a674aa43152b52a+53
+WARNING:root:API lookup failed for collection 576c44d762ba241b0a674aa43152b52a+53 (<class 'apiclient.errors.HttpError'>: <HttpError 404 when requesting https://qr1hi.arvadosapi.com/arvados/v1/collections/576c44d762ba241b0a674aa43152b52a%2B53?alt=json returned "Not Found">)
 2013-12-12_21:57:03 qr1hi-8i9sb-79260ykfew5trzl 31578  finish
-2013-12-12_21:57:04 qr1hi-8i9sb-79260ykfew5trzl 31578  meta key is 9f937693334d0c9234ccc1f808ee7117+1761
 </code></pre>
 </notextile>
+
+(The WARNING issued near the end of the script may be safely ignored here; it is the Arvados SDK letting you know that it could not find a collection named @576c44d762ba241b0a674aa43152b52a+53@ and that it is going to try looking up a block by that name instead.)
 
 The job succeeded, with output in Keep object @576c44d762ba241b0a674aa43152b52a+53@.  Let's look at our output:
 
