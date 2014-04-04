@@ -24,6 +24,8 @@ BUILD = build/.buildstamp
 
 BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
 
+JOBS_DEPS = jobs/Dockerfile
+
 API_DEPS = api/Dockerfile $(API_GENERATED)
 
 DOC_DEPS = doc/Dockerfile doc/apache2_vhost
@@ -86,6 +88,10 @@ $(BUILD):
 	mkdir -p build
 	rsync -rlp --exclude=docker/ --exclude='**/log/*' --exclude='**/tmp/*' \
 		--chmod=Da+rx,Fa+rX ../ build/
+	find build/ -name \*.gem -delete
+	cd build/sdk/python/ && ./build.sh
+	cd build/sdk/cli && gem build arvados-cli.gemspec
+	cd build/sdk/ruby && gem build arvados.gemspec
 	touch build/.buildstamp
 
 $(BASE_GENERATED): config.yml $(BUILD)
@@ -124,6 +130,16 @@ doc-image: base-image $(BUILD) $(DOC_DEPS)
 	tar -czf doc/generated/doc.tar.gz -C build doc
 	$(DOCKER_BUILD) -t arvados/doc doc
 	date >doc-image
+
+jobs-image: base-image $(BUILD) $(JOBS_DEPS)
+	$(DOCKER_BUILD) -t arvados/jobswofuse jobs
+	docker run --privileged --name jobsaddfuse --user root \
+	  arvados/jobswofuse /bin/sh -c \
+	    "/bin/mknod -m 0660 /dev/fuse c 10 229 && \
+	     /bin/chown root:fuse /dev/fuse"
+	docker commit --run='{"User": "crunch"}' jobsaddfuse arvados/jobs
+	docker rm jobsaddfuse
+	date >jobs-image
 
 workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated
