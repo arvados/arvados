@@ -3,12 +3,13 @@
 import arvados
 
 import argparse
+import logging
 import pprint
+import math
 import re
 import urllib2
 
 from collections import defaultdict
-from math import log
 from operator import itemgetter
 
 arv = arvados.api('v1')
@@ -16,7 +17,7 @@ arv = arvados.api('v1')
 # Adapted from http://stackoverflow.com/questions/4180980/formatting-data-quantity-capacity-as-string
 byteunits = ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB')
 def fileSizeFormat(value):
-  exponent = 0 if value == 0 else int(log(value, 1024))
+  exponent = 0 if value == 0 else int(math.log(value, 1024))
   return "%7.2f %-3s" % (float(value) / pow(1024, exponent),
                          byteunits[exponent])
 
@@ -65,14 +66,14 @@ def checkUserIsAdmin():
   current_user = arv.users().current().execute()
 
   if not current_user['is_admin']:
-    # TODO(misha): Use a logging framework here
-    print ('Warning current user %s (%s - %s) does not have admin access '
-           'and will not see much of the data.' %
-           (current_user['full_name'],
-            current_user['email'],
-            current_user['uuid']))
+    log.warning('Current user %s (%s - %s) does not have '
+                'admin access and will not see much of the data.',
+                current_user['full_name'],
+                current_user['email'],
+                current_user['uuid'])
     if args.require_admin_user:
-      print 'Exiting, rerun with --no-require-admin-user if you wish to continue.'
+      log.critical('Exiting, rerun with --no-require-admin-user '
+                   'if you wish to continue.')
       exit(1)
 
 def buildCollectionsList():
@@ -259,6 +260,7 @@ parser.add_argument('-u',
                     help='uuid of specific collection to process')
 parser.add_argument('--require-admin-user',
                     action='store_true',
+                    default=True,
                     help='Fail if the user is not an admin [default]')
 parser.add_argument('--no-require-admin-user',
                     dest='require_admin_user',
@@ -266,19 +268,26 @@ parser.add_argument('--no-require-admin-user',
                     help='Allow users without admin permissions with only a warning.')
 args = parser.parse_args()
 
+log = logging.getLogger('arvados.services.datamanager')
+stderr_handler = logging.StreamHandler()
+log.setLevel(logging.INFO)
+stderr_handler.setFormatter(
+  logging.Formatter('%(asctime)-15s %(levelname)-8s %(message)s'))
+log.addHandler(stderr_handler)
+
 checkUserIsAdmin()
 
-print 'Building Collection List'
+log.info('Building Collection List')
 collection_uuids = filter(None, [extractUuid(candidate)
                                  for candidate in buildCollectionsList()])
 
-print 'Reading Collections'
+log.info('Reading Collections')
 readCollections(collection_uuids)
 
 if args.verbose:
   pprint.pprint(CollectionInfo.all_by_uuid)
 
-print 'Reading Links'
+log.info('Reading Links')
 readLinks()
 
 reportMostPopularCollections()
@@ -293,7 +302,7 @@ block_to_persisters = defaultdict(set)
 reader_to_blocks = defaultdict(set)
 persister_to_blocks = defaultdict(set)
 
-print 'Building Maps'
+log.info('Building Maps')
 buildMaps()
 
 reportBusiestUsers()
@@ -305,16 +314,16 @@ WEIGHTED_PERSIST_SIZE_COL = 3
 NUM_COLS = 4
 user_to_usage = defaultdict(lambda : [0,]*NUM_COLS)
 
-print 'Getting Keep Servers'
+log.info('Getting Keep Servers')
 keep_servers = getKeepServers()
 
 print keep_servers
 
-print 'Getting Blocks from each Keep Server.'
+log.info('Getting Blocks from each Keep Server.')
 keep_blocks = getKeepBlocks(keep_servers)
 
 block_to_replication = computeReplication(keep_blocks)
 
-print 'average replication level is %f' % (float(sum(block_to_replication.values())) / len(block_to_replication))
+log.info('average replication level is %f', (float(sum(block_to_replication.values())) / len(block_to_replication)))
 
 reportUserDiskUsage()
