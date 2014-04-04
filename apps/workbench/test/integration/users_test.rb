@@ -1,5 +1,4 @@
 require 'integration_helper'
-require "selenium-webdriver"
 
 class UsersTest < ActionDispatch::IntegrationTest
   test "login as active user but not admin" do
@@ -39,7 +38,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "create a new user" do
-    Capybara.current_driver = :selenium
+    Capybara.current_driver = :webkit
     visit page_with_token('admin_trustedclient')
 
     click_link 'Users'
@@ -81,7 +80,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "setup the active user" do
-    Capybara.current_driver = :selenium
+    Capybara.current_driver = :webkit
     visit page_with_token('admin_trustedclient')
 
     click_link 'Users'
@@ -133,7 +132,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "unsetup active user" do
-    Capybara.current_driver = :selenium
+    Capybara.current_driver = :webkit
 
     visit page_with_token('admin_trustedclient')
 
@@ -158,7 +157,6 @@ class UsersTest < ActionDispatch::IntegrationTest
     # unsetup user and verify all the above links are deleted
     click_link 'Admin'
     click_button 'Deactivate Active User'
-    page.driver.browser.switch_to.alert.accept
     sleep(0.1)
 
     # Should now be back in the Attributes tab for the user
