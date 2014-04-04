@@ -124,7 +124,8 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     if object_found
-      @response = @object.setup_repo_vm_links params[:repo_name], params[:vm_uuid]
+      @response = @object.setup_repo_vm_links params[:repo_name],
+                    params[:vm_uuid], params[:openid_prefix]
     else
       @response = User.setup @object, params[:openid_prefix],
                     params[:repo_name], params[:vm_uuid]

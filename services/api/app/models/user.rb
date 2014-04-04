@@ -111,39 +111,17 @@ class User < ArvadosModel
   end
 
   def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
-    login_perm_props = {identity_url_prefix: openid_prefix}
-
-    # Check oid_login_perm
-    oid_login_perms = Link.where(tail_uuid: user.email,
-                                   head_kind: 'arvados#user',
-                                   link_class: 'permission',
-                                   name: 'can_login')
-
-    if !oid_login_perms.any?
-      # create openid login permission
-      oid_login_perm = Link.create(link_class: 'permission',
-                                   name: 'can_login',
-                                   tail_kind: 'email',
-                                   tail_uuid: user.email,
-                                   head_kind: 'arvados#user',
-                                   head_uuid: user.uuid,
-                                   properties: login_perm_props
-                                  )
-      logger.info { "openid login permission: " + oid_login_perm[:uuid] }
-    else
-      oid_login_perm = oid_login_perms.first
-    end
-
-    return [oid_login_perm] + user.setup_repo_vm_links(repo_name, vm_uuid)
+    return user.setup_repo_vm_links(repo_name, vm_uuid, openid_prefix)
   end
 
   # create links
-  def setup_repo_vm_links(repo_name, vm_uuid)
+  def setup_repo_vm_links(repo_name, vm_uuid, openid_prefix)
+    oid_login_perm = create_oid_login_perm openid_prefix
     repo_perm = create_user_repo_link repo_name
     vm_login_perm = create_vm_login_permission_link vm_uuid, repo_name
     group_perm = create_user_group_link
 
-    return [repo_perm, vm_login_perm, group_perm, self].compact
+    return [oid_login_perm, repo_perm, vm_login_perm, group_perm, self].compact
   end
 
   # delete user signatures, login, repo, and vm perms, and mark as inactive
@@ -268,6 +246,33 @@ class User < ArvadosModel
     end
     upstream_path.delete start
     merged
+  end
+
+  def create_oid_login_perm (openid_prefix)
+    login_perm_props = {identity_url_prefix: openid_prefix}
+
+    # Check oid_login_perm
+    oid_login_perms = Link.where(tail_uuid: self.email,
+                                   head_kind: 'arvados#user',
+                                   link_class: 'permission',
+                                   name: 'can_login')
+
+    if !oid_login_perms.any?
+      # create openid login permission
+      oid_login_perm = Link.create(link_class: 'permission',
+                                   name: 'can_login',
+                                   tail_kind: 'email',
+                                   tail_uuid: self.email,
+                                   head_kind: 'arvados#user',
+                                   head_uuid: self.uuid,
+                                   properties: login_perm_props
+                                  )
+      logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+    else
+      oid_login_perm = oid_login_perms.first
+    end
+
+    return oid_login_perm
   end
 
   def create_user_repo_link(repo_name)

@@ -5,6 +5,7 @@
     <% end %>
     <% disable_email = uuid != nil %>
     <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
+    <% disable_url_prefix = identity_url_prefix != nil %>
     <% selected_repo = @current_selections[:repo_name] %>
     <% selected_vm = @current_selections[:vm_uuid] %>
     
@@ -24,7 +25,7 @@
             <% end %>
           </tr>
           <tr>
-            <% if disable_email %>
+            <% if disable_url_prefix %>
               <td> Identity URL Prefix &nbsp </td>
               <td> <input id="openid_prefix" maxlength="250" name="openid_prefix" type="text" 
                     value="<%=identity_url_prefix%>" disabled=true > </td>
