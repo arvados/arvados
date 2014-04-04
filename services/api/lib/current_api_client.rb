@@ -45,6 +45,12 @@ module CurrentApiClient
      '000000000000000'].join('-')
   end
 
+  def system_group_uuid
+    [Server::Application.config.uuid_prefix,
+     Group.uuid_prefix,
+     '000000000000000'].join('-')
+  end
+
   def system_user
     if not $system_user
       real_current_user = Thread.current[:user]
@@ -63,6 +69,29 @@ module CurrentApiClient
       Thread.current[:user] = real_current_user
     end
     $system_user
+  end
+
+  def system_group
+    if not $system_group
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          $system_group = Group.
+            where(uuid: system_group_uuid).first_or_create do |g|
+            g.update_attributes(name: "System group",
+                                description: "System group")
+            User.all.collect(&:uuid).each do |user_uuid|
+              Link.create(link_class: 'permission',
+                          name: 'can_manage',
+                          tail_kind: 'arvados#group',
+                          tail_uuid: system_group_uuid,
+                          head_kind: 'arvados#user',
+                          head_uuid: user_uuid)
+            end
+          end
+        end
+      end
+    end
+    $system_group
   end
 
   def act_as_system_user

@@ -7,6 +7,7 @@ class User < ArvadosModel
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_create :check_auto_admin
+  after_create :add_system_group_permission_link
   after_create AdminNotifier
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
@@ -79,10 +80,10 @@ class User < ArvadosModel
         Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
           newgroups << [group.owner_uuid, group.uuid, 'can_manage']
         end
-        Link.where('tail_uuid in (?) and link_class = ? and head_kind = ?',
+        Link.where('tail_uuid in (?) and link_class = ? and head_kind in (?)',
                    lookup_uuids,
                    'permission',
-                   'arvados#group').each do |link|
+                   ['arvados#group', 'arvados#user']).each do |link|
           newgroups << [link.tail_uuid, link.head_uuid, link.name]
         end
         newgroups.each do |tail_uuid, head_uuid, perm_name|
@@ -371,4 +372,15 @@ class User < ArvadosModel
     end
   end
 
+  # Give the special "System group" permission to manage this user and
+  # all of this user's stuff.
+  #
+  def add_system_group_permission_link
+    Link.create(link_class: 'permission',
+                name: 'can_manage',
+                tail_kind: 'arvados#group',
+                tail_uuid: system_group_uuid,
+                head_kind: 'arvados#user',
+                head_uuid: self.uuid)
+  end
 end

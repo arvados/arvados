@@ -12,7 +12,7 @@ class UsersController < ApplicationController
 
   def activity
     @breadcrumb_page_name = nil
-    @users = User.all
+    @users = User.limit(params[:limit] || 1000).all
     @user_activity = {}
     @activity = {
       logins: {},

@@ -146,7 +146,7 @@ class ApplicationController < ActionController::Base
       cond_out = []
       param_out = []
       @filters.each do |attr, operator, operand|
-        if !model_class.searchable_columns.index attr.to_s
+        if !model_class.searchable_columns(operator).index attr.to_s
           raise ArgumentError.new("Invalid attribute '#{attr}' in condition")
         end
         case operator.downcase
@@ -175,13 +175,12 @@ class ApplicationController < ActionController::Base
     if @where.is_a? Hash and @where.any?
       conditions = ['1=1']
       @where.each do |attr,value|
-        if attr == :any
+        if attr.to_s == 'any'
           if value.is_a?(Array) and
               value.length == 2 and
-              value[0] == 'contains' and
-              model_class.columns.collect(&:name).index('name') then
+              value[0] == 'contains' then
             ilikes = []
-            model_class.searchable_columns.each do |column|
+            model_class.searchable_columns('ilike').each do |column|
               ilikes << "#{table_name}.#{column} ilike ?"
               conditions << "%#{value[1]}%"
             end
@@ -434,7 +433,9 @@ class ApplicationController < ActionController::Base
       :items => @objects.as_api_response(nil)
     }
     if @objects.respond_to? :except
-      @object_list[:items_available] = @objects.except(:limit).except(:offset).count
+      @object_list[:items_available] = @objects.
+        except(:limit).except(:offset).
+        count(:id, distinct: true)
     end
     render json: @object_list
   end

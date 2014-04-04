@@ -3,6 +3,7 @@ all: api-image doc-image workbench-image warehouse-image sso-image
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
 clean:
+	-rm -rf build
 	-rm *-image */generated/*
 	-@rmdir */generated
 
@@ -16,6 +17,10 @@ realclean: clean
 # ============================================================
 # Dependencies for */generated files which are prerequisites
 # for building docker images.
+
+CONFIG_RB = build_tools/config.rb
+
+BUILD = build/.buildstamp
 
 BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
 
@@ -33,7 +38,7 @@ WAREHOUSE_DEPS = warehouse/Dockerfile \
 
 SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
 
-BASE_GENERATED = base/generated
+BASE_GENERATED = base/generated/arvados.tar.gz
 
 API_GENERATED = \
         api/generated/apache2_vhost \
@@ -77,20 +82,28 @@ SSO_GENERATED_IN = \
         sso/seeds.rb.in \
         sso/secret_token.rb.in
 
-$(BASE_GENERATED): config.yml
-	./config.rb
+$(BUILD):
+	mkdir -p build
+	rsync -rlp --exclude=docker/ --exclude='**/log/*' --exclude='**/tmp/*' \
+		--chmod=Da+rx,Fa+rX ../ build/
+	touch build/.buildstamp
+
+$(BASE_GENERATED): config.yml $(BUILD)
+	$(CONFIG_RB)
+	mkdir -p base/generated
+	tar -czf base/generated/arvados.tar.gz -C build .
 
 $(API_GENERATED): config.yml $(API_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 $(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 $(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
-	./config.rb
+	$(CONFIG_RB)
 
 # The docker build -q option suppresses verbose build output.
 # Necessary to prevent failure on building warehouse; see
@@ -100,31 +113,31 @@ DOCKER_BUILD = docker build -q
 # ============================================================
 # The main Arvados servers: api, doc, workbench, warehouse
 
-api-image: passenger-image $(API_DEPS)
+api-image: passenger-image $(BUILD) $(API_DEPS)
 	mkdir -p api/generated
-	tar -c -z -f api/generated/api.tar.gz -C ../services api
+	tar -czf api/generated/api.tar.gz -C build/services api
 	$(DOCKER_BUILD) -t arvados/api api
-	echo -n "Built at $(date)" > api-image
+	date >api-image
 
-doc-image: base-image $(DOC_DEPS)
+doc-image: base-image $(BUILD) $(DOC_DEPS)
 	mkdir -p doc/generated
-	tar -c -z -f doc/generated/doc.tar.gz -C .. doc
+	tar -czf doc/generated/doc.tar.gz -C build doc
 	$(DOCKER_BUILD) -t arvados/doc doc
-	echo -n "Built at $(date)" > doc-image
+	date >doc-image
 
-workbench-image: passenger-image $(WORKBENCH_DEPS)
+workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated
-	tar -c -z -f workbench/generated/workbench.tar.gz -C ../apps workbench
+	tar -czf workbench/generated/workbench.tar.gz -C build/apps workbench
 	$(DOCKER_BUILD) -t arvados/workbench workbench
-	echo -n "Built at $(date)" > workbench-image
+	date >workbench-image
 
 warehouse-image: base-image $(WAREHOUSE_DEPS)
 	$(DOCKER_BUILD) -t arvados/warehouse warehouse
-	echo -n "Built at $(date)" > warehouse-image
+	date >warehouse-image
 
 sso-image: passenger-image $(SSO_DEPS)
 	$(DOCKER_BUILD) -t arvados/sso sso
-	echo -n "Built at $(date)" > sso-image
+	date >sso-image
 
 # ============================================================
 # The arvados/base image is the base Debian image plus packages
@@ -132,13 +145,12 @@ sso-image: passenger-image $(SSO_DEPS)
 
 passenger-image: base-image
 	$(DOCKER_BUILD) -t arvados/passenger passenger
-	echo -n "Built at $(date)" > passenger-image
+	date >passenger-image
 
 base-image: debian-image $(BASE_DEPS)
 	$(DOCKER_BUILD) -t arvados/base base
-	echo -n "Built at $(date)" > base-image
+	date >base-image
 
 debian-image:
 	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
-	echo -n "Built at $(date)" > debian-image
-
+	date >debian-image

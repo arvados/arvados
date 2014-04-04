@@ -1,6 +1,7 @@
 require 'test_helper'
 
 class Arvados::V1::UsersControllerTest < ActionController::TestCase
+  include CurrentApiClient
 
   setup do
     @all_links_at_start = Link.all
@@ -83,7 +84,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url'
 
     # arvados#user, repo link and link add user to 'All users' group
-    verify_num_links @all_links_at_start, 3
+    verify_num_links @all_links_at_start, 4
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -96,6 +97,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+
+    verify_system_group_permission_link_for created['uuid']
 
     # invoke setup again with the same data
     post :setup, {
@@ -120,7 +123,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url'
 
     # arvados#user, repo link and link add user to 'All users' group
-    verify_num_links @all_links_at_start, 4
+    verify_num_links @all_links_at_start, 5
 
     verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
         repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
@@ -130,6 +133,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+
+    verify_system_group_permission_link_for created['uuid']
   end
 
   test "setup user with bogus uuid and expect error" do
@@ -288,8 +293,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # three extra links; login link, group link and repo link
-    verify_num_links @all_links_at_start, 3
+    # four extra links; system_group, login, group and repo perms
+    verify_num_links @all_links_at_start, 4
   end
 
   test "setup user with fake vm and expect error" do
@@ -325,8 +330,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for the new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # three extra links; login link, group link and repo link
-    verify_num_links @all_links_at_start, 4
+    # five extra links; system_group, login, group, vm, repo
+    verify_num_links @all_links_at_start, 5
   end
 
   test "setup user with valid email, no vm and repo as input" do
@@ -343,8 +348,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # two extra links; login link and group link
-    verify_num_links @all_links_at_start, 2
+    # three extra links; system_group, login, and group
+    verify_num_links @all_links_at_start, 3
   end
 
   test "setup user with email, first name, repo name and vm uuid" do
@@ -368,8 +373,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal 'test_first_name', response_object['first_name'],
         'expecting first name'
 
-    # four extra links; login link, group link, repo link and vm link
-    verify_num_links @all_links_at_start, 4
+    # five extra links; system_group, login, group, repo and vm
+    verify_num_links @all_links_at_start, 5
   end
 
   test "setup user twice with email and check two different objects created" do
@@ -388,7 +393,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
-    verify_num_links @all_links_at_start, 3   # openid, group, and repo. no vm
+    # system_group, openid, group, and repo. No vm link.
+    verify_num_links @all_links_at_start, 4
 
     # create again
     post :setup, {
@@ -403,8 +409,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expected same uuid as first create operation'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # extra login link only
-    verify_num_links @all_links_at_start, 4
+    # +1 extra login link +1 extra system_group link pointing to the new User
+    verify_num_links @all_links_at_start, 6
   end
 
   test "setup user with openid prefix" do
@@ -431,8 +437,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url'
 
     # verify links
-    # 3 new links: arvados#user, repo, and 'All users' group.
-    verify_num_links @all_links_at_start, 3
+    # four new links: system_group, arvados#user, repo, and 'All users' group.
+    verify_num_links @all_links_at_start, 4
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -490,8 +496,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
-    # expect 4 new links: arvados#user, repo, vm and 'All users' group link
-    verify_num_links @all_links_at_start, 4
+    # five new links: system_group, arvados#user, repo, vm and 'All
+    # users' group link
+    verify_num_links @all_links_at_start, 5
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -553,8 +560,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['email'], 'expected non-nil email'
     assert_equal created['email'], 'foo@example.com', 'expected input email'
 
-    # verify links; 2 new links: arvados#user, and 'All users' group.
-    verify_num_links @all_links_at_start, 2
+    # three new links: system_group, arvados#user, and 'All users' group.
+    verify_num_links @all_links_at_start, 3
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -637,8 +644,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created['uuid'], 'expected uuid for the new user'
     assert_equal created['email'], 'foo@example.com', 'expected given email'
 
-    # 4 extra links: login, group, repo and vm
-    verify_num_links @all_links_at_start, 4
+    # five extra links: system_group, login, group, repo and vm
+    verify_num_links @all_links_at_start, 5
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -693,7 +700,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   def verify_num_links (original_links, expected_additional_links)
     links_now = Link.all
-    assert_equal original_links.size+expected_additional_links, Link.all.size,
+    assert_equal expected_additional_links, Link.all.size-original_links.size,
         "Expected #{expected_additional_links.inspect} more links"
   end
 
@@ -790,10 +797,17 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                                   tail_uuid: uuid)
 
     if expect_signatures
-      assert signed_uuids.any?, "expected singnatures"
+      assert signed_uuids.any?, "expected signatures"
     else
-      assert !signed_uuids.any?, "expected all singnatures deleted"
+      assert !signed_uuids.any?, "expected all signatures deleted"
     end
 
+  end
+
+  def verify_system_group_permission_link_for user_uuid
+    assert_equal 1, Link.where(link_class: 'permission',
+                               name: 'can_manage',
+                               tail_uuid: system_group_uuid,
+                               head_uuid: user_uuid).count
   end
 end
