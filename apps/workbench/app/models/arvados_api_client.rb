@@ -9,7 +9,7 @@ class ArvadosApiClient
 
   @@client_mtx = Mutex.new
   @@api_client = nil
-  @@profiling_enabled = Rails.configuration.profiling_enabled rescue false
+  @@profiling_enabled = Rails.configuration.profiling_enabled
 
   def api(resources_kind, action, data=nil)
     profile_checkpoint

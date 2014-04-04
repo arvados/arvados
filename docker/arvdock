@@ -34,7 +34,7 @@ function start_container {
     fi
     if [[ "$2" != '' ]]; then
       local name="$2"
-      args="$args -name $name"
+      args="$args --name $name"
     fi
     if [[ "$3" != '' ]]; then
       local volume="$3"
@@ -42,7 +42,7 @@ function start_container {
     fi
     if [[ "$4" != '' ]]; then
       local link="$4"
-      args="$args -link $link"
+      args="$args --link $link"
     fi
     local image=$5
 

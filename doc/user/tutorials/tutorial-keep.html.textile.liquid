@@ -11,17 +11,15 @@ This tutorial introduces you to the Arvados file storage system.
 
 The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file, rather than human-assigned file names (specifically, the md5 hash).  This has a number of advantages:
 * Files can be stored and replicated across a cluster of servers without requiring a central name server.
-* Systematic validation of data integrity by both server and client because the checksum is built into the identifier.
-* Minimizes data duplication (two files with the same contents will result in the same identifier, and will not be stored twice.)
-* Avoids data race conditions (an identifier always points to the same data.)
+* Both the server and client systematically validate data integrity because the checksum is built into the identifier.
+* Data duplication is minimized—two files with the same contents will have in the same identifier, and will not be stored twice.
+* It avoids data race conditions, since an identifier always points to the same data.
 
 h1. Putting Data into Keep
 
-We will start with downloading a freely available VCF file from the "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905":https://my.personalgenomes.org/profile/hu599905 to a staging directory on the VM, and then add it to Keep.
+We will start by downloading a freely available VCF file from "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905":https://my.personalgenomes.org/profile/hu599905 to a staging directory on the VM, and adding it to Keep.  In the following commands, replace *@you@* with your login name.
 
-In the following tutorials, replace <b><code>you</code></b> with your user id.
-
-First, log into the Arvados VM instance and set up the staging area:
+First, log into your Arvados VM and set up the staging area:
 
 notextile. <pre><code>~$ <span class="userinput">mkdir /scratch/<b>you</b></span></code></pre>
 
@@ -65,7 +63,7 @@ You can also use @arv keep put@ to add an entire directory:
 /scratch/<b>you</b>$ <span class="userinput">echo "hello bob" > tmp/bob.txt</span>
 /scratch/<b>you</b>$ <span class="userinput">echo "hello carol" > tmp/carol.txt</span>
 /scratch/<b>you</b>$ <span class="userinput">arv keep put tmp</span>
-0M / 0M 100.0% 
+0M / 0M 100.0%
 887cd41e9c613463eab2f0d885c6dd96+83
 </code></pre>
 </notextile>
@@ -76,12 +74,12 @@ h1. Getting Data from Keep
 
 h2. Using Workbench
 
-You may access collections through the "Collections section of Arvados Workbench":https://{{ site.arvados_workbench_host }}/collections located at "https://{{ site.arvados_workbench_host }}/collections":https://{{ site.arvados_workbench_host }}/collections .  You can also access individual collections and individual files within a collection.  Some examples:
+You may access collections through the "Collections section of Arvados Workbench":https://{{ site.arvados_workbench_host }}/collections at *Data* %(rarr)&rarr;% *Collections (data files)*.  You can also access individual files within a collection.  Some examples:
 
 * "https://{{ site.arvados_workbench_host }}/collections/c1bad4b39ca5a924e481008009d94e32+210":https://{{ site.arvados_workbench_host }}/collections/c1bad4b39ca5a924e481008009d94e32+210
 * "https://{{ site.arvados_workbench_host }}/collections/887cd41e9c613463eab2f0d885c6dd96+83/alice.txt":https://{{ site.arvados_workbench_host }}/collections/887cd41e9c613463eab2f0d885c6dd96+83/alice.txt
 
-h2(#arv-get). Using arv-get
+h2(#arv-get). Using the command line
 
 You can view the contents of a collection using @arv keep ls@:
 
@@ -109,6 +107,8 @@ Use @arv keep get@ to download the contents of a collection and place it in the 
 
 <notextile>
 <pre><code>/scratch/<b>you</b>$ <span class="userinput">arv keep get c1bad4b39ca5a924e481008009d94e32+210/ .</span>
+/scratch/<b>you</b>$ <span class="userinput">ls var-GS000016015-ASM.tsv.bz2</span>
+var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>
 
@@ -129,10 +129,10 @@ With a local copy of the file, we can do some computation, for example computing
 
 h2. Using arv-mount
 
-Use @arv-mount@ to take advantage of the "File System in User Space / FUSE":http://fuse.sourceforge.net/ feature of the Linux kernel to mount a Keep collection as if it were a regular directory tree.
+Use @arv-mount@ to mount a Keep collection and access it using traditional filesystem tools.
 
 <notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">mkdir mnt</span>
+<pre><code>/scratch/<b>you</b>$ <span class="userinput">mkdir -p mnt</span>
 /scratch/<b>you</b>$ <span class="userinput">arv-mount --collection c1bad4b39ca5a924e481008009d94e32+210 mnt &</span>
 /scratch/<b>you</b>$ <span class="userinput">cd mnt</span>
 /scratch/<b>you</b>/mnt$ <span class="userinput">ls</span>
@@ -147,7 +147,7 @@ var-GS000016015-ASM.tsv.bz2
 You can also mount the entire Keep namespace in "magic directory" mode:
 
 <notextile>
-<pre><code>/scratch/<b>you</b>$ <span class="userinput">mkdir mnt</span>
+<pre><code>/scratch/<b>you</b>$ <span class="userinput">mkdir -p mnt</span>
 /scratch/<b>you</b>$ <span class="userinput">arv-mount mnt &</span>
 /scratch/<b>you</b>$ <span class="userinput">cd mnt/c1bad4b39ca5a924e481008009d94e32+210</span>
 /scratch/<b>you</b>/mnt/c1bad4b39ca5a924e481008009d94e32+210$ <span class="userinput">ls</span>
@@ -159,8 +159,8 @@ var-GS000016015-ASM.tsv.bz2
 </code></pre>
 </notextile>
 
-Using @arv-mount@ has several significant benefits:
+@arv-mount@ provides several features:
 
 * You can browse, open and read Keep entries as if they are regular files.
 * It is easy for existing tools to access files in Keep.
-* Data is downloaded on demand, it is not necessary to download an entire file or collection to start processing
+* Data is downloaded on demand.  It is not necessary to download an entire file or collection to start processing.

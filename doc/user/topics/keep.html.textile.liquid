@@ -16,9 +16,9 @@ In this example we will use @c1bad4b39ca5a924e481008009d94e32+210@ which we adde
 </code></pre>
 </notextile>
 
-The command @arv keep get@ fetches the contents of the locator @c1bad4b39ca5a924e481008009d94e32+210@.  This is a locator for a collection data block, so it fetches the contents of the collection.  In this example, this collection consists of a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, <code>204e43b8a1185621ca55a94839582e6f+67108864</code>, <code>b9677abbac956bd3e86b1deb28dfac03+67108864</code>, <code>fc15aff2a762b13f521baf042140acec+67108864</code>, <code>323d2a3ce20370c4ca1d3462a344f8fd+25885655</code>.
+The command @arv keep get@ fetches the contents of the collection @c1bad4b39ca5a924e481008009d94e32+210@.  In this example, this collection includes a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, @204e43b8a1185621ca55a94839582e6f+67108864@, @b9677abbac956bd3e86b1deb28dfac03+67108864@, @fc15aff2a762b13f521baf042140acec+67108864@, and @323d2a3ce20370c4ca1d3462a344f8fd+25885655@.
 
-Let's use @arv keep get@ to download the first datablock:
+Let's use @arv keep get@ to download the first data block:
 
 notextile. <pre><code>~$ <span class="userinput">cd /scratch/<b>you</b></span>
 /scratch/<b>you</b>$ <span class="userinput">arv keep get 204e43b8a1185621ca55a94839582e6f+67108864 &gt; block1</span></code></pre>
@@ -44,5 +44,5 @@ Let's look at the size and compute the md5 hash of @block1@:
 </notextile>
 
 Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864</code> consists of:
-* the md5 hash @204e43b8a1185621ca55a94839582e6f@ which matches the md5 hash of @block1@
-* a size hint @67108864@ which matches the size of @block1@
+* the md5 hash of @block1@, @204e43b8a1185621ca55a94839582e6f@, plus
+* the size of @block1@, @67108864@.

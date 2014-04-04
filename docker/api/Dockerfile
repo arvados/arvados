@@ -11,7 +11,7 @@ MAINTAINER Tim Pierce <twp@curoverse.com>
 RUN apt-get update && \
     apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
                           supervisor && \
-    git clone git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
+    git clone --bare git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
 
 RUN /bin/mkdir -p /usr/src/arvados/services
 ADD generated/api.tar.gz /usr/src/arvados/services/
@@ -27,7 +27,8 @@ ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 ENV RAILS_ENV production
 ADD generated/config_databases.sh /tmp/config_databases.sh
 ADD generated/superuser_token /tmp/superuser_token
-RUN sh /tmp/config_databases.sh && \
+RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
+    sh /tmp/config_databases.sh && \
     rm /tmp/config_databases.sh && \
     /etc/init.d/postgresql start && \
     cd /usr/src/arvados/services/api && \
@@ -36,6 +37,7 @@ RUN sh /tmp/config_databases.sh && \
     ./script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
     chown www-data:www-data config.ru && \
     chown www-data:www-data log -R && \
+    mkdir -p tmp && \
     chown www-data:www-data tmp -R
 
 # Configure Apache and Passenger.

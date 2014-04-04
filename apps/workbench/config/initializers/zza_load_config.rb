@@ -1,3 +1,6 @@
+# This file must be loaded _after_ secret_token.rb if secret_token is
+# defined there instead of in config/application.yml.
+
 $application_config = {}
 
 %w(application.default application).each do |cfgfile|
