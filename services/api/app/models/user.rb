@@ -175,6 +175,19 @@ class User < ArvadosModel
       Link.delete perm
     end
 
+    # delete "All users' group read permissions for this user
+    group = Group.where(name: 'All users').select do |g|
+      g[:uuid].match /-f+$/
+    end.first
+    group_perms = Link.where(tail_uuid: self.uuid,
+                             head_uuid: group[:uuid],
+                             head_kind: 'arvados#group',
+                             link_class: 'permission',
+                             name: 'can_read')
+    group_perms.each do |perm|
+      Link.delete perm
+    end
+
     # delete any signatures by this user
     signed_uuids = Link.where(link_class: 'signature',
                               tail_kind: 'arvados#user',
