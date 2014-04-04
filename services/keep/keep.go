@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/md5"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	"log"
@@ -12,7 +13,7 @@ import (
 	"strings"
 )
 
-const DEFAULT_PORT = 25107
+const DEFAULT_ADDR = ":25107"
 const BLOCKSIZE = 64 * 1024 * 1024
 
 var PROC_MOUNTS = "/proc/mounts"
@@ -29,8 +30,21 @@ func (e *KeepError) Error() string {
 }
 
 func main() {
+	// Parse command-line flags.
+	var listen, keepvols string
+	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
+		"interface on which to listen for requests")
+	flag.StringVar(&keepvols, "volumes", "",
+		"comma-separated list of directories to use for Keep volumes")
+	flag.Parse()
+
 	// Look for local keep volumes.
-	KeepVolumes = FindKeepVolumes()
+	if keepvols == "" {
+		KeepVolumes = FindKeepVolumes()
+	} else {
+		KeepVolumes = strings.Split(keepvols, ",")
+	}
+
 	if len(KeepVolumes) == 0 {
 		log.Fatal("could not find any keep volumes")
 	}
@@ -52,8 +66,7 @@ func main() {
 	http.Handle("/", rest)
 
 	// Start listening for requests.
-	port := fmt.Sprintf(":%d", DEFAULT_PORT)
-	http.ListenAndServe(port, nil)
+	http.ListenAndServe(listen, nil)
 }
 
 // FindKeepVolumes
