@@ -1,9 +1,7 @@
 require 'integration_helper'
 require "selenium-webdriver"
-#require 'headless'
 
 class UsersTest < ActionDispatch::IntegrationTest
-
   test "login as active user but not admin" do
     Capybara.current_driver = Capybara.javascript_driver
     visit page_with_token('active_trustedclient')
@@ -41,7 +39,7 @@ class UsersTest < ActionDispatch::IntegrationTest
   end
 
   test "create a new user" do
-    Capybara.current_driver = Capybara.javascript_driver
+    Capybara.current_driver = :selenium
     visit page_with_token('admin_trustedclient')
 
     click_link 'Users'
@@ -50,64 +48,36 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Add a new user'
     
-    # for now just check that we are back in Users -> List page
-    assert page.has_text? 'zzzzz-tpzed-d9tiejq69daie8f'
-  end
-
-  #@headless
-  test "unsetup active user" do
-    Capybara.current_driver = Capybara.javascript_driver
-    #Capybara.current_driver = :selenium
-
-    visit page_with_token('admin_trustedclient')
-
-    click_link 'Users'
-
-    assert page.has_link? 'zzzzz-tpzed-xurymjxw79nv3jz'
-
-    # click on active user
-    click_link 'zzzzz-tpzed-xurymjxw79nv3jz'
-
-    # Verify that is_active is set
-    click_link 'Attributes'
-    assert page.has_text? 'modified_by_user_uuid'
-    page.within(:xpath, '//a[@data-name="is_active"]') do
-      assert_equal "true", text, "Expected user's is_active to be true"
-    end
-
-    # go to Admin tab
-    click_link 'Admin'
-    assert page.has_text? 'As an admin, you can deactivate and reset this user'
-
-    # Click on Deactivate button
-    click_button 'Deactivate Active User'
-
-    # Click Ok in the confirm dialog
-=begin
-#use with selenium
-    page.driver.browser.switch_to.alert.accept
     sleep(0.1)
     popup = page.driver.browser.window_handles.last
-    #popup = page.driver.browser.window_handle
     page.within_window popup do
-      assert has_text? 'Are you sure you want to deactivate'
-      click_button "OK"
+      assert has_text? 'Virtual Machine'
+      fill_in "email", :with => "foo@example.com"
+      fill_in "repo_name", :with => "test_repo"
+      click_button "Submit"
     end
 
-# use with poltergeist driver
-popup = page.driver.window_handles.last
-page.within_window popup do
-  #fill_in "email", :with => "my_email"
-  assert has_text? 'Are you sure you want to deactivate'
-  click_button "OK"
-end
-=end
+    sleep(0.1)
+    
+    # verify that the new user showed up in the users page
+    assert page.has_text? 'foo@example.com'
 
-    # Should now be back in the Attributes tab for the user
+    page.within(:xpath, '//tr[@data-object-uuid][1]') do
+      assert (text.include? 'foo@example.com false'), 'Expected email'
+      new_user_uuid = text.split[0]
+
+      # go to the new user's page
+      click_link new_user_uuid
+    end
+
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//a[@data-name="is_active"]') do
-      assert_equal "false", text, "Expected user's is_active to be false after unsetup"
+      assert_equal "false", text, "Expected new user's is_active to be false"
     end
+
+    click_link 'Metadata'
+    assert page.has_text? '(Repository: test_repo)'
+    assert !(page.has_text? '(VirtualMachine:)')
   end
 
   test "setup the active user" do
@@ -160,6 +130,30 @@ end
     click_link 'Metadata'
     assert page.has_text? '(Repository: second_test_repo)'
     assert page.has_text? '(VirtualMachine: testvm.shell)'
+  end
+
+  test "unsetup active user" do
+    Capybara.current_driver = :selenium
+
+    visit page_with_token('admin_trustedclient')
+
+    click_link 'Users'
+
+    assert page.has_link? 'zzzzz-tpzed-xurymjxw79nv3jz'
+
+    # click on active user
+    click_link 'zzzzz-tpzed-xurymjxw79nv3jz'
+
+    # Verify that is_active is set
+    click_link 'Attributes'
+    assert page.has_text? 'modified_by_user_uuid'
+    page.within(:xpath, '//a[@data-name="is_active"]') do
+      assert_equal "true", text, "Expected user's is_active to be true"
+    end
+
+    # go to Admin tab
+    click_link 'Admin'
+    assert page.has_text? 'As an admin, you can deactivate and reset this user'
 
     # unsetup user and verify all the above links are deleted
     click_link 'Admin'
@@ -167,7 +161,11 @@ end
     page.driver.browser.switch_to.alert.accept
     sleep(0.1)
 
-#    popup = page.driver.browser.window_handles.last
+    # Should now be back in the Attributes tab for the user
+    assert page.has_text? 'modified_by_user_uuid'
+    page.within(:xpath, '//a[@data-name="is_active"]') do
+      assert_equal "false", text, "Expected user's is_active to be false after unsetup"
+    end
 
     click_link 'Metadata'
     assert !(page.has_text? '(Repository: test_repo)')
