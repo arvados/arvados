@@ -137,7 +137,11 @@ func GetBlock(hash string) ([]byte, error) {
 
 		f, err = os.Open(blockFilename)
 		if err != nil {
-			log.Printf("%s: opening %s: %s\n", vol, blockFilename, err)
+			if !os.IsNotExist(err) {
+				// A block is stored on only one Keep disk,
+				// so os.IsNotExist is expected.  Report any other errors.
+				log.Printf("%s: opening %s: %s\n", vol, blockFilename, err)
+			}
 			continue
 		}
 
@@ -175,9 +179,8 @@ func GetBlock(hash string) ([]byte, error) {
    The MD5 checksum of the block must be identical to the content id HASH.
    If not, an error is returned.
 
-   PutBlock stores the BLOCK in each of the available Keep volumes.
-   If any volume fails, an error is signaled on the back end.  A write
-   error is returned only if all volumes fail.
+   PutBlock stores the BLOCK on the first Keep volume with free space.
+   A failure code is returned to the user only if all volumes fail.
 
    On success, PutBlock returns nil.
    On failure, it returns a KeepError with one of the following codes:
@@ -201,9 +204,9 @@ func PutBlock(block []byte, hash string) error {
 		return &KeepError{401, errors.New("MD5Fail")}
 	}
 
-	// any_success will be set to true upon a successful block write.
-	any_success := false
 	for _, vol := range KeepVolumes {
+
+		// TODO(twp): check for a full volume here before trying to write.
 
 		blockDir := fmt.Sprintf("%s/%s", vol, hash[0:3])
 		if err := os.MkdirAll(blockDir, 0755); err != nil {
@@ -215,10 +218,11 @@ func PutBlock(block []byte, hash string) error {
 		blockFilename := fmt.Sprintf("%s/%s", blockDir, hash)
 		f, err := os.OpenFile(blockFilename, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			// if the block already exists, just skip to the next volume.
+			// if the block already exists, just return success.
+			// TODO(twp): should we check here whether the file on disk
+			// matches the file we were asked to store?
 			if os.IsExist(err) {
-				any_success = true
-				continue
+				return nil
 			} else {
 				// Open failed for some other reason.
 				log.Printf("%s: creating %s: %s\n", vol, blockFilename, err)
@@ -228,18 +232,15 @@ func PutBlock(block []byte, hash string) error {
 
 		if _, err := f.Write(block); err == nil {
 			f.Close()
-			any_success = true
-			continue
+			return nil
 		} else {
 			log.Printf("%s: writing to %s: %s\n", vol, blockFilename, err)
 			continue
 		}
 	}
 
-	if any_success {
-		return nil
-	} else {
-		log.Printf("all Keep volumes failed")
-		return &KeepError{500, errors.New("Fail")}
-	}
+	// All volumes failed; report the failure and return an error.
+	//
+	log.Printf("all Keep volumes failed")
+	return &KeepError{500, errors.New("Fail")}
 }

@@ -16,37 +16,13 @@ var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 // GetBlock tests.
 // ========================================
 
-// TestGetBlockOK
-//     Test that a simple block read can be executed successfully.
+// TestGetBlock
+//     Test that simple block reads succeed.
 //
-func TestGetBlockOK(t *testing.T) {
+func TestGetBlock(t *testing.T) {
 	defer teardown()
 
-	// Create two test Keep volumes and store a block in each of them.
-	KeepVolumes = setup(t, 2)
-
-	for _, vol := range KeepVolumes {
-		store(t, vol, TEST_HASH, TEST_BLOCK)
-	}
-
-	// Check that GetBlock returns success.
-	result, err := GetBlock(TEST_HASH)
-	if err != nil {
-		t.Errorf("GetBlock error: %s", err)
-	}
-	if fmt.Sprint(result) != fmt.Sprint(TEST_BLOCK) {
-		t.Errorf("expected %s, got %s", TEST_BLOCK, result)
-	}
-}
-
-// TestGetBlockOneKeepOK
-//     Test that block reads succeed even when the block is found only
-//     on one Keep volume.
-//
-func TestGetBlockOneKeepOK(t *testing.T) {
-	defer teardown()
-
-	// Two test Keep volumes, only the second has a block.
+	// Prepare two test Keep volumes. Our block is stored on the second volume.
 	KeepVolumes = setup(t, 2)
 	store(t, KeepVolumes[1], TEST_HASH, TEST_BLOCK)
 
