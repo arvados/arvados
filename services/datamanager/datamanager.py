@@ -300,10 +300,13 @@ keep_servers = []
 keep_blocks = []
 block_to_replication = defaultdict(lambda: 0)
 
+all_data_loaded = False
+
 def loadAllData():
   checkUserIsAdmin()
 
   log.info('Building Collection List')
+  global collection_uuids
   collection_uuids = filter(None, [extractUuid(candidate)
                                    for candidate in buildCollectionsList()])
 
@@ -324,11 +327,13 @@ def loadAllData():
   reportBusiestUsers()
 
   log.info('Getting Keep Servers')
+  global keep_servers
   keep_servers = getKeepServers()
 
   print keep_servers
 
   log.info('Getting Blocks from each Keep Server.')
+  global keep_blocks
   keep_blocks = getKeepBlocks(keep_servers)
 
   computeReplication(keep_blocks)
@@ -337,7 +342,56 @@ def loadAllData():
 
   reportUserDiskUsage()
 
-loadAllData()
+  global all_data_loaded
+  all_data_loaded = True
 
-# http://stackoverflow.com/questions/14088294/multithreaded-web-server-in-python
 
+class DataManagerHandler(BaseHTTPRequestHandler):
+
+  def writeTop(self, title):
+    self.wfile.write('<HTML><HEAD><TITLE>%s</TITLE></HEAD>\n<BODY>' % title)
+    
+  def writeBottom(self):
+    self.wfile.write('</BODY></HTML>\n')
+    
+  def writeHomePage(self):
+    self.send_response(200)
+    self.end_headers()
+    self.writeTop('Home')
+    self.wfile.write('<TABLE>')
+    self.wfile.write('<TR><TH>user'
+                     '<TH>unweighted readable block size'
+                     '<TH>weighted readable block size'
+                     '<TH>unweighted persisted block size'
+                     '<TH>weighted persisted block size</TR>\n')
+    for user, usage in user_to_usage.items():
+      self.wfile.write('<TR><TD>%s<TD>%s<TD>%s<TD>%s<TD>%s</TR>\n' %
+                       (user,
+                        fileSizeFormat(usage[UNWEIGHTED_READ_SIZE_COL]),
+                        fileSizeFormat(usage[WEIGHTED_READ_SIZE_COL]),
+                        fileSizeFormat(usage[UNWEIGHTED_PERSIST_SIZE_COL]),
+                        fileSizeFormat(usage[WEIGHTED_PERSIST_SIZE_COL])))
+    self.wfile.write('</TABLE>\n')
+    self.writeBottom()
+
+  def do_GET(self):
+    if not all_data_loaded:
+      self.send_response(503)
+      self.end_headers()
+      self.writeTop('Not ready')
+      self.wfile.write('Sorry, but I am still loading all the data I need.\n')
+      self.writeBottom()
+    else:
+      self.writeHomePage()
+    return
+
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+  """Handle requests in a separate thread."""
+
+#if __name__ == '__main__':
+
+loader = threading.Thread(target = loadAllData, name = 'loader')
+loader.start()
+
+server = ThreadedHTTPServer(('localhost', 9090), DataManagerHandler)
+server.serve_forever()
