@@ -3,14 +3,18 @@
 import arvados
 
 import argparse
+
 import logging
 import pprint
 import math
 import re
+import threading
 import urllib2
 
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from collections import defaultdict
 from operator import itemgetter
+from SocketServer import ThreadingMixIn
 
 arv = arvados.api('v1')
 
@@ -236,11 +240,9 @@ def getKeepBlocks(keep_servers):
 
 
 def computeReplication(keep_blocks):
-  block_to_replication = defaultdict(lambda: 0)
   for server_blocks in keep_blocks:
     for block_uuid, _ in server_blocks:
       block_to_replication[block_uuid] += 1
-  return block_to_replication
 
 
 # This is the main flow here
@@ -275,25 +277,10 @@ stderr_handler.setFormatter(
   logging.Formatter('%(asctime)-15s %(levelname)-8s %(message)s'))
 log.addHandler(stderr_handler)
 
-checkUserIsAdmin()
-
-log.info('Building Collection List')
-collection_uuids = filter(None, [extractUuid(candidate)
-                                 for candidate in buildCollectionsList()])
-
-log.info('Reading Collections')
-readCollections(collection_uuids)
-
-if args.verbose:
-  pprint.pprint(CollectionInfo.all_by_uuid)
-
-log.info('Reading Links')
-readLinks()
-
-reportMostPopularCollections()
+# Global Data - don't try this at home
+collection_uuids = []
 
 # These maps all map from uuids to a set of uuids
-# The sets all contain collection uuids.
 block_to_collections = defaultdict(set)  # keep blocks
 reader_to_collections = defaultdict(set)  # collection(s) for which the user has read access
 persister_to_collections = defaultdict(set)  # collection(s) which the user has persisted
@@ -302,11 +289,6 @@ block_to_persisters = defaultdict(set)
 reader_to_blocks = defaultdict(set)
 persister_to_blocks = defaultdict(set)
 
-log.info('Building Maps')
-buildMaps()
-
-reportBusiestUsers()
-
 UNWEIGHTED_READ_SIZE_COL = 0
 WEIGHTED_READ_SIZE_COL = 1
 UNWEIGHTED_PERSIST_SIZE_COL = 2
@@ -314,16 +296,48 @@ WEIGHTED_PERSIST_SIZE_COL = 3
 NUM_COLS = 4
 user_to_usage = defaultdict(lambda : [0,]*NUM_COLS)
 
-log.info('Getting Keep Servers')
-keep_servers = getKeepServers()
+keep_servers = []
+keep_blocks = []
+block_to_replication = defaultdict(lambda: 0)
 
-print keep_servers
+def loadAllData():
+  checkUserIsAdmin()
 
-log.info('Getting Blocks from each Keep Server.')
-keep_blocks = getKeepBlocks(keep_servers)
+  log.info('Building Collection List')
+  collection_uuids = filter(None, [extractUuid(candidate)
+                                   for candidate in buildCollectionsList()])
 
-block_to_replication = computeReplication(keep_blocks)
+  log.info('Reading Collections')
+  readCollections(collection_uuids)
 
-log.info('average replication level is %f', (float(sum(block_to_replication.values())) / len(block_to_replication)))
+  if args.verbose:
+    pprint.pprint(CollectionInfo.all_by_uuid)
 
-reportUserDiskUsage()
+  log.info('Reading Links')
+  readLinks()
+
+  reportMostPopularCollections()
+
+  log.info('Building Maps')
+  buildMaps()
+
+  reportBusiestUsers()
+
+  log.info('Getting Keep Servers')
+  keep_servers = getKeepServers()
+
+  print keep_servers
+
+  log.info('Getting Blocks from each Keep Server.')
+  keep_blocks = getKeepBlocks(keep_servers)
+
+  computeReplication(keep_blocks)
+
+  log.info('average replication level is %f', (float(sum(block_to_replication.values())) / len(block_to_replication)))
+
+  reportUserDiskUsage()
+
+loadAllData()
+
+# http://stackoverflow.com/questions/14088294/multithreaded-web-server-in-python
+
