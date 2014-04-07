@@ -3,10 +3,10 @@
 import arvados
 
 import argparse
-
+import cgi
 import logging
-import pprint
 import math
+import pprint
 import re
 import threading
 import urllib2
@@ -253,6 +253,11 @@ parser.add_argument('-m',
                     type=int,
                     default=5000,
                     help=('The max results to get at once.'))
+parser.add_argument('-p',
+                    '--port',
+                    type=int,
+                    default=9090,
+                    help=('The port number to serve on.'))
 parser.add_argument('-v',
                     '--verbose',
                     help='increase output verbosity',
@@ -345,8 +350,25 @@ def loadAllData():
   global all_data_loaded
   all_data_loaded = True
 
-
 class DataManagerHandler(BaseHTTPRequestHandler):
+  USER_PATH = 'user'
+  COLLECTION_PATH = 'collection'
+  BLOCK_PATH = 'block'
+
+  def userLink(self, uuid):
+    return ('<A HREF="/%(path)s/%(uuid)s">%(uuid)s</A>' %
+            {'uuid': uuid,
+             'path': DataManagerHandler.USER_PATH})
+
+  def collectionLink(self, uuid):
+    return ('<A HREF="/%(path)s/%(uuid)s">%(uuid)s</A>' %
+            {'uuid': uuid,
+             'path': DataManagerHandler.COLLECTION_PATH})
+
+  def blockLink(self, uuid):
+    return ('<A HREF="/%(path)s/%(uuid)s">%(uuid)s</A>' %
+            {'uuid': uuid,
+             'path': DataManagerHandler.BLOCK_PATH})
 
   def writeTop(self, title):
     self.wfile.write('<HTML><HEAD><TITLE>%s</TITLE></HEAD>\n<BODY>' % title)
@@ -366,7 +388,7 @@ class DataManagerHandler(BaseHTTPRequestHandler):
                      '<TH>weighted persisted block size</TR>\n')
     for user, usage in user_to_usage.items():
       self.wfile.write('<TR><TD>%s<TD>%s<TD>%s<TD>%s<TD>%s</TR>\n' %
-                       (user,
+                       (self.userLink(user),
                         fileSizeFormat(usage[UNWEIGHTED_READ_SIZE_COL]),
                         fileSizeFormat(usage[WEIGHTED_READ_SIZE_COL]),
                         fileSizeFormat(usage[UNWEIGHTED_PERSIST_SIZE_COL]),
@@ -374,15 +396,59 @@ class DataManagerHandler(BaseHTTPRequestHandler):
     self.wfile.write('</TABLE>\n')
     self.writeBottom()
 
+  def userExists(self, uuid):
+    # Currently this will return false for a user who exists but
+    # doesn't appear on any manifests.
+    # TODO(misha): Figure out if we need to fix this.
+    return user_to_usage.has_key(uuid)
+
+  def writeUserPage(self, uuid):
+    if not self.userExists(uuid):
+      self.send_error(404,
+                      'User (%s) Not Found.' % cgi.escape(uuid, quote=False))
+    else:
+      self.send_response(200)
+      self.end_headers()
+      self.writeTop('Home')
+      self.wfile.write('<TABLE>')
+      self.wfile.write('<TR><TH>user'
+                       '<TH>unweighted readable block size'
+                       '<TH>weighted readable block size'
+                       '<TH>unweighted persisted block size'
+                       '<TH>weighted persisted block size</TR>\n')
+      usage = user_to_usage[uuid]
+      self.wfile.write('<TR><TD>%s<TD>%s<TD>%s<TD>%s<TD>%s</TR>\n' %
+                       (self.userLink(uuid),
+                        fileSizeFormat(usage[UNWEIGHTED_READ_SIZE_COL]),
+                        fileSizeFormat(usage[WEIGHTED_READ_SIZE_COL]),
+                        fileSizeFormat(usage[UNWEIGHTED_PERSIST_SIZE_COL]),
+                        fileSizeFormat(usage[WEIGHTED_PERSIST_SIZE_COL])))
+      self.wfile.write('</TABLE>\n')
+      self.wfile.write('<P>Persisting Collections: %s\n' %
+                       ', '.join(map(self.collectionLink,
+                                     persister_to_collections[uuid])))
+      self.wfile.write('<P>Reading Collections: %s\n' %
+                       ', '.join(map(self.collectionLink,
+                                     reader_to_collections[uuid])))
+      self.writeBottom()
+
   def do_GET(self):
     if not all_data_loaded:
-      self.send_response(503)
-      self.end_headers()
-      self.writeTop('Not ready')
-      self.wfile.write('Sorry, but I am still loading all the data I need.\n')
-      self.writeBottom()
+      self.send_error(503,
+                      'Sorry, but I am still loading all the data I need.')
     else:
-      self.writeHomePage()
+      # Removing leading '/' and process request path
+      split_path = self.path[1:].split('/')
+      request_type = split_path[0]
+      log.debug('path (%s) split as %s with request_type %s' % (self.path,
+                                                                split_path,
+                                                                request_type))
+      if request_type == '':
+        self.writeHomePage()
+      elif request_type == DataManagerHandler.USER_PATH:
+        self.writeUserPage(split_path[1])
+      else:
+        self.send_error(404, 'Unrecognized request path.')
     return
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -393,5 +459,5 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 loader = threading.Thread(target = loadAllData, name = 'loader')
 loader.start()
 
-server = ThreadedHTTPServer(('localhost', 9090), DataManagerHandler)
+server = ThreadedHTTPServer(('localhost', args.port), DataManagerHandler)
 server.serve_forever()
