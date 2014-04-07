@@ -1,3 +1,6 @@
+<%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get', 
+                    class: 'form-search', remote: true} do %>
+
   <div class="modal-header">
     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
     <h3 class="modal-title">Setup User</h4>
@@ -13,12 +16,10 @@
     <% disable_url_prefix = identity_url_prefix != nil %>
     <% selected_repo = @current_selections[:repo_name] %>
     <% selected_vm = @current_selections[:vm_uuid] %>
-    
-    <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get', 
-                    class: 'form-search', remote: true} do %>
+
       <input id="user_uuid" maxlength="250" name="user_uuid" type="hidden" value="<%=uuid%>">
       <div>
-        <table><tbody>
+        <table><tbody><div class="form-group">
           <tr>
             <% if disable_email %>
               <td> Email </td>
@@ -63,15 +64,16 @@
               </select>
             </td>
           </tr>
-        </tbody></table>
+        </div></tbody></table>
       </div>
-    <% end %>
   </div>
 
   <div class="modal-footer">
     <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
     <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
   </div>
+
+<% end %>
 
 <script>
   var $input = $('input:text'),
