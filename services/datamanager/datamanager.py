@@ -40,7 +40,7 @@ class CollectionInfo:
     self.persister_uuids = set()  # uuids of users who want this collection saved
     CollectionInfo.all_by_uuid[uuid] = self
 
-  def byte_size(self):
+  def byteSize(self):
     return sum(map(byteSizeFromValidUuid, self.block_uuids))
 
   def __str__(self):
@@ -50,7 +50,7 @@ class CollectionInfo:
             '               persister_uuids: %s' %
             (self.uuid,
              len(self.block_uuids),
-             fileSizeFormat(self.byte_size()),
+             fileSizeFormat(self.byteSize()),
              pprint.pformat(self.reader_uuids, indent = 15),
              pprint.pformat(self.persister_uuids, indent = 15)))
 
@@ -407,9 +407,11 @@ class DataManagerHandler(BaseHTTPRequestHandler):
       self.send_error(404,
                       'User (%s) Not Found.' % cgi.escape(uuid, quote=False))
     else:
+      # Here we assume that since a user exists, they don't need to be
+      # html escaped.
       self.send_response(200)
       self.end_headers()
-      self.writeTop('Home')
+      self.writeTop('User %s' % uuid)
       self.wfile.write('<TABLE>')
       self.wfile.write('<TR><TH>user'
                        '<TH>unweighted readable block size'
@@ -432,6 +434,43 @@ class DataManagerHandler(BaseHTTPRequestHandler):
                                      reader_to_collections[uuid])))
       self.writeBottom()
 
+  def collectionExists(self, uuid):
+    return CollectionInfo.all_by_uuid.has_key(uuid)
+
+  def writeCollectionPage(self, uuid):
+    if not self.collectionExists(uuid):
+      self.send_error(404,
+                      'Collection (%s) Not Found.' % cgi.escape(uuid, quote=False))
+    else:
+      collection = CollectionInfo.get(uuid)
+      # Here we assume that since a collection exists, its id doesn't
+      # need to be html escaped.
+      self.send_response(200)
+      self.end_headers()
+      self.writeTop('Collection %s' % uuid)
+      self.wfile.write('<H1>Collection %s</H1>\n' % uuid)
+      self.wfile.write('<P>Total size %s (not factoring in replication).\n' %
+                       fileSizeFormat(collection.byteSize()))
+      self.wfile.write('<P>Readers: %s\n' %
+                       ', '.join(map(self.userLink, collection.reader_uuids)))
+      self.wfile.write('<P>Persisters: %s\n' %
+                       ', '.join(map(self.userLink,
+                                     collection.persister_uuids)))
+      replication_to_blocks = defaultdict(set)
+      for block in collection.block_uuids:
+        replication_to_blocks[block_to_replication[block]].add(block)
+      replication_levels = sorted(replication_to_blocks.keys())
+      self.wfile.write('<P>%d blocks in %d replication level(s):\n' %
+                       (len(collection.block_uuids), len(replication_levels)))
+      self.wfile.write('<TABLE><TR><TH>%s</TR>\n' %
+                       '<TH>'.join(['Replication Level ' + str(x) for x in replication_levels]))
+      self.wfile.write('<TR>\n')
+      for replication_level in replication_levels:
+        blocks = replication_to_blocks[replication_level]
+        self.wfile.write('<TD valign="top">%s\n' % '<BR>\n'.join(blocks))
+      self.wfile.write('</TR></TABLE>\n')
+      
+
   def do_GET(self):
     if not all_data_loaded:
       self.send_error(503,
@@ -447,6 +486,8 @@ class DataManagerHandler(BaseHTTPRequestHandler):
         self.writeHomePage()
       elif request_type == DataManagerHandler.USER_PATH:
         self.writeUserPage(split_path[1])
+      elif request_type == DataManagerHandler.COLLECTION_PATH:
+        self.writeCollectionPage(split_path[1])
       else:
         self.send_error(404, 'Unrecognized request path.')
     return
