@@ -1,4 +1,9 @@
-  <div class="modal-body">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3 class="modal-title">Setup User</h4>
+  </div
+
+  <div class="modal-body" style="max-height:800px;">
     <% if @object%>
       <% uuid = @object.uuid %>
       <% email = @object.email %>
@@ -60,12 +65,12 @@
           </tr>
         </tbody></table>
       </div>
-      <div align="center">
-        <br/>
-        <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
-        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">Cancel</button>
-      </div>
     <% end %>
+  </div>
+
+  <div class="modal-footer">
+    <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
+    <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
   </div>
 
 <script>
