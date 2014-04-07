@@ -2,7 +2,7 @@ class Log < ArvadosModel
   include AssignUuid
   include KindAndEtag
   include CommonApiTemplate
-  serialize :info, Hash
+  serialize :properties, Hash
   before_validation :set_default_event_at
   attr_accessor :object
 
@@ -13,7 +13,7 @@ class Log < ArvadosModel
     t.add :event_at
     t.add :event_type
     t.add :summary
-    t.add :info
+    t.add :properties
   end
 
   protected
