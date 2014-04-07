@@ -9,11 +9,21 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"strconv"
 	"strings"
+	"time"
 )
 
+// Default TCP port on which to listen for requests.
 const DEFAULT_PORT = 25107
+
+// A Keep "block" is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
+
+// A Keep volume must have at least MIN_FREE_KILOBYTES available
+// in order to permit writes.
+const MIN_FREE_KILOBYTES = BLOCKSIZE / 1024
 
 var PROC_MOUNTS = "/proc/mounts"
 
@@ -204,10 +214,12 @@ func PutBlock(block []byte, hash string) error {
 		return &KeepError{401, errors.New("MD5Fail")}
 	}
 
+	allFull := true
 	for _, vol := range KeepVolumes {
-
-		// TODO(twp): check for a full volume here before trying to write.
-
+		if IsFull(vol) {
+			continue
+		}
+		allFull = false
 		blockDir := fmt.Sprintf("%s/%s", vol, hash[0:3])
 		if err := os.MkdirAll(blockDir, 0755); err != nil {
 			log.Printf("%s: could not create directory %s: %s",
@@ -239,8 +251,73 @@ func PutBlock(block []byte, hash string) error {
 		}
 	}
 
-	// All volumes failed; report the failure and return an error.
-	//
-	log.Printf("all Keep volumes failed")
-	return &KeepError{500, errors.New("Fail")}
+	if allFull {
+		log.Printf("all Keep volumes full")
+		return &KeepError{503, errors.New("Full")}
+	} else {
+		log.Printf("all Keep volumes failed")
+		return &KeepError{500, errors.New("Fail")}
+	}
+}
+
+func IsFull(volume string) (isFull bool) {
+	fullSymlink := volume + "/full"
+
+	// Check if the volume has been marked as full in the last hour.
+	if link, err := os.Readlink(fullSymlink); err == nil {
+		if ts, err := strconv.Atoi(link); err == nil {
+			fulltime := time.Unix(int64(ts), 0)
+			if time.Since(fulltime).Hours() < 1.0 {
+				return true
+			}
+		}
+	}
+
+	if avail, err := FreeDiskSpace(volume); err == nil {
+		isFull = avail < MIN_FREE_KILOBYTES
+	} else {
+		log.Printf("%s: FreeDiskSpace: %s\n", volume, err)
+		isFull = false
+	}
+
+	// If the volume is full, timestamp it.
+	if isFull {
+		now := fmt.Sprintf("%d", time.Now().Unix())
+		os.Symlink(now, fullSymlink)
+	}
+	return
+}
+
+// FreeDiskSpace(volume)
+//     Returns the amount of available disk space on VOLUME,
+//     as a number of 1k blocks.
+//
+func FreeDiskSpace(volume string) (free int, err error) {
+	// Run df to find out how much disk space is left.
+	cmd := exec.Command("df", "--block-size=1k", volume)
+	stdout, perr := cmd.StdoutPipe()
+	if perr != nil {
+		return 0, perr
+	}
+	scanner := bufio.NewScanner(stdout)
+	if perr := cmd.Start(); err != nil {
+		return 0, perr
+	}
+
+	scanner.Scan() // skip header line of df output
+	scanner.Scan()
+
+	f := strings.Fields(scanner.Text())
+	if avail, err := strconv.Atoi(f[3]); err == nil {
+		free = avail
+	} else {
+		err = errors.New("bad df format: " + scanner.Text())
+	}
+
+	// Flush the df output and shut it down cleanly.
+	for scanner.Scan() {
+	}
+	cmd.Wait()
+
+	return
 }
