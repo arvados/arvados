@@ -9,8 +9,8 @@ account.</p>
 <p>As an admin, you can setup this user. Please input a VM and repository for the user. If you had previously provided any of these items, they are pre-filled for you and you can leave them as is if you would like to reuse them.</p>
 
 <blockquote>
-<%= link_to "Setup #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#modal-window'}  %>
-<div id="modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+<%= link_to "Setup #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
+<div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
 </blockquote>
 
 <p>As an admin, you can deactivate and reset this user. This will remove all repository/VM permissions for the user. If you "setup" the user again, the user will have to sign the user agreement again.</p>

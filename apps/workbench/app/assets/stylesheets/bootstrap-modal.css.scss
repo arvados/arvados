@@ -47,6 +47,11 @@ overflow: hidden;
 overflow-y: scroll;
 }
 
+#user-setup-modal-window{
+  overflow: hidden;
+}
+
+
 @media (max-width: 979px) {
 .modal-open.page-overflow .page-container .navbar-fixed-top,
 .modal-open.page-overflow .page-container .navbar-fixed-bottom {
