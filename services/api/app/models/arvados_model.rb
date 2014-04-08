@@ -8,11 +8,15 @@ class ArvadosModel < ActiveRecord::Base
   attr_protected :modified_by_user_uuid
   attr_protected :modified_by_client_uuid
   attr_protected :modified_at
+  after_initialize :log_start_state
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
   before_destroy :ensure_permission_to_destroy
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
+  around_create { |&block| make_log_around(:create, nil, self, &block) }
+  around_update { |&block| make_log_around(:update, self, self, &block) }
+  around_destroy { |&block| make_log_around(:destroy, self, nil, &block) }
   validate :ensure_serialized_attribute_type
   validate :normalize_collection_uuids
 
@@ -210,4 +214,24 @@ class ArvadosModel < ActiveRecord::Base
     nil
   end
 
+  def log_start_state
+    @old_etag = etag
+    @old_attributes = attributes
+  end
+
+  def make_log_around(event_type, old_thing, new_thing)
+    if self.is_a? Log
+      yield
+    else
+      log = Log.start_from(old_thing, event_type.to_s)
+      if not old_thing.nil?
+        log.properties['old_etag'] = @old_etag
+        log.properties['old_attributes'] = @old_attributes
+      end
+      yield
+      log.update_to new_thing
+      log_start_state
+      log.save
+    end
+  end
 end
