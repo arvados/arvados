@@ -45,4 +45,8 @@ class User < ArvadosBase
                                                 {}))
   end
 
+  def self.setup params
+    $arvados_api_client.api(self, "/setup", params)
+  end
+
 end
