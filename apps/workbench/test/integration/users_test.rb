@@ -46,7 +46,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'zzzzz-tpzed-d9tiejq69daie8f'
 
     click_link 'Add a new user'
-    
+
     sleep(0.1)
     popup = page.driver.browser.window_handles.last
     page.within_window popup do
@@ -57,7 +57,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
 
     sleep(0.1)
-    
+
     # verify that the new user showed up in the users page
     assert page.has_text? 'foo@example.com'
 
