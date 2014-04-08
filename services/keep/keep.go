@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -33,6 +34,15 @@ type KeepError struct {
 	HTTPCode int
 	Err      error
 }
+
+const (
+	ErrCollision = 400
+	ErrMD5Fail   = 401
+	ErrCorrupt   = 402
+	ErrNotFound  = 404
+	ErrOther     = 500
+	ErrFull      = 503
+)
 
 func (e *KeepError) Error() string {
 	return fmt.Sprintf("Error %d: %s", e.HTTPCode, e.Err.Error())
@@ -172,7 +182,7 @@ func GetBlock(hash string) ([]byte, error) {
 			//
 			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
 				vol, blockFilename, filehash)
-			continue
+			return buf, &KeepError{ErrCorrupt, errors.New("Corrupt")}
 		}
 
 		// Success!
@@ -180,7 +190,7 @@ func GetBlock(hash string) ([]byte, error) {
 	}
 
 	log.Printf("%s: not found on any volumes, giving up\n", hash)
-	return buf, &KeepError{404, errors.New("not found: " + hash)}
+	return buf, &KeepError{ErrNotFound, errors.New("not found: " + hash)}
 }
 
 /* PutBlock(block, hash)
@@ -195,15 +205,18 @@ func GetBlock(hash string) ([]byte, error) {
    On success, PutBlock returns nil.
    On failure, it returns a KeepError with one of the following codes:
 
+   400 Collision
+          A different block with the same hash already exists on this
+          Keep server.
    401 MD5Fail
-         -- The MD5 hash of the BLOCK does not match the argument HASH.
+          The MD5 hash of the BLOCK does not match the argument HASH.
    503 Full
-         -- There was not enough space left in any Keep volume to store
-            the object.
+          There was not enough space left in any Keep volume to store
+          the object.
    500 Fail
-         -- The object could not be stored for some other reason (e.g.
-            all writes failed). The text of the error message should
-            provide as much detail as possible.
+          The object could not be stored for some other reason (e.g.
+          all writes failed). The text of the error message should
+          provide as much detail as possible.
 */
 
 func PutBlock(block []byte, hash string) error {
@@ -211,9 +224,25 @@ func PutBlock(block []byte, hash string) error {
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
 		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
-		return &KeepError{401, errors.New("MD5Fail")}
+		return &KeepError{ErrMD5Fail, errors.New("MD5Fail")}
 	}
 
+	// If we already have a block on disk under this identifier, return
+	// success (but check for MD5 collisions, which may signify on-disk corruption).
+	if oldblock, err := GetBlock(hash); err == nil {
+		if bytes.Compare(block, oldblock) == 0 {
+			return nil
+		} else {
+			return &KeepError{ErrCollision, errors.New("Collision")}
+		}
+	} else {
+		ke := err.(*KeepError)
+		if ke.HTTPCode == ErrCorrupt {
+			return &KeepError{ErrCollision, errors.New("Collision")}
+		}
+	}
+
+	// Store the block on the first available Keep volume.
 	allFull := true
 	for _, vol := range KeepVolumes {
 		if IsFull(vol) {
@@ -228,18 +257,11 @@ func PutBlock(block []byte, hash string) error {
 		}
 
 		blockFilename := fmt.Sprintf("%s/%s", blockDir, hash)
+
 		f, err := os.OpenFile(blockFilename, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			// if the block already exists, just return success.
-			// TODO(twp): should we check here whether the file on disk
-			// matches the file we were asked to store?
-			if os.IsExist(err) {
-				return nil
-			} else {
-				// Open failed for some other reason.
-				log.Printf("%s: creating %s: %s\n", vol, blockFilename, err)
-				continue
-			}
+			log.Printf("%s: creating %s: %s\n", vol, blockFilename, err)
+			continue
 		}
 
 		if _, err := f.Write(block); err == nil {
@@ -253,10 +275,10 @@ func PutBlock(block []byte, hash string) error {
 
 	if allFull {
 		log.Printf("all Keep volumes full")
-		return &KeepError{503, errors.New("Full")}
+		return &KeepError{ErrFull, errors.New("Full")}
 	} else {
 		log.Printf("all Keep volumes failed")
-		return &KeepError{500, errors.New("Fail")}
+		return &KeepError{ErrOther, errors.New("Fail")}
 	}
 }
 
