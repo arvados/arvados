@@ -129,11 +129,11 @@ func TestPutBlockOneVol(t *testing.T) {
 	}
 }
 
-// TestPutBlockCorrupt
+// TestPutBlockMD5Fail
 //     Check that PutBlock returns an error if passed a block and hash that
 //     do not match.
 //
-func TestPutBlockCorrupt(t *testing.T) {
+func TestPutBlockMD5Fail(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes.
@@ -145,7 +145,7 @@ func TestPutBlockCorrupt(t *testing.T) {
 		t.Error("PutBlock succeeded despite a block mismatch")
 	} else {
 		ke := err.(*KeepError)
-		if ke.HTTPCode != 401 || ke.Err.Error() != "MD5Fail" {
+		if ke.HTTPCode != ErrMD5Fail {
 			t.Errorf("PutBlock returned the wrong error (%v)", ke)
 		}
 	}
@@ -155,6 +155,32 @@ func TestPutBlockCorrupt(t *testing.T) {
 		t.Errorf("GetBlock succeded after a corrupt block store, returned '%s'",
 			string(result))
 	}
+}
+
+// TestPutBlockCollision
+//     PutBlock must report a 400 Collision error when asked to store a block
+//     when a different block exists on disk under the same identifier.
+//
+func TestPutBlockCollision(t *testing.T) {
+	defer teardown()
+
+	// Create two test Keep volumes.
+	KeepVolumes = setup(t, 2)
+
+	// Store a corrupted block under TEST_HASH.
+	store(t, KeepVolumes[0], TEST_HASH, BAD_BLOCK)
+
+	// Attempting to put TEST_BLOCK should produce a 400 Collision error.
+	if err := PutBlock(TEST_BLOCK, TEST_HASH); err == nil {
+		t.Error("Expected PutBlock error, but no error returned")
+	} else {
+		ke := err.(*KeepError)
+		if ke.HTTPCode != ErrCollision {
+			t.Errorf("Expected 400 Collision error, got %v", ke)
+		}
+	}
+
+	KeepVolumes = nil
 }
 
 // TestFindKeepVolumes
@@ -251,7 +277,7 @@ func teardown() {
 // store
 //     Low-level code to write Keep blocks directly to disk for testing.
 //
-func store(t *testing.T, keepdir string, filename string, block []byte) error {
+func store(t *testing.T, keepdir string, filename string, block []byte) {
 	blockdir := fmt.Sprintf("%s/%s", keepdir, filename[:3])
 	if err := os.MkdirAll(blockdir, 0755); err != nil {
 		t.Fatal(err)
@@ -264,6 +290,4 @@ func store(t *testing.T, keepdir string, filename string, block []byte) error {
 	} else {
 		t.Fatal(err)
 	}
-
-	return nil
 }
