@@ -403,11 +403,13 @@ class User < ArvadosModel
   # all of this user's stuff.
   #
   def add_system_group_permission_link
-    Link.create(link_class: 'permission',
-                name: 'can_manage',
-                tail_kind: 'arvados#group',
-                tail_uuid: system_group_uuid,
-                head_kind: 'arvados#user',
-                head_uuid: self.uuid)
+    act_as_system_user do
+      Link.create(link_class: 'permission',
+                  name: 'can_manage',
+                  tail_kind: 'arvados#group',
+                  tail_uuid: system_group_uuid,
+                  head_kind: 'arvados#user',
+                  head_uuid: self.uuid)
+    end
   end
 end
