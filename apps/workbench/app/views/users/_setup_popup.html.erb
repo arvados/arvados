@@ -75,12 +75,12 @@
   var email_disabled = document.forms["setup_form"]["email"].disabled;
   var email_value = document.forms["setup_form"]["email"].value;
   var prefix_value = document.forms["setup_form"]["openid_prefix"].value;
-  if ((email_disabled == false) && (email_value == null || email_value == "" || 
+  if ((email_disabled == false) && (email_value == null || email_value == "" ||
         prefix_value == null || prefix_value == "")) {
     $register.attr('disabled', true);
   }
 
-  $input.keyup(function() {
+  $input.on('keyup paste mouseleave', function() {
     var trigger = false;
 
     var email_disabled = document.forms["setup_form"]["email"].disabled;
@@ -93,7 +93,7 @@
       validEmail = true;
     }
 
-    if ((email_disabled == false) && (!validEmail || email_value == null || 
+    if ((email_disabled == false) && (!validEmail || email_value == null ||
             email_value == "" || prefix_value == null || prefix_value == "")){
       trigger = true;
     }
