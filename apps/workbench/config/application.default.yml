@@ -73,3 +73,4 @@ common:
   show_user_agreement_inline: false
   secret_token: ~
   default_openid_prefix: https://www.google.com/accounts/o8/id
+  send_user_setup_notification_email: true

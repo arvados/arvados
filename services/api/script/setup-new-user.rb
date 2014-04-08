@@ -21,6 +21,9 @@ If creating a new user record, require authentication from an OpenID \
 with this OpenID prefix *and* a matching email address in order to \
 claim the account.
   eos
+  opt :send_notification_email, <<-eos, default: 'true'
+Send notification email after successfully setting up the user.
+  eos
 end
 
 log.level = (ENV['DEBUG'] || opts.debug) ? Logger::DEBUG : Logger::WARN
@@ -55,10 +58,12 @@ end
 # Invoke user setup method
 if (found_user)
   user = arv.user.setup uuid: found_user[:uuid], repo_name: user_repo_name,
-        vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix
+          vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix,
+          send_notification_email: opts.send_notification_email
 else
   user = arv.user.setup user: {email: user_arg}, repo_name: user_repo_name,
-        vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix
+          vm_uuid: vm_uuid, openid_prefix: opts.openid_prefix,
+          send_notification_email: opts.send_notification_email
 end
 
 log.info {"user uuid: " + user[:uuid]}

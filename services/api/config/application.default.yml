@@ -85,6 +85,7 @@ common:
   new_users_are_active: false
   admin_notifier_email_from: arvados@example.com
   email_subject_prefix: "[ARVADOS] "
+  user_notifier_email_from: arvados@example.com
 
   # Visitors to the API server will be redirected to the workbench
   workbench_address: https://workbench.local:3001/
