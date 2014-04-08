@@ -10,7 +10,6 @@ account.</p>
 
 <blockquote>
 <%= link_to "Setup #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
-<div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
 </blockquote>
 
 <p>As an admin, you can deactivate and reset this user. This will remove all repository/VM permissions for the user. If you "setup" the user again, the user will have to sign the user agreement again.</p>
@@ -19,3 +18,6 @@ account.</p>
 <%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', confirm: "Are you sure you want to deactivate #{@object.full_name}?"%>
 </blockquote>
 
+<% content_for :footer_html do %>
+<div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+<% end %>
