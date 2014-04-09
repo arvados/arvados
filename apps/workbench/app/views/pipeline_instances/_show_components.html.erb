@@ -5,8 +5,14 @@
 <% template = PipelineTemplate.find(@object.pipeline_template_uuid) rescue nil %>
 
 <%= content_for :content_top do %>
+  <h2>
+    <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => 'Unnamed pipeline', 'data-mode' => 'inline' } %>
+  </h2>
   <% if template %>
-    <h2><%= template.name %></h2>
+  <h4>
+    From template:
+    <%= link_to_if_arvados_object template, friendly_name: true %>
+  </h4>
   <% end %>
 <% end %>
 
