@@ -224,6 +224,7 @@ def blockPersistedUsage(user_uuid, block_uuid):
   return (byteSizeFromValidUuid(block_uuid) *
           block_to_persister_replication[block_uuid].get(user_uuid, 0))
 
+memo_computeWeightedReplicationCosts = {}
 def computeWeightedReplicationCosts(replication_levels):
   """Computes the relative cost of varied replication levels.
 
@@ -235,7 +236,7 @@ def computeWeightedReplicationCosts(replication_levels):
   The basic thinking is that the cost of replicating at level x should
   be shared by everyone who wants replication of level x or higher.
 
-  For example, if I have two users who want 1 copy, one user who
+  For example, if we have two users who want 1 copy, one user who
   wants 3 copies and two users who want 6 copies:
   the input would be [1, 1, 3, 6, 6] (or any permutation)
 
@@ -256,22 +257,26 @@ def computeWeightedReplicationCosts(replication_levels):
   computeWeightedReplicationCosts([1,3,6,6,10]) -> {1:0.2,3:0.7,6:1.7,10:5.7}
   """
   replication_level_counts = sorted(Counter(replication_levels).items())
-  # The above, written to a string, could also serve as a hash key if
-  # we want to save on computation
 
-  last_level = 0
-  current_cost = 0
-  total_interested = float(sum(map(itemgetter(1), replication_level_counts)))
-  cost_for_level = {}
-  for replication_level, count in replication_level_counts:
-    copies_added = replication_level - last_level
-    # compute marginal cost from last level and add it to the last cost
-    current_cost += copies_added / total_interested
-    cost_for_level[replication_level] = current_cost
-    # update invariants
-    last_level = replication_level
-    total_interested -= count
-  return cost_for_level
+  memo_key = str(replication_level_counts)
+
+  if not memo_key in memo_computeWeightedReplicationCosts:
+    last_level = 0
+    current_cost = 0
+    total_interested = float(sum(map(itemgetter(1), replication_level_counts)))
+    cost_for_level = {}
+    for replication_level, count in replication_level_counts:
+      copies_added = replication_level - last_level
+      # compute marginal cost from last level and add it to the last cost
+      current_cost += copies_added / total_interested
+      cost_for_level[replication_level] = current_cost
+      # update invariants
+      last_level = replication_level
+      total_interested -= count
+    memo_computeWeightedReplicationCosts[memo_key] = cost_for_level
+
+  print memo_computeWeightedReplicationCosts
+  return memo_computeWeightedReplicationCosts[memo_key]
 
 def reportUserDiskUsage():
   for user, blocks in reader_to_blocks.items():
