@@ -1,13 +1,19 @@
 require 'test_helper'
 
 class UserTest < ActiveSupport::TestCase
+  include CurrentApiClient
 
   # The fixture services/api/test/fixtures/users.yml serves as the input for this test case
   setup do
+    # Make sure system_user exists before making "pre-test users" list
+    system_user
+
     @all_users = User.find(:all)
 
     @all_users.each do |user|
-      if user.is_admin && user.is_active
+      if user.uuid == system_user_uuid
+        @system_user = user
+      elsif user.is_admin && user.is_active
         @admin_user = user
       elsif user.is_active && !user.is_admin
         @active_user = user
@@ -89,7 +95,7 @@ class UserTest < ActiveSupport::TestCase
     user.save
 
     # verify there is one extra user in the db now
-    assert (User.find(:all).size == @all_users.size+1)
+    assert_equal @all_users.size+1, User.find(:all).size
 
     user = User.find(user.id)   # get the user back
     assert_equal(user.first_name, 'first_name_for_newly_created_user')
