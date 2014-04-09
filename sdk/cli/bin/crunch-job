@@ -400,24 +400,21 @@ else
   my $commit;
   my $git_archive;
   my $treeish = $Job->{'script_version'};
-  my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'};
+  my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'} || $Job->{'repository'};
   # Todo: let script_version specify repository instead of expecting
   # parent process to figure it out.
   $ENV{"CRUNCH_SRC_URL"} = $repo;
 
-  # Create/update our clone of the remote git repo
-
-  if (!-d $ENV{"CRUNCH_SRC"}) {
-    system(qw(git clone), $repo, $ENV{"CRUNCH_SRC"}) == 0
-	or croak ("git clone $repo failed: exit ".($?>>8));
-    system("cd $ENV{CRUNCH_SRC} && git config clean.requireForce false");
+  if (-d "$repo/.git") {
+    # We were given a working directory, but we are only interested in
+    # the index.
+    $repo = "$repo/.git";
   }
-  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q --tags origin`;
 
   # If this looks like a subversion r#, look for it in git-svn commit messages
 
   if ($treeish =~ m{^\d{1,4}$}) {
-    my $gitlog = `cd $ENV{CRUNCH_SRC} && git log --pretty="format:%H" --grep="git-svn-id:.*\@$treeish " origin/master`;
+    my $gitlog = `git --git-dir="$repo" log --pretty="format:%H" --grep="git-svn-id:.*\@$treeish " master`;
     chomp $gitlog;
     if ($gitlog =~ /^[a-f0-9]{40}$/) {
       $commit = $gitlog;
@@ -428,15 +425,7 @@ else
   # If that didn't work, try asking git to look it up as a tree-ish.
 
   if (!defined $commit) {
-
-    my $cooked_treeish = $treeish;
-    if ($treeish !~ m{^[0-9a-f]{5,}$}) {
-      # Looks like a git branch name -- make sure git knows it's
-      # relative to the remote repo
-      $cooked_treeish = "origin/$treeish";
-    }
-
-    my $found = `cd $ENV{CRUNCH_SRC} && git rev-list -1 $cooked_treeish`;
+    my $found = `git --git-dir="$repo" rev-list -1 "$treeish"`;
     chomp $found;
     if ($found =~ /^[0-9a-f]{40}$/s) {
       $commit = $found;
@@ -461,7 +450,7 @@ else
     $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
     @execargs = ("sh", "-c",
 		 "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
-    $git_archive = `cd $ENV{CRUNCH_SRC} && git archive $commit`;
+    $git_archive = `git --git-dir="$repo" archive "$commit"`;
   }
   else {
     croak ("could not figure out commit id for $treeish");
