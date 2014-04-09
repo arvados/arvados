@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include CurrentApiClient
+  include ThemesForRails::ActionController
 
   respond_to :json
   protect_from_forgery
@@ -19,6 +20,8 @@ class ApplicationController < ActionController::Base
   before_filter :render_404_if_no_object, except: [:index, :create,
                                                    :render_error,
                                                    :render_not_found]
+
+  theme :select_theme
 
   attr_accessor :resource_attrs
 
@@ -476,5 +479,9 @@ class ApplicationController < ActionController::Base
       end
     end
     super *opts
+  end
+
+  def select_theme
+    return Rails.configuration.arvados_theme
   end
 end

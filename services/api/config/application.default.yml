@@ -110,3 +110,5 @@ common:
 
   # Version of your assets, change this if you want to expire all your assets
   assets.version: "1.0"
+
+  arvados_theme: default

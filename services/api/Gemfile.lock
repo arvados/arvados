@@ -177,6 +177,8 @@ GEM
       tilt (~> 1.1, != 1.3.0)
     sqlite3 (1.3.8)
     test_after_commit (0.2.2)
+    themes_for_rails (0.5.1)
+      rails (>= 3.0.0)
     therubyracer (0.12.0)
       libv8 (~> 3.16.14.0)
       ref
@@ -214,6 +216,7 @@ DEPENDENCIES
   sass-rails (>= 3.2.0)
   sqlite3
   test_after_commit
+  themes_for_rails
   therubyracer
   trollop
   uglifier (>= 1.0.3)
