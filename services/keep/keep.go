@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -64,8 +65,10 @@ func main() {
 	// appropriate handler.
 	//
 	rest := mux.NewRouter()
-	rest.HandleFunc("/{hash:[0-9a-f]{32}}", GetBlockHandler).Methods("GET")
-	rest.HandleFunc("/{hash:[0-9a-f]{32}}", PutBlockHandler).Methods("PUT")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 
 	// Tell the built-in HTTP server to direct all requests to the REST
 	// router.
@@ -142,6 +145,62 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 		log.Println("error reading request: ", err)
 		http.Error(w, err.Error(), 500)
 	}
+}
+
+func IndexHandler(w http.ResponseWriter, req *http.Request) {
+	prefix := mux.Vars(req)["prefix"]
+
+	index := IndexLocators(prefix)
+	w.Write([]byte(index))
+}
+
+// IndexLocators
+//     Returns a string containing a list of locator ids found on this
+//     Keep server.  If {prefix} is given, return only those locator
+//     ids that begin with the given prefix string.
+//
+//     The return string consists of a sequence of newline-separated
+//     strings in the format
+//
+//         locator+size modification-time
+//
+//     e.g.:
+//
+//         e4df392f86be161ca6ed3773a962b8f3+67108864 1388894303
+//         e4d41e6fd68460e0e3fc18cc746959d2+67108864 1377796043
+//         e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
+//
+func IndexLocators(prefix string) string {
+	var output string
+	for _, vol := range KeepVolumes {
+		filepath.Walk(vol,
+			func(path string, info os.FileInfo, err error) error {
+				// This WalkFunc inspects each path in the volume
+				// and prints an index line for all files that begin
+				// with prefix.
+				if err != nil {
+					log.Printf("IndexHandler: %s: walking to %s: %s",
+						vol, path, err)
+					return nil
+				}
+				locator := filepath.Base(path)
+				// Skip directories that do not match prefix.
+				// We know there is nothing interesting inside.
+				if info.IsDir() &&
+					!strings.HasPrefix(locator, prefix) &&
+					!strings.HasPrefix(prefix, locator) {
+					return filepath.SkipDir
+				}
+				// Print filenames beginning with prefix
+				if !info.IsDir() && strings.HasPrefix(locator, prefix) {
+					output = output + fmt.Sprintf(
+						"%s+%d %d\n", locator, info.Size(), info.ModTime().Unix())
+				}
+				return nil
+			})
+	}
+
+	return output
 }
 
 func GetBlock(hash string) ([]byte, error) {
