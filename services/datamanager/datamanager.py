@@ -255,22 +255,23 @@ def computeWeightedReplicationCosts(replication_levels):
   computeWeightedReplicationCosts([1,3]) -> {1:0.5,2:2.5}
   computeWeightedReplicationCosts([1,3,6,6,10]) -> {1:0.2,3:0.7,6:1.7,10:5.7}
   """
-  replication_level_counts = sorted(Counter(replication_levels))
+  replication_level_counts = sorted(Counter(replication_levels).items())
   # The above, written to a string, could also serve as a hash key if
   # we want to save on computation
 
   last_level = 0
+  current_cost = 0
   total_interested = float(sum(map(itemgetter(1), replication_level_counts)))
   cost_for_level = {}
   for replication_level, count in replication_level_counts:
-    # compute cost
     copies_added = replication_level - last_level
-    cost_for_level[replication_level] = (
-      cost_for_level[last_level] +
-      (total_interested * copies_added) / count)
+    # compute marginal cost from last level and add it to the last cost
+    current_cost += copies_added / total_interested
+    cost_for_level[replication_level] = current_cost
     # update invariants
     last_level = replication_level
     total_interested -= count
+  return cost_for_level
 
 def reportUserDiskUsage():
   for user, blocks in reader_to_blocks.items():
@@ -324,33 +325,8 @@ def computeReplication(keep_blocks):
 
 # This is the main flow here
 
-parser = argparse.ArgumentParser(description='Report on keep disks.')
-parser.add_argument('-m',
-                    '--max-api-results',
-                    type=int,
-                    default=5000,
-                    help=('The max results to get at once.'))
-parser.add_argument('-p',
-                    '--port',
-                    type=int,
-                    default=9090,
-                    help=('The port number to serve on. 0 means no server.'))
-parser.add_argument('-v',
-                    '--verbose',
-                    help='increase output verbosity',
-                    action='store_true')
-parser.add_argument('-u',
-                    '--uuid',
-                    help='uuid of specific collection to process')
-parser.add_argument('--require-admin-user',
-                    action='store_true',
-                    default=True,
-                    help='Fail if the user is not an admin [default]')
-parser.add_argument('--no-require-admin-user',
-                    dest='require_admin_user',
-                    action='store_false',
-                    help='Allow users without admin permissions with only a warning.')
-args = parser.parse_args()
+
+args = None
 
 log = logging.getLogger('arvados.services.datamanager')
 stderr_handler = logging.StreamHandler()
@@ -598,6 +574,37 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
   """Handle requests in a separate thread."""
 
 if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description='Report on keep disks.')
+  parser.add_argument('-m',
+                      '--max-api-results',
+                      type=int,
+                      default=5000,
+                      help=('The max results to get at once.'))
+  parser.add_argument('-p',
+                      '--port',
+                      type=int,
+                      default=9090,
+                      help=('The port number to serve on. 0 means no server.'))
+  parser.add_argument('-v',
+                      '--verbose',
+                      help='increase output verbosity',
+                      action='store_true')
+  parser.add_argument('-u',
+                      '--uuid',
+                      help='uuid of specific collection to process')
+  parser.add_argument('--require-admin-user',
+                      action='store_true',
+                      default=True,
+                      help='Fail if the user is not an admin [default]')
+  parser.add_argument('--no-require-admin-user',
+                      dest='require_admin_user',
+                      action='store_false',
+                      help='Allow users without admin permissions with only a warning.')
+
+
+  args = parser.parse_args()
+
+
   if args.port == 0:
     loadAllData()
   else:
