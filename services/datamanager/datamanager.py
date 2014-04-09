@@ -13,6 +13,7 @@ import urllib2
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from collections import defaultdict
+from functools import partial
 from operator import itemgetter
 from SocketServer import ThreadingMixIn
 
@@ -32,6 +33,11 @@ class maxdict(dict):
   """A dictionary that holds the largest value entered for each key."""
   def addValue(self, key, value):
     dict.__setitem__(self, key, max(dict.get(self, key), value))
+  def addValues(self, kv_pairs):
+    for key,value in kv_pairs:
+      self.addValue(key, value)
+  def addDict(self, d):
+    self.addValues(d.items())
 
 class CollectionInfo:
   DEFAULT_PERSISTER_REPLICATION_LEVEL=2
@@ -180,6 +186,8 @@ def buildMaps():
       block_to_collections[block_uuid].add(collection_uuid)
       block_to_readers[block_uuid].update(collection_info.reader_uuids)
       block_to_persisters[block_uuid].update(collection_info.persister_uuids)
+      block_to_persister_replication[block_uuid].addDict(
+        collection_info.persister_replication)
     for reader_uuid in collection_info.reader_uuids:
       reader_to_collections[reader_uuid].add(collection_uuid)
       reader_to_blocks[reader_uuid].update(block_uuids)
@@ -212,6 +220,9 @@ def blockDiskUsage(block_uuid):
   """
   return byteSizeFromValidUuid(block_uuid) * block_to_replication[block_uuid]
 
+def blockPersistedUsage(user_uuid, block_uuid):
+  return (byteSizeFromValidUuid(block_uuid) *
+          block_to_persister_replication[block_uuid].get(user_uuid, 0))
 
 def reportUserDiskUsage():
   for user, blocks in reader_to_blocks.items():
@@ -224,7 +235,7 @@ def reportUserDiskUsage():
         blocks))
   for user, blocks in persister_to_blocks.items():
     user_to_usage[user][UNWEIGHTED_PERSIST_SIZE_COL] = sum(map(
-        blockDiskUsage,
+        partial(blockPersistedUsage, user),
         blocks))
     user_to_usage[user][WEIGHTED_PERSIST_SIZE_COL] = sum(map(
         lambda block_uuid:(float(blockDiskUsage(block_uuid))/
@@ -309,6 +320,7 @@ reader_to_collections = defaultdict(set)  # collection(s) for which the user has
 persister_to_collections = defaultdict(set)  # collection(s) which the user has persisted
 block_to_readers = defaultdict(set)
 block_to_persisters = defaultdict(set)
+block_to_persister_replication = defaultdict(maxdict)
 reader_to_blocks = defaultdict(set)
 persister_to_blocks = defaultdict(set)
 
@@ -480,7 +492,7 @@ class DataManagerHandler(BaseHTTPRequestHandler):
           replication_to_users[replication].add(user)
         replication_levels = sorted(replication_to_users.keys())
 
-        self.wfile.write('<P>%d persisters in %d replication levels maxing '
+        self.wfile.write('<P>%d persisters in %d replication level(s) maxing '
                          'out at %dx replication:\n' %
                          (len(collection.persister_replication),
                           len(replication_levels),
