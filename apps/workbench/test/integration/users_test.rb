@@ -67,7 +67,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # verify that the new user showed up in the users page
     assert page.has_text? 'foo@example.com'
-
+=begin
     page.within(:xpath, '//tr[@data-object-uuid][1]') do
       assert (text.include? 'foo@example.com false'), 'Expected email'
       new_user_uuid = text.split[0]
@@ -84,7 +84,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? '(Repository: test_repo)'
     assert !(page.has_text? '(VirtualMachine:)')
-
+=end
     headless.stop
   end
 
