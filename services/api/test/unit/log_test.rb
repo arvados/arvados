@@ -147,4 +147,22 @@ class LogTest < ActiveSupport::TestCase
     log.save!
     assert_equal(0, get_logs_about(log).size, "made a Log about a Log")
   end
+
+  test "non-admins can't modify or delete logs" do
+    set_user_from_auth :active_trustedclient
+    log = Log.new(summary: "immutable log test")
+    assert_nothing_raised { log.save! }
+    log.summary = "log mutation test should fail"
+    assert_raise(ArvadosModel::PermissionDeniedError) { log.save! }
+    assert_raise(ArvadosModel::PermissionDeniedError) { log.destroy }
+  end
+
+  test "admins can modify and delete logs" do
+    set_user_from_auth :admin_trustedclient
+    log = Log.new(summary: "admin log mutation test")
+    assert_nothing_raised { log.save! }
+    log.summary = "admin mutated log test"
+    assert_nothing_raised { log.save! }
+    assert_nothing_raised { log.destroy }
+  end
 end

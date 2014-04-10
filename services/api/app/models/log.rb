@@ -57,12 +57,10 @@ class Log < ArvadosModel
   end
 
   def permission_to_update
-    false
+    current_user.andand.is_admin
   end
 
-  def permission_to_destroy
-    false
-  end
+  alias_method :permission_to_delete, :permission_to_update
 
   def set_default_event_at
     self.event_at ||= Time.now
