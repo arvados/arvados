@@ -184,4 +184,19 @@ class LogTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "don't log changes only to ApiClientAuthorization.last_used_*" do
+    set_user_from_auth :admin_trustedclient
+    auth = api_client_authorizations(:spectator)
+    start_log_count = get_logs_about(auth).size
+    auth.last_used_at = Time.now
+    auth.last_used_by_ip_address = '::1'
+    auth.save!
+    assert_equal(start_log_count, get_logs_about(auth).size,
+                 "log count changed after 'using' ApiClientAuthorization")
+    auth.created_by_ip_address = '::1'
+    auth.save!
+    assert_equal(start_log_count + 1, get_logs_about(auth).size,
+                 "no log after changed stable ApiClientAuthorization attribute")
+  end
 end
