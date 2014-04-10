@@ -165,4 +165,23 @@ class LogTest < ActiveSupport::TestCase
     assert_nothing_raised { log.save! }
     assert_nothing_raised { log.destroy }
   end
+
+  test "failure saving log causes failure saving object" do
+    Log.class_eval do
+      alias_method :_orig_validations, :perform_validations
+      def perform_validations(options)
+        false
+      end
+    end
+    begin
+      set_user_from_auth :active_trustedclient
+      user = users(:active)
+      user.first_name = 'Test'
+      assert_raise(ActiveRecord::RecordInvalid) { user.save! }
+    ensure
+      Log.class_eval do
+        alias_method :perform_validations, :_orig_validations
+      end
+    end
+  end
 end

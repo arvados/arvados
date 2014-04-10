@@ -14,9 +14,9 @@ class ArvadosModel < ActiveRecord::Base
   before_destroy :ensure_permission_to_destroy
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
-  around_create { |&block| make_log_around(:create, nil, self, &block) }
-  around_update { |&block| make_log_around(:update, self, self, &block) }
-  around_destroy { |&block| make_log_around(:destroy, self, nil, &block) }
+  after_create :log_create
+  after_update :log_update
+  after_destroy :log_destroy
   validate :ensure_serialized_attribute_type
   validate :normalize_collection_uuids
 
@@ -219,19 +219,31 @@ class ArvadosModel < ActiveRecord::Base
     @old_attributes = attributes
   end
 
-  def make_log_around(event_type, old_thing, new_thing)
-    if self.is_a? Log
-      yield
-    else
-      log = Log.start_from(old_thing, event_type.to_s)
-      if not old_thing.nil?
-        log.properties['old_etag'] = @old_etag
-        log.properties['old_attributes'] = @old_attributes
-      end
-      yield
-      log.update_to new_thing
-      log_start_state
-      log.save
+  def log_change(event_type)
+    log = Log.new(event_type: event_type).fill_object(self)
+    yield log
+    log.save!
+    log_start_state
+  end
+
+  def log_create
+    log_change('create') do |log|
+      log.fill_properties('old', nil, nil)
+      log.update_to self
+    end
+  end
+
+  def log_update
+    log_change('update') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to self
+    end
+  end
+
+  def log_destroy
+    log_change('destroy') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to nil
     end
   end
 end

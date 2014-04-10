@@ -16,22 +16,21 @@ class Log < ArvadosModel
     t.add :properties
   end
 
-  def self.start_from(thing, event_type)
-    self.new do |log|
-      log.event_type = event_type
-      log.properties = {
-        'old_etag' => nil,
-        'old_attributes' => nil,
-      }
-      log.seed_basics_from thing
-    end
+  def fill_object(thing)
+    self.object_kind ||= thing.kind
+    self.object_uuid ||= thing.uuid
+    self.summary ||= "#{self.event_type} of #{thing.uuid}"
+    self
+  end
+
+  def fill_properties(age, etag_prop, attrs_prop)
+    self.properties.merge!({"#{age}_etag" => etag_prop,
+                             "#{age}_attributes" => attrs_prop})
   end
 
   def update_to(thing)
-    self.seed_basics_from thing
-    self.properties["new_etag"] = thing.andand.etag
-    self.properties["new_attributes"] = thing.andand.attributes
-    case self.event_type
+    fill_properties('new', thing.andand.etag, thing.andand.attributes)
+    case event_type
     when "create"
       self.event_at = thing.created_at
     when "update"
@@ -39,14 +38,7 @@ class Log < ArvadosModel
     when "destroy"
       self.event_at = Time.now
     end
-  end
-
-  def seed_basics_from(thing)
-    if not thing.nil?
-      self.object_kind ||= thing.kind
-      self.object_uuid ||= thing.uuid
-      self.summary ||= "#{self.event_type} of #{thing.uuid}"
-    end
+    self
   end
 
   protected
@@ -63,5 +55,9 @@ class Log < ArvadosModel
 
   def set_default_event_at
     self.event_at ||= Time.now
+  end
+
+  def log_change(event_type)
+    # Don't log changes to logs.
   end
 end
