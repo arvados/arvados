@@ -150,6 +150,9 @@ def readLinks():
   link_classes = set()
 
   for collection_uuid,collection_info in CollectionInfo.all_by_uuid.items():
+    # TODO(misha): We may not be seing all the links, but since items
+    # available does not return an accurate number, I don't knos how
+    # to confirm that we saw all of them.
     collection_links_response = arv.links().list(where={'head_uuid':collection_uuid}).execute()
     link_classes.update([link['link_class'] for link in collection_links_response['items']])
     for link in collection_links_response['items']:
@@ -286,13 +289,14 @@ def blockPersistedWeightedUsage(user_uuid, block_uuid):
     computeWeightedReplicationCosts(
       persister_replication_for_block.values())[user_replication])
 
-def reportUserDiskUsage():
+
+def computeUserStorageUsage():
   for user, blocks in reader_to_blocks.items():
     user_to_usage[user][UNWEIGHTED_READ_SIZE_COL] = sum(map(
-        blockDiskUsage,
+        byteSizeFromValidUuid,
         blocks))
     user_to_usage[user][WEIGHTED_READ_SIZE_COL] = sum(map(
-        lambda block_uuid:(float(blockDiskUsage(block_uuid))/
+        lambda block_uuid:(float(byteSizeFromValidUuid(block_uuid))/
                                  len(block_to_readers[block_uuid])),
         blocks))
   for user, blocks in persister_to_blocks.items():
@@ -303,6 +307,7 @@ def reportUserDiskUsage():
         partial(blockPersistedWeightedUsage, user),
         blocks))
 
+def printUserStorageUsage():
   print ('user: unweighted readable block size, weighted readable block size, '
          'unweighted persisted block size, weighted persisted block size:')
   for user, usage in user_to_usage.items():
@@ -313,6 +318,24 @@ def reportUserDiskUsage():
             fileSizeFormat(usage[UNWEIGHTED_PERSIST_SIZE_COL]),
             fileSizeFormat(usage[WEIGHTED_PERSIST_SIZE_COL])))
 
+def logUserStorageUsage():
+  for user, usage in user_to_usage.items():
+    body = {}
+    # user could actually represent a user or a group. We don't set
+    # the object_type field since we don't know which we have.
+    body['object_uuid'] = user
+    body['event_type'] = args.user_storage_log_event_type
+    info = {}
+    info['read_collections_total_bytes'] = usage[UNWEIGHTED_READ_SIZE_COL]
+    info['read_collections_weighted_bytes'] = usage[WEIGHTED_READ_SIZE_COL]
+    info['persisted_collections_total_bytes'] = (
+      usage[UNWEIGHTED_PERSIST_SIZE_COL])
+    info['persisted_collections_weighted_bytes'] = (
+      usage[WEIGHTED_PERSIST_SIZE_COL])
+    body['info'] = info
+    # TODO(misha): Confirm that this will throw an exception if it
+    # fails to create the log entry.
+    arv.logs().create(body=body).execute()
 
 def getKeepServers():
   response = arv.keep_disks().list().execute()
@@ -338,9 +361,55 @@ def computeReplication(keep_blocks):
 
 # This is the main flow here
 
+parser = argparse.ArgumentParser(description='Report on keep disks.')
+"""The command line argument parser we use.
+
+We only use it in the __main__ block, but leave it outside the block
+in case another package wants to use it or customize it by specifying
+it as a parent to their commandline parser.
+"""
+parser.add_argument('-m',
+                    '--max-api-results',
+                    type=int,
+                    default=5000,
+                    help=('The max results to get at once.'))
+parser.add_argument('-p',
+                    '--port',
+                    type=int,
+                    default=9090,
+                    help=('The port number to serve on. 0 means no server.'))
+parser.add_argument('-v',
+                    '--verbose',
+                    help='increase output verbosity',
+                    action='store_true')
+parser.add_argument('-u',
+                    '--uuid',
+                    help='uuid of specific collection to process')
+parser.add_argument('--require-admin-user',
+                    action='store_true',
+                    default=True,
+                    help='Fail if the user is not an admin [default]')
+parser.add_argument('--no-require-admin-user',
+                    dest='require_admin_user',
+                    action='store_false',
+                    help=('Allow users without admin permissions with '
+                          'only a warning.'))
+parser.add_argument('--log-to-workbench',
+                    action='store_true',
+                    default=False,
+                    help='Log findings to workbench')
+parser.add_argument('--no-log-to-workbench',
+                    dest='log_to_workbench',
+                    action='store_false',
+                    help='Don\'t log findings to workbench [default]')
+parser.add_argument('--user-storage-log-event-type',
+                    default='user-storage-report',
+                    help=('The event type to set when logging user '
+                          'storage usage to workbench.'))
 
 args = None
 
+# TODO(misha): Think about moving some of this to the __main__ block.
 log = logging.getLogger('arvados.services.datamanager')
 stderr_handler = logging.StreamHandler()
 log.setLevel(logging.INFO)
@@ -412,7 +481,10 @@ def loadAllData():
 
   log.info('average replication level is %f', (float(sum(block_to_replication.values())) / len(block_to_replication)))
 
-  reportUserDiskUsage()
+  computeUserStorageUsage()
+  printUserStorageUsage()
+  if args.log_to_workbench:
+    logUserStorageUsage()
 
   global all_data_loaded
   all_data_loaded = True
@@ -587,34 +659,6 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
   """Handle requests in a separate thread."""
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description='Report on keep disks.')
-  parser.add_argument('-m',
-                      '--max-api-results',
-                      type=int,
-                      default=5000,
-                      help=('The max results to get at once.'))
-  parser.add_argument('-p',
-                      '--port',
-                      type=int,
-                      default=9090,
-                      help=('The port number to serve on. 0 means no server.'))
-  parser.add_argument('-v',
-                      '--verbose',
-                      help='increase output verbosity',
-                      action='store_true')
-  parser.add_argument('-u',
-                      '--uuid',
-                      help='uuid of specific collection to process')
-  parser.add_argument('--require-admin-user',
-                      action='store_true',
-                      default=True,
-                      help='Fail if the user is not an admin [default]')
-  parser.add_argument('--no-require-admin-user',
-                      dest='require_admin_user',
-                      action='store_false',
-                      help='Allow users without admin permissions with only a warning.')
-
-
   args = parser.parse_args()
 
 
