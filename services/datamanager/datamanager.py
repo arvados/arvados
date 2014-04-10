@@ -229,7 +229,8 @@ def computeWeightedReplicationCosts(replication_levels):
   """Computes the relative cost of varied replication levels.
 
   replication_levels: a tuple of integers representing the desired
-  replication level.
+  replication level. If n users want a replication level of x then x
+  should appear n times in replication_levels.
 
   Returns a dictionary from replication level to cost.
 
@@ -275,8 +276,15 @@ def computeWeightedReplicationCosts(replication_levels):
       total_interested -= count
     memo_computeWeightedReplicationCosts[memo_key] = cost_for_level
 
-  print memo_computeWeightedReplicationCosts
   return memo_computeWeightedReplicationCosts[memo_key]
+
+def blockPersistedWeightedUsage(user_uuid, block_uuid):
+  persister_replication_for_block = block_to_persister_replication[block_uuid]
+  user_replication = persister_replication_for_block[user_uuid]
+  return (
+    byteSizeFromValidUuid(block_uuid) *
+    computeWeightedReplicationCosts(
+      persister_replication_for_block.values())[user_replication])
 
 def reportUserDiskUsage():
   for user, blocks in reader_to_blocks.items():
@@ -292,9 +300,9 @@ def reportUserDiskUsage():
         partial(blockPersistedUsage, user),
         blocks))
     user_to_usage[user][WEIGHTED_PERSIST_SIZE_COL] = sum(map(
-        lambda block_uuid:(float(blockDiskUsage(block_uuid))/
-                                 len(block_to_persisters[block_uuid])),
+        partial(blockPersistedWeightedUsage, user),
         blocks))
+
   print ('user: unweighted readable block size, weighted readable block size, '
          'unweighted persisted block size, weighted persisted block size:')
   for user, usage in user_to_usage.items():
