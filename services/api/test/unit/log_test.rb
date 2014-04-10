@@ -22,8 +22,12 @@ class LogTest < ActiveSupport::TestCase
     end
   end
 
+  def get_logs_about(thing)
+    Log.where(object_uuid: thing.uuid).order("created_at ASC").all
+  end
+
   def assert_logged(thing, event_type)
-    logs = Log.where(object_uuid: thing.uuid).order("created_at ASC").all
+    logs = get_logs_about(thing)
     assert_equal(@log_count, logs.size, "log count mismatch")
     @log_count += 1
     log = logs.last
@@ -135,5 +139,12 @@ class LogTest < ActiveSupport::TestCase
       assert_equal(name1, props['new_attributes']['name'],
                    "group final name mismatch")
     end
+  end
+
+  test "making a log doesn't get logged" do
+    set_user_from_auth :active_trustedclient
+    log = Log.new
+    log.save!
+    assert_equal(0, get_logs_about(log).size, "made a Log about a Log")
   end
 end
