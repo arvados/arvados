@@ -32,8 +32,8 @@ class LogTest < ActiveSupport::TestCase
     @log_count += 1
     log = logs.last
     props = log.properties
-    assert_equal(system_user_uuid, log.owner_uuid,
-                 "log is not owned by system user")
+    assert_equal(current_user.andand.uuid, log.owner_uuid,
+                 "log is not owned by current user")
     assert_equal(current_user.andand.uuid, log.modified_by_user_uuid,
                  "log is not 'modified by' current user")
     assert_equal(current_api_client.andand.uuid, log.modified_by_client_uuid,

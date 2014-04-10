@@ -4,7 +4,6 @@ class Log < ArvadosModel
   include CommonApiTemplate
   serialize :properties, Hash
   before_validation :set_default_event_at
-  before_save { self.owner_uuid = self.system_user_uuid }
   attr_accessor :object
 
   api_accessible :user, extend: :common do |t|
