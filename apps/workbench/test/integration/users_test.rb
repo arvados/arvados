@@ -67,14 +67,19 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # verify that the new user showed up in the users page
     assert page.has_text? 'foo@example.com'
-=begin
-    page.within(:xpath, '//tr[@data-object-uuid][1]') do
-      assert (text.include? 'foo@example.com false'), 'Expected email'
-      new_user_uuid = text.split[0]
 
-      # go to the new user's page
-      click_link new_user_uuid
+    new_user_uuid = nil
+    all("tr").each do |elem|
+      if elem.text.include? 'foo@example.com'
+        new_user_uuid = elem.text.split[0]
+        break
+      end
     end
+
+    assert new_user_uuid, "Expected new user uuid not found"
+
+    # go to the new user's page
+    click_link new_user_uuid
 
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//a[@data-name="is_active"]') do
@@ -84,7 +89,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Metadata'
     assert page.has_text? '(Repository: test_repo)'
     assert !(page.has_text? '(VirtualMachine:)')
-=end
+
     headless.stop
   end
 
