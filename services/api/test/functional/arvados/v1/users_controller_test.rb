@@ -659,7 +659,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
-    verify_link_existence created['uuid'], created['email'], true, true, true, false
+    verify_link_existence created['uuid'], created['email'], true, true, true, true, false
 
     # now unsetup this user
     post :unsetup, uuid: created['uuid']
@@ -669,7 +669,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil created2['uuid'], 'expected uuid for the newly created user'
     assert_equal created['uuid'], created2['uuid'], 'expected uuid not found'
 
-    verify_link_existence created['uuid'], created['email'], false, false, false, false
+    verify_link_existence created['uuid'], created['email'], false, false, false, false, false
   end
 
   test "unsetup active user" do
@@ -679,9 +679,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     active_user = JSON.parse(@response.body)
     assert_not_nil active_user['uuid'], 'expected uuid for the active user'
     assert active_user['is_active'], 'expected is_active for active user'
+    assert active_user['is_invited'], 'expected is_invited for active user'
 
     verify_link_existence active_user['uuid'], active_user['email'],
-          false, false, false, true
+          false, false, false, true, true
 
     authorize_with :admin
 
@@ -693,9 +694,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_not_nil response_user['uuid'], 'expected uuid for the upsetup user'
     assert_equal active_user['uuid'], response_user['uuid'], 'expected uuid not found'
     assert !response_user['is_active'], 'expected user to be inactive'
+    assert !response_user['is_invited'], 'expected user to be uninvited'
 
     verify_link_existence response_user['uuid'], response_user['email'],
-          false, false, false, false
+          false, false, false, false, false
   end
 
   def verify_num_links (original_links, expected_additional_links)
@@ -760,7 +762,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   def verify_link_existence uuid, email, expect_oid_login_perms,
-        expect_repo_perms, expect_vm_perms, expect_signatures
+      expect_repo_perms, expect_vm_perms, expect_group_perms, expect_signatures
     # verify that all links are deleted for the user
     oid_login_perms = Link.where(tail_uuid: email,
                                  head_kind: 'arvados#user',
@@ -790,6 +792,20 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       assert vm_login_perms.any?, "expected vm_login_perms"
     else
       assert !vm_login_perms.any?, "expected all vm_login_perms deleted"
+    end
+
+    group = Group.where(name: 'All users').select do |g|
+      g[:uuid].match /-f+$/
+    end.first
+    group_read_perms = Link.where(tail_uuid: uuid,
+                             head_uuid: group[:uuid],
+                             head_kind: 'arvados#group',
+                             link_class: 'permission',
+                             name: 'can_read')
+    if expect_group_perms
+      assert group_read_perms.any?, "expected all users group read perms"
+    else
+      assert !group_read_perms.any?, "expected all users group perm deleted"
     end
 
     signed_uuids = Link.where(link_class: 'signature',

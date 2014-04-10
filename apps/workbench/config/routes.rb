@@ -7,6 +7,8 @@ ArvadosWorkbench::Application.routes.draw do
     get 'signatures', on: :collection
   end
   get '/user_agreements/signatures' => 'user_agreements#signatures'
+  get "users/setup_popup" => 'users#setup_popup', :as => :setup_user_popup
+  get "users/setup" => 'users#setup', :as => :setup_user
   resources :nodes
   resources :humans
   resources :traits
@@ -24,6 +26,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'activity', :on => :collection
     post 'sudo', :on => :member
     post 'unsetup', :on => :member
+    get 'setup_popup', :on => :member
   end
   resources :logs
   resources :factory_jobs
