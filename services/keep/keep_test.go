@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -21,6 +22,17 @@ var TEST_HASH_3 = "eed29bbffbc2dbe5e5ee0bb71888e61f"
 // BAD_BLOCK is used to test collisions and corruption.
 // It must not match any test hashes.
 var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
+
+// TODO(twp): Tests still to be written
+//
+//   * PutBlockCollision
+//       - test that PutBlock(BLOCK, HASH) reports a collision. HASH must
+//         be present in Keep and identify a block which sums to HASH but
+//         which does not match BLOCK. (Requires an interface to mock MD5.)
+//
+//   * PutBlockFull
+//       - test that PutBlock returns 503 Full if the filesystem is full.
+//         (must mock FreeDiskSpace or Statfs? use a tmpfs?)
 
 // ========================================
 // GetBlock tests.
@@ -59,6 +71,11 @@ func TestGetBlockMissing(t *testing.T) {
 	result, err := GetBlock(TEST_HASH)
 	if err == nil {
 		t.Errorf("GetBlock incorrectly returned success: ", result)
+	} else {
+		ke := err.(*KeepError)
+		if ke.HTTPCode != ErrNotFound {
+			t.Errorf("GetBlock: %v", ke)
+		}
 	}
 }
 
@@ -167,11 +184,11 @@ func TestPutBlockMD5Fail(t *testing.T) {
 	}
 }
 
-// TestPutBlockCollision
-//     PutBlock must report a 400 Collision error when asked to store a block
-//     when a different block exists on disk under the same identifier.
+// TestPutBlockCorrupt
+//     PutBlock should overwrite corrupt blocks on disk when given
+//     a PUT request with a good block.
 //
-func TestPutBlockCollision(t *testing.T) {
+func TestPutBlockCorrupt(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes.
@@ -179,19 +196,21 @@ func TestPutBlockCollision(t *testing.T) {
 
 	// Store a corrupted block under TEST_HASH.
 	store(t, KeepVolumes[0], TEST_HASH, BAD_BLOCK)
-
-	// Attempting to put TEST_BLOCK should produce a 400 Collision error.
-	if err := PutBlock(TEST_BLOCK, TEST_HASH); err == nil {
-		t.Error("Expected PutBlock error, but no error returned")
-	} else {
-		ke := err.(*KeepError)
-		if ke.HTTPCode != ErrCollision {
-			t.Errorf("Expected 400 Collision error, got %v", ke)
-		}
+	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+		t.Errorf("PutBlock: %v", err)
 	}
 
-	KeepVolumes = nil
+	// The block on disk should now match TEST_BLOCK.
+	if block, err := GetBlock(TEST_HASH); err != nil {
+		t.Errorf("GetBlock: %v", err)
+	} else if bytes.Compare(block, TEST_BLOCK) != 0 {
+		t.Errorf("GetBlock returned: '%s'", string(block))
+	}
 }
+
+// ========================================
+// FindKeepVolumes tests.
+// ========================================
 
 // TestFindKeepVolumes
 //     Confirms that FindKeepVolumes finds tmpfs volumes with "/keep"
@@ -308,6 +327,7 @@ func teardown() {
 	for _, vol := range KeepVolumes {
 		os.RemoveAll(path.Dir(vol))
 	}
+	KeepVolumes = nil
 }
 
 // store

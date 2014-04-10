@@ -1120,6 +1120,7 @@ sub collate_output
     my $s = IO::Select->new($child_out);
     if ($s->can_read(120)) {
       sysread($child_out, $joboutput, 64 * 1024 * 1024);
+      chomp($joboutput);
     } else {
       Log (undef, "timed out reading from 'arv keep put'");
     }
