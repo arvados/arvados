@@ -10,10 +10,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -69,6 +69,7 @@ func main() {
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/status\.json`, StatusHandler).Methods("GET", "HEAD")
 
 	// Tell the built-in HTTP server to direct all requests to the REST
 	// router.
@@ -152,6 +153,80 @@ func IndexHandler(w http.ResponseWriter, req *http.Request) {
 
 	index := IndexLocators(prefix)
 	w.Write([]byte(index))
+}
+
+// StatusHandler
+//     Responds to /status.json requests with the current node status,
+//     described in a JSON structure.
+//
+//     The data given in a status.json response includes:
+//        time - the time the status was last updated
+//        df   - the output of the most recent `df --block-size=1k`
+//        disk_devices - list of disk device files (i.e. /dev/(s|xv|h)d)
+//        dirs - an object describing Keep volumes, keyed on Keep volume dirs,
+//          each value is an object describing the status of that volume
+//            * status ("full [timestamp]" or "ok [timestamp]")
+//            * last_error
+//            * last_error_time
+//
+type VolumeStatus struct {
+	Space       string
+	LastErr     string
+	LastErrTime time.Time
+}
+
+type NodeStatus struct {
+	LastUpdate time.Time
+	DfOutput   string
+	DiskDev    []string
+	Volumes    map[string]VolumeStatus
+}
+
+func StatusHandler(w http.ResponseWriter, req *http.Request) {
+	st := new(NodeStatus)
+	st.LastUpdate = time.Now()
+
+	// Get a list of disk devices on this system.
+	st.DiskDev = make([]string, 1)
+	if devdir, err := os.Open("/dev"); err != nil {
+		log.Printf("StatusHandler: opening /dev: %s\n", err)
+	} else {
+		devs, err := devdir.Readdirnames(0)
+		if err == nil {
+			for _, d := range devs {
+				if strings.HasPrefix(d, "sd") ||
+					strings.HasPrefix(d, "hd") ||
+					strings.HasPrefix(d, "xvd") {
+					st.DiskDev = append(st.DiskDev, d)
+				}
+			}
+		} else {
+			log.Printf("Readdirnames: %s", err)
+		}
+	}
+
+	for _, vol := range KeepVolumes {
+		st.Volumes[vol] = GetVolumeStatus(vol)
+	}
+}
+
+// GetVolumeStatus
+//     Returns a VolumeStatus describing the requested volume.
+func GetVolumeStatus(volume string) VolumeStatus {
+	var isfull, lasterr string
+	var lasterrtime time.Time
+
+	if IsFull(volume) {
+		isfull = fmt.Sprintf("full %d", time.Now().Unix())
+	} else {
+		isfull = fmt.Sprintf("ok %d", time.Now().Unix())
+	}
+
+	// Not implemented yet
+	lasterr = ""
+	lasterrtime = time.Unix(0, 0)
+
+	return VolumeStatus{isfull, lasterr, lasterrtime}
 }
 
 // IndexLocators
@@ -373,32 +448,13 @@ func IsFull(volume string) (isFull bool) {
 //     Returns the amount of available disk space on VOLUME,
 //     as a number of 1k blocks.
 //
-func FreeDiskSpace(volume string) (free int, err error) {
-	// Run df to find out how much disk space is left.
-	cmd := exec.Command("df", "--block-size=1k", volume)
-	stdout, perr := cmd.StdoutPipe()
-	if perr != nil {
-		return 0, perr
+func FreeDiskSpace(volume string) (free uint64, err error) {
+	var fs syscall.Statfs_t
+	err = syscall.Statfs(volume, &fs)
+	if err == nil {
+		// Statfs output is not guaranteed to measure free
+		// space in terms of 1K blocks.
+		free = fs.Bavail * uint64(fs.Bsize) / 1024
 	}
-	scanner := bufio.NewScanner(stdout)
-	if perr := cmd.Start(); err != nil {
-		return 0, perr
-	}
-
-	scanner.Scan() // skip header line of df output
-	scanner.Scan()
-
-	f := strings.Fields(scanner.Text())
-	if avail, err := strconv.Atoi(f[3]); err == nil {
-		free = avail
-	} else {
-		err = errors.New("bad df format: " + scanner.Text())
-	}
-
-	// Flush the df output and shut it down cleanly.
-	for scanner.Scan() {
-	}
-	cmd.Wait()
-
 	return
 }
