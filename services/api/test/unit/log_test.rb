@@ -15,8 +15,9 @@ class LogTest < ActiveSupport::TestCase
   end
 
   def assert_properties(test_method, event, props, *keys)
-    verb = (test_method == :assert_nil) ? 'not include' : 'include'
+    verb = (test_method == :assert_nil) ? 'have nil' : 'define'
     keys.each do |prop_name|
+      assert_includes(props, prop_name, "log properties missing #{prop_name}")
       self.send(test_method, props[prop_name],
                 "#{event.to_s} log should #{verb} #{prop_name}")
     end
