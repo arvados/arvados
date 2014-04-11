@@ -18,7 +18,15 @@ var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 //   * PutBlockFull
 //       - test that PutBlock returns 503 Full if the filesystem is full.
 //         (must mock FreeDiskSpace or Statfs? use a tmpfs?)
-
+//
+//   * PutBlockWriteErr
+//       - test the behavior when Write returns an error.
+//           - Possible solutions: use a small tmpfs and a high
+//             MIN_FREE_KILOBYTES to trick PutBlock into attempting
+//             to write a block larger than the amount of space left
+//           - use an interface to mock ioutil.TempFile with a File
+//             object that always returns an error on write
+//
 // ========================================
 // GetBlock tests.
 // ========================================
