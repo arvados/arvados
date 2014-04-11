@@ -25,15 +25,18 @@ var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 
 // TODO(twp): Tests still to be written
 //
-//   * PutBlockCollision
-//       - test that PutBlock(BLOCK, HASH) reports a collision. HASH must
-//         be present in Keep and identify a block which sums to HASH but
-//         which does not match BLOCK. (Requires an interface to mock MD5.)
-//
 //   * PutBlockFull
 //       - test that PutBlock returns 503 Full if the filesystem is full.
 //         (must mock FreeDiskSpace or Statfs? use a tmpfs?)
-
+//
+//   * PutBlockWriteErr
+//       - test the behavior when Write returns an error.
+//           - Possible solutions: use a small tmpfs and a high
+//             MIN_FREE_KILOBYTES to trick PutBlock into attempting
+//             to write a block larger than the amount of space left
+//           - use an interface to mock ioutil.TempFile with a File
+//             object that always returns an error on write
+//
 // ========================================
 // GetBlock tests.
 // ========================================
@@ -205,6 +208,30 @@ func TestPutBlockCorrupt(t *testing.T) {
 		t.Errorf("GetBlock: %v", err)
 	} else if bytes.Compare(block, TEST_BLOCK) != 0 {
 		t.Errorf("GetBlock returned: '%s'", string(block))
+	}
+}
+
+// PutBlockCollision
+//     PutBlock returns a 400 Collision error when attempting to
+//     store a block that collides with another block on disk.
+//
+func TestPutBlockCollision(t *testing.T) {
+	defer teardown()
+
+	// These blocks both hash to the MD5 digest cee9a457e790cf20d4bdaa6d69f01e41.
+	var b1 = []byte("\x0e0eaU\x9a\xa7\x87\xd0\x0b\xc6\xf7\x0b\xbd\xfe4\x04\xcf\x03e\x9epO\x854\xc0\x0f\xfbe\x9cL\x87@\xcc\x94/\xeb-\xa1\x15\xa3\xf4\x15\\\xbb\x86\x07Is\x86em}\x1f4\xa4 Y\xd7\x8fZ\x8d\xd1\xef")
+	var b2 = []byte("\x0e0eaU\x9a\xa7\x87\xd0\x0b\xc6\xf7\x0b\xbd\xfe4\x04\xcf\x03e\x9etO\x854\xc0\x0f\xfbe\x9cL\x87@\xcc\x94/\xeb-\xa1\x15\xa3\xf4\x15\xdc\xbb\x86\x07Is\x86em}\x1f4\xa4 Y\xd7\x8fZ\x8d\xd1\xef")
+	var locator = "cee9a457e790cf20d4bdaa6d69f01e41"
+
+	// Prepare two test Keep volumes. Store one block,
+	// then attempt to store the other.
+	KeepVolumes = setup(t, 2)
+	store(t, KeepVolumes[1], locator, b1)
+
+	if err := PutBlock(b2, locator); err == nil {
+		t.Error("PutBlock did not report a collision")
+	} else if err.(*KeepError).HTTPCode != ErrCollision {
+		t.Errorf("PutBlock returned %v", err)
 	}
 }
 
