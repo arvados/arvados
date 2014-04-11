@@ -251,7 +251,7 @@ def computeWeightedReplicationCosts(replication_levels):
   The cost of the fourth, fifth and sixth copies is shared by two
   users, so they each pay 3 copies / 2 users = 1.5 (plus the above costs)
 
-  Here are some sample other examples:
+  Here are some other examples:
   computeWeightedReplicationCosts([1,]) -> {1:1.0}
   computeWeightedReplicationCosts([2,]) -> {2:2.0}
   computeWeightedReplicationCosts([1,1]) -> {1:0.5}
@@ -357,6 +357,41 @@ def computeReplication(keep_blocks):
   for server_blocks in keep_blocks:
     for block_uuid, _ in server_blocks:
       block_to_replication[block_uuid] += 1
+  # THIS IS A HACK TO DEAL WITH KEEP SERVER DOUBLE-REPORTING!
+  # DELETE THIS WHEN THAT BUG IS FIXED OR THE KEEP SERVER IS REPLACED.
+  block_to_replication.update({k: v/2 for k,v in block_to_replication.items()})
+  log.debug('Seeing the following replication levels among blocks: %s',
+            str(set(block_to_replication.values())))
+
+def detectReplicationProblems():
+  blocks_not_in_any_collections.update(
+    set(block_to_replication.keys()).difference(block_to_collections.keys()))
+  underreplicated_persisted_blocks.update(
+    [uuid
+     for uuid, persister_replication in block_to_persister_replication.items()
+     if len(persister_replication) > 0 and
+     block_to_replication[uuid] < max(persister_replication.values())])
+  overreplicated_persisted_blocks.update(
+    [uuid
+     for uuid, persister_replication in block_to_persister_replication.items()
+     if len(persister_replication) > 0 and
+     block_to_replication[uuid] > max(persister_replication.values())])
+  log.info('Found %d blocks not in any collections, e.g. %s...',
+           len(blocks_not_in_any_collections),
+           ','.join(list(blocks_not_in_any_collections)[:5]))
+  log.info('Found %d underreplicated blocks, e.g. %s...',
+           len(underreplicated_persisted_blocks),
+           ','.join(list(underreplicated_persisted_blocks)[:5]))
+  log.info('Found %d overreplicated blocks, e.g. %s...',
+           len(overreplicated_persisted_blocks),
+           ','.join(list(overreplicated_persisted_blocks)[:5]))
+  # TODO:
+  #  Read blocks sorted by mtime
+  #  Cache window vs % free space
+  #  Collections which will candidates appear in
+  #  Youngest underreplicated read blocks that appear in collections.
+  #  Report Collections that have blocks which are missing from (or
+  #   underreplicated in) keep.
 
 
 # This is the main flow here
@@ -441,6 +476,11 @@ keep_servers = []
 keep_blocks = []
 block_to_replication = defaultdict(lambda: 0)
 
+# Stuff to report on
+blocks_not_in_any_collections = set()
+underreplicated_persisted_blocks = set()
+overreplicated_persisted_blocks = set()
+
 all_data_loaded = False
 
 def loadAllData():
@@ -479,7 +519,11 @@ def loadAllData():
 
   computeReplication(keep_blocks)
 
-  log.info('average replication level is %f', (float(sum(block_to_replication.values())) / len(block_to_replication)))
+  log.info('average replication level is %f',
+           (float(sum(block_to_replication.values())) /
+            len(block_to_replication)))
+
+  detectReplicationProblems()
 
   computeUserStorageUsage()
   printUserStorageUsage()
@@ -488,6 +532,7 @@ def loadAllData():
 
   global all_data_loaded
   all_data_loaded = True
+
 
 class DataManagerHandler(BaseHTTPRequestHandler):
   USER_PATH = 'user'
@@ -658,9 +703,9 @@ class DataManagerHandler(BaseHTTPRequestHandler):
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
   """Handle requests in a separate thread."""
 
+
 if __name__ == '__main__':
   args = parser.parse_args()
-
 
   if args.port == 0:
     loadAllData()
