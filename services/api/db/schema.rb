@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140402001908) do
+ActiveRecord::Schema.define(:version => 20140407184311) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -264,7 +264,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.datetime "event_at"
     t.string   "event_type"
     t.text     "summary"
-    t.text     "info"
+    t.text     "properties"
     t.datetime "created_at",              :null => false
     t.datetime "updated_at",              :null => false
     t.datetime "modified_at"
