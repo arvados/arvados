@@ -51,7 +51,25 @@ func (e *KeepError) Error() string {
 }
 
 func main() {
-	// Parse command-line flags.
+	// Parse command-line flags:
+	//
+	// -listen=ipaddr:port
+	//    Interface on which to listen for requests. Use :port without
+	//    an ipaddr to listen on all network interfaces.
+	//    Examples:
+	//      -listen=127.0.0.1:4949
+	//      -listen=10.0.1.24:8000
+	//      -listen=:25107 (to listen to port 25107 on all interfaces)
+	//
+	// -volumes
+	//    A comma-separated list of directories to use as Keep volumes.
+	//    Example:
+	//      -volumes=/var/keep01,/var/keep02,/var/keep03/subdir
+	//
+	//    If -volumes is empty or is not present, Keep will select volumes
+	//    by looking at currently mounted filesystems for /keep top-level
+	//    directories.
+
 	var listen, keepvols string
 	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
 		"interface on which to listen for requests")
