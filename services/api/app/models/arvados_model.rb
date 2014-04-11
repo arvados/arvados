@@ -229,6 +229,24 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  class Email
+    def self.kind
+      "email"
+    end
+
+    def kind
+      self.class.kind
+    end
+
+    def self.readable_by (u)
+      self
+    end
+
+    def self.where (u)
+      [{:uuid => u[:uuid]}]
+    end
+  end
+
   def self.resource_class_for_uuid(uuid)
     if uuid.is_a? ArvadosModel
       return uuid.class
@@ -245,6 +263,11 @@ class ArvadosModel < ActiveRecord::Base
     uuid.match @@UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
+
+    if uuid.match /.+@.+/
+      return Email
+    end
+
     nil
   end
 

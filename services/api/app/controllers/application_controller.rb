@@ -251,7 +251,7 @@ class ApplicationController < ActionController::Base
       end
     else
       @offset = 0
-    end      
+    end
 
     orders = []
     if params[:order]
@@ -465,7 +465,7 @@ class ApplicationController < ActionController::Base
       order: { type: 'string', required: false }
     }
   end
-  
+
   def client_accepts_plain_text_stream
     (request.headers['Accept'].split(' ') &
      ['text/plain', '*/*']).count > 0

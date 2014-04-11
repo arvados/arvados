@@ -19,7 +19,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       assert_equal false, assigns(:object).properties.has_key?(:username)
     end
   end
-  
+
   test "head must exist" do
     link = {
       link_class: 'test',
@@ -42,6 +42,38 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     authorize_with :admin
     post :create, link: link
     assert_response 422
+  end
+
+  test "head and tail exist" do
+    link = {
+      link_class: 'test',
+      name: 'stuff',
+      head_uuid: users(:active).uuid,
+      tail_uuid: users(:spectator).uuid,
+    }
+    authorize_with :admin
+    post :create, link: link
+    assert_response :success
+    l = JSON.parse(@response.body)
+    assert 'arvados#user', l['head_kind']
+    assert 'arvados#user', l['tail_kind']
+  end
+
+  test "can supply head_kind and tail_kind without error" do
+    link = {
+      link_class: 'test',
+      name: 'stuff',
+      head_uuid: users(:active).uuid,
+      tail_uuid: users(:spectator).uuid,
+      head_kind: "arvados#user",
+      tail_kind: "arvados#user",
+    }
+    authorize_with :admin
+    post :create, link: link
+    assert_response :success
+    l = JSON.parse(@response.body)
+    assert 'arvados#user', l['head_kind']
+    assert 'arvados#user', l['tail_kind']
   end
 
   test "tail must be visible by user" do
@@ -95,10 +127,30 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     }
     assert_response :success
     found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-f0-9]{32}\+\d+/}).count
+  end
+
+  test "test can still use where tail_kind" do
+    authorize_with :admin
+    get :index, {
+      where: { tail_kind: 'arvados#user' }
+    }
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-f0-9]{32}\+\d+/}).count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+  end
+
+  test "test can still use where head_kind" do
+    authorize_with :admin
+    get :index, {
+      where: { head_kind: 'arvados#user' }
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
   end
 
 

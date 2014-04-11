@@ -59,7 +59,7 @@ class Arvados::V1::UsersController < ApplicationController
           "but is not invited"
         raise ArgumentError.new "Cannot activate without being invited."
       end
-      act_as_system_user do       
+      act_as_system_user do
         required_uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
                                     system_user_uuid,
                                     'signature',
@@ -130,7 +130,7 @@ class Arvados::V1::UsersController < ApplicationController
                     params[:repo_name], params[:vm_uuid]
     end
 
-    render json: { kind: "arvados#HashList", items: @response }
+    render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
   end
 
   # delete user agreements, vm, repository, login links; set state to inactive

@@ -129,7 +129,6 @@ class User < ArvadosModel
   def unsetup
     # delete oid_login_perms for this user
     oid_login_perms = Link.where(tail_uuid: self.email,
-                                 head_kind: 'arvados#user',
                                  link_class: 'permission',
                                  name: 'can_login')
     oid_login_perms.each do |perm|
@@ -138,7 +137,6 @@ class User < ArvadosModel
 
     # delete repo_perms for this user
     repo_perms = Link.where(tail_uuid: self.uuid,
-                            head_kind: 'arvados#repository',
                             link_class: 'permission',
                             name: 'can_write')
     repo_perms.each do |perm|
@@ -147,7 +145,6 @@ class User < ArvadosModel
 
     # delete vm_login_perms for this user
     vm_login_perms = Link.where(tail_uuid: self.uuid,
-                                head_kind: 'arvados#virtualMachine',
                                 link_class: 'permission',
                                 name: 'can_login')
     vm_login_perms.each do |perm|
@@ -160,7 +157,6 @@ class User < ArvadosModel
     end.first
     group_perms = Link.where(tail_uuid: self.uuid,
                              head_uuid: group[:uuid],
-                             head_kind: 'arvados#group',
                              link_class: 'permission',
                              name: 'can_read')
     group_perms.each do |perm|
@@ -169,7 +165,6 @@ class User < ArvadosModel
 
     # delete any signatures by this user
     signed_uuids = Link.where(link_class: 'signature',
-                              tail_kind: 'arvados#user',
                               tail_uuid: self.uuid)
     signed_uuids.each do |sign|
       Link.delete sign
@@ -254,17 +249,14 @@ class User < ArvadosModel
 
     # Check oid_login_perm
     oid_login_perms = Link.where(tail_uuid: self.email,
-                                   head_kind: 'arvados#user',
                                    link_class: 'permission',
-                                   name: 'can_login')
+                                   name: 'can_login').where("head_uuid like ?", User.uuid_like_pattern)
 
     if !oid_login_perms.any?
       # create openid login permission
       oid_login_perm = Link.create(link_class: 'permission',
                                    name: 'can_login',
-                                   tail_kind: 'email',
                                    tail_uuid: self.email,
-                                   head_kind: 'arvados#user',
                                    head_uuid: self.uuid,
                                    properties: login_perm_props
                                   )
@@ -291,7 +283,6 @@ class User < ArvadosModel
 
       # Look for existing repository access for this repo
       repo_perms = Link.where(tail_uuid: self.uuid,
-                              head_kind: 'arvados#repository',
                               head_uuid: repo[:uuid],
                               link_class: 'permission',
                               name: 'can_write')
@@ -306,9 +297,7 @@ class User < ArvadosModel
     repo ||= Repository.create(name: repo_name)
     logger.info { "repo uuid: " + repo[:uuid] }
 
-    repo_perm = Link.create(tail_kind: 'arvados#user',
-                            tail_uuid: self.uuid,
-                            head_kind: 'arvados#repository',
+    repo_perm = Link.create(tail_uuid: self.uuid,
                             head_uuid: repo[:uuid],
                             link_class: 'permission',
                             name: 'can_write')
@@ -336,7 +325,6 @@ class User < ArvadosModel
 
       login_perms = Link.where(tail_uuid: self.uuid,
                               head_uuid: vm[:uuid],
-                              head_kind: 'arvados#virtualMachine',
                               link_class: 'permission',
                               name: 'can_login')
 
@@ -349,9 +337,7 @@ class User < ArvadosModel
       end
 
       if !perm_exists
-        login_perm = Link.create(tail_kind: 'arvados#user',
-                                 tail_uuid: self.uuid,
-                                 head_kind: 'arvados#virtualMachine',
+        login_perm = Link.create(tail_uuid: self.uuid,
                                  head_uuid: vm[:uuid],
                                  link_class: 'permission',
                                  name: 'can_login',
@@ -380,14 +366,11 @@ class User < ArvadosModel
 
       group_perms = Link.where(tail_uuid: self.uuid,
                               head_uuid: group[:uuid],
-                              head_kind: 'arvados#group',
                               link_class: 'permission',
                               name: 'can_read')
 
       if !group_perms.any?
-        group_perm = Link.create(tail_kind: 'arvados#user',
-                                 tail_uuid: self.uuid,
-                                 head_kind: 'arvados#group',
+        group_perm = Link.create(tail_uuid: self.uuid,
                                  head_uuid: group[:uuid],
                                  link_class: 'permission',
                                  name: 'can_read')
@@ -407,9 +390,7 @@ class User < ArvadosModel
     act_as_system_user do
       Link.create(link_class: 'permission',
                   name: 'can_manage',
-                  tail_kind: 'arvados#group',
                   tail_uuid: system_group_uuid,
-                  head_kind: 'arvados#user',
                   head_uuid: self.uuid)
     end
   end

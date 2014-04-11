@@ -182,8 +182,8 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.boolean  "running"
     t.boolean  "success"
     t.string   "output"
-    t.datetime "created_at",                                  :null => false
-    t.datetime "updated_at",                                  :null => false
+    t.datetime "created_at"
+    t.datetime "updated_at"
     t.string   "priority"
     t.string   "is_locked_by_uuid"
     t.string   "log"
@@ -245,6 +245,8 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "head_uuid"
     t.text     "properties"
     t.datetime "updated_at"
+    t.string   "head_kind"
+    t.string   "tail_kind"
   end
 
   add_index "links", ["created_at"], :name => "index_links_on_created_at"
