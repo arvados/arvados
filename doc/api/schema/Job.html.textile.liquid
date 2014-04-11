@@ -19,21 +19,6 @@ See "REST methods for working with Arvados resources":{{site.baseurl}}/api/metho
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
 
-h3. Additional parameters for "Create" method
-
-table(table table-bordered table-condensed).
-|_. Attribute               |_. Type|_. Accepted values                            |_. Required|_. Description|
-|script                 |string     |filename                                      |yes        |The actual script that will be run by crunch.  Must be the name of an executable file in the crunch_scripts/ directory at the git revision specified by script_version.|
-|script_version         |string     |git branch, tag, or version hash              |yes        |The code version to run, which is available in the specified repository.  May be a git hash or tag to specify an exact version, or a branch.  If it is a branch, use the branch head.|
-|repository             |string     |name of git repository hosted by Arvados      |yes        |The repository to search for script_version.|
-|script_parameters      |object     |any JSON object                               |yes        |The input parameters for the job, with the parameter names as keys mapping to parameter values.|
-|minimum_script_version |string     |git branch, tag, or version hash              |no         |The minimum acceptable script version when deciding whether to re-use a past job.|
-|exclude_script_versions|array of strings|git branch, tag, or version hash|no         |Script versions to exclude when deciding whether to re-use a past job.|
-|nondeterministic       |boolean    |                                              |no         |If true, never re-use a past job, and flag this job so it will never be considered for re-use.|
-|no_reuse               |boolean    |                                              |no         |If true, do not re-use a past job, but this job may be re-used.|
-
-See the "job and pipeline reference":{{site.baseurl}}/user/reference/job-and-pipeline-reference.html for more information.
-
 h3. Queue
 
 <pre>
