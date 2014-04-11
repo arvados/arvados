@@ -72,13 +72,16 @@ func main() {
 
 	var listen, keepvols string
 	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
-		"interface on which to listen for requests")
+		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
 	flag.StringVar(&keepvols, "volumes", "",
-		"comma-separated list of directories to use for Keep volumes")
+		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
 	flag.Parse()
 
 	// Look for local keep volumes.
 	if keepvols == "" {
+		// TODO(twp): decide whether this is desirable default behavior.
+		// In production we may want to require the admin to specify
+		// Keep volumes explicitly.
 		KeepVolumes = FindKeepVolumes()
 	} else {
 		KeepVolumes = strings.Split(keepvols, ",")
