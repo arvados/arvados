@@ -5,8 +5,14 @@
 <% template = PipelineTemplate.find(@object.pipeline_template_uuid) rescue nil %>
 
 <%= content_for :content_top do %>
+  <h2>
+    <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => 'Unnamed pipeline', 'data-mode' => 'inline' } %>
+  </h2>
   <% if template %>
-    <h2><%= template.name %></h2>
+  <h4>
+    From template:
+    <%= link_to_if_arvados_object template, friendly_name: true %>
+  </h4>
   <% end %>
 <% end %>
 
@@ -38,7 +44,7 @@
     <% render_pipeline_jobs.each do |pj| %>
     <tr>
       <td>
-        <% job_status = render(partial: 'job_status_label', 
+        <% job_status = render(partial: 'job_status_label',
                                locals: { :j => pj[:job], :title => pj[:name] }) %>
         <% if pj[:job].andand[:uuid] %>
           <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
@@ -51,7 +57,7 @@
       </td><td>
         <%= pj[:progress_bar] %>
       </td><td>
-        <%= render(partial: 'job_status_label', 
+        <%= render(partial: 'job_status_label',
                                locals: { :j => pj[:job] }) %>
       </td><td>
         <%= link_to_if_arvados_object pj[:output] %>
@@ -68,6 +74,16 @@
 <% content_for :js do %>
 setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
+
+<% content_for :tab_line_buttons do %>
+  <%= form_tag @object, :method => :put do |f| %>
+
+    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => false %>
+
+    <%= button_tag "Stop pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+  <% end %>
+<% end %>
+
 <% end %>
 
 <% else %>
@@ -76,7 +92,7 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 
   <% content_for :tab_line_buttons do %>
     <%= form_tag @object, :method => :put do |f| %>
-      
+
       <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
 
       <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
@@ -84,5 +100,5 @@ setInterval(function(){$('a.refresh').click()}, 15000);
   <% end %>
 
   <%= render partial: 'pipeline_templates/show_components_template', locals: {:template => template, :obj => @object} %>
-  
+
 <% end %>

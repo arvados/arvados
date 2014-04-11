@@ -10,6 +10,26 @@ admin:
   is_admin: true
   prefs: {}
 
+miniadmin:
+  uuid: zzzzz-tpzed-2bg9x0oeydcw5hm
+  email: miniadmin@arvados.local
+  first_name: TestCase
+  last_name: User Group Administrator
+  identity_url: https://miniadmin.openid.local
+  is_active: true
+  is_admin: false
+  prefs: {}
+
+rominiadmin:
+  uuid: zzzzz-tpzed-4hvxm4n25emegis
+  email: rominiadmin@arvados.local
+  first_name: TestCase
+  last_name: Read-Only User Group Administrator
+  identity_url: https://rominiadmin.openid.local
+  is_active: true
+  is_admin: false
+  prefs: {}
+
 active:
   uuid: zzzzz-tpzed-xurymjxw79nv3jz
   email: active-user@arvados.local

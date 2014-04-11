@@ -2,6 +2,8 @@
  "name":"GATK / exome PE fastq to snp",
  "components":{
   "extract-reference":{
+   "repository":"arvados",
+   "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153",
    "script":"file-select",
    "script_parameters":{
     "names":[
@@ -11,9 +13,10 @@
     ],
     "input":"d237a90bae3870b3b033aea1e99de4a9+10820+K@qr1hi"
    },
-   "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153"
+   "output_is_persistent":false
   },
   "bwa-index":{
+   "repository":"arvados",
    "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153",
    "script":"bwa-index",
    "script_parameters":{
@@ -24,9 +27,11 @@
      "value":"8b6e2c4916133e1d859c9e812861ce13+70",
      "required":true
     }
-   }
+   },
+   "output_is_persistent":false
   },
   "bwa-aln":{
+   "repository":"arvados",
    "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153",
    "script":"bwa-aln",
    "script_parameters":{
@@ -48,9 +53,11 @@
    },
    "runtime_constraints":{
     "max_tasks_per_node":1
-   }
+   },
+   "output_is_persistent":false
   },
   "picard-gatk2-prep":{
+   "repository":"arvados",
    "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153",
    "script":"picard-gatk2-prep",
    "script_parameters":{
@@ -67,9 +74,11 @@
    },
    "runtime_constraints":{
     "max_tasks_per_node":1
-   }
+   },
+   "output_is_persistent":false
   },
   "GATK2-realign":{
+   "repository":"arvados",
    "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153",
    "script":"GATK2-realign",
    "script_parameters":{
@@ -97,9 +106,11 @@
    },
    "runtime_constraints":{
     "max_tasks_per_node":2
-   }
+   },
+   "output_is_persistent":false
   },
   "GATK2-bqsr":{
+   "repository":"arvados",
    "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153",
    "script":"GATK2-bqsr",
    "script_parameters":{
@@ -118,9 +129,11 @@
      "value":"7e0a277d6d2353678a11f56bab3b13f2+87",
      "required":true
     }
-   }
+   },
+   "output_is_persistent":false
   },
   "GATK2-merge-call":{
+   "repository":"arvados",
    "script_version":"e820bd1c6890f93ea1a84ffd5730bbf0e3d8e153",
    "script":"GATK2-merge-call",
    "script_parameters":{
@@ -155,7 +168,8 @@
       "200"
      ]
     }
-   }
+   },
+   "output_is_persistent":true
   }
  }
 }

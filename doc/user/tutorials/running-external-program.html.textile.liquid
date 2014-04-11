@@ -17,7 +17,7 @@ Start by entering the @crunch_scripts@ directory of your git repository:
 </code></pre>
 </notextile>
 
-Next, using @nano@ or your favorite Unix text editor, create a new file called @run-md5sum.py@ in the @crunch_scripts@ directory.  
+Next, using @nano@ or your favorite Unix text editor, create a new file called @run-md5sum.py@ in the @crunch_scripts@ directory.
 
 notextile. <pre>~/<b>you</b>/crunch_scripts$ <code class="userinput">nano run-md5sum.py</code></pre>
 
@@ -29,7 +29,7 @@ Make the file executable:
 
 notextile. <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x run-md5sum.py</span></code></pre>
 
-Next, add the file to @git@ staging, commit and push:
+Next, use @git@ to stage the file, commit, and push:
 
 <notextile>
 <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">git add run-md5sum.py</span>
@@ -38,7 +38,7 @@ Next, add the file to @git@ staging, commit and push:
 </code></pre>
 </notextile>
 
-You should now be able to run your new script using Crunch, with "script" referring to our new "run-md5sum.py" script.
+You should now be able to run your new script using Crunch, with @"script"@ referring to our new @run-md5sum.py@ script.
 
 <notextile>
 <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_pipeline &lt;&lt;EOF
@@ -53,7 +53,8 @@ You should now be able to run your new script using Crunch, with "script" referr
           "dataclass": "Collection"
         }
       },
-      "script_version":"<b>you</b>:master"
+      "repository":"$USER",
+      "script_version":"master"
     }
   }
 }
@@ -62,4 +63,6 @@ EOF
 </code></pre>
 </notextile>
 
-Your new pipeline template will appear on the "Workbench %(rarr)&rarr;% Compute %(rarr)&rarr;% Pipeline&nbsp;templates":http://{{ site.arvados_workbench_host }}/pipeline_instances page.  You can run the "pipeline using workbench":tutorial-pipeline-workbench.html
+(Your shell should automatically fill in @$USER@ with your login name.  The JSON that gets saved should have @"repository"@ pointed at your personal git repository.)
+
+Your new pipeline template will appear on the Workbench "Compute %(rarr)&rarr;% Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_instances page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.

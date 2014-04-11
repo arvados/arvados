@@ -9,6 +9,39 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_not_nil assigns(:objects)
   end
 
+  [0,1,2].each do |limit|
+    test "get index with limit=#{limit}" do
+      authorize_with :active
+      get :index, limit: limit
+      assert_response :success
+      assert_equal limit, assigns(:objects).count
+      resp = JSON.parse(@response.body)
+      assert_equal limit, resp['limit']
+    end
+  end
+
+  test "items.count == items_available" do
+    authorize_with :active
+    get :index, limit: 100000
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal resp['items_available'], assigns(:objects).length
+    assert_equal resp['items_available'], resp['items'].count
+    unique_uuids = resp['items'].collect { |i| i['uuid'] }.compact.uniq
+    assert_equal unique_uuids.count, resp['items'].count
+  end
+
+  test "get index with limit=2 offset=99999" do
+    # Assume there are not that many test fixtures.
+    authorize_with :active
+    get :index, limit: 2, offset: 99999
+    assert_response :success
+    assert_equal 0, assigns(:objects).count
+    resp = JSON.parse(@response.body)
+    assert_equal 2, resp['limit']
+    assert_equal 99999, resp['offset']
+  end
+
   test "should create" do
     authorize_with :active
     test_collection = {
@@ -174,6 +207,17 @@ EOS
     assert_not_nil resp['zzzzz-8i9sb-cjs4pklxxjykyuq']     # bar->baz
     assert_nil resp['zzzzz-8i9sb-aceg2bnq7jt7kon']         # foo->bar
     assert_nil resp['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'] # foo
+  end
+
+  test "search collections with 'any' operator" do
+    authorize_with :active
+    get :index, {
+      where: { any: ['contains', '7f9102c395f4ffc5e3'] }
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal 1, found.count
+    assert_equal true, !!found.index('1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
   end
 
 end

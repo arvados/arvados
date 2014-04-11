@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140325175653) do
+ActiveRecord::Schema.define(:version => 20140402001908) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -182,8 +182,8 @@ ActiveRecord::Schema.define(:version => 20140325175653) do
     t.boolean  "running"
     t.boolean  "success"
     t.string   "output"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",                                  :null => false
+    t.datetime "updated_at",                                  :null => false
     t.string   "priority"
     t.string   "is_locked_by_uuid"
     t.string   "log"
@@ -191,6 +191,7 @@ ActiveRecord::Schema.define(:version => 20140325175653) do
     t.text     "runtime_constraints"
     t.boolean  "nondeterministic"
     t.string   "repository"
+    t.boolean  "output_is_persistent",     :default => false, :null => false
   end
 
   add_index "jobs", ["created_at"], :name => "index_jobs_on_created_at"

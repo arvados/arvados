@@ -36,8 +36,9 @@ class IntegrationTestRunner < MiniTest::Unit
   # Make a hash that unsets Bundle's environment variables.
   # We'll use this environment when we launch Bundle commands in the API
   # server.  Otherwise, those commands will try to use Workbench's gems, etc.
-  @@APIENV = ENV.map { |(key, val)| (key =~ /^BUNDLE_/) ? [key, nil] : nil }.
-    compact.to_h
+  @@APIENV = Hash[ENV.map { |key, val|
+                    (key =~ /^BUNDLE_/) ? [key, nil] : nil
+                  }.compact]
 
   def _system(*cmd)
     if not system(@@APIENV, *cmd)
@@ -51,11 +52,20 @@ class IntegrationTestRunner < MiniTest::Unit
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')
-      timeout = Time.now.tv_sec + 5
-      while (not File.exists? SERVER_PID_PATH) and (Time.now.tv_sec < timeout)
+      timeout = Time.now.tv_sec + 10
+      begin
         sleep 0.2
+        begin
+          server_pid = IO.read(SERVER_PID_PATH).to_i
+          good_pid = (server_pid > 0) and (Process.kill(0, pid) rescue false)
+        rescue Errno::ENOENT
+          good_pid = false
+        end
+      end while (not good_pid) and (Time.now.tv_sec < timeout)
+      if not good_pid
+        raise RuntimeError, "could not find API server Rails pid"
       end
-      IO.read(SERVER_PID_PATH).to_i
+      server_pid
     end
     begin
       super(args)

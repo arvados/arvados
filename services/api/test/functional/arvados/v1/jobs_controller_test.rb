@@ -1,12 +1,16 @@
 require 'test_helper'
+load 'test/functional/arvados/v1/git_setup.rb'
 
 class Arvados::V1::JobsControllerTest < ActionController::TestCase
+
+  include GitSetup
 
   test "submit a job" do
     authorize_with :active
     post :create, job: {
       script: "hash",
       script_version: "master",
+      repository: "foo",
       script_parameters: {}
     }
     assert_response :success
@@ -14,6 +18,8 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     new_job = JSON.parse(@response.body)
     assert_not_nil new_job['uuid']
     assert_not_nil new_job['script_version'].match(/^[0-9a-f]{40}$/)
+    # Default: not persistent
+    assert_equal false, new_job['output_is_persistent']
   end
 
   test "normalize output and log uuids when creating job" do
@@ -22,6 +28,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       script: "hash",
       script_version: "master",
       script_parameters: {},
+      repository: "foo",
       started_at: Time.now,
       finished_at: Time.now,
       running: false,
@@ -216,7 +223,8 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
-    assert_equal true, !!found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+    assert_equal 0, found.index('zzzzz-8i9sb-pshmckwoma9plh7')
+    assert_equal 1, found.count
   end
 
   test "search jobs by nonexistent column with < query" do
@@ -226,4 +234,6 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response 422
   end
+
+
 end

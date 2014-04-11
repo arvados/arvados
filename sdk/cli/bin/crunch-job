@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# -*- mode: perl; perl-indent-level: 2; -*-
+# -*- mode: perl; perl-indent-level: 2; indent-tabs-mode: nil; -*-
 
 =head1 NAME
 
@@ -77,9 +77,9 @@ use POSIX ':sys_wait_h';
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use Arvados;
 use Getopt::Long;
-use Warehouse;
-use Warehouse::Stream;
-use IPC::System::Simple qw(capturex);
+use IPC::Open2;
+use IO::Select;
+use File::Temp;
 use Fcntl ':flock';
 
 $ENV{"TMPDIR"} ||= "/tmp";
@@ -175,11 +175,8 @@ else
 }
 $job_id = $Job->{'uuid'};
 
-$metastream = Warehouse::Stream->new(whc => new Warehouse);
-$metastream->clear;
-$metastream->name('.');
-$metastream->write_start($job_id . '.log.txt');
-
+my $keep_logfile = $job_id . '.log.txt';
+my $local_logfile = File::Temp->new();
 
 $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
@@ -415,7 +412,7 @@ else
 	or croak ("git clone $repo failed: exit ".($?>>8));
     system("cd $ENV{CRUNCH_SRC} && git config clean.requireForce false");
   }
-  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q origin`;
+  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q --tags origin`;
 
   # If this looks like a subversion r#, look for it in git-svn commit messages
 
@@ -582,8 +579,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     }
     $ENV{"TASK_SLOT_NODE"} = $slot[$childslot]->{node}->{name};
     $ENV{"TASK_SLOT_NUMBER"} = $slot[$childslot]->{cpu};
-    $ENV{"TASK_WORK"} = $ENV{"JOB_WORK"}."/".$slot[$childslot]->{cpu};
-    $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}."/keep";
+    $ENV{"TASK_WORK"} = $ENV{"JOB_WORK"}."/$id.$$";
+    $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}.".keep";
     $ENV{"TASK_TMPDIR"} = $ENV{"TASK_WORK"}; # deprecated
     $ENV{"CRUNCH_NODE_SLOTS"} = $slot[$childslot]->{node}->{ncpus};
     $ENV{"PATH"} = $ENV{"CRUNCH_INSTALL"} . "/bin:" . $ENV{"PATH"};
@@ -761,11 +758,21 @@ if ($job_has_uuid) {
 if ($Job->{'output'})
 {
   eval {
-    my $manifest_text = capturex("whget", $Job->{'output'});
+    my $manifest_text = `arv keep get \Q$Job->{'output'}\E`;
     $arv->{'collections'}->{'create'}->execute('collection' => {
       'uuid' => $Job->{'output'},
       'manifest_text' => $manifest_text,
     });
+    if ($Job->{'output_is_persistent'}) {
+      $arv->{'links'}->{'create'}->execute('link' => {
+        'tail_kind' => 'arvados#user',
+        'tail_uuid' => $User->{'uuid'},
+        'head_kind' => 'arvados#collection',
+        'head_uuid' => $Job->{'output'},
+        'link_class' => 'resources',
+        'name' => 'wants',
+      });
+    }
   };
   if ($@) {
     Log (undef, "Failed to register output manifest: $@");
@@ -1061,12 +1068,24 @@ sub process_stderr
   } split ("\n", $jobstep[$job]->{stderr});
 }
 
+sub fetch_block
+{
+  my $hash = shift;
+  my ($keep, $child_out, $output_block);
+
+  my $cmd = "arv keep get \Q$hash\E";
+  open($keep, '-|', $cmd) or die "fetch_block: $cmd: $!";
+  sysread($keep, $output_block, 64 * 1024 * 1024);
+  close $keep;
+  return $output_block;
+}
 
 sub collate_output
 {
-  my $whc = Warehouse->new;
   Log (undef, "collate");
-  $whc->write_start (1);
+
+  my ($child_out, $child_in);
+  my $pid = open2($child_out, $child_in, 'arv', 'keep', 'put', '--raw');
   my $joboutput;
   for (@jobstep)
   {
@@ -1077,26 +1096,37 @@ sub collate_output
     if ($output !~ /^[0-9a-f]{32}(\+\S+)*$/)
     {
       $output_in_keep ||= $output =~ / [0-9a-f]{32}\S*\+K/;
-      $whc->write_data ($output);
+      print $child_in $output;
     }
     elsif (@jobstep == 1)
     {
       $joboutput = $output;
-      $whc->write_finish;
+      last;
     }
-    elsif (defined (my $outblock = $whc->fetch_block ($output)))
+    elsif (defined (my $outblock = fetch_block ($output)))
     {
       $output_in_keep ||= $outblock =~ / [0-9a-f]{32}\S*\+K/;
-      $whc->write_data ($outblock);
+      print $child_in $outblock;
     }
     else
     {
-      my $errstr = $whc->errstr;
-      $whc->write_data ("XXX fetch_block($output) failed: $errstr XXX\n");
+      Log (undef, "XXX fetch_block($output) failed XXX");
       $main::success = 0;
     }
   }
-  $joboutput = $whc->write_finish if !defined $joboutput;
+  $child_in->close;
+
+  if (!defined $joboutput) {
+    my $s = IO::Select->new($child_out);
+    if ($s->can_read(120)) {
+      sysread($child_out, $joboutput, 64 * 1024 * 1024);
+      chomp($joboutput);
+    } else {
+      Log (undef, "timed out reading from 'arv keep put'");
+    }
+  }
+  waitpid($pid, 0);
+
   if ($joboutput)
   {
     Log (undef, "output $joboutput");
@@ -1171,8 +1201,9 @@ sub Log				# ($jobstep_id, $logmessage)
   }
   print STDERR ((-t STDERR) ? ($datetime." ".$message) : $message);
 
-  return if !$metastream;
-  $metastream->write_data ($datetime . " " . $message);
+  if ($metastream) {
+    print $metastream $datetime . " " . $message;
+  }
 }
 
 
@@ -1201,16 +1232,15 @@ sub cleanup
 sub save_meta
 {
   my $justcheckpoint = shift; # false if this will be the last meta saved
-  my $m = $metastream;
-  $m = $m->copy if $justcheckpoint;
-  $m->write_finish;
-  my $whc = Warehouse->new;
-  my $loglocator = $whc->store_block ($m->as_string);
-  $arv->{'collections'}->{'create'}->execute('collection' => {
-    'uuid' => $loglocator,
-    'manifest_text' => $m->as_string,
-  });
-  undef $metastream if !$justcheckpoint; # otherwise Log() will try to use it
+  return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
+
+  $local_logfile->flush;
+  my $cmd = "arv keep put --filename \Q$keep_logfile\E "
+      . quotemeta($local_logfile->filename);
+  my $loglocator = `$cmd`;
+  die "system $cmd failed: $?" if $?;
+
+  $local_logfile = undef;   # the temp file is automatically deleted
   Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
   $Job->update_attributes('log', $loglocator) if $job_has_uuid;
@@ -1256,65 +1286,6 @@ sub freeze
 sub thaw
 {
   croak ("Thaw not implemented");
-
-  my $whc;
-  my $key = shift;
-  Log (undef, "thaw from $key");
-
-  @jobstep = ();
-  @jobstep_done = ();
-  @jobstep_todo = ();
-  @jobstep_tomerge = ();
-  $jobstep_tomerge_level = 0;
-  my $frozenjob = {};
-
-  my $stream = new Warehouse::Stream ( whc => $whc,
-				       hash => [split (",", $key)] );
-  $stream->rewind;
-  while (my $dataref = $stream->read_until (undef, "\n\n"))
-  {
-    if ($$dataref =~ /^job /)
-    {
-      foreach (split ("\n", $$dataref))
-      {
-	my ($k, $v) = split ("=", $_, 2);
-	$frozenjob->{$k} = freezeunquote ($v);
-      }
-      next;
-    }
-
-    if ($$dataref =~ /^merge (\d+) (.*)/)
-    {
-      $jobstep_tomerge_level = $1;
-      @jobstep_tomerge
-	  = map { freezeunquote ($_) } split ("\n", freezeunquote($2));
-      next;
-    }
-
-    my $Jobstep = { };
-    foreach (split ("\n", $$dataref))
-    {
-      my ($k, $v) = split ("=", $_, 2);
-      $Jobstep->{$k} = freezeunquote ($v) if $k;
-    }
-    $Jobstep->{'failures'} = 0;
-    push @jobstep, $Jobstep;
-
-    if ($Jobstep->{exitcode} eq "0")
-    {
-      push @jobstep_done, $#jobstep;
-    }
-    else
-    {
-      push @jobstep_todo, $#jobstep;
-    }
-  }
-
-  foreach (qw (script script_version script_parameters))
-  {
-    $Job->{$_} = $frozenjob->{$_};
-  }
-  $Job->save if $job_has_uuid;
 }
 
 

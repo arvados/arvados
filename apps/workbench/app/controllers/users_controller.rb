@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => :welcome
+  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity]
   skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
-  before_filter :ensure_current_user_is_admin, only: :sudo
+  before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
   def welcome
     if current_user
@@ -10,9 +10,70 @@ class UsersController < ApplicationController
     end
   end
 
+  def activity
+    @breadcrumb_page_name = nil
+    @users = User.limit(params[:limit] || 1000).all
+    @user_activity = {}
+    @activity = {
+      logins: {},
+      jobs: {},
+      pipeline_instances: {}
+    }
+    @total_activity = {}
+    @spans = [['This week', Time.now.beginning_of_week, Time.now],
+              ['Last week',
+               Time.now.beginning_of_week.advance(weeks:-1),
+               Time.now.beginning_of_week],
+              ['This month', Time.now.beginning_of_month, Time.now],
+              ['Last month',
+               1.month.ago.beginning_of_month,
+               Time.now.beginning_of_month]]
+    @spans.each do |span, threshold_start, threshold_end|
+      @activity[:logins][span] = Log.
+        filter([[:event_type, '=', 'login'],
+                [:object_kind, '=', 'arvados#user'],
+                [:created_at, '>=', threshold_start],
+                [:created_at, '<', threshold_end]])
+      @activity[:jobs][span] = Job.
+        filter([[:created_at, '>=', threshold_start],
+                [:created_at, '<', threshold_end]])
+      @activity[:pipeline_instances][span] = PipelineInstance.
+        filter([[:created_at, '>=', threshold_start],
+                [:created_at, '<', threshold_end]])
+      @activity.each do |type, act|
+        records = act[span]
+        @users.each do |u|
+          @user_activity[u.uuid] ||= {}
+          @user_activity[u.uuid][span + ' ' + type.to_s] ||= 0
+        end
+        records.each do |record|
+          @user_activity[record.modified_by_user_uuid] ||= {}
+          @user_activity[record.modified_by_user_uuid][span + ' ' + type.to_s] ||= 0
+          @user_activity[record.modified_by_user_uuid][span + ' ' + type.to_s] += 1
+          @total_activity[span + ' ' + type.to_s] ||= 0
+          @total_activity[span + ' ' + type.to_s] += 1
+        end
+      end
+    end
+    @users = @users.sort_by do |a|
+      [-@user_activity[a.uuid].values.inject(:+), a.full_name]
+    end
+    # Prepend a "Total" pseudo-user to the sorted list
+    @user_activity[nil] = @total_activity
+    @users = [OpenStruct.new(uuid: nil)] + @users
+  end
+
   def show_pane_list
     if current_user.andand.is_admin
       super | %w(Admin)
+    else
+      super
+    end
+  end
+
+  def index_pane_list
+    if current_user.andand.is_admin
+      super | %w(Activity)
     else
       super
     end
@@ -73,4 +134,102 @@ class UsersController < ApplicationController
       f.html { render template: 'users/home' }
     end
   end
+
+  def unsetup
+    if current_user.andand.is_admin
+      @object.unsetup
+    end
+    show
+  end
+
+  def setup
+    respond_to do |format|
+      if current_user.andand.is_admin
+        setup_params = {}
+        if params['user_uuid'] && params['user_uuid'].size>0
+          setup_params[:uuid] = params['user_uuid']
+        end
+        if params['email'] && params['email'].size>0
+          user = {email: params['email']}
+          setup_params[:user] = user
+        end
+        if params['openid_prefix'] && params['openid_prefix'].size>0
+          setup_params[:openid_prefix] = params['openid_prefix']
+        end
+        if params['repo_name'] && params['repo_name'].size>0
+          setup_params[:repo_name] = params['repo_name']
+        end
+        if params['vm_uuid'] && params['vm_uuid'].size>0
+          setup_params[:vm_uuid] = params['vm_uuid']
+        end
+
+        if User.setup setup_params
+          format.js
+        else
+          self.render_error status: 422
+        end
+      else
+        self.render_error status: 422
+      end
+    end
+  end
+
+  def setup_popup
+    @vms = VirtualMachine.all.results
+
+    @current_selections = find_current_links @object
+
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
+  protected
+
+  def find_current_links user
+    current_selections = {}
+
+    if !user
+      return current_selections
+    end
+
+    # oid login perm
+    oid_login_perms = Link.where(tail_uuid: user.email,
+                                   head_kind: 'arvados#user',
+                                   link_class: 'permission',
+                                   name: 'can_login')
+
+    if oid_login_perms.any?
+      prefix_properties = oid_login_perms.first.properties
+      current_selections[:identity_url_prefix] = prefix_properties[:identity_url_prefix]
+    end
+
+    # repo perm
+    repo_perms = Link.where(tail_uuid: user.uuid,
+                            head_kind: 'arvados#repository',
+                            link_class: 'permission',
+                            name: 'can_write')
+    if repo_perms.any?
+      repo_uuid = repo_perms.first.head_uuid
+      repos = Repository.where(head_uuid: repo_uuid)
+      if repos.any?
+        repo_name = repos.first.name
+        current_selections[:repo_name] = repo_name
+      end
+    end
+
+    # vm login perm
+    vm_login_perms = Link.where(tail_uuid: user.uuid,
+                              head_kind: 'arvados#virtualMachine',
+                              link_class: 'permission',
+                              name: 'can_login')
+    if vm_login_perms.any?
+      vm_uuid = vm_login_perms.first.head_uuid
+      current_selections[:vm_uuid] = vm_uuid
+    end
+
+    return current_selections
+  end
+
 end

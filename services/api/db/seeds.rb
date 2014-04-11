@@ -1,7 +1,9 @@
-# This file should contain all the record creation needed to seed the database with its default values.
-# The data can then be loaded with the rake db:seed (or created alongside the db with db:setup).
+# This file seeds the database with initial/default values.
 #
-# Examples:
-#
-#   cities = City.create([{ :name => 'Chicago' }, { :name => 'Copenhagen' }])
-#   Mayor.create(:name => 'Emanuel', :city => cities.first)
+# It is invoked by `rake db:seed` and `rake db:setup`.
+
+# These two methods would create the system user and group objects on
+# demand later anyway, but it's better form to create them up front.
+include CurrentApiClient
+system_user
+system_group

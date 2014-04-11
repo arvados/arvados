@@ -1,0 +1,99 @@
+---
+layout: default
+navsection: sdk
+navmenu: Perl
+title: "Perl SDK"
+
+...
+
+The Perl SDK provides a generic set of wrappers so you can make API calls easily.
+
+It should be treated as alpha/experimental. Currently, limitations include:
+* Verbose syntax.
+* No native Keep client.
+* No CPAN package.
+
+h3. Installation
+
+<notextile>
+<pre>
+$ <code class="userinput">sudo apt-get install libjson-perl libio-socket-ssl-perl libwww-perl</code>
+$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
+$ <code class="userinput">cd arvados/sdk/perl</code>
+$ <code class="userinput">perl Makefile.PL</code>
+$ <code class="userinput">sudo make install</code>
+</pre>
+</notextile>
+
+h4. Test installation
+
+If the SDK is installed, @perl -MArvados -e ''@ should produce no errors.
+
+If your @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ environment variables are set up correctly (see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for details), the following test script should work:
+
+<notextile>
+<pre>$ <code class="userinput">perl &lt;&lt;'EOF'
+use Arvados;
+my $arv = Arvados-&gt;new('apiVersion' => 'v1');
+my $me = $arv-&gt;{'users'}-&gt;{'current'}-&gt;execute;
+print ("arvados.v1.users.current.full_name = '", $me-&gt;{'full_name'}, "'\n");
+EOF</code>
+arvados.v1.users.current.full_name = 'Your Name'
+</pre>
+</notextile>
+
+h3. Examples
+
+Set up an API client user agent:
+
+<notextile>
+<pre><code class="userinput">my $arv = Arvados->new('apiVersion' => 'v1');
+</code></pre>
+</notextile>
+
+Get the User object for the current user:
+
+<notextile>
+<pre><code class="userinput">my $current_user = $arv->{'users'}->{'current'}->execute;
+</code></pre>
+</notextile>
+
+Get the UUID of an object that was retrieved using the SDK:
+
+<notextile>
+<pre><code class="userinput">my $current_user_uuid = $current_user->{'uuid'}
+</code></pre>
+</notextile>
+
+Retrieve an object by ID:
+
+<notextile>
+<pre><code class="userinput">my $some_user = $arv->{'users'}->{'get'}->execute('uuid' => $current_user_uuid);
+</code></pre>
+</notextile>
+
+Create an object:
+
+<notextile>
+<pre><code class="userinput">my $test_link = $arv->{'links'}->{'create'}->execute('link' => { 'link_class' => 'test', 'name' => 'test' });
+</code></pre>
+</notextile>
+
+Update an object:
+
+<notextile>
+<pre><code class="userinput">my $test_link = $arv->{'links'}->{'update'}->execute(
+        'uuid' => $test_link->{'uuid'},
+        'link' => { 'properties' => { 'foo' => 'bar' } });
+</code></pre>
+</notextile>
+
+Get a list of objects:
+
+<notextile>
+<pre><code class="userinput">my $repos = $arv->{'repositories'}->{'list'}->execute;
+print ("UUID of first repo returned is ", $repos->{'items'}->[0], "\n");
+</code></pre>
+</notextile>
+
+The SDK retrieves the list of API methods from the server at run time. Therefore, the set of available methods is determined by the server version rather than the SDK version.

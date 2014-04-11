@@ -1,0 +1,69 @@
+h1. Arvados documentation
+
+This is the source code for "doc.arvados.org":http://doc.arvados.org.
+
+Here's how to build the HTML pages locally so you can preview your updates before you commit and push.
+
+Additional information is available on the "'Documentation' page on the Arvados wiki":https://arvados.org/projects/arvados/wiki/Documentation.
+
+h2. Install dependencies
+
+<pre>
+arvados/doc$ bundle install
+</pre>
+
+h2. Generate HTML pages
+
+<pre>
+arvados/doc$ rake
+</pre>
+
+Alternately, to make the documentation browsable on the local filesystem:
+
+<pre>
+arvados/doc$ rake generate baseurl=$PWD/.site
+</pre>
+
+h2. Run linkchecker
+
+If you have "Linkchecker":http://wummel.github.io/linkchecker/ installed on
+your system, you can run it against the documentation:
+
+<pre>
+arvados/doc$ rake linkchecker baseurl=file://$PWD/.site
+</pre>
+
+Please note that this will regenerate your $PWD/.site directory.
+
+h2. Preview HTML pages
+
+<pre>
+arvados/doc$ rake run
+[2014-03-10 09:03:41] INFO  WEBrick 1.3.1
+[2014-03-10 09:03:41] INFO  ruby 2.1.1 (2014-02-24) [x86_64-linux]
+[2014-03-10 09:03:41] INFO  WEBrick::HTTPServer#start: pid=8926 port=8000
+</pre>
+
+Preview the rendered pages at "http://localhost:8000":http://localhost:8000.
+
+h2. Publish HTML pages inside Workbench
+
+(or some other web site)
+
+You can set @baseurl@ (the URL prefix for all internal links), @arvados_api_host@ and @arvados_workbench_host@ without changing @_config.yml@:
+
+<pre>
+arvados/doc$ rake generate baseurl=/doc arvados_api_host=xyzzy.arvadosapi.com
+</pre>
+
+Make the docs appear at {workbench_host}/doc by creating a symbolic link in Workbench's @public@ directory, pointing to the generated HTML tree.
+
+<pre>
+arvados/doc$ ln -sn ../../../doc/.site ../apps/workbench/public/doc
+</pre>
+
+h2. Delete generated files
+
+<pre>
+arvados/doc$ rake realclean
+</pre>
