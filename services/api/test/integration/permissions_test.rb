@@ -3,10 +3,6 @@ require 'test_helper'
 class PermissionsTest < ActionDispatch::IntegrationTest
   fixtures :users, :groups, :api_client_authorizations, :collections
 
-  def auth auth_fixture
-    {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(auth_fixture).api_token}"}
-  end
-
   test "adding and removing direct can_read links" do
     # try to read collection as spectator
     get "/arvados/v1/collections/#{collections(:foo_file).uuid}", {:format => :json}, auth(:spectator)

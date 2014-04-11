@@ -8,11 +8,15 @@ class ArvadosModel < ActiveRecord::Base
   attr_protected :modified_by_user_uuid
   attr_protected :modified_by_client_uuid
   attr_protected :modified_at
+  after_initialize :log_start_state
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
   before_destroy :ensure_permission_to_destroy
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
+  after_create :log_create
+  after_update :log_update
+  after_destroy :log_destroy
   validate :ensure_serialized_attribute_type
   validate :normalize_collection_uuids
 
@@ -81,6 +85,10 @@ class ArvadosModel < ActiveRecord::Base
             true, user.is_admin,
             uuid_list,
             user.uuid)
+  end
+
+  def logged_attributes
+    attributes
   end
 
   protected
@@ -210,4 +218,36 @@ class ArvadosModel < ActiveRecord::Base
     nil
   end
 
+  def log_start_state
+    @old_etag = etag
+    @old_attributes = logged_attributes
+  end
+
+  def log_change(event_type)
+    log = Log.new(event_type: event_type).fill_object(self)
+    yield log
+    log.save!
+    log_start_state
+  end
+
+  def log_create
+    log_change('create') do |log|
+      log.fill_properties('old', nil, nil)
+      log.update_to self
+    end
+  end
+
+  def log_update
+    log_change('update') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to self
+    end
+  end
+
+  def log_destroy
+    log_change('destroy') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to nil
+    end
+  end
 end
