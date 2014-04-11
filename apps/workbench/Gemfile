@@ -28,6 +28,7 @@ group :test do
   gem 'selenium-webdriver'
   gem 'capybara'
   gem 'poltergeist'
+  gem 'headless'
 end
 
 gem 'jquery-rails'

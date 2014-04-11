@@ -7,7 +7,7 @@ test:
   encoding: utf8
   database: arvados_test
   username: arvados
-  password: ********
+  password: xxxxxxxx
   host: localhost
 
 production:
@@ -15,6 +15,6 @@ production:
   encoding: utf8
   database: arvados_production
   username: arvados
-  password: ********
+  password: xxxxxxxx
   host: localhost
 

@@ -8,12 +8,13 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -241,16 +242,14 @@ func PutBlock(block []byte, hash string) error {
 	}
 
 	// If we already have a block on disk under this identifier, return
-	// success (but check for MD5 collisions, which may signify on-disk corruption).
+	// success (but check for MD5 collisions).
+	// The only errors that GetBlock can return are ErrCorrupt and ErrNotFound.
+	// In either case, we want to write our new (good) block to disk, so there is
+	// nothing special to do if err != nil.
 	if oldblock, err := GetBlock(hash); err == nil {
 		if bytes.Compare(block, oldblock) == 0 {
 			return nil
 		} else {
-			return &KeepError{ErrCollision, errors.New("Collision")}
-		}
-	} else {
-		ke := err.(*KeepError)
-		if ke.HTTPCode == ErrCorrupt {
 			return &KeepError{ErrCollision, errors.New("Collision")}
 		}
 	}
@@ -269,21 +268,28 @@ func PutBlock(block []byte, hash string) error {
 			continue
 		}
 
-		blockFilename := fmt.Sprintf("%s/%s", blockDir, hash)
-
-		f, err := os.OpenFile(blockFilename, os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Printf("%s: creating %s: %s\n", vol, blockFilename, err)
+		tmpfile, tmperr := ioutil.TempFile(blockDir, "tmp"+hash)
+		if tmperr != nil {
+			log.Printf("ioutil.TempFile(%s, tmp%s): %s", blockDir, hash, tmperr)
 			continue
 		}
+		blockFilename := fmt.Sprintf("%s/%s", blockDir, hash)
 
-		if _, err := f.Write(block); err == nil {
-			f.Close()
-			return nil
-		} else {
+		if _, err := tmpfile.Write(block); err != nil {
 			log.Printf("%s: writing to %s: %s\n", vol, blockFilename, err)
 			continue
 		}
+		if err := tmpfile.Close(); err != nil {
+			log.Printf("closing %s: %s\n", tmpfile.Name(), err)
+			os.Remove(tmpfile.Name())
+			continue
+		}
+		if err := os.Rename(tmpfile.Name(), blockFilename); err != nil {
+			log.Printf("rename %s %s: %s\n", tmpfile.Name(), blockFilename, err)
+			os.Remove(tmpfile.Name())
+			continue
+		}
+		return nil
 	}
 
 	if allFull {
@@ -327,32 +333,14 @@ func IsFull(volume string) (isFull bool) {
 //     Returns the amount of available disk space on VOLUME,
 //     as a number of 1k blocks.
 //
-func FreeDiskSpace(volume string) (free int, err error) {
-	// Run df to find out how much disk space is left.
-	cmd := exec.Command("df", "--block-size=1k", volume)
-	stdout, perr := cmd.StdoutPipe()
-	if perr != nil {
-		return 0, perr
+func FreeDiskSpace(volume string) (free uint64, err error) {
+	var fs syscall.Statfs_t
+	err = syscall.Statfs(volume, &fs)
+	if err == nil {
+		// Statfs output is not guaranteed to measure free
+		// space in terms of 1K blocks.
+		free = fs.Bavail * uint64(fs.Bsize) / 1024
 	}
-	scanner := bufio.NewScanner(stdout)
-	if perr := cmd.Start(); err != nil {
-		return 0, perr
-	}
-
-	scanner.Scan() // skip header line of df output
-	scanner.Scan()
-
-	f := strings.Fields(scanner.Text())
-	if avail, err := strconv.Atoi(f[3]); err == nil {
-		free = avail
-	} else {
-		err = errors.New("bad df format: " + scanner.Text())
-	}
-
-	// Flush the df output and shut it down cleanly.
-	for scanner.Scan() {
-	}
-	cmd.Wait()
 
 	return
 }
