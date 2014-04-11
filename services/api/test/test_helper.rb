@@ -24,6 +24,9 @@ class ActionDispatch::IntegrationTest
   def jresponse
     @jresponse ||= ActiveSupport::JSON.decode @response.body
   end
+  def auth auth_fixture
+    {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(auth_fixture).api_token}"}
+  end
 end
 
 # Ensure permissions are computed from the test fixtures.
