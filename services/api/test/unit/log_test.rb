@@ -196,7 +196,6 @@ class LogTest < ActiveSupport::TestCase
                  "log count changed after 'using' ApiClientAuthorization")
     auth.created_by_ip_address = '::1'
     auth.save!
-    assert_equal(start_log_count + 1, get_logs_about(auth).size,
-                 "no log after changed stable ApiClientAuthorization attribute")
+    assert_logged(auth, :update)
   end
 end
