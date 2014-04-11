@@ -87,6 +87,10 @@ class ArvadosModel < ActiveRecord::Base
             user.uuid)
   end
 
+  def logged_attributes
+    attributes
+  end
+
   protected
 
   def ensure_permission_to_create
@@ -216,7 +220,7 @@ class ArvadosModel < ActiveRecord::Base
 
   def log_start_state
     @old_etag = etag
-    @old_attributes = attributes
+    @old_attributes = logged_attributes
   end
 
   def log_change(event_type)

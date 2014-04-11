@@ -55,6 +55,17 @@ class LogTest < ActiveSupport::TestCase
     yield props if block_given?
   end
 
+  def assert_auth_logged_with_clean_properties(auth, event_type)
+    assert_logged(auth, event_type) do |props|
+      ['old_attributes', 'new_attributes'].map { |k| props[k] }.compact
+        .each do |attributes|
+        refute_includes(attributes, 'api_token',
+                        "auth log properties include sensitive API token")
+      end
+      yield props if block_given?
+    end
+  end
+
   def set_user_from_auth(auth_name)
     client_auth = api_client_authorizations(auth_name)
     Thread.current[:api_client_authorization] = client_auth
@@ -96,6 +107,7 @@ class LogTest < ActiveSupport::TestCase
     auth = api_client_authorizations(:spectator)
     orig_etag = auth.etag
     orig_attrs = auth.attributes
+    orig_attrs.delete 'api_token'
     auth.destroy
     assert_logged(auth, :destroy) do |props|
       assert_equal(orig_etag, props['old_etag'], "destroyed auth etag mismatch")
@@ -198,5 +210,19 @@ class LogTest < ActiveSupport::TestCase
     auth.created_by_ip_address = '::1'
     auth.save!
     assert_logged(auth, :update)
+  end
+
+  test "token isn't included in ApiClientAuthorization logs" do
+    set_user_from_auth :admin_trustedclient
+    auth = ApiClientAuthorization.new
+    auth.user = users(:spectator)
+    auth.api_client = api_clients(:untrusted)
+    auth.save!
+    assert_auth_logged_with_clean_properties(auth, :create)
+    auth.expires_at = Time.now
+    auth.save!
+    assert_auth_logged_with_clean_properties(auth, :update)
+    auth.destroy
+    assert_auth_logged_with_clean_properties(auth, :destroy)
   end
 end

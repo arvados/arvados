@@ -29,7 +29,7 @@ class Log < ArvadosModel
   end
 
   def update_to(thing)
-    fill_properties('new', thing.andand.etag, thing.andand.attributes)
+    fill_properties('new', thing.andand.etag, thing.andand.logged_attributes)
     case event_type
     when "create"
       self.event_at = thing.created_at

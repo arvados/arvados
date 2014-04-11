@@ -20,8 +20,7 @@ class ApiClientAuthorization < ArvadosModel
     t.add :scopes
   end
 
-  UNLOGGED_ATTRIBUTES = ['last_used_at', 'last_used_by_ip_address',
-                         'updated_at']
+  UNLOGGED_CHANGES = ['last_used_at', 'last_used_by_ip_address', 'updated_at']
 
   def assign_random_api_token
     self.api_token ||= rand(2**256).to_s(36)
@@ -63,6 +62,12 @@ class ApiClientAuthorization < ArvadosModel
   end
   def modified_at=(x) end
 
+  def logged_attributes
+    attrs = attributes.dup
+    attrs.delete('api_token')
+    attrs
+  end
+
   protected
 
   def permission_to_create
@@ -76,6 +81,6 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def log_update
-    super unless (changed - UNLOGGED_ATTRIBUTES).empty?
+    super unless (changed - UNLOGGED_CHANGES).empty?
   end
 end
