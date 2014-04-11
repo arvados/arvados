@@ -11,18 +11,18 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140402001908) do
+ActiveRecord::Schema.define(:version => 20140407184311) do
 
   create_table "api_client_authorizations", :force => true do |t|
-    t.string   "api_token",                                           :null => false
-    t.integer  "api_client_id",                                       :null => false
-    t.integer  "user_id",                                             :null => false
+    t.string   "api_token",                                             :null => false
+    t.integer  "api_client_id",                                         :null => false
+    t.integer  "user_id",                                               :null => false
     t.string   "created_by_ip_address"
     t.string   "last_used_by_ip_address"
     t.datetime "last_used_at"
     t.datetime "expires_at"
-    t.datetime "created_at",                                          :null => false
-    t.datetime "updated_at",                                          :null => false
+    t.datetime "created_at",                                            :null => false
+    t.datetime "updated_at",                                            :null => false
     t.string   "default_owner_uuid"
     t.text     "scopes",                  :default => "---\n- all\n", :null => false
   end
@@ -70,7 +70,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
   create_table "collections", :force => true do |t|
     t.string   "locator"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",                          :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -80,7 +80,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "redundancy_confirmed_by_client_uuid"
     t.datetime "redundancy_confirmed_at"
     t.integer  "redundancy_confirmed_as"
-    t.datetime "updated_at"
+    t.datetime "updated_at",                          :null => false
     t.string   "uuid"
     t.text     "manifest_text"
   end
@@ -104,8 +104,8 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "repository_name"
     t.string   "sha1"
     t.string   "message"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",      :null => false
+    t.datetime "updated_at",      :null => false
   end
 
   add_index "commits", ["repository_name", "sha1"], :name => "index_commits_on_repository_name_and_sha1", :unique => true
@@ -133,8 +133,8 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.text     "properties"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",              :null => false
+    t.datetime "updated_at",              :null => false
   end
 
   add_index "humans", ["uuid"], :name => "index_humans_on_uuid", :unique => true
@@ -235,7 +235,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
   create_table "links", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",              :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -245,7 +245,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "name"
     t.string   "head_uuid"
     t.text     "properties"
-    t.datetime "updated_at"
+    t.datetime "updated_at",              :null => false
     t.string   "head_kind"
   end
 
@@ -267,7 +267,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.datetime "event_at"
     t.string   "event_type"
     t.text     "summary"
-    t.text     "info"
+    t.text     "properties"
     t.datetime "created_at",              :null => false
     t.datetime "updated_at",              :null => false
     t.datetime "modified_at"
@@ -308,7 +308,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
   create_table "pipeline_instances", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",                                 :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -317,7 +317,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.text     "components"
     t.boolean  "success"
     t.boolean  "active",                  :default => false
-    t.datetime "updated_at"
+    t.datetime "updated_at",                                 :null => false
     t.text     "properties"
   end
 
