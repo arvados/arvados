@@ -400,9 +400,21 @@ else
   my $commit;
   my $git_archive;
   my $treeish = $Job->{'script_version'};
+
+  # If we're running under crunch-dispatch, it will have pulled the
+  # appropriate source tree into its own repository, and given us that
+  # repo's path as $git_dir. If we're running a "local" job, and a
+  # script_version was specified, it's up to the user to provide the
+  # full path to a local repository in Job->{repository}.
+  #
+  # TODO: Accept URLs too, not just local paths. Use git-ls-remote and
+  # git-archive --remote where appropriate.
+  #
+  # TODO: Accept a locally-hosted Arvados repository by name or
+  # UUID. Use arvados.v1.repositories.list or .get to figure out the
+  # appropriate fetch-url.
   my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'} || $Job->{'repository'};
-  # Todo: let script_version specify repository instead of expecting
-  # parent process to figure it out.
+
   $ENV{"CRUNCH_SRC_URL"} = $repo;
 
   if (-d "$repo/.git") {
