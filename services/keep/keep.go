@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -208,6 +209,14 @@ func StatusHandler(w http.ResponseWriter, req *http.Request) {
 
 	for _, vol := range KeepVolumes {
 		st.Volumes[vol] = GetVolumeStatus(vol)
+	}
+
+	if jstat, err := json.Marshal(st); err == nil {
+		w.Write(jstat)
+	} else {
+		log.Printf("json.Marshal: %s\n", err)
+		log.Printf("NodeStatus = %v\n", st)
+		http.Error(w, err.Error(), 500)
 	}
 }
 
