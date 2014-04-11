@@ -107,7 +107,7 @@ func main() {
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(`/status\.json`, StatusHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
 	// Tell the built-in HTTP server to direct all requests to the REST
 	// router.
@@ -240,6 +240,7 @@ func StatusHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	st.Volumes = make(map[string]VolumeStatus)
 	for _, vol := range KeepVolumes {
 		st.Volumes[vol] = GetVolumeStatus(vol)
 	}
