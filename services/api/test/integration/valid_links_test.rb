@@ -25,9 +25,6 @@ class ValidLinksTest < ActionDispatch::IntegrationTest
       }
     }, admin_auth
     assert_response :success
-    #puts @response.body
-    #puts jresponse['tail_uuid']
-    #puts virtual_machines(:testvm2)
     assert_equal virtual_machines(:testvm2).uuid, (ActiveSupport::JSON.decode @response.body)['tail_uuid']
 
     put "/arvados/v1/links/#{u}", {
