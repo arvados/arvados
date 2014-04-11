@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -167,12 +168,10 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
 	// Read the block data to be stored.
-	// TODO(twp): decide what to do when the input stream contains
-	// more than BLOCKSIZE bytes.
+	// If the request exceeds BLOCKSIZE bytes, return 500 Request Too Large.
 	//
-	buf := make([]byte, BLOCKSIZE)
-	if nread, err := req.Body.Read(buf); err == nil {
-		if err := PutBlock(buf[:nread], hash); err == nil {
+	if buf, err := ReadAtMost(req.Body, BLOCKSIZE); err == nil {
+		if err := PutBlock(buf, hash); err == nil {
 			w.WriteHeader(http.StatusOK)
 		} else {
 			ke := err.(*KeepError)
@@ -506,4 +505,18 @@ func FreeDiskSpace(volume string) (free uint64, err error) {
 		free = fs.Bavail * uint64(fs.Bsize) / 1024
 	}
 	return
+}
+
+// ReadAtMost
+//     Returns a byte slice containing at most N bytes read
+//     from the specified io.Reader.
+//
+func ReadAtMost(r io.Reader, limit int) ([]byte, error) {
+	// Attempt to read one more byte than limit.
+	lr := io.LimitReader(r, int64(limit+1))
+	buf, err := ioutil.ReadAll(lr)
+	if len(buf) > limit {
+		return buf[:limit], errors.New("Request Too Large")
+	}
+	return buf, err
 }
