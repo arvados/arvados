@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	"io/ioutil"
@@ -19,8 +20,8 @@ import (
 	"time"
 )
 
-// Default TCP port on which to listen for requests.
-const DEFAULT_PORT = 25107
+// Default TCP address on which to listen for requests.
+const DEFAULT_ADDR = ":25107"
 
 // A Keep "block" is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
@@ -52,8 +53,42 @@ func (e *KeepError) Error() string {
 }
 
 func main() {
+	// Parse command-line flags:
+	//
+	// -listen=ipaddr:port
+	//    Interface on which to listen for requests. Use :port without
+	//    an ipaddr to listen on all network interfaces.
+	//    Examples:
+	//      -listen=127.0.0.1:4949
+	//      -listen=10.0.1.24:8000
+	//      -listen=:25107 (to listen to port 25107 on all interfaces)
+	//
+	// -volumes
+	//    A comma-separated list of directories to use as Keep volumes.
+	//    Example:
+	//      -volumes=/var/keep01,/var/keep02,/var/keep03/subdir
+	//
+	//    If -volumes is empty or is not present, Keep will select volumes
+	//    by looking at currently mounted filesystems for /keep top-level
+	//    directories.
+
+	var listen, keepvols string
+	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
+		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
+	flag.StringVar(&keepvols, "volumes", "",
+		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
+	flag.Parse()
+
 	// Look for local keep volumes.
-	KeepVolumes = FindKeepVolumes()
+	if keepvols == "" {
+		// TODO(twp): decide whether this is desirable default behavior.
+		// In production we may want to require the admin to specify
+		// Keep volumes explicitly.
+		KeepVolumes = FindKeepVolumes()
+	} else {
+		KeepVolumes = strings.Split(keepvols, ",")
+	}
+
 	if len(KeepVolumes) == 0 {
 		log.Fatal("could not find any keep volumes")
 	}
@@ -78,8 +113,7 @@ func main() {
 	http.Handle("/", rest)
 
 	// Start listening for requests.
-	port := fmt.Sprintf(":%d", DEFAULT_PORT)
-	http.ListenAndServe(port, nil)
+	http.ListenAndServe(listen, nil)
 }
 
 // FindKeepVolumes
