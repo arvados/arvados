@@ -44,20 +44,21 @@ var KeepVolumes []string
 //
 type KeepError struct {
 	HTTPCode int
-	Err      error
+	ErrMsg   string
 }
 
-const (
-	ErrCollision = 400
-	ErrMD5Fail   = 401
-	ErrCorrupt   = 402
-	ErrNotFound  = 404
-	ErrOther     = 500
-	ErrFull      = 503
+var (
+	CollisionError = &KeepError{400, "Collision"}
+	MD5Error       = &KeepError{401, "MD5 Failure"}
+	CorruptError   = &KeepError{402, "Corruption"}
+	NotFoundError  = &KeepError{404, "Not Found"}
+	GenericError   = &KeepError{500, "Fail"}
+	FullError      = &KeepError{503, "Full"}
+	TooLongError   = &KeepError{504, "Too Long"}
 )
 
 func (e *KeepError) Error() string {
-	return fmt.Sprintf("Error %d: %s", e.HTTPCode, e.Err.Error())
+	return e.ErrMsg
 }
 
 // This error is returned by ReadAtMost if the available
@@ -242,7 +243,7 @@ func GetBlock(hash string) ([]byte, error) {
 			//
 			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
 				vol, blockFilename, filehash)
-			return buf, &KeepError{ErrCorrupt, errors.New("Corrupt")}
+			return buf, CorruptError
 		}
 
 		// Success!
@@ -250,7 +251,7 @@ func GetBlock(hash string) ([]byte, error) {
 	}
 
 	log.Printf("%s: not found on any volumes, giving up\n", hash)
-	return buf, &KeepError{ErrNotFound, errors.New("not found: " + hash)}
+	return buf, NotFoundError
 }
 
 /* PutBlock(block, hash)
@@ -284,7 +285,7 @@ func PutBlock(block []byte, hash string) error {
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
 		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
-		return &KeepError{ErrMD5Fail, errors.New("MD5Fail")}
+		return MD5Error
 	}
 
 	// If we already have a block on disk under this identifier, return
@@ -296,7 +297,7 @@ func PutBlock(block []byte, hash string) error {
 		if bytes.Compare(block, oldblock) == 0 {
 			return nil
 		} else {
-			return &KeepError{ErrCollision, errors.New("Collision")}
+			return CollisionError
 		}
 	}
 
@@ -340,10 +341,10 @@ func PutBlock(block []byte, hash string) error {
 
 	if allFull {
 		log.Printf("all Keep volumes full")
-		return &KeepError{ErrFull, errors.New("Full")}
+		return FullError
 	} else {
 		log.Printf("all Keep volumes failed")
-		return &KeepError{ErrOther, errors.New("Fail")}
+		return GenericError
 	}
 }
 
