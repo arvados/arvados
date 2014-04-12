@@ -19,6 +19,12 @@ import (
 	"time"
 )
 
+// ======================
+// Configuration settings
+//
+// TODO(twp): make all of these configurable via command line flags
+// and/or configuration file settings.
+
 // Default TCP address on which to listen for requests.
 const DEFAULT_ADDR = ":25107"
 
@@ -33,6 +39,9 @@ var PROC_MOUNTS = "/proc/mounts"
 
 var KeepVolumes []string
 
+// ==========
+// Error types.
+//
 type KeepError struct {
 	HTTPCode int
 	Err      error
@@ -50,6 +59,10 @@ const (
 func (e *KeepError) Error() string {
 	return fmt.Sprintf("Error %d: %s", e.HTTPCode, e.Err.Error())
 }
+
+// This error is returned by ReadAtMost if the available
+// data exceeds BLOCKSIZE bytes.
+var ReadErrorTooLong = errors.New("Too long")
 
 func main() {
 	// Parse command-line flags:
@@ -163,7 +176,14 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
 	// Read the block data to be stored.
-	// If the request exceeds BLOCKSIZE bytes, return 500 Request Too Large.
+	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.
+	//
+	// Note: because req.Body is a buffered Reader, each Read() call will
+	// collect only the data in the network buffer (typically 16384 bytes),
+	// even if it is passed a much larger slice.
+	//
+	// Instead, call ReadAtMost to read data from the socket
+	// repeatedly until either EOF or BLOCKSIZE bytes have been read.
 	//
 	if buf, err := ReadAtMost(req.Body, BLOCKSIZE); err == nil {
 		if err := PutBlock(buf, hash); err == nil {
@@ -174,7 +194,13 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	} else {
 		log.Println("error reading request: ", err)
-		http.Error(w, err.Error(), 500)
+		errmsg := err.Error()
+		if err == ReadErrorTooLong {
+			// Use a more descriptive error message that includes
+			// the maximum request size.
+			errmsg = fmt.Sprintf("Max request size %d bytes", BLOCKSIZE)
+		}
+		http.Error(w, errmsg, 500)
 	}
 }
 
@@ -366,15 +392,19 @@ func FreeDiskSpace(volume string) (free uint64, err error) {
 }
 
 // ReadAtMost
-//     Returns a byte slice containing at most N bytes read
-//     from the specified io.Reader.
+//     Reads bytes repeatedly from an io.Reader until either
+//     encountering EOF, or the maxbytes byte limit has been reached.
+//     Returns a byte slice of the bytes that were read.
 //
-func ReadAtMost(r io.Reader, limit int) ([]byte, error) {
-	// Attempt to read one more byte than limit.
-	lr := io.LimitReader(r, int64(limit+1))
+//     If the reader contains more than maxbytes, returns a nil slice
+//     and an error.
+//
+func ReadAtMost(r io.Reader, maxbytes int) ([]byte, error) {
+	// Attempt to read one more byte than maxbytes.
+	lr := io.LimitReader(r, int64(maxbytes+1))
 	buf, err := ioutil.ReadAll(lr)
-	if len(buf) > limit {
-		return buf[:limit], errors.New("Request Too Large")
+	if len(buf) > maxbytes {
+		return nil, ReadErrorTooLong
 	}
 	return buf, err
 }
