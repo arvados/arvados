@@ -156,8 +156,8 @@ module ApplicationHelper
     elsif dataclass == 'number'
       datatype = 'number'
     elsif attrvalue.is_a? Array
-      datatype = 'text'
-      attrvalue = attrvalue.to_s
+      # TODO: find a way to edit arrays with x-editable
+      return attrvalue
     elsif attrvalue.is_a? Fixnum or attrvalue.is_a? Float
       datatype = 'number'
     elsif attrvalue.is_a? String
