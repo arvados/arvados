@@ -71,3 +71,9 @@ expired_trustedclient:
   user: active
   api_token: 5hpni7izokzcatku2896xxwqdbt5ptomn04r6auc7fohnli82v
   expires_at: 1970-01-01 00:00:00
+
+valid_token_deleted_user:
+  api_client: trusted_workbench
+  user_id: 1234567
+  api_token: tewfa58099sndckyqhlgd37za6e47o6h03r9l1vpll23hudm8b
+  expires_at: 2038-01-01 00:00:00
