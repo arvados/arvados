@@ -30,6 +30,7 @@ class ApplicationController < ActionController::Base
   end
 
   def render_error(opts)
+    opts = {status: 500}.merge opts
     respond_to do |f|
       # json must come before html here, so it gets used as the
       # default format when js is requested by the client. This lets
