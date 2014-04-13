@@ -1,8 +1,7 @@
 require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
-  test "valid token for deleted user ignored instead of crashing" do
-    skip
+  test "ignore previously valid token (for deleted user), don't crash" do
     get :welcome, {}, session_for(:valid_token_deleted_user)
     assert_response :success
     assert_nil assigns(:my_jobs)
