@@ -20,25 +20,33 @@ class Arvados::V1::JobsController < ApplicationController
                                  resource_attrs[:script_version],
                                  resource_attrs[:exclude_script_versions])
     if !resource_attrs[:nondeterministic] and !resource_attrs[:no_reuse]
-      # Search for jobs where the script_version is in the list of commits
+      # Search for jobs whose script_version is in the list of commits
       # returned by find_commit_range
       @object = nil
+      @incomplete_job = nil
       Job.readable_by(current_user).where(script: resource_attrs[:script],
                                           script_version: r).
         each do |j|
         if j.nondeterministic != true and
             j.success != false and
+            !j.cancelled_at and
             j.script_parameters == resource_attrs[:script_parameters]
-          # Record the first job in the list
-          if !@object
-            @object = j
-          end
-          # Ensure that all candidate jobs actually did produce the same output
-          if @object.output != j.output
-            @object = nil
-            break
+          if j.success.nil?
+            # We'll use this if we don't find a job that has completed
+            @incomplete_job ||= j
+          else
+            # Record the first job in the list
+            if !@object
+              @object = j
+            end
+            # Ensure that all candidate jobs actually did produce the same output
+            if @object.output != j.output
+              @object = nil
+              break
+            end
           end
         end
+        @object ||= @incomplete_job
         if @object
           return show
         end
