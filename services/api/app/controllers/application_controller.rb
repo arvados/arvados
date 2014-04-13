@@ -146,8 +146,10 @@ class ApplicationController < ActionController::Base
       cond_out = []
       param_out = []
       @filters.each do |attr, operator, operand|
-        if !model_class.searchable_columns(operator).index attr.to_s
-          raise ArgumentError.new("Invalid attribute '#{attr}' in condition")
+        if !operator.is_a? String
+          raise ArgumentError.new("Invalid operator '#{operator}' (#{operator.class}) in filter")
+        elsif !model_class.searchable_columns(operator).index attr.to_s
+          raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
         end
         case operator.downcase
         when '=', '<', '<=', '>', '>=', 'like'
@@ -160,12 +162,18 @@ class ApplicationController < ActionController::Base
               operand = Time.parse operand
             end
             param_out << operand
+          else
+            raise ArgumentError.new("Invalid operand type '#{operand.class}' for '#{operator}' operator")
           end
         when 'in'
           if operand.is_a? Array
             cond_out << "#{table_name}.#{attr} IN (?)"
             param_out << operand
+          else
+            raise ArgumentError.new("Invalid argument '#{operand}' for 'in' operator")
           end
+        else
+          raise ArgumentError.new("Invalid operator '#{attr}' in filter")
         end
       end
       if cond_out.any?

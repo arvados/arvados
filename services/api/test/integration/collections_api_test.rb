@@ -15,6 +15,30 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal "arvados#collectionList", jresponse['kind']
   end
 
+  test "get index with invalid filters (array of strings) responds 422" do
+    get "/arvados/v1/collections", {
+      :format => :json,
+      :filters => ['uuid', '=', 'ad02e37b6a7f45bbe2ead3c29a109b8a+54']
+    }, auth(:active)
+    assert_response 422
+  end
+
+  test "get index with invalid filters (unsearchable column) responds 422" do
+    get "/arvados/v1/collections", {
+      :format => :json,
+      :filters => [['this_column_does_not_exist', '=', 'bogus']]
+    }, auth(:active)
+    assert_response 422
+  end
+
+  test "get index with invalid filters (invalid operator) responds 422" do
+    get "/arvados/v1/collections", {
+      :format => :json,
+      :filters => [['uuid', ':-(', 'displeased']]
+    }, auth(:active)
+    assert_response 422
+  end
+
   test "get index with where= (empty string)" do
     get "/arvados/v1/collections", {:format => :json, :where => ''}, auth(:active)
     assert_response :success
