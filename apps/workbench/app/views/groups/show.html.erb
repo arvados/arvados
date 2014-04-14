@@ -1,0 +1,330 @@
+<% content_for :css do %>
+.arvados-nav-container {
+    display:none;
+}
+.card {
+    padding-top: 20px;
+    margin: 10px 0 20px 0;
+    background-color: #ffffff;
+    border: 1px solid #d8d8d8;
+    border-top-width: 0;
+    border-bottom-width: 2px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+.card.arvados-object {
+    position: relative;
+    display: inline-block;
+    width: 170px;
+    height: 175px;
+    padding-top: 0;
+    margin-left: 20px;
+    overflow: hidden;
+    vertical-align: top;
+}
+.card.arvados-object .card-top.green {
+    background-color: #53a93f;
+}
+.card.arvados-object .card-top.blue {
+    background-color: #427fed;
+}
+.card.arvados-object .card-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: inline-block;
+    width: 170px;
+    height: 25px;
+    background-color: #ffffff;
+}
+.card.arvados-object .card-info {
+    position: absolute;
+    top: 25px;
+    display: inline-block;
+    width: 100%;
+    height: 101px;
+    overflow: hidden;
+    background: #ffffff;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+.card.arvados-object .card-info .title {
+    display: block;
+    margin: 8px 14px 0 14px;
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 18px;
+    color: #404040;
+}
+.card.arvados-object .card-info .desc {
+    display: block;
+    margin: 8px 14px 0 14px;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 16px;
+    color: #737373;
+    text-overflow: ellipsis;
+}
+.card.arvados-object .card-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: inline-block;
+    width: 100%;
+    padding: 10px 20px;
+    line-height: 29px;
+    text-align: center;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+<% end %>
+
+<% content_for :above_left_nav do %>
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <a class="btn btn-xs btn-info pull-right">
+      Rename
+    </a>
+    <h3 class="panel-title">
+      <%= @object.name %>
+    </h3>
+  </div>
+  <div class="panel-body">
+    <img src="/favicon.ico" class="pull-right" alt=""/>
+    <p>
+      This folder was created <%= @object.created_at %>. (This
+      description defaults to something generic.)
+    </p>
+    <a href="#" class="btn btn-xs btn-info">Edit description</a>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">
+      Activity
+    </h3>
+  </div>
+  <div class="panel-body">
+    <input type="text" class="form-control" placeholder="Search"/>
+    <div style="height:0.5em;"></div>
+    <p>
+      11:12 - Some Subfolder added
+    </p>
+    <p>
+      10:06 - <%= @object.name %> - renamed from OldFolderName to <%= @object.name %>
+    </p>
+    <p>
+      10:01 - Test Dataset (4 GiB collection) added to <%= @object.name %> by <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
+    </p>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">
+      Sharing and permissions
+    </h3>
+  </div>
+  <div class="panel-body">
+    <input type="text" class="form-control" placeholder="Search"/>
+    <div style="height:0.5em;"></div>
+    <table class="table table-condensed">
+      <tbody>
+        <tr>
+          <td><%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></td>
+          <td>Owner</td>
+        </tr>
+        <tr>
+          <td>Someone Else</td>
+          <td>read only</td>
+        </tr>
+        <tr>
+          <td>Someone Else</td>
+          <td>read+write</td>
+        </tr>
+      </tbody>
+      <thead><tr><th>User</th><th>Role</th></tr></thead>
+    </table>
+  </div>
+</div>
+<% end %>
+
+<div class="row">
+  <div class="card arvados-object">
+    <div class="card-top green">
+      <a href="#">
+        <img src="/favicon.ico" alt=""/>
+      </a>
+    </div>
+    <div class="card-info">
+      <a class="title" href="#">Test dataset</a>
+      <div class="desc">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</div>
+    </div>
+    <div class="card-bottom">
+      <button class="btn btn-default btn-block">Show details</button>
+    </div>
+  </div>
+
+  <div class="card arvados-object">
+    <div class="card-top green">
+      <a href="#">
+        <img src="/favicon.ico" alt=""/>
+      </a>
+    </div>
+    <div class="card-info">
+      <a class="title" href="#">GATK Exome Pipeline</a>
+      <div class="desc">exome p.e. fastq -&gt; vcf</div>
+    </div>
+    <div class="card-bottom">
+      <button class="btn btn-default btn-block">Show details</button>
+    </div>
+  </div>
+
+  <div class="card arvados-object">
+    <div class="card-top blue">
+      <a href="#">
+        <img src="/favicon.ico" alt=""/>
+      </a>
+    </div>
+    <div class="card-info">
+      <a class="title" href="#">Reference result</a>
+      <div class="desc">Known good -- checked concordance against other datasets</div>
+    </div>
+    <div class="card-bottom">
+      <button class="btn btn-default btn-block">Show details</button>
+    </div>
+  </div>
+
+  <div class="card arvados-object">
+    <div class="card-top blue">
+      <a href="#">
+        <img src="/favicon.ico" alt=""/>
+      </a>
+    </div>
+    <div class="card-info">
+      <a class="title" href="#">Some other thing</a>
+      <div class="desc">(Objects that are "starred" appear in this area)</div>
+    </div>
+    <div class="card-bottom">
+      <button class="btn btn-default btn-block">Show details</button>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <div class="row">
+          <div class="col-md-6">
+            <h3 class="panel-title" style="vertical-align:middle;">
+              Contents
+            </h3>
+          </div>
+          <div class="col-md-6">
+            <div class="input-group input-group-sm pull-right">
+              <input type="text" class="form-control" placeholder="Search folder contents"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <p>
+        </p><table class="table">
+          <tbody>
+            <tr>
+              <td>
+                Some Subfolder
+              </td>
+              <td>
+                12 items
+              </td>
+              <td>
+                2014-04-01
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Test Dataset
+              </td>
+              <td>
+                4 GiB
+              </td>
+              <td>
+                2014-04-01
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Test Dataset 2
+              </td>
+              <td>
+                4 GiB
+              </td>
+              <td>
+                2014-04-01
+              </td>
+            </tr>
+            <tr>
+              <td>
+                GATK Exome Pipeline
+              </td>
+              <td>
+                7 components
+              </td>
+              <td>
+                2014-03-21
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Reference result
+              </td>
+              <td>
+                250 MiB
+              </td>
+              <td>
+                2014-03-22
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Some other thing
+              </td>
+              <td>
+                1.2 TiB
+              </td>
+              <td>
+                2014-01-01
+              </td>
+            </tr>
+          </tbody>
+          <thead>
+            <tr>
+              <th>
+                Name
+              </th>
+              <th>
+              </th>
+              <th>
+                Modified
+              </th>
+            </tr>
+          </thead>
+        </table>
+        <p></p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -178,6 +178,7 @@
         </div>
       </div>
       <div class="col-sm-3 left-nav">
+        <%= yield :above_left_nav %>
         <div class="arvados-nav-container">
         <% if current_user.andand.is_active %>
         <div class="well">
