@@ -25,17 +25,21 @@ var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 
 // TODO(twp): Tests still to be written
 //
-//   * PutBlockFull
+//   * TestPutBlockFull
 //       - test that PutBlock returns 503 Full if the filesystem is full.
 //         (must mock FreeDiskSpace or Statfs? use a tmpfs?)
 //
-//   * PutBlockWriteErr
+//   * TestPutBlockWriteErr
 //       - test the behavior when Write returns an error.
 //           - Possible solutions: use a small tmpfs and a high
 //             MIN_FREE_KILOBYTES to trick PutBlock into attempting
 //             to write a block larger than the amount of space left
 //           - use an interface to mock ioutil.TempFile with a File
 //             object that always returns an error on write
+//
+//   * TestNodeStatus
+//       - test that GetNodeStatus returns a structure with expected
+//         values: need to mock FreeDiskSpace or Statfs, or use a tmpfs
 //
 // ========================================
 // GetBlock tests.

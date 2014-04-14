@@ -210,6 +210,9 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// IndexHandler
+//     A HandleFunc to address /index and /index/{prefix} requests.
+//
 func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
@@ -232,46 +235,17 @@ func IndexHandler(w http.ResponseWriter, req *http.Request) {
 //            * last_error_time
 //
 type VolumeStatus struct {
-	Space       string
-	LastErr     string
-	LastErrTime time.Time
+	MountPoint string `json:"mount_point"`
+	BytesFree  uint64 `json:"bytes_free"`
+	BytesUsed  uint64 `json:"bytes_used"`
 }
 
 type NodeStatus struct {
-	LastUpdate time.Time
-	DfOutput   string
-	DiskDev    []string
-	Volumes    map[string]VolumeStatus
+	Volumes map[string]*VolumeStatus `json:"volumes"`
 }
 
 func StatusHandler(w http.ResponseWriter, req *http.Request) {
-	st := new(NodeStatus)
-	st.LastUpdate = time.Now()
-
-	// Get a list of disk devices on this system.
-	st.DiskDev = make([]string, 1)
-	if devdir, err := os.Open("/dev"); err != nil {
-		log.Printf("StatusHandler: opening /dev: %s\n", err)
-	} else {
-		devs, err := devdir.Readdirnames(0)
-		if err == nil {
-			for _, d := range devs {
-				if strings.HasPrefix(d, "sd") ||
-					strings.HasPrefix(d, "hd") ||
-					strings.HasPrefix(d, "xvd") {
-					st.DiskDev = append(st.DiskDev, d)
-				}
-			}
-		} else {
-			log.Printf("Readdirnames: %s", err)
-		}
-	}
-
-	st.Volumes = make(map[string]VolumeStatus)
-	for _, vol := range KeepVolumes {
-		st.Volumes[vol] = GetVolumeStatus(vol)
-	}
-
+	st := GetNodeStatus()
 	if jstat, err := json.Marshal(st); err == nil {
 		w.Write(jstat)
 	} else {
@@ -281,23 +255,37 @@ func StatusHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// GetNodeStatus
+//     Returns a NodeStatus struct describing this Keep
+//     node's current status.
+//
+func GetNodeStatus() NodeStatus {
+	st := new(NodeStatus)
+
+	st.Volumes = make(map[string]*VolumeStatus)
+	for _, vol := range KeepVolumes {
+		st.Volumes[vol] = GetVolumeStatus(vol)
+	}
+	return st
+}
+
 // GetVolumeStatus
 //     Returns a VolumeStatus describing the requested volume.
-func GetVolumeStatus(volume string) VolumeStatus {
-	var isfull, lasterr string
-	var lasterrtime time.Time
+//
+func GetVolumeStatus(volume string) *VolumeStatus {
+	var fs syscall.Statfs_t
 
-	if IsFull(volume) {
-		isfull = fmt.Sprintf("full %d", time.Now().Unix())
-	} else {
-		isfull = fmt.Sprintf("ok %d", time.Now().Unix())
+	err := syscall.Statfs(volume, &fs)
+	if err != nil {
+		log.Printf("GetVolumeStatus: statfs: %s\n", err)
+		return nil
 	}
-
-	// Not implemented yet
-	lasterr = ""
-	lasterrtime = time.Unix(0, 0)
-
-	return VolumeStatus{isfull, lasterr, lasterrtime}
+	// These calculations match the way df calculates disk usage:
+	// "free" space is measured by fs.Bavail, but "used" space
+	// uses fs.Blocks - fs.Bfree.
+	free := fs.Bavail * uint64(fs.Bsize)
+	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
+	return &VolumeStatus{volume, free, used}
 }
 
 // IndexLocators
@@ -523,6 +511,10 @@ func IsFull(volume string) (isFull bool) {
 // FreeDiskSpace(volume)
 //     Returns the amount of available disk space on VOLUME,
 //     as a number of 1k blocks.
+//
+//     TODO(twp): consider integrating this better with
+//     VolumeStatus (e.g. keep a NodeStatus object up-to-date
+//     periodically and use it as the source of info)
 //
 func FreeDiskSpace(volume string) (free uint64, err error) {
 	var fs syscall.Statfs_t
