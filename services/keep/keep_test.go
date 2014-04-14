@@ -62,13 +62,8 @@ func TestGetBlockMissing(t *testing.T) {
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
-	if err == nil {
-		t.Errorf("GetBlock incorrectly returned success: ", result)
-	} else {
-		ke := err.(*KeepError)
-		if ke.HTTPCode != ErrNotFound {
-			t.Errorf("GetBlock: %v", ke)
-		}
+	if err != NotFoundError {
+		t.Errorf("Expected NotFoundError, got %v", result)
 	}
 }
 
@@ -88,8 +83,8 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
-	if err == nil {
-		t.Errorf("GetBlock incorrectly returned success: %s", result)
+	if err != CorruptError {
+		t.Errorf("Expected CorruptError, got %v", result)
 	}
 }
 
@@ -113,7 +108,7 @@ func TestPutBlockOK(t *testing.T) {
 
 	result, err := GetBlock(TEST_HASH)
 	if err != nil {
-		t.Fatalf("GetBlock: %s", err.Error())
+		t.Fatalf("GetBlock returned error: %v", err)
 	}
 	if string(result) != string(TEST_BLOCK) {
 		t.Error("PutBlock/GetBlock mismatch")
@@ -140,7 +135,7 @@ func TestPutBlockOneVol(t *testing.T) {
 
 	result, err := GetBlock(TEST_HASH)
 	if err != nil {
-		t.Fatalf("GetBlock: %s", err.Error())
+		t.Fatalf("GetBlock: %v", err)
 	}
 	if string(result) != string(TEST_BLOCK) {
 		t.Error("PutBlock/GetBlock mismatch")
@@ -161,19 +156,14 @@ func TestPutBlockMD5Fail(t *testing.T) {
 
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
-	if err := PutBlock(BAD_BLOCK, TEST_HASH); err == nil {
-		t.Error("PutBlock succeeded despite a block mismatch")
-	} else {
-		ke := err.(*KeepError)
-		if ke.HTTPCode != ErrMD5Fail {
-			t.Errorf("PutBlock returned the wrong error (%v)", ke)
-		}
+	if err := PutBlock(BAD_BLOCK, TEST_HASH); err != MD5Error {
+		t.Error("Expected MD5Error, got %v", err)
 	}
 
 	// Confirm that GetBlock fails to return anything.
-	if result, err := GetBlock(TEST_HASH); err == nil {
-		t.Errorf("GetBlock succeded after a corrupt block store, returned '%s'",
-			string(result))
+	if result, err := GetBlock(TEST_HASH); err != NotFoundError {
+		t.Errorf("GetBlock succeeded after a corrupt block store (result = %s, err = %v)",
+			string(result), err)
 	}
 }
 
@@ -220,7 +210,7 @@ func TestPutBlockCollision(t *testing.T) {
 
 	if err := PutBlock(b2, locator); err == nil {
 		t.Error("PutBlock did not report a collision")
-	} else if err.(*KeepError).HTTPCode != ErrCollision {
+	} else if err != CollisionError {
 		t.Errorf("PutBlock returned %v", err)
 	}
 }
