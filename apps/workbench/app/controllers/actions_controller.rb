@@ -76,9 +76,7 @@ class ActionsController < ApplicationController
 
     chash.each do |k,v|
       l = Link.new({
-                     tail_kind: "arvados#collection",
                      tail_uuid: k,
-                     head_kind: "arvados#collection", 
                      head_uuid: newuuid,
                      link_class: "provenance",
                      name: "provided"

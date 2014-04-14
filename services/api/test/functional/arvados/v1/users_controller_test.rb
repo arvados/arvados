@@ -67,7 +67,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       repo_name: repo_name,
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {
-        uuid: "this_is_agreeable",
+        uuid: 'zzzzz-tpzed-abcdefghijklmno',
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
         email: "foo@example.com"
@@ -77,9 +77,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
 
     created = find_obj_in_resp response_items, 'User', nil
+
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
-    assert_equal 'this_is_agreeable', created['uuid']
+    assert_equal 'zzzzz-tpzed-abcdefghijklmno', created['uuid']
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
@@ -106,7 +107,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {
-        uuid: "this_is_agreeable",
+        uuid: 'zzzzz-tpzed-abcdefghijklmno',
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
         email: "foo@example.com"
@@ -118,7 +119,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     created = find_obj_in_resp response_items, 'User', nil
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
-    assert_equal 'this_is_agreeable', created['uuid']
+    assert_equal 'zzzzz-tpzed-abcdefghijklmno', created['uuid']
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
@@ -714,12 +715,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       end
 
       if object_type == 'User'
-        if !x['head_kind']
+        if ArvadosModel::resource_class_for_uuid(x['uuid']) == User
           return_obj = x
           break
         end
       else  # looking for a link
-        if x['head_kind'] == head_kind
+        if x['head_uuid'] and ArvadosModel::resource_class_for_uuid(x['head_uuid']).kind == head_kind
           return_obj = x
           break
         end
@@ -745,19 +746,19 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       assert [] != object, "expected #{class_name} with name #{head_uuid}"
       head_uuid = object.first[:uuid]
     end
-    assert_equal link['link_class'], link_class,
+    assert_equal link_class, link['link_class'],
         "did not find expected link_class for #{link_object_name}"
 
-    assert_equal link['name'], link_name,
+    assert_equal link_name, link['name'],
         "did not find expected link_name for #{link_object_name}"
 
-    assert_equal link['tail_uuid'], tail_uuid,
+    assert_equal tail_uuid, link['tail_uuid'],
         "did not find expected tail_uuid for #{link_object_name}"
 
-    assert_equal link['head_kind'], head_kind,
+    assert_equal head_kind, link['head_kind'],
         "did not find expected head_kind for #{link_object_name}"
 
-    assert_equal link['head_uuid'], head_uuid,
+    assert_equal head_uuid, link['head_uuid'],
         "did not find expected head_uuid for #{link_object_name}"
   end
 
@@ -765,9 +766,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       expect_repo_perms, expect_vm_perms, expect_group_perms, expect_signatures
     # verify that all links are deleted for the user
     oid_login_perms = Link.where(tail_uuid: email,
-                                 head_kind: 'arvados#user',
                                  link_class: 'permission',
-                                 name: 'can_login')
+                                 name: 'can_login').where("head_uuid like ?", User.uuid_like_pattern)
     if expect_oid_login_perms
       assert oid_login_perms.any?, "expected oid_login_perms"
     else
@@ -775,9 +775,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
 
     repo_perms = Link.where(tail_uuid: uuid,
-                              head_kind: 'arvados#repository',
                               link_class: 'permission',
-                              name: 'can_write')
+                              name: 'can_write').where("head_uuid like ?", Repository.uuid_like_pattern)
     if expect_repo_perms
       assert repo_perms.any?, "expected repo_perms"
     else
@@ -785,9 +784,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
 
     vm_login_perms = Link.where(tail_uuid: uuid,
-                              head_kind: 'arvados#virtualMachine',
                               link_class: 'permission',
-                              name: 'can_login')
+                              name: 'can_login').where("head_uuid like ?", VirtualMachine.uuid_like_pattern)
     if expect_vm_perms
       assert vm_login_perms.any?, "expected vm_login_perms"
     else
@@ -799,7 +797,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end.first
     group_read_perms = Link.where(tail_uuid: uuid,
                              head_uuid: group[:uuid],
-                             head_kind: 'arvados#group',
                              link_class: 'permission',
                              name: 'can_read')
     if expect_group_perms
@@ -809,7 +806,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
 
     signed_uuids = Link.where(link_class: 'signature',
-                                  tail_kind: 'arvados#user',
                                   tail_uuid: uuid)
 
     if expect_signatures

@@ -91,9 +91,6 @@ class UsersController < ApplicationController
   def home
     @showallalerts = false
     @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
-    # @my_vm_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#virtual_machine', link_class: 'permission', name: 'can_login')
-    # @my_repo_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#repository', link_class: 'permission', name: 'can_write')
-
     @my_tag_links = {}
 
     @my_jobs = Job.

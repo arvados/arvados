@@ -1,10 +1,57 @@
 class Arvados::V1::LinksController < ApplicationController
-  def index
-    if params[:tail_uuid]
-      params[:where] = Oj.load(params[:where]) if params[:where].is_a?(String)
-      params[:where] ||= {}
-      params[:where][:tail_uuid] = params[:tail_uuid]
+
+  def create
+    if resource_attrs[:head_kind] and ArvadosModel::resource_class_for_uuid(resource_attrs[:head_uuid]).kind != resource_attrs[:head_kind]
+      errors.add(attr, "'#{resource_attrs[:head_kind]}' does not match '#{head_uuid}'")
     end
+
+    if resource_attrs[:tail_kind] and ArvadosModel::resource_class_for_uuid(resource_attrs[:tail_uuid]).kind != resource_attrs[:tail_kind]
+      errors.add(attr, "'#{resource_attrs[:tail_kind]}' does not match '#{tail_uuid}'")
+    end
+
+    resource_attrs.delete :head_kind
+    resource_attrs.delete :tail_kind
     super
   end
+
+  protected
+
+  # Overrides ApplicationController load_where_param
+  def load_where_param
+    super
+
+    # head_kind and tail_kind columns are now virtual,
+    # equivilent functionality is now provided by
+    # 'is_a', so fix up any old-style 'where' clauses.
+    if @where
+      @filters ||= []
+      if @where[:head_kind]
+        @filters << ['head_uuid', 'is_a', @where[:head_kind]]
+        @where.delete :head_kind
+      end
+      if @where[:tail_kind]
+        @filters << ['tail_uuid', 'is_a', @where[:tail_kind]]
+        @where.delete :tail_kind
+      end
+    end
+  end
+
+  # Overrides ApplicationController load_filters_param
+  def load_filters_param
+    super
+
+    # head_kind and tail_kind columns are now virtual,
+    # equivilent functionality is now provided by
+    # 'is_a', so fix up any old-style 'filter' clauses.
+    @filters = @filters.map do |k|
+      if k[0] == 'head_kind' and k[1] == '='
+        ['head_uuid', 'is_a', k[2]]
+      elsif k[0] == 'tail_kind' and k[1] == '='
+        ['tail_uuid', 'is_a', k[2]]
+      else
+        k
+      end
+    end
+  end
+
 end
