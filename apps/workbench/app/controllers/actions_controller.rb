@@ -78,7 +78,7 @@ class ActionsController < ApplicationController
       l = Link.new({
                      tail_kind: "arvados#collection",
                      tail_uuid: k,
-                     head_kind: "arvados#collection", 
+                     head_kind: "arvados#collection",
                      head_uuid: newuuid,
                      link_class: "provenance",
                      name: "provided"

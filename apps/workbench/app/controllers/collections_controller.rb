@@ -5,6 +5,7 @@ class CollectionsController < ApplicationController
   def show_pane_list
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
+
   def index
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
@@ -112,17 +113,17 @@ class CollectionsController < ApplicationController
         @sourcedata[collection.uuid][:collection] = collection
       end
     end
-    
+
     Collection.where(uuid: @object.uuid).each do |u|
       puts request
-      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg", 
+      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg",
                                                             {:request => request,
-                                                              :direction => :bottom_up, 
+                                                              :direction => :bottom_up,
                                                               :combine_jobs => :script_only}) rescue nil
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg", 
+      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg",
                                                                {:request => request,
-                                                                 :direction => :top_down, 
-                                                                 :combine_jobs => :script_only, 
+                                                                 :direction => :top_down,
+                                                                 :combine_jobs => :script_only,
                                                                  :pdata_only => true}) rescue nil
     end
   end
