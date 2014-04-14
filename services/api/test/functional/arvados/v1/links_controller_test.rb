@@ -175,5 +175,32 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
   end
 
+  test "head_kind matches head_uuid" do
+    link = {
+      link_class: 'test',
+      name: 'stuff',
+      head_uuid: groups(:public).uuid,
+      head_kind: "arvados#user",
+      tail_uuid: users(:spectator).uuid,
+      tail_kind: "arvados#user",
+    }
+    authorize_with :admin
+    post :create, link: link
+    assert_response 422
+  end
+
+  test "tail_kind matches tail_uuid" do
+    link = {
+      link_class: 'test',
+      name: 'stuff',
+      head_uuid: users(:active).uuid,
+      head_kind: "arvados#user",
+      tail_uuid: groups(:public).uuid,
+      tail_kind: "arvados#user",
+    }
+    authorize_with :admin
+    post :create, link: link
+    assert_response 422
+  end
 
 end

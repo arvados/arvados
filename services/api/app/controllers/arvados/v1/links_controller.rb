@@ -1,6 +1,14 @@
 class Arvados::V1::LinksController < ApplicationController
 
   def create
+    if resource_attrs[:head_kind] and ArvadosModel::resource_class_for_uuid(resource_attrs[:head_uuid]).kind != resource_attrs[:head_kind]
+      errors.add(attr, "'#{resource_attrs[:head_kind]}' does not match '#{head_uuid}'")
+    end
+
+    if resource_attrs[:tail_kind] and ArvadosModel::resource_class_for_uuid(resource_attrs[:tail_uuid]).kind != resource_attrs[:tail_kind]
+      errors.add(attr, "'#{resource_attrs[:tail_kind]}' does not match '#{tail_uuid}'")
+    end
+
     resource_attrs.delete :head_kind
     resource_attrs.delete :tail_kind
     super
