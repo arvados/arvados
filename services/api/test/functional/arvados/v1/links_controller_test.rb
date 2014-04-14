@@ -44,7 +44,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response 422
   end
 
-  test "head and tail exist" do
+  test "head and tail exist, head_kind and tail_kind are returned" do
     link = {
       link_class: 'test',
       name: 'stuff',
@@ -146,6 +146,28 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     authorize_with :admin
     get :index, {
       where: { head_kind: 'arvados#user' }
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+  end
+
+  test "test can still use filter tail_kind" do
+    authorize_with :admin
+    get :index, {
+      filters: [ ['tail_kind', '=', 'arvados#user'] ]
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_not_equal 0, found.count
+    assert_equal found.count, (found.select { |f| f.tail_uuid.match /[a-z0-9]{5}-tpzed-[a-z0-9]{15}/}).count
+  end
+
+  test "test can still use filter head_kind" do
+    authorize_with :admin
+    get :index, {
+      filters: [ ['head_kind', '=', 'arvados#user'] ]
     }
     assert_response :success
     found = assigns(:objects)

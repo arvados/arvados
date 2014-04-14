@@ -222,18 +222,13 @@ class ArvadosModel < ActiveRecord::Base
     specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
 
     foreign_key_attributes.each do |attr|
-      begin
-        if new_record? or send (attr + "_changed?")
-          attr_value = send attr
-          r = ArvadosModel::resource_class_for_uuid attr_value if attr_value
-          r = r.readable_by(current_user) if r and not skip_uuid_read_permission_check.include? attr
-          if r and r.where(uuid: attr_value).count == 0 and not specials.include? attr_value
-            errors.add(attr, "'#{attr_value}' not found")
-          end
+      if new_record? or send (attr + "_changed?")
+        attr_value = send attr
+        r = ArvadosModel::resource_class_for_uuid attr_value if attr_value
+        r = r.readable_by(current_user) if r and not skip_uuid_read_permission_check.include? attr
+        if r and r.where(uuid: attr_value).count == 0 and not specials.include? attr_value
+          errors.add(attr, "'#{attr_value}' not found")
         end
-      rescue Exception => e
-        bt = e.backtrace.join("\n")
-        errors.add(attr, "'#{attr_value}' error '#{e}'\n#{bt}\n")
       end
     end
   end

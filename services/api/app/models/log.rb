@@ -4,15 +4,22 @@ class Log < ArvadosModel
   include CommonApiTemplate
   serialize :properties, Hash
   before_validation :set_default_event_at
-  attr_accessor :object
+  attr_accessor :object, :object_kind
 
   api_accessible :user, extend: :common do |t|
     t.add :object_uuid
     t.add :object, :if => :object
+    t.add :object_kind
     t.add :event_at
     t.add :event_type
     t.add :summary
     t.add :properties
+  end
+
+  def object_kind
+    if k = ArvadosModel::resource_class_for_uuid(object_uuid)
+      k.kind
+    end
   end
 
   def fill_object(thing)

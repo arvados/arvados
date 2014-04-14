@@ -118,11 +118,12 @@ class ApplicationController < ActionController::Base
   end
 
   def load_filters_param
+    @filters ||= []
     if params[:filters].is_a? Array
-      @filters = params[:filters]
+      @filters += params[:filters]
     elsif params[:filters].is_a? String and !params[:filters].empty?
       begin
-        @filters = Oj.load params[:filters]
+        @filters += Oj.load params[:filters]
         raise unless @filters.is_a? Array
       rescue
         raise ArgumentError.new("Could not parse \"filters\" param as an array")

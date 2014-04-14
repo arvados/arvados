@@ -8,6 +8,7 @@ class Link < ArvadosModel
   after_update :maybe_invalidate_permissions_cache
   after_create :maybe_invalidate_permissions_cache
   after_destroy :maybe_invalidate_permissions_cache
+  attr_accessor :head_kind, :tail_kind
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
