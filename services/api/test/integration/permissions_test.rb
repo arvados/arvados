@@ -3,10 +3,6 @@ require 'test_helper'
 class PermissionsTest < ActionDispatch::IntegrationTest
   fixtures :users, :groups, :api_client_authorizations, :collections
 
-  def auth auth_fixture
-    {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(auth_fixture).api_token}"}
-  end
-
   test "adding and removing direct can_read links" do
     # try to read collection as spectator
     get "/arvados/v1/collections/#{collections(:foo_file).uuid}", {:format => :json}, auth(:spectator)
@@ -16,11 +12,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -31,11 +25,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -70,11 +62,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:private).uuid,
         properties: {}
       }
@@ -89,11 +79,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:private).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -125,11 +113,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:private).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }
@@ -144,11 +130,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:private).uuid,
         properties: {}
       }
@@ -179,11 +163,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#user',
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:private).uuid,
         properties: {}
       }
@@ -194,11 +176,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:private).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#group',
         head_uuid: groups(:empty_lonely_group).uuid,
         properties: {}
       }
@@ -209,11 +189,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_kind: 'arvados#group',
         tail_uuid: groups(:empty_lonely_group).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_kind: 'arvados#collection',
         head_uuid: collections(:foo_file).uuid,
         properties: {}
       }

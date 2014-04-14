@@ -48,9 +48,6 @@ GEM
       rack (>= 1.0.0)
       rack-test (>= 0.5.4)
       xpath (~> 2.0)
-    capybara-webkit (1.1.0)
-      capybara (~> 2.0, >= 2.0.2)
-      json
     childprocess (0.5.1)
       ffi (~> 1.0, >= 1.0.11)
     cliver (0.3.2)
@@ -67,6 +64,7 @@ GEM
     erubis (2.7.0)
     execjs (2.0.2)
     ffi (1.9.3)
+    headless (1.0.1)
     highline (1.6.20)
     hike (1.2.3)
     httpclient (2.3.4.1)
@@ -185,9 +183,9 @@ DEPENDENCIES
   bootstrap-sass (~> 3.1.0)
   bootstrap-x-editable-rails
   capybara
-  capybara-webkit
   coffee-rails (~> 3.2.0)
   deep_merge
+  headless
   httpclient
   jquery-rails
   less

@@ -195,7 +195,7 @@ if (!$have_slurm)
 }
 if (exists $ENV{SLURM_NODELIST})
 {
-  push @sinfo, `sinfo -h --format='%c %N' --nodes='$ENV{SLURM_NODELIST}'`;
+  push @sinfo, `sinfo -h --format='%c %N' --nodes=\Q$ENV{SLURM_NODELIST}\E`;
 }
 foreach (@sinfo)
 {
@@ -400,24 +400,33 @@ else
   my $commit;
   my $git_archive;
   my $treeish = $Job->{'script_version'};
-  my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'};
-  # Todo: let script_version specify repository instead of expecting
-  # parent process to figure it out.
+
+  # If we're running under crunch-dispatch, it will have pulled the
+  # appropriate source tree into its own repository, and given us that
+  # repo's path as $git_dir. If we're running a "local" job, and a
+  # script_version was specified, it's up to the user to provide the
+  # full path to a local repository in Job->{repository}.
+  #
+  # TODO: Accept URLs too, not just local paths. Use git-ls-remote and
+  # git-archive --remote where appropriate.
+  #
+  # TODO: Accept a locally-hosted Arvados repository by name or
+  # UUID. Use arvados.v1.repositories.list or .get to figure out the
+  # appropriate fetch-url.
+  my $repo = $git_dir || $ENV{'CRUNCH_DEFAULT_GIT_DIR'} || $Job->{'repository'};
+
   $ENV{"CRUNCH_SRC_URL"} = $repo;
 
-  # Create/update our clone of the remote git repo
-
-  if (!-d $ENV{"CRUNCH_SRC"}) {
-    system(qw(git clone), $repo, $ENV{"CRUNCH_SRC"}) == 0
-	or croak ("git clone $repo failed: exit ".($?>>8));
-    system("cd $ENV{CRUNCH_SRC} && git config clean.requireForce false");
+  if (-d "$repo/.git") {
+    # We were given a working directory, but we are only interested in
+    # the index.
+    $repo = "$repo/.git";
   }
-  `cd $ENV{CRUNCH_SRC} && git remote set-url origin \"\$CRUNCH_SRC_URL\" && git fetch -q --tags origin`;
 
   # If this looks like a subversion r#, look for it in git-svn commit messages
 
   if ($treeish =~ m{^\d{1,4}$}) {
-    my $gitlog = `cd $ENV{CRUNCH_SRC} && git log --pretty="format:%H" --grep="git-svn-id:.*\@$treeish " origin/master`;
+    my $gitlog = `git --git-dir=\Q$repo\E log --pretty="format:%H" --grep="git-svn-id:.*\@"\Q$treeish\E" " master`;
     chomp $gitlog;
     if ($gitlog =~ /^[a-f0-9]{40}$/) {
       $commit = $gitlog;
@@ -428,15 +437,7 @@ else
   # If that didn't work, try asking git to look it up as a tree-ish.
 
   if (!defined $commit) {
-
-    my $cooked_treeish = $treeish;
-    if ($treeish !~ m{^[0-9a-f]{5,}$}) {
-      # Looks like a git branch name -- make sure git knows it's
-      # relative to the remote repo
-      $cooked_treeish = "origin/$treeish";
-    }
-
-    my $found = `cd $ENV{CRUNCH_SRC} && git rev-list -1 $cooked_treeish`;
+    my $found = `git --git-dir=\Q$repo\E rev-list -1 ''\Q$treeish\E`;
     chomp $found;
     if ($found =~ /^[0-9a-f]{40}$/s) {
       $commit = $found;
@@ -461,7 +462,7 @@ else
     $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
     @execargs = ("sh", "-c",
 		 "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
-    $git_archive = `cd $ENV{CRUNCH_SRC} && git archive $commit`;
+    $git_archive = `git --git-dir=\Q$repo\E archive ''\Q$commit\E`;
   }
   else {
     croak ("could not figure out commit id for $treeish");
@@ -758,7 +759,7 @@ if ($job_has_uuid) {
 if ($Job->{'output'})
 {
   eval {
-    my $manifest_text = `arv keep get \Q$Job->{'output'}\E`;
+    my $manifest_text = `arv keep get ''\Q$Job->{'output'}\E`;
     $arv->{'collections'}->{'create'}->execute('collection' => {
       'uuid' => $Job->{'output'},
       'manifest_text' => $manifest_text,
@@ -1235,7 +1236,7 @@ sub save_meta
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
   $local_logfile->flush;
-  my $cmd = "arv keep put --filename \Q$keep_logfile\E "
+  my $cmd = "arv keep put --filename ''\Q$keep_logfile\E "
       . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;

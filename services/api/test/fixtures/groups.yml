@@ -22,6 +22,12 @@ system_owned_group:
   name: System Private
   description: System-owned Group
 
+system_group:
+  uuid: zzzzz-j7d0g-000000000000000
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: System Private
+  description: System-owned Group
+
 empty_lonely_group:
   uuid: zzzzz-j7d0g-jtp06ulmvsezgyu
   owner_uuid: zzzzz-tpzed-000000000000000

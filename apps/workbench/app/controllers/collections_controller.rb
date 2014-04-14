@@ -104,7 +104,7 @@ class CollectionsController < ApplicationController
     Link.where(tail_uuid: @sourcedata.keys).each do |link|
       if link.link_class == 'data_origin'
         @sourcedata[link.tail_uuid][:data_origins] ||= []
-        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_kind, link.head_uuid]
+        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_uuid]
       end
     end
     Collection.where(uuid: @sourcedata.keys).each do |collection|
@@ -112,17 +112,17 @@ class CollectionsController < ApplicationController
         @sourcedata[collection.uuid][:collection] = collection
       end
     end
-    
+
     Collection.where(uuid: @object.uuid).each do |u|
       puts request
-      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg", 
+      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg",
                                                             {:request => request,
-                                                              :direction => :bottom_up, 
+                                                              :direction => :bottom_up,
                                                               :combine_jobs => :script_only}) rescue nil
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg", 
+      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg",
                                                                {:request => request,
-                                                                 :direction => :top_down, 
-                                                                 :combine_jobs => :script_only, 
+                                                                 :direction => :top_down,
+                                                                 :combine_jobs => :script_only,
                                                                  :pdata_only => true}) rescue nil
     end
   end

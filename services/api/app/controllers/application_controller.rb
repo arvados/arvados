@@ -39,22 +39,16 @@ class ApplicationController < ActionController::Base
 
   def create
     @object = model_class.new resource_attrs
-    if @object.save
-      show
-    else
-      raise "Save failed"
-    end
+    @object.save!
+    show
   end
 
   def update
     attrs_to_update = resource_attrs.reject { |k,v|
       [:kind, :etag, :href].index k
     }
-    if @object.update_attributes attrs_to_update
-      show
-    else
-      raise "Update failed"
-    end
+    @object.update_attributes! attrs_to_update
+    show
   end
 
   def destroy
@@ -127,12 +121,14 @@ class ApplicationController < ActionController::Base
   end
 
   def load_filters_param
+    @filters ||= []
     if params[:filters].is_a? Array
-      @filters = params[:filters]
+      @filters += params[:filters]
     elsif params[:filters].is_a? String and !params[:filters].empty?
       begin
-        @filters = Oj.load params[:filters]
-        raise unless @filters.is_a? Array
+        f = Oj.load params[:filters]
+        raise unless f.is_a? Array
+        @filters += f
       rescue
         raise ArgumentError.new("Could not parse \"filters\" param as an array")
       end
@@ -169,6 +165,19 @@ class ApplicationController < ActionController::Base
             cond_out << "#{table_name}.#{attr} IN (?)"
             param_out << operand
           end
+        when 'is_a'
+          operand = [operand] unless operand.is_a? Array
+          cond = []
+          operand.each do |op|
+              cl = ArvadosModel::kind_class op
+              if cl
+                cond << "#{table_name}.#{attr} like ?"
+                param_out << cl.uuid_like_pattern
+              else
+                cond << "1=0"
+              end
+          end
+          cond_out << cond.join(' OR ')
         end
       end
       if cond_out.any?
@@ -247,7 +256,7 @@ class ApplicationController < ActionController::Base
       end
     else
       @offset = 0
-    end      
+    end
 
     orders = []
     if params[:order]
@@ -461,7 +470,7 @@ class ApplicationController < ActionController::Base
       order: { type: 'string', required: false }
     }
   end
-  
+
   def client_accepts_plain_text_stream
     (request.headers['Accept'].split(' ') &
      ['text/plain', '*/*']).count > 0

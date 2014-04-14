@@ -33,9 +33,7 @@ echo "Arvados repository uuid is $repo_uuid"
 
 read -rd $'\000' newlink <<EOF; arv link create --link "$newlink" 
 {
- "tail_kind":"arvados#group",
  "tail_uuid":"$all_users_group_uuid",
- "head_kind":"arvados#repository",
  "head_uuid":"$repo_uuid",
  "link_class":"permission",
  "name":"can_read" 

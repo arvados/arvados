@@ -161,9 +161,7 @@ class UserTest < ActiveSupport::TestCase
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
 
-    user = User.new
-    user.email = email
-    user.uuid = 'abcdefghijklmnop'
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
 
     vm = VirtualMachine.create
 
@@ -173,8 +171,10 @@ class UserTest < ActiveSupport::TestCase
     verify_user resp_user, email
 
     oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
+
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
+
     assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
         'expected identity_url_prefix not found for oid_login_perm'
 
@@ -194,9 +194,7 @@ class UserTest < ActiveSupport::TestCase
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
 
-    user = User.new
-    user.email = email
-    user.uuid = 'abcdefghijklmnop'
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
 
     response = User.setup user, openid_prefix
 
@@ -243,16 +241,20 @@ class UserTest < ActiveSupport::TestCase
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
 
-  def find_obj_in_resp (response, object_type, head_kind=nil)
+  def find_obj_in_resp (response_items, object_type, head_kind=nil)
     return_obj = nil
-    response.each { |x|
-      if x.class.name == object_type
-        if head_kind
-          if x.head_kind == head_kind
-            return_obj = x
-            break
-          end
-        else
+    response_items.each { |x|
+      if !x
+        next
+      end
+
+      if object_type == 'User'
+        if ArvadosModel::resource_class_for_uuid(x['uuid']) == User
+          return_obj = x
+          break
+        end
+      else  # looking for a link
+        if ArvadosModel::resource_class_for_uuid(x['head_uuid']).kind == head_kind
           return_obj = x
           break
         end
@@ -269,18 +271,18 @@ class UserTest < ActiveSupport::TestCase
   end
 
   def verify_link (link_object, link_class, link_name, tail_uuid, head_uuid)
-    assert_not_nil link_object, 'expected link for #{link_class} #{link_name}'
+    assert_not_nil link_object, "expected link for #{link_class} #{link_name}"
     assert_not_nil link_object[:uuid],
-        'expected non-nil uuid for link for #{link_class} #{link_name}'
+        "expected non-nil uuid for link for #{link_class} #{link_name}"
     assert_equal link_class, link_object[:link_class],
-        'expected link_class not found for #{link_class} #{link_name}'
+        "expected link_class not found for #{link_class} #{link_name}"
     assert_equal link_name, link_object[:name],
-        'expected link_name not found for #{link_class} #{link_name}'
+        "expected link_name not found for #{link_class} #{link_name}"
     assert_equal tail_uuid, link_object[:tail_uuid],
-        'expected tail_uuid not found for #{link_class} #{link_name}'
+        "expected tail_uuid not found for #{link_class} #{link_name}"
     if head_uuid
       assert_equal head_uuid, link_object[:head_uuid],
-          'expected head_uuid not found for #{link_class} #{link_name}'
+          "expected head_uuid not found for #{link_class} #{link_name}"
     end
   end
 
