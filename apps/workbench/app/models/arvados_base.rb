@@ -164,7 +164,7 @@ class ArvadosBase < ActiveRecord::Base
       true
     end
   end
-      
+
   def links(*args)
     o = {}
     o.merge!(args.pop) if args[-1].is_a? Hash

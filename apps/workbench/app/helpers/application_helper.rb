@@ -36,7 +36,7 @@ module ApplicationHelper
         end
       end
     end
-    
+
     return h(n)
       #raw = n.to_s
     #cooked = ''
@@ -73,9 +73,18 @@ module ApplicationHelper
         if opts[:with_class_name]
           link_name = "#{resource_class.to_s}: #{link_name}"
         end
+        if !opts[:no_tags] and resource_class == Collection
+          Link.where(head_uuid: link_uuid, link_class: ["tag", "identifier"]).each do |tag|
+            link_name += ' <span class="label label-info">' + tag.name + '</span>'
+          end
+        end
       end
       style_opts[:class] = (style_opts[:class] || '') + ' nowrap'
-      link_to link_name, { controller: resource_class.to_s.tableize, action: 'show', id: link_uuid }, style_opts
+      if opts[:no_link]
+        link_name
+      else
+        link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: link_uuid }, style_opts
+      end
     else
       attrvalue
     end
@@ -166,7 +175,7 @@ module ApplicationHelper
       datatype = 'select'
     elsif dataclass == 'number'
       datatype = 'number'
-    else
+1    else
       if template.is_a? Array
         # ?!?
       elsif template.is_a? String
@@ -196,8 +205,17 @@ module ApplicationHelper
       #dataclass.where(uuid: attrvalue).each do |item|
       #  items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       #end
+      itemuuids = []
       dataclass.limit(10).each do |item|
+        itemuuids << item.uuid
         items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      end
+      Link.where(head_uuid: itemuuids, link_class: ["tag", "identifier"]).each do |tag|
+        items.each do |item|
+          if item.uuid == tag.head_uuid
+            item.name += ' [' + tag.name + ']'
+          end
+        end
       end
     end
 
@@ -216,7 +234,7 @@ module ApplicationHelper
     }.merge(htmloptions)
 
     lt += raw("\n<script>")
-    
+
     if items and items.length > 0
       lt += raw("add_form_selection_sources(#{items.to_json});\n")
     end
@@ -225,6 +243,6 @@ module ApplicationHelper
 
     lt += raw("</script>")
 
-    lt 
+    lt
   end
 end
