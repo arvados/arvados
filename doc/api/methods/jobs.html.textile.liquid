@@ -36,11 +36,11 @@ Attributes of 'job' parameter:
 table(table table-bordered table-condensed).
 |_. Attribute               |_. Type|_. Accepted values                            |_. Description|
 {background:#ccffcc}.|script                 |string     |filename                                      |The actual script that will be run by crunch.  Must be the name of an executable file in the crunch_scripts/ directory at the git revision specified by script_version.|
-{background:#ccffcc}.|script_version         |string     |git branch, tag, or version hash              |The code version to run, which is available in the specified repository.  May be a git hash or tag to specify an exact version, or a branch.  If it is a branch, use the branch head.|
+{background:#ccffcc}.|script_version         |string     |git branch, tag, or commit hash               |The version of code to run, which must be available in the specified repository.|
 {background:#ccffcc}.|repository             |string     |name of git repository hosted by Arvados      |The repository to search for script_version.|
 {background:#ccffcc}.|script_parameters      |object     |any JSON object                               |The input parameters for the job, with the parameter names as keys mapping to parameter values.|
-|minimum_script_version |string     |git branch, tag, or version hash              |The minimum acceptable script version when deciding whether to re-use a past job.|
-|exclude_script_versions|array of strings|git branch, tag, or version hash|Script versions to exclude when deciding whether to re-use a past job.|
+|minimum_script_version |string     |git branch, tag, or commit hash              |The minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|
+|exclude_script_versions|array of strings|git branch, tag, or commit hash|Script versions to exclude when deciding whether to re-use a past job.|
 |nondeterministic       |boolean    |                                              |If true, never re-use a past job, and flag this job so it will never be considered for re-use.|
 |no_reuse               |boolean    |                                              |If true, do not re-use a past job, but this job may be re-used.|
 
