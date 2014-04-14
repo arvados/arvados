@@ -39,7 +39,6 @@ class LogTest < ActiveSupport::TestCase
                  "log is not 'modified by' current user")
     assert_equal(current_api_client.andand.uuid, log.modified_by_client_uuid,
                  "log is not 'modified by' current client")
-    assert_equal(thing.kind, log.object_kind, "log kind mismatch")
     assert_equal(thing.uuid, log.object_uuid, "log UUID mismatch")
     assert_equal(event_type.to_s, log.event_type, "log event type mismatch")
     time_method, old_props_test, new_props_test = EVENT_TEST_METHODS[event_type]

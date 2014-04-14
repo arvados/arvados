@@ -60,18 +60,17 @@ class Arvados::V1::UsersController < ApplicationController
         raise ArgumentError.new "Cannot activate without being invited."
       end
       act_as_system_user do
-        required_uuids = Link.where(owner_uuid: system_user_uuid,
-                                    link_class: 'signature',
-                                    name: 'require',
-                                    tail_uuid: system_user_uuid,
-                                    head_kind: 'arvados#collection').
+        required_uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                                    system_user_uuid,
+                                    'signature',
+                                    'require',
+                                    system_user_uuid,
+                                    Collection.uuid_like_pattern).
           collect(&:head_uuid)
         signed_uuids = Link.where(owner_uuid: system_user_uuid,
                                   link_class: 'signature',
                                   name: 'click',
-                                  tail_kind: 'arvados#user',
                                   tail_uuid: @object.uuid,
-                                  head_kind: 'arvados#collection',
                                   head_uuid: required_uuids).
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids
@@ -131,7 +130,7 @@ class Arvados::V1::UsersController < ApplicationController
                     params[:repo_name], params[:vm_uuid]
     end
 
-    render json: { kind: "arvados#HashList", items: @response }
+    render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
   end
 
   # delete user agreements, vm, repository, login links; set state to inactive

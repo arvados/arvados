@@ -67,22 +67,22 @@ h2. Finding humans with the selected trait
 We query the "links" resource to find humans that report the selected trait.  Links are directional connections between Arvados data items, for example, from a human to their reported traits.
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">trait_query = {
-    'link_class': 'human_trait',
-    'tail_kind': 'arvados#human',
-    'head_uuid': non_melanoma_cancer
-  }
+<pre><code>&gt;&gt;&gt; <span class="userinput">trait_filter = [
+    ['link_class', '=', 'human_trait'],
+    ['tail_uuid', 'is_a', 'arvados#human'],
+    ['head_uuid', '=', non_melanoma_cancer],
+  ]
 </code></pre>
 </notextile>
 
-* @'link_class'@ queries for links that describe the traits of a particular human.
-* @'tail_kind'@ queries for links where the tail of the link is a human.
-* @'head_uuit'@ queries for links where the head of the link is a specific data item.
+* @['link_class', '=', 'human_trait']@ filters on links that connect phenotype traits to individuals in the database.
+* @['tail_uuid', 'is_a', 'arvados#human']@ filters that the "tail" must be a "human" database object.
+* @['head_uuid', '=', non_melanoma_cancer]@ filters that the "head" of the link must connect to the "trait" database object non_melanoma_cancer .
 
 The query will return links that match all three conditions.
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">trait_links = arvados.api().links().list(limit=1000, where=trait_query).execute()</span>
+<pre><code>&gt;&gt;&gt; <span class="userinput">trait_links = arvados.api().links().list(limit=1000, filters=trait_filter).execute()</span>
 </code></pre>
 </notextile>
 

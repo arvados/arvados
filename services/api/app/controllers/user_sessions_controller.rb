@@ -24,11 +24,11 @@ class UserSessionsController < ApplicationController
     if not user
       # Check for permission to log in to an existing User record with
       # a different identity_url
-      Link.where(link_class: 'permission',
-                 name: 'can_login',
-                 tail_kind: 'email',
-                 tail_uuid: omniauth['info']['email'],
-                 head_kind: 'arvados#user').each do |link|
+      Link.where("link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                 'permission',
+                 'can_login',
+                 omniauth['info']['email'],
+                 User.uuid_like_pattern).each do |link|
         if prefix = link.properties['identity_url_prefix']
           if prefix == omniauth['info']['identity_url'][0..prefix.size-1]
             user = User.find_by_uuid(link.head_uuid)
