@@ -241,7 +241,7 @@ type VolumeStatus struct {
 }
 
 type NodeStatus struct {
-	Volumes map[string]*VolumeStatus `json:"volumes"`
+	Volumes []*VolumeStatus `json:"volumes"`
 }
 
 func StatusHandler(w http.ResponseWriter, req *http.Request) {
@@ -259,12 +259,12 @@ func StatusHandler(w http.ResponseWriter, req *http.Request) {
 //     Returns a NodeStatus struct describing this Keep
 //     node's current status.
 //
-func GetNodeStatus() NodeStatus {
+func GetNodeStatus() *NodeStatus {
 	st := new(NodeStatus)
 
-	st.Volumes = make(map[string]*VolumeStatus)
-	for _, vol := range KeepVolumes {
-		st.Volumes[vol] = GetVolumeStatus(vol)
+	st.Volumes = make([]*VolumeStatus, len(KeepVolumes))
+	for i, vol := range KeepVolumes {
+		st.Volumes[i] = GetVolumeStatus(vol)
 	}
 	return st
 }
