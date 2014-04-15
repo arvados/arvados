@@ -6,6 +6,6 @@ module CollectionsHelper
   end
 
   def self.match(uuid)
-    /^([a-f0-9]{32}(\+[0-9]+)?)(\+.*)?$/.match(uuid.to_s)
+    /^([a-f0-9]{32})(\+[0-9]+)?(\+.*?)?(\/.*)?$/.match(uuid.to_s)
   end
 end

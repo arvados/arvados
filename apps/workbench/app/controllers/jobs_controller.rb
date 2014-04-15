@@ -14,7 +14,10 @@ class JobsController < ApplicationController
       nodes << c
     end
 
-    @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {:all_script_parameters => true, :script_version_nodes => true}
+    @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {
+      :request => request,
+      :all_script_parameters => true, 
+      :script_version_nodes => true}
   end
 
   def index

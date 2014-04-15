@@ -94,4 +94,32 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     end
   end
 
+  test "search keep_disks by service_port with >= query" do
+    authorize_with :active
+    get :index, {
+      filters: [['service_port', '>=', 25107]]
+    }
+    assert_response :success
+    assert_equal true, assigns(:objects).any?
+  end
+
+  test "search keep_disks by service_port with < query" do
+    authorize_with :active
+    get :index, {
+      filters: [['service_port', '<', 25107]]
+    }
+    assert_response :success
+    assert_equal false, assigns(:objects).any?
+  end
+
+  test "search keep_disks with 'any' operator" do
+    authorize_with :active
+    get :index, {
+      where: { any: ['contains', 'o2t1q5w'] }
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_equal true, !!found.index('zzzzz-penuu-5w2o2t1q5wy7fhn')
+  end
+
 end

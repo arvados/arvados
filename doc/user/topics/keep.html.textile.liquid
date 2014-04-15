@@ -1,0 +1,48 @@
+---
+layout: default
+navsection: userguide
+title: "How Keep works"
+...
+
+In Keep, information is stored in *data blocks*.  Data blocks are normally between 1 byte and 64 megabytes in size.  If a file exceeds the maximum size of a single data block, the file will be split across multiple data blocks until the entire file can be stored.  These data blocks may be stored and replicated across multiple disks, servers, or clusters.  Each data block has its own identifier for the contents of that specific data block.
+
+In order to reassemble the file, Keep stores a *collection* data block which lists in sequence the data blocks that make up the original file.  A collection data block may store the information for multiple files, including a directory structure.
+
+In this example we will use @c1bad4b39ca5a924e481008009d94e32+210@ which we added to Keep in "the first Keep tutorial":{{ site.baseurl }}/user/tutorials/tutorial-keep.html.  First let us examine the contents of this collection using @arv keep get@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv keep get c1bad4b39ca5a924e481008009d94e32+210</span>
+. 204e43b8a1185621ca55a94839582e6f+67108864 b9677abbac956bd3e86b1deb28dfac03+67108864 fc15aff2a762b13f521baf042140acec+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:227212247:var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+The command @arv keep get@ fetches the contents of the collection @c1bad4b39ca5a924e481008009d94e32+210@.  In this example, this collection includes a single file @var-GS000016015-ASM.tsv.bz2@ which is 227212247 bytes long, and is stored using four sequential data blocks, @204e43b8a1185621ca55a94839582e6f+67108864@, @b9677abbac956bd3e86b1deb28dfac03+67108864@, @fc15aff2a762b13f521baf042140acec+67108864@, and @323d2a3ce20370c4ca1d3462a344f8fd+25885655@.
+
+Let's use @arv keep get@ to download the first data block:
+
+notextile. <pre><code>~$ <span class="userinput">cd /scratch/<b>you</b></span>
+/scratch/<b>you</b>$ <span class="userinput">arv keep get 204e43b8a1185621ca55a94839582e6f+67108864 &gt; block1</span></code></pre>
+
+{% include 'notebox_begin' %}
+
+When you run this command, you may get this API warning:
+
+notextile. <pre><code>WARNING:root:API lookup failed for collection 204e43b8a1185621ca55a94839582e6f+67108864 (&lt;class 'apiclient.errors.HttpError'&gt;: &lt;HttpError 404 when requesting https://qr1hi.arvadosapi.com/arvados/v1/collections/204e43b8a1185621ca55a94839582e6f%2B67108864?alt=json returned "Not Found"&gt;)</code></pre>
+
+This happens because @arv keep get@ tries to find a collection with this identifier.  When that fails, it emits this warning, then looks for a datablock instead, which succeeds.
+
+{% include 'notebox_end' %}
+
+Let's look at the size and compute the md5 hash of @block1@:
+
+<notextile>
+<pre><code>/scratch/<b>you</b>$ <span class="userinput">ls -l block1</span>
+-rw-r--r-- 1 you group 67108864 Dec  9 20:14 block1
+/scratch/<b>you</b>$ <span class="userinput">md5sum block1</span>
+204e43b8a1185621ca55a94839582e6f  block1
+</code></pre>
+</notextile>
+
+Notice that the block identifer <code>204e43b8a1185621ca55a94839582e6f+67108864</code> consists of:
+* the md5 hash of @block1@, @204e43b8a1185621ca55a94839582e6f@, plus
+* the size of @block1@, @67108864@.

@@ -12,7 +12,8 @@
           <col width="20%" />
           <col width="20%" />
           <col width="13%" />
-          <col width="27%" />
+          <col width="13%" />
+          <col width="20%" />
         </colgroup>
 
         <tr>
@@ -21,6 +22,7 @@
 	  <th>Log</th>
 	  <th>Age</th>
 	  <th>Status</th>
+	  <th>Progress</th>
 	</tr>
 
         <% @my_jobs[0..6].each do |j| %>
@@ -33,7 +35,7 @@
 
 	    <td>
 	      <small>
-		<% if j.success %>
+		<% if j.success and j.output %>
 
 		  <a href="<%= collection_path(j.output) %>">
 		    <% Collection.limit(1).where(uuid: j.output).each do |c| %>
@@ -71,29 +73,11 @@
 </td>
 
 <td>
-  <% if j.success %>
-    <span class="label label-success">finished</span>
-  <% elsif j.success == false %>
-    <span class="label label-danger">failed</span>
-  <% elsif j.finished_at %>
-    <span class="label">finished?</span>
-  <% elsif j.started_at %>
-    <span class="label label-info">running</span>
-  <% else %>
-    <span class="label">queued</span>
-  <% end %>
-  <% percent_total_tasks = 100 / (j.tasks_summary[:running] + j.tasks_summary[:done] + j.tasks_summary[:todo]) rescue 0 %>
-  <div class="inline-progress-container pull-right">
-    <div class="progress">
-      <span class="progress-bar progress-bar-success" style="width: <%= j.tasks_summary[:done] * percent_total_tasks rescue 0 %>%;">
-      </span>
-      <span class="progress-bar" style="width: <%= j.tasks_summary[:running] * percent_total_tasks rescue 0 %>%;">
-      </span>
-      <% if j.success == false %>
-      <span class="progress-bar progress-bar-danger" style="width: <%= tasks_summary[:failed] * percent_total_tasks rescue 0 %>%;">
-      </span>
-      <% end %>
-    </div>
+  <%= render partial: 'job_status_label', locals: {:j => j} %>
+</td>
+<td>
+  <div class="inline-progress-container">
+  <%= render partial: 'job_progress', locals: {:j => j} %>
   </div>
 </td>
 
@@ -115,7 +99,8 @@
         <col width="30%" />
         <col width="30%" />
         <col width="13%" />
-        <col width="27%" />
+        <col width="13%" />
+        <col width="20%" />
       </colgroup>
 
       <tr>
@@ -123,6 +108,7 @@
 	<th>Template</th>
 	<th>Age</th>
 	<th>Status</th>
+	<th>Progress</th>
       </tr>
 
       <% @my_pipelines[0..6].each do |p| %>
@@ -147,38 +133,14 @@
           </td>
 
           <td>
-            <% if p.success %>
-              <span class="label label-success">finished</span>
-            <% elsif p.success == false %>
-              <span class="label label-danger">failed</span>
-            <% elsif p.active and p.modified_at < 30.minutes.ago %>
-              <span class="label label-info">stopped</span>
-            <% elsif p.active %>
-              <span class="label label-info">running</span>
-            <% else %>
-              <span class="label">queued</span>
-            <% end %>
-
-            <% summary = pipeline_summary p %>
-            <div class="inline-progress-container pull-right">
-              <div class="progress">
-                <span class="progress-bar progress-bar-success" style="width: <%= summary[:percent_done] %>%;">
-                </span>
-                <% if p.success == false %>
-                <span class="progress-bar progress-bar-danger" style="width: <%= 100.0 - summary[:percent_done] %>%;">
-                </span>
-                <% else %>
-                <span class="progress-bar" style="width: <%= summary[:percent_running] %>%;">
-                </span>
-                <span class="progress-bar progress-bar-info" style="width: <%= summary[:percent_queued] %>%;">
-                </span>
-                <span class="progress-bar progress-bar-danger" style="width: <%= summary[:percent_failed] %>%;">
-                </span>
-                <% end %>
-              </div>
-            </div>
+            <%= render partial: 'pipeline_status_label', locals: {:p => p} %>
           </td>
 
+          <td>
+            <div class="inline-progress-container">
+              <%= render partial: 'pipeline_progress', locals: {:p => p} %>
+            </div>
+          </td>
         </tr>
       <% end %>
     </table>
@@ -200,7 +162,7 @@
         <span class="glyphicon glyphicon-search"></span>
         <% end %>
       </span>
-    </div>  
+    </div>
     <% end %>
   </div>
   <% if not current_user.andand.is_active or @my_collections.empty? %>
@@ -261,10 +223,10 @@
 	<p>
 	  Your account must be activated by an Arvados administrator.  If this
 	  is your first time accessing Arvados and would like to request
-	  access, or you believe you are seeing the page in error, please 
-	  <%= link_to "contact us", Rails.configuration.activation_contact_link %>.  
+	  access, or you believe you are seeing the page in error, please
+	  <%= link_to "contact us", Rails.configuration.activation_contact_link %>.
 	  You should receive an email at the address you used to log in when
-	  your account is activated.  In the mean time, you can 
+	  your account is activated.  In the mean time, you can
 	  <%= link_to "learn more about Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %>,
 	  and <%= link_to "read the Arvados user guide", "http://doc.arvados.org/user" %>.
 	</p>

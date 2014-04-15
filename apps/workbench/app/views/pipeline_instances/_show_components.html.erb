@@ -1,35 +1,19 @@
 <% content_for :css do %>
-  .pipeline_color_legend {
-    padding-left: 1em;
-    padding-right: 1em;
-  }
-table.pipeline-components-table {
-  width: 100%;
-  table-layout: fixed;
-  overflow: hidden;
-}
-
-table.pipeline-components-table thead th {
-  text-align: bottom;
-}
-table.pipeline-components-table div.progress {
-  margin-bottom: 0;
-}
-
-table.pipeline-components-table td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-td.required {
-  background: #ffdddd;
-}
 
 <% end %>
 
-<% template = PipelineTemplate.find(@object.pipeline_template_uuid) %>
-<% if template %>
-  <h2><%= template.name %></h2>
+<% template = PipelineTemplate.find(@object.pipeline_template_uuid) rescue nil %>
+
+<%= content_for :content_top do %>
+  <h2>
+    <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => 'Unnamed pipeline', 'data-mode' => 'inline' } %>
+  </h2>
+  <% if template %>
+  <h4>
+    From template:
+    <%= link_to_if_arvados_object template, friendly_name: true %>
+  </h4>
+  <% end %>
 <% end %>
 
 <% if @object.active != nil %>
@@ -38,7 +22,7 @@ td.required {
     <col style="width: 15%" />
     <col style="width: 20%" />
     <col style="width: 12%" />
-    <col style="width: 8%" />
+    <col style="width: 12%" />
     <col style="width: 45%" />
   </colgroup>
   <thead>
@@ -60,38 +44,21 @@ td.required {
     <% render_pipeline_jobs.each do |pj| %>
     <tr>
       <td>
-        <% label = if pj[:job].andand[:uuid] 
-             if pj[:job][:success] == true
-               'label-success'
-             elsif pj[:job][:success] == false
-               'label-danger'
-             elsif pj[:job][:running] == true
-               'label-info'
-             else
-               'label-default'
-             end
-           else
-             'label-default'
-         end %>
+        <% job_status = render(partial: 'job_status_label',
+                               locals: { :j => pj[:job], :title => pj[:name] }) %>
         <% if pj[:job].andand[:uuid] %>
-        <%= link_to pj[:name], job_url(id: pj[:job][:uuid]), class: "label #{label}" %>
+          <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
         <% else %>
-          <span class="label <%= label %>"><%= pj[:name] %></span>
+          <%= job_status %>
         <% end %>
-
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
       </td><td>
         <%= pj[:progress_bar] %>
       </td><td>
-        <% if pj[:job].andand[:cancelled_at] %>
-        <span class="label label-warning">cancelled</span>
-        <% elsif pj[:failed] %>
-        <span class="label label-danger">failed</span>
-        <% elsif pj[:result] == 'queued' %>
-        <span class="label">queued</span>
-        <% end %>
+        <%= render(partial: 'job_status_label',
+                               locals: { :j => pj[:job] }) %>
       </td><td>
         <%= link_to_if_arvados_object pj[:output] %>
       </td>
@@ -99,7 +66,7 @@ td.required {
     <% end %>
   </tbody>
   <tfoot>
-    <tr><td colspan="4"></td></tr>
+    <tr><td colspan="5"></td></tr>
   </tfoot>
 </table>
 
@@ -107,65 +74,31 @@ td.required {
 <% content_for :js do %>
 setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
+
+<% content_for :tab_line_buttons do %>
+  <%= form_tag @object, :method => :put do |f| %>
+
+    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => false %>
+
+    <%= button_tag "Stop pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+  <% end %>
+<% end %>
+
 <% end %>
 
 <% else %>
 
-  <%= form_tag @object, :method => :put do |f| %>
+  <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
 
-  <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
-  <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
-  <% end %>
+  <% content_for :tab_line_buttons do %>
+    <%= form_tag @object, :method => :put do |f| %>
 
-<table class="table pipeline-components-table" style="margin-top: -.1em">
-  <colgroup>
-    <col style="width: 15%" />
-    <col style="width: 20%" />
-    <col style="width: 20%" />
-    <col style="width: 45%" />
-  </colgroup>
+      <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
 
-  <thead>
-    <tr>
-      <th>
-        component
-      </th><th>
-        script
-      </th><th>
-        parameter
-      </th><th>
-        value
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <% template.components.each do |k, template_value| %>
-
-    <tr>
-      <td><span class="label label-default"><%= k %></span></td>
-
-      <td><%= render_editable_subattribute @object, :components, [k, :script], template_value[:script] %></td>
-
-      <td>script version</td>
-
-      <td>
-        <%= render_editable_subattribute @object, :components, [k, :script_version], template_value[:script_version] %>
-      </td>
-    </tr>
-
-    <% if template_value[:script_parameters].length > 0 %>
-      <% template_value[:script_parameters].each do |p, tv| %>
-        <tr>
-          <td style="border-top: none"></td>
-          <td style="border-top: none"></td>
-          
-          <td class="property-edit-row"><%= p %></td>
-          <td class="property-edit-row"><%= render_editable_subattribute @object, :components, [k, :script_parameters, p.to_sym], tv %></td>
-      <% end %>
-      </tr>
+      <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
     <% end %>
   <% end %>
-  </tbody>
-  </table>
-  
+
+  <%= render partial: 'pipeline_templates/show_components_template', locals: {:template => template, :obj => @object} %>
+
 <% end %>

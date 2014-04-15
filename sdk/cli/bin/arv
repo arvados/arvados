@@ -89,7 +89,7 @@ begin
 rescue LoadError
   abort <<-EOS
 
-Please install all required gems: 
+Please install all required gems:
 
   gem install activesupport andand curb google-api-client json oj trollop
 
@@ -148,8 +148,13 @@ class ArvadosClient < Google::APIClient
   end
 end
 
-client = ArvadosClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
-arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
+begin
+  client = ArvadosClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
+  arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
+rescue Exception => e
+  puts "Failed to connect to Arvados API server: #{e}"
+  exit 1
+end
 
 def to_boolean(s)
   !!(s =~ /^(true|t|yes|y|1)$/i)
@@ -170,8 +175,8 @@ def help_methods(discovery_document, resource, method=nil)
   end
   banner += "\n"
   STDERR.puts banner
-  
-  if not method.nil? and method != '--help' then 
+
+  if not method.nil? and method != '--help' then
     Trollop::die ("Unknown method #{method.inspect} " +
                   "for resource #{resource.inspect}")
   end
@@ -194,7 +199,7 @@ def help_resources(discovery_document, resource)
   banner += "\n"
   STDERR.puts banner
 
-  if not resource.nil? and resource != '--help' then 
+  if not resource.nil? and resource != '--help' then
     Trollop::die "Unknown resource type #{resource.inspect}"
   end
   exit 255
@@ -320,7 +325,7 @@ when
     curl.headers['Accept'] = 'text/plain'
     curl.headers['Authorization'] = "OAuth2 #{ENV['ARVADOS_API_TOKEN']}"
     if ENV['ARVADOS_API_HOST_INSECURE']
-      curl.ssl_verify_peer = false 
+      curl.ssl_verify_peer = false
       curl.ssl_verify_host = false
     end
     if global_opts[:verbose]
@@ -364,5 +369,3 @@ else
     puts results['uuid']
   end
 end
-
-

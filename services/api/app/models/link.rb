@@ -8,25 +8,33 @@ class Link < ArvadosModel
   after_update :maybe_invalidate_permissions_cache
   after_create :maybe_invalidate_permissions_cache
   after_destroy :maybe_invalidate_permissions_cache
-
-  attr_accessor :head
-  attr_accessor :tail
+  attr_accessor :head_kind, :tail_kind
 
   api_accessible :user, extend: :common do |t|
-    t.add :tail_kind
     t.add :tail_uuid
     t.add :link_class
     t.add :name
-    t.add :head_kind
     t.add :head_uuid
-    t.add :head, :if => :head
-    t.add :tail, :if => :tail
+    t.add :head_kind
+    t.add :tail_kind
     t.add :properties
   end
 
   def properties
     @properties ||= Hash.new
     super
+  end
+
+  def head_kind
+    if k = ArvadosModel::resource_class_for_uuid(head_uuid)
+      k.kind
+    end
+  end
+
+  def tail_kind
+    if k = ArvadosModel::resource_class_for_uuid(tail_uuid)
+      k.kind
+    end
   end
 
   protected
@@ -43,7 +51,7 @@ class Link < ArvadosModel
 
     # All users can grant permissions on objects they own
     head_obj = self.class.
-      kind_class(self.head_kind).
+      kind_class(self.head_uuid).
       where('uuid=?',head_uuid).
       first
     if head_obj

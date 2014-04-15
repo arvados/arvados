@@ -1,8 +1,9 @@
 class Arvados::V1::UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, only:
-    [:activate, :event_stream, :current, :system]
+    [:activate, :event_stream, :current, :system, :setup]
   skip_before_filter :render_404_if_no_object, only:
-    [:activate, :event_stream, :current, :system]
+    [:activate, :event_stream, :current, :system, :setup]
+  before_filter :admin_required, only: [:setup, :unsetup]
 
   def current
     @object = current_user
@@ -28,7 +29,7 @@ class Arvados::V1::UsersController < ApplicationController
       end
     end
   end
-      
+
   def event_stream
     channel = current_user.andand.uuid
     if current_user.andand.is_admin
@@ -59,18 +60,17 @@ class Arvados::V1::UsersController < ApplicationController
         raise ArgumentError.new "Cannot activate without being invited."
       end
       act_as_system_user do
-        required_uuids = Link.where(owner_uuid: system_user_uuid,
-                                    link_class: 'signature',
-                                    name: 'require',
-                                    tail_uuid: system_user_uuid,
-                                    head_kind: 'arvados#collection').
+        required_uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                                    system_user_uuid,
+                                    'signature',
+                                    'require',
+                                    system_user_uuid,
+                                    Collection.uuid_like_pattern).
           collect(&:head_uuid)
         signed_uuids = Link.where(owner_uuid: system_user_uuid,
                                   link_class: 'signature',
                                   name: 'click',
-                                  tail_kind: 'arvados#user',
                                   tail_uuid: @object.uuid,
-                                  head_kind: 'arvados#collection',
                                   head_uuid: required_uuids).
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids
@@ -87,4 +87,70 @@ class Arvados::V1::UsersController < ApplicationController
     end
     show
   end
+
+  # create user object and all the needed links
+  def setup
+    @object = nil
+    if params[:uuid]
+      @object = User.find_by_uuid params[:uuid]
+      if !@object
+        return render_404_if_no_object
+      end
+      object_found = true
+    else
+      if !params[:user]
+        raise ArgumentError.new "Required uuid or user"
+      else
+        if params[:user]['uuid']
+          @object = User.find_by_uuid params[:user]['uuid']
+          if @object
+            object_found = true
+          end
+        end
+
+        if !@object
+          if !params[:user]['email']
+            raise ArgumentError.new "Require user email"
+          end
+
+          if !params[:openid_prefix]
+            raise ArgumentError.new "Required openid_prefix parameter is missing."
+          end
+
+          @object = model_class.create! resource_attrs
+        end
+      end
+    end
+
+    if object_found
+      @response = @object.setup_repo_vm_links params[:repo_name],
+                    params[:vm_uuid], params[:openid_prefix]
+    else
+      @response = User.setup @object, params[:openid_prefix],
+                    params[:repo_name], params[:vm_uuid]
+    end
+
+    # setup succeeded. send email to user
+    if params[:send_notification_email] == true || params[:send_notification_email] == 'true'
+      UserNotifier.account_is_setup(@object).deliver
+    end
+
+    render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
+  end
+
+  # delete user agreements, vm, repository, login links; set state to inactive
+  def unsetup
+    reload_object_before_update
+    @object.unsetup
+    show
+  end
+
+  protected
+
+  def self._setup_requires_parameters 
+    {
+      send_notification_email: { type: 'boolean', required: true },
+    }  
+  end
+
 end

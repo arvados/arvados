@@ -1,24 +1,20 @@
 development:
-  adapter: mysql
-  encoding: utf8
-  database: arvados_development
-  username: arvados
-  password: ********
-  host: localhost
+  adapter: sqlite3
+  database: db/arvados_development.sqlite3
 
 test:
-  adapter: mysql
+  adapter: postgresql
   encoding: utf8
   database: arvados_test
   username: arvados
-  password: ********
+  password: xxxxxxxx
   host: localhost
 
 production:
-  adapter: mysql
+  adapter: postgresql
   encoding: utf8
   database: arvados_production
   username: arvados
-  password: ********
+  password: xxxxxxxx
   host: localhost
 

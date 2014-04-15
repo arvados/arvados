@@ -8,13 +8,19 @@ class ArvadosModel < ActiveRecord::Base
   attr_protected :modified_by_user_uuid
   attr_protected :modified_by_client_uuid
   attr_protected :modified_at
+  after_initialize :log_start_state
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
   before_destroy :ensure_permission_to_destroy
+
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
+  after_create :log_create
+  after_update :log_update
+  after_destroy :log_destroy
   validate :ensure_serialized_attribute_type
   validate :normalize_collection_uuids
+  validate :ensure_valid_uuids
 
   has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
 
@@ -31,33 +37,42 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def self.kind_class(kind)
-    kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
+    kind.match(/^arvados\#(.+)$/)[1].classify.safe_constantize rescue nil
   end
 
   def href
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
   end
 
-  def self.searchable_columns
+  def self.searchable_columns operator
+    textonly_operator = !operator.match(/[<=>]/)
     self.columns.collect do |col|
-      if [:string, :text].index(col.type) && col.name != 'owner_uuid'
+      if col.name == 'owner_uuid'
+        nil
+      elsif [:string, :text].index(col.type)
+        col.name
+      elsif !textonly_operator and [:datetime, :integer].index(col.type)
         col.name
       end
     end.compact
   end
 
-  def eager_load_associations
-    self.class.columns.each do |col|
-      re = col.name.match /^(.*)_kind$/
-      if (re and
-          self.respond_to? re[1].to_sym and
-          (auuid = self.send((re[1] + '_uuid').to_sym)) and
-          (aclass = self.class.kind_class(self.send(col.name.to_sym))) and
-          (aobject = aclass.where('uuid=?', auuid).first))
-        self.instance_variable_set('@'+re[1], aobject)
-      end
-    end
+  def self.attribute_column attr
+    self.columns.select { |col| col.name == attr.to_s }.first
   end
+
+  # def eager_load_associations
+  #   self.class.columns.each do |col|
+  #     re = col.name.match /^(.*)_kind$/
+  #     if (re and
+  #         self.respond_to? re[1].to_sym and
+  #         (auuid = self.send((re[1] + '_uuid').to_sym)) and
+  #         (aclass = self.class.kind_class(self.send(col.name.to_sym))) and
+  #         (aobject = aclass.where('uuid=?', auuid).first))
+  #       self.instance_variable_set('@'+re[1], aobject)
+  #     end
+  #   end
+  # end
 
   def self.readable_by user
     uuid_list = [user.uuid, *user.groups_i_can(:read)]
@@ -72,6 +87,10 @@ class ArvadosModel < ActiveRecord::Base
             true, user.is_admin,
             uuid_list,
             user.uuid)
+  end
+
+  def logged_attributes
+    attributes
   end
 
   protected
@@ -131,12 +150,12 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def maybe_update_modified_by_fields
-    update_modified_by_fields if self.changed?
+    update_modified_by_fields if self.changed? or self.new_record?
   end
 
   def update_modified_by_fields
     self.created_at ||= Time.now
-    self.owner_uuid ||= current_default_owner
+    self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
     self.modified_at = Time.now
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
@@ -162,6 +181,10 @@ class ArvadosModel < ActiveRecord::Base
     attributes.keys.select { |a| a.match /_uuid$/ }
   end
 
+  def skip_uuid_read_permission_check
+    %w(modified_by_client_uuid)
+  end
+
   def normalize_collection_uuids
     foreign_key_attributes.each do |attr|
       attr_value = send attr
@@ -173,6 +196,58 @@ class ArvadosModel < ActiveRecord::Base
           # TODO: abort instead of silently accepting unnormalizable value?
         end
       end
+    end
+  end
+
+  @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
+
+  @@prefixes_hash = nil
+  def self.uuid_prefixes
+    unless @@prefixes_hash
+      @@prefixes_hash = {}
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+        if k.respond_to?(:uuid_prefix)
+          @@prefixes_hash[k.uuid_prefix] = k
+        end
+      end
+    end
+    @@prefixes_hash
+  end
+
+  def self.uuid_like_pattern
+    "_____-#{uuid_prefix}-_______________"
+  end
+
+  def ensure_valid_uuids
+    specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
+
+    foreign_key_attributes.each do |attr|
+      if new_record? or send (attr + "_changed?")
+        attr_value = send attr
+        r = ArvadosModel::resource_class_for_uuid attr_value if attr_value
+        r = r.readable_by(current_user) if r and not skip_uuid_read_permission_check.include? attr
+        if r and r.where(uuid: attr_value).count == 0 and not specials.include? attr_value
+          errors.add(attr, "'#{attr_value}' not found")
+        end
+      end
+    end
+  end
+
+  class Email
+    def self.kind
+      "email"
+    end
+
+    def kind
+      self.class.kind
+    end
+
+    def self.readable_by (u)
+      self
+    end
+
+    def self.where (u)
+      [{:uuid => u[:uuid]}]
     end
   end
 
@@ -189,16 +264,47 @@ class ArvadosModel < ActiveRecord::Base
     resource_class = nil
 
     Rails.application.eager_load!
-    uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
-      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
-        if k.respond_to?(:uuid_prefix)
-          if k.uuid_prefix == re[1]
-            return k
-          end
-        end
-      end
+    uuid.match @@UUID_REGEX do |re|
+      return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
+
+    if uuid.match /.+@.+/
+      return Email
+    end
+
     nil
   end
 
+  def log_start_state
+    @old_etag = etag
+    @old_attributes = logged_attributes
+  end
+
+  def log_change(event_type)
+    log = Log.new(event_type: event_type).fill_object(self)
+    yield log
+    log.save!
+    log_start_state
+  end
+
+  def log_create
+    log_change('create') do |log|
+      log.fill_properties('old', nil, nil)
+      log.update_to self
+    end
+  end
+
+  def log_update
+    log_change('update') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to self
+    end
+  end
+
+  def log_destroy
+    log_change('destroy') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to nil
+    end
+  end
 end

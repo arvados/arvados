@@ -30,6 +30,7 @@ class ApplicationController < ActionController::Base
   end
 
   def render_error(opts)
+    opts = {status: 500}.merge opts
     respond_to do |f|
       # json must come before html here, so it gets used as the
       # default format when js is requested by the client. This lets
@@ -58,7 +59,19 @@ class ApplicationController < ActionController::Base
   end
 
   def index
-    @objects ||= model_class.limit(200).all
+    if params[:limit]
+      limit = params[:limit].to_i
+    else
+      limit = 200
+    end
+
+    if params[:offset]
+      offset = params[:offset].to_i
+    else
+      offset = 0
+    end
+
+    @objects ||= model_class.limit(limit).offset(offset).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -149,7 +162,8 @@ class ApplicationController < ActionController::Base
 
   def breadcrumb_page_name
     (@breadcrumb_page_name ||
-     (@object.friendly_link_name if @object.respond_to? :friendly_link_name))
+     (@object.friendly_link_name if @object.respond_to? :friendly_link_name) ||
+     action_name)
   end
 
   def index_pane_list
@@ -320,14 +334,14 @@ class ApplicationController < ActionController::Base
     }
   }
 
-  @@notification_tests.push lambda { |controller, current_user|
-    Job.limit(1).where(created_by: current_user.uuid).each do
-      return nil
-    end
-    return lambda { |view|
-      view.render partial: 'notifications/jobs_notification'
-    }
-  }
+  #@@notification_tests.push lambda { |controller, current_user|
+  #  Job.limit(1).where(created_by: current_user.uuid).each do
+  #    return nil
+  #  end
+  #  return lambda { |view|
+  #    view.render partial: 'notifications/jobs_notification'
+  #  }
+  #}
 
   @@notification_tests.push lambda { |controller, current_user|
     Collection.limit(1).where(created_by: current_user.uuid).each do

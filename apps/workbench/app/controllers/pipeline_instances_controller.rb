@@ -15,6 +15,12 @@ class PipelineInstancesController < ApplicationController
       p.components.each do |k, v|
         j = v[:job] || next
 
+        # The graph is interested in whether the component is
+        # indicated as persistent, more than whether the job
+        # satisfying it (which could have been reused, or someone
+        # else's) is.
+        j[:output_is_persistent] = v[:output_is_persistent]
+
         uuid = j[:uuid].intern
         provenance[uuid] = j
         pips[uuid] = 0 unless pips[uuid] != nil
@@ -59,7 +65,7 @@ class PipelineInstancesController < ApplicationController
                   pipeline[component_name][:script_parameters][param_name] = param_value[:value]
                 elsif param_value[:default]
                   pipeline[component_name][:script_parameters][param_name] = param_value[:default]
-                elsif param_value[:optional] != nil or param_value[:required] != nil
+                elsif param_value[:optional] != nil or param_value[:required] != nil or param_value[:dataclass] != nil
                     pipeline[component_name][:script_parameters][param_name] = ""
                 else
                   pipeline[component_name][:script_parameters][param_name] = param_value
@@ -88,6 +94,7 @@ class PipelineInstancesController < ApplicationController
     provenance, pips = graph(@pipelines)
 
     @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
+      :request => request,
       :all_script_parameters => true, 
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
@@ -159,6 +166,7 @@ class PipelineInstancesController < ApplicationController
     @pipelines = @objects
 
     @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
+      :request => request,
       :all_script_parameters => true, 
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
@@ -179,6 +187,11 @@ class PipelineInstancesController < ApplicationController
       require 'deep_merge/rails_compat'
       updates["components"] = updates["components"].deeper_merge(@object.components)
     end
+    super
+  end
+
+  def index
+    @objects ||= model_class.limit(20).all
     super
   end
 

@@ -6,6 +6,7 @@ running:
   cancelled_by_client_uuid: ~
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
   output: ~
@@ -27,6 +28,7 @@ running_cancelled:
   cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
   output: ~
@@ -110,3 +112,24 @@ barbaz:
     running: 0
     done: 1
   runtime_constraints: {}
+
+previous_job_run:
+  uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "1"
+  success: true
+
+nondeterminisic_job_run:
+  uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  script: hash2
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "1"
+  success: true
+  nondeterministic: true

@@ -5,7 +5,7 @@ title: Install client libraries
 
 ...
 
-h1. Install client libraries
+
 
 h3. Python
 
@@ -34,3 +34,17 @@ The arvados package includes the Ruby client library module. The arvados-cli pac
 {% include 'notebox_end' %}
 
 notextile. <pre><code>$ <span class="userinput">sudo gem install arvados arvados-cli</span></code></pre>
+
+h3. Perl
+
+{% include 'notebox_begin' %}
+The Perl client library includes the @Arvados.pm@ module and submodules.
+{% include 'notebox_end' %}
+
+<notextile>
+<pre><code>$ <span class="userinput">cd arvados/sdk/perl</span>
+$ <span class="userinput">perl Makefile.PL</span>
+$ <span class="userinput">sudo make install</span>
+</code></pre>
+</notextile>
+

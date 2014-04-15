@@ -6,7 +6,7 @@ title: Job
 
 ...
 
-h1. Job
+
 
 Applications submit compute jobs when:
 * Provenance is important, i.e., it is worth recording how the output was produced; or
@@ -15,21 +15,30 @@ Applications submit compute jobs when:
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":/api/methods.html
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
 
 h3. Additional parameters for "Create" method
 
 table(table table-bordered table-condensed).
-|_. Parameter name|_. Type|_. Description|
-|allow_duplicate|boolean|If true, a new job is submitted even if an identical job has already been submitted (and has not failed). If false or not supplied, a new job will _not_ be submitted and the existing job will be returned in the API response.|
+|_. Attribute               |_. Type|_. Accepted values                            |_. Required|_. Description|
+|script                 |string     |filename                                      |yes        |The actual script that will be run by crunch.  Must be the name of an executable file in the crunch_scripts/ directory at the git revision specified by script_version.|
+|script_version         |string     |git branch, tag, or version hash              |yes        |The code version to run, which is available in the specified repository.  May be a git hash or tag to specify an exact version, or a branch.  If it is a branch, use the branch head.|
+|repository             |string     |name of git repository hosted by Arvados      |yes        |The repository to search for script_version.|
+|script_parameters      |object     |any JSON object                               |yes        |The input parameters for the job, with the parameter names as keys mapping to parameter values.|
+|minimum_script_version |string     |git branch, tag, or version hash              |no         |The minimum acceptable script version when deciding whether to re-use a past job.|
+|exclude_script_versions|array of strings|git branch, tag, or version hash|no         |Script versions to exclude when deciding whether to re-use a past job.|
+|nondeterministic       |boolean    |                                              |no         |If true, never re-use a past job, and flag this job so it will never be considered for re-use.|
+|no_reuse               |boolean    |                                              |no         |If true, do not re-use a past job, but this job may be re-used.|
+
+See the "job and pipeline reference":{{site.baseurl}}/user/reference/job-and-pipeline-reference.html for more information.
 
 h3. Queue
 
 <pre>
 GET https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
- 
+
 POST https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
 _method=GET
 where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
@@ -37,11 +46,11 @@ where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
 
 &rarr; Job resource list
 
-This method is equivalent to the "index method":/api/methods.html#index, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
+This method is equivalent to the "index method":{{site.baseurl}}/api/methods.html#index, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
 
 h2. Resource
 
-Each job has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
+Each job has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
@@ -50,7 +59,8 @@ table(table table-bordered table-condensed).
 |runtime_constraints{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
 |script|string|Name of crunch script in @/crunch_scripts/@||
 |script_parameters{}|list|Parameters passed to MapReduce script||
-|script_version|string|git commit/tree used when running the job|This can be submitted as an unambiguous prefix of a commit sha1, "repository:tag", or "repository:branch". Before the job starts, Arvados will resolve it to a full 40-character git commit sha1.|
+|script_version|string|The git ref of the the git commit used to run the job.|  When the job starts, Arvados updates this field to the precise git commit hash used by the job.|
+|repository             |string     |The repository from which the script_version will be fetched.|
 |cancelled_by_client_uuid|string|API client ID|Is null if job has not been cancelled|
 |cancelled_by_user_uuid|string|Authenticated user ID|Is null if job has not been cancelled|
 |cancelled_at|datetime|When job was cancelled|Is null if job has not been cancelled|
@@ -62,6 +72,7 @@ table(table table-bordered table-condensed).
 |log|string|||
 |tasks_summary|Hash|||
 |output|string|||
+|nondeterministic       |boolean    |Indicates whether this job is a candidate for re-use|If true, this job will never be considered for re-use.|
 
 h3. Runtime constraints
 

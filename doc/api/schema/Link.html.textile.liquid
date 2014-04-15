@@ -6,7 +6,7 @@ title: Link
 
 ...
 
-h1. Link
+
 
 **Links** describe relationships between Arvados objects, and from objects to primitives.
 
@@ -16,22 +16,20 @@ For links that don't make sense to share between API clients, a _link_class_ tha
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":/api/methods.html
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/links@
 
 h2. Resource
 
-Each link has, in addition to the usual "attributes of Arvados resources":/api/resources.html:
+Each link has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|
 |tail_uuid|string|Object UUID at the tail (start, source, origin) of this link|
-|tail_kind|string|Object kind at the tail (start, source, origin) of this link|
 |link_class|string|Class (see below)|
 |name|string|Link type (see below)|
 |head_uuid|string|Object UUID at the head (end, destination, target) of this link|
-|head_kind|string|Object kind at the head (end, destination, target) of this link|
 |properties{}|list|Additional information, expressed as a key&rarr;value hash. Key: string. Value: string, number, array, or hash.|
 
 h2. Link classes

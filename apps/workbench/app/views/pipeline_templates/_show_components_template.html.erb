@@ -1,0 +1,54 @@
+<table class="table pipeline-components-table" style="margin-top: -.1em">
+  <colgroup>
+    <col style="width: 15%" />
+    <col style="width: 20%" />
+    <col style="width: 20%" />
+    <col style="width: 45%" />
+  </colgroup>
+
+  <thead>
+    <tr>
+      <th>
+        component
+      </th><th>
+        script
+      </th><th>
+        parameter
+      </th><th>
+        value
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <% order = PipelineTemplatesHelper::sort_components(template.components) %>
+    <% puts "order is #{order}" %>
+    <% order.each do |k| %>
+      <% template_value = template.components[k] %>
+      <% puts "#{k} #{template_value}" %>
+      <% if not template_value then next end %>
+    <tr>
+      <td><span class="label label-default"><%= k %></span></td>
+
+      <td><%= render_editable_subattribute obj, :components, [k, :script], template_value[:script] %></td>
+
+      <td>script version</td>
+
+      <td>
+        <%= render_editable_subattribute obj, :components, [k, :script_version], template_value[:script_version] %>
+      </td>
+    </tr>
+
+    <% if template_value[:script_parameters].length > 0 %>
+      <% template_value[:script_parameters].each do |p, tv| %>
+        <tr>
+          <td style="border-top: none"></td>
+          <td style="border-top: none"></td>
+          
+          <td class="property-edit-row"><%= p %></td>
+          <td class="property-edit-row"><%= render_editable_subattribute obj, :components, [k, :script_parameters, p.to_sym], tv %></td>
+      <% end %>
+      </tr>
+    <% end %>
+  <% end %>
+  </tbody>
+</table>

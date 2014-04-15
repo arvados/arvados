@@ -40,7 +40,6 @@ jQuery(function($){
     };
 
     var remove_selection_click = function(e) {
-        //remove_selection($(this).attr('name'));
         remove_selection($(this).val());
     };
 
@@ -52,20 +51,22 @@ jQuery(function($){
     var update_count = function(e) {
         var lst = get_selection_list();
         $("#persistent-selection-count").text(lst.length);
-
         if (lst.length > 0) {
-            $('#persistent-selection-list').html('<li><a href="#" class="btn pull-right" id="clear_selections_button">Clear selections</a></li>'
-                                                 +'<li class="notification"><table style="width: 100%"></table></li>');
+            $('#selection-form-content').html(
+                '<li><a href="#" id="clear_selections_button">Clear selections</a></li>'
+                    + '<li><input type="submit" name="combine_selected_files_into_collection" '
+                    + ' id="combine_selected_files_into_collection" '
+                    + ' value="Combine selected collections and files into a new collection" /></li>'
+                    + '<li class="notification"><table style="width: 100%"></table></li>');
+
             for (var i = 0; i < lst.length; i++) {
-                $('#persistent-selection-list > li > table').append("<tr>"
+                $('#selection-form-content > li > table').append("<tr>"
                                                        + "<td>"
-                                                       + "<form>"
-                                                       + "<input class='remove-selection' type='checkbox' value='" + lst[i].uuid + "' checked='true'></input>"
-                                                       + "</form>"
+                                                       + "<input class='remove-selection' name='selection[]' type='checkbox' value='" + lst[i].uuid + "' checked='true' data-stoppropagation='true' />"
                                                        + "</td>"
 
                                                        + "<td>"
-                                                       + "<span style='padding-left: 1em'><a href=\"" + lst[i].href + "\">" + lst[i].name + "</a></span>"
+                                                       + "<div style='padding-left: 1em'><a href=\"" + lst[i].href + "\">" + lst[i].name + "</a></div>"
                                                        + "</td>"
 
                                                        + "<td style=\"vertical-align: top\">"
@@ -75,7 +76,7 @@ jQuery(function($){
                                                        + "</tr>");
             }
         } else {
-            $('#persistent-selection-list').html("<li class='notification empty'>No selections.</li>");
+            $('#selection-form-content').html("<li class='notification empty'>No selections.</li>");
         }
 
         var checkboxes = $('.persistent-selection:checkbox');
@@ -111,6 +112,10 @@ jQuery(function($){
 
 
     $(window).on('load storage', update_count);
+
+    $('#selection-form-content').on("click", function(e) {
+        e.stopPropagation();
+    });
 });
 
 add_form_selection_sources = null;
@@ -136,7 +141,10 @@ select_form_sources  = null;
         if (get_selection_list) {
             var lst = get_selection_list();
             if (lst.length > 0) {
-                ret.push({text: "--- Selections ---", value: ""});
+                var text = "&horbar; Selections &horbar;";
+                var span = document.createElement('span');
+                span.innerHTML = text;
+                ret.push({text: span.innerHTML, value: "***invalid***"});
 
                 for (var i = 0; i < lst.length; i++) {
                     if (lst[i].type == type) {
@@ -145,7 +153,11 @@ select_form_sources  = null;
                 }
             }
         }
-        ret.push({text: "--- Recent ---", value: ""});
+
+        var text = "&horbar; Recent &horbar;";
+        var span = document.createElement('span');
+        span.innerHTML = text;
+        ret.push({text: span.innerHTML, value: "***invalid***"});
 
         var t = form_selection_sources[type];
         for (var key in t) {

@@ -6,7 +6,7 @@ title: "Permission model"
 
 ...
 
-h1. Permission model
+
 
 Each API transaction (read, write, create, etc.) is done on behalf of a person.
 
@@ -15,7 +15,7 @@ Each API transaction (read, write, create, etc.) is done on behalf of a person.
 
 A user (person) is permitted to act on an object if there is a path (series of permission Links) from the acting user to the object in which
 
-* Every intervening object is a Group, and
+* Every intervening object is a Group or a User, and
 * Every intervening permission Link allows the current action
 
 Each object has exactly one _owner_, which can be either a User or a Group.
@@ -70,7 +70,23 @@ h3. 3. Group-managed objects
 
 Three lab members are working together on a project. All Specimens, Links, Jobs, etc. can be modified by any of the three lab members. _Other_ lab members, who are not working on this project, can view but not modify these objects.
 
-h3. 4. Segregated roles
+h3. 4. Group-level administrator
+
+The Ashton Lab administrator, Alison, manages user accounts within her lab. She can enable and disable accounts, and exercise any permission that her lab members have.
+
+George has read-only access to the same set of accounts. This lets him see things like user activity and resource usage reports, without worrying about accidentally messing up anyone's data.
+
+table(table table-bordered table-condensed).
+|Tail                   |Permission     |Head                      |Effect|
+|Group: Ashton Lab Admin|can_manage     |User: Lab Member 1        |Lab member 1 is in this administrative group|
+|Group: Ashton Lab Admin|can_manage     |User: Lab Member 2        |Lab member 2 is in this administrative group|
+|Group: Ashton Lab Admin|can_manage     |User: Lab Member 3        |Lab member 3 is in this administrative group|
+|Group: Ashton Lab Admin|can_manage     |User: Alison              |Alison is in this administrative group|
+|Group: Ashton Lab Admin|can_manage     |User: George              |George is in this administrative group|
+|Alison                 |can_manage     |Group: Ashton Lab Admin   |Alison can do everything the above lab members can do|
+|George                 |can_read       |Group: Ashton Lab Admin   |George can read everything the above lab members can read|
+
+h3. 5. Segregated roles
 
 Granwyth, at the Hulatberi Lab, sets up a Factory Robot which uses a hosted Arvados site to do work for the Hulatberi Lab.
 

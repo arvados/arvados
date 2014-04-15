@@ -32,9 +32,7 @@ class ArvadosBase < ActiveRecord::Base
       'modified_by_user_uuid' => '004',
       'modified_by_client_uuid' => '005',
       'name' => '050',
-      'tail_kind' => '100',
       'tail_uuid' => '100',
-      'head_kind' => '101',
       'head_uuid' => '101',
       'info' => 'zzz-000',
       'updated_at' => 'zzz-999'
@@ -45,20 +43,25 @@ class ArvadosBase < ActiveRecord::Base
     return @columns unless @columns.nil?
     @columns = []
     @attribute_info ||= {}
-    return @columns if $arvados_api_client.arvados_schema[self.to_s.to_sym].nil?
-    $arvados_api_client.arvados_schema[self.to_s.to_sym].each do |coldef|
-      k = coldef[:name].to_sym
-      if coldef[:type] == coldef[:type].downcase
-        @columns << column(k, coldef[:type].to_sym)
+    schema = $arvados_api_client.discovery[:schemas][self.to_s.to_sym]
+    return @columns if schema.nil?
+    schema[:properties].each do |k, coldef|
+      case k
+      when :etag, :kind
+        attr_reader k
       else
-        @columns << column(k, :text)
-        serialize k, coldef[:type].constantize
+        if coldef[:type] == coldef[:type].downcase
+          # boolean, integer, etc.
+          @columns << column(k, coldef[:type].to_sym)
+        else
+          # Hash, Array
+          @columns << column(k, :text)
+          serialize k, coldef[:type].constantize
+        end
+        attr_accessible k
+        @attribute_info[k] = coldef
       end
-      attr_accessible k
-      @attribute_info[k] = coldef
     end
-    attr_reader :etag
-    attr_reader :kind
     @columns
   end
 
@@ -90,6 +93,10 @@ class ArvadosBase < ActiveRecord::Base
 
   def self.order(*args)
     ArvadosResourceList.new(self).order(*args)
+  end
+
+  def self.filter(*args)
+    ArvadosResourceList.new(self).filter(*args)
   end
 
   def self.where(*args)
@@ -155,14 +162,12 @@ class ArvadosBase < ActiveRecord::Base
       true
     end
   end
-      
+
   def links(*args)
     o = {}
     o.merge!(args.pop) if args[-1].is_a? Hash
     o[:link_class] ||= args.shift
     o[:name] ||= args.shift
-    o[:head_kind] ||= args.shift
-    o[:tail_kind] = self.kind
     o[:tail_uuid] = self.uuid
     if all_links
       return all_links.select do |m|

@@ -59,11 +59,15 @@ module ApplicationHelper
         link_name = link_uuid
 
         if opts[:friendly_name]
-          begin
-            link_name = resource_class.find(link_uuid).friendly_link_name
-          rescue RuntimeError
-            # If that lookup failed, the link will too. So don't make one.
-            return attrvalue
+          if attrvalue.respond_to? :friendly_link_name
+            link_name = attrvalue.friendly_link_name
+          else
+            begin
+              link_name = resource_class.find(link_uuid).friendly_link_name
+            rescue RuntimeError
+              # If that lookup failed, the link will too. So don't make one.
+              return attrvalue
+            end
           end
         end
         if opts[:with_class_name]
@@ -106,12 +110,14 @@ module ApplicationHelper
   end
 
   def render_editable_subattribute(object, attr, subattr, template, htmloptions={})
-    attrvalue = object.send(attr)
-    subattr.each do |k|
-      if attrvalue and attrvalue.is_a? Hash
-        attrvalue = attrvalue[k]
-      else
-        break
+    if object
+      attrvalue = object.send(attr)
+      subattr.each do |k|
+        if attrvalue and attrvalue.is_a? Hash
+          attrvalue = attrvalue[k]
+        else
+          break
+        end
       end
     end
 
@@ -135,18 +141,24 @@ module ApplicationHelper
       end
     end
 
-    return attrvalue if !object.attribute_editable? attr
-
-    if not dataclass
-      rsc = template
-      if template.is_a? Hash
-        if template[:value]
-          rsc = template[:value]
-        elsif template[:default]
-          rsc = template[:default]
-        end
+    rsc = template
+    if template.is_a? Hash
+      if template[:value]
+        rsc = template[:value]
+      elsif template[:default]
+        rsc = template[:default]
       end
+    end
 
+    return link_to_if_arvados_object(rsc) if !object
+    return link_to_if_arvados_object(attrvalue) if !object.attribute_editable? attr
+
+    if dataclass
+      begin
+        dataclass = dataclass.constantize
+      rescue NameError
+      end
+    else
       dataclass = ArvadosBase.resource_class_for_uuid(rsc)
     end
 
@@ -178,7 +190,9 @@ module ApplicationHelper
 
     if dataclass and dataclass.is_a? Class
       items = []
-      items.append({name: attrvalue, uuid: attrvalue, type: dataclass.to_s})
+      if attrvalue and !attrvalue.empty?
+        items.append({name: attrvalue, uuid: attrvalue, type: dataclass.to_s})
+      end
       #dataclass.where(uuid: attrvalue).each do |item|
       #  items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       #end
@@ -192,7 +206,7 @@ module ApplicationHelper
       "data-placement" => "bottom",
       "data-type" => datatype,
       "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
-      "data-title" => "Update #{subattr[-1].to_s.titleize}",
+      "data-title" => "Set value for #{subattr[-1].to_s}",
       "data-name" => dn,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       "data-showbuttons" => "false",
@@ -201,7 +215,7 @@ module ApplicationHelper
       :id => id
     }.merge(htmloptions)
 
-    lt += raw('<script>')
+    lt += raw("\n<script>")
     
     if items and items.length > 0
       lt += raw("add_form_selection_sources(#{items.to_json});\n")

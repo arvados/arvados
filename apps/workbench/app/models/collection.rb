@@ -1,4 +1,12 @@
 class Collection < ArvadosBase
+
+  MD5_EMPTY = 'd41d8cd98f00b204e9800998ecf8427e'
+
+  # Return true if the given string is the locator of a zero-length blob
+  def self.is_empty_blob_locator? locator
+    !!locator.to_s.match("^#{MD5_EMPTY}(\\+.*)?\$")
+  end
+
   def total_bytes
     if files
       tot = 0
@@ -25,22 +33,4 @@ class Collection < ArvadosBase
     $arvados_api_client.api "collections/#{self.uuid}/", "used_by"
   end
 
-  # def selection_label
-  #   name = ''
-  #   i = 0 
-  #   if self.files.length > 3
-  #     m = 3
-  #   else
-  #     m = self.files.length 
-  #   end
-  #   while i < m
-  #     name += "#{self.files[i][1]}"
-  #     i += 1
-  #     name += ", " if i < m
-  #   end
-  #   if i < self.files.length
-  #     name += "&ellip;"
-  #   end
-  #   name
-  # end
 end

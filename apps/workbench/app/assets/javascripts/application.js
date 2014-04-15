@@ -18,6 +18,7 @@
 //= require bootstrap/tooltip
 //= require bootstrap/popover
 //= require bootstrap/collapse
+//= require bootstrap/modal
 //= require bootstrap3-editable/bootstrap-editable
 //= require_tree .
 
@@ -89,7 +90,6 @@ jQuery(function($){
                            {dataType: 'json',
                             type: $(this).attr('data-remote-method'),
                             data: {
-                                'link[head_kind]': 'arvados#collection',
                                 'link[head_uuid]': tag_head_uuid,
                                 'link[link_class]': 'tag',
                                 'link[name]': new_tag
@@ -129,7 +129,7 @@ jQuery(function($){
             });
         }
     }
-    
+
     var fixer = new HeaderRowFixer('.table-fixed-header-row');
     fixer.duplicateTheadTr();
     fixer.fixThead();

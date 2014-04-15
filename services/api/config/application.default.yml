@@ -1,0 +1,114 @@
+# Do not use this file for site configuration. Create application.yml
+# instead (see application.yml.example).
+
+development:
+  force_ssl: false
+  cache_classes: false
+  whiny_nils: true
+  consider_all_requests_local: true
+  action_controller.perform_caching: false
+  action_mailer.raise_delivery_errors: false
+  action_mailer.perform_deliveries: false
+  active_support.deprecation: :log
+  action_dispatch.best_standards_support: :builtin
+  active_record.mass_assignment_sanitizer: :strict
+  active_record.auto_explain_threshold_in_seconds: 0.5
+  assets.compress: false
+  assets.debug: true
+
+production:
+  force_ssl: true
+  cache_classes: true
+  consider_all_requests_local: false
+  action_controller.perform_caching: true
+  serve_static_assets: false
+  assets.compress: true
+  assets.compile: false
+  assets.digest: true
+
+test:
+  force_ssl: false
+  cache_classes: true
+  serve_static_assets: true
+  static_cache_control: public, max-age=3600
+  whiny_nils: true
+  consider_all_requests_local: true
+  action_controller.perform_caching: false
+  action_dispatch.show_exceptions: false
+  action_controller.allow_forgery_protection: false
+  action_mailer.delivery_method: :test
+  active_support.deprecation: :stderr
+  active_record.mass_assignment_sanitizer: :strict
+  uuid_prefix: zzzzz
+
+common:
+  secret_token: ~
+  uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
+
+  # Git repositories must be readable by api server, or you won't be
+  # able to submit crunch jobs. To pass the test suites, put a clone
+  # of the arvados tree in {git_repositories_dir}/arvados.git or
+  # {git_repositories_dir}/arvados/.git
+  git_repositories_dir: /var/lib/arvados/git
+
+  # This is a (bare) repository that stores commits used in jobs.  When a job
+  # runs, the source commits are first fetched into this repository, then this
+  # repository is used to deploy to compute nodes.  This should NOT be a
+  # subdirectory of {git_repositiories_dir}.
+  git_internal_dir: /var/lib/arvados/internal.git
+
+  # :none or :slurm_immediate
+  crunch_job_wrapper: :none
+
+  # username, or false = do not set uid when running jobs.
+  crunch_job_user: crunch
+
+  # The web service must be able to create/write this file, and
+  # crunch-job must be able to stat() it.
+  crunch_refresh_trigger: /tmp/crunch_refresh_trigger
+
+  # Path to /etc/dnsmasq.d, or false = do not update dnsmasq data.
+  dnsmasq_conf_dir: false
+
+  # Set to AMI id (ami-123456) to auto-start nodes. See app/models/node.rb
+  compute_node_ami: false
+  compute_node_ec2run_args: -g arvados-compute
+  compute_node_spot_bid: 0.11
+
+  compute_node_domain: false
+  compute_node_nameservers:
+    - 192.168.1.1
+  compute_node_ec2_tag_enable: false
+
+  accept_api_token: {}
+
+  new_users_are_active: false
+  admin_notifier_email_from: arvados@example.com
+  email_subject_prefix: "[ARVADOS] "
+  user_notifier_email_from: arvados@example.com
+
+  # Visitors to the API server will be redirected to the workbench
+  workbench_address: https://workbench.local:3001/
+
+  # The e-mail address of the user you would like to become marked as an admin
+  # user on their first login.
+  # In the default configuration, authentication happens through the Arvados SSO
+  # server, which uses openid against Google's servers, so in that case this
+  # should be an address associated with a Google account.
+  auto_admin_user: false
+
+  ## Set Time.zone default to the specified zone and make Active
+  ## Record auto-convert to this zone.  Run "rake -D time" for a list
+  ## of tasks for finding time zone names. Default is UTC.
+  #time_zone: Central Time (US & Canada)
+
+  ## Default encoding used in templates for Ruby 1.9.
+  encoding: utf-8
+
+  # Enable the asset pipeline
+  assets.enabled: true
+
+  # Version of your assets, change this if you want to expire all your assets
+  assets.version: "1.0"
+
+  arvados_theme: default

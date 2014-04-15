@@ -2,8 +2,8 @@
 
 # == Synopsis
 #
-#  wh-run-pipeline-instance --template pipeline-template-uuid [options] [--] [parameters]
-#  wh-run-pipeline-instance --instance pipeline-instance-uuid [options]
+#  arv-run-pipeline-instance --template pipeline-template-uuid [options] [--] [parameters]
+#  arv-run-pipeline-instance --instance pipeline-instance-uuid [options]
 #
 # Satisfy a pipeline template by finding or submitting a mapreduce job
 # for each pipeline component.
@@ -21,17 +21,12 @@
 #                 to finish. Just find out whether jobs are finished,
 #                 queued, or running for each component
 #
-# [--create-instance-only] Do not try to satisfy any components. Just
+# [--submit] Do not try to satisfy any components. Just
 #                          create an instance, print its UUID to
 #                          stdout, and exit.
 #
 # [--no-wait] Make only as much progress as possible without entering
 #             a sleep/poll loop.
-#
-# [--no-reuse-finished] Do not reuse existing outputs to satisfy
-#                       pipeline components. Always submit a new job
-#                       or use an existing job which has not yet
-#                       finished.
 #
 # [--no-reuse] Do not reuse existing jobs to satisfy pipeline
 #              components. Submit a new job for every component.
@@ -79,15 +74,18 @@ $arvados_api_token = ENV['ARVADOS_API_TOKEN'] or
   abort "#{$0}: fatal: ARVADOS_API_TOKEN environment variable not set."
 
 begin
+  require 'arvados'
   require 'rubygems'
-  require 'google/api_client'
   require 'json'
   require 'pp'
   require 'trollop'
-rescue LoadError
+  require 'google/api_client'
+rescue LoadError => l
+  puts $:
   abort <<-EOS
-#{$0}: fatal: some runtime dependencies are missing.
-Try: gem install pp google-api-client json trollop
+#{$0}: fatal: #{l.message}
+Some runtime dependencies may be missing.
+Try: gem install arvados pp google-api-client json trollop
   EOS
 end
 
@@ -150,10 +148,6 @@ p = Trollop::Parser.new do
       "Do not wait for jobs to finish. Just look up status, submit new jobs if needed, and exit.",
       :short => :none,
       :type => :boolean)
-  opt(:no_reuse_finished,
-      "Do not reuse existing outputs to satisfy pipeline components. Always submit a new job or use an existing job which has not yet finished.",
-      :short => :none,
-      :type => :boolean)
   opt(:no_reuse,
       "Do not reuse existing jobs to satisfy pipeline components. Submit a new job for every component.",
       :short => :none,
@@ -173,8 +167,12 @@ p = Trollop::Parser.new do
       "UUID of pipeline instance.",
       :short => :none,
       :type => :string)
-  opt(:create_instance_only,
+  opt(:submit,
       "Do not try to satisfy any components. Just create a pipeline instance and output its UUID.",
+      :short => :none,
+      :type => :boolean)
+  opt(:run_here,
+      "Manage the pipeline in process.",
       :short => :none,
       :type => :boolean)
   stop_on [:'--']
@@ -185,11 +183,31 @@ end
 $debuglevel = $options[:debug_level] || ($options[:debug] && 1) || 0
 
 if $options[:instance]
-  if $options[:template] or $options[:create_instance_only]
-    abort "#{$0}: syntax error: --instance cannot be combined with --template or --create-instance-only."
+  if $options[:template] or $options[:submit]
+    abort "#{$0}: syntax error: --instance cannot be combined with --template or --submit."
   end
 elsif not $options[:template]
   abort "#{$0}: syntax error: you must supply a --template or --instance."
+end
+
+if $options[:run_here] == $options[:submit]
+  abort "#{$0}: syntax error: you must supply either --run-here or --submit."
+end
+
+# Suppress SSL certificate checks if ARVADOS_API_HOST_INSECURE
+
+module Kernel
+  def suppress_warnings
+    original_verbosity = $VERBOSE
+    $VERBOSE = nil
+    result = yield
+    $VERBOSE = original_verbosity
+    return result
+  end
+end
+
+if ENV['ARVADOS_API_HOST_INSECURE']
+  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
 end
 
 # Set up the API client.
@@ -199,6 +217,7 @@ $client ||= Google::APIClient.
       :application_name => File.split($0).last,
       :application_version => $application_version.to_s)
 $arvados = $client.discovered_api('arvados', $arvados_api_version)
+$arv = Arvados.new api_version: 'v1'
 
 
 class PipelineInstance
@@ -305,7 +324,7 @@ class JobCache
     if j.is_a? Hash and j[:uuid]
       @cache[j[:uuid]] = j
     else
-      debuglog "create job: #{j[:errors] rescue nil}", 0
+      debuglog "create job: #{j[:errors] rescue nil} with attribute #{attributes}", 0
       nil
     end
   end
@@ -407,84 +426,41 @@ class WhRunPipelineInstance
       moretodo = false
       @components.each do |cname, c|
         job = nil
+        # Is the job satisfying this component already known to be
+        # finished? (Already meaning "before we query API server about
+        # the job's current state")
+        c_already_finished = (c[:job] &&
+                              c[:job][:uuid] &&
+                              !c[:job][:success].nil?)
         if !c[:job] and
-            c[:script_parameters].select { |pname, p| p.is_a? Hash }.empty?
-          # Job is fully specified (all parameter values are present) but
-          # no particular job has been found.
-
-          debuglog "component #{cname} ready to satisfy."
-
-          c.delete :wait
-          second_place_job = nil # satisfies component, but not finished yet
-
-          (@options[:no_reuse] ? [] : JobCache.
-           where(script: c[:script],
-                 script_parameters: c[:script_parameters],
-                 script_version_descends_from: c[:script_version])
-           ).each do |candidate_job|
-            candidate_params_downcase = Hash[candidate_job[:script_parameters].
-                                             map { |k,v| [k.downcase,v] }]
-            c_params_downcase = Hash[c[:script_parameters].
-                                     map { |k,v| [k.downcase,v] }]
-
-            debuglog "component #{cname} considering job #{candidate_job[:uuid]} version #{candidate_job[:script_version]} parameters #{candidate_params_downcase.inspect}", 3
-
-            unless candidate_params_downcase == c_params_downcase
-              next
-            end
-
-            if c[:script_version] !=
-                candidate_job[:script_version][0,c[:script_version].length]
-              debuglog "component #{cname} would be satisfied by job #{candidate_job[:uuid]} if script_version matched.", 2
-              next
-            end
-
-            unless candidate_job[:success] || candidate_job[:running] ||
-                (!candidate_job[:started_at] && !candidate_job[:cancelled_at])
-              debuglog "component #{cname} would be satisfied by job #{candidate_job[:uuid]} if it were running or successful.", 2
-              next
-            end
-
-            if candidate_job[:success]
-              unless @options[:no_reuse_finished]
-                job = candidate_job
-                $stderr.puts "using #{job[:uuid]} (finished at #{job[:finished_at]}) for component #{cname}"
-                c[:job] = job
-              end
-            else
-              second_place_job ||= candidate_job
-            end
-            break
-          end
-          if not c[:job] and second_place_job
-            job = second_place_job
-            $stderr.puts "using #{job[:uuid]} (running since #{job[:started_at]}) for component #{cname}"
+            c[:script_parameters].select { |pname, p| p.is_a? Hash and p[:output_of]}.empty?
+          # No job yet associated with this component and is component inputs
+          # are fully specified (any output_of script_parameters are resolved
+          # to real value)
+          job = JobCache.create({:script => c[:script],
+                            :script_parameters => c[:script_parameters],
+                            :script_version => c[:script_version],
+                            :repository => c[:repository],
+                            :minimum_script_version => c[:minimum_script_version],
+                            :exclude_script_versions => c[:exclude_minimum_script_versions],
+                            :nondeterministic => c[:nondeterministic],
+                            :no_reuse => @options[:no_reuse],
+                            :output_is_persistent => c[:output_is_persistent] || false})
+          if job
+            debuglog "component #{cname} new job #{job[:uuid]}"
             c[:job] = job
+          else
+            debuglog "component #{cname} new job failed"
           end
-          if not c[:job]
-            debuglog "component #{cname} not satisfied by any existing job."
-            if !@options[:dry_run]
-              debuglog "component #{cname} new job."
-              job = JobCache.create(:script => c[:script],
-                                    :script_parameters => c[:script_parameters],
-                                    :runtime_constraints => c[:runtime_constraints] || {},
-                                    :script_version => c[:script_version] || 'master')
-              if job
-                debuglog "component #{cname} new job #{job[:uuid]}"
-                c[:job] = job
-              else
-                debuglog "component #{cname} new job failed"
-              end
-            end
-          end
-        else
-          c[:wait] = true
         end
+
         if c[:job] and c[:job][:uuid]
           if (c[:job][:running] or
               not (c[:job][:finished_at] or c[:job][:cancelled_at]))
+            # Job is running so update copy of job record
             c[:job] = JobCache.get(c[:job][:uuid])
           end
+
           if c[:job][:success]
             # Populate script_parameters of other components waiting for
             # this job
@@ -493,12 +469,51 @@ class WhRunPipelineInstance
                 if p.is_a? Hash and p[:output_of] == cname.to_s
                   debuglog "parameter #{c2name}::#{pname} == #{c[:job][:output]}"
                   c2[:script_parameters][pname] = c[:job][:output]
+                  moretodo = true
+                end
+              end
+            end
+            unless c_already_finished
+              # This is my first time discovering that the job
+              # succeeded. (At the top of this loop, I was still
+              # waiting for it to finish.)
+              if c[:output_is_persistent]
+                # I need to make sure a resources/wants link is in
+                # place to protect the output from garbage
+                # collection. (Normally Crunch does this for me, but
+                # here I might be reusing the output of someone else's
+                # job and I need to make sure it's understood that the
+                # output is valuable to me, too.)
+                wanted = c[:job][:output]
+                debuglog "checking for existing persistence link for #{wanted}"
+                @my_user_uuid ||= $arv.user.current[:uuid]
+                links = $arv.link.list(limit: 1,
+                                       filters:
+                                       [%w(link_class = resources),
+                                        %w(name = wants),
+                                        %w(tail_uuid =) + [@my_user_uuid],
+                                        %w(head_uuid =) + [wanted]
+                                       ])[:items]
+                if links.any?
+                  debuglog "link already exists, uuid #{links.first[:uuid]}"
+                else
+                  newlink = $arv.link.create link: \
+                  {
+                    link_class: 'resources',
+                    name: 'wants',
+                    tail_kind: 'arvados#user',
+                    tail_uuid: @my_user_uuid,
+                    head_kind: 'arvados#collection',
+                    head_uuid: wanted
+                  }
+                  debuglog "added link, uuid #{newlink[:uuid]}"
                 end
               end
             end
           elsif c[:job][:running] ||
               (!c[:job][:started_at] && !c[:job][:cancelled_at])
-            moretodo ||= !@options[:no_wait]
+            # Job is still running
+            moretodo = true
           elsif c[:job][:cancelled_at]
             debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
           end
@@ -507,6 +522,11 @@ class WhRunPipelineInstance
       @instance[:components] = @components
       @instance[:active] = moretodo
       report_status
+
+      if @options[:no_wait]
+        moretodo = false
+      end
+
       if moretodo
         begin
           sleep 10
@@ -516,7 +536,28 @@ class WhRunPipelineInstance
         end
       end
     end
-    @instance[:success] = @components.reject { |cname,c| c[:job] and c[:job][:success] }.empty?
+
+    ended = 0
+    succeeded = 0
+    failed = 0
+    @components.each do |cname, c|
+      if c[:job]
+        if c[:job][:finished_at]
+          ended += 1
+          if c[:job][:success] == true
+            succeeded += 1
+          elsif c[:job][:success] == false
+            failed += 1
+          end
+        end
+      end
+    end
+
+    if ended == @components.length or failed > 0
+      @instance[:active] = false
+      @instance[:success] = (succeeded == @components.length)
+    end
+
     @instance.save
   end
 
@@ -579,7 +620,7 @@ begin
   end
   runner.apply_parameters(p.leftovers)
   runner.setup_instance
-  if $options[:create_instance_only]
+  if $options[:submit]
     runner.instance.save
     puts runner.instance[:uuid]
   else

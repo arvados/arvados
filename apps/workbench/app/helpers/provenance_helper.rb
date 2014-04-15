@@ -6,23 +6,29 @@ module ProvenanceHelper
       @opts = opts
       @visited = {}
       @jobs = {}
+      @node_extra = {}
     end
-
+    
     def self.collection_uuid(uuid)
       m = CollectionsHelper.match(uuid)
       if m
-        #if m[2]
-        return m[1]
-        #else
-        #  Collection.where(uuid: ['contains', m[1]]).each do |u|
-        #    puts "fixup #{uuid} to #{u.uuid}"
-        #    return u.uuid
-        #  end
-        #end
+        if m[2]
+          return m[1]+m[2]
+        else
+          return m[1]
+        end
       else
         nil
       end
     end
+
+    def url_for u
+      p = { :host => @opts[:request].host, 
+        :port => @opts[:request].port,
+        :protocol => @opts[:request].protocol }
+      p.merge! u
+      Rails.application.routes.url_helpers.url_for (p)      
+    end 
 
     def determine_fillcolor(n)
       fillcolor = %w(aaaaaa aaffaa aaaaff aaaaaa ffaaaa)[n || 0] || 'aaaaaa'
@@ -30,25 +36,25 @@ module ProvenanceHelper
     end
 
     def describe_node(uuid)
-      bgcolor = determine_fillcolor @opts[:pips][uuid] if @opts[:pips]
+      uuid = uuid.to_sym
+      bgcolor = determine_fillcolor @opts[:pips].andand[uuid]
 
       rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
       if rsc
-        href = "/#{rsc.to_s.underscore.pluralize rsc}/#{uuid}"
+        href = url_for ({:controller => rsc.to_s.tableize, 
+                          :action => :show, 
+                          :id => uuid.to_s })
       
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
-          #puts uuid
-          if uuid == :"d41d8cd98f00b204e9800998ecf8427e+0"
+          if Collection.is_empty_blob_locator? uuid.to_s
             # special case
-            #puts "empty!"
             return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
           end
           if @pdata[uuid] 
-            #puts @pdata[uuid]
             if @pdata[uuid][:name]
               return "\"#{uuid}\" [label=\"#{@pdata[uuid][:name]}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
-            else
+            else              
               files = nil
               if @pdata[uuid].respond_to? :files
                 files = @pdata[uuid].files
@@ -67,12 +73,15 @@ module ProvenanceHelper
                 if i < files.length
                   label += "\\n&vellip;"
                 end
-                return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
+                extra_s = @node_extra[uuid].andand.map { |k,v|
+                  "#{k}=\"#{v}\""
+                }.andand.join ","
+                return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval,#{bgcolor},#{extra_s}];\n"
               end
             end  
           end
-          return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\",#{bgcolor}];\n"
         end
+        return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\",#{bgcolor}];\n"
       end
       "\"#{uuid}\" [#{bgcolor}];\n"
     end
@@ -99,7 +108,7 @@ module ProvenanceHelper
         gr = "\"#{head}\" -> \"#{tail}\""
       end
       if extra.length > 0
-        gr += "["
+        gr += " ["
         extra.each do |k, v|
           gr += "#{k}=\"#{v}\","
         end
@@ -134,20 +143,16 @@ module ProvenanceHelper
         end
         unless node == ""
           node += "']"
-          #puts node
-          #id = "#{job[:uuid]}_#{prefix}"
           gr += "\"#{node}\" [label=\"#{node}\"];\n"
           gr += edge(job_uuid(job), node, {:label => prefix})        
         end
       when String
         return '' if sp.empty?
         m = GenerateGraph::collection_uuid(sp)
-        #puts "#{m} pdata is #{@pdata[m.intern]}"
         if m and (@pdata[m.intern] or (not @opts[:pdata_only]))
           gr += edge(job_uuid(job), m, {:label => prefix})
           gr += generate_provenance_edges(m)
         elsif @opts[:all_script_parameters]
-          #id = "#{job[:uuid]}_#{prefix}"
           gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
           gr += edge(job_uuid(job), sp, {:label => prefix})
         end
@@ -163,8 +168,6 @@ module ProvenanceHelper
       uuid = uuid.intern if uuid
 
       if (not uuid) or uuid.empty? or @visited[uuid]
-
-        #puts "already @visited #{uuid}"
         return ""
       end
 
@@ -174,27 +177,27 @@ module ProvenanceHelper
         @visited[uuid] = true
       end
 
-      #puts "visiting #{uuid}"
-
-      if m  
+      if m
         # uuid is a collection
+        if not Collection.is_empty_blob_locator? uuid.to_s
+          @pdata.each do |k, job|
+            if job[:output] == uuid.to_s
+              extra = { label: 'output' }
+              if job[:output_is_persistent]
+                extra[:label] += ' (persistent)'
+                @node_extra[uuid] ||= {}
+                @node_extra[uuid][:penwidth] = 4
+              end
+              gr += edge(uuid, job_uuid(job), extra)
+              gr += generate_provenance_edges(job[:uuid])
+            end
+            if job[:log] == uuid.to_s
+              gr += edge(uuid, job_uuid(job), {:label => "log"})
+              gr += generate_provenance_edges(job[:uuid])
+            end
+          end
+        end
         gr += describe_node(uuid)
-
-        if m == :"d41d8cd98f00b204e9800998ecf8427e+0"
-          # empty collection, don't follow any further
-          return gr
-        end
-
-        @pdata.each do |k, job|
-          if job[:output] == uuid.to_s
-            gr += edge(uuid, job_uuid(job), {:label => "output"})
-            gr += generate_provenance_edges(job[:uuid])
-          end
-          if job[:log] == uuid.to_s
-            gr += edge(uuid, job_uuid(job), {:label => "log"})
-            gr += generate_provenance_edges(job[:uuid])
-          end
-        end
       else
         # uuid is something else
         rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
@@ -209,6 +212,8 @@ module ProvenanceHelper
               gr += edge(job_uuid(job), job[:script_version], {:label => "script_version"})
             end
           end
+        elsif rsc == Link
+          # do nothing
         else
           gr += describe_node(uuid)
         end
@@ -216,13 +221,15 @@ module ProvenanceHelper
 
       @pdata.each do |k, link|
         if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
+          href = url_for ({:controller => Link.to_s.tableize, 
+                            :action => :show, 
+                            :id => link[:uuid] })
+
           gr += describe_node(link[:tail_uuid])
-          gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => "/links/#{link[:uuid]}"}) 
+          gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => href}) 
           gr += generate_provenance_edges(link[:tail_uuid])
         end
       end
-
-      #puts "finished #{uuid}"
 
       gr
     end
@@ -230,7 +237,10 @@ module ProvenanceHelper
     def describe_jobs
       gr = ""
       @jobs.each do |k, v|
-        gr += "\"#{k}\" [href=\"/jobs?"
+        href = url_for ({:controller => Job.to_s.tableize, 
+                          :action => :index })
+
+        gr += "\"#{k}\" [href=\"#{href}?"
         
         n = 0
         v.each do |u|
@@ -241,11 +251,11 @@ module ProvenanceHelper
         gr += "\",label=\""
         
         if @opts[:combine_jobs] == :script_only
-          gr += uuid = "#{v[0][:script]}"
+          gr += "#{v[0][:script]}"
         elsif @opts[:combine_jobs] == :script_and_version
-          gr += uuid = "#{v[0][:script]}"
+          gr += "#{v[0][:script]}" # Just show the name but the nodes will be distinct
         else
-          gr += uuid = "#{v[0][:script]}\\n#{v[0][:finished_at]}"
+          gr += "#{v[0][:script]}\\n#{v[0][:finished_at]}"
         end
         gr += "\",#{determine_fillcolor n}];\n"
       end
@@ -276,8 +286,6 @@ edge [fontsize=10];
       gr += "edge [dir=back];"
     end
 
-    #puts "@pdata is #{pdata}"
-
     g = GenerateGraph.new(pdata, opts)
 
     pdata.each do |k, v|
@@ -288,8 +296,6 @@ edge [fontsize=10];
 
     gr += "}"
     svg = ""
-
-    #puts gr
 
     require 'open3'
 

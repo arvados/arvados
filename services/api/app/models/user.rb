@@ -7,6 +7,7 @@ class User < ArvadosModel
   before_update :prevent_privilege_escalation
   before_update :prevent_inactive_admin
   before_create :check_auto_admin
+  after_create :add_system_group_permission_link
   after_create AdminNotifier
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
@@ -79,10 +80,11 @@ class User < ArvadosModel
         Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
           newgroups << [group.owner_uuid, group.uuid, 'can_manage']
         end
-        Link.where('tail_uuid in (?) and link_class = ? and head_kind = ?',
+        Link.where('tail_uuid in (?) and link_class = ? and (head_uuid like ? or head_uuid like ?)',
                    lookup_uuids,
                    'permission',
-                   'arvados#group').each do |link|
+                   Group.uuid_like_pattern,
+                   User.uuid_like_pattern).each do |link|
           newgroups << [link.tail_uuid, link.head_uuid, link.name]
         end
         newgroups.each do |tail_uuid, head_uuid, perm_name|
@@ -109,6 +111,70 @@ class User < ArvadosModel
     end
   end
 
+  def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
+    return user.setup_repo_vm_links(repo_name, vm_uuid, openid_prefix)
+  end
+
+  # create links
+  def setup_repo_vm_links(repo_name, vm_uuid, openid_prefix)
+    oid_login_perm = create_oid_login_perm openid_prefix
+    repo_perm = create_user_repo_link repo_name
+    vm_login_perm = create_vm_login_permission_link vm_uuid, repo_name
+    group_perm = create_user_group_link
+
+    return [oid_login_perm, repo_perm, vm_login_perm, group_perm, self].compact
+  end
+
+  # delete user signatures, login, repo, and vm perms, and mark as inactive
+  def unsetup
+    # delete oid_login_perms for this user
+    oid_login_perms = Link.where(tail_uuid: self.email,
+                                 link_class: 'permission',
+                                 name: 'can_login')
+    oid_login_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete repo_perms for this user
+    repo_perms = Link.where(tail_uuid: self.uuid,
+                            link_class: 'permission',
+                            name: 'can_write')
+    repo_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete vm_login_perms for this user
+    vm_login_perms = Link.where(tail_uuid: self.uuid,
+                                link_class: 'permission',
+                                name: 'can_login')
+    vm_login_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete "All users' group read permissions for this user
+    group = Group.where(name: 'All users').select do |g|
+      g[:uuid].match /-f+$/
+    end.first
+    group_perms = Link.where(tail_uuid: self.uuid,
+                             head_uuid: group[:uuid],
+                             link_class: 'permission',
+                             name: 'can_read')
+    group_perms.each do |perm|
+      Link.delete perm
+    end
+
+    # delete any signatures by this user
+    signed_uuids = Link.where(link_class: 'signature',
+                              tail_uuid: self.uuid)
+    signed_uuids.each do |sign|
+      Link.delete sign
+    end
+
+    # mark the user as inactive
+    self.is_active = false
+    self.save!
+  end
+
   protected
 
   def permission_to_update
@@ -124,7 +190,7 @@ class User < ArvadosModel
   end
 
   def check_auto_admin
-    if User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and not Rails.configuration.auto_admin_user.nil?
+    if User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and Rails.configuration.auto_admin_user
       if current_user.email == Rails.configuration.auto_admin_user
         self.is_admin = true
         self.is_active = true
@@ -176,5 +242,156 @@ class User < ArvadosModel
     end
     upstream_path.delete start
     merged
+  end
+
+  def create_oid_login_perm (openid_prefix)
+    login_perm_props = {identity_url_prefix: openid_prefix}
+
+    # Check oid_login_perm
+    oid_login_perms = Link.where(tail_uuid: self.email,
+                                   link_class: 'permission',
+                                   name: 'can_login').where("head_uuid like ?", User.uuid_like_pattern)
+
+    if !oid_login_perms.any?
+      # create openid login permission
+      oid_login_perm = Link.create(link_class: 'permission',
+                                   name: 'can_login',
+                                   tail_uuid: self.email,
+                                   head_uuid: self.uuid,
+                                   properties: login_perm_props
+                                  )
+      logger.info { "openid login permission: " + oid_login_perm[:uuid] }
+    else
+      oid_login_perm = oid_login_perms.first
+    end
+
+    return oid_login_perm
+  end
+
+  def create_user_repo_link(repo_name)
+    # repo_name is optional
+    if not repo_name
+      logger.warn ("Repository name not given for #{self.uuid}.")
+      return
+    end
+
+    # Check for an existing repository with the same name we're about to use.
+    repo = Repository.where(name: repo_name).first
+
+    if repo
+      logger.warn "Repository exists for #{repo_name}: #{repo[:uuid]}."
+
+      # Look for existing repository access for this repo
+      repo_perms = Link.where(tail_uuid: self.uuid,
+                              head_uuid: repo[:uuid],
+                              link_class: 'permission',
+                              name: 'can_write')
+      if repo_perms.any?
+        logger.warn "User already has repository access " +
+            repo_perms.collect { |p| p[:uuid] }.inspect
+        return repo_perms.first
+      end
+    end
+
+    # create repo, if does not already exist
+    repo ||= Repository.create(name: repo_name)
+    logger.info { "repo uuid: " + repo[:uuid] }
+
+    repo_perm = Link.create(tail_uuid: self.uuid,
+                            head_uuid: repo[:uuid],
+                            link_class: 'permission',
+                            name: 'can_write')
+    logger.info { "repo permission: " + repo_perm[:uuid] }
+    return repo_perm
+  end
+
+  # create login permission for the given vm_uuid, if it does not already exist
+  def create_vm_login_permission_link(vm_uuid, repo_name)
+    begin
+
+      # vm uuid is optional
+      if vm_uuid
+        vm = VirtualMachine.where(uuid: vm_uuid).first
+
+        if not vm
+          logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
+          raise "No vm found for #{vm_uuid}"
+        end
+      else
+        return
+      end
+
+      logger.info { "vm uuid: " + vm[:uuid] }
+
+      login_perms = Link.where(tail_uuid: self.uuid,
+                              head_uuid: vm[:uuid],
+                              link_class: 'permission',
+                              name: 'can_login')
+
+      perm_exists = false
+      login_perms.each do |perm|
+        if perm.properties[:username] == repo_name
+          perm_exists = true
+          break
+        end
+      end
+
+      if !perm_exists
+        login_perm = Link.create(tail_uuid: self.uuid,
+                                 head_uuid: vm[:uuid],
+                                 link_class: 'permission',
+                                 name: 'can_login',
+                                 properties: {username: repo_name})
+        logger.info { "login permission: " + login_perm[:uuid] }
+      else
+        login_perm = login_perms.first
+      end
+
+      return login_perm
+    end
+  end
+
+  # add the user to the 'All users' group
+  def create_user_group_link
+    # Look up the "All users" group (we expect uuid *-*-fffffffffffffff).
+    group = Group.where(name: 'All users').select do |g|
+      g[:uuid].match /-f+$/
+    end.first
+
+    if not group
+      logger.warn "No 'All users' group with uuid '*-*-fffffffffffffff'."
+      raise "No 'All users' group with uuid '*-*-fffffffffffffff' is found"
+    else
+      logger.info { "\"All users\" group uuid: " + group[:uuid] }
+
+      group_perms = Link.where(tail_uuid: self.uuid,
+                              head_uuid: group[:uuid],
+                              link_class: 'permission',
+                              name: 'can_read')
+
+      if !group_perms.any?
+        group_perm = Link.create(tail_uuid: self.uuid,
+                                 head_uuid: group[:uuid],
+                                 link_class: 'permission',
+                                 name: 'can_read')
+        logger.info { "group permission: " + group_perm[:uuid] }
+      else
+        group_perm = group_perms.first
+      end
+
+      return group_perm
+    end
+  end
+
+  # Give the special "System group" permission to manage this user and
+  # all of this user's stuff.
+  #
+  def add_system_group_permission_link
+    act_as_system_user do
+      Link.create(link_class: 'permission',
+                  name: 'can_manage',
+                  tail_uuid: system_group_uuid,
+                  head_uuid: self.uuid)
+    end
   end
 end

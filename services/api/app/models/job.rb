@@ -27,6 +27,7 @@ class Job < ArvadosModel
     t.add :started_at
     t.add :finished_at
     t.add :output
+    t.add :output_is_persistent
     t.add :success
     t.add :running
     t.add :is_locked_by_uuid
@@ -36,6 +37,8 @@ class Job < ArvadosModel
     t.add :dependencies
     t.add :log_stream_href
     t.add :log_buffer
+    t.add :nondeterministic
+    t.add :repository
   end
 
   def assert_finished
@@ -51,8 +54,13 @@ class Job < ArvadosModel
   end
 
   def self.queue
-    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ?',
-               nil, nil, nil).
+    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ? and success is ?',
+               nil, nil, nil, nil).
+      order('priority desc, created_at')
+  end
+
+  def self.running
+    self.where('running = ?', true).
       order('priority desc, created_at')
   end
 
@@ -60,6 +68,10 @@ class Job < ArvadosModel
 
   def foreign_key_attributes
     super + %w(output log)
+  end
+
+  def skip_uuid_read_permission_check
+    super + %w(cancelled_by_client_uuid)
   end
 
   def ensure_script_version_is_commit
@@ -70,7 +82,7 @@ class Job < ArvadosModel
       return true
     end
     if new_record? or script_version_changed?
-      sha1 = Commit.find_by_commit_ish(self.script_version) rescue nil
+      sha1 = Commit.find_commit_range(current_user, nil, nil, self.script_version, nil)[0] rescue nil
       if sha1
         self.script_version = sha1
       else
@@ -108,7 +120,8 @@ class Job < ArvadosModel
 
   def permission_to_update
     if is_locked_by_uuid_was and !(current_user and
-                                   current_user.uuid == is_locked_by_uuid_was)
+                                   (current_user.uuid == is_locked_by_uuid_was or
+                                    current_user.uuid == system_user.uuid))
       if script_changed? or
           script_parameters_changed? or
           script_version_changed? or

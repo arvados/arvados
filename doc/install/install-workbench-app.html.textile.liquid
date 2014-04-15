@@ -1,0 +1,52 @@
+---
+layout: default
+navsection: installguide
+title: Install the Arvados Workbench application
+...
+
+h2. Prerequisites
+
+# A GNU/linux (virtual) machine (can be shared with the API server)
+# A hostname for your Workbench application
+
+h2. Download the source tree
+
+Please follow the instructions on the "Download page":https://arvados.org/projects/arvados/wiki/Download in the wiki.
+
+The Workbench application is in @arvados/apps/workbench@.
+
+h2. Configure the Workbench application
+
+This application needs a secret token. Generate a new secret:
+
+<notextile>
+<pre><code>~/arvados/apps/workbench$ <span class="userinput">rake secret</span>
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+</code></pre>
+</notextile>
+
+Copy @config/application.yml.example@ to @config/application.yml@ and edit it appropriately for your environment.
+
+* Set @secret_token@ to the string you generated with @rake secret@.
+* Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html
+* @site_name@ can be any string to identify this Workbench.
+* Assuming that the SSL certificate you use for development isn't signed by a CA, make sure @arvados_insecure_https@ is @true@.
+
+Copy @config/piwik.yml.example@ to @config/piwik.yml@ and edit to suit.
+
+h3. Apache/Passenger (optional)
+
+Set up Apache and Passenger. Point them to the apps/workbench directory in the source tree.
+
+h2. Trusted client setting
+
+Log in to Workbench once (this ensures that the Arvados API server has a record of the Workbench client).
+
+In the API server project root, start the rails console.  Locate the ApiClient record for your Workbench installation, then set the `is_trusted` flag for the appropriate client record:
+
+<notextile><pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=development bundle exec rails console</span>
+irb(main):001:0&gt; <span class="userinput">ApiClient.where('url_prefix like ?', '%workbench%')</span>
+=&gt; {:id => 1234}
+irb(main):002:0&gt; <span class="userinput">ApiClient.find(1234).update_attributes is_trusted: true</span>
+</code></pre>
+</notextile>
