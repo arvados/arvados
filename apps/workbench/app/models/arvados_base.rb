@@ -138,7 +138,7 @@ class ArvadosBase < ActiveRecord::Base
     @kind = resp[:kind]
 
     # these attrs can be modified by "save" -- we should update our copies
-    %w(uuid owner_uuid created_at
+    %w(uuid owner_uuid created_at updated_at
        modified_at modified_by_user_uuid modified_by_client_uuid
       ).each do |attr|
       if self.respond_to? "#{attr}=".to_sym
