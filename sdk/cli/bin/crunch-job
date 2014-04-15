@@ -605,8 +605,22 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .=
 	  "&& perl -";
     }
-    $command .=
-        "&& exec arv-mount $ENV{TASK_KEEPMOUNT} --exec $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+    $command .= "&& exec arv-mount $ENV{TASK_KEEPMOUNT} --exec ";
+    my $docker_image = $Job->{runtime_constraints}->{docker_image};
+    if (defined($docker_image))
+    {
+      $command .= "docker run -i -a stdin -a stdout -a stderr ";
+      foreach my $env_key (qw(CRUNCH_SRC CRUNCH_TMP TASK_KEEPMOUNT))
+      {
+        $command .= "-v \Q$ENV{$env_key}:$ENV{$env_key}:rw\E ";
+      }
+      while (my ($env_key, $env_val) = each %ENV)
+      {
+        $command .= "-e \Q$env_key=$env_val\E ";
+      }
+      $command .= "$docker_image ";
+    }
+    $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
     exit (111);
