@@ -34,7 +34,8 @@
                 :class => 'persistent-selection',
                 :friendly_type => "File",
                 :friendly_name => "#{@object.uuid}/#{file_path}",
-                :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}"
+                :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}",
+                :title => "Click to add this item to your selection list"
               } %>
         </td>
         <td>
