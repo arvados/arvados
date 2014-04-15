@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -17,6 +18,12 @@ import (
 	"syscall"
 	"time"
 )
+
+// ======================
+// Configuration settings
+//
+// TODO(twp): make all of these configurable via command line flags
+// and/or configuration file settings.
 
 // Default TCP address on which to listen for requests.
 const DEFAULT_ADDR = ":25107"
@@ -32,23 +39,31 @@ var PROC_MOUNTS = "/proc/mounts"
 
 var KeepVolumes []string
 
+// ==========
+// Error types.
+//
 type KeepError struct {
 	HTTPCode int
-	Err      error
+	ErrMsg   string
 }
 
-const (
-	ErrCollision = 400
-	ErrMD5Fail   = 401
-	ErrCorrupt   = 402
-	ErrNotFound  = 404
-	ErrOther     = 500
-	ErrFull      = 503
+var (
+	CollisionError = &KeepError{400, "Collision"}
+	MD5Error       = &KeepError{401, "MD5 Failure"}
+	CorruptError   = &KeepError{402, "Corruption"}
+	NotFoundError  = &KeepError{404, "Not Found"}
+	GenericError   = &KeepError{500, "Fail"}
+	FullError      = &KeepError{503, "Full"}
+	TooLongError   = &KeepError{504, "Too Long"}
 )
 
 func (e *KeepError) Error() string {
-	return fmt.Sprintf("Error %d: %s", e.HTTPCode, e.Err.Error())
+	return e.ErrMsg
 }
+
+// This error is returned by ReadAtMost if the available
+// data exceeds BLOCKSIZE bytes.
+var ReadErrorTooLong = errors.New("Too long")
 
 func main() {
 	// Parse command-line flags:
@@ -162,12 +177,17 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
 	// Read the block data to be stored.
-	// TODO(twp): decide what to do when the input stream contains
-	// more than BLOCKSIZE bytes.
+	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.
 	//
-	buf := make([]byte, BLOCKSIZE)
-	if nread, err := req.Body.Read(buf); err == nil {
-		if err := PutBlock(buf[:nread], hash); err == nil {
+	// Note: because req.Body is a buffered Reader, each Read() call will
+	// collect only the data in the network buffer (typically 16384 bytes),
+	// even if it is passed a much larger slice.
+	//
+	// Instead, call ReadAtMost to read data from the socket
+	// repeatedly until either EOF or BLOCKSIZE bytes have been read.
+	//
+	if buf, err := ReadAtMost(req.Body, BLOCKSIZE); err == nil {
+		if err := PutBlock(buf, hash); err == nil {
 			w.WriteHeader(http.StatusOK)
 		} else {
 			ke := err.(*KeepError)
@@ -175,7 +195,13 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	} else {
 		log.Println("error reading request: ", err)
-		http.Error(w, err.Error(), 500)
+		errmsg := err.Error()
+		if err == ReadErrorTooLong {
+			// Use a more descriptive error message that includes
+			// the maximum request size.
+			errmsg = fmt.Sprintf("Max request size %d bytes", BLOCKSIZE)
+		}
+		http.Error(w, errmsg, 500)
 	}
 }
 
@@ -217,7 +243,7 @@ func GetBlock(hash string) ([]byte, error) {
 			//
 			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
 				vol, blockFilename, filehash)
-			return buf, &KeepError{ErrCorrupt, errors.New("Corrupt")}
+			return buf, CorruptError
 		}
 
 		// Success!
@@ -225,7 +251,7 @@ func GetBlock(hash string) ([]byte, error) {
 	}
 
 	log.Printf("%s: not found on any volumes, giving up\n", hash)
-	return buf, &KeepError{ErrNotFound, errors.New("not found: " + hash)}
+	return buf, NotFoundError
 }
 
 /* PutBlock(block, hash)
@@ -259,7 +285,7 @@ func PutBlock(block []byte, hash string) error {
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
 		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
-		return &KeepError{ErrMD5Fail, errors.New("MD5Fail")}
+		return MD5Error
 	}
 
 	// If we already have a block on disk under this identifier, return
@@ -271,7 +297,7 @@ func PutBlock(block []byte, hash string) error {
 		if bytes.Compare(block, oldblock) == 0 {
 			return nil
 		} else {
-			return &KeepError{ErrCollision, errors.New("Collision")}
+			return CollisionError
 		}
 	}
 
@@ -315,10 +341,10 @@ func PutBlock(block []byte, hash string) error {
 
 	if allFull {
 		log.Printf("all Keep volumes full")
-		return &KeepError{ErrFull, errors.New("Full")}
+		return FullError
 	} else {
 		log.Printf("all Keep volumes failed")
-		return &KeepError{ErrOther, errors.New("Fail")}
+		return GenericError
 	}
 }
 
@@ -364,4 +390,22 @@ func FreeDiskSpace(volume string) (free uint64, err error) {
 	}
 
 	return
+}
+
+// ReadAtMost
+//     Reads bytes repeatedly from an io.Reader until either
+//     encountering EOF, or the maxbytes byte limit has been reached.
+//     Returns a byte slice of the bytes that were read.
+//
+//     If the reader contains more than maxbytes, returns a nil slice
+//     and an error.
+//
+func ReadAtMost(r io.Reader, maxbytes int) ([]byte, error) {
+	// Attempt to read one more byte than maxbytes.
+	lr := io.LimitReader(r, int64(maxbytes+1))
+	buf, err := ioutil.ReadAll(lr)
+	if len(buf) > maxbytes {
+		return nil, ReadErrorTooLong
+	}
+	return buf, err
 }

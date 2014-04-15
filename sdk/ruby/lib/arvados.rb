@@ -152,22 +152,26 @@ class Arvados
     config['ARVADOS_API_HOST_INSECURE'] = ENV['ARVADOS_API_HOST_INSECURE']
     config['ARVADOS_API_VERSION']       = ENV['ARVADOS_API_VERSION']
 
-    expanded_path = File.expand_path config_file_path
-    if File.exist? expanded_path
-      # Load settings from the config file.
-      lineno = 0
-      File.open(expanded_path).each do |line|
-        lineno = lineno + 1
-        # skip comments and blank lines
-        next if line.match('^\s*#') or not line.match('\S')
-        var, val = line.chomp.split('=', 2)
-        # allow environment settings to override config files.
-        if var and val
-          config[var] ||= val
-        else
-          warn "#{expanded_path}: #{lineno}: could not parse `#{line}'"
+    begin
+      expanded_path = File.expand_path config_file_path
+      if File.exist? expanded_path
+        # Load settings from the config file.
+        lineno = 0
+        File.open(expanded_path).each do |line|
+          lineno = lineno + 1
+          # skip comments and blank lines
+          next if line.match('^\s*#') or not line.match('\S')
+          var, val = line.chomp.split('=', 2)
+          # allow environment settings to override config files.
+          if var and val
+            config[var] ||= val
+          else
+            warn "#{expanded_path}: #{lineno}: could not parse `#{line}'"
+          end
         end
       end
+    rescue
+      debuglog "HOME environment variable (#{ENV['HOME']}) not set, not using #{config_file_path}", 0
     end
 
     @@config = config

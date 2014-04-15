@@ -28,10 +28,9 @@ class Arvados::V1::JobsController < ApplicationController
                                           script_version: r).
         each do |j|
         if j.nondeterministic != true and
-            j.success != false and
-            !j.cancelled_at and
+            ((j.success == true and j.output != nil) or j.running == true) and
             j.script_parameters == resource_attrs[:script_parameters]
-          if j.success.nil?
+          if j.running
             # We'll use this if we don't find a job that has completed
             @incomplete_job ||= j
           else
@@ -65,7 +64,7 @@ class Arvados::V1::JobsController < ApplicationController
 
   def cancel
     reload_object_before_update
-    @object.update_attributes cancelled_at: Time.now
+    @object.update_attributes! cancelled_at: Time.now
     show
   end
 

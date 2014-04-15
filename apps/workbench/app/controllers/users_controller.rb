@@ -91,9 +91,6 @@ class UsersController < ApplicationController
   def home
     @showallalerts = false
     @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
-    # @my_vm_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#virtual_machine', link_class: 'permission', name: 'can_login')
-    # @my_repo_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#repository', link_class: 'permission', name: 'can_write')
-
     @my_tag_links = {}
 
     @my_jobs = Job.
@@ -149,6 +146,7 @@ class UsersController < ApplicationController
     respond_to do |format|
       if current_user.andand.is_admin
         setup_params = {}
+        setup_params[:send_notification_email] = "#{Rails.configuration.send_user_setup_notification_email}"
         if params['user_uuid'] && params['user_uuid'].size>0
           setup_params[:uuid] = params['user_uuid']
         end

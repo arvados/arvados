@@ -1,4 +1,6 @@
 Server::Application.routes.draw do
+  themes_for_rails
+
   resources :humans
   resources :traits
   resources :repositories

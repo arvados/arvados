@@ -15,7 +15,7 @@ end
 gem 'pg'
 
 # Start using multi_json once we are on Rails 3.2;
-# Rails 3.1 has a dependency on multi_json < 1.3.0 but we need version 1.3.4 to 
+# Rails 3.1 has a dependency on multi_json < 1.3.0 but we need version 1.3.4 to
 # fix bug https://github.com/collectiveidea/json_spec/issues/27
 gem 'multi_json'
 gem 'oj'
@@ -62,5 +62,7 @@ gem 'test_after_commit', :group => :test
 
 gem 'google-api-client', '~> 0.6.3'
 gem 'trollop'
+
+gem 'themes_for_rails'
 
 gem 'arvados-cli', '>= 0.1.20140328152103'
