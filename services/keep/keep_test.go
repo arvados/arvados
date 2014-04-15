@@ -296,10 +296,14 @@ func TestIndex(t *testing.T) {
 	defer teardown()
 
 	// Set up Keep volumes and populate them.
+	// Include multiple blocks on different volumes, and
+	// some metadata files.
 	KeepVolumes = setup(t, 2)
 	store(t, KeepVolumes[0], TEST_HASH, TEST_BLOCK)
 	store(t, KeepVolumes[1], TEST_HASH_2, TEST_BLOCK_2)
 	store(t, KeepVolumes[0], TEST_HASH_3, TEST_BLOCK_3)
+	store(t, KeepVolumes[0], TEST_HASH+".meta", []byte("metadata"))
+	store(t, KeepVolumes[1], TEST_HASH_2+".meta", []byte("metadata"))
 
 	index := IndexLocators("")
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +

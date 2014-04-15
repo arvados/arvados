@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -325,6 +326,12 @@ func IndexLocators(prefix string) string {
 					!strings.HasPrefix(prefix, locator) {
 					return filepath.SkipDir
 				}
+				// Skip any file that is not apparently a locator, e.g. .meta files
+				if is_valid, err := IsValidLocator(locator); err != nil {
+					return err
+				} else if !is_valid {
+					return nil
+				}
 				// Print filenames beginning with prefix
 				if !info.IsDir() && strings.HasPrefix(locator, prefix) {
 					output = output + fmt.Sprintf(
@@ -543,4 +550,13 @@ func ReadAtMost(r io.Reader, maxbytes int) ([]byte, error) {
 		return nil, ReadErrorTooLong
 	}
 	return buf, err
+}
+
+// IsValidLocator
+//     Return true if the specified string is a valid Keep locator.
+//     When Keep is extended to support hash types other than MD5,
+//     this should be updated to cover those as well.
+//
+func IsValidLocator(loc string) (bool, error) {
+	return regexp.MatchString(`^[0-9a-f]{32}$`, loc)
 }
