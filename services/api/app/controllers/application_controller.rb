@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include CurrentApiClient
+  include ThemesForRails::ActionController
 
   respond_to :json
   protect_from_forgery
@@ -19,6 +20,8 @@ class ApplicationController < ActionController::Base
   before_filter :render_404_if_no_object, except: [:index, :create,
                                                    :render_error,
                                                    :render_not_found]
+
+  theme :select_theme
 
   attr_accessor :resource_attrs
 
@@ -349,6 +352,9 @@ class ApplicationController < ActionController::Base
           session[:api_client_authorization_id] = api_client_auth.id
           user = api_client_auth.user
           api_client = api_client_auth.api_client
+        else
+          # Token seems valid, but points to a non-existent (deleted?) user.
+          api_client_auth = nil
         end
       elsif session[:user_id]
         user = User.find(session[:user_id]) rescue nil
@@ -485,5 +491,9 @@ class ApplicationController < ActionController::Base
       end
     end
     super *opts
+  end
+
+  def select_theme
+    return Rails.configuration.arvados_theme
   end
 end

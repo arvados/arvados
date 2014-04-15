@@ -146,6 +146,7 @@ class UsersController < ApplicationController
     respond_to do |format|
       if current_user.andand.is_admin
         setup_params = {}
+        setup_params[:send_notification_email] = "#{Rails.configuration.send_user_setup_notification_email}"
         if params['user_uuid'] && params['user_uuid'].size>0
           setup_params[:uuid] = params['user_uuid']
         end

@@ -44,6 +44,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal true, me['is_active']
   end
 
+  test "respond 401 if given token exists but user record is missing" do
+    authorize_with :valid_token_deleted_user
+    get :current, {format: :json}
+    assert_response 401
+  end
+
   test "create new user with user as input" do
     authorize_with :admin
     post :create, user: {
@@ -699,6 +705,58 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     verify_link_existence response_user['uuid'], response_user['email'],
           false, false, false, false, false
+  end
+
+  test "setup user with send notification param false and verify no email" do
+    authorize_with :admin
+
+    post :setup, {
+      openid_prefix: 'http://www.example.com/account',
+      send_notification_email: 'false',
+      user: {
+        email: "foo@example.com"
+      }
+    }
+
+    assert_response :success
+    response_items = JSON.parse(@response.body)['items']
+    created = find_obj_in_resp response_items, 'User', nil
+    assert_not_nil created['uuid'], 'expected uuid for the new user'
+    assert_equal created['email'], 'foo@example.com', 'expected given email'
+
+    setup_email = ActionMailer::Base.deliveries.last
+    assert_nil setup_email, 'expected no setup email'
+  end
+
+  test "setup user with send notification param true and verify email" do
+    authorize_with :admin
+
+    post :setup, {
+      openid_prefix: 'http://www.example.com/account',
+      send_notification_email: 'true',
+      user: {
+        email: "foo@example.com"
+      }
+    }
+
+    assert_response :success
+    response_items = JSON.parse(@response.body)['items']
+    created = find_obj_in_resp response_items, 'User', nil
+    assert_not_nil created['uuid'], 'expected uuid for the new user'
+    assert_equal created['email'], 'foo@example.com', 'expected given email'
+
+    setup_email = ActionMailer::Base.deliveries.last
+    assert_not_nil setup_email, 'Expected email after setup'
+
+    assert_equal Rails.configuration.user_notifier_email_from, setup_email.from[0]
+    assert_equal 'foo@example.com', setup_email.to[0]
+    assert_equal 'Welcome to Curoverse', setup_email.subject
+    assert (setup_email.body.to_s.include? 'Your Arvados account has been set up'),
+        'Expected Your Arvados account has been set up in email body'
+    assert (setup_email.body.to_s.include? 'foo@example.com'),
+        'Expected user email in email body'
+    assert (setup_email.body.to_s.include? Rails.configuration.workbench_address),
+        'Expected workbench url in email body'
   end
 
   def verify_num_links (original_links, expected_additional_links)

@@ -130,6 +130,11 @@ class Arvados::V1::UsersController < ApplicationController
                     params[:repo_name], params[:vm_uuid]
     end
 
+    # setup succeeded. send email to user
+    if params[:send_notification_email] == true || params[:send_notification_email] == 'true'
+      UserNotifier.account_is_setup(@object).deliver
+    end
+
     render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
   end
 
@@ -138,6 +143,14 @@ class Arvados::V1::UsersController < ApplicationController
     reload_object_before_update
     @object.unsetup
     show
+  end
+
+  protected
+
+  def self._setup_requires_parameters 
+    {
+      send_notification_email: { type: 'boolean', required: true },
+    }  
   end
 
 end
