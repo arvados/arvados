@@ -23,11 +23,7 @@
     </tr>
   </thead><tbody>
     <% if @object then @object.files.sort_by{|f|[f[0],f[1]]}.each do |file| %>
-      <% f0 = file[0] %>
-      <% f0 = '' if f0 == '.' %>
-      <% f0 = f0[2..-1] if f0[0..1] == './' %>
-      <% f0 += '/' if not f0.empty? %>
-      <% file_path = "#{f0}#{file[1]}" %>
+      <% file_path = CollectionsHelper::file_path file %>
       <tr>
         <td>
           <%= check_box_tag 'uuids[]', @object.uuid+'/'+file_path, false, {
@@ -43,13 +39,13 @@
         </td>
 
       <td>
-        <%= link_to((if /\.(jpg|jpeg|gif|png|svg)$/i.match(file[1]) then
+        <%= link_to (if CollectionsHelper::is_image file[1]
                        image_tag "#{url_for @object}/#{file_path}", class: "file-list-inline-image"
                      else
                        file[1]
                      end),
-                    {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'},
-                    {title: file_path}) %>
+            {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'},
+            {title: file_path} %>
       </td>
 
         <td style="text-align:right">

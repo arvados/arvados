@@ -60,7 +60,7 @@
         <%= render(partial: 'job_status_label',
                                locals: { :j => pj[:job] }) %>
       </td><td>
-        <%= link_to_if_arvados_object pj[:output] %>
+        <%= link_to_if_arvados_object pj[:output], {:thumbnail => true} %>
       </td>
     </tr>
     <% end %>

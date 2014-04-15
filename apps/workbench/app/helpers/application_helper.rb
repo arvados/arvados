@@ -78,6 +78,19 @@ module ApplicationHelper
             link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
           end
         end
+        if opts[:thumbnail] and resource_class == Collection
+          maximg = 3
+          Collection.where(uuid: link_uuid).each do |c|
+            c.files.each do |file|
+              if CollectionsHelper::is_image file[1]
+                link_name += " "
+                link_name += image_tag "#{url_for c}/#{CollectionsHelper::file_path file}", style: "height: 4em; width: auto"
+                maximg -= 1
+              end
+              break if maximg == 0
+            end
+          end
+        end
       end
       style_opts[:class] = (style_opts[:class] || '') + ' nowrap'
       if opts[:no_link]
