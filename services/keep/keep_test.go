@@ -340,6 +340,9 @@ func TestNodeStatus(t *testing.T) {
 		if mtp != vol {
 			t.Errorf("GetNodeStatus mount_point %s != KeepVolume %s", mtp, vol)
 		}
+		if volinfo.DeviceNum == 0 {
+			t.Errorf("uninitialized device_num in %v", volinfo)
+		}
 		if volinfo.BytesFree == 0 {
 			t.Errorf("uninitialized bytes_free in %v", volinfo)
 		}

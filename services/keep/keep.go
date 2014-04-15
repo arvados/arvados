@@ -226,17 +226,16 @@ func IndexHandler(w http.ResponseWriter, req *http.Request) {
 //     described in a JSON structure.
 //
 //     The data given in a status.json response includes:
-//        time - the time the status was last updated
-//        df   - the output of the most recent `df --block-size=1k`
-//        disk_devices - list of disk device files (i.e. /dev/(s|xv|h)d)
-//        dirs - an object describing Keep volumes, keyed on Keep volume dirs,
-//          each value is an object describing the status of that volume
-//            * status ("full [timestamp]" or "ok [timestamp]")
-//            * last_error
-//            * last_error_time
+//        volumes - a list of Keep volumes currently in use by this server
+//          each volume is an object with the following fields:
+//            * mount_point
+//            * device_num (an integer identifying the underlying filesystem)
+//            * bytes_free
+//            * bytes_used
 //
 type VolumeStatus struct {
 	MountPoint string `json:"mount_point"`
+	DeviceNum  uint64 `json:"device_num"`
 	BytesFree  uint64 `json:"bytes_free"`
 	BytesUsed  uint64 `json:"bytes_used"`
 }
@@ -275,6 +274,14 @@ func GetNodeStatus() *NodeStatus {
 //
 func GetVolumeStatus(volume string) *VolumeStatus {
 	var fs syscall.Statfs_t
+	var devnum uint64
+
+	if fi, err := os.Stat(volume); err == nil {
+		devnum = fi.Sys().(*syscall.Stat_t).Dev
+	} else {
+		log.Printf("GetVolumeStatus: os.Stat: %s\n", err)
+		return nil
+	}
 
 	err := syscall.Statfs(volume, &fs)
 	if err != nil {
@@ -286,7 +293,7 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 	// uses fs.Blocks - fs.Bfree.
 	free := fs.Bavail * uint64(fs.Bsize)
 	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
-	return &VolumeStatus{volume, free, used}
+	return &VolumeStatus{volume, devnum, free, used}
 }
 
 // IndexLocators
