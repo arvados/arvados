@@ -203,4 +203,34 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response 422
   end
 
+  test "test with virtual_machine" do
+    link = {
+      tail_kind: "arvados#user",
+      tail_uuid: users(:active).uuid,
+      head_kind: "arvados#virtual_machine",
+      head_uuid: virtual_machines(:testvm).uuid,
+      link_class: "permission",
+      name: "can_login",
+      properties: {username: "repo_and_user_name"}
+    }
+    authorize_with :admin
+    post :create, link: link
+    assert_response 422
+  end
+
+  test "test with virtualMachine" do
+    link = {
+      tail_kind: "arvados#user",
+      tail_uuid: users(:active).uuid,
+      head_kind: "arvados#virtualMachine",
+      head_uuid: virtual_machines(:testvm).uuid,
+      link_class: "permission",
+      name: "can_login",
+      properties: {username: "repo_and_user_name"}
+    }
+    authorize_with :admin
+    post :create, link: link
+    assert_response :success
+  end
+
 end
