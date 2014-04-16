@@ -175,7 +175,7 @@ module ApplicationHelper
       datatype = 'select'
     elsif dataclass == 'number'
       datatype = 'number'
-1    else
+    else
       if template.is_a? Array
         # ?!?
       elsif template.is_a? String
