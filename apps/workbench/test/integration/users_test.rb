@@ -122,7 +122,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       click_button "Submit"
     end
 
-    sleep(0.1)
+    sleep(1)
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Metadata'
