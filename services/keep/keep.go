@@ -88,28 +88,37 @@ func main() {
 	//    by looking at currently mounted filesystems for /keep top-level
 	//    directories.
 
-	var listen, keepvols string
+	var listen, volumearg string
 	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
 		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
-	flag.StringVar(&keepvols, "volumes", "",
+	flag.StringVar(&volumearg, "volumes", "",
 		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
 	flag.Parse()
 
 	// Look for local keep volumes.
-	if keepvols == "" {
+	var keepvols []string
+	if volumearg == "" {
 		// TODO(twp): decide whether this is desirable default behavior.
 		// In production we may want to require the admin to specify
 		// Keep volumes explicitly.
-		KeepVolumes = FindKeepVolumes()
+		keepvols = FindKeepVolumes()
 	} else {
-		KeepVolumes = strings.Split(keepvols, ",")
+		keepvols = strings.Split(volumearg, ",")
+	}
+
+	// Check that the specified volumes actually exist.
+	KeepVolumes = []string(nil)
+	for _, v := range keepvols {
+		if _, err := os.Stat(v); err == nil {
+			log.Println("adding Keep volume:", v)
+			KeepVolumes = append(KeepVolumes, v)
+		} else {
+			log.Printf("bad Keep volume: %s\n", err)
+		}
 	}
 
 	if len(KeepVolumes) == 0 {
 		log.Fatal("could not find any keep volumes")
-	}
-	for _, v := range KeepVolumes {
-		log.Println("keep volume:", v)
 	}
 
 	// Set up REST handlers.
