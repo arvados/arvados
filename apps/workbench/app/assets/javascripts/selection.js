@@ -91,7 +91,7 @@ jQuery(function($){
                 checkboxes[i].checked = false;
             }
         }
-        
+
         $('.remove-selection').on('click', remove_selection_click);
         $('#clear_selections_button').on('click', clear_selections);
     };
@@ -100,7 +100,7 @@ jQuery(function($){
         on('change', '.persistent-selection:checkbox', function(e) {
             //console.log($(this));
             //console.log($(this).val());
-            
+
             var inc = 0;
             if ($(this).is(":checked")) {
                 add_selection($(this).val(), $(this).attr('friendly_name'), $(this).attr('href'), $(this).attr('friendly_type'));
@@ -148,7 +148,10 @@ select_form_sources  = null;
 
                 for (var i = 0; i < lst.length; i++) {
                     if (lst[i].type == type) {
-                        ret.push({text: lst[i].name, value: lst[i].uuid})
+                        var n = lst[i].name;
+                        n = n.replace(/<span[^>]*>/i, "[");
+                        n = n.replace(/<\/span>/i, "]");
+                        ret.push({text: n, value: lst[i].uuid})
                     }
                 }
             }
@@ -169,4 +172,3 @@ select_form_sources  = null;
         return ret;
     };
 })();
-

@@ -5,6 +5,7 @@ class CollectionsController < ApplicationController
   def show_pane_list
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
+
   def index
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])

@@ -2,10 +2,14 @@
 
 <tr class="collection" data-object-uuid="<%= c.uuid %>">
   <td>
-    <%= render :partial => "selection_checkbox", :locals => {:object => c} %>
+    <% friendly_name = c.friendly_link_name  %>
+    <% @collection_info[c.uuid][:tag_links].each do |tag_link| %>
+      <% friendly_name += raw(" <span class='label label-info'>#{tag_link.name}</span>") %>
+    <% end %>
+    <%= render :partial => "selection_checkbox", :locals => {:object => c, :friendly_name => friendly_name} %>
   </td>
   <td>
-    <%= link_to_if_arvados_object c.uuid %>
+    <%= link_to_if_arvados_object c.uuid, {:no_tags => true } %>
   </td>
   <td>
     <% i = 0 %>
