@@ -147,10 +147,10 @@ class Arvados::V1::UsersController < ApplicationController
 
   protected
 
-  def self._setup_requires_parameters 
+  def self._setup_requires_parameters
     {
       send_notification_email: { type: 'boolean', required: true },
-    }  
+    }
   end
 
 end

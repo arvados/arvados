@@ -37,7 +37,7 @@ class Dispatcher
   end
 
   def refresh_todo
-    @todo = Job.queue
+    @todo = Job.queue.select do |j| j.repository end
     @todo_pipelines = PipelineInstance.queue
   end
 

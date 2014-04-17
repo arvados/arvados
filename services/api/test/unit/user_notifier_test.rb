@@ -1,5 +1,5 @@
 require 'test_helper'
- 
+
 class UserNotifierTest < ActionMailer::TestCase
 
   # Send the email, then test that it got queued
@@ -8,7 +8,7 @@ class UserNotifierTest < ActionMailer::TestCase
     email = UserNotifier.account_is_setup user
 
     assert_not_nil email
- 
+
     # Test the body of the sent email contains what we expect it to
     assert_equal Rails.configuration.user_notifier_email_from, email.from.first
     assert_equal user.email, email.to.first
