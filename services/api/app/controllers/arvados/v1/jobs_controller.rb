@@ -23,7 +23,7 @@ class Arvados::V1::JobsController < ApplicationController
       # Search for jobs whose script_version is in the list of commits
       # returned by find_commit_range
       @object = nil
-      @incomplete_job = nil
+      incomplete_job = nil
       Job.readable_by(current_user).where(script: resource_attrs[:script],
                                           script_version: r).
         each do |j|
@@ -32,7 +32,7 @@ class Arvados::V1::JobsController < ApplicationController
             j.script_parameters == resource_attrs[:script_parameters]
           if j.running
             # We'll use this if we don't find a job that has completed
-            @incomplete_job ||= j
+            incomplete_job ||= j
           else
             # Record the first job in the list
             if !@object
@@ -45,7 +45,7 @@ class Arvados::V1::JobsController < ApplicationController
             end
           end
         end
-        @object ||= @incomplete_job
+        @object ||= incomplete_job
         if @object
           return show
         end
