@@ -38,7 +38,7 @@ module ApplicationHelper
     end
 
     return h(n)
-      #raw = n.to_s
+    #raw = n.to_s
     #cooked = ''
     #while raw.length > 3
     #  cooked = ',' + raw[-3..-1] + cooked
@@ -51,6 +51,31 @@ module ApplicationHelper
     ArvadosBase::resource_class_for_uuid(attrvalue, opts)
   end
 
+  ##
+  # Returns HTML that links to the Arvados object specified in +attrvalue+
+  # Provides various output control and styling options.
+  #
+  # +attrvalue+ an Arvados model object or uuid
+  #
+  # +opts+ a set of flags to control output:
+  #
+  # [:link_text] the link text to use (may include HTML), overrides everything else
+  #
+  # [:friendly_name] whether to use the "friendly" name in the link text (by
+  # calling #friendly_link_name on the object), otherwise use the uuid
+  #
+  # [:with_class_name] prefix the link text with the class name of the model
+  #
+  # [:no_tags] disable tags in the link text (default is to show tags).
+  # Currently tags are only shown for Collections.
+  #
+  # [:thumbnail] if the object is a collection, show an image thumbnail if the
+  # collection consists of a single image file.
+  #
+  # [:no_link] don't create a link, just return the link text
+  #
+  # +style_opts+ additional HTML properties for the anchor tag, passed to link_to
+  #
   def link_to_if_arvados_object(attrvalue, opts={}, style_opts={})
     if (resource_class = resource_class_for_uuid(attrvalue, opts))
       link_uuid = attrvalue.is_a?(ArvadosBase) ? attrvalue.uuid : attrvalue
@@ -79,15 +104,11 @@ module ApplicationHelper
           end
         end
         if opts[:thumbnail] and resource_class == Collection
-          maximg = 3
+          # add an image thumbnail if the collection consists of a single image file.
           Collection.where(uuid: link_uuid).each do |c|
-            c.files.each do |file|
-              if CollectionsHelper::is_image file[1]
-                link_name += " "
-                link_name += image_tag "#{url_for c}/#{CollectionsHelper::file_path file}", style: "height: 4em; width: auto"
-                maximg -= 1
-              end
-              break if maximg == 0
+            if c.files.length == 1 and CollectionsHelper::is_image c.files.first[1]
+              link_name += " "
+              link_name += image_tag "#{url_for c}/#{CollectionsHelper::file_path c.files.first}", style: "height: 4em; width: auto"
             end
           end
         end
@@ -99,6 +120,7 @@ module ApplicationHelper
         link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: link_uuid }, style_opts
       end
     else
+      # just return attrvalue if it is not recognizable as an Arvados object or uuid.
       attrvalue
     end
   end
@@ -146,7 +168,6 @@ module ApplicationHelper
     datatype = nil
     required = true
     if template
-      #puts "Template is #{template.class} #{template.is_a? Hash} #{template}"
       if template.is_a? Hash
         if template[:output_of]
           return raw("<span class='label label-default'>#{template[:output_of]}</span>")
