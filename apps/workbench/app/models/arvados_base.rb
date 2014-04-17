@@ -138,7 +138,7 @@ class ArvadosBase < ActiveRecord::Base
     # attributes can be modified during "save" -- we should update our copies
     resp.keys.each do |attr|
       if self.respond_to? "#{attr}=".to_sym
-        self.send(attr + '=', resp[attr.to_sym])
+        self.send(attr.to_s + '=', resp[attr.to_sym])
       end
     end
 
