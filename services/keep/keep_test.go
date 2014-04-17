@@ -6,20 +6,30 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"regexp"
 	"testing"
 )
 
 var TEST_BLOCK = []byte("The quick brown fox jumps over the lazy dog.")
 var TEST_HASH = "e4d909c290d0fb1ca068ffaddf22cbd0"
+
+var TEST_BLOCK_2 = []byte("Pack my box with five dozen liquor jugs.")
+var TEST_HASH_2 = "f15ac516f788aec4f30932ffb6395c39"
+
+var TEST_BLOCK_3 = []byte("Now is the time for all good men to come to the aid of their country.")
+var TEST_HASH_3 = "eed29bbffbc2dbe5e5ee0bb71888e61f"
+
+// BAD_BLOCK is used to test collisions and corruption.
+// It must not match any test hashes.
 var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 
 // TODO(twp): Tests still to be written
 //
-//   * PutBlockFull
+//   * TestPutBlockFull
 //       - test that PutBlock returns 503 Full if the filesystem is full.
 //         (must mock FreeDiskSpace or Statfs? use a tmpfs?)
 //
-//   * PutBlockWriteErr
+//   * TestPutBlockWriteErr
 //       - test the behavior when Write returns an error.
 //           - Possible solutions: use a small tmpfs and a high
 //             MIN_FREE_KILOBYTES to trick PutBlock into attempting
@@ -277,6 +287,68 @@ func TestFindKeepVolumesFail(t *testing.T) {
 		}
 
 		os.Remove(PROC_MOUNTS)
+	}
+}
+
+// TestIndex
+//     Test an /index request.
+func TestIndex(t *testing.T) {
+	defer teardown()
+
+	// Set up Keep volumes and populate them.
+	// Include multiple blocks on different volumes, and
+	// some metadata files.
+	KeepVolumes = setup(t, 2)
+	store(t, KeepVolumes[0], TEST_HASH, TEST_BLOCK)
+	store(t, KeepVolumes[1], TEST_HASH_2, TEST_BLOCK_2)
+	store(t, KeepVolumes[0], TEST_HASH_3, TEST_BLOCK_3)
+	store(t, KeepVolumes[0], TEST_HASH+".meta", []byte("metadata"))
+	store(t, KeepVolumes[1], TEST_HASH_2+".meta", []byte("metadata"))
+
+	index := IndexLocators("")
+	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
+		TEST_HASH_3 + `\+\d+ \d+\n` +
+		TEST_HASH_2 + `\+\d+ \d+\n$`
+
+	match, err := regexp.MatchString(expected, index)
+	if err == nil {
+		if !match {
+			t.Errorf("IndexLocators returned:\n-----\n%s-----\n", index)
+		}
+	} else {
+		t.Errorf("regexp.MatchString: %s", err)
+	}
+}
+
+// TestNodeStatus
+//     Test that GetNodeStatus returns valid info about available volumes.
+//
+//     TODO(twp): set up appropriate interfaces to permit more rigorous
+//     testing.
+//
+func TestNodeStatus(t *testing.T) {
+	defer teardown()
+
+	// Set up test Keep volumes.
+	KeepVolumes = setup(t, 2)
+
+	// Get node status and make a basic sanity check.
+	st := GetNodeStatus()
+	for i, vol := range KeepVolumes {
+		volinfo := st.Volumes[i]
+		mtp := volinfo.MountPoint
+		if mtp != vol {
+			t.Errorf("GetNodeStatus mount_point %s != KeepVolume %s", mtp, vol)
+		}
+		if volinfo.DeviceNum == 0 {
+			t.Errorf("uninitialized device_num in %v", volinfo)
+		}
+		if volinfo.BytesFree == 0 {
+			t.Errorf("uninitialized bytes_free in %v", volinfo)
+		}
+		if volinfo.BytesUsed == 0 {
+			t.Errorf("uninitialized bytes_used in %v", volinfo)
+		}
 	}
 }
 

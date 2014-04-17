@@ -21,7 +21,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string||path||
 
-h2. create
+h2(#create). create
 
 Create a new Job.
 
@@ -29,7 +29,97 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-|job|object||query||
+{background:#ccffcc}.|job|object||query||
+
+Attributes of 'job' parameter:
+
+table(table table-bordered table-condensed).
+|_. Attribute               |_. Type|_. Accepted values                            |_. Description|
+{background:#ccffcc}.|script                 |string     |filename                                      |The actual script that will be run by crunch.  Must be the name of an executable file in the crunch_scripts/ directory at the git revision specified by script_version.|
+{background:#ccffcc}.|script_version         |string     |git branch, tag, or commit hash               |The version of code to run, which must be available in the specified repository.|
+{background:#ccffcc}.|repository             |string     |name of git repository hosted by Arvados      |The repository to search for script_version.|
+{background:#ccffcc}.|script_parameters      |object     |any JSON object                               |The input parameters for the job, with the parameter names as keys mapping to parameter values.|
+|minimum_script_version |string     |git branch, tag, or commit hash              |The minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|
+|exclude_script_versions|array of strings|git branch, tag, or commit hash|Script versions to exclude when deciding whether to re-use a past job.|
+|nondeterministic       |boolean    |                                              |If true, never re-use a past job, and flag this job so it will never be considered for re-use.|
+|no_reuse               |boolean    |                                              |If true, do not re-use a past job, but this job may be re-used.|
+
+When a job is executed, the 'script_version' field is resolved to an exact git revision and the git hash for that revision is recorded in 'script_version'.  If 'script_version' can't be resolved, the job submission will be rejected.
+
+h3. Reusing jobs
+
+Because Arvados records the exact version of the script, input parameters, and runtime environment [1] that was used to run the job, if the script is deterministic (meaning that the same code version is guaranteed to produce the same outputs from the same inputs) then it is possible to re-use the results of past jobs, and avoid re-running the computation to save time.  Arvados uses the following algorithm to determine if a past job can be re-used:
+
+notextile. <div class="spaced-out">
+
+# If 'nondeterministic' or 'no_reuse' are true, always create a new job.
+# Find a list of acceptable values for 'script_version'.  If 'minimum_script_version' is specified, this is the set of all revisions in the git commit graph between 'minimum_script_version' and 'script_version' (inclusive) [2].  If 'minimum_script_version' is not specified, only 'script_version' is added to the list.  If 'exclude_script_versions' is specified, the listed versions are excluded from the list.
+# Select jobs have the same 'script' and 'script_parameters' attributes, and where the 'script_version' attribute is in the list of acceptable versions.  Exclude jobs that failed or set 'nondeterministic' to true.
+# If there is more than one candidate job, check that all selected past jobs actually did produce the same output.
+# If everything passed, re-use one of the selected past jobs (if there is more than one match, which job will be returned is undefined).  Otherwise create a new job.
+
+fn1. As of this writing, versioning the runtime environment is still under development.
+
+fn2. This may include parallel branches if there is more than one path between 'minimum_script_version' and 'script_version' in the git commit graph.  Use 'exclude_script_versions' to blacklist specific versions.
+
+</div>
+
+h3. Examples
+
+Run the script "crunch_scripts/hash.py" in the repository "you" using the "master" branch head.  Arvados is allowed to re-use a previous job if the script_version of the past job is the same as the "master" branch head (i.e., there have not been any subsequent commits to "master").
+
+<notextile><pre>
+{
+  "script": "hash.py",
+  "repository": "<b>you</b>",
+  "script_version": "master",
+  "script_parameters": {
+    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  }
+}
+</pre></notextile>
+
+Run using exactly the version "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5". Arvados is allowed to re-use a previous job if the "script_version" of that job is also "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5".
+
+<notextile><pre>
+{
+  "script": "hash.py",
+  "repository": "<b>you</b>",
+  "script_version": "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5",
+  "script_parameters": {
+    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  }
+}
+</pre></notextile>
+
+Arvados is allowed to re-use a previous job if the "script_version" of the past job is between "earlier_version_tag" and the head of the "master" branch (inclusive), but not "blacklisted_version_tag".  If there are no previous jobs, run the job using the head of the "master" branch as specified in "script_version".
+
+<notextile><pre>
+{
+  "script": "hash.py",
+  "repository": "<b>you</b>",
+  "minimum_script_version": "earlier_version_tag",
+  "script_version": "master",
+  "exclude_script_versions": ["blacklisted_version_tag"],
+  "script_parameters": {
+    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  }
+}
+</pre></notextile>
+
+Run the script "crunch_scripts/monte-carlo.py" in the repository "you" using the "master" branch head.  Because it is marked as "nondeterministic", never re-use previous jobs, and never re-use this job.
+
+<notextile><pre>
+{
+  "script": "monte-carlo.py",
+  "repository": "<b>you</b>",
+  "script_version": "master",
+  "nondeterministic": true,
+  "script_parameters": {
+    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  }
+}
+</pre></notextile>
 
 h2. delete
 

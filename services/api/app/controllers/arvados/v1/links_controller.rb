@@ -1,13 +1,17 @@
 class Arvados::V1::LinksController < ApplicationController
 
-  def create
-    if resource_attrs[:head_kind] and ArvadosModel::resource_class_for_uuid(resource_attrs[:head_uuid]).kind != resource_attrs[:head_kind]
-      errors.add(attr, "'#{resource_attrs[:head_kind]}' does not match '#{head_uuid}'")
+  def check_uuid_kind uuid, kind
+    if kind and ArvadosModel::resource_class_for_uuid(uuid).andand.kind != kind
+      render :json => { errors: ["'#{kind}' does not match uuid '#{uuid}', expected '#{ArvadosModel::resource_class_for_uuid(uuid).andand.kind}'"] }.to_json, status: 422
+      nil
+    else
+      true
     end
+  end
 
-    if resource_attrs[:tail_kind] and ArvadosModel::resource_class_for_uuid(resource_attrs[:tail_uuid]).kind != resource_attrs[:tail_kind]
-      errors.add(attr, "'#{resource_attrs[:tail_kind]}' does not match '#{tail_uuid}'")
-    end
+  def create
+    return if ! check_uuid_kind resource_attrs[:head_uuid], resource_attrs[:head_kind]
+    return if ! check_uuid_kind resource_attrs[:tail_uuid], resource_attrs[:tail_kind]
 
     resource_attrs.delete :head_kind
     resource_attrs.delete :tail_kind

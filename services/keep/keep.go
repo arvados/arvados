@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -85,28 +88,37 @@ func main() {
 	//    by looking at currently mounted filesystems for /keep top-level
 	//    directories.
 
-	var listen, keepvols string
+	var listen, volumearg string
 	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
 		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
-	flag.StringVar(&keepvols, "volumes", "",
+	flag.StringVar(&volumearg, "volumes", "",
 		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
 	flag.Parse()
 
 	// Look for local keep volumes.
-	if keepvols == "" {
+	var keepvols []string
+	if volumearg == "" {
 		// TODO(twp): decide whether this is desirable default behavior.
 		// In production we may want to require the admin to specify
 		// Keep volumes explicitly.
-		KeepVolumes = FindKeepVolumes()
+		keepvols = FindKeepVolumes()
 	} else {
-		KeepVolumes = strings.Split(keepvols, ",")
+		keepvols = strings.Split(volumearg, ",")
+	}
+
+	// Check that the specified volumes actually exist.
+	KeepVolumes = []string(nil)
+	for _, v := range keepvols {
+		if _, err := os.Stat(v); err == nil {
+			log.Println("adding Keep volume:", v)
+			KeepVolumes = append(KeepVolumes, v)
+		} else {
+			log.Printf("bad Keep volume: %s\n", err)
+		}
 	}
 
 	if len(KeepVolumes) == 0 {
 		log.Fatal("could not find any keep volumes")
-	}
-	for _, v := range KeepVolumes {
-		log.Println("keep volume:", v)
 	}
 
 	// Set up REST handlers.
@@ -115,8 +127,11 @@ func main() {
 	// appropriate handler.
 	//
 	rest := mux.NewRouter()
-	rest.HandleFunc("/{hash:[0-9a-f]{32}}", GetBlockHandler).Methods("GET")
-	rest.HandleFunc("/{hash:[0-9a-f]{32}}", PutBlockHandler).Methods("PUT")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
 	// Tell the built-in HTTP server to direct all requests to the REST
 	// router.
@@ -203,6 +218,146 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		http.Error(w, errmsg, 500)
 	}
+}
+
+// IndexHandler
+//     A HandleFunc to address /index and /index/{prefix} requests.
+//
+func IndexHandler(w http.ResponseWriter, req *http.Request) {
+	prefix := mux.Vars(req)["prefix"]
+
+	index := IndexLocators(prefix)
+	w.Write([]byte(index))
+}
+
+// StatusHandler
+//     Responds to /status.json requests with the current node status,
+//     described in a JSON structure.
+//
+//     The data given in a status.json response includes:
+//        volumes - a list of Keep volumes currently in use by this server
+//          each volume is an object with the following fields:
+//            * mount_point
+//            * device_num (an integer identifying the underlying filesystem)
+//            * bytes_free
+//            * bytes_used
+//
+type VolumeStatus struct {
+	MountPoint string `json:"mount_point"`
+	DeviceNum  uint64 `json:"device_num"`
+	BytesFree  uint64 `json:"bytes_free"`
+	BytesUsed  uint64 `json:"bytes_used"`
+}
+
+type NodeStatus struct {
+	Volumes []*VolumeStatus `json:"volumes"`
+}
+
+func StatusHandler(w http.ResponseWriter, req *http.Request) {
+	st := GetNodeStatus()
+	if jstat, err := json.Marshal(st); err == nil {
+		w.Write(jstat)
+	} else {
+		log.Printf("json.Marshal: %s\n", err)
+		log.Printf("NodeStatus = %v\n", st)
+		http.Error(w, err.Error(), 500)
+	}
+}
+
+// GetNodeStatus
+//     Returns a NodeStatus struct describing this Keep
+//     node's current status.
+//
+func GetNodeStatus() *NodeStatus {
+	st := new(NodeStatus)
+
+	st.Volumes = make([]*VolumeStatus, len(KeepVolumes))
+	for i, vol := range KeepVolumes {
+		st.Volumes[i] = GetVolumeStatus(vol)
+	}
+	return st
+}
+
+// GetVolumeStatus
+//     Returns a VolumeStatus describing the requested volume.
+//
+func GetVolumeStatus(volume string) *VolumeStatus {
+	var fs syscall.Statfs_t
+	var devnum uint64
+
+	if fi, err := os.Stat(volume); err == nil {
+		devnum = fi.Sys().(*syscall.Stat_t).Dev
+	} else {
+		log.Printf("GetVolumeStatus: os.Stat: %s\n", err)
+		return nil
+	}
+
+	err := syscall.Statfs(volume, &fs)
+	if err != nil {
+		log.Printf("GetVolumeStatus: statfs: %s\n", err)
+		return nil
+	}
+	// These calculations match the way df calculates disk usage:
+	// "free" space is measured by fs.Bavail, but "used" space
+	// uses fs.Blocks - fs.Bfree.
+	free := fs.Bavail * uint64(fs.Bsize)
+	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
+	return &VolumeStatus{volume, devnum, free, used}
+}
+
+// IndexLocators
+//     Returns a string containing a list of locator ids found on this
+//     Keep server.  If {prefix} is given, return only those locator
+//     ids that begin with the given prefix string.
+//
+//     The return string consists of a sequence of newline-separated
+//     strings in the format
+//
+//         locator+size modification-time
+//
+//     e.g.:
+//
+//         e4df392f86be161ca6ed3773a962b8f3+67108864 1388894303
+//         e4d41e6fd68460e0e3fc18cc746959d2+67108864 1377796043
+//         e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
+//
+func IndexLocators(prefix string) string {
+	var output string
+	for _, vol := range KeepVolumes {
+		filepath.Walk(vol,
+			func(path string, info os.FileInfo, err error) error {
+				// This WalkFunc inspects each path in the volume
+				// and prints an index line for all files that begin
+				// with prefix.
+				if err != nil {
+					log.Printf("IndexHandler: %s: walking to %s: %s",
+						vol, path, err)
+					return nil
+				}
+				locator := filepath.Base(path)
+				// Skip directories that do not match prefix.
+				// We know there is nothing interesting inside.
+				if info.IsDir() &&
+					!strings.HasPrefix(locator, prefix) &&
+					!strings.HasPrefix(prefix, locator) {
+					return filepath.SkipDir
+				}
+				// Skip any file that is not apparently a locator, e.g. .meta files
+				if is_valid, err := IsValidLocator(locator); err != nil {
+					return err
+				} else if !is_valid {
+					return nil
+				}
+				// Print filenames beginning with prefix
+				if !info.IsDir() && strings.HasPrefix(locator, prefix) {
+					output = output + fmt.Sprintf(
+						"%s+%d %d\n", locator, info.Size(), info.ModTime().Unix())
+				}
+				return nil
+			})
+	}
+
+	return output
 }
 
 func GetBlock(hash string) ([]byte, error) {
@@ -380,6 +535,10 @@ func IsFull(volume string) (isFull bool) {
 //     Returns the amount of available disk space on VOLUME,
 //     as a number of 1k blocks.
 //
+//     TODO(twp): consider integrating this better with
+//     VolumeStatus (e.g. keep a NodeStatus object up-to-date
+//     periodically and use it as the source of info)
+//
 func FreeDiskSpace(volume string) (free uint64, err error) {
 	var fs syscall.Statfs_t
 	err = syscall.Statfs(volume, &fs)
@@ -388,7 +547,6 @@ func FreeDiskSpace(volume string) (free uint64, err error) {
 		// space in terms of 1K blocks.
 		free = fs.Bavail * uint64(fs.Bsize) / 1024
 	}
-
 	return
 }
 
@@ -408,4 +566,13 @@ func ReadAtMost(r io.Reader, maxbytes int) ([]byte, error) {
 		return nil, ReadErrorTooLong
 	}
 	return buf, err
+}
+
+// IsValidLocator
+//     Return true if the specified string is a valid Keep locator.
+//     When Keep is extended to support hash types other than MD5,
+//     this should be updated to cover those as well.
+//
+func IsValidLocator(loc string) (bool, error) {
+	return regexp.MatchString(`^[0-9a-f]{32}$`, loc)
 }
