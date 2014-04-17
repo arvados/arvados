@@ -121,6 +121,8 @@ module ApplicationHelper
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
     datatype = nil
     required = true
+    attrvalue = value_info
+
     if value_info.is_a? Hash
       if value_info[:output_of]
         return raw("<span class='label label-default'>#{value_info[:output_of]}</span>")
@@ -134,10 +136,9 @@ module ApplicationHelper
       if value_info[:required] != nil
         required = value_info[:required]
       end
-    end
 
-    attrvalue = value_info
-    if value_info.is_a? Hash
+      # Pick a suitable attrvalue to show as the current value (i.e.,
+      # the one that would be used if we ran the pipeline right now).
       if value_info[:value]
         attrvalue = value_info[:value]
       elsif value_info[:default]
