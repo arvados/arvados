@@ -1,0 +1,5 @@
+#! /bin/sh
+
+# Download file to test installation
+curl -o hu599905_20120417214030.csv https://my.pgp-hms.org/user_file/download/393 
+
