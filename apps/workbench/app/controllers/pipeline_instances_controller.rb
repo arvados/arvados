@@ -50,17 +50,6 @@ class PipelineInstancesController < ApplicationController
     return provenance, pips
   end
 
-  def create
-    @object = PipelineInstance.new params[:pipeline_instance]
-    @object.save!
-    if !@object.components.andand.any? and @object.pipeline_template_uuid
-      template = PipelineTemplate.find(@object.pipeline_template_uuid)
-      @object.components = template.components.deep_dup
-      @object.save!
-    end
-    super
-  end
-
   def show
     @pipelines = [@object]
 
