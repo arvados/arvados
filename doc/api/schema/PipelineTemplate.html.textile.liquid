@@ -3,12 +3,135 @@ layout: default
 navsection: api
 navmenu: Schema
 title: PipelineTemplate
-
 ...
 
+Pipelines consist of a set of "components".  Each component is an Arvados job submission.  "Parameters for job submissions are described on the job method page.":{{site.baseurl}}/api/methods/jobs.html#create
+
+table(table table-bordered table-condensed).
+|_. Attribute    |_. Type |_. Accepted values                           |_. Required|_. Description|
+|name            |string  |any                                          |yes        |The human-readable name of the pipeline template.|
+|components      |object  |JSON object containing job submission objects|yes        |The component jobs that make up the pipeline, with the component name as the key. |
+
+h3. Script parameters
+
+When used in a pipeline, each parameter in the 'script_parameters' attribute of a component job can specify that the input parameter must be supplied by the user, or the input parameter should be linked to the output of another component.  To do this, the value of the parameter should be JSON object containing one of the following attributes:
+
+table(table table-bordered table-condensed).
+|_. Attribute    |_. Type |_. Accepted values                               |_. Description|
+|default         |any     |any                                              |The default value for this parameter.|
+|required        |boolean |true or false                                    |Specifies whether the parameter is required to have a value or not.|
+|dataclass       |string  |One of 'Collection', 'File' [1], 'number', or 'text' |Data type of this parameter.|
+|output_of       |string  |the name of another component in the pipeline    |Specifies that the value of this parameter should be set to the 'output' attribute of the job that corresponds to the specified component.|
+
+The 'output_of' parameter is especially important, as this is how components are actually linked together to form a pipeline.  Component jobs that depend on the output of other components do not run until the parent job completes and has produced output.  If the parent job fails, the entire pipeline fails.
+
+fn1. The 'File' type refers to a specific file within a Keep collection in the form 'collection_hash/filename', for example '887cd41e9c613463eab2f0d885c6dd96+83/bob.txt'.
+
+h3. Examples
+
+This is a pipeline named "Filter md5 hash values" with two components, "do_hash" and "filter".  The "input" script parameter of the "do_hash" component is required to be filled in by the user, and the expected data type is "Collection".  This also specifies that the "input" script parameter of the "filter" component is the output of "do_hash", so "filter" will not run until "do_hash" completes successfully.  When the pipeline runs, past jobs that meet the criteria described above may be substituted for either or both components to avoid redundant computation.
+
+<notextile><pre>
+{
+  "name": "Filter md5 hash values",
+  "components": {
+    "do_hash": {
+      "script": "hash.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": {
+        "input": {
+          "required": true,
+          "dataclass": "Collection"
+        }
+      },
+    },
+    "filter": {
+      "script": "0-filter.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": {
+        "input": {
+          "output_of": "do_hash"
+        }
+      },
+    }
+  }
+}
+</pre></notextile>
+
+This pipeline consists of three components.  The components "thing1" and "thing2" both depend on "cat_in_the_hat".  Once the "cat_in_the_hat" job is complete, both "thing1" and "thing2" can run in parallel, because they do not depend on each other.
+
+<notextile><pre>
+{
+  "name": "Wreck the house",
+  "components": {
+    "cat_in_the_hat": {
+      "script": "cat.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": { }
+    },
+    "thing1": {
+      "script": "thing1.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": {
+        "input": {
+          "output_of": "cat_in_the_hat"
+        }
+      },
+    },
+    "thing2": {
+      "script": "thing2.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": {
+        "input": {
+          "output_of": "cat_in_the_hat"
+        }
+      },
+    },
+  }
+}
+</pre></notextile>
+
+This pipeline consists of three components.  The component "cleanup" depends on "thing1" and "thing2".  Both "thing1" and "thing2" are started immediately and can run in parallel, because they do not depend on each other, but "cleanup" cannot begin until both "thing1" and "thing2" have completed.
+
+<notextile><pre>
+{
+  "name": "Clean the house",
+  "components": {
+    "thing1": {
+      "script": "thing1.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": { }
+    },
+    "thing2": {
+      "script": "thing2.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": { }
+    },
+    "cleanup": {
+      "script": "cleanup.py",
+      "repository": "<b>you</b>",
+      "script_version": "master",
+      "script_parameters": {
+        "mess1": {
+          "output_of": "thing1"
+        },
+        "mess2": {
+          "output_of": "thing2"
+        }
+      }
+    }
+  }
+}
+</pre></notextile>
 
 
-A **PipelineTemplate** represents...
 
 h2. Methods
 

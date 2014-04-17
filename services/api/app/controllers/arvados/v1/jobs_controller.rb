@@ -27,7 +27,7 @@ class Arvados::V1::JobsController < ApplicationController
                                           script_version: r).
         each do |j|
         if j.nondeterministic != true and
-            j.success != false and
+            ((j.success == true and j.output != nil) or j.running == true) and
             j.script_parameters == resource_attrs[:script_parameters]
           # Record the first job in the list
           if !@object
