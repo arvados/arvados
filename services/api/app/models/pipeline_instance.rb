@@ -5,7 +5,6 @@ class PipelineInstance < ArvadosModel
   serialize :components, Hash
   serialize :properties, Hash
   belongs_to :pipeline_template, :foreign_key => :pipeline_template_uuid, :primary_key => :uuid
-  attr_accessor :pipeline_template
 
   before_validation :bootstrap_components
   before_validation :update_success
@@ -68,7 +67,7 @@ class PipelineInstance < ArvadosModel
   protected
   def bootstrap_components
     if pipeline_template and (!components or components.empty?)
-      self.components = pipeline_template.components
+      self.components = pipeline_template.components.deep_dup
     end
   end
 
