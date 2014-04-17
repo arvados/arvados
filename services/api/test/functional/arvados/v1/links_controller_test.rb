@@ -20,6 +20,43 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     end
   end
 
+  %w(created_at updated_at modified_at).each do |attr|
+    {nil: nil, bogus: 2.days.ago}.each do |bogustype, bogusvalue|
+      test "cannot set #{bogustype} #{attr} in create" do
+        authorize_with :active
+        post :create, {
+          link: {
+            properties: {},
+            link_class: 'test',
+            name: 'test',
+          }.merge(attr => bogusvalue)
+        }
+        assert_response :success
+        resp = JSON.parse @response.body
+        assert_in_delta Time.now, Time.parse(resp[attr]), 3.0
+      end
+      test "cannot set #{bogustype} #{attr} in update" do
+        really_created_at = links(:test_timestamps).created_at
+        authorize_with :active
+        put :update, {
+          id: links(:test_timestamps).uuid,
+          link: {
+            :properties => {test: 'test'},
+            attr => bogusvalue
+          }
+        }
+        assert_response :success
+        resp = JSON.parse @response.body
+        case attr
+        when 'created_at'
+          assert_in_delta really_created_at, Time.parse(resp[attr]), 0.001
+        else
+          assert_in_delta Time.now, Time.parse(resp[attr]), 3.0
+        end
+      end
+    end
+  end
+
   test "head must exist" do
     link = {
       link_class: 'test',

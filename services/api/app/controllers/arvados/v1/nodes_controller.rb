@@ -15,7 +15,7 @@ class Arvados::V1::NodesController < ApplicationController
   end
 
   def ping
-    act_as_system_user do 
+    act_as_system_user do
       @object = Node.where(uuid: (params[:id] || params[:uuid])).first
       if !@object
         return render_not_found

@@ -118,49 +118,39 @@ module ApplicationHelper
     }.merge(htmloptions)
   end
 
-  def render_editable_subattribute(object, attr, subattr, template, htmloptions={})
-    if object
-      attrvalue = object.send(attr)
-      subattr.each do |k|
-        if attrvalue and attrvalue.is_a? Hash
-          attrvalue = attrvalue[k]
-        else
-          break
-        end
-      end
-    end
-
+  def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
     datatype = nil
     required = true
-    if template
-      #puts "Template is #{template.class} #{template.is_a? Hash} #{template}"
-      if template.is_a? Hash
-        if template[:output_of]
-          return raw("<span class='label label-default'>#{template[:output_of]}</span>")
-        end
-        if template[:dataclass]
-          dataclass = template[:dataclass]
-        end
-        if template[:optional] != nil
-          required = (template[:optional] != "true")
-        end
-        if template[:required] != nil
-          required = template[:required]
-        end
+    attrvalue = value_info
+
+    if value_info.is_a? Hash
+      if value_info[:output_of]
+        return raw("<span class='label label-default'>#{value_info[:output_of]}</span>")
+      end
+      if value_info[:dataclass]
+        dataclass = value_info[:dataclass]
+      end
+      if value_info[:optional] != nil
+        required = (value_info[:optional] != "true")
+      end
+      if value_info[:required] != nil
+        required = value_info[:required]
+      end
+
+      # Pick a suitable attrvalue to show as the current value (i.e.,
+      # the one that would be used if we ran the pipeline right now).
+      if value_info[:value]
+        attrvalue = value_info[:value]
+      elsif value_info[:default]
+        attrvalue = value_info[:default]
+      else
+        attrvalue = ''
       end
     end
 
-    rsc = template
-    if template.is_a? Hash
-      if template[:value]
-        rsc = template[:value]
-      elsif template[:default]
-        rsc = template[:default]
-      end
+    unless object.andand.attribute_editable? attr
+      return link_to_if_arvados_object attrvalue
     end
-
-    return link_to_if_arvados_object(rsc) if !object
-    return link_to_if_arvados_object(attrvalue) if !object.attribute_editable? attr
 
     if dataclass
       begin
@@ -168,23 +158,20 @@ module ApplicationHelper
       rescue NameError
       end
     else
-      dataclass = ArvadosBase.resource_class_for_uuid(rsc)
+      dataclass = ArvadosBase.resource_class_for_uuid(attrvalue)
     end
 
-    if dataclass && dataclass.is_a?(Class)
+    if dataclass.andand.is_a?(Class)
       datatype = 'select'
     elsif dataclass == 'number'
       datatype = 'number'
-    else
-      if template.is_a? Array
-        # ?!?
-      elsif template.is_a? String
-        if /^\d+$/.match(template)
-          datatype = 'number'
-        else
-          datatype = 'text'
-        end
-      end
+    elsif attrvalue.is_a? Array
+      # TODO: find a way to edit arrays with x-editable
+      return attrvalue
+    elsif attrvalue.is_a? Fixnum or attrvalue.is_a? Float
+      datatype = 'number'
+    elsif attrvalue.is_a? String
+      datatype = 'text'
     end
 
     id = "#{object.uuid}-#{subattr.join('-')}"
@@ -192,14 +179,13 @@ module ApplicationHelper
     subattr.each do |a|
       dn += "[#{a}]"
     end
-
-    if attrvalue.is_a? String
-      attrvalue = attrvalue.strip
+    if value_info.is_a? Hash
+      dn += '[value]'
     end
 
+    items = []
     attrtext = attrvalue
     if dataclass and dataclass.is_a? Class
-      items = []
       if attrvalue and !attrvalue.empty?
         Link.where(head_uuid: attrvalue, link_class: ["tag", "identifier"]).each do |tag|
           attrtext += " [#{tag.name}]"
@@ -227,7 +213,7 @@ module ApplicationHelper
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => datatype,
-      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
+      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
       "data-title" => "Set value for #{subattr[-1].to_s}",
       "data-name" => dn,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
@@ -238,8 +224,8 @@ module ApplicationHelper
     }.merge(htmloptions)
 
     lt += raw("\n<script>")
-
-    if items and items.length > 0
+    
+    if items.any?
       lt += raw("add_form_selection_sources(#{items.to_json});\n")
     end
 

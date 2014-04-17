@@ -277,3 +277,15 @@ testusergroup_can_manage_active_user:
   name: can_manage
   head_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   properties: {}
+
+test_timestamps:
+  uuid: zzzzz-o0j2j-4abnk2w5t86x4uc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-15 13:17:14 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-15 13:17:14 -0400
+  updated_at: 2014-04-15 13:17:14 -0400
+  link_class: test
+  name: test
+  properties: {}
