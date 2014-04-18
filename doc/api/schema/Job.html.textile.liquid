@@ -39,13 +39,10 @@ Each job has, in addition to the usual "attributes of Arvados resources":{{site.
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
-|submit_id|string|Unique ID provided by client when job was submitted|Optional. Can be used by client to ensure idempotence|
-|priority|string|||
-|runtime_constraints{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
-|script|string|Name of crunch script in @/crunch_scripts/@||
-|script_parameters{}|list|Parameters passed to MapReduce script||
+|script|string|The filename of the job script.|This program will be invoked by Crunch for each job task. It is given as a path to an executable file, relative to the @/crunch_scripts@ directory in the Git tree specified by the _repository_ and _script_version_ attributes.|
+|script_parameters|hash|The input parameters for the job.|Conventionally, one of the parameters is called @"input"@. Typically, some parameter values are collection UUIDs. Ultimately, though, the significance of parameters is left entirely up to the script itself.|
+|repository|string|Git repository|Given as the name of a locally hosted git repository.|
 |script_version|string|Git branch, tag, or commit hash.|Before the job starts, this is the Git branch, tag, or hash supplied by the user.  When the job starts, Arvados updates this field to the full 40-character git hash of the actual commit used by the job.|
-|repository             |string     |The repository from which the script_version will be fetched.|
 |cancelled_by_client_uuid|string|API client ID|Is null if job has not been cancelled|
 |cancelled_by_user_uuid|string|Authenticated user ID|Is null if job has not been cancelled|
 |cancelled_at|datetime|When job was cancelled|Is null if job has not been cancelled|
@@ -54,24 +51,18 @@ table(table table-bordered table-condensed).
 |running|boolean|Whether the job is running||
 |success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
 |is_locked_by_uuid|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
-|log|string|||
-|tasks_summary|Hash|||
-|output|string|||
-|nondeterministic       |boolean    |Indicates whether this job is a candidate for re-use|If true, this job will never be considered for re-use.|
+|log|string|Collection UUID|Is null if the job has not finished. After the job runs, the given collection contains a text file with log messages provided by the @arv-crunch-job@ task scheduler as well as the standard error streams provided by the task processes.|
+|tasks_summary|Hash|Summary of task completion states.|Example: @{"done":0,"running":4,"todo":2,"failed":0}@|
+|output|string|Collection UUID|Is null if the job has not finished.|
+|nondeterministic|boolean|The job is expected to produce different results if run more than once.|If true, this job will not be considered as a candidate for automatic re-use when submitting subsequent identical jobs.|
+|submit_id|string|Unique ID provided by client when job was submitted|Optional. This can be used by a client to make the "jobs.create":{{site.baseurl}}/api/methods/jobs.html#create method idempotent.|
+|priority|string|||
+|runtime_constraints|hash|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
 
 h3. Runtime constraints
 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Implemented|
-|dependencies{}|list|[
- {
-  "name": "freebayes",
-  "package_type": "git",
-  "origin": "https://github.com/ekg/freebayes.git",
-  "version": "011561f4a96619125d4388b66b2e82b173f3de7a"
- },
- ...
-]||
 |min_nodes|integer||&#10003;|
 |max_nodes|integer|||
 |max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#10003;|

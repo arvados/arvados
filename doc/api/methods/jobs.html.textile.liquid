@@ -29,20 +29,10 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|job|object||query||
-
-Attributes of 'job' parameter:
-
-table(table table-bordered table-condensed).
-|_. Attribute               |_. Type|_. Accepted values                            |_. Description|
-{background:#ccffcc}.|script                 |string     |filename                                      |The actual script that will be run by crunch.  Must be the name of an executable file in the crunch_scripts/ directory at the Git revision specified by script_version.|
-{background:#ccffcc}.|script_version         |string     |Git branch, tag, or commit hash               |The version of code to run, which must be available in the specified repository.|
-{background:#ccffcc}.|repository             |string     |Name of Git repository hosted by Arvados      |The repository to search for script_version.|
-{background:#ccffcc}.|script_parameters      |object     |Any JSON object                               |The input parameters for the job, with the parameter names as keys mapping to parameter values.|
-|minimum_script_version |string     |Git branch, tag, or commit hash              |The minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|
-|exclude_script_versions|array of strings|Git branch, tag, or commit hash|Script versions to exclude when deciding whether to re-use a past job.|
-|nondeterministic       |boolean    |                                              |If true, never re-use a past job, and flag this job so it will never be considered for re-use.|
-|no_reuse               |boolean    |                                              |If true, do not re-use a past job, but this job may be re-used.|
+{background:#ccffcc}.|job|object|See "Job resource":{{site.baseurl}}/schema/Job.html|request body||
+|minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|query|@c3e86c9@|
+|exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@|
+|no_reuse               |boolean    |Disable implicit "find or create" feature: run a new job, even if a job is available with identical script, version, and parameters.|query|@false@|
 
 When a job is executed, the 'script_version' field is resolved to an exact Git revision and the Git hash for that revision is recorded in 'script_version'.  If 'script_version' can't be resolved, the job submission will be rejected.
 
@@ -70,11 +60,13 @@ Run the script "crunch_scripts/hash.py" in the repository "you" using the "maste
 
 <notextile><pre>
 {
-  "script": "hash.py",
-  "repository": "<b>you</b>",
-  "script_version": "master",
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  "job": {
+    "script": "hash.py",
+    "repository": "<b>you</b>",
+    "script_version": "master",
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
   }
 }
 </pre></notextile>
@@ -83,11 +75,13 @@ Run using exactly the version "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5". Arvado
 
 <notextile><pre>
 {
-  "script": "hash.py",
-  "repository": "<b>you</b>",
-  "script_version": "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5",
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  "job": {
+    "script": "hash.py",
+    "repository": "<b>you</b>",
+    "script_version": "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5",
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
   }
 }
 </pre></notextile>
@@ -96,14 +90,16 @@ Arvados is allowed to re-use a previous job if the "script_version" of the past 
 
 <notextile><pre>
 {
-  "script": "hash.py",
-  "repository": "<b>you</b>",
+  "job": {
+    "script": "hash.py",
+    "repository": "<b>you</b>",
+    "script_version": "master",
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
+  },
   "minimum_script_version": "earlier_version_tag",
-  "script_version": "master",
-  "exclude_script_versions": ["blacklisted_version_tag"],
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
-  }
+  "exclude_script_versions": ["blacklisted_version_tag"]
 }
 </pre></notextile>
 
@@ -111,12 +107,14 @@ Run the script "crunch_scripts/monte-carlo.py" in the repository "you" using the
 
 <notextile><pre>
 {
-  "script": "monte-carlo.py",
-  "repository": "<b>you</b>",
-  "script_version": "master",
-  "nondeterministic": true,
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  "job": {
+    "script": "monte-carlo.py",
+    "repository": "<b>you</b>",
+    "script_version": "master",
+    "nondeterministic": true,
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
   }
 }
 </pre></notextile>
