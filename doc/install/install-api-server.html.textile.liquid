@@ -84,13 +84,32 @@ Put it in @config/application.yml@ in the production or common section:
 
 Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
 
-Configure the database:
+Generate a new database password. Nobody ever needs to memorize it or type it, so we'll make a strong one:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+6gqa1vu492idd7yca9tfandj3
+</code></pre></notextile>
+
+Create a new database user with permission to create its own databases.
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted --pwprompt arvados</span>
+[sudo] password for <b>you</b>: <span class="userinput">yourpassword</span>
+Enter password for new role: <span class="userinput">paste-password-you-generated</span>
+Enter it again: <span class="userinput">paste-password-again</span>
+Shall the new role be a superuser? (y/n) <span class="userinput">n</span>
+Shall the new role be allowed to create more new roles? (y/n) <span class="userinput">n</span>
+</code></pre></notextile>
+
+Configure API server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.
 
 <notextile>
 <pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/database.yml.sample config/database.yml</span>
+~/arvados/services/api$ <span class="userinput">edit config/database.yml</span>
 </code></pre></notextile>
 
-By default, the development database will use the sqlite3 driver, so no configuration is necessary.  If you wish to use mysql or postgres, edit @config/database.yml@ to your liking and make sure the database and db user exist. Then initialize the database:
+Create and initialize the database.
 
 <notextile>
 <pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=development bundle exec rake db:setup</span>
@@ -107,7 +126,7 @@ Edit @config/initializers/omniauth.rb@. Set @APP_SECRET@ to the value of @app_se
 You can now run the development server:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rails server
+<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails server
 </code></pre></notextile>
 
 h3. Apache/Passenger (optional)
