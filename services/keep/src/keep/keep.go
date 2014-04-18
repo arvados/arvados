@@ -361,52 +361,25 @@ func IndexLocators(prefix string) string {
 }
 
 func GetBlock(hash string) ([]byte, error) {
-	var buf = make([]byte, BLOCKSIZE)
-
 	// Attempt to read the requested hash from a keep volume.
 	for _, vol := range KeepVolumes {
-		var f *os.File
-		var err error
-		var nread int
-
-		blockFilename := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
-
-		f, err = os.Open(blockFilename)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				// A block is stored on only one Keep disk,
-				// so os.IsNotExist is expected.  Report any other errors.
-				log.Printf("%s: opening %s: %s\n", vol, blockFilename, err)
+		uv := UnixVolume{vol}
+		if buf, err := uv.Read(hash); err != nil {
+			if os.IsNotExist(err) {
+				// IsNotExist is an expected error.
+				continue
+			} else {
+				log.Printf("GetBlock: reading %s: %s\n", hash, err)
+				return buf, err
 			}
-			continue
+		} else {
+			// Success!
+			return buf, nil
 		}
-
-		nread, err = f.Read(buf)
-		if err != nil {
-			log.Printf("%s: reading %s: %s\n", vol, blockFilename, err)
-			continue
-		}
-
-		// Double check the file checksum.
-		//
-		filehash := fmt.Sprintf("%x", md5.Sum(buf[:nread]))
-		if filehash != hash {
-			// TODO(twp): this condition probably represents a bad disk and
-			// should raise major alarm bells for an administrator: e.g.
-			// they should be sent directly to an event manager at high
-			// priority or logged as urgent problems.
-			//
-			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
-				vol, blockFilename, filehash)
-			return buf, CorruptError
-		}
-
-		// Success!
-		return buf[:nread], nil
 	}
 
 	log.Printf("%s: not found on any volumes, giving up\n", hash)
-	return buf, NotFoundError
+	return nil, NotFoundError
 }
 
 /* PutBlock(block, hash)
