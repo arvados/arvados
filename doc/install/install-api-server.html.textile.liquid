@@ -8,9 +8,31 @@ h2. Prerequisites:
 
 # A GNU/Linux (virtual) machine
 # A domain name for your api server
-# Ruby >= 2.0.0
-# Bundler: @gem install bundler@
-# Curl libraries: @sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev@
+
+h2. Install dependencies
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev \
+    libxslt1.1 zlib1g-dev gettext bison libssl-dev libreadline-dev \
+    libpq-dev sqlite3 libsqlite3-dev build-essential wget postgresql
+</span></code></pre></notextile>
+
+h2. Install Ruby and bundler
+
+We recommend Ruby >= 2.1.
+
+<notextile>
+<pre><code><span class="userinput">mkdir -p ~/src
+cd ~/src
+wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.1.tar.gz
+tar xzf ruby-2.1.1.tar.gz
+cd ruby-2.1.1
+./configure
+make
+sudo make install
+
+gem install bundler</span>
+</code></pre></notextile>
 
 h2. Download the source tree
 
