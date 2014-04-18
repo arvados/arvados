@@ -23,7 +23,7 @@ EOF
 
 h3. "arvados" repository
 
-This will be readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying a commit like "arvados:HEAD", rather than having to pull the Arvados git tree into their own repositories.
+This will be readable by the "All users" group, and therefore by every active user. This makes it possible for users to run the bundled Crunch scripts by specifying a commit like "arvados:HEAD", rather than pulling the Arvados source tree into their own repositories.
 
 <pre>
 prefix=`arv user current | cut -d- -f1`
