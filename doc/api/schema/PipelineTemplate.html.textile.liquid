@@ -131,30 +131,15 @@ This pipeline consists of three components.  The component "cleanup" depends on 
 }
 </pre></notextile>
 
-
-
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "pipeline_templates":{{site.baseurl}}/api/methods/pipeline_templates.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_templates@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a PipelineTemplate.
-
-h3. Side effects
-
-Side effects of creating a PipelineTemplate.
-
-h2. Resources
+h2. Resource
 
 Each PipelineTemplate has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
-|components|Hash|||
-|updated_at|datetime|||
+|components|hash|||

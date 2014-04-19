@@ -6,10 +6,11 @@ title: "jobs"
 
 ...
 
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
-
 
 h2. cancel
 
@@ -168,7 +169,7 @@ table(table table-bordered table-condensed).
 
 h2. queue
 
-queue jobs
+Get the current job queue.
 
 Arguments:
 
@@ -176,6 +177,8 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |order|string||query||
 |filters|array||query||
+
+This method is equivalent to the "list method":#list, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
 
 h2. update
 

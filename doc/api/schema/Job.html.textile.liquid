@@ -6,8 +6,6 @@ title: Job
 
 ...
 
-
-
 Applications submit compute jobs when:
 * Provenance is important, i.e., it is worth recording how the output was produced; or
 * Computation time is significant; or
@@ -15,23 +13,7 @@ Applications submit compute jobs when:
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
-
-h3. Queue
-
-<pre>
-GET https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
-
-POST https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
-_method=GET
-filters=[["owner_uuid","=","xyzzy-tpzed-a4lcehql0dv2u25"]]
-</pre>
-
-&rarr; Job resource list
-
-This method is equivalent to the "index method":{{site.baseurl}}/api/methods.html#index, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
+See "jobs":{{site.baseurl}}/api/methods/jobs.html
 
 h2. Resource
 
@@ -52,7 +34,7 @@ table(table table-bordered table-condensed).
 |success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
 |is_locked_by_uuid|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
 |log|string|Collection UUID|Is null if the job has not finished. After the job runs, the given collection contains a text file with log messages provided by the @arv-crunch-job@ task scheduler as well as the standard error streams provided by the task processes.|
-|tasks_summary|Hash|Summary of task completion states.|Example: @{"done":0,"running":4,"todo":2,"failed":0}@|
+|tasks_summary|hash|Summary of task completion states.|Example: @{"done":0,"running":4,"todo":2,"failed":0}@|
 |output|string|Collection UUID|Is null if the job has not finished.|
 |nondeterministic|boolean|The job is expected to produce different results if run more than once.|If true, this job will not be considered as a candidate for automatic re-use when submitting subsequent identical jobs.|
 |submit_id|string|Unique ID provided by client when job was submitted|Optional. This can be used by a client to make the "jobs.create":{{site.baseurl}}/api/methods/jobs.html#create method idempotent.|
