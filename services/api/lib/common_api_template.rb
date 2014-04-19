@@ -16,7 +16,6 @@ module CommonApiTemplate
       t.add :modified_by_client_uuid
       t.add :modified_by_user_uuid
       t.add :modified_at
-      t.add :updated_at
     end
   end
 
