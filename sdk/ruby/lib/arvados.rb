@@ -35,9 +35,8 @@ class Arvados
     @application_version ||= 0.0
     @application_name ||= File.split($0).last
 
-    @arvados_api_version = opts[:api_version] ||
-      config['ARVADOS_API_VERSION'] ||
-      'v1'
+    @arvados_api_version = opts[:api_version] || 'v1'
+
     @arvados_api_host = opts[:api_host] ||
       config['ARVADOS_API_HOST'] or
       raise "#{$0}: no :api_host or ENV[ARVADOS_API_HOST] provided."
@@ -46,7 +45,8 @@ class Arvados
       raise "#{$0}: no :api_token or ENV[ARVADOS_API_TOKEN] provided."
 
     if (opts[:suppress_ssl_warnings] or
-        config['ARVADOS_API_HOST_INSECURE'])
+        %w(1 true yes).index(config['ARVADOS_API_HOST_INSECURE'].
+                             andand.downcase))
       suppress_warnings do
         OpenSSL::SSL.const_set 'VERIFY_PEER', OpenSSL::SSL::VERIFY_NONE
       end
@@ -150,7 +150,15 @@ class Arvados
     config['ARVADOS_API_HOST']          = ENV['ARVADOS_API_HOST']
     config['ARVADOS_API_TOKEN']         = ENV['ARVADOS_API_TOKEN']
     config['ARVADOS_API_HOST_INSECURE'] = ENV['ARVADOS_API_HOST_INSECURE']
-    config['ARVADOS_API_VERSION']       = ENV['ARVADOS_API_VERSION']
+
+    if config['ARVADOS_API_HOST'] and config['ARVADOS_API_TOKEN']
+      # Environment variables take precedence over the config file, so
+      # there is no point reading the config file. If the environment
+      # specifies a _HOST without asking for _INSECURE, we certainly
+      # shouldn't give the config file a chance to create a
+      # system-wide _INSECURE state for this user.
+      return (@@config = config)
+    end
 
     begin
       expanded_path = File.expand_path config_file_path
@@ -162,8 +170,10 @@ class Arvados
           # skip comments and blank lines
           next if line.match('^\s*#') or not line.match('\S')
           var, val = line.chomp.split('=', 2)
+          var.strip!
+          val.strip!
           # allow environment settings to override config files.
-          if var and val
+          if val
             config[var] ||= val
           else
             warn "#{expanded_path}: #{lineno}: could not parse `#{line}'"
