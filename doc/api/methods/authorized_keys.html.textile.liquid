@@ -51,17 +51,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the AuthorizedKey in question.|path||
 
-h2. index
-
-index authorized_keys
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List authorized_keys.
@@ -72,9 +61,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of authorized_keys to return.|query||
 |order|string|Order in which to return matching authorized_keys.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching authorized_keys.|query||
-|where|object|Conditions for filtering authorized_keys.|query||
+|filters|array|Conditions for filtering authorized_keys.|query||
 
 h2. show
 

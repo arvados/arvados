@@ -60,17 +60,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 
-h2. index
-
-index repositories
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List repositories.
@@ -81,9 +70,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of repositories to return.|query||
 |order|string|Order in which to return matching repositories.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching repositories.|query||
-|where|object|Conditions for filtering repositories.|query||
+|filters|array|Conditions for filtering repositories.|query||
 
 h2. show
 

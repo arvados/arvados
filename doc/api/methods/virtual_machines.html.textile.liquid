@@ -60,17 +60,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 
-h2. index
-
-index virtual_machines
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List virtual_machines.
@@ -81,9 +70,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of virtual_machines to return.|query||
 |order|string|Order in which to return matching virtual_machines.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching virtual_machines.|query||
-|where|object|Conditions for filtering virtual_machines.|query||
+|filters|array|Conditions for filtering virtual_machines.|query||
 
 h2. logins
 

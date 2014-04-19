@@ -51,17 +51,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the JobTask in question.|path||
 
-h2. index
-
-index job_tasks
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List job_tasks.
@@ -72,9 +61,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of job_tasks to return.|query||
 |order|string|Order in which to return matching job_tasks.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching job_tasks.|query||
-|where|object|Conditions for filtering job_tasks.|query||
+|filters|array|Conditions for filtering job_tasks.|query||
 
 h2. show
 

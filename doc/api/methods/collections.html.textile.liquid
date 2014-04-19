@@ -51,17 +51,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 
-h2. index
-
-index collections
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List collections.
@@ -72,9 +61,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of collections to return.|query||
 |order|string|Order in which to return matching collections.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching collections.|query||
-|where|object|Conditions for filtering collections.|query||
+|filters|array|Conditions for filtering collections.|query||
 
 h2. show
 

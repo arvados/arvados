@@ -153,17 +153,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Job in question.|path||
 
-h2. index
-
-index jobs
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List jobs.
@@ -174,9 +163,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of jobs to return.|query||
 |order|string|Order in which to return matching jobs.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching jobs.|query||
-|where|object|Conditions for filtering jobs.|query||
+|filters|array|Conditions for filtering jobs.|query||
 
 h2. log_tail_follow
 
@@ -198,7 +185,7 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |order|string||query||
-|where|object||query||
+|filters|array||query||
 
 h2. show
 

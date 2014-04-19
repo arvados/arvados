@@ -51,17 +51,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Group in question.|path||
 
-h2. index
-
-index groups
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List groups.
@@ -72,9 +61,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of groups to return.|query||
 |order|string|Order in which to return matching groups.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching groups.|query||
-|where|object|Conditions for filtering groups.|query||
+|filters|array|Conditions for filtering groups.|query||
 
 h2. show
 

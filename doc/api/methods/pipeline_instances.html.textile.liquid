@@ -51,17 +51,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the PipelineInstance in question.|path||
 
-h2. index
-
-index pipeline_instances
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List pipeline_instances.
@@ -72,9 +61,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of pipeline_instances to return.|query||
 |order|string|Order in which to return matching pipeline_instances.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching pipeline_instances.|query||
-|where|object|Conditions for filtering pipeline_instances.|query||
+|filters|array|Conditions for filtering pipeline_instances.|query||
 
 h2. show
 

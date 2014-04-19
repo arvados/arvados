@@ -26,7 +26,7 @@ GET https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
 
 POST https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
 _method=GET
-where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
+filters=[["owner_uuid","=","xyzzy-tpzed-a4lcehql0dv2u25"]]
 </pre>
 
 &rarr; Job resource list
