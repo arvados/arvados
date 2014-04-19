@@ -14,7 +14,7 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 h2. cancel
 
-cancel jobs
+Cancel a job that is queued or running.
 
 Arguments:
 
@@ -35,7 +35,7 @@ table(table table-bordered table-condensed).
 |exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@|
 |find_or_create         |boolean    |Before creating, look for an existing job that has identical script, script_version, and script_parameters to those in the present job, has nondeterministic=false, and did not fail (it could be queued, running, or completed). If such a job exists, respond with the existing job instead of submitting a new one.|query|@false@|
 
-When a job is executed, the 'script_version' field is resolved to an exact Git revision and the Git hash for that revision is recorded in 'script_version'.  If 'script_version' can't be resolved, the job submission will be rejected.
+When a job is submitted to the queue using the **create** method, the 'script_version' field is updated to a full 40-character Git commit hash based on the current content of the specified repository. If 'script_version' cannot be resolved, the job submission is rejected.
 
 h3. Reusing jobs
 
