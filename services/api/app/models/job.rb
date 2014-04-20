@@ -71,7 +71,11 @@ class Job < ArvadosModel
   end
 
   def skip_uuid_read_permission_check
-    super + %w(cancelled_by_client_uuid output log)
+    super + %w(cancelled_by_client_uuid)
+  end
+
+  def skip_uuid_existence_check
+    super + %w(output log)
   end
 
   def ensure_script_version_is_commit
