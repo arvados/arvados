@@ -235,5 +235,20 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_response 422
   end
 
+  test "finish a job" do
+    authorize_with :active
+    put :update, {
+      id: jobs(:nearly_finished_job).uuid,
+      job: {
+        output_uuid: '551392cc37a317abf865b95f66f4ef94+101',
+        log: '9215de2a951a721f5f156bc08cf63ad7+93',
+        tasks_summary: {done: 1, running: 0, todo: 0, failed: 0},
+        success: true,
+        running: false,
+        finished_at: Time.now.to_s
+      }
+    }
+    assert_response :success
+  end
 
 end
