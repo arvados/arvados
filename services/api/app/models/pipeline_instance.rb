@@ -79,10 +79,16 @@ class PipelineInstance < ArvadosModel
 
     all_components_have_input = true
     components.each do |name, component|
-      if !component.andand['script_parameters'].andand['input'] || 
-          component.andand['script_parameters'].andand['input'].empty?
-        all_components_have_input = false
-        break
+      component['script_parameters'].each do |parametername, parameter|
+        parameter = { 'value' => parameter } unless parameter.is_a? Hash
+        if parameter['value'].nil? and
+            ![false,'false',0,'0'].index parameter['required']
+          if parameter['output_of']
+            next
+          end          
+          all_components_have_input = false
+          break
+        end
       end
     end
     return all_components_have_input

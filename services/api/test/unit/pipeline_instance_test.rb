@@ -21,12 +21,12 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     pi = pipeline_instances :new_pipeline
 
     # add a component with no input and expect state to be New
-    component = {'script_parameters' => {"something" => "c1bad4b39ca5a924e481008009d94e32+210"}}
+    component = {'script_parameters' => {"input_not_provided" => {"required" => "true"}}}
     pi.components['first'] = component
     components = pi.components
     pi.update_attribute 'components', pi.components
     pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
-    assert_equal PipelineInstance::New, pi.state, 'expected state to be Ready after adding component with input'
+    assert_equal PipelineInstance::New, pi.state, 'expected state to be New after adding component with input'
     assert_equal pi.components.size, 1, 'expected one component'
     assert !pi.active, 'expected active to be false after update'
     assert !pi.success, 'expected success to be false for a new pipeline'
@@ -66,13 +66,13 @@ class PipelineInstanceTest < ActiveSupport::TestCase
 
     # add two components, one with input and one with no input and expect state to be New
     component1 = {'script_parameters' => {"something" => "xxxad4b39ca5a924e481008009d94e32+210", "input" => "c1bad4b39ca5a924e481008009d94e32+210"}}
-    component2 = {'script_parameters' => {"something_else" => "xxxad4b39ca5a924e481008009d94e32+210", "not_input" => "c1bad4b39ca5a924e481008009d94e32+210"}}
+    component2 = {'script_parameters' => {"something_else" => "xxxad4b39ca5a924e481008009d94e32+210", "input_missing" => {"required" => "true"}}}
     pi.components['first'] = component1
     pi.components['second'] = component2
     components = pi.components
     pi.update_attribute 'components', pi.components
     pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
-    assert_equal PipelineInstance::New, pi.state, 'expected state to be Ready after adding component with input'
+    assert_equal PipelineInstance::New, pi.state, 'expected state to be New after adding component with input'
     assert_equal pi.components.size, 2, 'expected two components'
     assert !pi.active, 'expected active to be false after update'
     assert !pi.success, 'expected success to be false for a new pipeline'
