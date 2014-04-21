@@ -632,11 +632,11 @@ begin
   runner.apply_parameters(p.leftovers)
   runner.setup_instance
   if $options[:submit]
-    runner.instance.set_state 'RunningOnServer'
+    runner.instance.state = 'RunningOnServer'
     runner.instance.save
     puts runner.instance[:uuid]
   else
-    runner.instance.set_state 'RunningOnClient'
+    runner.instance.state = 'RunningOnClient'
     runner.run
   end
 rescue Exception => e
