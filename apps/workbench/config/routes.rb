@@ -43,6 +43,7 @@ ArvadosWorkbench::Application.routes.draw do
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
 
   post 'actions' => 'actions#post'
+  get 'websockets' => 'websocket#index'
 
   root :to => 'users#welcome'
 
