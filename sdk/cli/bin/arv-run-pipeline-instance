@@ -416,7 +416,7 @@ class WhRunPipelineInstance
     @instance ||= PipelineInstance.
       create(:components => @components,
              :pipeline_template_uuid => @template[:uuid],
-             :active => true)
+             :state => 'New')
     self
   end
 
@@ -449,6 +449,7 @@ class WhRunPipelineInstance
           if job
             debuglog "component #{cname} new job #{job[:uuid]}"
             c[:job] = job
+            @instance[:state] = 'RunningOnClient'  # correct?
           else
             debuglog "component #{cname} new job failed"
           end
@@ -520,7 +521,9 @@ class WhRunPipelineInstance
         end
       end
       @instance[:components] = @components
-      @instance[:active] = moretodo
+      if moretodo
+        @instance[:state] = 'RunningOnClient'  # correct?
+      end
       report_status
 
       if @options[:no_wait]
@@ -553,9 +556,18 @@ class WhRunPipelineInstance
       end
     end
 
+    # populate components_summary
+    @instance[:components_summary][:failed] = failed
+    @instance[:components_summary][:done] = ended
+    @instance[:components_summary][:todo] = @components.length - ended - failed
+    #@instance[:components_summary][:running] = TBD -- how to determine this?
+    
     if ended == @components.length or failed > 0
-      @instance[:active] = false
-      @instance[:success] = (succeeded == @components.length)
+      if succeeded == @components.length
+        @instance[:state] = 'Complete'
+      else
+        @instance[:state] = 'Failed'
+      end
     end
 
     @instance.save
@@ -563,7 +575,6 @@ class WhRunPipelineInstance
 
   def cleanup
     if @instance
-      @instance[:active] = false
       @instance.save
     end
   end
@@ -621,9 +632,11 @@ begin
   runner.apply_parameters(p.leftovers)
   runner.setup_instance
   if $options[:submit]
+    runner.instance.set_state 'RunningOnServer'
     runner.instance.save
     puts runner.instance[:uuid]
   else
+    runner.instance.set_state 'RunningOnClient'
     runner.run
   end
 rescue Exception => e
