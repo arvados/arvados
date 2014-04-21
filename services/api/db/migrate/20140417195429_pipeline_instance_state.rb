@@ -8,10 +8,6 @@ class PipelineInstanceState < ActiveRecord::Migration
     act_as_system_user do
       PipelineInstance.all.each do |pi|
         pi.state = PipelineInstance::New
-puts "\ninstance = #{pi.inspect}"
-puts "\nid = #{pi.id}"
-puts "\nsuccess = #{pi[:success]}"
-puts "\nactive = #{pi[:active]}"
 
         if !pi.attribute_present? :success   # success is nil
           if pi[:active] == true

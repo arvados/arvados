@@ -46,20 +46,6 @@ class PipelineInstance < ArvadosModel
     self.state == Complete      
   end
 
-  def set_state state
-    self.state = state
-  end
-
-  def set_state_for_new_pipeline
-    if !self.state || self.state == New
-      if PipelineInstance.is_ready self.components
-        self.state = Ready
-      else
-        self.state = New
-      end
-    end
-  end
-
   # if a legacy client tries to update active or success attributes, convert to state
   def update_attribute name, value
     if name == 'success'
@@ -178,4 +164,15 @@ class PipelineInstance < ArvadosModel
       {}
     end
   end
+
+  def set_state_for_new_pipeline
+    if !self.state || self.state == New
+      if PipelineInstance.is_ready self.components
+        self.state = Ready
+      else
+        self.state = New
+      end
+    end
+  end
+
 end
