@@ -58,12 +58,19 @@ class PipelineInstanceState < ActiveRecord::Migration
           next
         end
 
-        if pi.state == 'Complete'
-          pi.success = true
-        elsif pi.state == 'Failed'
+        case pi.state
+        when PipelineInstance::Failed
+          pi.active = false
           pi.success = false
-        elsif pi.state != 'New'
+        when PipelineInstance::Complete
+          pi.active = false
+          pi.success = true
+        when PipelineInstance::New
+          pi.active = false
+          pi.success = nil
+        else
           pi.active = true
+          pi.success = nil
         end
 
         pi.save!
