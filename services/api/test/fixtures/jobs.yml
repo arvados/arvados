@@ -146,3 +146,22 @@ nondeterminisic_job_run:
     an_integer: "1"
   success: true
   nondeterministic: true
+
+nearly_finished_job:
+  uuid: zzzzz-8i9sb-2gx6rz0pjl033w3
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: arvados
+  script: doesnotexist
+  script_version: 309e25a64fe994867db8459543af372f850e25b9
+  script_parameters:
+    input: b519d9cb706a29fc7ea24dbea2f05851+249025
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  running: true
+  success: ~
+  tasks_summary:
+    failed: 0
+    todo: 0
+    running: 1
+    done: 0
+  runtime_constraints: {}
