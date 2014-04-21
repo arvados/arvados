@@ -17,3 +17,7 @@ in_afolder:
 in_asubfolder:
   uuid: zzzzz-2x53u-c40lddwcqqr1ffs
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+
+in_afolder_linked_from_asubfolder:
+  uuid: zzzzz-2x53u-5gid26432uujf79
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
