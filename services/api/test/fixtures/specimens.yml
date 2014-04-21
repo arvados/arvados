@@ -9,3 +9,11 @@ owned_by_private_group:
 owned_by_spectator:
   uuid: zzzzz-2x53u-3b0xxwzlbzxq5yr
   owner_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
+
+in_afolder:
+  uuid: zzzzz-2x53u-7r18rnd5nzhg5yk
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+
+in_asubfolder:
+  uuid: zzzzz-2x53u-c40lddwcqqr1ffs
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
