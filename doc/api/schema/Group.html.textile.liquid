@@ -6,9 +6,7 @@ title: Group
 
 ...
 
-
-
-A **Group** represents...
+A **Group** represents a set of objects. Groups allow you to organize content, define user roles, and apply permissions to sets of objects.
 
 h2. Methods
 
@@ -33,5 +31,6 @@ Each Group has, in addition to the usual "attributes of Arvados resources":{{sit
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
+|group_class|string|Type of group. This does not affect behavior, but determines how the group is presented in the user interface.|@folder@|
 |description|text|||
 |updated_at|datetime|||

@@ -43,3 +43,17 @@ testusergroup_admins:
   uuid: zzzzz-j7d0g-48foin4vonvc2at
   owner_uuid: zzzzz-tpzed-000000000000000
   name: Administrators of a subset of users
+
+afolder:
+  uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: A Folder
+  description: Test folder belonging to active user
+  group_class: folder
+
+asubfolder:
+  uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  name: A Subfolder
+  description: Test folder belonging to active user's first test folder
+  group_class: folder

@@ -13,6 +13,10 @@ class ActiveSupport::TestCase
     self.request.headers["Accept"] = "text/json"
   end
 
+  def jresponse
+    @jresponse ||= ActiveSupport::JSON.decode @response.body
+  end
+
   def authorize_with(api_client_auth_name)
     self.request.env['HTTP_AUTHORIZATION'] = "OAuth2 #{api_client_authorizations(api_client_auth_name).api_token}"
   end
@@ -21,9 +25,6 @@ class ActiveSupport::TestCase
 end
 
 class ActionDispatch::IntegrationTest
-  def jresponse
-    @jresponse ||= ActiveSupport::JSON.decode @response.body
-  end
   def auth auth_fixture
     {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(auth_fixture).api_token}"}
   end
