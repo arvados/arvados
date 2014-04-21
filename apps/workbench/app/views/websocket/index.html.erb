@@ -4,7 +4,6 @@
 <h1>Event bus debugging page</h1>
 
 <form>
-<input type="text" style="width:100%" id="websocket-message-type">
 <textarea style="width:100%; height: 10em" id="websocket-message-content"></textarea>
 <button type="button" id="send-to-websocket">Send</button>
 </form>
@@ -19,11 +18,13 @@ putStuffThere = function (content) {
   $("#PutStuffHere").append(content["message"] + "<br>");
 };
 
-var dispatcher = new WebSocketRails('localhost:3032/arvados/v1/events?api_token=<%= Thread.current[:arvados_api_token] %>');
-dispatcher.bind('hello', putStuffThere);
+var dispatcher = new WebSocket('ws://localhost:3001/websocket?api_token=<%= Thread.current[:arvados_api_token] %>');
+dispatcher.onmessage = function(event) {
+  putStuffThere(JSON.parse(event.data));
+};
 
 sendStuff = function () {
-  dispatcher.trigger($("#websocket-message-type").val(), JSON.parse($("#websocket-message-content").val()));
+  dispatcher.send($("#websocket-message-content").val());
 };
 
 $("#send-to-websocket").click(sendStuff);
