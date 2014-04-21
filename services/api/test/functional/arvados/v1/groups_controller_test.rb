@@ -27,4 +27,51 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_not_nil group_uuids.index groups(:asubfolder).uuid
   end
 
+  test 'get group-owned objects' do
+    authorize_with :active
+    get :owned_items, {
+      id: groups(:afolder).uuid,
+      format: :json,
+    }
+    assert_response :success
+    assert_operator 2, :<=, jresponse['items_available']
+    assert_operator 2, :<=, jresponse['items'].count
+  end
+
+  test 'get group-owned objects with limit' do
+    authorize_with :active
+    get :owned_items, {
+      id: groups(:afolder).uuid,
+      limit: 1,
+      format: :json,
+    }
+    assert_response :success
+    assert_operator 1, :<, jresponse['items_available']
+    assert_equal 1, jresponse['items'].count
+  end
+
+  test 'get group-owned objects with limit and offset' do
+    authorize_with :active
+    get :owned_items, {
+      id: groups(:afolder).uuid,
+      limit: 1,
+      offset: 12345,
+      format: :json,
+    }
+    assert_response :success
+    assert_operator 1, :<, jresponse['items_available']
+    assert_equal 0, jresponse['items'].count
+  end
+
+  test 'get group-owned objects with additional filter matching nothing' do
+    authorize_with :active
+    get :owned_items, {
+      id: groups(:afolder).uuid,
+      filters: [['uuid', 'in', ['foo_not_a_uuid','bar_not_a_uuid']]],
+      format: :json,
+    }
+    assert_response :success
+    assert_equal [], jresponse['items']
+    assert_equal 0, jresponse['items_available']
+  end
 end

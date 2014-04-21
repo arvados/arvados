@@ -107,9 +107,13 @@ Server::Application.routes.draw do
       resources :pipeline_templates
       resources :pipeline_instances
       resources :specimens
-      resources :groups
+      resources :groups do
+        get 'owned_items', on: :member
+      end
       resources :logs
-      resources :users
+      resources :users do
+        get 'owned_items', on: :member
+      end
       resources :api_clients
       resources :api_client_authorizations
       resources :jobs

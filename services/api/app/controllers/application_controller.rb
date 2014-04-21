@@ -10,12 +10,13 @@ class ApplicationController < ActionController::Base
   before_filter :require_auth_scope_all, :except => :render_not_found
   before_filter :catch_redirect_hint
 
-  before_filter :load_where_param, :only => :index
-  before_filter :load_filters_param, :only => :index
-  before_filter :find_objects_for_index, :only => :index
   before_filter :find_object_by_uuid, :except => [:index, :create,
                                                   :render_error,
                                                   :render_not_found]
+  before_filter :load_limit_offset_order_params, only: [:index, :owned_items]
+  before_filter :load_where_param, only: [:index, :owned_items]
+  before_filter :load_filters_param, only: [:index, :owned_items]
+  before_filter :find_objects_for_index, :only => :index
   before_filter :reload_object_before_update, :only => :update
   before_filter :render_404_if_no_object, except: [:index, :create,
                                                    :render_error,
@@ -24,6 +25,8 @@ class ApplicationController < ActionController::Base
   theme :select_theme
 
   attr_accessor :resource_attrs
+
+  DEFAULT_LIMIT = 100
 
   def index
     @objects.uniq!(&:id)
@@ -54,6 +57,52 @@ class ApplicationController < ActionController::Base
   def destroy
     @object.destroy
     show
+  end
+
+  def owned_items
+    all_objects = []
+    all_available = 0
+
+    # We stuffed params[:uuid] into @where in find_object_by_uuid,
+    # but we don't want it there any more.
+    @where = {}
+    # Order, limit, offset don't work here.
+    limit_all = @limit
+    @limit = DEFAULT_LIMIT
+    offset_all = @offset
+    @offset = 0
+    orders_all = @orders
+    @orders = []
+
+    ArvadosModel.descendants.reject(&:abstract_class?).sort_by(&:to_s).each do |klass|
+      case klass.to_s
+      when *%w(ApiClientAuthorization Link ApiClient)
+        # Do not want.
+      else
+        @objects = klass.
+          readable_by(current_user).
+          where(owner_uuid: @object.uuid)
+        apply_where_limit_order_params
+        # TODO: follow links, too
+        all_available += @objects.
+          except(:limit).except(:offset).
+          count(:id, distinct: true)
+        if all_objects.length < limit_all + offset_all
+          all_objects += @objects.to_a
+        end
+      end
+    end
+    @objects = all_objects[offset_all..(offset_all+limit_all-1)] || []
+    @object_list = {
+      :kind  => "arvados#objectList",
+      :etag => "",
+      :self_link => "",
+      :offset => offset_all,
+      :limit => limit_all,
+      :items_available => all_available,
+      :items => @objects.as_api_response(nil)
+    }
+    render json: @object_list
   end
 
   def catch_redirect_hint
@@ -135,12 +184,51 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def load_limit_offset_order_params
+    if params[:limit]
+      begin
+        @limit = params[:limit].to_i
+      rescue
+        raise ArgumentError.new("Invalid value for limit parameter")
+      end
+    else
+      @limit = DEFAULT_LIMIT
+    end
+
+    if params[:offset]
+      begin
+        @offset = params[:offset].to_i
+      rescue
+        raise ArgumentError.new("Invalid value for offset parameter")
+      end
+    else
+      @offset = 0
+    end
+
+    @orders = []
+    if params[:order]
+      params[:order].split(',').each do |order|
+        attr, direction = order.strip.split " "
+        direction ||= 'asc'
+        if attr.match /^[a-z][_a-z0-9]+$/ and
+            model_class.columns.collect(&:name).index(attr) and
+            ['asc','desc'].index direction.downcase
+          @orders << "#{table_name}.#{attr} #{direction.downcase}"
+        end
+      end
+    end
+    if @orders.empty?
+      @orders << "#{table_name}.modified_at desc"
+    end
+  end
+
   def find_objects_for_index
     @objects ||= model_class.readable_by(current_user)
     apply_where_limit_order_params
   end
 
   def apply_where_limit_order_params
+    ar_table_name = @objects.table_name
     if @filters.is_a? Array and @filters.any?
       cond_out = []
       param_out = []
@@ -151,7 +239,7 @@ class ApplicationController < ActionController::Base
         case operator.downcase
         when '=', '<', '<=', '>', '>=', 'like'
           if operand.is_a? String
-            cond_out << "#{table_name}.#{attr} #{operator} ?"
+            cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
             if (# any operator that operates on value rather than
                 # representation:
                 operator.match(/[<=>]/) and
@@ -162,7 +250,7 @@ class ApplicationController < ActionController::Base
           end
         when 'in'
           if operand.is_a? Array
-            cond_out << "#{table_name}.#{attr} IN (?)"
+            cond_out << "#{ar_table_name}.#{attr} IN (?)"
             param_out << operand
           end
         when 'is_a'
@@ -171,7 +259,7 @@ class ApplicationController < ActionController::Base
           operand.each do |op|
               cl = ArvadosModel::kind_class op
               if cl
-                cond << "#{table_name}.#{attr} like ?"
+                cond << "#{ar_table_name}.#{attr} like ?"
                 param_out << cl.uuid_like_pattern
               else
                 cond << "1=0"
@@ -193,7 +281,7 @@ class ApplicationController < ActionController::Base
               value[0] == 'contains' then
             ilikes = []
             model_class.searchable_columns('ilike').each do |column|
-              ilikes << "#{table_name}.#{column} ilike ?"
+              ilikes << "#{ar_table_name}.#{column} ilike ?"
               conditions << "%#{value[1]}%"
             end
             if ilikes.any?
@@ -203,24 +291,24 @@ class ApplicationController < ActionController::Base
         elsif attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr.to_s)
           if value.nil?
-            conditions[0] << " and #{table_name}.#{attr} is ?"
+            conditions[0] << " and #{ar_table_name}.#{attr} is ?"
             conditions << nil
           elsif value.is_a? Array
             if value[0] == 'contains' and value.length == 2
-              conditions[0] << " and #{table_name}.#{attr} like ?"
+              conditions[0] << " and #{ar_table_name}.#{attr} like ?"
               conditions << "%#{value[1]}%"
             else
-              conditions[0] << " and #{table_name}.#{attr} in (?)"
+              conditions[0] << " and #{ar_table_name}.#{attr} in (?)"
               conditions << value
             end
           elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
-            conditions[0] << " and #{table_name}.#{attr}=?"
+            conditions[0] << " and #{ar_table_name}.#{attr}=?"
             conditions << value
           elsif value.is_a? Hash
             # Not quite the same thing as "equal?" but better than nothing?
             value.each do |k,v|
               if v.is_a? String
-                conditions[0] << " and #{table_name}.#{attr} ilike ?"
+                conditions[0] << " and #{ar_table_name}.#{attr} ilike ?"
                 conditions << "%#{k}%#{v}%"
               end
             end
@@ -234,46 +322,9 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    if params[:limit]
-      begin
-        @limit = params[:limit].to_i
-      rescue
-        raise ArgumentError.new("Invalid value for limit parameter")
-      end
-    else
-      @limit = 100
-    end
+    @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
-
-    orders = []
-
-    if params[:offset]
-      begin
-        @objects = @objects.offset(params[:offset].to_i)
-        @offset = params[:offset].to_i
-      rescue
-        raise ArgumentError.new("Invalid value for limit parameter")
-      end
-    else
-      @offset = 0
-    end
-
-    orders = []
-    if params[:order]
-      params[:order].split(',').each do |order|
-        attr, direction = order.strip.split " "
-        direction ||= 'asc'
-        if attr.match /^[a-z][_a-z0-9]+$/ and
-            model_class.columns.collect(&:name).index(attr) and
-            ['asc','desc'].index direction.downcase
-          orders << "#{table_name}.#{attr} #{direction.downcase}"
-        end
-      end
-    end
-    if orders.empty?
-      orders << "#{table_name}.modified_at desc"
-    end
-    @objects = @objects.order(orders.join ", ")
+    @objects = @objects.offset(@offset)
   end
 
   def resource_attrs
@@ -404,6 +455,10 @@ class ApplicationController < ActionController::Base
       params[:uuid] = params.delete :id
     end
     @where = { uuid: params[:uuid] }
+    @offset = 0
+    @limit = 1
+    @orders = []
+    @filters = []
     find_objects_for_index
     @object = @objects.first
   end

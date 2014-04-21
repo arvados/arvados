@@ -880,4 +880,19 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                                tail_uuid: system_group_uuid,
                                head_uuid: user_uuid).count
   end
+
+  test 'get user-owned objects' do
+    authorize_with :active
+    get :owned_items, {
+      id: users(:active).uuid,
+      format: :json,
+    }
+    assert_response :success
+    assert_operator 2, :<=, jresponse['items_available']
+    assert_operator 2, :<=, jresponse['items'].count
+    kinds = jresponse['items'].collect { |i| i['kind'] }.uniq
+    expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
+    assert_equal expect_kinds, (expect_kinds & kinds)
+  end
+
 end
