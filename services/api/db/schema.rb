@@ -247,8 +247,6 @@ ActiveRecord::Schema.define(:version => 20140421140924) do
     t.string   "head_uuid"
     t.text     "properties"
     t.datetime "updated_at"
-    t.string   "head_kind"
-    t.string   "tail_kind"
   end
 
   add_index "links", ["created_at"], :name => "index_links_on_created_at"
