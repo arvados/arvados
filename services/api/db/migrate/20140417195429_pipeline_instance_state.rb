@@ -34,8 +34,32 @@ class PipelineInstanceState < ActiveRecord::Migration
   end
 
   def down
-      add_column :pipeline_instances, :success, :null => true
-      add_column :pipeline_instances, :active, :default => false
-      remove_column :pipeline_instances, :state
+    add_column :pipeline_instances, :success, :boolean, :null => true
+    add_column :pipeline_instances, :active, :boolean, :default => false
+
+    act_as_system_user do
+      PipelineInstance.all.each do |pi|
+        case pi.state
+        when PipelineInstance::New, PipelineInstance::Ready
+          pi.active = false
+          pi.success = nil
+        when PipelineInstance::RunningOnServer
+          pi.active = true
+          pi.success = nil
+        when PipelineInstance::RunningOnClient
+          pi.active = false
+          pi.success = nil
+        when PipelineInstance::Failed
+          pi.active = false
+          pi.success = false
+        when PipelineInstance::Complete
+          pi.active = false
+          pi.success = true
+        end
+        pi.save!
+      end
+    end
+
+    remove_column :pipeline_instances, :state
   end
 end
