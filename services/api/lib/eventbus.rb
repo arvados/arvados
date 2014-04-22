@@ -2,6 +2,13 @@ require 'eventmachine'
 require 'oj'
 require 'faye/websocket'
 
+module Faye
+  class WebSocket
+    attr_accessor :user
+    attr_accessor :last_log_id
+  end
+end
+
 class EventBus
   include CurrentApiClient
 
@@ -18,9 +25,16 @@ class EventBus
       return
     end
 
+    ws.user = current_user
+
     sub = @channel.subscribe do |msg|
       Log.where(id: msg.to_i).each do |l|
-        ws.send(l.as_api_response.to_json)
+        if rsc = ArvadosModel::resource_class_for_uuid(l.object_uuid)
+          rsc.readable_by(ws.user).where(uuid: l.object_uuid).each do
+            ws.send(l.as_api_response.to_json)
+          end
+        end
+        ws.last_log_id = msg.to_i
       end
     end
 
