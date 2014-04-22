@@ -365,12 +365,18 @@ func GetBlock(hash string) ([]byte, error) {
 	for _, vol := range KeepVolumes {
 		uv := UnixVolume{vol}
 		if buf, err := uv.Read(hash); err != nil {
-			if os.IsNotExist(err) {
-				// IsNotExist is an expected error.
+			// IsNotExist is an expected error and may be ignored.
+			// (If all volumes report IsNotExist, we return a NotFoundError)
+			// A CorruptError should be returned immediately.
+			// Any other errors should be logged but we continue trying to
+			// read.
+			switch {
+			case os.IsNotExist(err):
 				continue
-			} else {
+			case err == CorruptError:
+				return nil, err
+			default:
 				log.Printf("GetBlock: reading %s: %s\n", hash, err)
-				return buf, err
 			}
 		} else {
 			// Success!
