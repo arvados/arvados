@@ -9,8 +9,9 @@ class PipelineInstance < ArvadosModel
 
   before_validation :bootstrap_components
   before_validation :update_success
-  before_create :verify_status
-  before_save :verify_status
+  before_validation :verify_status
+  before_create :set_state_before_save
+  before_save :set_state_before_save
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
@@ -175,13 +176,25 @@ class PipelineInstance < ArvadosModel
         self.active = false
         self.success = true
       end
-    else    # new object create or save
+    elsif components_changed? 
       if !self.state || self.state == New || !self.active
         if PipelineInstance.is_ready self.components
           self.state = Ready
         else
           self.state = New
         end
+      end
+    end
+  end
+
+  def set_state_before_save
+    if !self.state || self.state == New
+      if self.active
+        self.state = RunningOnServer
+      elsif PipelineInstance.is_ready self.components
+        self.state = Ready
+      else
+        self.state = New
       end
     end
   end

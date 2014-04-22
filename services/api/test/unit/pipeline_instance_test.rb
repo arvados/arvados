@@ -62,23 +62,6 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     assert_equal PipelineInstance::Complete, pi.state, 'expected state to be Complete after updating success to true'
     assert !pi.active, 'expected active to be false after update'
     assert pi.success, 'expected success to be true after update'
-
-    pi.update_attribute 'active', true
-    pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
-    assert_equal PipelineInstance::RunningOnServer, pi.state, 'expected state to be RunningOnServer after updating active to true'
-    assert pi.active, 'expected active to be true after update'
-
-    pi.update_attribute 'success', false
-    pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
-    assert_equal PipelineInstance::Failed, pi.state, 'expected state to be Failed after updating success to false'
-    assert !pi.active, 'expected active to be false after update'
-    assert !pi.success, 'expected success to be false for a new pipeline'
-
-    pi.update_attribute 'success', true
-    pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
-    assert_equal PipelineInstance::Complete, pi.state, 'expected state to be Complete after updating success to true'
-    assert !pi.active, 'expected active to be false after update'
-    assert pi.success, 'expected success to be true after update'
   end
 
   test "update attributes for pipeline with two components" do
