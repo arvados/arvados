@@ -175,7 +175,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
 
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
@@ -217,7 +217,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
 
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
@@ -248,7 +248,7 @@ class UserTest < ActiveSupport::TestCase
     oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
