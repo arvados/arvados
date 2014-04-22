@@ -416,8 +416,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expected same uuid as first create operation'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # +1 extra login link +1 extra system_group link pointing to the new User
-    verify_num_links @all_links_at_start, 6
+    # +1 extra can_read 'all users' group link
+    # +1 extra system_group can_manage link pointing to the new User
+    # +1 extra can_login permission link
+    # no repo link, no vm link
+    verify_num_links @all_links_at_start, 7
   end
 
   test "setup user with openid prefix" do
