@@ -250,7 +250,7 @@ class User < ArvadosModel
     # Check oid_login_perm
     oid_login_perms = Link.where(tail_uuid: self.email,
                                    link_class: 'permission',
-                                   name: 'can_login').where("head_uuid like ?", User.uuid_like_pattern)
+                                   name: 'can_login').where("head_uuid = ?", self.uuid)
 
     if !oid_login_perms.any?
       # create openid login permission
