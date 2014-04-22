@@ -62,7 +62,7 @@ class ApplicationController < ActionController::Base
   def self._owned_items_requires_parameters
     _index_requires_parameters.
       merge({
-              include_managed: {
+              include_indirect: {
                 type: 'boolean', required: false, default: false
               },
             })
@@ -98,7 +98,7 @@ class ApplicationController < ActionController::Base
         @objects = klass.readable_by(current_user)
         cond_sql = "#{klass.table_name}.owner_uuid = ?"
         cond_params = [@object.uuid]
-        if params[:include_managed]
+        if params[:include_indirect]
           @objects = @objects.
             joins("LEFT JOIN links mng_links"\
                   " ON mng_links.link_class=#{klass.sanitize 'permission'}"\

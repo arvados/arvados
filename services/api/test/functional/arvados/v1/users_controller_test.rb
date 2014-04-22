@@ -896,8 +896,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal expect_kinds, (expect_kinds & kinds)
   end
 
-  [false, true].each do |inc_mgd|
-    test "get all pages of user-owned #{'and -managed ' if inc_mgd}objects" do
+  [false, true].each do |inc_ind|
+    test "get all pages of user-owned #{'and -indirect ' if inc_ind}objects" do
       authorize_with :active
       limit = 5
       offset = 0
@@ -910,7 +910,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @jresponse = nil
         get :owned_items, {
           id: users(:active).uuid,
-          include_managed: inc_mgd,
+          include_indirect: inc_ind,
           limit: limit,
           offset: offset,
           format: :json,
@@ -930,15 +930,15 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
           uuid_received[uuid] = true
           owner_received[item['owner_uuid']] = true
           offset += 1
-          if not inc_mgd
+          if not inc_ind
             assert_equal users(:active).uuid, item['owner_uuid']
           end
         end
         break if offset >= items_available
       end
-      if inc_mgd
+      if inc_ind
         assert_operator 0, :<, (jresponse.keys - [users(:active).uuid]).count,
-        "Set include_managed=true but did not receive any managed items"
+        "Set include_indirect=true but did not receive any indirect items"
       end
     end
   end
