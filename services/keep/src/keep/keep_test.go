@@ -37,6 +37,9 @@ var BAD_BLOCK = []byte("The magic words are squeamish ossifrage.")
 //           - use an interface to mock ioutil.TempFile with a File
 //             object that always returns an error on write
 //
+// TODO(twp): Make these tests less dependent on being able to access
+// the UnixVolume root field.
+//
 // ========================================
 // GetBlock tests.
 // ========================================
@@ -136,7 +139,7 @@ func TestPutBlockOneVol(t *testing.T) {
 
 	// Create two test Keep volumes, but cripple one of them.
 	KeepVolumes = setup(t, 2)
-	os.Chmod(KeepVolumes[0], 000)
+	os.Chmod(KeepVolumes[0].(*UnixVolume).root, 000)
 
 	// Check that PutBlock stores the data as expected.
 	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
@@ -237,12 +240,12 @@ func TestFindKeepVolumes(t *testing.T) {
 	defer teardown()
 
 	// Initialize two keep volumes.
-	var tempVols []string = setup(t, 2)
+	var tempVols []Volume = setup(t, 2)
 
 	// Set up a bogus PROC_MOUNTS file.
 	if f, err := ioutil.TempFile("", "keeptest"); err == nil {
 		for _, vol := range tempVols {
-			fmt.Fprintf(f, "tmpfs %s tmpfs opts\n", path.Dir(vol))
+			fmt.Fprintf(f, "tmpfs %s tmpfs opts\n", path.Dir(vol.(*UnixVolume).root))
 		}
 		f.Close()
 		PROC_MOUNTS = f.Name()
@@ -254,9 +257,10 @@ func TestFindKeepVolumes(t *testing.T) {
 				len(tempVols), len(resultVols))
 		}
 		for i := range tempVols {
-			if tempVols[i] != resultVols[i] {
+			tempVolRoot := tempVols[i].(*UnixVolume).root
+			if tempVolRoot != resultVols[i] {
 				t.Errorf("FindKeepVolumes returned %s, expected %s\n",
-					resultVols[i], tempVols[i])
+					tempVolRoot, tempVols[i])
 			}
 		}
 
@@ -305,7 +309,7 @@ func TestIndex(t *testing.T) {
 	store(t, KeepVolumes[0], TEST_HASH+".meta", []byte("metadata"))
 	store(t, KeepVolumes[1], TEST_HASH_2+".meta", []byte("metadata"))
 
-	index := IndexLocators("")
+	index := KeepVolumes[0].Index("") + KeepVolumes[1].Index("")
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_3 + `\+\d+ \d+\n` +
 		TEST_HASH_2 + `\+\d+ \d+\n$`
@@ -337,7 +341,7 @@ func TestNodeStatus(t *testing.T) {
 	for i, vol := range KeepVolumes {
 		volinfo := st.Volumes[i]
 		mtp := volinfo.MountPoint
-		if mtp != vol {
+		if mtp != vol.(*UnixVolume).root {
 			t.Errorf("GetNodeStatus mount_point %s != KeepVolume %s", mtp, vol)
 		}
 		if volinfo.DeviceNum == 0 {
@@ -360,12 +364,13 @@ func TestNodeStatus(t *testing.T) {
 //     Create KeepVolumes for testing.
 //     Returns a slice of pathnames to temporary Keep volumes.
 //
-func setup(t *testing.T, num_volumes int) []string {
-	vols := make([]string, num_volumes)
+func setup(t *testing.T, num_volumes int) []Volume {
+	vols := make([]Volume, num_volumes)
 	for i := range vols {
 		if dir, err := ioutil.TempDir(os.TempDir(), "keeptest"); err == nil {
-			vols[i] = dir + "/keep"
-			os.Mkdir(vols[i], 0755)
+			root := dir + "/keep"
+			vols[i] = &UnixVolume{root}
+			os.Mkdir(root, 0755)
 		} else {
 			t.Fatal(err)
 		}
@@ -378,16 +383,17 @@ func setup(t *testing.T, num_volumes int) []string {
 //
 func teardown() {
 	for _, vol := range KeepVolumes {
-		os.RemoveAll(path.Dir(vol))
+		os.RemoveAll(path.Dir(vol.(*UnixVolume).root))
 	}
 	KeepVolumes = nil
 }
 
 // store
 //     Low-level code to write Keep blocks directly to disk for testing.
+//     Note: works only on UnixVolumes.
 //
-func store(t *testing.T, keepdir string, filename string, block []byte) {
-	blockdir := fmt.Sprintf("%s/%s", keepdir, filename[:3])
+func store(t *testing.T, vol Volume, filename string, block []byte) {
+	blockdir := fmt.Sprintf("%s/%s", vol.(*UnixVolume).root, filename[:3])
 	if err := os.MkdirAll(blockdir, 0755); err != nil {
 		t.Fatal(err)
 	}
