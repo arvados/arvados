@@ -20,7 +20,6 @@ class Arvados::V1::ApiTokensScopeTest < ActionController::IntegrationTest
   end
 
   def request_with_auth(method, path, params={})
-    https!
     send(method, path, @token.merge(params))
   end
 
@@ -30,6 +29,51 @@ class Arvados::V1::ApiTokensScopeTest < ActionController::IntegrationTest
 
   def post_with_auth(*args)
     request_with_auth(:post_via_redirect, *args)
+  end
+
+  test "user list token can only list users" do
+    auth_with :active_userlist
+    get_with_auth v1_url('users')
+    assert_response :success
+    get_with_auth v1_url('users', '')  # Add trailing slash.
+    assert_response :success
+    get_with_auth v1_url('users', 'current')
+    assert_response 403
+    get_with_auth v1_url('virtual_machines')
+    assert_response 403
+  end
+
+  test "specimens token can see exactly owned specimens" do
+    auth_with :active_specimens
+    get_with_auth v1_url('specimens')
+    assert_response 403
+    get_with_auth v1_url('specimens', specimens(:owned_by_active_user).uuid)
+    assert_response :success
+    get_with_auth v1_url('specimens', specimens(:owned_by_spectator).uuid)
+    assert_includes(403..404, @response.status)
+  end
+
+  test "token with multiple scopes can use them all" do
+    def get_token_count
+      get_with_auth v1_url('api_client_authorizations')
+      assert_response :success
+      token_count = JSON.parse(@response.body)['items_available']
+      assert_not_nil(token_count, "could not find token count")
+      token_count
+    end
+    auth_with :active_apitokens
+    # Test the GET scope.
+    token_count = get_token_count
+    # Test the POST scope.
+    post_with_auth(v1_url('api_client_authorizations'),
+                   api_client_authorization: {user_id: users(:active).id})
+    assert_response :success
+    assert_equal(token_count + 1, get_token_count,
+                 "token count suggests POST was not accepted")
+    # Test other requests are denied.
+    get_with_auth v1_url('api_client_authorizations',
+                         api_client_authorizations(:active_apitokens).uuid)
+    assert_response 403
   end
 
   test "token without scope has no access" do
