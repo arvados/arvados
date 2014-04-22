@@ -1,6 +1,13 @@
+<% if not @user.full_name.empty? -%>
 <%= @user.full_name %>,
+<% else -%>
+Hi there,
+<% end -%>
 
-Your Arvados account has been set up. You can log in here using your
-Google account (<%= @user.email %>):
+Your Arvados account has been set up. You can log in with your Google account
+associated with the e-mail address <%= @user.email %> at:
 
-<%= Rails.configuration.workbench_address %>
+  <%= Rails.configuration.workbench_address %>
+
+Thanks,
+The Arvados team.
