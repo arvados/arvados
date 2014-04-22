@@ -1,12 +1,50 @@
 require 'eventmachine'
 require 'oj'
 require 'faye/websocket'
+require 'record_filters'
 
 module Faye
   class WebSocket
     attr_accessor :user
     attr_accessor :last_log_id
+    attr_accessor :filters
   end
+end
+
+class Filter
+  include LoadParam
+
+  def initialize p
+    @p = p
+    load_filters_param
+  end
+
+  def params
+    @p
+  end
+
+  def filters
+    @filters
+  end
+end
+
+class FilterController
+  include RecordFilters
+
+  def initialize(f, o)
+    @filters = f
+    @objects = o
+    apply_where_limit_order_params
+  end
+
+  def each &b
+    @objects.each &b
+  end
+
+  def params
+    {}
+  end
+
 end
 
 class EventBus
@@ -26,20 +64,24 @@ class EventBus
     end
 
     ws.user = current_user
+    ws.filters = []
 
     sub = @channel.subscribe do |msg|
       Log.where(id: msg.to_i).each do |l|
+        ws.last_log_id = msg.to_i
         if rsc = ArvadosModel::resource_class_for_uuid(l.object_uuid)
-          rsc.readable_by(ws.user).where(uuid: l.object_uuid).each do
-            ws.send(l.as_api_response.to_json)
+          permitted = rsc.readable_by(ws.user).where(uuid: l.object_uuid)
+          ws.filters.each do |filter|
+            FilterController.new(filter, permitted).each do
+              ws.send(l.as_api_response.to_json)
+            end
           end
         end
-        ws.last_log_id = msg.to_i
       end
     end
 
     ws.on :message do |event|
-      #puts "got #{event.data}"
+      ws.filters = Filter.new oj.parse(event.data)
     end
 
     ws.on :close do |event|
