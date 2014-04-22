@@ -36,6 +36,21 @@ active_trustedclient:
   api_token: 27bnddk6x2nmq00a1e3gq43n9tsl5v87a3faqar2ijj8tud5en
   expires_at: 2038-01-01 00:00:00
 
+admin_vm:
+  api_client: untrusted
+  user: admin
+  api_token: adminvirtualmachineabcdefghijklmnopqrstuvwxyz12345
+  expires_at: 2038-01-01 00:00:00
+  # scope refers to the testvm fixture.
+  scopes: ["https://www.example.com/arvados/v1/virtual_machines/zzzzz-2x53u-382brsig8rp3064"]
+
+admin_noscope:
+  api_client: untrusted
+  user: admin
+  api_token: adminnoscopeabcdefghijklmnopqrstuvwxyz123456789012
+  expires_at: 2038-01-01 00:00:00
+  scopes: []
+
 spectator:
   api_client: untrusted
   user: spectator
