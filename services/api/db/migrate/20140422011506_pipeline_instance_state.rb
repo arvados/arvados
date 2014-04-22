@@ -18,7 +18,7 @@ class PipelineInstanceState < ActiveRecord::Migration
           if pi[:active] == true
             pi.state = PipelineInstance::RunningOnServer
           else
-            if PipelineInstance.is_ready pi.components
+            if pi.components_look_ready?
               pi.state = PipelineInstance::Ready
             else
               pi.state = PipelineInstance::New
@@ -34,6 +34,7 @@ class PipelineInstanceState < ActiveRecord::Migration
       end
     end
 
+# We want to perform addition of state, and removal of active and success in two phases. Hence comment these statements out.
 =begin
     if column_exists?(:pipeline_instances, :active)
       remove_column :pipeline_instances, :active
@@ -46,6 +47,7 @@ class PipelineInstanceState < ActiveRecord::Migration
   end
 
   def down
+# We want to perform addition of state, and removal of active and success in two phases. Hence comment these statements out.
 =begin
     add_column :pipeline_instances, :success, :boolean, :null => true
     add_column :pipeline_instances, :active, :boolean, :default => false
