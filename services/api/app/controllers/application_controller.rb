@@ -4,7 +4,6 @@ class ApplicationController < ActionController::Base
 
   respond_to :json
   protect_from_forgery
-  around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
   before_filter :remote_ip
   before_filter :require_auth_scope_all, :except => :render_not_found
@@ -329,63 +328,6 @@ class ApplicationController < ActionController::Base
       render :json => { errors: ['Forbidden'] }.to_json, status: 403
     end
   end
-
-  def thread_with_auth_info
-    Thread.current[:request_starttime] = Time.now
-    Thread.current[:api_url_base] = root_url.sub(/\/$/,'') + '/arvados/v1'
-    begin
-      user = nil
-      api_client = nil
-      api_client_auth = nil
-      supplied_token =
-        params[:api_token] ||
-        params[:oauth_token] ||
-        request.headers["Authorization"].andand.match(/OAuth2 ([a-z0-9]+)/).andand[1]
-      if supplied_token
-        api_client_auth = ApiClientAuthorization.
-          includes(:api_client, :user).
-          where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied_token).
-          first
-        if api_client_auth.andand.user
-          session[:user_id] = api_client_auth.user.id
-          session[:api_client_uuid] = api_client_auth.api_client.andand.uuid
-          session[:api_client_authorization_id] = api_client_auth.id
-          user = api_client_auth.user
-          api_client = api_client_auth.api_client
-        else
-          # Token seems valid, but points to a non-existent (deleted?) user.
-          api_client_auth = nil
-        end
-      elsif session[:user_id]
-        user = User.find(session[:user_id]) rescue nil
-        api_client = ApiClient.
-          where('uuid=?',session[:api_client_uuid]).
-          first rescue nil
-        if session[:api_client_authorization_id] then
-          api_client_auth = ApiClientAuthorization.
-            find session[:api_client_authorization_id]
-        end
-      end
-      Thread.current[:api_client_ip_address] = remote_ip
-      Thread.current[:api_client_authorization] = api_client_auth
-      Thread.current[:api_client_uuid] = api_client.andand.uuid
-      Thread.current[:api_client] = api_client
-      Thread.current[:user] = user
-      if api_client_auth
-        api_client_auth.last_used_at = Time.now
-        api_client_auth.last_used_by_ip_address = remote_ip
-        api_client_auth.save validate: false
-      end
-      yield
-    ensure
-      Thread.current[:api_client_ip_address] = nil
-      Thread.current[:api_client_authorization] = nil
-      Thread.current[:api_client_uuid] = nil
-      Thread.current[:api_client] = nil
-      Thread.current[:user] = nil
-    end
-  end
-  # /Authentication
 
   def model_class
     controller_name.classify.constantize

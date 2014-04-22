@@ -3,28 +3,37 @@ require 'oj'
 require 'faye/websocket'
 
 class EventBus
+  include CurrentApiClient
+
   def initialize
     @channel = EventMachine::Channel.new
-    @bgthread = nil
+    @mtx = Mutex.new
+    @bgthread = false
   end
 
   def on_connect ws
-      sub = @channel.subscribe do |msg|
-        puts "sending #{msg}"
-        ws.send({:message => "log"}.to_json)
-      end
+    if not current_user
+      ws.send '{"error":"Not logged in"}'
+      ws.close
+      return
+    end
 
-      ws.on :message do |event|
-        puts "got #{event.data}"
-        ws.send(event.data)
+    sub = @channel.subscribe do |msg|
+      Log.where(id: msg.to_i).each do |l|
+        ws.send(l.as_api_response.to_json)
       end
+    end
 
-      ws.on :close do |event|
-        p [:close, event.code, event.reason]
-        @channel.unsubscribe sub
-        ws = nil
-      end
+    ws.on :message do |event|
+      #puts "got #{event.data}"
+    end
 
+    ws.on :close do |event|
+      @channel.unsubscribe sub
+      ws = nil
+    end
+
+    @mtx.synchronize do
       unless @bgthread
         @bgthread = true
         Thread.new do
@@ -35,10 +44,7 @@ class EventBus
               conn.async_exec "LISTEN logs"
               while true
                 conn.wait_for_notify do |channel, pid, payload|
-                  puts "Received a NOTIFY on channel #{channel}"
-                  puts "from PG backend #{pid}"
-                  puts "saying #{payload}"
-                  @channel.push true
+                  @channel.push payload
                 end
               end
             ensure
@@ -50,6 +56,6 @@ class EventBus
           end
         end
       end
-
+    end
   end
 end
