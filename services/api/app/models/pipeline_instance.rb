@@ -40,17 +40,16 @@ class PipelineInstance < ArvadosModel
   end
 
   # if all components have input, the pipeline is Ready
-  def self.is_ready components
-    if !components || components.empty?  # is this correct?
-      return true
+  def components_look_ready?
+    if !self.components || self.components.empty?
+      return false
     end
 
     all_components_have_input = true
-    components.each do |name, component|
+    self.components.each do |name, component|
       component['script_parameters'].each do |parametername, parameter|
         parameter = { 'value' => parameter } unless parameter.is_a? Hash
-        if parameter['value'].nil? and
-            ![false,'false',0,'0'].index parameter['required']
+        if parameter['value'].nil? and parameter['required']
           if parameter['output_of']
             next
           end
@@ -144,7 +143,7 @@ class PipelineInstance < ArvadosModel
       if self.active
         self.state = RunningOnServer
       else
-        if PipelineInstance.is_ready self.components
+        if self.components_look_ready?
           self.state = Ready
         else
           self.state = New
@@ -160,7 +159,7 @@ class PipelineInstance < ArvadosModel
       end
     elsif state_changed?
       case self.state
-      when New, Ready
+      when New, Ready, Paused
         self.active = false
         self.success = nil
       when RunningOnServer
@@ -172,13 +171,16 @@ class PipelineInstance < ArvadosModel
       when Failed
         self.active = false
         self.success = false
+        self.state = Failed   # before_validation will fail if false is returned in the previous line
       when Complete
         self.active = false
         self.success = true
+      else
+        return false
       end
     elsif components_changed? 
       if !self.state || self.state == New || !self.active
-        if PipelineInstance.is_ready self.components
+        if self.components_look_ready?
           self.state = Ready
         else
           self.state = New
@@ -191,7 +193,7 @@ class PipelineInstance < ArvadosModel
     if !self.state || self.state == New
       if self.active
         self.state = RunningOnServer
-      elsif PipelineInstance.is_ready self.components
+      elsif self.components_look_ready?
         self.state = Ready
       else
         self.state = New
