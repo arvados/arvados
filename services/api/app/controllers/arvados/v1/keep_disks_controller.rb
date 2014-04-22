@@ -1,5 +1,5 @@
 class Arvados::V1::KeepDisksController < ApplicationController
-  skip_before_filter :require_auth_scope_all, :only => :ping
+  skip_before_filter :require_auth_scope, :only => :ping
 
   def self._ping_requires_parameters
     {

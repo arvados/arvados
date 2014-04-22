@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
   before_filter :remote_ip
-  before_filter :require_auth_scope_all, :except => :render_not_found
+  before_filter :require_auth_scope, :except => :render_not_found
   before_filter :catch_redirect_hint
 
   before_filter :find_object_by_uuid, :except => [:index, :create,
@@ -405,12 +405,9 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def require_auth_scope_all
-    require_login and require_auth_scope(['all'])
-  end
-
-  def require_auth_scope(ok_scopes)
-    unless current_api_client_auth_has_scope(ok_scopes)
+  def require_auth_scope
+    return false unless require_login
+    unless current_api_client_auth_has_scope("#{request.method} #{request.path}")
       render :json => { errors: ['Forbidden'] }.to_json, status: 403
     end
   end
