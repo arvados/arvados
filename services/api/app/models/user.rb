@@ -27,7 +27,7 @@ class User < ArvadosModel
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
 
   def full_name
-    "#{first_name} #{last_name}"
+    "#{first_name} #{last_name}".strip
   end
 
   def is_invited

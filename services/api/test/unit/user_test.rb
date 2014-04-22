@@ -87,6 +87,17 @@ class UserTest < ActiveSupport::TestCase
     assert_equal found_user.identity_url, user.identity_url
   end
 
+  test "full name should not contain spurious whitespace" do
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: 'foo@example.com' })
+
+    assert_equal '', user.full_name
+
+    user.first_name = 'John'
+    user.last_name = 'Smith'
+
+    assert_equal user.first_name + ' ' + user.last_name, user.full_name
+  end
+
   test "create new user" do
     Thread.current[:user] = @admin_user   # set admin user as the current user
 
