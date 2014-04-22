@@ -4,10 +4,13 @@ class PipelineInstance < ArvadosModel
   include CommonApiTemplate
   serialize :components, Hash
   serialize :properties, Hash
+  serialize :components_summary, Hash
   belongs_to :pipeline_template, :foreign_key => :pipeline_template_uuid, :primary_key => :uuid
 
   before_validation :bootstrap_components
   before_validation :update_success
+  before_create :verify_status
+  before_save :verify_status
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
@@ -18,10 +21,44 @@ class PipelineInstance < ArvadosModel
     t.add :active
     t.add :dependencies
     t.add :properties
+    t.add :state
+    t.add :components_summary
   end
+
+  # Supported states for a pipeline instance
+  New = 'New'
+  Ready = 'Ready'
+  RunningOnServer = 'RunningOnServer'
+  RunningOnClient = 'RunningOnClient'
+  Paused = 'Paused'
+  Failed = 'Failed'
+  Complete = 'Complete'
 
   def dependencies
     dependency_search(self.components).keys
+  end
+
+  # if all components have input, the pipeline is Ready
+  def self.is_ready components
+    if !components || components.empty?  # is this correct?
+      return true
+    end
+
+    all_components_have_input = true
+    components.each do |name, component|
+      component['script_parameters'].each do |parametername, parameter|
+        parameter = { 'value' => parameter } unless parameter.is_a? Hash
+        if parameter['value'].nil? and
+            ![false,'false',0,'0'].index parameter['required']
+          if parameter['output_of']
+            next
+          end
+          all_components_have_input = false
+          break
+        end
+      end
+    end
+    return all_components_have_input
   end
 
   def progress_table
@@ -100,4 +137,53 @@ class PipelineInstance < ArvadosModel
       {}
     end
   end
+
+  def verify_status
+    if active_changed?
+      if self.active
+        self.state = RunningOnServer
+      else
+        if PipelineInstance.is_ready self.components
+          self.state = Ready
+        else
+          self.state = New
+        end
+      end
+    elsif success_changed?
+      if self.success
+        self.active = false
+        self.state = Complete
+      else
+        self.active = false
+        self.state = Failed
+      end
+    elsif state_changed?
+      case self.state
+      when New, Ready
+        self.active = false
+        self.success = nil
+      when RunningOnServer
+        self.active = true
+        self.success = nil
+      when RunningOnClient
+        self.active = false
+        self.success = nil
+      when Failed
+        self.active = false
+        self.success = false
+      when Complete
+        self.active = false
+        self.success = true
+      end
+    else    # new object create or save
+      if !self.state || self.state == New || !self.active
+        if PipelineInstance.is_ready self.components
+          self.state = Ready
+        else
+          self.state = New
+        end
+      end
+    end
+  end
+
 end

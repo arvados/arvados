@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140407184311) do
+ActiveRecord::Schema.define(:version => 20140422011506) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -311,10 +311,12 @@ ActiveRecord::Schema.define(:version => 20140407184311) do
     t.string   "pipeline_template_uuid"
     t.string   "name"
     t.text     "components"
-    t.boolean  "success"
-    t.boolean  "active",                  :default => false
     t.datetime "updated_at"
     t.text     "properties"
+    t.boolean  "active"
+    t.boolean  "success"
+    t.string   "state"
+    t.text     "components_summary"
   end
 
   add_index "pipeline_instances", ["created_at"], :name => "index_pipeline_instances_on_created_at"
