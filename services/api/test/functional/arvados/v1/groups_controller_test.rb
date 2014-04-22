@@ -74,4 +74,29 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal [], jresponse['items']
     assert_equal 0, jresponse['items_available']
   end
+
+  test 'get group-owned objects without include_managed' do
+    unexpected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
+    authorize_with :active
+    get :owned_items, {
+      id: groups(:asubfolder).uuid,
+      format: :json,
+    }
+    assert_response :success
+    uuids = jresponse['items'].collect { |i| i['uuid'] }
+    assert_equal nil, uuids.index(unexpected_uuid)
+  end
+
+  test 'get group-owned objects with include_managed' do
+    expected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
+    authorize_with :active
+    get :owned_items, {
+      id: groups(:asubfolder).uuid,
+      include_managed: true,
+      format: :json,
+    }
+    assert_response :success
+    uuids = jresponse['items'].collect { |i| i['uuid'] }
+    assert_includes uuids, expected_uuid, "Did not get #{expected_uuid}"
+  end
 end

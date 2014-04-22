@@ -59,6 +59,15 @@ class ApplicationController < ActionController::Base
     show
   end
 
+  def self._owned_items_requires_parameters
+    _index_requires_parameters.
+      merge({
+              include_managed: {
+                type: 'boolean', required: false, default: false
+              },
+            })
+  end
+
   def owned_items
     all_objects = []
     all_available = 0
@@ -66,33 +75,51 @@ class ApplicationController < ActionController::Base
     # We stuffed params[:uuid] into @where in find_object_by_uuid,
     # but we don't want it there any more.
     @where = {}
-    # Order, limit, offset don't work here.
+
+    # Trick apply_where_limit_order_params into applying suitable
+    # per-table values. *_all are the real ones we'll apply to the
+    # aggregate set.
     limit_all = @limit
-    @limit = DEFAULT_LIMIT
     offset_all = @offset
-    @offset = 0
-    orders_all = @orders
     @orders = []
 
-    ArvadosModel.descendants.reject(&:abstract_class?).sort_by(&:to_s).each do |klass|
+    ArvadosModel.descendants.
+      reject(&:abstract_class?).
+      sort_by(&:to_s).
+      each do |klass|
       case klass.to_s
-      when *%w(ApiClientAuthorization Link ApiClient)
+        # We might expect klass==Link etc. here, but we would be
+        # disappointed: when Rails reloads model classes, we get two
+        # distinct classes called Link which do not equal each
+        # other. But we can still rely on klass.to_s to be "Link".
+      when 'ApiClientAuthorization'
         # Do not want.
       else
-        @objects = klass.
-          readable_by(current_user).
-          where(owner_uuid: @object.uuid)
+        @objects = klass.readable_by(current_user)
+        cond_sql = "#{klass.table_name}.owner_uuid = ?"
+        cond_params = [@object.uuid]
+        if params[:include_managed]
+          @objects = @objects.
+            joins("LEFT JOIN links mng_links"\
+                  " ON mng_links.link_class=#{klass.sanitize 'permission'}"\
+                  "    AND mng_links.name=#{klass.sanitize 'can_manage'}"\
+                  "    AND mng_links.tail_uuid=#{klass.sanitize @object.uuid}"\
+                  "    AND mng_links.head_uuid=#{klass.table_name}.uuid")
+          cond_sql += " OR mng_links.uuid IS NOT NULL"
+        end
+        @objects = @objects.where(cond_sql, *cond_params)
+        @limit = limit_all - all_objects.count
         apply_where_limit_order_params
-        # TODO: follow links, too
-        all_available += @objects.
+        items_available = @objects.
           except(:limit).except(:offset).
           count(:id, distinct: true)
-        if all_objects.length < limit_all + offset_all
-          all_objects += @objects.to_a
-        end
+        all_available += items_available
+        @offset = [@offset - items_available, 0].max
+
+        all_objects += @objects.to_a
       end
     end
-    @objects = all_objects[offset_all..(offset_all+limit_all-1)] || []
+    @objects = all_objects || []
     @object_list = {
       :kind  => "arvados#objectList",
       :etag => "",
@@ -459,6 +486,7 @@ class ApplicationController < ActionController::Base
     @limit = 1
     @orders = []
     @filters = []
+    @objects = nil
     find_objects_for_index
     @object = @objects.first
   end
@@ -525,7 +553,9 @@ class ApplicationController < ActionController::Base
     {
       filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
-      order: { type: 'string', required: false }
+      order: { type: 'string', required: false },
+      limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
+      offset: { type: 'integer', required: false, default: 0 },
     }
   end
 

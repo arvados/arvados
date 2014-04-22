@@ -885,6 +885,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :active
     get :owned_items, {
       id: users(:active).uuid,
+      limit: 500,
       format: :json,
     }
     assert_response :success
@@ -895,4 +896,50 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal expect_kinds, (expect_kinds & kinds)
   end
 
+  [false, true].each do |inc_mgd|
+    test "get all pages of user-owned #{'and -managed ' if inc_mgd}objects" do
+      authorize_with :active
+      limit = 5
+      offset = 0
+      items_available = nil
+      uuid_received = {}
+      owner_received = {}
+      while true
+        # Behaving badly here, using the same controller multiple
+        # times within a test.
+        @jresponse = nil
+        get :owned_items, {
+          id: users(:active).uuid,
+          include_managed: inc_mgd,
+          limit: limit,
+          offset: offset,
+          format: :json,
+        }
+        assert_response :success
+        assert_operator(0, :<, jresponse['items'].count,
+                        "items_available=#{items_available} but received 0 "\
+                        "items with offset=#{offset}")
+        items_available ||= jresponse['items_available']
+        assert_equal(items_available, jresponse['items_available'],
+                     "items_available changed between page #{offset/limit} "\
+                     "and page #{1+offset/limit}")
+        jresponse['items'].each do |item|
+          uuid = item['uuid']
+          assert_equal(nil, uuid_received[uuid],
+                       "Received '#{uuid}' again on page #{1+offset/limit}")
+          uuid_received[uuid] = true
+          owner_received[item['owner_uuid']] = true
+          offset += 1
+          if not inc_mgd
+            assert_equal users(:active).uuid, item['owner_uuid']
+          end
+        end
+        break if offset >= items_available
+      end
+      if inc_mgd
+        assert_operator 0, :<, (jresponse.keys - [users(:active).uuid]).count,
+        "Set include_managed=true but did not receive any managed items"
+      end
+    end
+  end
 end
