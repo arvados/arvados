@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity]
+  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity, :storage]
   skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
   before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
@@ -61,6 +61,11 @@ class UsersController < ApplicationController
     # Prepend a "Total" pseudo-user to the sorted list
     @user_activity[nil] = @total_activity
     @users = [OpenStruct.new(uuid: nil)] + @users
+  end
+
+  def storage
+    @breadcrumb_page_name = nil
+    @users = User.limit(params[:limit] || 1000).all
   end
 
   def show_pane_list
