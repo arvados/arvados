@@ -5,6 +5,19 @@
 require 'test_helper'
 
 class Arvados::V1::ApiTokensScopeTest < ActionController::TestCase
+  test "token without scope has no access" do
+    # The logs controller is good for this test, because logs have relatively
+    # few access controls enforced at the model level.
+    @controller = Arvados::V1::LogsController.new
+    authorize_with :admin_noscope
+    get :index
+    assert_response 403
+    get :show, {id: logs(:log1).uuid}
+    assert_response 403
+    post :create, log: {}
+    assert_response 403
+  end
+
   test "VM login scopes work" do
     # A system administration script makes an API token with limited scope
     # for virtual machines to let it see logins.
