@@ -321,7 +321,8 @@ class ApplicationController < ActionController::Base
   end
 
   def require_auth_scope_all
-    require_login and require_auth_scope(['all'])
+    require_login and
+      require_auth_scope(["#{request.method} #{request.path}"])
   end
 
   def require_auth_scope(ok_scopes)

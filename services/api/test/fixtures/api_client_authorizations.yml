@@ -51,6 +51,28 @@ admin_noscope:
   expires_at: 2038-01-01 00:00:00
   scopes: []
 
+active_userlist:
+  api_client: untrusted
+  user: active
+  api_token: activeuserlistabcdefghijklmnopqrstuvwxyz1234568900
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /arvados/v1/users"]
+
+active_specimens:
+  api_client: untrusted
+  user: active
+  api_token: activespecimensabcdefghijklmnopqrstuvwxyz123456890
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /arvados/v1/specimens/"]
+
+active_apitokens:
+  api_client: trusted_workbench
+  user: active
+  api_token: activeapitokensabcdefghijklmnopqrstuvwxyz123456789
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /arvados/v1/api_client_authorizations",
+           "POST /arvados/v1/api_client_authorizations"]
+
 spectator:
   api_client: untrusted
   user: spectator
