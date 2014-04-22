@@ -18,7 +18,7 @@ putStuffThere = function (content) {
   $("#PutStuffHere").append(content + "<br>");
 };
 
-var dispatcher = new WebSocket('ws://localhost:3001/websocket?api_token=<%= Thread.current[:arvados_api_token] %>');
+var dispatcher = new WebSocket('<%= $arvados_api_client.discovery[:websocketUrl] %>?api_token=<%= Thread.current[:arvados_api_token] %>');
 dispatcher.onmessage = function(event) {
   //putStuffThere(JSON.parse(event.data));
   putStuffThere(event.data);

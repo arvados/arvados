@@ -21,6 +21,7 @@ class Arvados::V1::SchemaController < ApplicationController
         documentationLink: "http://doc.arvados.org/api/index.html",
         protocol: "rest",
         baseUrl: root_url + "/arvados/v1/",
+        websocketUrl: Rails.application.config.websocket_address,
         basePath: "/arvados/v1/",
         rootUrl: root_url,
         servicePath: "arvados/v1/",
@@ -69,7 +70,7 @@ class Arvados::V1::SchemaController < ApplicationController
         schemas: {},
         resources: {}
       }
-      
+
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         begin
           ctl_class = "Arvados::V1::#{k.to_s.pluralize}Controller".constantize
@@ -175,7 +176,7 @@ class Arvados::V1::SchemaController < ApplicationController
               description:
                  %|List #{k.to_s.pluralize}.
 
-                   The <code>list</code> method returns a 
+                   The <code>list</code> method returns a
                    <a href="/api/resources.html">resource list</a> of
                    matching #{k.to_s.pluralize}. For example:
 

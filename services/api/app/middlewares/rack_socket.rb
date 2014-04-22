@@ -15,6 +15,7 @@ class RackSocket
     @app = app if app.respond_to?(:call)
     @options = [app, options].grep(Hash).first || {}
     @endpoint = @options[:mount] || DEFAULT_ENDPOINT
+    @websocket_only = @options[:websocket_only] || false
 
     # from https://gist.github.com/eatenbyagrue/1338545#file-eventmachine-rb
     if defined?(PhusionPassenger)
@@ -49,8 +50,10 @@ class RackSocket
 
       # Return async Rack response
       ws.rack_response
-    else
+    elsif not @websocket_only
       @app.call env
+    else
+      [406, {"Content-Type" => "text/plain"}, ["Only websocket connections are permitted on this port."]]
     end
   end
 
