@@ -1,15 +1,15 @@
 <% content_for :css do %>
 table#users-storage-table th {
     overflow-x: hidden;
+    text-align: center;
 }
-table#users-storage-table .cell-for-span-This-month,
-table#users-storage-table .cell-for-span-Last-month {
-    background: #eee;
+table#users-storage-table .byte-value {
+    text-align: right;
 }
 <% end %>
 <table class="table table-condensed arv-index" id="users-storage-table">
   <colgroup>
-    <col width="28%" />
+    <col />
   </colgroup>
 
   <tr>
@@ -20,13 +20,14 @@ table#users-storage-table .cell-for-span-Last-month {
     <th colspan="2">
       Collections Persisted Storage
     </th>
+    <th rowspan="2">Measured At</th>
   </tr>
   <tr>
     <% 2.times do %>
-    <th>
+    <th class="byte-value">
       Total (unweighted)
     </th>
-    <th>
+    <th class="byte-value">
       Shared (weighted)
     </th>
     <% end %>
@@ -44,10 +45,13 @@ table#users-storage-table .cell-for-span-Last-month {
       </small>
     </td>
     <% [:read_collections_total_bytes, :read_collections_weighted_bytes, :persisted_collections_total_bytes, :persisted_collections_weighted_bytes].each do |key| %>
-    <td>
-      <%= @user_storage[user.uuid][key].to_s %>
+    <td class="byte-value">
+      <%= human_readable_bytes_html(@user_storage[user.uuid].fetch(key,0).floor) %>
     </td>
     <% end %>
+    <td class="date">
+      <%= @log_date[user.uuid] %>
+    </td>
   </tr>
   <% end %>
 </table>
