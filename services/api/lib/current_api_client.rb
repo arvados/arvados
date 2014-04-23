@@ -29,15 +29,15 @@ module CurrentApiClient
     Thread.current[:api_client_ip_address]
   end
 
-  # Does the current API client authorization include any of ok_scopes?
-  def current_api_client_auth_has_scope(ok_scopes)
+  # Is the current API client authorization scoped for the request?
+  def current_api_client_auth_has_scope(req_s)
     (current_api_client_authorization.andand.scopes || []).select { |scope|
       if scope == 'all'
         true
       elsif scope.end_with? '/'
-        ok_scopes.select { |s| s.start_with? scope }.any?
+        req_s.start_with? scope
       else
-        ok_scopes.include? scope
+        req_s == scope
       end
     }.any?
   end
