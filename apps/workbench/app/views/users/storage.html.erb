@@ -43,6 +43,11 @@ table#users-storage-table .cell-for-span-Last-month {
 	<% end %>
       </small>
     </td>
+    <% [:read_collections_total_bytes, :read_collections_weighted_bytes, :persisted_collections_total_bytes, :persisted_collections_weighted_bytes].each do |key| %>
+    <td>
+      <%= @user_storage[user.uuid][key].to_s %>
+    </td>
+    <% end %>
   </tr>
   <% end %>
 </table>

@@ -66,6 +66,23 @@ class UsersController < ApplicationController
   def storage
     @breadcrumb_page_name = nil
     @users = User.limit(params[:limit] || 1000).all
+    @user_storage = {}
+    @users.each do |u|
+      @user_storage[u.uuid] ||= {}
+      storage_log = Log.
+        # filter([[:object_uuid, '=', u.uuid],
+        #         [:event_type, '=', 'user-storage-report']])
+        filter([[:object_uuid, '=', u.uuid],
+                [:event_type, '=', 'user-storage-report']]).
+        order(:created_at => :desc).
+        limit(1)
+      storage_log.each do |log_entry|
+        @user_storage[u.uuid] = log_entry['properties']
+      end
+    end
+    @users = @users.sort_by do |u|
+      [-@user_storage[u.uuid].values.push(0).inject(:+), u.full_name]
+    end
   end
 
   def show_pane_list
