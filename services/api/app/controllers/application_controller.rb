@@ -268,11 +268,19 @@ class ApplicationController < ActionController::Base
               operand = Time.parse operand
             end
             param_out << operand
+          elsif operand.nil? and operator == '='
+            cond_out << "#{ar_table_name}.#{attr} is null"
+          else
+            raise ArgumentError.new("Invalid operand type '#{attr.class}' "\
+                                    "for '#{operator}' operator in filters")
           end
         when 'in'
           if operand.is_a? Array
             cond_out << "#{ar_table_name}.#{attr} IN (?)"
             param_out << operand
+          else
+            raise ArgumentError.new("Invalid operand type '#{attr.class}' "\
+                                    "for '#{operator}' operator in filters")
           end
         when 'is_a'
           operand = [operand] unless operand.is_a? Array
