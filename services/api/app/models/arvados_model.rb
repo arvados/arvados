@@ -79,11 +79,33 @@ class ArvadosModel < ActiveRecord::Base
     sanitized_uuid_list = uuid_list.
       collect { |uuid| sanitize(uuid) }.join(', ')
     or_references_me = ''
+
     if self == Link and user
       or_references_me = "OR (#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND #{sanitize user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
     end
-    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
+
+    if self == Log and user
+      object_owner = ", #{table_name}.object_owner_uuid"
+      or_object_owner = "OR (#{table_name}.object_owner_uuid in (#{sanitized_uuid_list}))"
+    end
+
+    # Link head points to this row, or to the owner of this row
+    # (or owner of object described by this row, for logs table only)
+    # Link tail originates from this user, or a group that is readable by this user
+    # Link is any permission link ('write' and 'manage' implicitly grant 'read')
+    # or
+    # This row is owned by this user, or owned by a group readable by this user
+    # or
+    # This row uuid is equal this user uuid
+    # or
+    # This is the links table
+    # This row is a permission link
+    # The current user is referenced in either the head or tail of the link
+    # or
+    # This is the logs table
+    # This object described by this row is owned by this user, or owned by a group readable by this user
+    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid #{object_owner}) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
+      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me} #{or_object_owner}",
             true, user.is_admin,
             uuid_list,
             user.uuid)

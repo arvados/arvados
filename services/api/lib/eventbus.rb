@@ -2,6 +2,7 @@ require 'eventmachine'
 require 'oj'
 require 'faye/websocket'
 require 'record_filters'
+require 'load_param'
 
 module Faye
   class WebSocket
@@ -28,27 +29,9 @@ class Filter
   end
 end
 
-class FilterController
-  include RecordFilters
-
-  def initialize(f, o)
-    @filters = f
-    @objects = o
-    apply_where_limit_order_params
-  end
-
-  def each &b
-    @objects.each &b
-  end
-
-  def params
-    {}
-  end
-
-end
-
 class EventBus
   include CurrentApiClient
+  include RecordFilters
 
   def initialize
     @channel = EventMachine::Channel.new
@@ -65,23 +48,58 @@ class EventBus
 
     ws.user = current_user
     ws.filters = []
+    ws.last_log_id = nil
 
     sub = @channel.subscribe do |msg|
-      Log.where(id: msg.to_i).each do |l|
-        ws.last_log_id = msg.to_i
-        if rsc = ArvadosModel::resource_class_for_uuid(l.object_uuid)
-          permitted = rsc.readable_by(ws.user).where(uuid: l.object_uuid)
-          ws.filters.each do |filter|
-            FilterController.new(filter, permitted).each do
-              ws.send(l.as_api_response.to_json)
-            end
-          end
+      # Must have at least one filter set up to receive events
+      if ws.filters.length > 0
+
+        # Start with log rows readable by user, sorted in ascending order
+        logs = Log.readable_by(ws.user).order("id asc")
+
+        if ws.last_log_id
+          # Only get log rows that are new
+          logs = logs.where("log.id > ? and log.id <= ?", ws.last_log_id, msg.to_i)
+        else
+          # No last log id, so only look at the most recently changed row
+          logs = logs.where("log.id = ?", msg.to_i)
         end
+
+        # Record the most recent row
+        ws.last_log_id = msg.to_i
+
+        # Now process filters provided by client
+        cond_out = []
+        param_out = []
+        ws.filters.each do |filter|
+          ft = record_filters filter.filters
+          cond_out += ft[:cond_out]
+          param_out += ft[:param_out]
+        end
+
+        # Add filters to query
+        if cond_out.any?
+          logs = logs.where(cond_out.join(' OR '), *param_out)
+        end
+
+        # Finally execute query and send matching rows
+        logs.each do |l|
+          ws.send(l.as_api_response.to_json)
+        end
+      else
+        # No filters set up, so just record the sequence number
+        ws.last_log_id.nil = msg.to_i
       end
     end
 
     ws.on :message do |event|
-      ws.filters = Filter.new oj.parse(event.data)
+      p = oj.parse(event.data)
+      if p[:method] == 'subscribe'
+        if p[:starting_log_id]
+          ws.last_log_id = p[:starting_log_id].to_i
+        end
+        ws.filters.push(Filter.new p)
+      end
     end
 
     ws.on :close do |event|

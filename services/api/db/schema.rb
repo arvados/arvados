@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140407184311) do
+ActiveRecord::Schema.define(:version => 20140423132913) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -268,6 +268,7 @@ ActiveRecord::Schema.define(:version => 20140407184311) do
     t.datetime "created_at",              :null => false
     t.datetime "updated_at",              :null => false
     t.datetime "modified_at"
+    t.string   "object_owner_uuid"
   end
 
   add_index "logs", ["created_at"], :name => "index_logs_on_created_at"
