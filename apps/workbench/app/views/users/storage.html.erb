@@ -36,13 +36,13 @@ table#users-storage-table .byte-value {
   <% @users.each do |user| %>
   <tr>
     <td>
+	    <% if user.uuid %>
       <small>
-	<% if user.uuid %>
-	<%= link_to_if_arvados_object user, friendly_name: true %>
-	<% else %>
-	<b>Total</b>
-	<% end %>
+	      <%= link_to_if_arvados_object user, friendly_name: true %>
       </small>
+	    <% else %>
+	    <b>Total</b>
+	    <% end %>
     </td>
     <% [:read_collections_total_bytes, :read_collections_weighted_bytes, :persisted_collections_total_bytes, :persisted_collections_weighted_bytes].each do |key| %>
     <td class="byte-value">

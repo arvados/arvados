@@ -67,6 +67,7 @@ class UsersController < ApplicationController
     @breadcrumb_page_name = nil
     @users = User.limit(params[:limit] || 1000).all
     @user_storage = {}
+    total_storage = {}
     @log_date = {}
     @users.each do |u|
       @user_storage[u.uuid] ||= {}
@@ -76,12 +77,17 @@ class UsersController < ApplicationController
         order(:created_at => :desc).
         limit(1)
       storage_log.each do |log_entry|
+        # We expect this block to only execute once since we specified limit(1)
         @user_storage[u.uuid] = log_entry['properties']
         @log_date[u.uuid] = log_entry['event_at']
       end
+      total_storage.merge!(@user_storage[u.uuid]) { |k,v1,v2| v1 + v2 }
     end
     @users = @users.sort_by { |u|
       [-@user_storage[u.uuid].values.push(0).inject(:+), u.full_name]}
+    # Prepend a "Total" pseudo-user to the sorted list
+    @users = [OpenStruct.new(uuid: nil)] + @users
+    @user_storage[nil] = total_storage
   end
 
   def show_pane_list
