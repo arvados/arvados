@@ -5,6 +5,13 @@ class AdminNotifier < ActionMailer::Base
     self.generic_callback('after_create', model, *args)
   end
 
+  def new_inactive_user(user)
+    @user = user
+    if not Rails.configuration.new_inactive_user_notification_recipients.empty? then
+      mail(to: Rails.configuration.new_inactive_user_notification_recipients, subject: 'New inactive user notification')
+    end
+  end
+
   protected
 
   def generic_callback(callback_type, model, *args)
