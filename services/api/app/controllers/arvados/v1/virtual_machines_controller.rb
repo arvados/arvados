@@ -1,11 +1,7 @@
 class Arvados::V1::VirtualMachinesController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => :get_all_logins
   skip_before_filter :render_404_if_no_object, :only => :get_all_logins
-  skip_before_filter(:require_auth_scope_all,
-                     :only => [:logins, :get_all_logins])
   before_filter(:admin_required,
-                :only => [:logins, :get_all_logins])
-  before_filter(:require_auth_scope_for_get_all_logins,
                 :only => [:logins, :get_all_logins])
 
   def logins
@@ -43,17 +39,5 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
       end
     end
     render json: { kind: "arvados#HashList", items: @response }
-  end
-
-  protected
-
-  def require_auth_scope_for_get_all_logins
-    if @object
-      # Client wants all logins for a single VM.
-      require_auth_scope(['all', arvados_v1_virtual_machine_url(@object.uuid)])
-    else
-      # ...for a non-existent VM, or all VMs.
-      require_auth_scope(['all'])
-    end
   end
 end
