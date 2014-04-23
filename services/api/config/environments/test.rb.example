@@ -43,4 +43,7 @@ Server::Application.configure do
   # No need for SSL while testing
   config.force_ssl = false
 
+  # I18n likes to warn when this variable is not set
+  I18n.enforce_available_locales = true
+
 end

@@ -27,7 +27,7 @@ class User < ArvadosModel
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
 
   def full_name
-    "#{first_name} #{last_name}"
+    "#{first_name} #{last_name}".strip
   end
 
   def is_invited
@@ -245,7 +245,7 @@ class User < ArvadosModel
   end
 
   def create_oid_login_perm (openid_prefix)
-    login_perm_props = {identity_url_prefix: openid_prefix}
+    login_perm_props = { "identity_url_prefix" => openid_prefix}
 
     # Check oid_login_perm
     oid_login_perms = Link.where(tail_uuid: self.email,

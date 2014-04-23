@@ -87,6 +87,19 @@ class UserTest < ActiveSupport::TestCase
     assert_equal found_user.identity_url, user.identity_url
   end
 
+  test "full name should not contain spurious whitespace" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: 'foo@example.com' })
+
+    assert_equal '', user.full_name
+
+    user.first_name = 'John'
+    user.last_name = 'Smith'
+
+    assert_equal user.first_name + ' ' + user.last_name, user.full_name
+  end
+
   test "create new user" do
     Thread.current[:user] = @admin_user   # set admin user as the current user
 
@@ -175,7 +188,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
 
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
@@ -217,7 +230,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
 
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
@@ -248,7 +261,7 @@ class UserTest < ActiveSupport::TestCase
     oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
