@@ -47,6 +47,6 @@ class ArvadosApiToken
       api_client_auth.save validate: false
     end
 
-    @app.call env
+    @app.call env if @app
   end
 end
