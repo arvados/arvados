@@ -21,12 +21,37 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   test "refuse to activate a user before signing UA" do
+    act_as_system_user do
+    required_uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                                system_user_uuid,
+                                'signature',
+                                'require',
+                                system_user_uuid,
+                                Collection.uuid_like_pattern).
+      collect(&:head_uuid)
+
+      assert required_uuids.length > 0
+
+      signed_uuids = Link.where(owner_uuid: system_user_uuid,
+                                link_class: 'signature',
+                                name: 'click',
+                                tail_uuid: users(:inactive).uuid,
+                                head_uuid: required_uuids).
+        collect(&:head_uuid)
+
+      assert_equal 0, signed_uuids.length
+    end
+
     authorize_with :inactive
+
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
+    assert_equal false, me['is_active']
+
     post :activate, uuid: me['uuid']
     assert_response 403
+
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
@@ -416,8 +441,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expected same uuid as first create operation'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # +1 extra login link +1 extra system_group link pointing to the new User
-    verify_num_links @all_links_at_start, 6
+    # +1 extra can_read 'all users' group link
+    # +1 extra system_group can_manage link pointing to the new User
+    # +1 extra can_login permission link
+    # no repo link, no vm link
+    verify_num_links @all_links_at_start, 7
   end
 
   test "setup user with openid prefix" do

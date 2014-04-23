@@ -9,6 +9,14 @@ class ActiveSupport::TestCase
   # -- they do not yet inherit this setting
   fixtures :all
 
+  teardown do
+    Thread.current[:api_client_ip_address] = nil
+    Thread.current[:api_client_authorization] = nil
+    Thread.current[:api_client_uuid] = nil
+    Thread.current[:api_client] = nil
+    Thread.current[:user] = nil
+  end
+
   def expect_json
     self.request.headers["Accept"] = "text/json"
   end
@@ -25,6 +33,15 @@ class ActiveSupport::TestCase
 end
 
 class ActionDispatch::IntegrationTest
+
+  teardown do
+    Thread.current[:api_client_ip_address] = nil
+    Thread.current[:api_client_authorization] = nil
+    Thread.current[:api_client_uuid] = nil
+    Thread.current[:api_client] = nil
+    Thread.current[:user] = nil
+  end
+
   def auth auth_fixture
     {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(auth_fixture).api_token}"}
   end
