@@ -33,7 +33,7 @@
         script, version
       </th><th>
         progress
-        <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
+        <%= link_to '(refresh)', request.fullpath, class: 'refresh hide', remote: true, method: 'get' %>
       </th><th>
       </th><th>
         output
@@ -60,7 +60,7 @@
         <%= render(partial: 'job_status_label',
                                locals: { :j => pj[:job] }) %>
       </td><td>
-        <%= link_to_if_arvados_object pj[:output] %>
+        <%= link_to_if_arvados_object pj[:output], {:thumbnail => true} %>
       </td>
     </tr>
     <% end %>
@@ -99,6 +99,6 @@ setInterval(function(){$('a.refresh').click()}, 15000);
     <% end %>
   <% end %>
 
-  <%= render partial: 'pipeline_templates/show_components_template', locals: {:template => template, :obj => @object} %>
+  <%= render partial: 'show_components_editable', locals: {editable: true} %>
 
 <% end %>

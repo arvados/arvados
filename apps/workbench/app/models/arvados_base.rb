@@ -135,12 +135,10 @@ class ArvadosBase < ActiveRecord::Base
     @etag = resp[:etag]
     @kind = resp[:kind]
 
-    # these attrs can be modified by "save" -- we should update our copies
-    %w(uuid owner_uuid created_at
-       modified_at modified_by_user_uuid modified_by_client_uuid
-      ).each do |attr|
+    # attributes can be modified during "save" -- we should update our copies
+    resp.keys.each do |attr|
       if self.respond_to? "#{attr}=".to_sym
-        self.send(attr + '=', resp[attr.to_sym])
+        self.send(attr.to_s + '=', resp[attr.to_sym])
       end
     end
 

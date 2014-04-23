@@ -154,7 +154,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def update_modified_by_fields
-    self.created_at ||= Time.now
+    self.updated_at = Time.now
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
     self.modified_at = Time.now
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
@@ -183,6 +183,10 @@ class ArvadosModel < ActiveRecord::Base
 
   def skip_uuid_read_permission_check
     %w(modified_by_client_uuid)
+  end
+
+  def skip_uuid_existence_check
+    []
   end
 
   def normalize_collection_uuids
@@ -223,11 +227,18 @@ class ArvadosModel < ActiveRecord::Base
 
     foreign_key_attributes.each do |attr|
       if new_record? or send (attr + "_changed?")
+        next if skip_uuid_existence_check.include? attr
         attr_value = send attr
-        r = ArvadosModel::resource_class_for_uuid attr_value if attr_value
-        r = r.readable_by(current_user) if r and not skip_uuid_read_permission_check.include? attr
-        if r and r.where(uuid: attr_value).count == 0 and not specials.include? attr_value
-          errors.add(attr, "'#{attr_value}' not found")
+        next if specials.include? attr_value
+        if attr_value
+          if (r = ArvadosModel::resource_class_for_uuid attr_value)
+            unless skip_uuid_read_permission_check.include? attr
+              r = r.readable_by(current_user)
+            end
+            if r.where(uuid: attr_value).count == 0
+              errors.add(attr, "'#{attr_value}' not found")
+            end
+          end
         end
       end
     end

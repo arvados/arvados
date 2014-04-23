@@ -1,6 +1,11 @@
 require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
+  test "valid token works in functional test" do
+    get :index, {}, session_for(:active)
+    assert_response :success
+  end
+
   test "ignore previously valid token (for deleted user), don't crash" do
     get :welcome, {}, session_for(:valid_token_deleted_user)
     assert_response :success
