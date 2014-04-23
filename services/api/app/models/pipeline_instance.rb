@@ -178,7 +178,7 @@ class PipelineInstance < ArvadosModel
       else
         return false
       end
-    elsif components_changed? 
+    elsif components_changed?
       if !self.state || self.state == New || !self.active
         if self.components_look_ready?
           self.state = Ready

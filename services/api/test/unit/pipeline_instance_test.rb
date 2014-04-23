@@ -10,6 +10,8 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     assert !pi.state, 'expected state to be nil because the fixture had no state specified'
 
     # save the pipeline and expect state to be New
+    Thread.current[:user] = users(:admin)
+
     pi.save
     pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
     assert_equal PipelineInstance::New, pi.state, 'expected state to be New for new pipeline'
@@ -18,6 +20,8 @@ class PipelineInstanceTest < ActiveSupport::TestCase
   end
 
   test "update attributes for pipeline" do
+    Thread.current[:user] = users(:admin)
+
     pi = pipeline_instances :new_pipeline
 
     # add a component with no input and expect state to be New
@@ -52,7 +56,7 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     assert_equal pi.components.size, 1, 'expected one component'
     assert !pi.active, 'expected active to be false after update'
     assert !pi.success, 'expected success to be false for a new pipeline'
-   
+
     pi.active = true
     pi.save
     pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
@@ -112,7 +116,10 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     pi.components['first'] = component1
     pi.components['second'] = component2
     components = pi.components
+
+    Thread.current[:user] = users(:admin)
     pi.update_attribute 'components', pi.components
+
     pi = PipelineInstance.find_by_uuid 'zzzzz-xxxxx-f4gneyn6br1xize'
     assert_equal PipelineInstance::New, pi.state, 'expected state to be New after adding component with input'
     assert_equal pi.components.size, 2, 'expected two components'
