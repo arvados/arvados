@@ -49,9 +49,11 @@ table#users-storage-table .byte-value {
       <%= human_readable_bytes_html(@user_storage[user.uuid].fetch(key,0).floor) %>
     </td>
     <% end %>
-    <td class="date">
-      <%= @log_date[user.uuid] %>
+    <% if @log_date.key?(user.uuid) %>
+    <td class="date" title="<%= @log_date[user.uuid] %>">
+      <%= @log_date[user.uuid].strftime('%F') %>
     </td>
+    <% end %>
   </tr>
   <% end %>
 </table>
