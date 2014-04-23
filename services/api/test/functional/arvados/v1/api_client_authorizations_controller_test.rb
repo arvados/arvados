@@ -1,7 +1,6 @@
 require 'test_helper'
 
 class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::TestCase
-
   test "should get index" do
     authorize_with :active_trustedclient
     get :index
@@ -38,4 +37,22 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     assert_response 403
   end
 
+  test "admin search filters where scopes exactly match" do
+    def check_tokens_by_scopes(scopes, *expected_tokens)
+      expected_tokens.map! { |name| api_client_authorizations(name).api_token }
+      get :index, where: {scopes: scopes}
+      assert_response :success
+      got_tokens = JSON.parse(@response.body)['items']
+        .map { |auth| auth['api_token'] }
+      assert_equal(expected_tokens.sort, got_tokens.sort,
+                   "wrong results for scopes = #{scopes}")
+    end
+    authorize_with :admin_trustedclient
+    check_tokens_by_scopes([], :admin_noscope)
+    authorize_with :active_trustedclient
+    check_tokens_by_scopes(["GET /arvados/v1/users"], :active_userlist)
+    check_tokens_by_scopes(["POST /arvados/v1/api_client_authorizations",
+                            "GET /arvados/v1/api_client_authorizations"],
+                           :active_apitokens)
+  end
 end
