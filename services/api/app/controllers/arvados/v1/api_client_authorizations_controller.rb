@@ -45,6 +45,11 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       includes(:user, :api_client).
       where('user_id=? and (? or api_token=?)', current_user.id, !@where['uuid'], @where['uuid']).
       order('created_at desc')
+    unless @where['scopes'].nil?
+      @objects = @objects.select { |auth|
+        (auth.scopes & @where['scopes']) == (auth.scopes | @where['scopes'])
+      }
+    end
   end
 
   def find_object_by_uuid
