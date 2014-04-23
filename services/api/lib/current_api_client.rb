@@ -98,9 +98,11 @@ module CurrentApiClient
     if block_given?
       user_was = Thread.current[:user]
       Thread.current[:user] = system_user
-      ret = yield
-      Thread.current[:user] = user_was
-      ret
+      begin
+        yield
+      ensure
+        Thread.current[:user] = user_was
+      end
     else
       Thread.current[:user] = system_user
     end

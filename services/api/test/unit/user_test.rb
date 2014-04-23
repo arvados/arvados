@@ -87,6 +87,19 @@ class UserTest < ActiveSupport::TestCase
     assert_equal found_user.identity_url, user.identity_url
   end
 
+  test "full name should not contain spurious whitespace" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: 'foo@example.com' })
+
+    assert_equal '', user.full_name
+
+    user.first_name = 'John'
+    user.last_name = 'Smith'
+
+    assert_equal user.first_name + ' ' + user.last_name, user.full_name
+  end
+
   test "create new user" do
     Thread.current[:user] = @admin_user   # set admin user as the current user
 
@@ -175,7 +188,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
 
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
@@ -187,6 +200,50 @@ class UserTest < ActiveSupport::TestCase
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
+
+  test "setup new user with junk in database" do
+    Thread.current[:user] = @admin_user
+
+    email = 'foo@example.com'
+    openid_prefix = 'http://openid/prefix'
+
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
+
+    vm = VirtualMachine.create
+
+    # Set up the bogus Link
+    bad_uuid = 'zzzzz-tpzed-xyzxyzxyzxyzxyz'
+
+    resp_link = Link.create ({tail_uuid: email, link_class: 'permission',
+        name: 'can_login', head_uuid: bad_uuid})
+    resp_link.save(validate: false)
+
+    verify_link resp_link, 'permission', 'can_login', email, bad_uuid
+
+    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+
+    resp_user = find_obj_in_resp response, 'User'
+    verify_user resp_user, email
+
+    oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
+
+    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
+        resp_user[:uuid]
+
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
+        'expected identity_url_prefix not found for oid_login_perm'
+
+    group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
+    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+
+    repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
+    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
+
+    vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
+    verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+  end
+
+
 
   test "setup new user in multiple steps" do
     Thread.current[:user] = @admin_user
@@ -204,7 +261,7 @@ class UserTest < ActiveSupport::TestCase
     oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'

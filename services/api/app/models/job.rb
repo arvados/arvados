@@ -74,6 +74,10 @@ class Job < ArvadosModel
     super + %w(cancelled_by_client_uuid)
   end
 
+  def skip_uuid_existence_check
+    super + %w(output log)
+  end
+
   def ensure_script_version_is_commit
     if self.is_locked_by_uuid and self.started_at
       # Apparently client has already decided to go for it. This is
