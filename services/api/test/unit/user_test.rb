@@ -122,6 +122,42 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(user.first_name, 'first_name_for_newly_created_user_updated')
   end
 
+  test "create new inactive user with new_inactive_user_notification_recipients empty" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    Rails.configuration.new_inactive_user_notification_recipients = ''
+
+    user = User.new
+    user.first_name = "first_name_for_newly_created_user"
+    user.is_active = false
+    user.save
+
+    assert_equal '', Rails.configuration.new_inactive_user_notification_recipients
+
+    setup_email = ActionMailer::Base.deliveries.last
+    assert_nil setup_email, 'Expected no email after setup'
+  end
+
+  test "create new inactive user with new_inactive_user_notification_recipients set" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    Rails.configuration.new_inactive_user_notification_recipients = 'foo@example.com'
+
+    user = User.new
+    user.first_name = "first_name_for_newly_created_user"
+    user.is_active = false
+    user.save
+
+    setup_email = ActionMailer::Base.deliveries.last
+    assert_not_nil setup_email, 'Expected email after setup'
+
+    assert_equal 'foo@example.com', Rails.configuration.new_inactive_user_notification_recipients
+
+    assert_equal Rails.configuration.user_notifier_email_from, setup_email.from[0]
+    assert_equal 'foo@example.com', setup_email.to[0]
+    assert_equal 'New inactive user notification', setup_email.subject
+  end
+
   test "update existing user" do
     Thread.current[:user] = @active_user    # set active user as current user
     @active_user.first_name = "first_name_changed"
