@@ -897,7 +897,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   [false, true].each do |inc_ind|
-    test "get all pages of user-owned #{'and -indirect ' if inc_ind}objects" do
+    test "get all pages of user-owned #{'and -linked ' if inc_ind}objects" do
       authorize_with :active
       limit = 5
       offset = 0
@@ -910,7 +910,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @jresponse = nil
         get :owned_items, {
           id: users(:active).uuid,
-          include_indirect: inc_ind,
+          include_linked: inc_ind,
           limit: limit,
           offset: offset,
           format: :json,
@@ -938,7 +938,21 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       end
       if inc_ind
         assert_operator 0, :<, (jresponse.keys - [users(:active).uuid]).count,
-        "Set include_indirect=true but did not receive any indirect items"
+        "Set include_linked=true but did not receive any non-owned items"
+      end
+    end
+  end
+
+  %w(offset limit).each do |arg|
+    ['foo', '', '1234five', '0x10', '-8'].each do |val|
+      test "Raise error on bogus #{arg} parameter #{val.inspect}" do
+        authorize_with :active
+        get :owned_items, {
+          :id => users(:active).uuid,
+          :format => :json,
+          arg => val,
+        }
+        assert_response 422
       end
     end
   end

@@ -53,9 +53,9 @@ table(table table-bordered table-condensed).
 |_. tail_type&rarr;head_type|_. name&rarr;head_uuid {properties}|_. Notes|
 |User&rarr;Group  |{white-space:nowrap}. can_manage &rarr; _group uuid_|The User can read, write, and control permissions on the Group itself, every object owned by the Group, and every object on which the Group has _can_manage_ permission.|
 |User&rarr;Group  |can_read &rarr; _group uuid_  |The User can retrieve the Group itself and every object that is readable by the Group.|
-|User&rarr;Job|can_write &rarr; _job uuid_  |The User can read and update the Job. (This works for all object types, not just jobs.)|
-|User&rarr;Job|can_manage &rarr; _job uuid_  |The User can read, update, and change permissions for the Job. (This works for all object types, not just jobs.)|
-|Group&rarr;Job|can_manage &rarr; _job uuid_  |Anyone with _can_manage_ permission on the Group can also read, update, and change permissions for the Job. Anyone with _can_read_ permission on the Group can read the Job. (This works for all object types, not just jobs.)|
+|User&rarr;Job|can_write &rarr; _job uuid_  |The User can read and update the Job. (This works for all objects, not just jobs.)|
+|User&rarr;Job|can_manage &rarr; _job uuid_  |The User can read, update, and change permissions for the Job. (This works for all objects, not just jobs.)|
+|Group&rarr;Job|can_manage &rarr; _job uuid_  |Anyone with _can_manage_ permission on the Group can also read, update, and change permissions for the Job. Anyone with _can_read_ permission on the Group can read the Job. (This works for all objects, not just jobs.)|
 
 h3. resources
 

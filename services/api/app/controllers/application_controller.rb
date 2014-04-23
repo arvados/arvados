@@ -62,7 +62,7 @@ class ApplicationController < ActionController::Base
   def self._owned_items_requires_parameters
     _index_requires_parameters.
       merge({
-              include_indirect: {
+              include_linked: {
                 type: 'boolean', required: false, default: false
               },
             })
@@ -71,10 +71,6 @@ class ApplicationController < ActionController::Base
   def owned_items
     all_objects = []
     all_available = 0
-
-    # We stuffed params[:uuid] into @where in find_object_by_uuid,
-    # but we don't want it there any more.
-    @where = {}
 
     # Trick apply_where_limit_order_params into applying suitable
     # per-table values. *_all are the real ones we'll apply to the
@@ -98,7 +94,7 @@ class ApplicationController < ActionController::Base
         @objects = klass.readable_by(current_user)
         cond_sql = "#{klass.table_name}.owner_uuid = ?"
         cond_params = [@object.uuid]
-        if params[:include_indirect]
+        if params[:include_linked]
           @objects = @objects.
             joins("LEFT JOIN links mng_links"\
                   " ON mng_links.link_class=#{klass.sanitize 'permission'}"\
@@ -213,21 +209,19 @@ class ApplicationController < ActionController::Base
 
   def load_limit_offset_order_params
     if params[:limit]
-      begin
-        @limit = params[:limit].to_i
-      rescue
+      unless params[:limit].to_s.match(/^\d+$/)
         raise ArgumentError.new("Invalid value for limit parameter")
       end
+      @limit = params[:limit].to_i
     else
       @limit = DEFAULT_LIMIT
     end
 
     if params[:offset]
-      begin
-        @offset = params[:offset].to_i
-      rescue
+      unless params[:offset].to_s.match(/^\d+$/)
         raise ArgumentError.new("Invalid value for offset parameter")
       end
+      @offset = params[:offset].to_i
     else
       @offset = 0
     end

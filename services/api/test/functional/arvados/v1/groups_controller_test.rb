@@ -23,8 +23,35 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_equal 'folder', group['group_class']
       group_uuids << group['uuid']
     end
-    assert_not_nil group_uuids.index groups(:afolder).uuid
-    assert_not_nil group_uuids.index groups(:asubfolder).uuid
+    assert_includes group_uuids, groups(:afolder).uuid
+    assert_includes group_uuids, groups(:asubfolder).uuid
+    assert_not_includes group_uuids, groups(:system_group).uuid
+    assert_not_includes group_uuids, groups(:private).uuid
+  end
+
+  test "get list of groups that are not folders" do
+    authorize_with :active
+    get :index, filters: [['group_class', '=', nil]], format: :json
+    assert_response :success
+    group_uuids = []
+    jresponse['items'].each do |group|
+      assert_equal nil, group['group_class']
+      group_uuids << group['uuid']
+    end
+    assert_not_includes group_uuids, groups(:afolder).uuid
+    assert_not_includes group_uuids, groups(:asubfolder).uuid
+    assert_includes group_uuids, groups(:private).uuid
+  end
+
+  test "get list of groups with bogus group_class" do
+    authorize_with :active
+    get :index, {
+      filters: [['group_class', '=', 'nogrouphasthislittleclass']],
+      format: :json,
+    }
+    assert_response :success
+    assert_equal [], jresponse['items']
+    assert_equal 0, jresponse['items_available']
   end
 
   test 'get group-owned objects' do
@@ -75,7 +102,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, jresponse['items_available']
   end
 
-  test 'get group-owned objects without include_indirect' do
+  test 'get group-owned objects without include_linked' do
     unexpected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
     authorize_with :active
     get :owned_items, {
@@ -87,12 +114,12 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal nil, uuids.index(unexpected_uuid)
   end
 
-  test 'get group-owned objects with include_indirect' do
+  test 'get group-owned objects with include_linked' do
     expected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
     authorize_with :active
     get :owned_items, {
       id: groups(:asubfolder).uuid,
-      include_indirect: true,
+      include_linked: true,
       format: :json,
     }
     assert_response :success
