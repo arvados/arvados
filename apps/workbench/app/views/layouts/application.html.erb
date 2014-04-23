@@ -65,7 +65,53 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
+
+        <a href="#" class="navbar-brand dropdown-toggle" data-toggle="dropdown" id="user-menu">
+          <%= Rails.configuration.site_name rescue Rails.application.class.parent_name %>
+        </a>
+        <ul class="dropdown-menu" role="menu">
+
+          <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
+            <a href="/">Dashboard</a>
+          </li>
+
+          <% [['Data', [['collections', 'Collections (data files)'],
+                        ['humans'],
+                        ['traits'],
+                        ['specimens'],
+                        ['links']]],
+              ['Activity', [['pipeline_instances', 'Recent pipeline instances'],
+                            ['jobs', 'Recent jobs']]],
+              ['Compute', [['pipeline_templates'],
+                           ['repositories', 'Code repositories'],
+                           ['virtual_machines']]],
+              ['System', [['users'],
+                         ['groups'],
+                         ['nodes', 'Compute nodes'],
+                         ['keep_disks']]]].each do |j| %>
+            <li class="dropdown-header"><%= j[0] %></li>
+            <li>
+              <% j[1].each do |k| %>
+                <% unless k[0] == 'users' and !current_user.andand.is_admin %>
+                  <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
+                    <a href="/<%= k[0] %>">
+                      <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                    </a>
+                  </li>
+                <% end %>
+              <% end %>
+            </li>
+            <li class="divider"></li>
+          <% end %>
+
+          <li class="dropdown-header">Help</li>
+          <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+          <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+          <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+          <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+
+        </ul>
+          
       </div>
 
       <div class="collapse navbar-collapse" id="workbench-navbar">
@@ -172,62 +218,9 @@
   </div>
 
   <div class="container-fluid">
-      <div class="col-sm-9 col-sm-offset-3">
-        <div id="content" class="body-content">
-          <%= yield %>
-        </div>
-      </div>
-      <div class="col-sm-3 left-nav">
-        <div class="arvados-nav-container">
-        <% if current_user.andand.is_active %>
-        <div class="well">
-        <ul class="arvados-nav">
-          <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
-            <a href="/">Dashboard</a>
-          </li>
-
-          <% [['Data', [['collections', 'Collections (data files)'],
-                        ['humans'],
-                        ['traits'],
-                        ['specimens'],
-                        ['links']]],
-              ['Activity', [['pipeline_instances', 'Recent pipeline instances'],
-                            ['jobs', 'Recent jobs']]],
-              ['Compute', [['pipeline_templates'],
-                           ['repositories', 'Code repositories'],
-                           ['virtual_machines']]],
-              ['System', [['users'],
-                         ['groups'],
-                         ['nodes', 'Compute nodes'],
-                         ['keep_disks']]]].each do |j| %>
-            <li><%= j[0] %>
-              <ul>
-              <% j[1].each do |k| %>
-                <% unless k[0] == 'users' and !current_user.andand.is_admin %>
-                  <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
-                    <a href="/<%= k[0] %>">
-                      <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
-                    </a>
-                  </li>
-                <% end %>
-              <% end %>
-              </ul>
-            </li>
-          <% end %>
-
-          <li>Help
-            <ul>
-              <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-              <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-              <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
-              <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
-            </ul>
-          </li>
-        </ul>
-        </div>
-        <% end %>
-      </div>
-        </div>
+    <div id="content" class="body-content">
+      <%= yield %>
+    </div>
   </div>
 
   <%= yield :footer_html %>
