@@ -43,11 +43,34 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the VirtualMachine in question.|path||
 
+h2(#logins). logins
+
+Get a list of SSH keys and account names that should be able to log in to a given virtual machine.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||
+
+The response is a "resource list":{{site.baseurl}}/api/resources.html#resourceList with @kind@ set to @"arvados#HashList"@. Each item is a hash with the following keys:
+
+table(table table-bordered table-condensed).
+|_. Key|_. Value type|_. Description|_. Example|
+|username|string|Name of the Unix login account to which the user should be able to log in|@"jsmith"@|
+|hostname|string|Hostname of the virtual machine|@"shell.xyzzy.arvadosapi.com"@|
+|public_key|string|SSH public key|@"ssh-rsa AAAAB3NzaC1yc2E..."@|
+|user_uuid|string|UUID of the user who should be able to log in|@"xyzzy-tpzed-mv4d7dy7n91te11"@|
+|virtual_machine_uuid|string|UUID of the "VirtualMachine resource":{{site.baseurl}}/api/schema/VirtualMachine.html|@"xyzzy-2x53u-kvszmclnbjuv8xc"@|
+|authorized_key_uuid|string|UUID of the "AuthorizedKey resource":{{site.baseurl}}/api/schema/AuthorizedKey.html|@"xyzzy-fngyi-v9p0cyfmjxbio64"@|
+
 h2. get_all_logins
 
 Get a list, for every virtual machine in the system, of SSH keys and account names that should be able to log in.
 
 Arguments: none.
+
+The response has the same format as the response to the "logins method":#logins above.
 
 h2. list
 
@@ -60,16 +83,6 @@ table(table table-bordered table-condensed).
 |limit|integer (default 100)|Maximum number of virtual_machines to return.|query||
 |order|string|Order in which to return matching virtual_machines.|query||
 |filters|array|Conditions for filtering virtual_machines.|query||
-
-h2. logins
-
-Get a list of SSH keys and account names that should be able to log in to a given virtual machine.
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
 
 h2. update
 

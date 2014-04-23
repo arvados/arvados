@@ -30,9 +30,10 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|job|object|See "Job resource":{{site.baseurl}}/schema/Job.html|request body||
-|minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|query|@c3e86c9@|
-|exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@|
+{background:#ccffcc}.|job|object|See "Job resource":{{site.baseurl}}/api/schema/Job.html|request body||
+|minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|query|@"c3e86c9"@|
+|exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@
+@["badtag1","badtag2"]@|
 |find_or_create         |boolean    |Before creating, look for an existing job that has identical script, script_version, and script_parameters to those in the present job, has nondeterministic=false, and did not fail (it could be queued, running, or completed). If such a job exists, respond with the existing job instead of submitting a new one.|query|@false@|
 
 When a job is submitted to the queue using the **create** method, the 'script_version' field is updated to a full 40-character Git commit hash based on the current content of the specified repository. If 'script_version' cannot be resolved, the job submission is rejected.
@@ -43,16 +44,16 @@ Because Arvados records the exact version of the script, input parameters, and r
 
 notextile. <div class="spaced-out">
 
-# If 'find_or_create' is false or omitted, create a new job and skip the rest of these steps.
-# Find a list of acceptable values for 'script_version'.  If 'minimum_script_version' is specified, this is the set of all revisions in the Git commit graph between 'minimum_script_version' and 'script_version' (inclusive) [2].  If 'minimum_script_version' is not specified, only 'script_version' is added to the list.  If 'exclude_script_versions' is specified, the listed versions are excluded from the list.
-# Select jobs whose 'script' and 'script_parameters' attributes match the submitted job, and whose 'script_version' attribute is in the list of acceptable versions.  Exclude jobs that failed or set 'nondeterministic' to true.
-# If more than one of candidate jobs has finished, check that all such jobs actually did produce the same output.
-# If existing jobs exist and do not disagree with one another about the correct output, re-use one of the selected past jobs. If there is more than one match, which job will be returned is undefined.
+# If @find_or_create@ is false or omitted, create a new job and skip the rest of these steps.
+# Find a list of acceptable values for @script_version@.  If @minimum_script_version@ is specified, this is the set of all revisions in the Git commit graph between @minimum_script_version@ and the @script_version@ in the submitted "job object":{{site.baseurl}}/api/schema/Job.html (inclusive)[2].  If @minimum_script_version@ is not specified, only @script_version@ is added to the list.  If @exclude_script_versions@ is specified, the listed versions are excluded from the list.
+# Select jobs whose @script@ and @script_parameters@ attributes match those in the submitted "job object":{{site.baseurl}}/api/schema/Job.html, and whose @script_version@ attribute is in the list of acceptable versions.  Exclude jobs that failed or set @nondeterministic@ to true.
+# If more than one of the candidate jobs has finished, check that all such jobs actually did produce the same output.
+# If existing jobs exist and do not disagree with one another about the correct output, return one of the selected past jobs instead of creating a new job. If there is more than one match, which job will be returned is undefined.
 # If an existing job could not be chosen this way, create a new job.
 
 fn1. As of this writing, versioning the runtime environment is still under development.
 
-fn2. This may include parallel branches if there is more than one path between 'minimum_script_version' and 'script_version' in the Git commit graph.  Use 'exclude_script_versions' to blacklist specific versions.
+fn2. This may include parallel branches if there is more than one path between @minimum_script_version@ and the submitted job's @script_version@ in the Git commit graph.  Use @exclude_script_versions@ to blacklist specific commits.
 
 </div>
 
