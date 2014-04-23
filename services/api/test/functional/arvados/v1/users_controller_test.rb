@@ -889,9 +889,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    assert_operator 2, :<=, jresponse['items_available']
-    assert_operator 2, :<=, jresponse['items'].count
-    kinds = jresponse['items'].collect { |i| i['kind'] }.uniq
+    assert_operator 2, :<=, json_response['items_available']
+    assert_operator 2, :<=, json_response['items'].count
+    kinds = json_response['items'].collect { |i| i['kind'] }.uniq
     expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
     assert_equal expect_kinds, (expect_kinds & kinds)
   end
@@ -907,7 +907,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       while true
         # Behaving badly here, using the same controller multiple
         # times within a test.
-        @jresponse = nil
+        @json_response = nil
         get :owned_items, {
           id: users(:active).uuid,
           include_linked: inc_ind,
@@ -916,14 +916,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
           format: :json,
         }
         assert_response :success
-        assert_operator(0, :<, jresponse['items'].count,
+        assert_operator(0, :<, json_response['items'].count,
                         "items_available=#{items_available} but received 0 "\
                         "items with offset=#{offset}")
-        items_available ||= jresponse['items_available']
-        assert_equal(items_available, jresponse['items_available'],
+        items_available ||= json_response['items_available']
+        assert_equal(items_available, json_response['items_available'],
                      "items_available changed between page #{offset/limit} "\
                      "and page #{1+offset/limit}")
-        jresponse['items'].each do |item|
+        json_response['items'].each do |item|
           uuid = item['uuid']
           assert_equal(nil, uuid_received[uuid],
                        "Received '#{uuid}' again on page #{1+offset/limit}")
@@ -937,7 +937,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         break if offset >= items_available
       end
       if inc_ind
-        assert_operator 0, :<, (jresponse.keys - [users(:active).uuid]).count,
+        assert_operator 0, :<, (json_response.keys - [users(:active).uuid]).count,
         "Set include_linked=true but did not receive any non-owned items"
       end
     end

@@ -19,7 +19,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :index, filters: [['group_class', '=', 'folder']], format: :json
     assert_response :success
     group_uuids = []
-    jresponse['items'].each do |group|
+    json_response['items'].each do |group|
       assert_equal 'folder', group['group_class']
       group_uuids << group['uuid']
     end
@@ -34,7 +34,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     get :index, filters: [['group_class', '=', nil]], format: :json
     assert_response :success
     group_uuids = []
-    jresponse['items'].each do |group|
+    json_response['items'].each do |group|
       assert_equal nil, group['group_class']
       group_uuids << group['uuid']
     end
@@ -50,8 +50,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    assert_equal [], jresponse['items']
-    assert_equal 0, jresponse['items_available']
+    assert_equal [], json_response['items']
+    assert_equal 0, json_response['items_available']
   end
 
   test 'get group-owned objects' do
@@ -61,8 +61,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    assert_operator 2, :<=, jresponse['items_available']
-    assert_operator 2, :<=, jresponse['items'].count
+    assert_operator 2, :<=, json_response['items_available']
+    assert_operator 2, :<=, json_response['items'].count
   end
 
   test 'get group-owned objects with limit' do
@@ -73,8 +73,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    assert_operator 1, :<, jresponse['items_available']
-    assert_equal 1, jresponse['items'].count
+    assert_operator 1, :<, json_response['items_available']
+    assert_equal 1, json_response['items'].count
   end
 
   test 'get group-owned objects with limit and offset' do
@@ -86,8 +86,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    assert_operator 1, :<, jresponse['items_available']
-    assert_equal 0, jresponse['items'].count
+    assert_operator 1, :<, json_response['items_available']
+    assert_equal 0, json_response['items'].count
   end
 
   test 'get group-owned objects with additional filter matching nothing' do
@@ -98,8 +98,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    assert_equal [], jresponse['items']
-    assert_equal 0, jresponse['items_available']
+    assert_equal [], json_response['items']
+    assert_equal 0, json_response['items_available']
   end
 
   test 'get group-owned objects without include_linked' do
@@ -110,7 +110,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    uuids = jresponse['items'].collect { |i| i['uuid'] }
+    uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_equal nil, uuids.index(unexpected_uuid)
   end
 
@@ -123,7 +123,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
     }
     assert_response :success
-    uuids = jresponse['items'].collect { |i| i['uuid'] }
+    uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes uuids, expected_uuid, "Did not get #{expected_uuid}"
   end
 end

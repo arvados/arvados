@@ -16,7 +16,7 @@ class ValidLinksTest < ActionDispatch::IntegrationTest
       }
     }, admin_auth
     assert_response :success
-    u = jresponse['uuid']
+    u = json_response['uuid']
 
     put "/arvados/v1/links/#{u}", {
       :format => :json,

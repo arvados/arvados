@@ -13,8 +13,8 @@ class ActiveSupport::TestCase
     self.request.headers["Accept"] = "text/json"
   end
 
-  def jresponse
-    @jresponse ||= ActiveSupport::JSON.decode @response.body
+  def json_response
+    @json_response ||= ActiveSupport::JSON.decode @response.body
   end
 
   def authorize_with(api_client_auth_name)
