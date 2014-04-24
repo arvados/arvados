@@ -97,7 +97,7 @@ func TestGetBlockCorrupt(t *testing.T) {
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
 	if err != CorruptError {
-		t.Errorf("Expected CorruptError, got %v", result)
+		t.Errorf("Expected CorruptError, got %v (buf: %v)", err, result)
 	}
 }
 

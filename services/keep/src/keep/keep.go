@@ -318,12 +318,23 @@ func GetBlock(hash string) ([]byte, error) {
 			switch {
 			case os.IsNotExist(err):
 				continue
-			case err == CorruptError:
-				return nil, err
 			default:
 				log.Printf("GetBlock: reading %s: %s\n", hash, err)
 			}
 		} else {
+			// Double check the file checksum.
+			//
+			filehash := fmt.Sprintf("%x", md5.Sum(buf))
+			if filehash != hash {
+				// TODO(twp): this condition probably represents a bad disk and
+				// should raise major alarm bells for an administrator: e.g.
+				// they should be sent directly to an event manager at high
+				// priority or logged as urgent problems.
+				//
+				log.Printf("%s: checksum mismatch for request %s (actual hash %s)\n",
+					vol, hash, filehash)
+				return buf, CorruptError
+			}
 			// Success!
 			return buf, nil
 		}

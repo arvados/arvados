@@ -1,7 +1,12 @@
+// A Volume is an interface representing a Keep back-end storage unit:
+// for example, a single mounted disk, a RAID array, an Amazon S3 volume,
+// etc.
+//
+// A UnixVolume is a Volume that is backed by a locally mounted disk.
+
 package main
 
 import (
-	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,18 +18,20 @@ import (
 	"time"
 )
 
-// A Volume is an interface that represents a Keep back-end volume.
-
 type Volume interface {
 	Read(loc string) ([]byte, error)
 	Write(loc string, block []byte) error
 	Index(prefix string) string
 	Status() *VolumeStatus
+	String() string
 }
 
-// A UnixVolume is a Volume that writes to a locally mounted disk.
 type UnixVolume struct {
 	root string // path to this volume
+}
+
+func (v *UnixVolume) String() string {
+	return fmt.Sprintf("[UnixVolume %s]", v.root)
 }
 
 // Read retrieves a block identified by the locator string "loc", and
@@ -53,22 +60,8 @@ func (v *UnixVolume) Read(loc string) ([]byte, error) {
 	var buf = make([]byte, BLOCKSIZE)
 	nread, err = f.Read(buf)
 	if err != nil {
-		log.Printf("%s: reading %s: %s\n", v.root, blockFilename, err)
+		log.Printf("%s: reading %s: %s\n", v, blockFilename, err)
 		return buf, err
-	}
-
-	// Double check the file checksum.
-	//
-	filehash := fmt.Sprintf("%x", md5.Sum(buf[:nread]))
-	if filehash != loc {
-		// TODO(twp): this condition probably represents a bad disk and
-		// should raise major alarm bells for an administrator: e.g.
-		// they should be sent directly to an event manager at high
-		// priority or logged as urgent problems.
-		//
-		log.Printf("%s: checksum mismatch: %s (actual locator %s)\n",
-			v.root, blockFilename, filehash)
-		return buf, CorruptError
 	}
 
 	// Success!
@@ -99,7 +92,7 @@ func (v *UnixVolume) Write(loc string, block []byte) error {
 	blockFilename := fmt.Sprintf("%s/%s", blockDir, loc)
 
 	if _, err := tmpfile.Write(block); err != nil {
-		log.Printf("%s: writing to %s: %s\n", v.root, blockFilename, err)
+		log.Printf("%s: writing to %s: %s\n", v, blockFilename, err)
 		return err
 	}
 	if err := tmpfile.Close(); err != nil {
@@ -125,13 +118,13 @@ func (v *UnixVolume) Status() *VolumeStatus {
 	if fi, err := os.Stat(v.root); err == nil {
 		devnum = fi.Sys().(*syscall.Stat_t).Dev
 	} else {
-		log.Printf("%s: os.Stat: %s\n", v.root, err)
+		log.Printf("%s: os.Stat: %s\n", v, err)
 		return nil
 	}
 
 	err := syscall.Statfs(v.root, &fs)
 	if err != nil {
-		log.Printf("%s: statfs: %s\n", v.root, err)
+		log.Printf("%s: statfs: %s\n", v, err)
 		return nil
 	}
 	// These calculations match the way df calculates disk usage:
@@ -143,7 +136,8 @@ func (v *UnixVolume) Status() *VolumeStatus {
 }
 
 // Index returns a list of blocks found on this volume which begin with
-// the specified prefix.
+// the specified prefix. If the prefix is an empty string, Index returns
+// a complete list of blocks.
 //
 // The return value is a multiline string (separated by
 // newlines). Each line is in the format
@@ -164,7 +158,7 @@ func (v *UnixVolume) Index(prefix string) (output string) {
 			// with prefix.
 			if err != nil {
 				log.Printf("IndexHandler: %s: walking to %s: %s",
-					v.root, path, err)
+					v, path, err)
 				return nil
 			}
 			locator := filepath.Base(path)
@@ -211,7 +205,7 @@ func (v *UnixVolume) IsFull() (isFull bool) {
 	if avail, err := v.FreeDiskSpace(); err == nil {
 		isFull = avail < MIN_FREE_KILOBYTES
 	} else {
-		log.Printf("%s: FreeDiskSpace: %s\n", v.root, err)
+		log.Printf("%s: FreeDiskSpace: %s\n", v, err)
 		isFull = false
 	}
 
@@ -225,10 +219,6 @@ func (v *UnixVolume) IsFull() (isFull bool) {
 
 // FreeDiskSpace returns the number of unused 1k blocks available on
 // the volume.
-//
-//     TODO(twp): consider integrating this better with VolumeStatus
-//     (e.g. keep a NodeStatus object up-to-date periodically and use
-//     it as the source of info)
 //
 func (v *UnixVolume) FreeDiskSpace() (free uint64, err error) {
 	var fs syscall.Statfs_t
