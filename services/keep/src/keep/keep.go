@@ -87,10 +87,13 @@ func main() {
 	//    directories.
 
 	var listen, volumearg string
+	var serialize_io bool
 	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
 		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
 	flag.StringVar(&volumearg, "volumes", "",
 		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
+	flag.BoolVar(&serialize_io, "serialize-io", false,
+		"If set, all read and write operations on local Keep volumes will be serialized.")
 	flag.Parse()
 
 	// Look for local keep volumes.
@@ -109,7 +112,11 @@ func main() {
 	for _, v := range keepvols {
 		if _, err := os.Stat(v); err == nil {
 			log.Println("adding Keep volume:", v)
-			KeepVolumes = append(KeepVolumes, &UnixVolume{v})
+			newvol := &UnixVolume{v, nil}
+			if serialize_io {
+				newvol.queue = make(chan *IORequest)
+			}
+			KeepVolumes = append(KeepVolumes, newvol)
 		} else {
 			log.Printf("bad Keep volume: %s\n", err)
 		}
@@ -309,7 +316,7 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 func GetBlock(hash string) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
 	for _, vol := range KeepVolumes {
-		if buf, err := vol.Read(hash); err != nil {
+		if buf, err := vol.Get(hash); err != nil {
 			// IsNotExist is an expected error and may be ignored.
 			// (If all volumes report IsNotExist, we return a NotFoundError)
 			// A CorruptError should be returned immediately.
@@ -394,7 +401,7 @@ func PutBlock(block []byte, hash string) error {
 	// Store the block on the first available Keep volume.
 	allFull := true
 	for _, vol := range KeepVolumes {
-		err := vol.Write(hash, block)
+		err := vol.Put(hash, block)
 		if err == nil {
 			return nil // success!
 		}

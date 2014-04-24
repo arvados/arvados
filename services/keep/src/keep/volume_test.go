@@ -9,15 +9,18 @@ import (
 	"time"
 )
 
-func TempUnixVolume(t *testing.T) UnixVolume {
+func TempUnixVolume(t *testing.T, queue chan *IORequest) UnixVolume {
 	d, err := ioutil.TempDir("", "volume_test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	return UnixVolume{d}
+	return MakeUnixVolume(d, queue)
 }
 
 func _teardown(v UnixVolume) {
+	if v.queue != nil {
+		close(v.queue)
+	}
 	os.RemoveAll(v.root)
 }
 
@@ -39,12 +42,12 @@ func _store(t *testing.T, vol UnixVolume, filename string, block []byte) {
 	}
 }
 
-func TestRead(t *testing.T) {
-	v := TempUnixVolume(t)
+func TestGet(t *testing.T) {
+	v := TempUnixVolume(t, nil)
 	defer _teardown(v)
 	_store(t, v, TEST_HASH, TEST_BLOCK)
 
-	buf, err := v.Read(TEST_HASH)
+	buf, err := v.Get(TEST_HASH)
 	if err != nil {
 		t.Error(err)
 	}
@@ -53,12 +56,12 @@ func TestRead(t *testing.T) {
 	}
 }
 
-func TestReadNotFound(t *testing.T) {
-	v := TempUnixVolume(t)
+func TestGetNotFound(t *testing.T) {
+	v := TempUnixVolume(t, nil)
 	defer _teardown(v)
 	_store(t, v, TEST_HASH, TEST_BLOCK)
 
-	buf, err := v.Read(TEST_HASH_2)
+	buf, err := v.Get(TEST_HASH_2)
 	switch {
 	case os.IsNotExist(err):
 		break
@@ -69,11 +72,11 @@ func TestReadNotFound(t *testing.T) {
 	}
 }
 
-func TestWrite(t *testing.T) {
-	v := TempUnixVolume(t)
+func TestPut(t *testing.T) {
+	v := TempUnixVolume(t, nil)
 	defer _teardown(v)
 
-	err := v.Write(TEST_HASH, TEST_BLOCK)
+	err := v.Put(TEST_HASH, TEST_BLOCK)
 	if err != nil {
 		t.Error(err)
 	}
@@ -86,19 +89,135 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-func TestWriteBadVolume(t *testing.T) {
-	v := TempUnixVolume(t)
+func TestPutBadVolume(t *testing.T) {
+	v := TempUnixVolume(t, nil)
 	defer _teardown(v)
 
 	os.Chmod(v.root, 000)
-	err := v.Write(TEST_HASH, TEST_BLOCK)
+	err := v.Put(TEST_HASH, TEST_BLOCK)
 	if err == nil {
 		t.Error("Write should have failed")
 	}
 }
 
+// Serialization tests.
+//
+// TODO(twp): a proper test of I/O serialization requires that
+// a second request start while the first one is still executing.
+// Doing this correctly requires some tricky synchronization.
+// For now we'll just launch a bunch of requests in goroutines
+// and demonstrate that they return accurate results.
+//
+func TestGetSerialized(t *testing.T) {
+	v := TempUnixVolume(t, make(chan *IORequest))
+	defer _teardown(v)
+
+	_store(t, v, TEST_HASH, TEST_BLOCK)
+	_store(t, v, TEST_HASH_2, TEST_BLOCK_2)
+	_store(t, v, TEST_HASH_3, TEST_BLOCK_3)
+
+	sem := make(chan int)
+	go func(sem chan int) {
+		buf, err := v.Get(TEST_HASH)
+		if err != nil {
+			t.Errorf("err1: %v", err)
+		}
+		if bytes.Compare(buf, TEST_BLOCK) != 0 {
+			t.Errorf("buf should be %s, is %s", string(TEST_BLOCK), string(buf))
+		}
+		sem <- 1
+	}(sem)
+
+	go func(sem chan int) {
+		buf, err := v.Get(TEST_HASH_2)
+		if err != nil {
+			t.Errorf("err2: %v", err)
+		}
+		if bytes.Compare(buf, TEST_BLOCK_2) != 0 {
+			t.Errorf("buf should be %s, is %s", string(TEST_BLOCK_2), string(buf))
+		}
+		sem <- 1
+	}(sem)
+
+	go func(sem chan int) {
+		buf, err := v.Get(TEST_HASH_3)
+		if err != nil {
+			t.Errorf("err3: %v", err)
+		}
+		if bytes.Compare(buf, TEST_BLOCK_3) != 0 {
+			t.Errorf("buf should be %s, is %s", string(TEST_BLOCK_3), string(buf))
+		}
+		sem <- 1
+	}(sem)
+
+	// Wait for all goroutines to finish
+	for done := 0; done < 2; {
+		done += <-sem
+	}
+}
+
+func TestPutSerialized(t *testing.T) {
+	v := TempUnixVolume(t, make(chan *IORequest))
+	defer _teardown(v)
+
+	sem := make(chan int)
+	go func(sem chan int) {
+		err := v.Put(TEST_HASH, TEST_BLOCK)
+		if err != nil {
+			t.Errorf("err1: %v", err)
+		}
+		sem <- 1
+	}(sem)
+
+	go func(sem chan int) {
+		err := v.Put(TEST_HASH_2, TEST_BLOCK_2)
+		if err != nil {
+			t.Errorf("err2: %v", err)
+		}
+		sem <- 1
+	}(sem)
+
+	go func(sem chan int) {
+		err := v.Put(TEST_HASH_3, TEST_BLOCK_3)
+		if err != nil {
+			t.Errorf("err3: %v", err)
+		}
+		sem <- 1
+	}(sem)
+
+	// Wait for all goroutines to finish
+	for done := 0; done < 2; {
+		done += <-sem
+	}
+
+	// Double check that we actually wrote the blocks we expected to write.
+	buf, err := v.Get(TEST_HASH)
+	if err != nil {
+		t.Errorf("Get #1: %v", err)
+	}
+	if bytes.Compare(buf, TEST_BLOCK) != 0 {
+		t.Errorf("Get #1: expected %s, got %s", string(TEST_BLOCK), string(buf))
+	}
+
+	buf, err = v.Get(TEST_HASH_2)
+	if err != nil {
+		t.Errorf("Get #2: %v", err)
+	}
+	if bytes.Compare(buf, TEST_BLOCK_2) != 0 {
+		t.Errorf("Get #2: expected %s, got %s", string(TEST_BLOCK_2), string(buf))
+	}
+
+	buf, err = v.Get(TEST_HASH_3)
+	if err != nil {
+		t.Errorf("Get #3: %v", err)
+	}
+	if bytes.Compare(buf, TEST_BLOCK_3) != 0 {
+		t.Errorf("Get #3: expected %s, got %s", string(TEST_BLOCK_3), string(buf))
+	}
+}
+
 func TestIsFull(t *testing.T) {
-	v := TempUnixVolume(t)
+	v := TempUnixVolume(t, nil)
 	defer _teardown(v)
 
 	full_path := v.root + "/full"

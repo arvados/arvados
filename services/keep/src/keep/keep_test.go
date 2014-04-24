@@ -369,7 +369,7 @@ func setup(t *testing.T, num_volumes int) []Volume {
 	for i := range vols {
 		if dir, err := ioutil.TempDir(os.TempDir(), "keeptest"); err == nil {
 			root := dir + "/keep"
-			vols[i] = &UnixVolume{root}
+			vols[i] = &UnixVolume{root, nil}
 			os.Mkdir(root, 0755)
 		} else {
 			t.Fatal(err)

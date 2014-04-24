@@ -19,19 +19,88 @@ import (
 )
 
 type Volume interface {
-	Read(loc string) ([]byte, error)
-	Write(loc string, block []byte) error
+	Get(loc string) ([]byte, error)
+	Put(loc string, block []byte) error
 	Index(prefix string) string
 	Status() *VolumeStatus
 	String() string
 }
 
-type UnixVolume struct {
-	root string // path to this volume
+// IORequests are encapsulated requests to perform I/O on a Keep volume.
+// When running in serialized mode, the Keep front end sends IORequests
+// on a channel to an IORunner, which handles them one at a time and
+// returns an IOResponse.
+//
+type IOMethod int
+
+const (
+	KeepGet IOMethod = iota
+	KeepPut
+)
+
+type IORequest struct {
+	method IOMethod
+	loc    string
+	data   []byte
+	reply  chan *IOResponse
 }
 
-func (v *UnixVolume) String() string {
-	return fmt.Sprintf("[UnixVolume %s]", v.root)
+type IOResponse struct {
+	data []byte
+	err  error
+}
+
+// A UnixVolume is configured with:
+//
+// * root: the path to the volume's root directory
+// * queue: if non-nil, all I/O requests for this volume should be queued
+//   on this channel. The response will be delivered on the IOResponse
+//   channel included in the request.
+//
+type UnixVolume struct {
+	root  string // path to this volume
+	queue chan *IORequest
+}
+
+func (v *UnixVolume) IOHandler() {
+	for req := range v.queue {
+		var result IOResponse
+		switch req.method {
+		case KeepGet:
+			result.data, result.err = v.Read(req.loc)
+		case KeepPut:
+			result.err = v.Write(req.loc, req.data)
+		}
+		req.reply <- &result
+	}
+}
+
+func MakeUnixVolume(root string, queue chan *IORequest) UnixVolume {
+	v := UnixVolume{root, queue}
+	if queue != nil {
+		go v.IOHandler()
+	}
+	return v
+}
+
+func (v *UnixVolume) Get(loc string) ([]byte, error) {
+	if v.queue == nil {
+		return v.Read(loc)
+	}
+	reply := make(chan *IOResponse)
+	v.queue <- &IORequest{KeepGet, loc, nil, reply}
+	response := <-reply
+	return response.data, response.err
+}
+
+func (v *UnixVolume) Put(loc string, block []byte) error {
+	if v.queue == nil {
+		return v.Write(loc, block)
+	}
+	reply := make(chan *IOResponse)
+	v.queue <- &IORequest{KeepPut, loc, block, reply}
+	response := <-reply
+	return response.err
 }
 
 // Read retrieves a block identified by the locator string "loc", and
@@ -229,4 +298,8 @@ func (v *UnixVolume) FreeDiskSpace() (free uint64, err error) {
 		free = fs.Bavail * uint64(fs.Bsize) / 1024
 	}
 	return
+}
+
+func (v *UnixVolume) String() string {
+	return fmt.Sprintf("[UnixVolume %s]", v.root)
 }
