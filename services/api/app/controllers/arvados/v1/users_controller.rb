@@ -74,7 +74,7 @@ class Arvados::V1::UsersController < ApplicationController
                                   head_uuid: required_uuids).
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids
-        if todo_uuids == []
+        if todo_uuids.empty?
           @object.update_attributes is_active: true
           logger.info "User #{@object.uuid} activated"
         else

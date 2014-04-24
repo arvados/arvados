@@ -14,15 +14,15 @@
 ActiveRecord::Schema.define(:version => 20140423133559) do
 
   create_table "api_client_authorizations", :force => true do |t|
-    t.string   "api_token",                                           :null => false
-    t.integer  "api_client_id",                                       :null => false
-    t.integer  "user_id",                                             :null => false
+    t.string   "api_token",                                             :null => false
+    t.integer  "api_client_id",                                         :null => false
+    t.integer  "user_id",                                               :null => false
     t.string   "created_by_ip_address"
     t.string   "last_used_by_ip_address"
     t.datetime "last_used_at"
     t.datetime "expires_at"
-    t.datetime "created_at",                                          :null => false
-    t.datetime "updated_at",                                          :null => false
+    t.datetime "created_at",                                            :null => false
+    t.datetime "updated_at",                                            :null => false
     t.string   "default_owner_uuid"
     t.text     "scopes",                  :default => "---\n- all\n", :null => false
   end
@@ -313,6 +313,8 @@ ActiveRecord::Schema.define(:version => 20140423133559) do
     t.boolean  "active",                  :default => false
     t.datetime "updated_at",                                 :null => false
     t.text     "properties"
+    t.string   "state"
+    t.text     "components_summary"
   end
 
   add_index "pipeline_instances", ["created_at"], :name => "index_pipeline_instances_on_created_at"
