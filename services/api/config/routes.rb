@@ -1,126 +1,58 @@
 Server::Application.routes.draw do
   themes_for_rails
 
-  resources :humans
-  resources :traits
-  resources :repositories
-  resources :virtual_machines
-  resources :authorized_keys
-  resources :keep_disks
-  resources :commit_ancestors
-  resources :commits
-  resources :job_tasks
-  resources :jobs
-  resources :api_client_authorizations
-  resources :api_clients
-  resources :logs
-  resources :groups
-  resources :specimens
-  resources :collections
-  resources :links
-  resources :nodes
-  resources :pipeline_templates
-  resources :pipeline_instances
-
-  # The priority is based upon order of creation:
-  # first created -> highest priority.
-
-  # Sample of regular route:
-  #   match 'products/:id' => 'catalog#view'
-  # Keep in mind you can assign values other than :controller and :action
-
-  # Sample of named route:
-  #   match 'products/:id/purchase' => 'catalog#purchase', :as => :purchase
-  # This route can be invoked with purchase_url(:id => product.id)
-
-  # Sample resource route (maps HTTP verbs to controller actions automatically):
-  #   resources :products
-
-  # Sample resource route with options:
-  #   resources :products do
-  #     member do
-  #       get 'short'
-  #       post 'toggle'
-  #     end
-  #
-  #     collection do
-  #       get 'sold'
-  #     end
-  #   end
-
-  # Sample resource route with sub-resources:
-  #   resources :products do
-  #     resources :comments, :sales
-  #     resource :seller
-  #   end
-
-  # Sample resource route with more complex sub-resources
-  #   resources :products do
-  #     resources :comments
-  #     resources :sales do
-  #       get 'recent', :on => :collection
-  #     end
-  #   end
-
-  # Sample resource route within a namespace:
-  #   namespace :admin do
-  #     # Directs /admin/products/* to Admin::ProductsController
-  #     # (app/controllers/admin/products_controller.rb)
-  #     resources :products
-  #   end
-
-  # You can have the root of your site routed with "root"
-  # just remember to delete public/index.html.
-  # root :to => 'welcome#index'
-
-  # See how all your routes lay out with "rake routes"
-
-  # This is a legacy wild controller route that's not recommended for RESTful applications.
-  # Note: This route will make all actions in every controller accessible via GET requests.
-  # match ':controller(/:action(/:id(.:format)))'
+  # See http://guides.rubyonrails.org/routing.html
 
   namespace :arvados do
     namespace :v1 do
-      match '/nodes/:uuid/ping' => 'nodes#ping', :as => :ping_node
-      match '/keep_disks/ping' => 'keep_disks#ping', :as => :ping_keep_disk
-      match '/links/from/:tail_uuid' => 'links#index', :as => :arvados_v1_links_from
-      match '/users/current' => 'users#current'
-      match '/users/system' => 'users#system'
-      match '/jobs/queue' => 'jobs#queue'
-      match '/jobs/:uuid/log_tail_follow' => 'jobs#log_tail_follow'
-      post '/jobs/:uuid/cancel' => 'jobs#cancel'
-      match '/users/:uuid/event_stream' => 'users#event_stream'
-      post '/users/:uuid/activate' => 'users#activate'
-      post '/users/setup' => 'users#setup'
-      post '/users/:uuid/unsetup' => 'users#unsetup'
-      match '/virtual_machines/get_all_logins' => 'virtual_machines#get_all_logins'
-      match '/virtual_machines/:uuid/logins' => 'virtual_machines#logins'
-      post '/api_client_authorizations/create_system_auth' => 'api_client_authorizations#create_system_auth'
-      match '/repositories/get_all_permissions' => 'repositories#get_all_permissions'
-      get '/user_agreements/signatures' => 'user_agreements#signatures'
-      post '/user_agreements/sign' => 'user_agreements#sign'
-      get '/collections/:uuid/provenance' => 'collections#provenance'
-      get '/collections/:uuid/used_by' => 'collections#used_by'
-      resources :collections
-      resources :links
-      resources :nodes
-      resources :pipeline_templates
-      resources :pipeline_instances
-      resources :specimens
-      resources :groups
-      resources :logs
-      resources :users
+      resources :api_client_authorizations do
+        post 'create_system_auth', on: :collection
+      end
       resources :api_clients
-      resources :api_client_authorizations
-      resources :jobs
-      resources :job_tasks
-      resources :keep_disks
       resources :authorized_keys
-      resources :virtual_machines
-      resources :repositories
-      resources :traits
+      resources :collections do
+        get 'provenance', on: :member
+        get 'used_by', on: :member
+      end
+      resources :groups
       resources :humans
-      resources :user_agreements
+      resources :job_tasks
+      resources :jobs do
+        get 'queue', on: :collection
+        get 'log_tail_follow', on: :member
+        post 'cancel', on: :member
+      end
+      resources :keep_disks do
+        post 'ping', on: :collection
+      end
+      resources :links
+      resources :logs
+      resources :nodes do
+        post 'ping', on: :member
+      end
+      resources :pipeline_instances
+      resources :pipeline_templates
+      resources :repositories do
+        get 'get_all_permissions', on: :collection
+      end
+      resources :specimens
+      resources :traits
+      resources :user_agreements do
+        get 'signatures', on: :collection
+        post 'sign', on: :collection
+      end
+      resources :users do
+        get 'current', on: :collection
+        get 'system', on: :collection
+        get 'event_stream', on: :member
+        post 'activate', on: :member
+        post 'setup', on: :collection
+        post 'unsetup', on: :member
+      end
+      resources :virtual_machines do
+        get 'logins', on: :member
+        get 'get_all_logins', on: :collection
+      end
     end
   end
 
@@ -138,7 +70,7 @@ Server::Application.routes.draw do
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
-  match '*a', :to => 'arvados/v1/links#render_not_found'
+  match '*a', :to => 'static#render_not_found'
 
   root :to => 'static#home'
 end

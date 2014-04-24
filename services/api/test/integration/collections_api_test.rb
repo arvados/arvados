@@ -15,6 +15,42 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal "arvados#collectionList", jresponse['kind']
   end
 
+  test "get index with invalid filters (array of strings) responds 422" do
+    get "/arvados/v1/collections", {
+      :format => :json,
+      :filters => ['uuid', '=', 'ad02e37b6a7f45bbe2ead3c29a109b8a+54'].to_json
+    }, auth(:active)
+    assert_response 422
+    assert_match /nvalid element.*not an array/, jresponse['errors'].join(' ')
+  end
+
+  test "get index with invalid filters (unsearchable column) responds 422" do
+    get "/arvados/v1/collections", {
+      :format => :json,
+      :filters => [['this_column_does_not_exist', '=', 'bogus']].to_json
+    }, auth(:active)
+    assert_response 422
+    assert_match /nvalid attribute/, jresponse['errors'].join(' ')
+  end
+
+  test "get index with invalid filters (invalid operator) responds 422" do
+    get "/arvados/v1/collections", {
+      :format => :json,
+      :filters => [['uuid', ':-(', 'displeased']].to_json
+    }, auth(:active)
+    assert_response 422
+    assert_match /nvalid operator/, jresponse['errors'].join(' ')
+  end
+
+  test "get index with invalid filters (invalid operand type) responds 422" do
+    get "/arvados/v1/collections", {
+      :format => :json,
+      :filters => [['uuid', '=', {foo: 'bar'}]].to_json
+    }, auth(:active)
+    assert_response 422
+    assert_match /nvalid operand type/, jresponse['errors'].join(' ')
+  end
+
   test "get index with where= (empty string)" do
     get "/arvados/v1/collections", {:format => :json, :where => ''}, auth(:active)
     assert_response :success
