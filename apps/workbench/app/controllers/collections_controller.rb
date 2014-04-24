@@ -6,6 +6,36 @@ class CollectionsController < ApplicationController
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
 
+  def set_persistent
+    case params[:value]
+    when 'persistent', 'cache'
+      persist_links = Link.filter([['owner_uuid', '=', current_user.uuid],
+                                   ['link_class', '=', 'resources'],
+                                   ['name', '=', 'wants'],
+                                   ['tail_uuid', '=', current_user.uuid],
+                                   ['head_uuid', '=', @object.uuid]])
+      logger.debug persist_links.inspect
+    else
+      return unprocessable "Invalid value #{value.inspect}"
+    end
+    if params[:value] == 'persistent'
+      if not persist_links.any?
+        Link.create(link_class: 'resources',
+                    name: 'wants',
+                    tail_uuid: current_user.uuid,
+                    head_uuid: @object.uuid)
+      end
+    else
+      persist_links.each do |link|
+        link.destroy || raise
+      end
+    end
+
+    respond_to do |f|
+      f.json { render json: @object }
+    end
+  end
+
   def index
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
@@ -67,7 +97,6 @@ class CollectionsController < ApplicationController
     self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
     self.response_body = FileStreamer.new opts
   end
-
 
   def show
     return super if !@object

@@ -23,18 +23,19 @@
       &vellip;
     <% end %>
   </td>
-  <td><%= link_to_if_arvados_object c.owner_uuid, friendly_name: true %></td>
   <td>
     <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
   </td>
   <td>
-    <% if @collection_info[c.uuid][:wanted_by_me] %>
-      <span class="label label-info">2&times;</span>
-    <% elsif @collection_info[c.uuid][:wanted] %>
-      <span class="label">2&times;</span>
-    <% else %>
-      <span class="label">cache</span>
-    <% end %>
+    <% current_state = @collection_info[c.uuid][:wanted_by_me] ? 'persistent' : 'cache' %>
+    <div class="btn-group btn-group-xs toggle-persist fill" data-toggle="buttons" data-remote-href="<%= set_persistent_collection_path(id: c.uuid) %>" data-persistent-state="<%= current_state %>">
+      <label class="btn btn-info <%= 'active' if current_state=='persistent' %>">
+        <input type="radio" name="wants" value="persistent">Persistent
+      </label>
+      <label class="btn btn-info <%= 'active' if current_state=='cache' %>">
+        <input type="radio" name="wants" value="cache">Cache
+      </label>
+    </div>
   </td>
   <td class="add-tag-button">
     <a class="btn btn-xs btn-info add-tag-button pull-right" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
