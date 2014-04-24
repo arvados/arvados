@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity]
+  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity, :storage]
   skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
   before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
@@ -61,6 +61,33 @@ class UsersController < ApplicationController
     # Prepend a "Total" pseudo-user to the sorted list
     @user_activity[nil] = @total_activity
     @users = [OpenStruct.new(uuid: nil)] + @users
+  end
+
+  def storage
+    @breadcrumb_page_name = nil
+    @users = User.limit(params[:limit] || 1000).all
+    @user_storage = {}
+    total_storage = {}
+    @log_date = {}
+    @users.each do |u|
+      @user_storage[u.uuid] ||= {}
+      storage_log = Log.
+        filter([[:object_uuid, '=', u.uuid],
+                [:event_type, '=', 'user-storage-report']]).
+        order(:created_at => :desc).
+        limit(1)
+      storage_log.each do |log_entry|
+        # We expect this block to only execute once since we specified limit(1)
+        @user_storage[u.uuid] = log_entry['properties']
+        @log_date[u.uuid] = log_entry['event_at']
+      end
+      total_storage.merge!(@user_storage[u.uuid]) { |k,v1,v2| v1 + v2 }
+    end
+    @users = @users.sort_by { |u|
+      [-@user_storage[u.uuid].values.push(0).inject(:+), u.full_name]}
+    # Prepend a "Total" pseudo-user to the sorted list
+    @users = [OpenStruct.new(uuid: nil)] + @users
+    @user_storage[nil] = total_storage
   end
 
   def show_pane_list
