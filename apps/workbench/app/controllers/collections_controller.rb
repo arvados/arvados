@@ -129,6 +129,9 @@ class CollectionsController < ApplicationController
     Link.where(head_uuid: @sourcedata.keys | @output2job.keys).each do |link|
       if link.link_class == 'resources' and link.name == 'wants'
         @protected[link.head_uuid] = true
+        if link.tail_uuid == current_user.uuid
+          @is_persistent = true
+        end
       end
     end
     Link.where(tail_uuid: @sourcedata.keys).each do |link|
