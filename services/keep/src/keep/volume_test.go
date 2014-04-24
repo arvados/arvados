@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 )
 
 func TempUnixVolume(t *testing.T) UnixVolume {
@@ -68,22 +69,6 @@ func TestReadNotFound(t *testing.T) {
 	}
 }
 
-func TestReadCorrupt(t *testing.T) {
-	v := TempUnixVolume(t)
-	defer _teardown(v)
-	_store(t, v, TEST_HASH, BAD_BLOCK)
-
-	buf, err := v.Read(TEST_HASH)
-	switch err {
-	case CorruptError:
-		break
-	case nil:
-		t.Errorf("Read should have failed, returned %s", string(buf))
-	default:
-		t.Error(err)
-	}
-}
-
 func TestWrite(t *testing.T) {
 	v := TempUnixVolume(t)
 	defer _teardown(v)
@@ -109,5 +94,25 @@ func TestWriteBadVolume(t *testing.T) {
 	err := v.Write(TEST_HASH, TEST_BLOCK)
 	if err == nil {
 		t.Error("Write should have failed")
+	}
+}
+
+func TestIsFull(t *testing.T) {
+	v := TempUnixVolume(t)
+	defer _teardown(v)
+
+	full_path := v.root + "/full"
+	now := fmt.Sprintf("%d", time.Now().Unix())
+	os.Symlink(now, full_path)
+	if !v.IsFull() {
+		t.Errorf("%s: claims not to be full", v)
+	}
+	os.Remove(full_path)
+
+	// Test with an expired /full link.
+	expired := fmt.Sprintf("%d", time.Now().Unix()-3605)
+	os.Symlink(expired, full_path)
+	if v.IsFull() {
+		t.Errorf("%s: should no longer be full", v)
 	}
 }
