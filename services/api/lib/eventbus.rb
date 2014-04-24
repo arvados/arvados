@@ -41,7 +41,7 @@ class EventBus
 
   def on_connect ws
     if not current_user
-      ws.send '{"error":"Not logged in"}'
+      ws.send ({status: 401, message: "Valid API token required"}.to_json)
       ws.close
       return
     end
@@ -93,12 +93,13 @@ class EventBus
     end
 
     ws.on :message do |event|
-      p = oj.parse(event.data)
-      if p[:method] == 'subscribe'
-        if p[:starting_log_id]
-          ws.last_log_id = p[:starting_log_id].to_i
+      p = Oj.load event.data
+      if p["method"] == 'subscribe'
+        if p["starting_log_id"]
+          ws.last_log_id = p["starting_log_id"].to_i
         end
         ws.filters.push(Filter.new p)
+        ws.send ({status: 200, message: 'subscribe ok'}.to_json)
       end
     end
 
