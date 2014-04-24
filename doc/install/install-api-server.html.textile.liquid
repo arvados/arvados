@@ -126,7 +126,7 @@ Edit @config/initializers/omniauth.rb@. Set @APP_SECRET@ to the value of @app_se
 You can now run the development server:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails server
+<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails server --port=3030
 </code></pre></notextile>
 
 h3. Apache/Passenger (optional)
@@ -142,28 +142,22 @@ To enable streaming so users can monitor crunch jobs in real time, add to your P
 
 h2. Add an admin user
 
-Point browser to the API endpoint. Log in with a google account.
-
-In the rails console:
+Point your browser to the API server's login endpoint:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rails console</span>
-irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.find(1)</span>
+<pre><code><span class="userinput">https://localhost:3030/login</span>
+</code></pre>
+</notextile>
+
+Log in with your google account.
+
+Use the rails console to give yourself admin privileges:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails console</span>
+irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
 irb(main):002:0&gt; <span class="userinput">Thread.current[:user].is_admin = true</span>
-irb(main):003:0&gt; <span class="userinput">User.find(1).update_attributes is_admin: true, is_active: true</span>
-irb(main):004:0&gt; <span class="userinput">User.find(1).is_admin</span>
-=&gt; true
-</code></pre></notextile>
-
-h2. Create an API token
-
-In rails console:
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rails console</span>
-irb(main):001:0&gt; <span class="userinput">a = ApiClient.new(owner_uuid:'0')</span>
-irb(main):002:0&gt; <span class="userinput">a.save!</span>
-irb(main):003:0&gt; <span class="userinput">x = ApiClientAuthorization.new(api_client_id:a.id, user_id:1)</span>
-irb(main):004:0&gt; <span class="userinput">x.save</span>
-irb(main):005:0&gt; <span class="userinput">x.api_token</span>
+irb(main):003:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
+irb(main):004:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
+=&gt; ["root", "<b>your_address@example.com</b>"]
 </code></pre></notextile>
