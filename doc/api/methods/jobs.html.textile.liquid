@@ -31,12 +31,14 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|job|object|See "Job resource":{{site.baseurl}}/api/schema/Job.html|request body||
-|minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|query|@"c3e86c9"@|
+|minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.[1]|query|@"c3e86c9"@|
 |exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@
 @["badtag1","badtag2"]@|
 |find_or_create         |boolean    |Before creating, look for an existing job that has identical script, script_version, and script_parameters to those in the present job, has nondeterministic=false, and did not fail (it could be queued, running, or completed). If such a job exists, respond with the existing job instead of submitting a new one.|query|@false@|
 
-When a job is submitted to the queue using the **create** method, the 'script_version' field is updated to a full 40-character Git commit hash based on the current content of the specified repository. If 'script_version' cannot be resolved, the job submission is rejected.
+When a job is submitted to the queue using the **create** method, the @script_version@ attribute is updated to a full 40-character Git commit hash based on the current content of the specified repository. If @script_version@ cannot be resolved, the job submission is rejected.
+
+fn1. See the "note about specifying Git commits on the Job resource page":{{site.baseurl}}/api/schema/Job.html#script_version for more detail.
 
 h3. Reusing jobs
 
