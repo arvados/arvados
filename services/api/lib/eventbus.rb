@@ -51,6 +51,9 @@ class EventBus
     ws.last_log_id = nil
 
     sub = @channel.subscribe do |msg|
+      begin
+      puts "Waking up"
+
       # Must have at least one filter set up to receive events
       if ws.filters.length > 0
 
@@ -59,10 +62,10 @@ class EventBus
 
         if ws.last_log_id
           # Only get log rows that are new
-          logs = logs.where("log.id > ? and log.id <= ?", ws.last_log_id, msg.to_i)
+          logs = logs.where("logs.id > ? and logs.id <= ?", ws.last_log_id, msg.to_i)
         else
           # No last log id, so only look at the most recently changed row
-          logs = logs.where("log.id = ?", msg.to_i)
+          logs = logs.where("logs.id = ?", msg.to_i)
         end
 
         # Record the most recent row
@@ -89,6 +92,9 @@ class EventBus
       else
         # No filters set up, so just record the sequence number
         ws.last_log_id.nil = msg.to_i
+      end
+      rescue Exception => e
+        puts "#{e}"
       end
     end
 

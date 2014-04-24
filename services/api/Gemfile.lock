@@ -69,6 +69,7 @@ GEM
     coffee-script-source (1.7.0)
     curb (0.8.5)
     daemon_controller (1.2.0)
+    database_cleaner (1.2.0)
     erubis (2.7.0)
     eventmachine (1.0.3)
     execjs (2.0.2)
@@ -207,6 +208,7 @@ DEPENDENCIES
   andand
   arvados-cli (>= 0.1.20140328152103)
   coffee-rails (~> 3.2.0)
+  database_cleaner
   faye-websocket
   google-api-client (~> 0.6.3)
   jquery-rails

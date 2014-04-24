@@ -1,10 +1,24 @@
 require 'test_helper'
 require 'websocket_runner'
 require 'oj'
+require 'database_cleaner'
+
+DatabaseCleaner.strategy = :deletion
 
 class WebsocketTest < ActionDispatch::IntegrationTest
+  self.use_transactional_fixtures = false
+
+  setup do
+    DatabaseCleaner.start
+  end
+
+  teardown do
+    DatabaseCleaner.clean
+  end
 
   def ws_helper (token = nil)
+    close_status = nil
+
     EM.run {
       if token
         ws = Faye::WebSocket::Client.new("ws://localhost:3002/websocket?api_token=#{api_client_authorizations(token).api_token}")
@@ -13,16 +27,19 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :close do |event|
+        close_status = [:close, event.code, event.reason]
         EM.stop_event_loop
       end
 
       EM::Timer.new 3 do
-        puts "\nTest took too long"
         EM.stop_event_loop
       end
 
       yield ws
     }
+
+    assert_not_nil close_status, "Test took too long"
+    assert_equal 1000, close_status[1], "Server closed the connection unexpectedly (check server log for errors)"
   end
 
   test "connect with no token" do
@@ -67,43 +84,40 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal 200, status
   end
 
+  test "connect, subscribe, get event" do
+    opened = false
+    state = 1
+    spec_uuid = nil
+    ev_uuid = nil
 
-  # test "connect, subscribe, get event" do
-  #   opened = false
-  #   state = 1
-  #   spec_uuid = nil
-  #   ev_uuid = nil
+    authorize_with :admin
 
-  #   puts "user #{Thread.current[:user]}"
-  #   authorize_with :admin
-  #   puts "user #{Thread.current[:user]}"
+    ws_helper :admin do |ws|
+      ws.on :open do |event|
+        opened = true
+        ws.send ({method: 'subscribe'}.to_json)
+      end
 
-  #   ws_helper :admin do |ws|
-  #     ws.on :open do |event|
-  #       puts "XXX"
-  #       opened = true
-  #       ws.send ({method: 'subscribe'}.to_json)
-  #     end
+      ws.on :message do |event|
+        d = Oj.load event.data
+        case state
+        when 1
+          assert_equal 200, d["status"]
+          spec = Specimen.create
+          spec.save
+          spec_uuid = spec.uuid
+          state = 2
+        when 2
+          ev_uuid = d["object_uuid"]
+          ws.close
+        end
+      end
 
-  #     ws.on :message do |event|
-  #       d = Oj.load event.data
-  #       puts d
-  #       case state
-  #       when 1
-  #         assert_equal 200, d["status"]
-  #         spec_uuid = Specimen.create.save.uuid
-  #         state = 2
-  #       when 2
-  #         ev_uuid = d["uuid"]
-  #         ws.close
-  #       end
-  #     end
+    end
 
-  #   end
-
-  #   assert opened, "Should have opened web socket"
-  #   assert_not spec_uuid.nil?
-  #   assert_equal spec_uuid, ev_uuid
-  # end
+    assert opened, "Should have opened web socket"
+    assert_not_nil spec_uuid
+    assert_equal spec_uuid, ev_uuid
+  end
 
 end
