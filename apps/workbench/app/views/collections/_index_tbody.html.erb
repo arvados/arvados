@@ -28,14 +28,7 @@
   </td>
   <td>
     <% current_state = @collection_info[c.uuid][:wanted_by_me] ? 'persistent' : 'cache' %>
-    <div class="btn-group btn-group-xs toggle-persist fill" data-toggle="buttons" data-remote-href="<%= set_persistent_collection_path(id: c.uuid) %>" data-persistent-state="<%= current_state %>">
-      <label class="btn btn-info <%= 'active' if current_state=='persistent' %>">
-        <input type="radio" name="wants" value="persistent">Persistent
-      </label>
-      <label class="btn btn-info <%= 'active' if current_state=='cache' %>">
-        <input type="radio" name="wants" value="cache">Cache
-      </label>
-    </div>
+    <%= render partial: 'toggle_persist', locals: { uuid: c.uuid, current_state: current_state } %>
   </td>
   <td class="add-tag-button">
     <a class="btn btn-xs btn-info add-tag-button pull-right" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
