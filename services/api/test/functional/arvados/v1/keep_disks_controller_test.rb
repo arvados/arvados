@@ -48,7 +48,7 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
 
   test "ping keep disk" do
     post :ping, {
-      uuid: keep_disks(:nonfull).uuid,
+      id: keep_disks(:nonfull).uuid,
       ping_secret: keep_disks(:nonfull).ping_secret,
       filesystem_uuid: keep_disks(:nonfull).filesystem_uuid
     }

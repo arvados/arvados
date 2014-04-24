@@ -13,7 +13,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
-    post :activate, uuid: me['uuid']
+    post :activate, id: me['uuid']
     assert_response :success
     assert_not_nil assigns(:object)
     me = JSON.parse(@response.body)
@@ -49,7 +49,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     me = JSON.parse(@response.body)
     assert_equal false, me['is_active']
 
-    post :activate, uuid: me['uuid']
+    post :activate, id: me['uuid']
     assert_response 403
 
     get :current
@@ -63,7 +63,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
-    post :activate, uuid: me['uuid']
+    post :activate, id: me['uuid']
     assert_response :success
     me = JSON.parse(@response.body)
     assert_equal true, me['is_active']
@@ -697,7 +697,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link_existence created['uuid'], created['email'], true, true, true, true, false
 
     # now unsetup this user
-    post :unsetup, uuid: created['uuid']
+    post :unsetup, id: created['uuid']
     assert_response :success
 
     created2 = JSON.parse(@response.body)
@@ -722,7 +722,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     authorize_with :admin
 
     # now unsetup this user
-    post :unsetup, uuid: active_user['uuid']
+    post :unsetup, id: active_user['uuid']
     assert_response :success
 
     response_user = JSON.parse(@response.body)
