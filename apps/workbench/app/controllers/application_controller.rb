@@ -183,7 +183,7 @@ class ApplicationController < ActionController::Base
   end
 
   protected
-    
+
   def find_object_by_uuid
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
@@ -206,7 +206,17 @@ class ApplicationController < ActionController::Base
   def thread_with_api_token(login_optional = false)
     begin
       try_redirect_to_login = true
-      if params[:api_token]
+      if params[:api_ticket]
+        # Use the provided token for this request only.
+        try_redirect_to_login = false
+        Thread.current[:arvados_api_token] = params[:api_ticket]
+        if verify_api_token
+          yield
+        else
+          @errors = ['Invalid API token']
+          self.render_error status: 401
+        end
+      elsif params[:api_token]
         try_redirect_to_login = false
         Thread.current[:arvados_api_token] = params[:api_token]
         # Before copying the token into session[], do a simple API
@@ -281,7 +291,7 @@ class ApplicationController < ActionController::Base
       yield
     else
       # We skipped thread_with_mandatory_api_token. Use the optional version.
-      thread_with_api_token(true) do 
+      thread_with_api_token(true) do
         yield
       end
     end
@@ -334,7 +344,7 @@ class ApplicationController < ActionController::Base
   @@notification_tests = []
 
   @@notification_tests.push lambda { |controller, current_user|
-    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do   
+    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
@@ -374,7 +384,7 @@ class ApplicationController < ActionController::Base
     @notifications = []
 
     if current_user
-      @showallalerts = false      
+      @showallalerts = false
       @@notification_tests.each do |t|
         a = t.call(self, current_user)
         if a
