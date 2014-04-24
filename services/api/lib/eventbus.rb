@@ -52,49 +52,48 @@ class EventBus
 
     sub = @channel.subscribe do |msg|
       begin
-      puts "Waking up"
+        # Must have at least one filter set up to receive events
+        if ws.filters.length > 0
 
-      # Must have at least one filter set up to receive events
-      if ws.filters.length > 0
+          # Start with log rows readable by user, sorted in ascending order
+          logs = Log.readable_by(ws.user).order("id asc")
 
-        # Start with log rows readable by user, sorted in ascending order
-        logs = Log.readable_by(ws.user).order("id asc")
+          if ws.last_log_id
+            # Only get log rows that are new
+            logs = logs.where("logs.id > ? and logs.id <= ?", ws.last_log_id, msg.to_i)
+          else
+            # No last log id, so only look at the most recently changed row
+            logs = logs.where("logs.id = ?", msg.to_i)
+          end
 
-        if ws.last_log_id
-          # Only get log rows that are new
-          logs = logs.where("logs.id > ? and logs.id <= ?", ws.last_log_id, msg.to_i)
+          # Record the most recent row
+          ws.last_log_id = msg.to_i
+
+          # Now process filters provided by client
+          cond_out = []
+          param_out = []
+          ws.filters.each do |filter|
+            ft = record_filters filter.filters
+            cond_out += ft[:cond_out]
+            param_out += ft[:param_out]
+          end
+
+          # Add filters to query
+          if cond_out.any?
+            logs = logs.where(cond_out.join(' OR '), *param_out)
+          end
+
+          # Finally execute query and send matching rows
+          logs.each do |l|
+            ws.send(l.as_api_response.to_json)
+          end
         else
-          # No last log id, so only look at the most recently changed row
-          logs = logs.where("logs.id = ?", msg.to_i)
+          # No filters set up, so just record the sequence number
+          ws.last_log_id.nil = msg.to_i
         end
-
-        # Record the most recent row
-        ws.last_log_id = msg.to_i
-
-        # Now process filters provided by client
-        cond_out = []
-        param_out = []
-        ws.filters.each do |filter|
-          ft = record_filters filter.filters
-          cond_out += ft[:cond_out]
-          param_out += ft[:param_out]
-        end
-
-        # Add filters to query
-        if cond_out.any?
-          logs = logs.where(cond_out.join(' OR '), *param_out)
-        end
-
-        # Finally execute query and send matching rows
-        logs.each do |l|
-          ws.send(l.as_api_response.to_json)
-        end
-      else
-        # No filters set up, so just record the sequence number
-        ws.last_log_id.nil = msg.to_i
-      end
       rescue Exception => e
         puts "#{e}"
+        ws.close
       end
     end
 
