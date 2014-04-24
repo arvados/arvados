@@ -332,7 +332,7 @@ def logUserStorageUsage():
       usage[UNWEIGHTED_PERSIST_SIZE_COL])
     info['persisted_collections_weighted_bytes'] = (
       usage[WEIGHTED_PERSIST_SIZE_COL])
-    body['info'] = info
+    body['properties'] = info
     # TODO(misha): Confirm that this will throw an exception if it
     # fails to create the log entry.
     arv.logs().create(body=body).execute()
@@ -357,9 +357,6 @@ def computeReplication(keep_blocks):
   for server_blocks in keep_blocks:
     for block_uuid, _ in server_blocks:
       block_to_replication[block_uuid] += 1
-  # THIS IS A HACK TO DEAL WITH KEEP SERVER DOUBLE-REPORTING!
-  # DELETE THIS WHEN THAT BUG IS FIXED OR THE KEEP SERVER IS REPLACED.
-  block_to_replication.update({k: v/2 for k,v in block_to_replication.items()})
   log.debug('Seeing the following replication levels among blocks: %s',
             str(set(block_to_replication.values())))
 
@@ -376,6 +373,7 @@ def detectReplicationProblems():
      for uuid, persister_replication in block_to_persister_replication.items()
      if len(persister_replication) > 0 and
      block_to_replication[uuid] > max(persister_replication.values())])
+
   log.info('Found %d blocks not in any collections, e.g. %s...',
            len(blocks_not_in_any_collections),
            ','.join(list(blocks_not_in_any_collections)[:5]))
@@ -385,10 +383,11 @@ def detectReplicationProblems():
   log.info('Found %d overreplicated blocks, e.g. %s...',
            len(overreplicated_persisted_blocks),
            ','.join(list(overreplicated_persisted_blocks)[:5]))
+
   # TODO:
   #  Read blocks sorted by mtime
   #  Cache window vs % free space
-  #  Collections which will candidates appear in
+  #  Collections which candidates will appear in
   #  Youngest underreplicated read blocks that appear in collections.
   #  Report Collections that have blocks which are missing from (or
   #   underreplicated in) keep.
