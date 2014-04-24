@@ -36,13 +36,13 @@ table#users-storage-table .byte-value {
   <% @users.each do |user| %>
   <tr>
     <td>
-	    <% if user.uuid %>
+      <% if user.uuid %>
       <small>
-	      <%= link_to_if_arvados_object user, friendly_name: true %>
+        <%= link_to_if_arvados_object user, friendly_name: true %>
       </small>
-	    <% else %>
-	    <b>Total</b>
-	    <% end %>
+      <% else %>
+      <b>Total</b>
+      <% end %>
     </td>
     <% [:read_collections_total_bytes, :read_collections_weighted_bytes, :persisted_collections_total_bytes, :persisted_collections_weighted_bytes].each do |key| %>
     <td class="byte-value">
@@ -61,6 +61,6 @@ table#users-storage-table .byte-value {
 <% content_for :footer_js do %>
 $('#users-storage-table td small').each(function(){
     if ($(this).html().trim() == '0')
-	$(this).css('opacity', '0.3');
+  $(this).css('opacity', '0.3');
 });
 <% end %>
