@@ -80,22 +80,31 @@ class ArvadosModel < ActiveRecord::Base
       collect { |uuid| sanitize(uuid) }.join(', ')
     or_references_me = ''
 
-    if self == Link and user
+    if self == User
+      or_row_is_me = "OR (#{table_name}.uuid=#{sanitize user.uuid})"
+    end
+
+    if self == Link
       or_references_me = "OR (#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND #{sanitize user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
     end
 
-    if self == Log and user
-      object_owner = ", #{table_name}.object_owner_uuid"
+    if self == Log
+      or_object_uuid = ", #{table_name}.object_uuid"
       or_object_owner = "OR (#{table_name}.object_owner_uuid in (#{sanitized_uuid_list}))"
     end
 
-    # Link head points to this row, or to the owner of this row
-    # (or owner of object described by this row, for logs table only)
-    # Link tail originates from this user, or a group that is readable by this user
-    # Link is any permission link ('write' and 'manage' implicitly grant 'read')
+    # Link head points to this row, or to the owner of this row (the thing to be read)
+    # (or the object described by this row, for logs table only)
+    # Link tail originates from this user, or a group that is readable by this
+    # user (the identity with authorization to read)
+    # Link is any permission link ('write' and 'manage' implicitly include 'read')
+    # The existence of such a link is tested in the where clause as permissions.head_uuid IS NOT NULL.
+    # or
+    # User is admin
     # or
     # This row is owned by this user, or owned by a group readable by this user
     # or
+    # This is the users table
     # This row uuid is equal this user uuid
     # or
     # This is the links table
@@ -104,11 +113,10 @@ class ArvadosModel < ActiveRecord::Base
     # or
     # This is the logs table
     # This object described by this row is owned by this user, or owned by a group readable by this user
-    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid #{object_owner}) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me} #{or_object_owner}",
-            true, user.is_admin,
-            uuid_list,
-            user.uuid)
+
+    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid #{or_object_uuid}) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
+      where("permissions.head_uuid IS NOT NULL OR ?=? OR #{table_name}.owner_uuid in (?) #{or_row_is_me} #{or_references_me} #{or_object_owner}",
+            user.is_admin, true, uuid_list).uniq
   end
 
   def logged_attributes
