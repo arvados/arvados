@@ -52,6 +52,11 @@
     display: none;
     }
     }
+
+    .brand-menu-button:hover {
+    background-color: #DDD;
+    }
+
   </style>
 </head>
 <body>
@@ -66,15 +71,12 @@
           <span class="icon-bar"></span>
         </button>
 
-        <a href="#" class="navbar-brand dropdown-toggle" data-toggle="dropdown" id="user-menu">
+        <a href="#" class="navbar-brand dropdown-toggle " data-toggle="dropdown" id="user-menu">
           <%= Rails.configuration.site_name rescue Rails.application.class.parent_name %>
         </a>
-        <ul class="dropdown-menu" role="menu">
+        <ul class="dropdown-menu" role="menu" style="left: 5%; width:90%">
 
-          <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
-            <a href="/">Dashboard</a>
-          </li>
-
+          <span class="row" style="margin-top: -2em">
           <% [['Data', [['collections', 'Collections (data files)'],
                         ['humans'],
                         ['traits'],
@@ -89,8 +91,8 @@
                          ['groups'],
                          ['nodes', 'Compute nodes'],
                          ['keep_disks']]]].each do |j| %>
+            <span class="col-sm-2">
             <li class="dropdown-header"><%= j[0] %></li>
-            <li>
               <% j[1].each do |k| %>
                 <% unless k[0] == 'users' and !current_user.andand.is_admin %>
                   <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
@@ -100,22 +102,24 @@
                   </li>
                 <% end %>
               <% end %>
-            </li>
-            <li class="divider"></li>
+            </span>
           <% end %>
 
-          <li class="dropdown-header">Help</li>
-          <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-          <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-          <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
-          <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
-
+          <span class="col-sm-2">
+            <li class="dropdown-header">Help</li>
+            <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+            <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+            <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+            <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+          </span>
+          </span>
         </ul>
           
       </div>
 
       <div class="collapse navbar-collapse" id="workbench-navbar">
       <ul class="nav navbar-nav navbar-left breadcrumbs">
+        <li> <a href="/">Dashboard</a></li>
         <% if current_user %>
         <% if content_for?(:breadcrumbs) %>
           <%= yield(:breadcrumbs) %>

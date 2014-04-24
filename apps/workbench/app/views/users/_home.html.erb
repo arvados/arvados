@@ -25,7 +25,55 @@
       .daxalert {
       overflow: hidden;
       }
+
+      .negmargin:before {
+      content: "";
+      margin-top: -2em;
+      }
 <% end %>
+
+        <ul style="left: 5%; width:90%">
+          
+          <span class="row negmargin">
+            <span class="col-sm-1"></span>
+          <% [['Data', [['collections', 'Collections (data files)'],
+                        ['humans'],
+                        ['traits'],
+                        ['specimens'],
+                        ['links']]],
+              ['Activity', [['pipeline_instances', 'Recent pipeline instances'],
+                            ['jobs', 'Recent jobs']]],
+              ['Compute', [['pipeline_templates'],
+                           ['repositories', 'Code repositories'],
+                           ['virtual_machines']]],
+              ['System', [['users'],
+                         ['groups'],
+                         ['nodes', 'Compute nodes'],
+                         ['keep_disks']]]].each do |j| %>
+            <span class="col-sm-2">
+            <li class="dropdown-header"><%= j[0] %></li>
+              <% j[1].each do |k| %>
+                <% unless k[0] == 'users' and !current_user.andand.is_admin %>
+                  <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
+                    <a href="/<%= k[0] %>">
+                      <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
+                    </a>
+                  </li>
+                <% end %>
+              <% end %>
+            </span>
+          <% end %>
+
+          <span class="col-sm-2">
+            <li class="dropdown-header">Help</li>
+            <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+            <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+            <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+            <li><%= link_to 'Admin guide', "#{Rails.configuration.arvados_docsite}/admin", target: "_blank" %></li>
+          </span>
+          </span>
+        </ul>
+
 
 <div class="container-fluid" id="home-tables">
 
