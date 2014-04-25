@@ -113,22 +113,6 @@ class UsersController < ApplicationController
       order('created_at desc').
       where(created_by: current_user.uuid)
 
-
-    # A Tutorial is a Link which has link_class "resources" and name
-    # "wants", and is owned by the Tutorials Group (i.e., named
-    # "Arvados Tutorials" and owned by the system user).
-    @tutorial_group = Group.where(owner_uuid: User.system.uuid,
-                                  name: 'Arvados Tutorials').first
-    if @tutorial_group
-      @tutorial_links = Link.where(tail_uuid: @tutorial_group.uuid,
-                                   link_class: 'resources',
-                                   name: 'wants')
-    else
-      @tutorial_links = []
-    end
-    @tutorial_complete = {
-      'Run a job' => @my_last_job
-    }
     respond_to do |f|
       f.js { render template: 'users/home.js' }
       f.html { render template: 'users/home' }
