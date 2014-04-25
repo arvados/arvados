@@ -16,7 +16,7 @@ class AdminNotifier < ActionMailer::Base
 
   def generic_callback(callback_type, model, *args)
     model_specific_method = "#{callback_type}_#{model.class.to_s.underscore}".to_sym
-    if self.respond_to? model_specific_method
+    if self.respond_to?(model_specific_method,true)
       self.send model_specific_method, model, *args
     end
   end
@@ -32,10 +32,11 @@ class AdminNotifier < ActionMailer::Base
 
   def after_create_user(user, *args)
     @new_user = user
+    @recipients = self.all_admin_emails
     logger.info "Sending mail to #{@recipients} about new user #{@new_user.uuid} (#{@new_user.full_name}, #{@new_user.email})"
-    mail({
-           to: self.all_admin_emails,
-           subject: "#{Rails.configuration.email_subject_prefix}New user: #{@new_user.full_name}, #{@new_user.email}"
-         })
+    mail(template_name: __method__,
+         to: @recipients,
+         subject: "#{Rails.configuration.email_subject_prefix}New user: #{@new_user.full_name}, #{@new_user.email}"
+        ).deliver
   end
 end
