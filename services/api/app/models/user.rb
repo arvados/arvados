@@ -9,7 +9,6 @@ class User < ArvadosModel
   before_create :check_auto_admin
   after_create :add_system_group_permission_link
   after_create :send_admin_notifications
-  after_create AdminNotifier
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
@@ -396,7 +395,9 @@ class User < ArvadosModel
     end
   end
 
+  # Send admin notifications
   def send_admin_notifications
+    AdminNotifier.new_user(self).deliver
     if not self.is_active then
       AdminNotifier.new_inactive_user(self).deliver
     end

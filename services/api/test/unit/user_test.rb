@@ -127,6 +127,8 @@ class UserTest < ActiveSupport::TestCase
 
     Rails.configuration.new_inactive_user_notification_recipients = ''
 
+    ActionMailer::Base.deliveries = []
+
     user = User.new
     user.first_name = "first_name_for_newly_created_user"
     user.is_active = false
@@ -134,29 +136,119 @@ class UserTest < ActiveSupport::TestCase
 
     assert_equal '', Rails.configuration.new_inactive_user_notification_recipients
 
-    setup_email = ActionMailer::Base.deliveries.last
-    assert_nil setup_email, 'Expected no email after setup'
+    ActionMailer::Base.deliveries.each do |d|
+      assert_not_equal "#{Rails.configuration.email_subject_prefix}New inactive user notification", setup_email.subject
+    end
+
   end
 
-  test "create new inactive user with new_inactive_user_notification_recipients set" do
+  test "create new inactive user with new_user_notification_recipients empty" do
     Thread.current[:user] = @admin_user   # set admin user as the current user
 
-    Rails.configuration.new_inactive_user_notification_recipients = 'foo@example.com'
+    Rails.configuration.new_user_notification_recipients = ''
+
+    ActionMailer::Base.deliveries = []
 
     user = User.new
     user.first_name = "first_name_for_newly_created_user"
     user.is_active = false
     user.save
 
-    setup_email = ActionMailer::Base.deliveries.last
-    assert_not_nil setup_email, 'Expected email after setup'
+    assert_equal '', Rails.configuration.new_user_notification_recipients
+
+    ActionMailer::Base.deliveries.each do |d|
+      assert_not_equal "#{Rails.configuration.email_subject_prefix}New user notification", d.subject
+    end
+
+  end
+
+  test "create new inactive user with new_user_notification_recipients and new_inactive_user_notification_recipients set" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    Rails.configuration.new_user_notification_recipients = 'foo_new@example.com'
+    Rails.configuration.new_inactive_user_notification_recipients = 'foo_new_inactive@example.com'
+
+    ActionMailer::Base.deliveries = []
+
+    user = User.new
+    user.first_name = "first_name_for_newly_created_user"
+    user.is_active = false
+    user.save
+
+    new_user_email = nil
+    new_inactive_user_email = nil
+    ActionMailer::Base.deliveries.each do |d|
+      if d.subject == "#{Rails.configuration.email_subject_prefix}New inactive user notification" then
+        new_inactive_user_email = d
+      end
+      if d.subject == "#{Rails.configuration.email_subject_prefix}New user notification" then
+        new_user_email = d
+      end
+    end
+
+    assert_not_nil new_inactive_user_email, 'Expected new inactive user email after setup'
+    assert_not_nil new_user_email, 'Expected new user email after setup'
+
+    assert_equal 'foo_new@example.com', Rails.configuration.new_user_notification_recipients
+    assert_equal 'foo_new_inactive@example.com', Rails.configuration.new_inactive_user_notification_recipients
+
+    assert_equal Rails.configuration.user_notifier_email_from, new_inactive_user_email.from[0]
+    assert_equal 'foo_new_inactive@example.com', new_inactive_user_email.to[0]
+    assert_equal "#{Rails.configuration.email_subject_prefix}New inactive user notification", new_inactive_user_email.subject
+
+    assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
+    assert_equal 'foo_new@example.com', new_user_email.to[0]
+    assert_equal "#{Rails.configuration.email_subject_prefix}New user notification", new_user_email.subject
+  end
+
+  test "create new inactive user with new_user_notification_recipients set" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    Rails.configuration.new_user_notification_recipients = 'foo@example.com'
+
+    user = User.new
+    user.first_name = "first_name_for_newly_created_user"
+    user.is_active = false
+    user.save
+
+    new_user_email = nil
+
+    ActionMailer::Base.deliveries.each do |d|
+      if d.subject == "#{Rails.configuration.email_subject_prefix}New user notification" then
+        new_user_email = d
+        break
+      end
+    end
+
+    assert_not_nil new_user_email, 'Expected email after setup'
+
+    assert_equal 'foo@example.com', Rails.configuration.new_user_notification_recipients
+
+    assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
+    assert_equal 'foo@example.com', new_user_email.to[0]
+    assert_equal "#{Rails.configuration.email_subject_prefix}New user notification", new_user_email.subject
+  end
+
+  test "create new active user with new_inactive_user_notification_recipients set" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    Rails.configuration.new_inactive_user_notification_recipients = 'foo@example.com'
+
+    ActionMailer::Base.deliveries = []
+
+    user = User.new
+    user.first_name = "first_name_for_newly_created_user"
+    user.is_active = true
+    user.save
 
     assert_equal 'foo@example.com', Rails.configuration.new_inactive_user_notification_recipients
 
-    assert_equal Rails.configuration.user_notifier_email_from, setup_email.from[0]
-    assert_equal 'foo@example.com', setup_email.to[0]
-    assert_equal 'New inactive user notification', setup_email.subject
+    ActionMailer::Base.deliveries.each do |d|
+      assert_not_equal "#{Rails.configuration.email_subject_prefix}New inactive user notification", setup_email.subject
+    end
+
   end
+
 
   test "update existing user" do
     Thread.current[:user] = @active_user    # set active user as current user
