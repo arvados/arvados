@@ -254,17 +254,19 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           state = 2
         when 2
           l1 = d["object_uuid"]
+          assert_not_nil l1, "Unexpected message: #{d}"
           state = 3
         when 3
           l2 = d["object_uuid"]
+          assert_not_nil l2, "Unexpected message: #{d}"
           ws.close
         end
       end
 
     end
 
-    assert_equal l1, logs(:log4).object_uuid
-    assert_equal l2, logs(:log5).object_uuid
+    assert_equal logs(:log4).object_uuid, l1
+    assert_equal logs(:log5).object_uuid, l2
   end
 
   test "connect, subscribe, get event, unsubscribe" do

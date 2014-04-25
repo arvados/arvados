@@ -41,11 +41,6 @@ class EventBus
     Log
   end
 
-  # used in RecordFilters
-  def table_name
-    model_class.table_name
-  end
-
   def initialize
     @channel = EventMachine::Channel.new
     @mtx = Mutex.new
@@ -78,7 +73,7 @@ class EventBus
           cond_out = []
           param_out = []
           ws.filters.each do |filter|
-            ft = record_filters filter.filters
+            ft = record_filters filter.filters, Log.table_name
             cond_out += ft[:cond_out]
             param_out += ft[:param_out]
           end

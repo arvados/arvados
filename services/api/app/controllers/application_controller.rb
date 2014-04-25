@@ -30,8 +30,6 @@ class ApplicationController < ActionController::Base
 
   attr_accessor :resource_attrs
 
-  DEFAULT_LIMIT = 100
-
   def index
     @objects.uniq!(&:id)
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
@@ -107,7 +105,7 @@ class ApplicationController < ActionController::Base
                   "    AND mng_links.head_uuid=#{klass.table_name}.uuid")
           cond_sql += " OR mng_links.uuid IS NOT NULL"
         end
-        @objects = @objects.where(cond_sql, *cond_params)
+        @objects = @objects.where(cond_sql, *cond_params).order(:uuid)
         @limit = limit_all - all_objects.count
         apply_where_limit_order_params
         items_available = @objects.
@@ -186,7 +184,9 @@ class ApplicationController < ActionController::Base
   end
 
   def apply_where_limit_order_params
-    ft = record_filters @filters
+    ar_table_name = @objects.table_name
+
+    ft = record_filters @filters, ar_table_name
     if ft[:cond_out].any?
       @objects = @objects.where(ft[:cond_out].join(' AND '), *ft[:param_out])
     end

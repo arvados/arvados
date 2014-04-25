@@ -5,6 +5,8 @@
 
 module LoadParam
 
+  DEFAULT_LIMIT = 100
+
   def load_where_param
     if params[:where].nil? or params[:where] == ""
       @where = {}
@@ -35,5 +37,42 @@ module LoadParam
       end
     end
   end
+
+  def load_limit_offset_order_params
+    if params[:limit]
+      unless params[:limit].to_s.match(/^\d+$/)
+        raise ArgumentError.new("Invalid value for limit parameter")
+      end
+      @limit = params[:limit].to_i
+    else
+      @limit = DEFAULT_LIMIT
+    end
+
+    if params[:offset]
+      unless params[:offset].to_s.match(/^\d+$/)
+        raise ArgumentError.new("Invalid value for offset parameter")
+      end
+      @offset = params[:offset].to_i
+    else
+      @offset = 0
+    end
+
+    @orders = []
+    if params[:order]
+      params[:order].split(',').each do |order|
+        attr, direction = order.strip.split " "
+        direction ||= 'asc'
+        if attr.match /^[a-z][_a-z0-9]+$/ and
+            model_class.columns.collect(&:name).index(attr) and
+            ['asc','desc'].index direction.downcase
+          @orders << "#{table_name}.#{attr} #{direction.downcase}"
+        end
+      end
+    end
+    if @orders.empty?
+      @orders << "#{table_name}.modified_at desc"
+    end
+  end
+
 
 end
