@@ -1,3 +1,16 @@
-// Place all the styles related to the Collections controller here.
-// They will automatically be included in application.css.
-// You can use Sass (SCSS) here: http://sass-lang.com/
+/*
+  "active" and "inactive" colors are too similar for a toggle switch
+  in the default bootstrap theme.
+  */
+
+$inactive-bg: #5bc0de;
+$active-bg: #39b3d7;
+
+.btn-group[data-toggle=buttons] label {
+    background-color: lighten($inactive-bg, 15%);
+}
+
+.btn-group[data-toggle=buttons] label.active {
+    background-color: $active-bg;
+    opacity: 1;
+}
