@@ -20,7 +20,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     end
   end
 
-  %w(created_at updated_at modified_at).each do |attr|
+  %w(created_at modified_at).each do |attr|
     {nil: nil, bogus: 2.days.ago}.each do |bogustype, bogusvalue|
       test "cannot set #{bogustype} #{attr} in create" do
         authorize_with :active

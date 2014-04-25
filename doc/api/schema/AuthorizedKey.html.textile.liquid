@@ -5,27 +5,13 @@ navmenu: Schema
 title: AuthorizedKey
 ...
 
-
-
-A **AuthorizedKey** represents...
+An **AuthorizedKey** represents the public part of an SSH authentication key which can be used to authorize transactions on behalf of the user.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "authorized_keys":{{site.baseurl}}/api/methods/authorized_keys.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/authorized_keys@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a AuthorizedKey.
-
-h3. Side effects
-
-Side effects of creating a AuthorizedKey.
-
-h2. Resources
+h2. Resource
 
 Each AuthorizedKey has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
@@ -36,4 +22,3 @@ table(table table-bordered table-condensed).
 |authorized_user_uuid|string|||
 |public_key|text|||
 |expires_at|datetime|||
-|updated_at|datetime|||
