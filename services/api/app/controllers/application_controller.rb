@@ -103,7 +103,7 @@ class ApplicationController < ActionController::Base
                   "    AND mng_links.head_uuid=#{klass.table_name}.uuid")
           cond_sql += " OR mng_links.uuid IS NOT NULL"
         end
-        @objects = @objects.where(cond_sql, *cond_params)
+        @objects = @objects.where(cond_sql, *cond_params).order(:uuid)
         @limit = limit_all - all_objects.count
         apply_where_limit_order_params
         items_available = @objects.
