@@ -32,7 +32,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
         properties: {}
       }
     }, auth(:admin)
-    u = jresponse['uuid']
+    u = json_response['uuid']
     assert_response :success
 
     # read collection as spectator
@@ -86,7 +86,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
         properties: {}
       }
     }, auth(:admin)
-    u = jresponse['uuid']
+    u = json_response['uuid']
     assert_response :success
 
     # try to read collection as spectator
@@ -137,7 +137,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
         properties: {}
       }
     }, auth(:admin)
-    u = jresponse['uuid']
+    u = json_response['uuid']
     assert_response :success
 
     # try to read collection as spectator
@@ -196,7 +196,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
         properties: {}
       }
     }, auth(:admin)
-    u = jresponse['uuid']
+    u = json_response['uuid']
     assert_response :success
 
     # try to read collection as spectator
@@ -215,7 +215,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
   test "read-only group-admin sees correct subset of user list" do
     get "/arvados/v1/users", {:format => :json}, auth(:rominiadmin)
     assert_response :success
-    resp_uuids = jresponse['items'].collect { |i| i['uuid'] }
+    resp_uuids = json_response['items'].collect { |i| i['uuid'] }
     [[true, users(:rominiadmin).uuid],
      [true, users(:active).uuid],
      [false, users(:miniadmin).uuid],
@@ -254,7 +254,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
      [:miniadmin, true]].each do |which_user, update_should_succeed|
       get "/arvados/v1/specimens", {:format => :json}, auth(which_user)
       assert_response :success
-      resp_uuids = jresponse['items'].collect { |i| i['uuid'] }
+      resp_uuids = json_response['items'].collect { |i| i['uuid'] }
       [[true, specimens(:owned_by_active_user).uuid],
        [true, specimens(:owned_by_private_group).uuid],
        [false, specimens(:owned_by_spectator).uuid],

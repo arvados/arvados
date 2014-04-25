@@ -24,6 +24,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'home', :on => :member
     get 'welcome', :on => :collection
     get 'activity', :on => :collection
+    get 'storage', :on => :collection
     post 'sudo', :on => :member
     post 'unsetup', :on => :member
     get 'setup_popup', :on => :member

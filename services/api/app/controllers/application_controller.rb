@@ -14,12 +14,13 @@ class ApplicationController < ActionController::Base
   before_filter :require_auth_scope_all, :except => :render_not_found
   before_filter :catch_redirect_hint
 
-  before_filter :load_where_param, :only => :index
-  before_filter :load_filters_param, :only => :index
-  before_filter :find_objects_for_index, :only => :index
   before_filter :find_object_by_uuid, :except => [:index, :create,
                                                   :render_error,
                                                   :render_not_found]
+  before_filter :load_limit_offset_order_params, only: [:index, :owned_items]
+  before_filter :load_where_param, only: [:index, :owned_items]
+  before_filter :load_filters_param, only: [:index, :owned_items]
+  before_filter :find_objects_for_index, :only => :index
   before_filter :reload_object_before_update, :only => :update
   before_filter :render_404_if_no_object, except: [:index, :create,
                                                    :render_error,
@@ -28,6 +29,8 @@ class ApplicationController < ActionController::Base
   theme :select_theme
 
   attr_accessor :resource_attrs
+
+  DEFAULT_LIMIT = 100
 
   def index
     @objects.uniq!(&:id)
@@ -58,6 +61,75 @@ class ApplicationController < ActionController::Base
   def destroy
     @object.destroy
     show
+  end
+
+  def self._owned_items_requires_parameters
+    _index_requires_parameters.
+      merge({
+              include_linked: {
+                type: 'boolean', required: false, default: false
+              },
+            })
+  end
+
+  def owned_items
+    all_objects = []
+    all_available = 0
+
+    # Trick apply_where_limit_order_params into applying suitable
+    # per-table values. *_all are the real ones we'll apply to the
+    # aggregate set.
+    limit_all = @limit
+    offset_all = @offset
+    @orders = []
+
+    ArvadosModel.descendants.
+      reject(&:abstract_class?).
+      sort_by(&:to_s).
+      each do |klass|
+      case klass.to_s
+        # We might expect klass==Link etc. here, but we would be
+        # disappointed: when Rails reloads model classes, we get two
+        # distinct classes called Link which do not equal each
+        # other. But we can still rely on klass.to_s to be "Link".
+      when 'ApiClientAuthorization'
+        # Do not want.
+      else
+        @objects = klass.readable_by(current_user)
+        cond_sql = "#{klass.table_name}.owner_uuid = ?"
+        cond_params = [@object.uuid]
+        if params[:include_linked]
+          @objects = @objects.
+            joins("LEFT JOIN links mng_links"\
+                  " ON mng_links.link_class=#{klass.sanitize 'permission'}"\
+                  "    AND mng_links.name=#{klass.sanitize 'can_manage'}"\
+                  "    AND mng_links.tail_uuid=#{klass.sanitize @object.uuid}"\
+                  "    AND mng_links.head_uuid=#{klass.table_name}.uuid")
+          cond_sql += " OR mng_links.uuid IS NOT NULL"
+        end
+        @objects = @objects.where(cond_sql, *cond_params)
+        @limit = limit_all - all_objects.count
+        apply_where_limit_order_params
+        items_available = @objects.
+          except(:limit).except(:offset).
+          count(:id, distinct: true)
+        all_available += items_available
+        @offset = [@offset - items_available, 0].max
+
+        all_objects += @objects.to_a
+      end
+    end
+    @objects = all_objects || []
+    @object_list = {
+      :kind  => "arvados#objectList",
+      :etag => "",
+      :self_link => "",
+      :offset => offset_all,
+      :limit => limit_all,
+      :items_available => all_available,
+      :items => @objects.as_api_response(nil)
+    }
+    render json: @object_list
   end
 
   def catch_redirect_hint
@@ -108,6 +180,11 @@ class ApplicationController < ActionController::Base
 
   protected
 
+  def find_objects_for_index
+    @objects ||= model_class.readable_by(current_user)
+    apply_where_limit_order_params
+  end
+
   def apply_where_limit_order_params
     ft = record_filters @filters
     if ft[:cond_out].any?
@@ -123,7 +200,7 @@ class ApplicationController < ActionController::Base
               value[0] == 'contains' then
             ilikes = []
             model_class.searchable_columns('ilike').each do |column|
-              ilikes << "#{table_name}.#{column} ilike ?"
+              ilikes << "#{ar_table_name}.#{column} ilike ?"
               conditions << "%#{value[1]}%"
             end
             if ilikes.any?
@@ -133,24 +210,24 @@ class ApplicationController < ActionController::Base
         elsif attr.to_s.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr.to_s)
           if value.nil?
-            conditions[0] << " and #{table_name}.#{attr} is ?"
+            conditions[0] << " and #{ar_table_name}.#{attr} is ?"
             conditions << nil
           elsif value.is_a? Array
             if value[0] == 'contains' and value.length == 2
-              conditions[0] << " and #{table_name}.#{attr} like ?"
+              conditions[0] << " and #{ar_table_name}.#{attr} like ?"
               conditions << "%#{value[1]}%"
             else
-              conditions[0] << " and #{table_name}.#{attr} in (?)"
+              conditions[0] << " and #{ar_table_name}.#{attr} in (?)"
               conditions << value
             end
           elsif value.is_a? String or value.is_a? Fixnum or value == true or value == false
-            conditions[0] << " and #{table_name}.#{attr}=?"
+            conditions[0] << " and #{ar_table_name}.#{attr}=?"
             conditions << value
           elsif value.is_a? Hash
             # Not quite the same thing as "equal?" but better than nothing?
             value.each do |k,v|
               if v.is_a? String
-                conditions[0] << " and #{table_name}.#{attr} ilike ?"
+                conditions[0] << " and #{ar_table_name}.#{attr} ilike ?"
                 conditions << "%#{k}%#{v}%"
               end
             end
@@ -164,51 +241,9 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    if params[:limit]
-      begin
-        @limit = params[:limit].to_i
-      rescue
-        raise ArgumentError.new("Invalid value for limit parameter")
-      end
-    else
-      @limit = 100
-    end
+    @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
-
-    orders = []
-
-    if params[:offset]
-      begin
-        @objects = @objects.offset(params[:offset].to_i)
-        @offset = params[:offset].to_i
-      rescue
-        raise ArgumentError.new("Invalid value for limit parameter")
-      end
-    else
-      @offset = 0
-    end
-
-    orders = []
-    if params[:order]
-      params[:order].split(',').each do |order|
-        attr, direction = order.strip.split " "
-        direction ||= 'asc'
-        if attr.match /^[a-z][_a-z0-9]+$/ and
-            model_class.columns.collect(&:name).index(attr) and
-            ['asc','desc'].index direction.downcase
-          orders << "#{table_name}.#{attr} #{direction.downcase}"
-        end
-      end
-    end
-    if orders.empty?
-      orders << "#{table_name}.modified_at desc"
-    end
-    @objects = @objects.order(orders.join ", ")
-  end
-
-  def find_objects_for_index
-    @objects ||= model_class.readable_by(current_user)
-    apply_where_limit_order_params
+    @objects = @objects.offset(@offset)
   end
 
   def resource_attrs
@@ -282,6 +317,11 @@ class ApplicationController < ActionController::Base
       params[:uuid] = params.delete :id
     end
     @where = { uuid: params[:uuid] }
+    @offset = 0
+    @limit = 1
+    @orders = []
+    @filters = []
+    @objects = nil
     find_objects_for_index
     @object = @objects.first
   end
@@ -348,7 +388,9 @@ class ApplicationController < ActionController::Base
     {
       filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
-      order: { type: 'string', required: false }
+      order: { type: 'string', required: false },
+      limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
+      offset: { type: 'integer', required: false, default: 0 },
     }
   end
 

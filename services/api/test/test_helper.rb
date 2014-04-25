@@ -21,6 +21,10 @@ class ActiveSupport::TestCase
     self.request.headers["Accept"] = "text/json"
   end
 
+  def json_response
+    @json_response ||= ActiveSupport::JSON.decode @response.body
+  end
+
   def authorize_with(api_client_auth_name)
     ArvadosApiToken.new.call ({"rack.input" => "", "HTTP_AUTHORIZATION" => "OAuth2 #{api_client_authorizations(api_client_auth_name).api_token}"})
   end
@@ -36,10 +40,6 @@ class ActionDispatch::IntegrationTest
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
-  end
-
-  def jresponse
-    @jresponse ||= ActiveSupport::JSON.decode @response.body
   end
 
   def auth auth_fixture
