@@ -112,11 +112,8 @@ func main() {
 	for _, v := range keepvols {
 		if _, err := os.Stat(v); err == nil {
 			log.Println("adding Keep volume:", v)
-			newvol := &UnixVolume{v, nil}
-			if serialize_io {
-				newvol.queue = make(chan *IORequest)
-			}
-			KeepVolumes = append(KeepVolumes, newvol)
+			newvol := MakeUnixVolume(v, serialize_io)
+			KeepVolumes = append(KeepVolumes, &newvol)
 		} else {
 			log.Printf("bad Keep volume: %s\n", err)
 		}

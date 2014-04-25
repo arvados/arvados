@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-func TempUnixVolume(t *testing.T, queue chan *IORequest) UnixVolume {
+func TempUnixVolume(t *testing.T, serialize bool) UnixVolume {
 	d, err := ioutil.TempDir("", "volume_test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	return MakeUnixVolume(d, queue)
+	return MakeUnixVolume(d, serialize)
 }
 
 func _teardown(v UnixVolume) {
@@ -43,7 +43,7 @@ func _store(t *testing.T, vol UnixVolume, filename string, block []byte) {
 }
 
 func TestGet(t *testing.T) {
-	v := TempUnixVolume(t, nil)
+	v := TempUnixVolume(t, false)
 	defer _teardown(v)
 	_store(t, v, TEST_HASH, TEST_BLOCK)
 
@@ -57,7 +57,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestGetNotFound(t *testing.T) {
-	v := TempUnixVolume(t, nil)
+	v := TempUnixVolume(t, false)
 	defer _teardown(v)
 	_store(t, v, TEST_HASH, TEST_BLOCK)
 
@@ -73,7 +73,7 @@ func TestGetNotFound(t *testing.T) {
 }
 
 func TestPut(t *testing.T) {
-	v := TempUnixVolume(t, nil)
+	v := TempUnixVolume(t, false)
 	defer _teardown(v)
 
 	err := v.Put(TEST_HASH, TEST_BLOCK)
@@ -90,7 +90,7 @@ func TestPut(t *testing.T) {
 }
 
 func TestPutBadVolume(t *testing.T) {
-	v := TempUnixVolume(t, nil)
+	v := TempUnixVolume(t, false)
 	defer _teardown(v)
 
 	os.Chmod(v.root, 000)
@@ -115,7 +115,8 @@ func TestPutBadVolume(t *testing.T) {
 // return accurate results.
 //
 func TestGetSerialized(t *testing.T) {
-	v := TempUnixVolume(t, make(chan *IORequest))
+	// Create a volume with I/O serialization enabled.
+	v := TempUnixVolume(t, true)
 	defer _teardown(v)
 
 	_store(t, v, TEST_HASH, TEST_BLOCK)
@@ -163,7 +164,8 @@ func TestGetSerialized(t *testing.T) {
 }
 
 func TestPutSerialized(t *testing.T) {
-	v := TempUnixVolume(t, make(chan *IORequest))
+	// Create a volume with I/O serialization enabled.
+	v := TempUnixVolume(t, true)
 	defer _teardown(v)
 
 	sem := make(chan int)
@@ -223,7 +225,7 @@ func TestPutSerialized(t *testing.T) {
 }
 
 func TestIsFull(t *testing.T) {
-	v := TempUnixVolume(t, nil)
+	v := TempUnixVolume(t, false)
 	defer _teardown(v)
 
 	full_path := v.root + "/full"

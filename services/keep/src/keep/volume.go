@@ -75,12 +75,14 @@ func (v *UnixVolume) IOHandler() {
 	}
 }
 
-func MakeUnixVolume(root string, queue chan *IORequest) UnixVolume {
-	v := UnixVolume{root, queue}
-	if queue != nil {
+func MakeUnixVolume(root string, serialize bool) (v UnixVolume) {
+	if serialize {
+		v = UnixVolume{root, make(chan *IORequest)}
 		go v.IOHandler()
+	} else {
+		v = UnixVolume{root, nil}
 	}
-	return v
+	return
 }
 
 func (v *UnixVolume) Get(loc string) ([]byte, error) {
