@@ -26,7 +26,7 @@
         </tr>
 
         <% @my_jobs[0..6].each do |j| %>
-          <tr>
+          <tr data-object-uuid="<%= j.uuid %>">
             <td>
               <small>
                 <%= link_to((j.script.andand[0..31] || j.uuid), job_path(j.uuid)) %>
@@ -111,7 +111,7 @@
       </tr>
 
       <% @my_pipelines[0..6].each do |p| %>
-        <tr>
+        <tr data-object-uuid="<%= p.uuid %>">
           <td>
             <small>
               <%= link_to_if_arvados_object p.uuid, friendly_name: true %>
@@ -182,7 +182,7 @@
       </tr>
 
       <% @my_collections[0..6].each do |c| %>
-        <tr>
+        <tr data-object-uuid="<%= c.uuid %>">
           <td>
             <small>
               <a href="<%= collection_path(c.uuid) %>">
