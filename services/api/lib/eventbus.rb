@@ -15,17 +15,20 @@ end
 class Filter
   include LoadParam
 
-  def initialize p
-    @p = p
+  attr_accessor :filters
+
+  def initialize p, fid
+    @params = p
+    @filter_id = fid
     load_filters_param
   end
 
   def params
-    @p
+    @params
   end
 
-  def filters
-    @filters
+  def filter_id
+    @filter_id
   end
 end
 
@@ -33,41 +36,43 @@ class EventBus
   include CurrentApiClient
   include RecordFilters
 
+  # used in RecordFilters
+  def model_class
+    Log
+  end
+
+  # used in RecordFilters
+  def table_name
+    model_class.table_name
+  end
+
   def initialize
     @channel = EventMachine::Channel.new
     @mtx = Mutex.new
     @bgthread = false
+    @filter_id_counter = 0
   end
 
-  def on_connect ws
-    if not current_user
-      ws.send ({status: 401, message: "Valid API token required"}.to_json)
-      ws.close
-      return
-    end
+  def alloc_filter_id
+    (@filter_id_counter += 1)
+  end
 
-    ws.user = current_user
-    ws.filters = []
-    ws.last_log_id = nil
-
-    sub = @channel.subscribe do |msg|
+  def push_events ws, msg = nil
       begin
         # Must have at least one filter set up to receive events
         if ws.filters.length > 0
-
           # Start with log rows readable by user, sorted in ascending order
           logs = Log.readable_by(ws.user).order("id asc")
 
           if ws.last_log_id
-            # Only get log rows that are new
-            logs = logs.where("logs.id > ? and logs.id <= ?", ws.last_log_id, msg.to_i)
-          else
+            # Only interested in log rows that are new
+            logs = logs.where("logs.id > ?", ws.last_log_id)
+          elsif msg
             # No last log id, so only look at the most recently changed row
             logs = logs.where("logs.id = ?", msg.to_i)
+          else
+            return
           end
-
-          # Record the most recent row
-          ws.last_log_id = msg.to_i
 
           # Now process filters provided by client
           cond_out = []
@@ -86,25 +91,76 @@ class EventBus
           # Finally execute query and send matching rows
           logs.each do |l|
             ws.send(l.as_api_response.to_json)
+            ws.last_log_id = l.id
           end
-        else
+        elsif msg
           # No filters set up, so just record the sequence number
-          ws.last_log_id.nil = msg.to_i
+          ws.last_log_id = msg.to_i
         end
       rescue Exception => e
-        puts "#{e}"
+        puts "Error publishing event: #{$!}"
+        puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+        ws.send ({status: 500, message: 'error'}.to_json)
         ws.close
       end
+  end
+
+  MAX_FILTERS = 16
+
+  def on_connect ws
+    if not current_user
+      ws.send ({status: 401, message: "Valid API token required"}.to_json)
+      ws.close
+      return
+    end
+
+    ws.user = current_user
+    ws.filters = []
+    ws.last_log_id = nil
+
+    sub = @channel.subscribe do |msg|
+      push_events ws, msg
     end
 
     ws.on :message do |event|
-      p = Oj.load event.data
-      if p["method"] == 'subscribe'
-        if p["starting_log_id"]
-          ws.last_log_id = p["starting_log_id"].to_i
+      begin
+        p = (Oj.load event.data).symbolize_keys
+        if p[:method] == 'subscribe'
+          if p[:last_log_id]
+            ws.last_log_id = p[:last_log_id].to_i
+          end
+
+          if ws.filters.length < MAX_FILTERS
+            filter_id = alloc_filter_id
+            ws.filters.push Filter.new(p, filter_id)
+            ws.send ({status: 200, message: 'subscribe ok', filter_id: filter_id}.to_json)
+            push_events ws
+          else
+            ws.send ({status: 403, message: "maximum of #{MAX_FILTERS} filters allowed per connection"}.to_json)
+          end
+        elsif p[:method] == 'unsubscribe'
+          if filter_id = p[:filter_id]
+            filter_id = filter_id.to_i
+            len = ws.filters.length
+            ws.filters = ws.filters.select { |f| f.filter_id != filter_id }
+            if ws.filters.length < len
+              ws.send ({status: 200, message: 'unsubscribe ok', filter_id: filter_id}.to_json)
+            else
+              ws.send ({status: 404, message: 'filter_id not found', filter_id: filter_id}.to_json)
+            end
+          else
+            ws.send ({status: 400, message: 'must provide filter_id'}.to_json)
+          end
+        else
+          ws.send ({status: 400, message: "missing or unrecognized method"}.to_json)
         end
-        ws.filters.push(Filter.new p)
-        ws.send ({status: 200, message: 'subscribe ok'}.to_json)
+      rescue Oj::Error => e
+        ws.send ({status: 400, message: "malformed request"}.to_json)
+      rescue Exception => e
+        puts "Error handling message: #{$!}"
+        puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+        ws.send ({status: 500, message: 'error'}.to_json)
+        ws.close
       end
     end
 
