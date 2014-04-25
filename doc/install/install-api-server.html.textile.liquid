@@ -8,9 +8,31 @@ h2. Prerequisites:
 
 # A GNU/Linux (virtual) machine
 # A domain name for your api server
-# Ruby >= 2.0.0
-# Bundler: @gem install bundler@
-# Curl libraries: @sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev@
+
+h2(#dependencies). Install dependencies
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev \
+    libxslt1.1 zlib1g-dev gettext bison libssl-dev libreadline-dev \
+    libpq-dev sqlite3 libsqlite3-dev build-essential wget postgresql sudo
+</span></code></pre></notextile>
+
+h2(#ruby). Install Ruby and bundler
+
+We recommend Ruby >= 2.1.
+
+<notextile>
+<pre><code><span class="userinput">mkdir -p ~/src
+cd ~/src
+wget http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.1.tar.gz
+tar xzf ruby-2.1.1.tar.gz
+cd ruby-2.1.1
+./configure
+make
+sudo make install
+
+sudo gem install bundler</span>
+</code></pre></notextile>
 
 h2. Download the source tree
 
@@ -18,7 +40,7 @@ h2. Download the source tree
 <pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
 </code></pre></notextile>
 
-See also: "Downloading the source code:https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
+See also: "Downloading the source code":https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
 
 h2. Install gem dependencies
 
@@ -49,7 +71,7 @@ Make sure a clone of the arvados repository exists in @git_repositories_dir@:
 Generate a new secret token for signing cookies:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rake secret
+<pre><code>~/arvados/services/api$ <span class="userinput">rake secret</span>
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre></notextile>
 
@@ -62,13 +84,32 @@ Put it in @config/application.yml@ in the production or common section:
 
 Consult @application.default.yml@ for a full list of configuration options. Always put your local configuration in @application.yml@ instead of editing @application.default.yml@.
 
-Configure the database:
+Generate a new database password. Nobody ever needs to memorize it or type it, so we'll make a strong one:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+6gqa1vu492idd7yca9tfandj3
+</code></pre></notextile>
+
+Create a new database user with permission to create its own databases.
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">sudo -u postgres createuser --createdb --encrypted --pwprompt arvados</span>
+[sudo] password for <b>you</b>: <span class="userinput">yourpassword</span>
+Enter password for new role: <span class="userinput">paste-password-you-generated</span>
+Enter it again: <span class="userinput">paste-password-again</span>
+Shall the new role be a superuser? (y/n) <span class="userinput">n</span>
+Shall the new role be allowed to create more new roles? (y/n) <span class="userinput">n</span>
+</code></pre></notextile>
+
+Configure API server to connect to your database by creating and updating @config/database.yml@. Replace the @xxxxxxxx@ database password placeholders with the new password you generated above.
 
 <notextile>
 <pre><code>~/arvados/services/api$ <span class="userinput">cp -i config/database.yml.sample config/database.yml</span>
+~/arvados/services/api$ <span class="userinput">edit config/database.yml</span>
 </code></pre></notextile>
 
-By default, the development database will use the sqlite3 driver, so no configuration is necessary.  If you wish to use mysql or postgres, edit @config/database.yml@ to your liking and make sure the database and db user exist. Then initialize the database:
+Create and initialize the database.
 
 <notextile>
 <pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=development bundle exec rake db:setup</span>
@@ -85,7 +126,7 @@ Edit @config/initializers/omniauth.rb@. Set @APP_SECRET@ to the value of @app_se
 You can now run the development server:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rails server
+<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails server --port=3030
 </code></pre></notextile>
 
 h3. Apache/Passenger (optional)
@@ -101,28 +142,22 @@ To enable streaming so users can monitor crunch jobs in real time, add to your P
 
 h2. Add an admin user
 
-Point browser to the API endpoint. Log in with a google account.
-
-In the rails console:
+Point your browser to the API server's login endpoint:
 
 <notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rails console</span>
-irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.find(1)</span>
+<pre><code><span class="userinput">https://localhost:3030/login</span>
+</code></pre>
+</notextile>
+
+Log in with your google account.
+
+Use the rails console to give yourself admin privileges:
+
+<notextile>
+<pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails console</span>
+irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
 irb(main):002:0&gt; <span class="userinput">Thread.current[:user].is_admin = true</span>
-irb(main):003:0&gt; <span class="userinput">User.find(1).update_attributes is_admin: true, is_active: true</span>
-irb(main):004:0&gt; <span class="userinput">User.find(1).is_admin</span>
-=&gt; true
-</code></pre></notextile>
-
-h2. Create an API token
-
-In rails console:
-
-<notextile>
-<pre><code>~/arvados/services/api$ <span class="userinput">rails console</span>
-irb(main):001:0&gt; <span class="userinput">a = ApiClient.new(owner_uuid:'0')</span>
-irb(main):002:0&gt; <span class="userinput">a.save!</span>
-irb(main):003:0&gt; <span class="userinput">x = ApiClientAuthorization.new(api_client_id:a.id, user_id:1)</span>
-irb(main):004:0&gt; <span class="userinput">x.save</span>
-irb(main):005:0&gt; <span class="userinput">x.api_token</span>
+irb(main):003:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
+irb(main):004:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
+=&gt; ["root", "<b>your_address@example.com</b>"]
 </code></pre></notextile>

@@ -6,27 +6,13 @@ title: User
 
 ...
 
-
-
-A **User** represents...
+A **User** represents a person who interacts with Arvados via an ApiClient.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "users":{{site.baseurl}}/api/methods/users.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/users@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a User.
-
-h3. Side effects
-
-Side effects of creating a User.
-
-h2. Resources
+h2. Resource
 
 Each User has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
@@ -37,7 +23,6 @@ table(table table-bordered table-condensed).
 |last_name|string|||
 |identity_url|string|||
 |is_admin|boolean|||
-|prefs|Hash|||
-|updated_at|datetime|||
+|prefs|hash|||
 |default_owner_uuid|string|||
 |is_active|boolean|||

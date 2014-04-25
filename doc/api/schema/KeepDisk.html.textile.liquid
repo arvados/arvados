@@ -6,27 +6,13 @@ title: KeepDisk
 
 ...
 
-
-
-A **KeepDisk** represents...
+A **KeepDisk** is a filesystem volume used by a Keep storage server to store data blocks.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "keep_disks":{{site.baseurl}}/api/methods/keep_disks.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/keep_disks@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a KeepDisk.
-
-h3. Side effects
-
-Side effects of creating a KeepDisk.
-
-h2. Resources
+h2. Resource
 
 Each KeepDisk has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
@@ -42,7 +28,6 @@ table(table table-bordered table-condensed).
 |last_read_at|datetime|||
 |last_write_at|datetime|||
 |last_ping_at|datetime|||
-|updated_at|datetime|||
 |service_host|string|||
 |service_port|integer|||
 |service_ssl_flag|boolean|||
