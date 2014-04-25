@@ -14,7 +14,9 @@ Server::Application.routes.draw do
         get 'provenance', on: :member
         get 'used_by', on: :member
       end
-      resources :groups
+      resources :groups do
+        get 'owned_items', on: :member
+      end
       resources :humans
       resources :job_tasks
       resources :jobs do
@@ -48,6 +50,7 @@ Server::Application.routes.draw do
         post 'activate', on: :member
         post 'setup', on: :collection
         post 'unsetup', on: :member
+        get 'owned_items', on: :member
       end
       resources :virtual_machines do
         get 'logins', on: :member

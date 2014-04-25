@@ -8,7 +8,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       get path, {:format => :json}, auth(:active)
       assert_nil assigns(:objects)
       assert_nil assigns(:object)
-      assert_not_nil jresponse['errors']
+      assert_not_nil json_response['errors']
       assert_response 404
     end
   end

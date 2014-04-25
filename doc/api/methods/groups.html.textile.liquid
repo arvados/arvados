@@ -76,6 +76,18 @@ table(table table-bordered table-condensed).
 |q|string|Query string for searching groups.|query||
 |where|object|Conditions for filtering groups.|query||
 
+h2. owned_items
+
+Retrieve a list of items which are owned by the given group.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the group in question.|path||
+|include_linked|boolean|If true, results will also include items on which the given group has _can_manage_ permission, even if they are owned by different users/groups.|path|{white-space:nowrap}. @false@ (default)
+@true@|
+
 h2. show
 
 show groups

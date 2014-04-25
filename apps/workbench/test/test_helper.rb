@@ -6,13 +6,21 @@ $ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
 SERVER_PID_PATH = 'tmp/pids/server.pid'
 
 class ActiveSupport::TestCase
-  # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in alphabetical order.
+  # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in
+  # alphabetical order.
   #
-  # Note: You'll currently still have to declare fixtures explicitly in integration tests
-  # -- they do not yet inherit this setting
+  # Note: You'll currently still have to declare fixtures explicitly
+  # in integration tests -- they do not yet inherit this setting
   fixtures :all
+  def use_token token_name
+    auth = api_fixture('api_client_authorizations')[token_name.to_s]
+    Thread.current[:arvados_api_token] = auth['api_token']
+  end
 
-  # Add more helper methods to be used by all tests here...
+  def teardown
+    Thread.current[:arvados_api_token] = nil
+    super
+  end
 end
 
 module ApiFixtureLoader

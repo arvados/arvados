@@ -19,9 +19,9 @@ class ApiClientAuthorizationsApiTest < ActionDispatch::IntegrationTest
 
     get "/arvados/v1/users/current", {
       :format => :json
-    }, {'HTTP_AUTHORIZATION' => "OAuth2 #{jresponse['api_token']}"}
-    @jresponse = nil
-    assert_equal users(:spectator).uuid, jresponse['uuid']
+    }, {'HTTP_AUTHORIZATION' => "OAuth2 #{json_response['api_token']}"}
+    @json_response = nil
+    assert_equal users(:spectator).uuid, json_response['uuid']
   end
 
   test "refuse to create token for different user if not trusted client" do
