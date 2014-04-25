@@ -10,21 +10,9 @@ A **Group** represents a set of objects. Groups allow you to organize content, d
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "groups":{{site.baseurl}}/api/methods/groups.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/groups@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a Group.
-
-h3. Side effects
-
-Side effects of creating a Group.
-
-h2. Resources
+h2. Resource
 
 Each Group has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
@@ -34,4 +22,3 @@ table(table table-bordered table-condensed).
 |group_class|string|Type of group. This does not affect behavior, but determines how the group is presented in the user interface. For example, @folder@ indicates that the group should be displayed by Workbench and arv-mount as a folder for organizing and naming objects.|@"folder"@
 null|
 |description|text|||
-|updated_at|datetime|||
