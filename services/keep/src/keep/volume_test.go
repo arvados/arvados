@@ -100,13 +100,19 @@ func TestPutBadVolume(t *testing.T) {
 	}
 }
 
-// Serialization tests.
+// Serialization tests: launch a bunch of concurrent
 //
-// TODO(twp): a proper test of I/O serialization requires that
-// a second request start while the first one is still executing.
-// Doing this correctly requires some tricky synchronization.
-// For now we'll just launch a bunch of requests in goroutines
-// and demonstrate that they return accurate results.
+// TODO(twp): show that the underlying Read/Write operations executed
+// serially and not concurrently. The easiest way to do this is
+// probably to activate verbose or debug logging, capture log output
+// and examine it to confirm that Reads and Writes did not overlap.
+//
+// TODO(twp): a proper test of I/O serialization requires that a
+// second request start while the first one is still underway.
+// Guaranteeing that the test behaves this way requires some tricky
+// synchronization and mocking.  For now we'll just launch a bunch of
+// requests simultaenously in goroutines and demonstrate that they
+// return accurate results.
 //
 func TestGetSerialized(t *testing.T) {
 	v := TempUnixVolume(t, make(chan *IORequest))

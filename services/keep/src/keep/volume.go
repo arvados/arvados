@@ -239,9 +239,7 @@ func (v *UnixVolume) Index(prefix string) (output string) {
 				return filepath.SkipDir
 			}
 			// Skip any file that is not apparently a locator, e.g. .meta files
-			if is_valid, err := IsValidLocator(locator); err != nil {
-				return err
-			} else if !is_valid {
+			if !IsValidLocator(locator) {
 				return nil
 			}
 			// Print filenames beginning with prefix

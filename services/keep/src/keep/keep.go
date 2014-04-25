@@ -92,7 +92,7 @@ func main() {
 		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
 	flag.StringVar(&volumearg, "volumes", "",
 		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
-	flag.BoolVar(&serialize_io, "serialize-io", false,
+	flag.BoolVar(&serialize_io, "serialize", false,
 		"If set, all read and write operations on local Keep volumes will be serialized.")
 	flag.Parse()
 
@@ -445,6 +445,11 @@ func ReadAtMost(r io.Reader, maxbytes int) ([]byte, error) {
 //     When Keep is extended to support hash types other than MD5,
 //     this should be updated to cover those as well.
 //
-func IsValidLocator(loc string) (bool, error) {
-	return regexp.MatchString(`^[0-9a-f]{32}$`, loc)
+func IsValidLocator(loc string) bool {
+	match, err := regexp.MatchString(`^[0-9a-f]{32}$`, loc)
+	if err == nil {
+		return match
+	}
+	log.Printf("IsValidLocator: %s\n", err)
+	return false
 }
