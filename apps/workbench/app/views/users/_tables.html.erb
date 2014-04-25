@@ -169,14 +169,16 @@
     <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
         <col width="46%" />
-        <col width="27%" />
-        <col width="27%" />
+        <col width="24%" />
+        <col width="10%" />
+        <col width="20%" />
       </colgroup>
 
       <tr>
-	<th>Contents</th>
-	<th>Tags</th>
-	<th>Age</th>
+        <th>Contents</th>
+        <th>Tags</th>
+        <th>Age</th>
+        <th>Storage</th>
       </tr>
 
       <% @my_collections[0..6].each do |c| %>
@@ -201,6 +203,9 @@
             <small>
               <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
             </small>
+          </td>
+          <td>
+            <%= render partial: 'collections/toggle_persist', locals: { uuid: c.uuid, current_state: @persist_state[c.uuid] } %>
           </td>
         </tr>
       <% end %>

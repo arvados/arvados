@@ -102,10 +102,24 @@ class UsersController < ApplicationController
       limit(10).
       order('created_at desc').
       where(created_by: current_user.uuid)
+    collection_uuids = @my_collections.collect &:uuid
 
-    Link.limit(1000).where(head_uuid: @my_collections.collect(&:uuid),
-                           link_class: 'tag').each do |link|
-      (@my_tag_links[link.head_uuid] ||= []) << link
+    @persist_state = {}
+    collection_uuids.each do |uuid|
+      @persist_state[uuid] = 'cache'
+    end
+
+    Link.limit(1000).filter([['head_uuid', 'in', collection_uuids],
+                             ['link_class', 'in', ['tag', 'resources']]]).
+      each do |link|
+      case link.link_class
+      when 'tag'
+        (@my_tag_links[link.head_uuid] ||= []) << link
+      when 'resources'
+        if link.name == 'wants'
+          @persist_state[link.head_uuid] = 'persistent'
+        end
+      end
     end
 
     @my_pipelines = PipelineInstance.
