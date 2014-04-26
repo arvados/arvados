@@ -76,7 +76,7 @@ class CollectionInfo:
     if not CollectionInfo.all_by_uuid.has_key(uuid):
       CollectionInfo(uuid)
     return CollectionInfo.all_by_uuid[uuid]
-  
+
 
 def extractUuid(candidate):
   """ Returns a canonical (hash+size) uuid from a valid uuid, or None if candidate is not a valid uuid."""
@@ -360,6 +360,31 @@ def computeReplication(keep_blocks):
   log.debug('Seeing the following replication levels among blocks: %s',
             str(set(block_to_replication.values())))
 
+
+def computeGarbageCollectionCandidates():
+  for server_blocks in keep_blocks:
+    block_to_latest_mtime.addValues(server_blocks)
+  empty_set = set()
+  garbage_collection_priority = sorted(
+    [(block,mtime)
+     for block,mtime in block_to_latest_mtime.items()
+     if len(block_to_persisters.get(block,empty_set)) == 0],
+    key = itemgetter(1))
+  global garbage_collection_report
+  garbage_collection_report = []
+  cumulative_disk_size = 0
+  for block,mtime in garbage_collection_priority:
+    disk_size = blockDiskUsage(block)
+    cumulative_disk_size += disk_size
+    garbage_collection_report.append((block,
+                                      mtime,
+                                      disk_size,
+                                      cumulative_disk_size))
+
+  print 'The oldest Garbage Collection Candidates: '
+  pprint.pprint(garbage_collection_report[:20])
+
+
 def detectReplicationProblems():
   blocks_not_in_any_collections.update(
     set(block_to_replication.keys()).difference(block_to_collections.keys()))
@@ -474,6 +499,24 @@ user_to_usage = defaultdict(lambda : [0,]*NUM_COLS)
 keep_servers = []
 keep_blocks = []
 block_to_replication = defaultdict(lambda: 0)
+block_to_latest_mtime = maxdict()
+
+garbage_collection_report = []
+"""A list of non-persisted blocks, sorted by increasing mtime
+
+Each entry is of the form (block uuid, latest mtime, disk size,
+cumulative size)
+
+* block uuid: The id of the block we want to delete
+* latest mtime: The latest mtime of the block across all keep servers.
+* disk size: The total disk space used by this block (block size
+multiplied by current replication level)
+* cumulative disk size: The sum of this block's disk size and all the
+blocks listed above it
+* TODO: disk free: The proportion of our disk space that would be free
+if we deleted this block and all the above. So this is (current disk
+space used - cumulative disk size) / total disk capacity
+"""
 
 # Stuff to report on
 blocks_not_in_any_collections = set()
@@ -518,6 +561,8 @@ def loadAllData():
 
   computeReplication(keep_blocks)
 
+  computeGarbageCollectionCandidates()
+
   log.info('average replication level is %f',
            (float(sum(block_to_replication.values())) /
             len(block_to_replication)))
@@ -555,10 +600,10 @@ class DataManagerHandler(BaseHTTPRequestHandler):
 
   def writeTop(self, title):
     self.wfile.write('<HTML><HEAD><TITLE>%s</TITLE></HEAD>\n<BODY>' % title)
-    
+
   def writeBottom(self):
     self.wfile.write('</BODY></HTML>\n')
-    
+
   def writeHomePage(self):
     self.send_response(200)
     self.end_headers()
@@ -676,7 +721,7 @@ class DataManagerHandler(BaseHTTPRequestHandler):
         blocks = replication_to_blocks[replication_level]
         self.wfile.write('<TD valign="top">%s\n' % '<BR>\n'.join(blocks))
       self.wfile.write('</TR></TABLE>\n')
-      
+
 
   def do_GET(self):
     if not all_data_loaded:
