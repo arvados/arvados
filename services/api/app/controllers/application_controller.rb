@@ -95,15 +95,9 @@ class ApplicationController < ActionController::Base
         cond_sql = "#{klass.table_name}.owner_uuid = ?"
         cond_params = [@object.uuid]
         if params[:include_linked]
-          @objects = @objects.
-            joins("LEFT JOIN links namelinks"\
-                  " ON namelinks.link_class=#{klass.sanitize 'name'}"\
-                  "    AND namelinks.owner_uuid=#{klass.sanitize @object.uuid}"\
-                  "    AND namelinks.tail_uuid=#{klass.sanitize @object.uuid}"\
-                  "    AND namelinks.head_uuid=#{klass.table_name}.uuid")
-          cond_sql += " OR namelinks.uuid IS NOT NULL"
+          cond_sql += " OR #{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.owner_uuid=#{klass.sanitize @object.uuid} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
         end
-        @objects = @objects.where(cond_sql, *cond_params).order(:uuid)
+        @objects = @objects.where(cond_sql, *cond_params).order("#{klass.table_name}.uuid")
         @limit = limit_all - all_objects.count
         apply_where_limit_order_params
         items_available = @objects.
