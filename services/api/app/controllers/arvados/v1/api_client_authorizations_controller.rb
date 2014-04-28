@@ -42,24 +42,26 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     # Here we are deliberately less helpful about searching for client
     # authorizations.  We look up tokens belonging to the current user
     # and filter by exact matches on api_token and scopes.
-    wanted_scopes = [@where.andand['scopes']]
+    wanted_scopes = []
     if @filters
       wanted_scopes.concat(@filters.map { |attr, operator, operand|
         ((attr == 'scopes') and (operator == '=')) ? operand : nil
       })
+      @filters.select! { |attr, operator, operand|
+        (attr == 'uuid') and (operator == '=')
+      }
     end
-    @where.andand.select! { |attr, val| attr == 'uuid' }
-    @filters.andand.select! { |attr, operator, operand|
-      (attr == 'uuid') and (operator == '=')
-    }
+    if @where
+      wanted_scopes << @where['scopes']
+      @where.select! { |attr, val| attr == 'uuid' }
+    end
     @objects = model_class.
       includes(:user, :api_client).
       where('user_id=?', current_user.id)
     super
     wanted_scopes.compact.each do |scope_list|
-      @objects = @objects.select { |auth|
-        (auth.scopes & scope_list) == (auth.scopes | scope_list)
-      }
+      sorted_scopes = scope_list.sort
+      @objects = @objects.select { |auth| auth.scopes.sort == sorted_scopes }
     end
   end
 
