@@ -6,27 +6,13 @@ title: ApiClientAuthorization
 
 ...
 
-
-
-A **ApiClientAuthorization** represents the API authorization token that has been issued to each "ApiClient":ApiClient.html known to this Arvados instance.
+An **ApiClientAuthorization** represents an API client's authorization to make API requests on a user's behalf.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "api_client_authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/api_client_authorizations@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a ApiClientAuthorization.
-
-h3. Side effects
-
-Side effects of creating a ApiClientAuthorization.
-
-h2. Resources
+h2. Resource
 
 An ApiClientAuthorization is not a generic Arvados resource.  The full list of properties that belong to an ApiClientAuthorization is:
 
@@ -39,6 +25,5 @@ table(table table-bordered table-condensed).
 |last_used_by_ip_address|string|||
 |last_used_at|datetime|||
 |expires_at|datetime|||
-|updated_at|datetime|||
 |default_owner_uuid|string|||
-|scopes|Array|||
+|scopes|array|||

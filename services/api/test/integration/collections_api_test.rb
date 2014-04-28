@@ -6,13 +6,13 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
   test "should get index" do
     get "/arvados/v1/collections", {:format => :json}, auth(:active)
     assert_response :success
-    assert_equal "arvados#collectionList", jresponse['kind']
+    assert_equal "arvados#collectionList", json_response['kind']
   end
 
   test "get index with filters= (empty string)" do
     get "/arvados/v1/collections", {:format => :json, :filters => ''}, auth(:active)
     assert_response :success
-    assert_equal "arvados#collectionList", jresponse['kind']
+    assert_equal "arvados#collectionList", json_response['kind']
   end
 
   test "get index with invalid filters (array of strings) responds 422" do
@@ -21,7 +21,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => ['uuid', '=', 'ad02e37b6a7f45bbe2ead3c29a109b8a+54'].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid element.*not an array/, jresponse['errors'].join(' ')
+    assert_match /nvalid element.*not an array/, json_response['errors'].join(' ')
   end
 
   test "get index with invalid filters (unsearchable column) responds 422" do
@@ -30,7 +30,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => [['this_column_does_not_exist', '=', 'bogus']].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid attribute/, jresponse['errors'].join(' ')
+    assert_match /nvalid attribute/, json_response['errors'].join(' ')
   end
 
   test "get index with invalid filters (invalid operator) responds 422" do
@@ -39,7 +39,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => [['uuid', ':-(', 'displeased']].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid operator/, jresponse['errors'].join(' ')
+    assert_match /nvalid operator/, json_response['errors'].join(' ')
   end
 
   test "get index with invalid filters (invalid operand type) responds 422" do
@@ -48,27 +48,27 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => [['uuid', '=', {foo: 'bar'}]].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid operand type/, jresponse['errors'].join(' ')
+    assert_match /nvalid operand type/, json_response['errors'].join(' ')
   end
 
   test "get index with where= (empty string)" do
     get "/arvados/v1/collections", {:format => :json, :where => ''}, auth(:active)
     assert_response :success
-    assert_equal "arvados#collectionList", jresponse['kind']
+    assert_equal "arvados#collectionList", json_response['kind']
   end
 
   test "controller 404 response is json" do
     get "/arvados/v1/thingsthatdonotexist", {:format => :xml}, auth(:active)
     assert_response 404
-    assert_equal 1, jresponse['errors'].length
-    assert_equal true, jresponse['errors'][0].is_a?(String)
+    assert_equal 1, json_response['errors'].length
+    assert_equal true, json_response['errors'][0].is_a?(String)
   end
 
   test "object 404 response is json" do
     get "/arvados/v1/groups/zzzzz-j7d0g-o5ba971173cup4f", {}, auth(:active)
     assert_response 404
-    assert_equal 1, jresponse['errors'].length
-    assert_equal true, jresponse['errors'][0].is_a?(String)
+    assert_equal 1, json_response['errors'].length
+    assert_equal true, json_response['errors'][0].is_a?(String)
   end
 
   test "store collection as json" do
@@ -77,6 +77,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       collection: "{\"manifest_text\":\". bad42fa702ae3ea7d888fef11b46f450+44 0:44:md5sum.txt\\n\",\"uuid\":\"ad02e37b6a7f45bbe2ead3c29a109b8a+54\"}"
     }, auth(:active)
     assert_response 200
-    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', jresponse['uuid']
+    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['uuid']
   end
 end

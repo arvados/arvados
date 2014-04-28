@@ -6,14 +6,15 @@ title: "jobs"
 
 ...
 
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
 h2. cancel
 
-cancel jobs
+Cancel a job that is queued or running.
 
 Arguments:
 
@@ -29,22 +30,15 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|job|object||query||
+{background:#ccffcc}.|job|object|See "Job resource":{{site.baseurl}}/api/schema/Job.html|request body||
+|minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.[1]|query|@"c3e86c9"@|
+|exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@
+@["badtag1","badtag2"]@|
+|find_or_create         |boolean    |Before creating, look for an existing job that has identical script, script_version, and script_parameters to those in the present job, has nondeterministic=false, and did not fail (it could be queued, running, or completed). If such a job exists, respond with the existing job instead of submitting a new one.|query|@false@|
 
-Attributes of 'job' parameter:
+When a job is submitted to the queue using the **create** method, the @script_version@ attribute is updated to a full 40-character Git commit hash based on the current content of the specified repository. If @script_version@ cannot be resolved, the job submission is rejected.
 
-table(table table-bordered table-condensed).
-|_. Attribute               |_. Type|_. Accepted values                            |_. Description|
-{background:#ccffcc}.|script                 |string     |filename                                      |The actual script that will be run by crunch.  Must be the name of an executable file in the crunch_scripts/ directory at the git revision specified by script_version.|
-{background:#ccffcc}.|script_version         |string     |git branch, tag, or commit hash               |The version of code to run, which must be available in the specified repository.|
-{background:#ccffcc}.|repository             |string     |name of git repository hosted by Arvados      |The repository to search for script_version.|
-{background:#ccffcc}.|script_parameters      |object     |any JSON object                               |The input parameters for the job, with the parameter names as keys mapping to parameter values.|
-|minimum_script_version |string     |git branch, tag, or commit hash              |The minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.|
-|exclude_script_versions|array of strings|git branch, tag, or commit hash|Script versions to exclude when deciding whether to re-use a past job.|
-|nondeterministic       |boolean    |                                              |If true, never re-use a past job, and flag this job so it will never be considered for re-use.|
-|no_reuse               |boolean    |                                              |If true, do not re-use a past job, but this job may be re-used.|
-
-When a job is executed, the 'script_version' field is resolved to an exact git revision and the git hash for that revision is recorded in 'script_version'.  If 'script_version' can't be resolved, the job submission will be rejected.
+fn1. See the "note about specifying Git commits on the Job resource page":{{site.baseurl}}/api/schema/Job.html#script_version for more detail.
 
 h3. Reusing jobs
 
@@ -52,71 +46,83 @@ Because Arvados records the exact version of the script, input parameters, and r
 
 notextile. <div class="spaced-out">
 
-# If 'nondeterministic' or 'no_reuse' are true, always create a new job.
-# Find a list of acceptable values for 'script_version'.  If 'minimum_script_version' is specified, this is the set of all revisions in the git commit graph between 'minimum_script_version' and 'script_version' (inclusive) [2].  If 'minimum_script_version' is not specified, only 'script_version' is added to the list.  If 'exclude_script_versions' is specified, the listed versions are excluded from the list.
-# Select jobs have the same 'script' and 'script_parameters' attributes, and where the 'script_version' attribute is in the list of acceptable versions.  Exclude jobs that failed or set 'nondeterministic' to true.
-# If there is more than one candidate job, check that all selected past jobs actually did produce the same output.
-# If everything passed, re-use one of the selected past jobs (if there is more than one match, which job will be returned is undefined).  Otherwise create a new job.
+# If @find_or_create@ is false or omitted, create a new job and skip the rest of these steps.
+# Find a list of acceptable values for @script_version@.  If @minimum_script_version@ is specified, this is the set of all revisions in the Git commit graph between @minimum_script_version@ and the @script_version@ in the submitted "job object":{{site.baseurl}}/api/schema/Job.html (inclusive)[2].  If @minimum_script_version@ is not specified, only @script_version@ is added to the list.  If @exclude_script_versions@ is specified, the listed versions are excluded from the list.
+# Select jobs whose @script@ and @script_parameters@ attributes match those in the submitted "job object":{{site.baseurl}}/api/schema/Job.html, and whose @script_version@ attribute is in the list of acceptable versions.  Exclude jobs that failed or set @nondeterministic@ to true.
+# If more than one of the candidate jobs has finished, check that all such jobs actually did produce the same output.
+# If existing jobs exist and do not disagree with one another about the correct output, return one of the selected past jobs instead of creating a new job. If there is more than one match, which job will be returned is undefined.
+# If an existing job could not be chosen this way, create a new job.
 
 fn1. As of this writing, versioning the runtime environment is still under development.
 
-fn2. This may include parallel branches if there is more than one path between 'minimum_script_version' and 'script_version' in the git commit graph.  Use 'exclude_script_versions' to blacklist specific versions.
+fn2. This may include parallel branches if there is more than one path between @minimum_script_version@ and the submitted job's @script_version@ in the Git commit graph.  Use @exclude_script_versions@ to blacklist specific commits.
 
 </div>
 
 h3. Examples
 
-Run the script "crunch_scripts/hash.py" in the repository "you" using the "master" branch head.  Arvados is allowed to re-use a previous job if the script_version of the past job is the same as the "master" branch head (i.e., there have not been any subsequent commits to "master").
+Run the script "crunch_scripts/hash.py" in the repository "you" using the "master" commit.  Arvados should re-use a previous job if the script_version of the previous job is the same as the current "master" commit. This works irrespective of whether the previous job was submitted using the name "master", a different branch name or tag indicating the same commit, a SHA-1 commit hash, etc.
 
 <notextile><pre>
 {
-  "script": "hash.py",
-  "repository": "<b>you</b>",
-  "script_version": "master",
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
-  }
+  "job": {
+    "script": "hash.py",
+    "repository": "<b>you</b>",
+    "script_version": "master",
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
+  },
+  "find_or_create": true
 }
 </pre></notextile>
 
-Run using exactly the version "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5". Arvados is allowed to re-use a previous job if the "script_version" of that job is also "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5".
+Run using exactly the version "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5". Arvados should re-use a previous job if the "script_version" of that job is also "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5".
 
 <notextile><pre>
 {
-  "script": "hash.py",
-  "repository": "<b>you</b>",
-  "script_version": "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5",
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
-  }
+  "job": {
+    "script": "hash.py",
+    "repository": "<b>you</b>",
+    "script_version": "d00220fb38d4b85ca8fc28a8151702a2b9d1dec5",
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
+  },
+  "find_or_create": true
 }
 </pre></notextile>
 
-Arvados is allowed to re-use a previous job if the "script_version" of the past job is between "earlier_version_tag" and the head of the "master" branch (inclusive), but not "blacklisted_version_tag".  If there are no previous jobs, run the job using the head of the "master" branch as specified in "script_version".
+Arvados should re-use a previous job if the "script_version" of the previous job is between "earlier_version_tag" and the "master" commit (inclusive), but not the commit indicated by "blacklisted_version_tag". If there are no previous jobs matching these criteria, run the job using the "master" commit.
 
 <notextile><pre>
 {
-  "script": "hash.py",
-  "repository": "<b>you</b>",
+  "job": {
+    "script": "hash.py",
+    "repository": "<b>you</b>",
+    "script_version": "master",
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
+  },
   "minimum_script_version": "earlier_version_tag",
-  "script_version": "master",
   "exclude_script_versions": ["blacklisted_version_tag"],
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
-  }
+  "find_or_create": true
 }
 </pre></notextile>
 
-Run the script "crunch_scripts/monte-carlo.py" in the repository "you" using the "master" branch head.  Because it is marked as "nondeterministic", never re-use previous jobs, and never re-use this job.
+Run the script "crunch_scripts/monte-carlo.py" in the repository "you" using the current "master" commit. Because it is marked as "nondeterministic", this job will not be considered as a suitable candidate for future job submissions that use the "find_or_create" feature.
 
 <notextile><pre>
 {
-  "script": "monte-carlo.py",
-  "repository": "<b>you</b>",
-  "script_version": "master",
-  "nondeterministic": true,
-  "script_parameters": {
-    "input": "c1bad4b39ca5a924e481008009d94e32+210"
+  "job": {
+    "script": "monte-carlo.py",
+    "repository": "<b>you</b>",
+    "script_version": "master",
+    "nondeterministic": true,
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
   }
 }
 </pre></notextile>
@@ -131,16 +137,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Job in question.|path||
 
-h2. destroy
-
-destroy jobs
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
-
 h2. get
 
 Gets a Job's metadata by UUID.
@@ -150,17 +146,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Job in question.|path||
-
-h2. index
-
-index jobs
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
 
 h2. list
 
@@ -172,9 +157,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of jobs to return.|query||
 |order|string|Order in which to return matching jobs.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching jobs.|query||
-|where|object|Conditions for filtering jobs.|query||
+|filters|array|Conditions for filtering jobs.|query||
 
 h2. log_tail_follow
 
@@ -189,24 +172,16 @@ table(table table-bordered table-condensed).
 
 h2. queue
 
-queue jobs
+Get the current job queue.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |order|string||query||
-|where|object||query||
+|filters|array||query||
 
-h2. show
-
-show jobs
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
+This method is equivalent to the "list method":#list, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
 
 h2. update
 

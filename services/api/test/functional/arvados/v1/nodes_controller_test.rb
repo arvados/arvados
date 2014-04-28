@@ -42,7 +42,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "node should ping with ping_secret and no token" do
     post :ping, {
-      uuid: 'zzzzz-7ekkf-2z3mc76g2q73aio',
+      id: 'zzzzz-7ekkf-2z3mc76g2q73aio',
       instance_id: 'i-0000000',
       local_ipv4: '172.17.2.174',
       ping_secret: '69udawxvn3zzj45hs8bumvndricrha4lcpi23pd69e44soanc0'
@@ -58,7 +58,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
 
   test "node should fail ping with invalid ping_secret" do
     post :ping, {
-      uuid: 'zzzzz-7ekkf-2z3mc76g2q73aio',
+      id: 'zzzzz-7ekkf-2z3mc76g2q73aio',
       instance_id: 'i-0000000',
       local_ipv4: '172.17.2.174',
       ping_secret: 'dricrha4lcpi23pd69e44soanc069udawxvn3zzj45hs8bumvn'

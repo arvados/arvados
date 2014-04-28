@@ -9,6 +9,12 @@ module AssignUuid
     def uuid_prefix
       Digest::MD5.hexdigest(self.to_s).to_i(16).to_s(36)[-5..-1]
     end
+    def generate_uuid
+      [Server::Application.config.uuid_prefix,
+       self.uuid_prefix,
+       rand(2**256).to_s(36)[-15..-1]].
+        join '-'
+    end
   end
 
   protected
@@ -20,9 +26,6 @@ module AssignUuid
   def assign_uuid
     return true if !self.respond_to_uuid?
     return true if uuid and current_user and current_user.is_admin
-    self.uuid = [Server::Application.config.uuid_prefix,
-                 self.class.uuid_prefix,
-                 rand(2**256).to_s(36)[-15..-1]].
-      join '-'
+    self.uuid = self.class.generate_uuid
   end
 end

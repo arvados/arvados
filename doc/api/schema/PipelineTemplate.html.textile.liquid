@@ -29,11 +29,11 @@ fn1. The 'File' type refers to a specific file within a Keep collection in the f
 
 h3. Examples
 
-This is a pipeline named "Filter md5 hash values" with two components, "do_hash" and "filter".  The "input" script parameter of the "do_hash" component is required to be filled in by the user, and the expected data type is "Collection".  This also specifies that the "input" script parameter of the "filter" component is the output of "do_hash", so "filter" will not run until "do_hash" completes successfully.  When the pipeline runs, past jobs that meet the criteria described above may be substituted for either or both components to avoid redundant computation.
+This is a pipeline named "Filter MD5 hash values" with two components, "do_hash" and "filter".  The "input" script parameter of the "do_hash" component is required to be filled in by the user, and the expected data type is "Collection".  This also specifies that the "input" script parameter of the "filter" component is the output of "do_hash", so "filter" will not run until "do_hash" completes successfully.  When the pipeline runs, past jobs that meet the criteria described above may be substituted for either or both components to avoid redundant computation.
 
 <notextile><pre>
 {
-  "name": "Filter md5 hash values",
+  "name": "Filter MD5 hash values",
   "components": {
     "do_hash": {
       "script": "hash.py",
@@ -131,30 +131,15 @@ This pipeline consists of three components.  The component "cleanup" depends on 
 }
 </pre></notextile>
 
-
-
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "pipeline_templates":{{site.baseurl}}/api/methods/pipeline_templates.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_templates@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a PipelineTemplate.
-
-h3. Side effects
-
-Side effects of creating a PipelineTemplate.
-
-h2. Resources
+h2. Resource
 
 Each PipelineTemplate has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |name|string|||
-|components|Hash|||
-|updated_at|datetime|||
+|components|hash|||

@@ -6,7 +6,9 @@ title: "nodes"
 
 ...
 
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/nodes@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
@@ -31,16 +33,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Node in question.|path||
 
-h2. destroy
-
-destroy nodes
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
-
 h2. get
 
 Gets a Node's metadata by UUID.
@@ -50,17 +42,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Node in question.|path||
-
-h2. index
-
-index nodes
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
 
 h2. list
 
@@ -72,9 +53,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of nodes to return.|query||
 |order|string|Order in which to return matching nodes.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching nodes.|query||
-|where|object|Conditions for filtering nodes.|query||
+|filters|array|Conditions for filtering nodes.|query||
 
 h2. ping
 
@@ -85,16 +64,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|ping_secret|string||query||
-{background:#ccffcc}.|uuid|string||path||
-
-h2. show
-
-show nodes
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string||path||
 
 h2. update

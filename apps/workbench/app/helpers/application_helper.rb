@@ -218,27 +218,27 @@ module ApplicationHelper
       dn += '[value]'
     end
 
-    items = []
+    selectables = []
     attrtext = attrvalue
     if dataclass and dataclass.is_a? Class
       if attrvalue and !attrvalue.empty?
         Link.where(head_uuid: attrvalue, link_class: ["tag", "identifier"]).each do |tag|
           attrtext += " [#{tag.name}]"
         end
-        items.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
+        selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
       end
       #dataclass.where(uuid: attrvalue).each do |item|
-      #  items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      #  selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       #end
       itemuuids = []
       dataclass.limit(10).each do |item|
         itemuuids << item.uuid
-        items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+        selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       end
       Link.where(head_uuid: itemuuids, link_class: ["tag", "identifier"]).each do |tag|
-        items.each do |item|
-          if item.uuid == tag.head_uuid
-            item.name += ' [' + tag.name + ']'
+        selectables.each do |selectable|
+          if selectable['uuid'] == tag.head_uuid
+            selectable['name'] += ' [' + tag.name + ']'
           end
         end
       end
@@ -260,8 +260,8 @@ module ApplicationHelper
 
     lt += raw("\n<script>")
 
-    if items.any?
-      lt += raw("add_form_selection_sources(#{items.to_json});\n")
+    if selectables.any?
+      lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
     end
 
     lt += raw("$('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")

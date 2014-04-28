@@ -1,3 +1,20 @@
 new_pipeline:
-  uuid: zzzzz-xxxxx-f4gneyn6br1xize
+  uuid: zzzzz-d1hrv-f4gneyn6br1xize
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+
+has_component_with_no_script_parameters:
+  uuid: zzzzz-d1hrv-1xfj6xkicf2muk2
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+
+has_component_with_empty_script_parameters:
+  uuid: zzzzz-d1hrv-jq16l10gcsnyumo
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  components:
+   foo:
+    script: foo
+    script_version: master

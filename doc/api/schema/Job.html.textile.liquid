@@ -6,8 +6,6 @@ title: Job
 
 ...
 
-
-
 Applications submit compute jobs when:
 * Provenance is important, i.e., it is worth recording how the output was produced; or
 * Computation time is significant; or
@@ -15,23 +13,7 @@ Applications submit compute jobs when:
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
-
-h3. Queue
-
-<pre>
-GET https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
-
-POST https://{{ site.arvados_api_host }}/arvados/v1/jobs/queue
-_method=GET
-where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
-</pre>
-
-&rarr; Job resource list
-
-This method is equivalent to the "index method":{{site.baseurl}}/api/methods.html#index, except that the results are restricted to queued jobs (i.e., jobs that have not yet been started or cancelled) and order defaults to queue priority.
+See "jobs":{{site.baseurl}}/api/methods/jobs.html
 
 h2. Resource
 
@@ -39,13 +21,11 @@ Each job has, in addition to the usual "attributes of Arvados resources":{{site.
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
-|submit_id|string|Unique ID provided by client when job was submitted|Optional. Can be used by client to ensure idempotence|
-|priority|string|||
-|runtime_constraints{}|list|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
-|script|string|Name of crunch script in @/crunch_scripts/@||
-|script_parameters{}|list|Parameters passed to MapReduce script||
-|script_version|string|git branch, tag, or commit hash.|Before the job starts, this is the git branch, tag, or hash supplied by the user.  When the job starts, Arvados updates this field to the full 40-character git hash of the actual commit used by the job.|
-|repository             |string     |The repository from which the script_version will be fetched.|
+|script|string|The filename of the job script.|This program will be invoked by Crunch for each job task. It is given as a path to an executable file, relative to the @/crunch_scripts@ directory in the Git tree specified by the _repository_ and _script_version_ attributes.|
+|script_parameters|hash|The input parameters for the job.|Conventionally, one of the parameters is called @"input"@. Typically, some parameter values are collection UUIDs. Ultimately, though, the significance of parameters is left entirely up to the script itself.|
+|repository|string|Git repository|Given as the name of a locally hosted git repository.|
+|script_version|string|Git commit|During a **create** transaction, this is the Git branch, tag, or hash supplied by the client. Before the job starts, Arvados updates it to the full 40-character SHA-1 hash of the commit used by the job.
+See "Script versions":#script_version below for more detail about acceptable ways to specify a commit.|
 |cancelled_by_client_uuid|string|API client ID|Is null if job has not been cancelled|
 |cancelled_by_user_uuid|string|Authenticated user ID|Is null if job has not been cancelled|
 |cancelled_at|datetime|When job was cancelled|Is null if job has not been cancelled|
@@ -54,24 +34,22 @@ table(table table-bordered table-condensed).
 |running|boolean|Whether the job is running||
 |success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
 |is_locked_by_uuid|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
-|log|string|||
-|tasks_summary|Hash|||
-|output|string|||
-|nondeterministic       |boolean    |Indicates whether this job is a candidate for re-use|If true, this job will never be considered for re-use.|
+|log|string|Collection UUID|Is null if the job has not finished. After the job runs, the given collection contains a text file with log messages provided by the @arv-crunch-job@ task scheduler as well as the standard error streams provided by the task processes.|
+|tasks_summary|hash|Summary of task completion states.|Example: @{"done":0,"running":4,"todo":2,"failed":0}@|
+|output|string|Collection UUID|Is null if the job has not finished.|
+|nondeterministic|boolean|The job is expected to produce different results if run more than once.|If true, this job will not be considered as a candidate for automatic re-use when submitting subsequent identical jobs.|
+|submit_id|string|Unique ID provided by client when job was submitted|Optional. This can be used by a client to make the "jobs.create":{{site.baseurl}}/api/methods/jobs.html#create method idempotent.|
+|priority|string|||
+|runtime_constraints|hash|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
+
+h3(#script_version). Script versions
+
+The @script_version@ attribute is typically given as a branch, tag, or commit hash, but there are many more ways to specify a Git commit. The "specifying revisions" section of the "gitrevisions manual page":http://git-scm.com/docs/gitrevisions.html has a definitive list. Arvados accepts @script_version@ in any format listed there that names a single commit (not a tree, a blob, or a range of commits). However, some kinds of names can be expected to resolve differently in Arvados than they do in your local repository. For example, <code>HEAD@{1}</code> refers to the local reflog, and @origin/master@ typically refers to a remote branch: neither is likely to work as desired if given as a @script_version@.
 
 h3. Runtime constraints
 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Implemented|
-|dependencies{}|list|[
- {
-  "name": "freebayes",
-  "package_type": "git",
-  "origin": "https://github.com/ekg/freebayes.git",
-  "version": "011561f4a96619125d4388b66b2e82b173f3de7a"
- },
- ...
-]||
 |min_nodes|integer||&#10003;|
 |max_nodes|integer|||
 |max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#10003;|

@@ -6,8 +6,6 @@ title: Link
 
 ...
 
-
-
 **Links** describe relationships between Arvados objects, and from objects to primitives.
 
 Links are directional: each metadata object has a tail (the "subject" being described), class, name, properties, and head (the "object" that describes the "subject").  A Link may describe a relationship between two objects in an Arvados database: e.g. a _permission_ link between a User and a Group defines the permissions that User has to read or modify the Group.  Other Links simply represent metadata for a single object, e.g. the _identifier_ Link, in which the _name_ property represents a human-readable identifier for the object at the link's head.
@@ -16,9 +14,7 @@ For links that don't make sense to share between API clients, a _link_class_ tha
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/links@
+See "links":{{site.baseurl}}/api/methods/links.html
 
 h2. Resource
 
@@ -30,7 +26,7 @@ table(table table-bordered table-condensed).
 |link_class|string|Class (see below)|
 |name|string|Link type (see below)|
 |head_uuid|string|Object UUID at the head (end, destination, target) of this link|
-|properties{}|list|Additional information, expressed as a key&rarr;value hash. Key: string. Value: string, number, array, or hash.|
+|properties|hash|Additional information, expressed as a key&rarr;value hash. Key: string. Value: string, number, array, or hash.|
 
 h2. Link classes
 
@@ -51,9 +47,11 @@ h3. permission
 
 table(table table-bordered table-condensed).
 |_. tail_type&rarr;head_type|_. name&rarr;head_uuid {properties}|_. Notes|
-|User&rarr;Group  |can_manage &rarr; _group uuid_|Writable only by a user who can_manage this group|
-|User&rarr;Group  |can_read &rarr; _group uuid_  |Writable only by a user who can_manage this group.
-Gives permission to read any object owned by this group.|
+|User&rarr;Group  |{white-space:nowrap}. can_manage &rarr; _group uuid_|The User can read, write, and control permissions on the Group itself, every object owned by the Group, and every object on which the Group has _can_manage_ permission.|
+|User&rarr;Group  |can_read &rarr; _group uuid_  |The User can retrieve the Group itself and every object that is readable by the Group.|
+|User&rarr;Job|can_write &rarr; _job uuid_  |The User can read and update the Job. (This works for all objects, not just jobs.)|
+|User&rarr;Job|can_manage &rarr; _job uuid_  |The User can read, update, and change permissions for the Job. (This works for all objects, not just jobs.)|
+|Group&rarr;Job|can_manage &rarr; _job uuid_  |Anyone with _can_manage_ permission on the Group can also read, update, and change permissions for the Job. Anyone with _can_read_ permission on the Group can read the Job. (This works for all objects, not just jobs.)|
 
 h3. resources
 

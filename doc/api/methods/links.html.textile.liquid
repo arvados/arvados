@@ -6,10 +6,11 @@ title: "links"
 
 ...
 
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/links@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
-
 
 h2. create
 
@@ -31,16 +32,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
 
-h2. destroy
-
-destroy links
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
-
 h2. get
 
 Gets a Link's metadata by UUID.
@@ -50,18 +41,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
-
-h2. index
-
-index links
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|tail_uuid|string||path||
-|order|string||query||
-|where|object||query||
 
 h2. list
 
@@ -73,9 +52,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of links to return.|query||
 |order|string|Order in which to return matching links.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching links.|query||
-|where|object|Conditions for filtering links.|query||
+|filters|array|Conditions for filtering links.|query||
 
 h2. render_not_found
 
@@ -86,16 +63,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|a|string||path||
-
-h2. show
-
-show links
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
 
 h2. update
 

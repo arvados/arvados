@@ -13,20 +13,19 @@ title: REST methods
 h2(#index). Index, list, search
 
 <pre>
-GET https://{{ site.arvados_api_host }}/arvados/v1/groups?where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
+GET https://{{ site.arvados_api_host }}/arvados/v1/groups?filters=[["owner_uuid","=","xyzzy-tpzed-a4lcehql0dv2u25"]]
  
 POST https://{{ site.arvados_api_host }}/arvados/v1/groups
 _method=GET
-where[owner_uuid]=xyzzy-tpzed-a4lcehql0dv2u25
+filters=[["owner_uuid","=","xyzzy-tpzed-a4lcehql0dv2u25"]]
 </pre>
 
 &rarr; Group resource list
 
 table(table table-bordered table-condensed).
 |*Parameter name*|*Value*|*Description*|
-|max_results|integer|Maximum number of resources to return|
-|page_token|string||
-|where{}|list|Attribute values to search for|
+|limit|integer|Maximum number of resources to return|
+|filters|array|Conditions for selecting resources to return|
 
 h2. Create
 
@@ -41,14 +40,6 @@ h2. Delete
 
 <pre>
 DELETE https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
-</pre>
-
-&rarr; Group resource
-
-h2. Show
-
-<pre>
-GET https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
 </pre>
 
 &rarr; Group resource

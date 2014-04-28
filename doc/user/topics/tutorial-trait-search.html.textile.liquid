@@ -88,7 +88,7 @@ The query will return links that match all three conditions.
 
 * @arvados.api()@ gets an object that provides access to the Arvados API server
 * @.links()@ gets an object that provides access to the "links" resource on the Arvados API server
-* @.list(limit=1000, where=query)@ constructs a query to elements of the "links" resource that match the criteria discussed above, with a limit of 1000 entries returned
+* @.list(limit=1000, filters=trait_filter)@ constructs a query to elements of the "links" resource that match the criteria discussed above, with a limit of 1000 entries returned
 * @.execute()@ executes the query and returns the result, which we assign to "trait_links"
 
 <notextile>
@@ -120,11 +120,11 @@ u'1h9kt-7a9it-t1v8sjz6dm9jmjf', u'1h9kt-7a9it-qe8wrbyvuqs5jew']
 h2. Find Personal Genome Project identifiers from Arvados UUIDs
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">human_query = {
-    "link_class": "identifier",
-    "head_uuid": human_uuids
-  }</span>
-&gt;&gt;&gt; <span class="userinput">pgpid_links = arvados.api('v1').links().list(limit=1000, where=human_query).execute()</span>
+<pre><code>&gt;&gt;&gt; <span class="userinput">human_filters = [
+    ["link_class", "=", "identifier"],
+    ["head_uuid", "in", human_uuids]
+  ]</span>
+&gt;&gt;&gt; <span class="userinput">pgpid_links = arvados.api('v1').links().list(limit=1000, filters=human_filters).execute()</span>
 &gt;&gt;&gt; <span class="userinput">map(lambda l: l['name'], pgpid_links['items'])</span>
 [u'hu01024B', u'hu11603C', u'hu15402B', u'hu174334', u'hu1BD549', u'hu237A50',
  u'hu34A921', u'hu397733', u'hu414115', u'hu43860C', u'hu474789', u'hu553620',
@@ -146,11 +146,11 @@ h2. Find genomic data from specific humans
 Now we want to find collections in Keep that were provided by these humans.  We search the "links" resource for "provenance" links that point to subjects in list of humans with the non-melanoma skin cancer trait:
 
 <notextile>
-<pre><code>&gt;&gt;&gt; <span class="userinput">provenance_links = arvados.api().links().list(limit=1000, where={
-    "link_class": "provenance",
-    "name": "provided",
-    "tail_uuid": human_uuids
-  }).execute()
+<pre><code>&gt;&gt;&gt; <span class="userinput">provenance_links = arvados.api().links().list(limit=1000, filters=[
+    ["link_class", "=", "provenance"],
+    ["name", "=", "provided"],
+    ["tail_uuid", "in", human_uuids]
+  ]).execute()
 collection_uuids = map(lambda l: l['head_uuid'], provenance_links['items'])
 
 # build map of human uuid -> PGP ID
@@ -163,9 +163,9 @@ for p_link in provenance_links['items']:
   pgpid[p_link['head_uuid']] = pgpid[p_link['tail_uuid']]
 
 # get details (e.g., list of files) of each collection
-collections = arvados.api('v1').collections().list(where={
-    "uuid": collection_uuids
-  }).execute()
+collections = arvados.api('v1').collections().list(filters=[
+    ["uuid", "in", collection_uuids]
+  ]).execute()
 
 # print PGP public profile links with file locators
 for c in collections['items']:
