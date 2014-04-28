@@ -400,10 +400,12 @@ def computeGarbageCollectionCandidates():
   for block,mtime in garbage_collection_priority:
     disk_size = blockDiskUsage(block)
     cumulative_disk_size += disk_size
-    garbage_collection_report.append((block,
-                                      mtime,
-                                      disk_size,
-                                      cumulative_disk_size))
+    garbage_collection_report.append(
+      (block,
+       mtime,
+       disk_size,
+       cumulative_disk_size,
+       float(free_keep_space - cumulative_disk_size)/total_keep_space))
 
   print 'The oldest Garbage Collection Candidates: '
   pprint.pprint(garbage_collection_report[:20])
@@ -541,9 +543,9 @@ cumulative size)
 multiplied by current replication level)
 * cumulative disk size: The sum of this block's disk size and all the
 blocks listed above it
-* TODO: disk free: The proportion of our disk space that would be free
-if we deleted this block and all the above. So this is (current disk
-space used - cumulative disk size) / total disk capacity
+* disk free: The proportion of our disk space that would be free if we
+deleted this block and all the above. So this is (free disk space -
+cumulative disk size) / total disk capacity
 """
 
 # Stuff to report on
