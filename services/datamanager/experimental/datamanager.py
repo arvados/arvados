@@ -4,6 +4,7 @@ import arvados
 
 import argparse
 import cgi
+import json
 import logging
 import math
 import pprint
@@ -352,6 +353,29 @@ def getKeepBlocks(keep_servers):
                    if line])
   return blocks
 
+def getKeepStats(keep_servers):
+  MOUNT_COLUMN = 5
+  TOTAL_COLUMN = 1
+  FREE_COLUMN = 3
+  DISK_BLOCK_SIZE = 1024
+  stats = []
+  for host,port in keep_servers:
+    response = urllib2.urlopen('http://%s:%d/status.json' % (host, port))
+
+    parsed_json = json.load(response)
+    df_entries = [line.split()
+                  for line in parsed_json['df'].split('\n')
+                  if line]
+    keep_volumes = [columns
+                    for columns in df_entries
+                    if 'keep' in columns[MOUNT_COLUMN]]
+    total_space = DISK_BLOCK_SIZE*sum(map(int,map(itemgetter(TOTAL_COLUMN),
+                                                  keep_volumes)))
+    free_space =  DISK_BLOCK_SIZE*sum(map(int,map(itemgetter(FREE_COLUMN),
+                                                  keep_volumes)))
+    stats.append([total_space, free_space])
+  return stats
+
 
 def computeReplication(keep_blocks):
   for server_blocks in keep_blocks:
@@ -498,6 +522,10 @@ user_to_usage = defaultdict(lambda : [0,]*NUM_COLS)
 
 keep_servers = []
 keep_blocks = []
+keep_stats = []
+total_keep_space = 0
+free_keep_space =  0
+
 block_to_replication = defaultdict(lambda: 0)
 block_to_latest_mtime = maxdict()
 
@@ -558,6 +586,18 @@ def loadAllData():
   log.info('Getting Blocks from each Keep Server.')
   global keep_blocks
   keep_blocks = getKeepBlocks(keep_servers)
+
+  log.info('Getting Stats from each Keep Server.')
+  global keep_stats, total_keep_space, free_keep_space
+  keep_stats = getKeepStats(keep_servers)
+
+  total_keep_space = sum(map(itemgetter(0), keep_stats))
+  free_keep_space = sum(map(itemgetter(1), keep_stats))
+
+  log.info('Total disk space: %s, Free disk space: %s (%d%%).' %
+           (fileSizeFormat(total_keep_space),
+            fileSizeFormat(free_keep_space),
+            100*free_keep_space/total_keep_space))
 
   computeReplication(keep_blocks)
 
