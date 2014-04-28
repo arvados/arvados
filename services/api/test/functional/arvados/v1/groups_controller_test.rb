@@ -125,5 +125,19 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_response :success
     uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes uuids, expected_uuid, "Did not get #{expected_uuid}"
+
+    expected_name = links(:specimen_is_in_two_folders).name
+    found_specimen_name = false
+    assert(json_response['links'].any?,
+           "Expected a non-empty array of links in response")
+    json_response['links'].each do |link|
+      if link['head_uuid'] == expected_uuid
+        if link['name'] == expected_name
+          found_specimen_name = true
+        end
+      end
+    end
+    assert(found_specimen_name,
+           "Expected to find name '#{expected_name}' in response")
   end
 end

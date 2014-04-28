@@ -96,12 +96,12 @@ class ApplicationController < ActionController::Base
         cond_params = [@object.uuid]
         if params[:include_linked]
           @objects = @objects.
-            joins("LEFT JOIN links mng_links"\
-                  " ON mng_links.link_class=#{klass.sanitize 'permission'}"\
-                  "    AND mng_links.name=#{klass.sanitize 'can_manage'}"\
-                  "    AND mng_links.tail_uuid=#{klass.sanitize @object.uuid}"\
-                  "    AND mng_links.head_uuid=#{klass.table_name}.uuid")
-          cond_sql += " OR mng_links.uuid IS NOT NULL"
+            joins("LEFT JOIN links namelinks"\
+                  " ON namelinks.link_class=#{klass.sanitize 'name'}"\
+                  "    AND namelinks.owner_uuid=#{klass.sanitize @object.uuid}"\
+                  "    AND namelinks.tail_uuid=#{klass.sanitize @object.uuid}"\
+                  "    AND namelinks.head_uuid=#{klass.table_name}.uuid")
+          cond_sql += " OR namelinks.uuid IS NOT NULL"
         end
         @objects = @objects.where(cond_sql, *cond_params).order(:uuid)
         @limit = limit_all - all_objects.count
@@ -116,10 +116,17 @@ class ApplicationController < ActionController::Base
       end
     end
     @objects = all_objects || []
+    @links = Link.where('link_class=? and owner_uuid=?'\
+                        ' and owner_uuid=tail_uuid'\
+                        ' and head_uuid in (?)',
+                        'name',
+                        @object.uuid,
+                        @objects.collect(&:uuid))
     @object_list = {
       :kind  => "arvados#objectList",
       :etag => "",
       :self_link => "",
+      :links => @links.as_api_response(nil),
       :offset => offset_all,
       :limit => limit_all,
       :items_available => all_available,
