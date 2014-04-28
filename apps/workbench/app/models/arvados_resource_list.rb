@@ -1,7 +1,7 @@
 class ArvadosResourceList
   include Enumerable
 
-  def initialize(resource_class)
+  def initialize resource_class=nil
     @resource_class = resource_class
   end
 
@@ -132,6 +132,34 @@ class ArvadosResourceList
 
   def result_offset
     results.offset if results.respond_to? :offset
+  end
+
+  def result_links
+    results.links if results.respond_to? :links
+  end
+
+  def links_for item_or_uuid, link_class=nil
+    unless @links_for_uuid
+      @links_for_uuid = {}
+      results.links.each do |link|
+        if link.respond_to? :head_uuid
+          @links_for_uuid[link.head_uuid] ||= []
+          @links_for_uuid[link.head_uuid] << link
+        end
+      end
+    end
+    if item_or_uuid.respond_to? :uuid
+      uuid = item_or_uuid.uuid
+    else
+      uuid = item_or_uuid
+    end
+    (@links_for_uuid[uuid] || []).select do |link|
+      link.link_class == link_class
+    end
+  end
+
+  def name_for item_or_uuid
+    links_for(item_or_uuid, 'name').first.name
   end
 
 end

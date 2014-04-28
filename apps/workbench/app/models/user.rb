@@ -17,9 +17,13 @@ class User < ArvadosBase
                              end
   end
 
-  def owned_items
-    res = $arvados_api_client.api self.class, "/#{self.uuid}/owned_items"
-    $arvados_api_client.unpack_api_response(res)
+  def owned_items params={}
+    res = $arvados_api_client.api self.class, "/#{self.uuid}/owned_items", {
+      _method: 'GET'
+    }.merge(params)
+    ret = ArvadosResourceList.new
+    ret.results = $arvados_api_client.unpack_api_response(res)
+    ret
   end
 
   def full_name

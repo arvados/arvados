@@ -65,5 +65,5 @@ asubfolder:
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
   name: A Subfolder
-  description: Test folder belonging to active user's first test folder
+  description: "Test folder belonging to active user's first test folder"
   group_class: folder
