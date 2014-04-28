@@ -42,7 +42,7 @@ admin_vm:
   api_token: adminvirtualmachineabcdefghijklmnopqrstuvwxyz12345
   expires_at: 2038-01-01 00:00:00
   # scope refers to the testvm fixture.
-  scopes: ["https://www.example.com/arvados/v1/virtual_machines/zzzzz-2x53u-382brsig8rp3064"]
+  scopes: ["GET /arvados/v1/virtual_machines/zzzzz-2x53u-382brsig8rp3064/logins"]
 
 admin_noscope:
   api_client: untrusted
