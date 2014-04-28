@@ -208,6 +208,10 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def default_orders
+    ["#{table_name}.modified_at desc"]
+  end
+
   def load_limit_offset_order_params
     if params[:limit]
       unless params[:limit].to_s.match(/^\d+$/)
@@ -240,7 +244,7 @@ class ApplicationController < ActionController::Base
       end
     end
     if @orders.empty?
-      @orders << "#{table_name}.modified_at desc"
+      @orders = default_orders
     end
   end
 
