@@ -4,6 +4,7 @@ import arvados
 
 import argparse
 import cgi
+import csv
 import json
 import logging
 import math
@@ -405,10 +406,19 @@ def computeGarbageCollectionCandidates():
        mtime,
        disk_size,
        cumulative_disk_size,
-       float(free_keep_space - cumulative_disk_size)/total_keep_space))
+       float(free_keep_space + cumulative_disk_size)/total_keep_space))
 
   print 'The oldest Garbage Collection Candidates: '
   pprint.pprint(garbage_collection_report[:20])
+
+
+def outputGarbageCollectionReport(filename):
+  with open(filename, 'wb') as csvfile:
+    gcwriter = csv.writer(csvfile)
+    gcwriter.writerow(['block uuid', 'latest mtime', 'disk size',
+                       'cumulative size', 'disk free'])
+    for line in garbage_collection_report:
+      gcwriter.writerow(line)
 
 
 def detectReplicationProblems():
@@ -491,6 +501,10 @@ parser.add_argument('--user-storage-log-event-type',
                     default='user-storage-report',
                     help=('The event type to set when logging user '
                           'storage usage to workbench.'))
+parser.add_argument('--garbage-collection-file',
+                    default='',
+                    help=('The file to write a garbage collection report, or '
+                          'leave empty for no report.'))
 
 args = None
 
@@ -544,7 +558,7 @@ multiplied by current replication level)
 * cumulative disk size: The sum of this block's disk size and all the
 blocks listed above it
 * disk free: The proportion of our disk space that would be free if we
-deleted this block and all the above. So this is (free disk space -
+deleted this block and all the above. So this is (free disk space +
 cumulative disk size) / total disk capacity
 """
 
@@ -603,11 +617,16 @@ def loadAllData():
 
   computeReplication(keep_blocks)
 
-  computeGarbageCollectionCandidates()
-
   log.info('average replication level is %f',
            (float(sum(block_to_replication.values())) /
             len(block_to_replication)))
+
+  computeGarbageCollectionCandidates()
+
+  if args.garbage_collection_file:
+    log.info('Writing garbage Collection report to %s',
+             args.garbage_collection_file)
+    outputGarbageCollectionReport(args.garbage_collection_file)
 
   detectReplicationProblems()
 
