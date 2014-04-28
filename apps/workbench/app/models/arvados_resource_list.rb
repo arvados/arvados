@@ -159,7 +159,7 @@ class ArvadosResourceList
   end
 
   def name_for item_or_uuid
-    links_for(item_or_uuid, 'name').first.name
+    links_for(item_or_uuid, 'name').first.andand.name
   end
 
 end

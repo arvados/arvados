@@ -129,7 +129,9 @@ class ApplicationController < ActionController::Base
   end
 
   def create
-    @object ||= model_class.new params[model_class.to_s.underscore.singularize]
+    new_resource_attrs = params[model_class.to_s.underscore.singularize].
+      reject { |k,v| k.to_s == 'uuid' }
+    @object ||= model_class.new new_resource_attrs
     @object.save!
 
     respond_to do |f|

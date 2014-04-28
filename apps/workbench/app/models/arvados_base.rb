@@ -299,6 +299,10 @@ class ArvadosBase < ActiveRecord::Base
     (name if self.respond_to? :name) || uuid
   end
 
+  def content_summary
+    self.class.to_s
+  end
+
   def selection_label
     friendly_link_name
   end

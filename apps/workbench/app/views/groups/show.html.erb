@@ -2,91 +2,6 @@
 .arvados-nav-container {
     display:none;
 }
-.card {
-    padding-top: 20px;
-    margin: 10px 0 20px 0;
-    background-color: #ffffff;
-    border: 1px solid #d8d8d8;
-    border-top-width: 0;
-    border-bottom-width: 2px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
-    -webkit-box-shadow: none;
-    -moz-box-shadow: none;
-    box-shadow: none;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-}
-.card.arvados-object {
-    position: relative;
-    display: inline-block;
-    width: 170px;
-    height: 175px;
-    padding-top: 0;
-    margin-left: 20px;
-    overflow: hidden;
-    vertical-align: top;
-}
-.card.arvados-object .card-top.green {
-    background-color: #53a93f;
-}
-.card.arvados-object .card-top.blue {
-    background-color: #427fed;
-}
-.card.arvados-object .card-top {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: inline-block;
-    width: 170px;
-    height: 25px;
-    background-color: #ffffff;
-}
-.card.arvados-object .card-info {
-    position: absolute;
-    top: 25px;
-    display: inline-block;
-    width: 100%;
-    height: 101px;
-    overflow: hidden;
-    background: #ffffff;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-}
-.card.arvados-object .card-info .title {
-    display: block;
-    margin: 8px 14px 0 14px;
-    overflow: hidden;
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 18px;
-    color: #404040;
-}
-.card.arvados-object .card-info .desc {
-    display: block;
-    margin: 8px 14px 0 14px;
-    overflow: hidden;
-    font-size: 12px;
-    line-height: 16px;
-    color: #737373;
-    text-overflow: ellipsis;
-}
-.card.arvados-object .card-bottom {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    display: inline-block;
-    width: 100%;
-    padding: 10px 20px;
-    line-height: 29px;
-    text-align: center;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
-}
 <% end %>
 
 <% content_for :above_left_nav do %>
@@ -241,74 +156,34 @@
       </div>
       <div class="panel-body">
         <p>
-        </p><table class="table">
+        </p>
+        <table class="table">
           <tbody>
+            <colgroup>
+              <col width="30%" />
+              <col width="20%" />
+              <col width="20%" />
+              <col width="30%" />
+            </colgroup>
+            <% @objects.each do |object| %>
             <tr>
               <td>
-                Some Subfolder
+                <% name_link = @objects.links_for(object, 'name').first || Link.new(link_class: "name", owner_uuid: @object.uuid, tail_uuid: @object.uuid, head_uuid: object.uuid, name: "") %>
+                <%= render_editable_attribute name_link, 'name', nil, { 'data-emptytext' => "Unnamed #{object.class}" } %>
               </td>
               <td>
-                12 items
+                <%= object.content_summary %>
               </td>
-              <td>
-                2014-04-01
+              <td title="<%= object.modified_at %>">
+                <span>
+                  <%= raw distance_of_time_in_words(object.modified_at, Time.now).sub('about ','~').sub(' ','&nbsp;') + '&nbsp;ago' %>
+                </span>
+              </td>
+              <td class="arvados-uuid">
+                <%= link_to_if_arvados_object(object, {no_tags: true}) %>
               </td>
             </tr>
-            <tr>
-              <td>
-                Test Dataset
-              </td>
-              <td>
-                4 GiB
-              </td>
-              <td>
-                2014-04-01
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Test Dataset 2
-              </td>
-              <td>
-                4 GiB
-              </td>
-              <td>
-                2014-04-01
-              </td>
-            </tr>
-            <tr>
-              <td>
-                GATK Exome Pipeline
-              </td>
-              <td>
-                7 components
-              </td>
-              <td>
-                2014-03-21
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Reference result
-              </td>
-              <td>
-                250 MiB
-              </td>
-              <td>
-                2014-03-22
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Some other thing
-              </td>
-              <td>
-                1.2 TiB
-              </td>
-              <td>
-                2014-01-01
-              </td>
-            </tr>
+            <% end %>
           </tbody>
           <thead>
             <tr>
@@ -319,6 +194,9 @@
               </th>
               <th>
                 Modified
+              </th>
+              <th>
+                UUID
               </th>
             </tr>
           </thead>

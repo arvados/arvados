@@ -141,16 +141,29 @@ module ApplicationHelper
 
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
 
+    ajax_options = {
+      "data-pk" => {
+        id: object.uuid,
+        key: object.class.to_s.underscore
+      }
+    }
+    if object.uuid
+      ajax_options['data-url'] = url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore)
+    else
+      ajax_options['data-url'] = url_for(action: "create", controller: object.class.to_s.pluralize.underscore)
+      ajax_options['data-pk'][:defaults] = object.attributes
+      ajax_options['data-pk'][:_method] = 'post'
+    end
+    ajax_options['data-pk'] = ajax_options['data-pk'].to_json
+
     link_to attrvalue.to_s, '#', {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
       "data-title" => "Update #{attr.gsub '_', ' '}",
       "data-name" => attr,
-      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       :class => "editable"
-    }.merge(htmloptions)
+    }.merge(htmloptions).merge(ajax_options)
   end
 
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})

@@ -1,4 +1,4 @@
-$.fn.editable.defaults.ajaxOptions = {type: 'put', dataType: 'json'};
+$.fn.editable.defaults.ajaxOptions = {type: 'post', dataType: 'json'};
 $.fn.editable.defaults.send = 'always';
 
 // Default for editing is popup.  I experimented with inline which is a little
@@ -13,8 +13,13 @@ $.fn.editable.defaults.params = function (params) {
     var a = {};
     var key = params.pk.key;
     a.id = params.pk.id;
-    a[key] = {};
+    a[key] = params.pk.defaults || {};
     a[key][params.name] = params.value;
+    if (params.pk._method) {
+        a['_method'] = params.pk._method;
+    } else {
+        a['_method'] = 'put';
+    }
     return a;
 };
 
@@ -23,6 +28,13 @@ $.fn.editable.defaults.validate = function (value) {
         return "Invalid selection";
     }
 }
+
+$(document).
+    on('ready ajax:complete', function() {
+        $('#editable-submit').click(function() {
+            console.log($(this));
+        });
+    });
 
 $.fn.editabletypes.text.defaults.tpl = '<input type="text" name="editable-text">'
 
