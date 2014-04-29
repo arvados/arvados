@@ -65,8 +65,7 @@ public class Arvados {
         }
         
         Arvados arv = new Arvados(args[1]);
-        String response = arv.call(params);
-        logger.debug(response);
+        arv.call(params);
       } else if (command.equals("discover")) {
         List<String> params = Arrays.asList(args);
         
