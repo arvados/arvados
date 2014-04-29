@@ -90,7 +90,7 @@ class ArvadosApiClient
     resp
   end
 
-  def self.patch_paging_vars(ary, items_available, offset, limit, links)
+  def self.patch_paging_vars(ary, items_available, offset, limit, links=nil)
     if items_available
       (class << ary; self; end).class_eval { attr_accessor :items_available }
       ary.items_available = items_available
