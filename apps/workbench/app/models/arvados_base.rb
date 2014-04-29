@@ -244,6 +244,10 @@ class ArvadosBase < ActiveRecord::Base
     }
   end
 
+  def class_for_display
+    self.class.to_s
+  end
+
   def self.creatable?
     current_user
   end

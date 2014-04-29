@@ -170,6 +170,10 @@ class ApplicationController < ActionController::Base
     controller_name.classify.constantize
   end
 
+  def model_class_for_display
+    model_class.to_s
+  end
+
   def breadcrumb_page_name
     (@breadcrumb_page_name ||
      (@object.friendly_link_name if @object.respond_to? :friendly_link_name) ||

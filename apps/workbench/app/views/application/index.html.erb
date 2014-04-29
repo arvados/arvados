@@ -12,7 +12,7 @@
           'data-target' => '#user-setup-modal-window', return_to: request.url}  %>
       <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
     <% else %>
-      <%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}",
+      <%= button_to "Add a new #{controller.model_class_for_display.underscore.gsub '_', ' '}",
         { action: 'create', return_to: request.url },
         { class: 'btn btn-primary pull-right' } %>
     <% end %>

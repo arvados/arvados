@@ -85,7 +85,7 @@
             <li><a href="/pipeline_templates">
                 <i class="fa fa-lg fa-gears fa-fw"></i> Pipeline templates
             </a></li>
-            <li><a href="/groups">
+            <li><a href="/folders">
                 <i class="fa fa-lg fa-folder-o fa-fw"></i> Folders
             </a></li>
             <li class="dropdown">
@@ -138,7 +138,7 @@
               <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
               <li>
                 <%= link_to(
-                            controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
+                            controller.model_class_for_display.pluralize.underscore.gsub('_', ' '),
                             url_for({controller: params[:controller]})) %>
               </li>
               <% if params[:action] != 'index' %>
