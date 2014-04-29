@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.log4j.Logger;
 
 public class Arvados {
   // HttpTransport and JsonFactory are thread-safe. So, use global instances. 
@@ -43,6 +44,8 @@ public class Arvados {
 
   private static String ARVADOS_ROOT_URL;
 
+  private static final Logger logger = Logger.getLogger(Arvados.class);
+  
   public static void main(String[] args) throws Exception {
     if (args.length == 0) {
       showMainHelp();
@@ -60,7 +63,7 @@ public class Arvados {
         
         Arvados arv = new Arvados(args[1]);
         String response = arv.call(params);
-        System.out.println (response);
+        logger.debug(response);
       } else if (command.equals("discover")) {
         List<String> params = Arrays.asList(args);
         
@@ -82,16 +85,21 @@ public class Arvados {
     } else {
       String helpCommand = args[1];
       if (helpCommand.equals("call")) {
-        System.out.println("Usage: Arvados call methodName [parameters]");
-        System.out.println();
-        System.out.println("Examples:");
-        System.out.println("  Arvados call arvados v1 users.list");
-        System.out.println("  Arvados call arvados v1 users.get <uuid>");
-        System.out.println("  Arvados call arvados v1 pipeline_instances.list");
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("\nUsage: Arvados call methodName [parameters]");
+        buffer.append("\nExamples:");
+        buffer.append("\n  Arvados call arvados v1 users.list");
+        buffer.append("\n  Arvados call arvados v1 users.get <uuid>");
+        buffer.append("\n  Arvados call arvados v1 pipeline_instances.list");
+        logger.debug(buffer.toString());
+        System.out.println(buffer.toString());
       } else if (helpCommand.equals("discover")) {
-        System.out.println("Usage");
-        System.out.println("Examples:");
-        System.out.println("  Arvados discover arvados v1");
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("\nUsage");
+        buffer.append("\nExamples:");
+        buffer.append("\n  Arvados discover arvados v1");
+        logger.debug(buffer.toString());
+        System.out.println(buffer.toString());
       } else {
         error(null, "unknown command: " + helpCommand);
       }
@@ -99,18 +107,20 @@ public class Arvados {
   }
 
   protected static void showMainHelp() {
-    System.out.println("arvados");
-    System.out.println();
-    System.out.println("For more help on a specific command, type one of:");
-    System.out.println();
-    System.out.println("  Arvados help call");
-    System.out.println("  Arvados help discover");
+    StringBuffer buffer = new StringBuffer();
+    buffer.append("\narvados");
+    buffer.append("\nFor more help on a specific command, type one of:");
+    buffer.append("\n  Arvados help call");
+    buffer.append("\n  Arvados help discover");
+    logger.debug(buffer.toString());
+    System.out.println(buffer.toString());
   }
 
   private static void error(String command, String detail) throws Exception {
     String errorDetail = "ERROR: " + detail +
         "For help, type: Arvados" + (command == null ? "" : " help " + command);
     
+    logger.equals(errorDetail);
     throw new Exception(errorDetail);
   }
 
@@ -160,26 +170,27 @@ public class Arvados {
 
     // display method details
     Collections.sort(result);
+    StringBuffer buffer = new StringBuffer();
     for (MethodDetails methodDetail : result) {
-      System.out.println();
-      System.out.print("Arvados call " + params.get(1) + " " + params.get(2) + " " + methodDetail.name);
+      buffer.append("\nArvados call " + params.get(1) + " " + params.get(2) + " " + methodDetail.name);
       for (String param : methodDetail.requiredParameters) {
-        System.out.print(" <" + param + ">");
+        buffer.append(" <" + param + ">");
       }
       if (methodDetail.hasContent) {
-        System.out.print(" contentFile");
+        buffer.append(" contentFile");
       }
       if (methodDetail.optionalParameters.isEmpty() && !methodDetail.hasContent) {
-        System.out.println();
+        buffer.append("\n");
       } else {
-        System.out.println(" [optional parameters...]");
-        System.out.println("  --contentType <value> (default is \"application/json\")");
+        buffer.append("\n [optional parameters...]");
+        buffer.append("\n  --contentType <value> (default is \"application/json\")");
         for (String param : methodDetail.optionalParameters) {
-          System.out.println("  --" + param + " <value>");
+          buffer.append("\n  --" + param + " <value>");
         }
       }
     }
-
+    logger.debug(buffer.toString());
+    
     return (restDescription);
   }
 
