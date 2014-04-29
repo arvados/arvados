@@ -15,7 +15,7 @@ class GroupsController < ApplicationController
   end
 
   def show
-    @objects = @object.owned_items include_linked: true
+    @objects = @object.contents include_linked: true
     super
   end
 end
