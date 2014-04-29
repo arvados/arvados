@@ -142,6 +142,10 @@ class Arvados
     $stderr.puts "#{File.split($0).last} #{$$}: #{message}" if @@debuglevel >= verbosity
   end
 
+  def debuglog *args
+    self.class.debuglog *args
+  end
+
   def config(config_file_path="~/.config/arvados/settings.conf")
     return @@config if @@config
 
@@ -157,6 +161,10 @@ class Arvados
       # specifies a _HOST without asking for _INSECURE, we certainly
       # shouldn't give the config file a chance to create a
       # system-wide _INSECURE state for this user.
+      #
+      # Note: If we start using additional configuration settings from
+      # this file in the future, we might have to read the file anyway
+      # instead of returning here.
       return (@@config = config)
     end
 
@@ -173,15 +181,15 @@ class Arvados
           var.strip!
           val.strip!
           # allow environment settings to override config files.
-          if val
+          if !var.empty? and val
             config[var] ||= val
           else
-            warn "#{expanded_path}: #{lineno}: could not parse `#{line}'"
+            debuglog "#{expanded_path}: #{lineno}: could not parse `#{line}'", 0
           end
         end
       end
-    rescue
-      debuglog "HOME environment variable (#{ENV['HOME']}) not set, not using #{config_file_path}", 0
+    rescue StandardError => e
+      debuglog "Ignoring error reading #{config_file_path}: #{e}", 0
     end
 
     @@config = config
