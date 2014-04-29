@@ -1,6 +1,20 @@
+module ApiTemplateOverride
+  def allowed_to_render?(fieldset, field, model, options)
+    if options[:select]
+      return options[:select].include? field.to_s
+    end
+    super
+  end
+end
+
+class ActsAsApi::ApiTemplate
+  prepend ApiTemplateOverride
+end
+
 class ApplicationController < ActionController::Base
   include CurrentApiClient
   include ThemesForRails::ActionController
+
 
   respond_to :json
   protect_from_forgery
@@ -29,7 +43,7 @@ class ApplicationController < ActionController::Base
   DEFAULT_LIMIT = 100
 
   def index
-    @objects.uniq!(&:id)
+    @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)
     end
@@ -245,6 +259,8 @@ class ApplicationController < ActionController::Base
     if @orders.empty?
       @orders = default_orders
     end
+
+    @select = params[:select] if params[:select].andand.is_a? Array
   end
 
   def find_objects_for_index
@@ -360,6 +376,7 @@ class ApplicationController < ActionController::Base
       end
     end
 
+    @objects = @objects.select(@select.map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }.join ", ") if @select
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
@@ -536,7 +553,7 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items => @objects.as_api_response(nil)
+      :items => @objects.as_api_response(nil, {select: @select})
     }
     if @objects.respond_to? :except
       @object_list[:items_available] = @objects.
