@@ -1,8 +1,3 @@
-<div class="btn-group btn-group-xs toggle-persist fill" data-toggle="buttons" data-remote-href="<%= set_persistent_collection_path(id: uuid) %>" data-persistent-state="<%= current_state %>">
-  <label class="btn btn-info <%= 'active' if current_state=='persistent' %>">
-    <input type="radio" name="wants" value="persistent">Persistent
-  </label>
-  <label class="btn btn-info <%= 'active' if current_state=='cache' %>">
-    <input type="radio" name="wants" value="cache">Cache
-  </label>
+<div class="btn-group btn-group-xs toggle-persist" data-remote-href="<%= set_persistent_collection_path(id: uuid) %>" data-persistent-state="<%= current_state %>">
+  <button type="button" class="btn btn-info <%= 'active' if current_state == 'persistent' %>"><%= current_state.capitalize %></button>
 </div>

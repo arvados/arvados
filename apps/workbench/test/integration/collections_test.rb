@@ -6,15 +6,12 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
   def change_persist oldstate, newstate
     find "div[data-persistent-state='#{oldstate}']"
-    assert_raises Capybara::ElementNotFound do
-      find "div[data-persistent-state='#{newstate}']"
-    end
-    find('label', text: newstate.capitalize).click
-    find 'label.active', text: newstate.capitalize
+    page.assert_no_selector "div[data-persistent-state='#{newstate}']"
+    find('.btn', text: oldstate.capitalize).click
+    find '.btn', text: newstate.capitalize
+    page.assert_no_selector '.btn', text: oldstate.capitalize
     find "div[data-persistent-state='#{newstate}']"
-    assert_raises Capybara::ElementNotFound do
-      find "div[data-persistent-state='#{oldstate}']"
-    end
+    page.assert_no_selector "div[data-persistent-state='#{oldstate}']"
   end
 
   ['/collections', '/'].each do |path|

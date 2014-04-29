@@ -6,11 +6,13 @@
 $inactive-bg: #5bc0de;
 $active-bg: #39b3d7;
 
-.btn-group[data-toggle=buttons] label {
+.btn-group.toggle-persist .btn {
+    width: 6em;
+}
+.btn-group.toggle-persist .btn-info {
     background-color: lighten($inactive-bg, 15%);
 }
 
-.btn-group[data-toggle=buttons] label.active {
+.btn-group.toggle-persist .btn-info.active {
     background-color: $active-bg;
-    opacity: 1;
 }
