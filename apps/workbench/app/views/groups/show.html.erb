@@ -4,76 +4,80 @@
 }
 <% end %>
 
-<% content_for :above_left_nav do %>
-<div class="panel panel-info">
-  <div class="panel-heading">
-    <a class="btn btn-xs btn-info pull-right">
-      Rename
-    </a>
-    <h3 class="panel-title">
-      <%= @object.name %>
-    </h3>
+<div class="row row-fill-height">
+  <div class="col-md-6">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+	<a class="btn btn-xs btn-info pull-right">
+	  Rename
+	</a>
+	<h3 class="panel-title">
+	  <%= @object.name %>
+	</h3>
+      </div>
+      <div class="panel-body">
+	<img src="/favicon.ico" class="pull-right" alt=""/>
+	<p>
+	  This folder was created <%= @object.created_at %>. (This
+	  description defaults to something generic.)
+	</p>
+	<a href="#" class="btn btn-xs btn-info">Edit description</a>
+      </div>
+    </div>
   </div>
-  <div class="panel-body">
-    <img src="/favicon.ico" class="pull-right" alt=""/>
-    <p>
-      This folder was created <%= @object.created_at %>. (This
-      description defaults to something generic.)
-    </p>
-    <a href="#" class="btn btn-xs btn-info">Edit description</a>
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">
+	  Activity
+	</h3>
+      </div>
+      <div class="panel-body">
+	<input type="text" class="form-control" placeholder="Search"/>
+	<div style="height:0.5em;"></div>
+	<p>
+	  11:12 - Some Subfolder added
+	</p>
+	<p>
+	  10:06 - <%= @object.name %> - renamed from OldFolderName to <%= @object.name %>
+	</p>
+	<p>
+	  10:01 - Test Dataset (4 GiB collection) added to <%= @object.name %> by <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
+	</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">
+	  Sharing and permissions
+	</h3>
+      </div>
+      <div class="panel-body">
+	<input type="text" class="form-control" placeholder="Search"/>
+	<div style="height:0.5em;"></div>
+	<table class="table table-condensed">
+	  <tbody>
+	    <tr>
+	      <td><%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></td>
+	      <td>Owner</td>
+	    </tr>
+	    <tr>
+	      <td>Someone Else</td>
+	      <td>read only</td>
+	    </tr>
+	    <tr>
+	      <td>Someone Else</td>
+	      <td>read+write</td>
+	    </tr>
+	  </tbody>
+	  <thead><tr><th>User</th><th>Role</th></tr></thead>
+	</table>
+      </div>
+    </div>
   </div>
 </div>
-
-<div class="panel panel-default">
-  <div class="panel-heading">
-    <h3 class="panel-title">
-      Activity
-    </h3>
-  </div>
-  <div class="panel-body">
-    <input type="text" class="form-control" placeholder="Search"/>
-    <div style="height:0.5em;"></div>
-    <p>
-      11:12 - Some Subfolder added
-    </p>
-    <p>
-      10:06 - <%= @object.name %> - renamed from OldFolderName to <%= @object.name %>
-    </p>
-    <p>
-      10:01 - Test Dataset (4 GiB collection) added to <%= @object.name %> by <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
-    </p>
-  </div>
-</div>
-
-<div class="panel panel-default">
-  <div class="panel-heading">
-    <h3 class="panel-title">
-      Sharing and permissions
-    </h3>
-  </div>
-  <div class="panel-body">
-    <input type="text" class="form-control" placeholder="Search"/>
-    <div style="height:0.5em;"></div>
-    <table class="table table-condensed">
-      <tbody>
-        <tr>
-          <td><%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></td>
-          <td>Owner</td>
-        </tr>
-        <tr>
-          <td>Someone Else</td>
-          <td>read only</td>
-        </tr>
-        <tr>
-          <td>Someone Else</td>
-          <td>read+write</td>
-        </tr>
-      </tbody>
-      <thead><tr><th>User</th><th>Role</th></tr></thead>
-    </table>
-  </div>
-</div>
-<% end %>
 
 <div class="row">
   <div class="card arvados-object">
