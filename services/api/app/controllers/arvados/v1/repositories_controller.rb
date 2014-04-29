@@ -27,6 +27,14 @@ class Arvados::V1::RepositoriesController < ApplicationController
         else
           perms << {name: perm.name, user_uuid: perm.tail_uuid}
         end
+        owner_uuid = perm[:owner_uuid]
+        @user_aks[owner_uuid] = @users[owner_uuid].andand.authorized_keys.andand.
+          collect do |ak|
+          {
+            public_key: ak.public_key,
+            authorized_key_uuid: ak.uuid
+          }
+        end || []
       end
       perms.each do |perm|
         user_uuid = perm[:user_uuid]
@@ -41,6 +49,7 @@ class Arvados::V1::RepositoriesController < ApplicationController
           @repo_info[repo.uuid] ||= {
             uuid: repo.uuid,
             name: repo.name,
+            owner_uuid: repo.owner_uuid,
             push_url: repo.push_url,
             fetch_url: repo.fetch_url,
             user_permissions: {}
