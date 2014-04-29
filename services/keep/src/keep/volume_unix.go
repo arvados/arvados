@@ -111,24 +111,22 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 func (v *UnixVolume) Read(loc string) ([]byte, error) {
 	var f *os.File
 	var err error
-	var nread int
+	var buf []byte
 
-	blockFilename := fmt.Sprintf("%s/%s/%s", v.root, loc[0:3], loc)
+	blockFilename := filepath.Join(v.root, loc[0:3], loc)
 
 	f, err = os.Open(blockFilename)
 	if err != nil {
 		return nil, err
 	}
 
-	var buf = make([]byte, BLOCKSIZE)
-	nread, err = f.Read(buf)
-	if err != nil {
+	if buf, err = ioutil.ReadAll(f); err != nil {
 		log.Printf("%s: reading %s: %s\n", v, blockFilename, err)
 		return buf, err
 	}
 
 	// Success!
-	return buf[:nread], nil
+	return buf, nil
 }
 
 // Write stores a block of data identified by the locator string
@@ -140,7 +138,7 @@ func (v *UnixVolume) Write(loc string, block []byte) error {
 	if v.IsFull() {
 		return FullError
 	}
-	blockDir := fmt.Sprintf("%s/%s", v.root, loc[0:3])
+	blockDir := filepath.Join(v.root, loc[0:3])
 	if err := os.MkdirAll(blockDir, 0755); err != nil {
 		log.Printf("%s: could not create directory %s: %s",
 			loc, blockDir, err)
@@ -152,7 +150,7 @@ func (v *UnixVolume) Write(loc string, block []byte) error {
 		log.Printf("ioutil.TempFile(%s, tmp%s): %s", blockDir, loc, tmperr)
 		return tmperr
 	}
-	blockFilename := fmt.Sprintf("%s/%s", blockDir, loc)
+	blockFilename := filepath.Join(blockDir, loc)
 
 	if _, err := tmpfile.Write(block); err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, blockFilename, err)
