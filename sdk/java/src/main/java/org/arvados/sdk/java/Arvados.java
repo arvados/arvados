@@ -120,7 +120,7 @@ public class Arvados {
     String errorDetail = "ERROR: " + detail +
         "For help, type: Arvados" + (command == null ? "" : " help " + command);
     
-    logger.equals(errorDetail);
+    logger.debug(errorDetail);
     throw new Exception(errorDetail);
   }
 

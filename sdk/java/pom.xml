@@ -95,7 +95,7 @@
       <resources>
     	<resource>
           <directory>src/main/resources</directory>
-            <targetPath>${basedir}/target</targetPath>
+            <targetPath>${basedir}/target/classes</targetPath>
             <includes>
               <include>log4j.properties</include>
             </includes>    	
