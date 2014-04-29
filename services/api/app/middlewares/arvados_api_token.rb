@@ -1,10 +1,19 @@
+# Perform api_token checking very early in the request process.  We want to do
+# this in the Rack stack instead of in ApplicationController because
+# websockets needs access to authentication but doesn't use any of the rails
+# active dispatch infrastructure.
 class ArvadosApiToken
+
+  # Create a new ArvadosApiToken handler
+  # +app+  The next layer of the Rack stack.
   def initialize(app = nil, options = nil)
     @app = app if app.respond_to?(:call)
   end
 
   def call env
-    # first, clean up just in case
+    # First, clean up just in case we have a multithreaded server and thread
+    # local variables are still set from a prior request.  Also useful for
+    # tests that call this code to set up the environment.
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
     Thread.current[:api_client_uuid] = nil
