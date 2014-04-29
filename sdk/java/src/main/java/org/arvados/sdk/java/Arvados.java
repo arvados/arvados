@@ -31,9 +31,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Arvados {
+  // HttpTransport and JsonFactory are thread-safe. So, use global instances. 
   private static HttpTransport HTTP_TRANSPORT;
   private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-  private static Discovery DISCOVERY_CLIENT;
 
   private static final Pattern METHOD_PATTERN = Pattern.compile("((\\w+)\\.)*(\\w+)");
 
@@ -139,17 +139,50 @@ public class Arvados {
       NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
       builder.doNotValidateCertificate();
       HTTP_TRANSPORT = builder.build();
-
-      // Create DISCOVERY_CLIENT object
-      Discovery.Builder discoveryBuilder = new Discovery.Builder(HTTP_TRANSPORT, JSON_FACTORY, null);
-
-      discoveryBuilder.setRootUrl(ARVADOS_ROOT_URL);
-      discoveryBuilder.setApplicationName(apiName);
-      DISCOVERY_CLIENT = discoveryBuilder.build();
     } catch (Throwable t) {
       t.printStackTrace();
     }
   }
+  
+  public RestDescription discover(List<String> params) throws Exception {
+    if (params.size() == 1) {
+      error("call", "missing api name");
+    } else if (params.size() == 2) {
+      error("call", "missing api version");
+    } 
+
+    RestDescription restDescription = loadArvadosApi(params.get(1), params.get(2));
+
+    // compute method details
+    ArrayList<MethodDetails> result = Lists.newArrayList();
+    String resourceName = "";
+    processResources(result, resourceName, restDescription.getResources());
+
+    // display method details
+    Collections.sort(result);
+    for (MethodDetails methodDetail : result) {
+      System.out.println();
+      System.out.print("Arvados call " + params.get(1) + " " + params.get(2) + " " + methodDetail.name);
+      for (String param : methodDetail.requiredParameters) {
+        System.out.print(" <" + param + ">");
+      }
+      if (methodDetail.hasContent) {
+        System.out.print(" contentFile");
+      }
+      if (methodDetail.optionalParameters.isEmpty() && !methodDetail.hasContent) {
+        System.out.println();
+      } else {
+        System.out.println(" [optional parameters...]");
+        System.out.println("  --contentType <value> (default is \"application/json\")");
+        for (String param : methodDetail.optionalParameters) {
+          System.out.println("  --" + param + " <value>");
+        }
+      }
+    }
+
+    return (restDescription);
+  }
+
   public String call(List<String> callParams) throws Exception {
     if (callParams.size() == 1) {
       error("call", "missing api name");
@@ -264,7 +297,7 @@ public class Arvados {
       requestFactory = HTTP_TRANSPORT.createRequestFactory();
 
       HttpRequest request = requestFactory.buildRequest(method.getHttpMethod(), url, content);
-      //request.getp
+
       List<String> authHeader = new ArrayList<String>();
       authHeader.add("OAuth2 " + ARVADOS_API_TOKEN);
       request.getHeaders().put("Authorization", authHeader);
@@ -277,57 +310,33 @@ public class Arvados {
     }
   }
 
-  public RestDescription discover(List<String> params) throws Exception {
-    if (params.size() == 1) {
-      error("call", "missing api name");
-    } else if (params.size() == 2) {
-      error("call", "missing api version");
-    } 
-
-    RestDescription restDescription = loadArvadosApi(params.get(1), params.get(2));
-
-    // compute method details
-    ArrayList<MethodDetails> result = Lists.newArrayList();
-    String resourceName = "";
-    processResources(result, resourceName, restDescription.getResources());
-
-
-    // display method details
-    Collections.sort(result);
-    for (MethodDetails methodDetail : result) {
-      System.out.println();
-      System.out.print("Arvados call " + params.get(1) + " " + params.get(2) + " " + methodDetail.name);
-      for (String param : methodDetail.requiredParameters) {
-        System.out.print(" <" + param + ">");
-      }
-      if (methodDetail.hasContent) {
-        System.out.print(" contentFile");
-      }
-      if (methodDetail.optionalParameters.isEmpty() && !methodDetail.hasContent) {
-        System.out.println();
-      } else {
-        System.out.println(" [optional parameters...]");
-        System.out.println("  --contentType <value> (default is \"application/json\")");
-        for (String param : methodDetail.optionalParameters) {
-          System.out.println("  --" + param + " <value>");
-        }
-      }
-    }
-
-    return (restDescription);
-  }
-
-  private RestDescription loadArvadosApi(String appName, String appVersion)
+  /**
+   * Not thread-safe. So, create for each request.
+   * @param apiName
+   * @param apiVersion
+   * @return
+   * @throws Exception
+   */
+  private RestDescription loadArvadosApi(String apiName, String apiVersion)
       throws Exception {
     try {
-      return DISCOVERY_CLIENT.apis().getRest(appName, appVersion).execute();
+      Discovery discovery;
+      
+      Discovery.Builder discoveryBuilder = new Discovery.Builder(HTTP_TRANSPORT, JSON_FACTORY, null);
+
+      discoveryBuilder.setRootUrl(ARVADOS_ROOT_URL);
+      discoveryBuilder.setApplicationName(apiName);
+      
+      discovery = discoveryBuilder.build();
+
+      return discovery.apis().getRest(apiName, apiVersion).execute();
     } catch (Exception e) {
       e.printStackTrace();
       throw e;
     }
   }
 
-  private static void processMethods(
+  private void processMethods(
       ArrayList<MethodDetails> result, String resourceName, Map<String, RestMethod> methodMap) {
     if (methodMap == null) {
       return;
@@ -363,7 +372,7 @@ public class Arvados {
     }
   }
 
-  private static void processResources(
+  private void processResources(
       ArrayList<MethodDetails> result, String resourceName, Map<String, RestResource> resourceMap) {
     if (resourceMap == null) {
       return;
@@ -376,7 +385,7 @@ public class Arvados {
     }
   }
 
-  private static void putParameter(String argName, Map<String, Object> parameters,
+  private void putParameter(String argName, Map<String, Object> parameters,
       String parameterName, JsonSchema parameter, String parameterValue) throws Exception {
     Object value = parameterValue;
     if (parameter != null) {
