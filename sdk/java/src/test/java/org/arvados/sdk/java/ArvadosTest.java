@@ -1,13 +1,12 @@
 package org.arvados.sdk.java;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 import com.google.api.services.discovery.model.RestDescription;
@@ -67,7 +66,6 @@ public class ArvadosTest {
     // The discover method returns the supported methods
     Map<String, RestResource> resources = restDescription.getResources();
     assertNotNull("Expected resources", resources);
-    //assertNotNull("Expected methods", restDescription.getMethods());
 
     Object users = resources.get("users");
     assertNotNull ("Expected users.list method", users);
@@ -91,12 +89,12 @@ public class ArvadosTest {
     params.add("v1");
     params.add("users.list");
 
-    String callResponse = arv.call(params);
-    assertTrue("Expected users.list in response", callResponse.contains("arvados#userList"));
-    assertTrue("Expected users.list in response", callResponse.contains("uuid"));
+    String response = arv.call(params);
+    assertTrue("Expected users.list in response", response.contains("arvados#userList"));
+    assertTrue("Expected users.list in response", response.contains("uuid"));
 
     JSONParser parser = new JSONParser();
-    Object obj = parser.parse(callResponse);
+    Object obj = parser.parse(response);
     JSONObject jsonObject = (JSONObject) obj;
 
     assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
@@ -127,9 +125,9 @@ public class ArvadosTest {
     params.add("v1");
     params.add("users.list");
 
-    String callResponse = arv.call(params);
+    String response = arv.call(params);
     JSONParser parser = new JSONParser();
-    Object obj = parser.parse(callResponse);
+    Object obj = parser.parse(response);
     JSONObject jsonObject = (JSONObject) obj;
     assertNotNull("expected users list", jsonObject);
     List items = (List)jsonObject.get("items");
@@ -146,10 +144,10 @@ public class ArvadosTest {
     params.add("users.get");
     params.add(userUuid);
 
-    callResponse = arv.call(params);
+    response = arv.call(params);
 
     //JSONParser parser = new JSONParser();
-    jsonObject = (JSONObject) parser.parse(callResponse);;
+    jsonObject = (JSONObject) parser.parse(response);;
     assertNotNull("Expected uuid for first user", jsonObject.get("uuid"));
     assertEquals("Expected system user uuid", userUuid, jsonObject.get("uuid"));
   }
@@ -162,26 +160,21 @@ public class ArvadosTest {
   public void testCreateUser() throws Exception {
     Arvados arv = new Arvados("arvados");
 
-    // POST request needs an input file
-    File file = new File("/tmp/arvados_test.json");
-    BufferedWriter output = new BufferedWriter(new FileWriter(file));
-    output.write("{}");
-    output.close();
+    File file = new File(getClass().getResource( "/create_user.json" ).toURI());
+    String filePath = file.getPath();
 
     List<String> params = new ArrayList<String>();
     params.add("call");
     params.add("arvados");
     params.add("v1");
     params.add("users.create");
-    params.add("/tmp/arvados_test.json");
-    String callResponse = arv.call(params);
+    params.add(filePath);
+    String response = arv.call(params);
 
     JSONParser parser = new JSONParser();
-    JSONObject jsonObject = (JSONObject) parser.parse(callResponse);
+    JSONObject jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
     assertNotNull("Expected uuid for first user", jsonObject.get("uuid"));
-    
-    file.delete();
   }
 
   /**
@@ -191,12 +184,6 @@ public class ArvadosTest {
   @Test
   public void testUnsupportedApiName() throws Exception {
     Arvados arv = new Arvados("not_arvados");
-
-    // POST request needs an input file
-    File file = new File("/tmp/arvados_test.json");
-    BufferedWriter output = new BufferedWriter(new FileWriter(file));
-    output.write("{}");
-    output.close();
 
     List<String> params = new ArrayList<String>();
     params.add("call");
@@ -222,12 +209,6 @@ public class ArvadosTest {
   @Test
   public void testUnsupportedVersion() throws Exception {
     Arvados arv = new Arvados("arvados");
-
-    // POST request needs an input file
-    File file = new File("/tmp/arvados_test.json");
-    BufferedWriter output = new BufferedWriter(new FileWriter(file));
-    output.write("{}");
-    output.close();
 
     List<String> params = new ArrayList<String>();
     params.add("call");
@@ -270,4 +251,45 @@ public class ArvadosTest {
     assertTrue ("Expected ERROR: missing method name", caught.getMessage().contains("ERROR: missing method name"));
   }
   
+  /**
+   * Test pipeline_tempates.create api
+   * @throws Exception
+   */
+  @Test
+  public void testCreateAndGetPipelineTemplate() throws Exception {
+    Arvados arv = new Arvados("arvados");
+
+    File file = new File(getClass().getResource( "/first_pipeline.json" ).toURI());
+    String filePath = file.getPath();
+
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+    params.add("pipeline_templates.create");
+    params.add(filePath);
+    String response = arv.call(params);
+
+    JSONParser parser = new JSONParser();
+    JSONObject jsonObject = (JSONObject) parser.parse(response);
+    assertEquals("Expected kind to be user", "arvados#pipelineTemplate", jsonObject.get("kind"));
+    String uuid = (String)jsonObject.get("uuid");
+    assertNotNull("Expected uuid for pipeline template", uuid);
+    
+    // get the pipeline
+    params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+    params.add("pipeline_templates.get");
+    params.add(uuid);
+    response = arv.call(params);
+
+    parser = new JSONParser();
+    jsonObject = (JSONObject) parser.parse(response);
+    assertEquals("Expected kind to be user", "arvados#pipelineTemplate", jsonObject.get("kind"));
+    assertEquals("Expected uuid for pipeline template", uuid, jsonObject.get("uuid"));
+  }
+
+
 }
