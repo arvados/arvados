@@ -19,6 +19,7 @@
 //= require bootstrap/popover
 //= require bootstrap/collapse
 //= require bootstrap/modal
+//= require bootstrap/button
 //= require bootstrap3-editable/bootstrap-editable
 //= require_tree .
 
@@ -103,6 +104,12 @@ jQuery(function($){
                     this.addClass('label-danger').fadeTo('fast', '1');
                 });
             return false;
+        });
+
+    $(document).
+        on('ajax:complete ready', function() {
+            // See http://getbootstrap.com/javascript/#buttons
+            $('.btn').button();
         });
 
     HeaderRowFixer = function(selector) {
