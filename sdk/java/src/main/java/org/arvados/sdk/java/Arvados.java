@@ -37,15 +37,84 @@ public class Arvados {
 
   private static final Pattern METHOD_PATTERN = Pattern.compile("((\\w+)\\.)*(\\w+)");
 
-  private static final String APP_NAME = "arvados";
-
   private static String ARVADOS_API_TOKEN;
   private static String ARVADOS_API_HOST;
   private static String ARVADOS_API_HOST_INSECURE;
 
   private static String ARVADOS_ROOT_URL;
 
-  static {
+  public static void main(String[] args) throws Exception {
+    if (args.length == 0) {
+      showMainHelp();
+        error(null, "Missing input args");
+    } else {
+      String command = args[0];
+      if (command.equals("help")) {
+        help(args);
+      } else if (command.equals("call")) {
+        List<String> params = Arrays.asList(args);
+        
+        if (args.length == 1) {
+          error("call", "missing api name");
+        }
+        
+        Arvados arv = new Arvados(args[1]);
+        String response = arv.call(params);
+        System.out.println (response);
+      } else if (command.equals("discover")) {
+        List<String> params = Arrays.asList(args);
+        
+        if (args.length == 1) {
+          error("call", "missing api name");
+        }
+        
+        Arvados arv = new Arvados(args[1]);
+        arv.discover(params);
+      } else {
+        error(null, "unknown command: " + command);
+      }
+    }
+  }
+
+  protected static void help(String[] args) throws Exception {
+    if (args.length == 1) {
+      showMainHelp();
+    } else {
+      String helpCommand = args[1];
+      if (helpCommand.equals("call")) {
+        System.out.println("Usage: Arvados call methodName [parameters]");
+        System.out.println();
+        System.out.println("Examples:");
+        System.out.println("  Arvados call arvados v1 users.list");
+        System.out.println("  Arvados call arvados v1 users.get <uuid>");
+        System.out.println("  Arvados call arvados v1 pipeline_instances.list");
+      } else if (helpCommand.equals("discover")) {
+        System.out.println("Usage");
+        System.out.println("Examples:");
+        System.out.println("  Arvados discover arvados v1");
+      } else {
+        error(null, "unknown command: " + helpCommand);
+      }
+    }
+  }
+
+  protected static void showMainHelp() {
+    System.out.println("arvados");
+    System.out.println();
+    System.out.println("For more help on a specific command, type one of:");
+    System.out.println();
+    System.out.println("  Arvados help call");
+    System.out.println("  Arvados help discover");
+  }
+
+  private static void error(String command, String detail) throws Exception {
+    String errorDetail = "ERROR: " + detail +
+        "For help, type: Arvados" + (command == null ? "" : " help " + command);
+    
+    throw new Exception(errorDetail);
+  }
+
+  public Arvados (String apiName){
     try {
       // Read needed environmental variables
       ARVADOS_API_TOKEN = System.getenv().get("ARVADOS_API_TOKEN");
@@ -75,72 +144,12 @@ public class Arvados {
       Discovery.Builder discoveryBuilder = new Discovery.Builder(HTTP_TRANSPORT, JSON_FACTORY, null);
 
       discoveryBuilder.setRootUrl(ARVADOS_ROOT_URL);
-      discoveryBuilder.setApplicationName(APP_NAME);
+      discoveryBuilder.setApplicationName(apiName);
       DISCOVERY_CLIENT = discoveryBuilder.build();
     } catch (Throwable t) {
       t.printStackTrace();
-      System.exit(1);
     }
   }
-
-  public static void main(String[] args) throws Exception {
-    // parse command argument
-    if (args.length == 0) {
-      showMainHelp();
-    } else {
-      String command = args[0];
-      if (command.equals("help")) {
-        help(args);
-      } else if (command.equals("call")) {
-        List<String> callParams = Arrays.asList(args);
-        String response = (new Arvados()).call(callParams);
-        System.out.println (response);
-      } else if (command.equals("discover")) {
-        List<String> callParams = Arrays.asList(args);
-        (new Arvados()).discover(callParams);
-      } else {
-        error(null, "unknown command: " + command);
-      }
-    }
-  }
-
-  protected static void help(String[] args) {
-    if (args.length == 1) {
-      showMainHelp();
-    } else {
-      String helpCommand = args[1];
-      if (helpCommand.equals("call")) {
-        System.out.println("Usage: Arvados call methodName [parameters]");
-        System.out.println();
-        System.out.println("Examples:");
-        System.out.println("  Arvados call arvados v1 users.list");
-        System.out.println("  Arvados call arvados v1 users.get <uuid>");
-        System.out.println("  Arvados call arvados v1 pipeline_instances.list");
-      } else if (helpCommand.equals("discover")) {
-        System.out.println("Usage");
-        System.out.println("Examples:");
-        System.out.println("  Arvados discover arvados v1");
-      } else {
-        error(null, "unknown command: " + helpCommand);
-      }
-    }
-  }
-
-  protected static void showMainHelp() {
-    System.out.println(APP_NAME);
-    System.out.println();
-    System.out.println("For more help on a specific command, type one of:");
-    System.out.println();
-    System.out.println("  Arvados help call");
-    System.out.println("  Arvados help discover");
-  }
-
-  private static void error(String command, String detail) {
-    System.err.println("ERROR: " + detail);
-    System.err.println("For help, type: Arvados" + (command == null ? "" : " help " + command));
-    System.exit(1);
-  }
-
   public String call(List<String> callParams) throws Exception {
     if (callParams.size() == 1) {
       error("call", "missing api name");
@@ -368,7 +377,7 @@ public class Arvados {
   }
 
   private static void putParameter(String argName, Map<String, Object> parameters,
-      String parameterName, JsonSchema parameter, String parameterValue) {
+      String parameterName, JsonSchema parameter, String parameterValue) throws Exception {
     Object value = parameterValue;
     if (parameter != null) {
       if ("boolean".equals(parameter.getType())) {

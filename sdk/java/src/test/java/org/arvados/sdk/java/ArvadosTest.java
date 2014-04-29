@@ -7,9 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 import com.google.api.services.discovery.model.RestDescription;
 import com.google.api.services.discovery.model.RestResource;
@@ -20,30 +19,43 @@ import org.json.simple.parser.JSONParser;
 /**
  * Unit test for Arvados.
  */
-public class ArvadosTest extends TestCase {
-  /**
-   * Create the test case
-   *
-   * @param testName name of the test case
-   */
-  public ArvadosTest(String testName) {
-    super( testName );
+public class ArvadosTest {
+
+  @Test(expected=Exception.class)
+  public void testMainWithNoParams() throws Exception {
+    String[] args = new String[0];
+    Arvados.main(args);
   }
 
-  public static Test suite() {
-    return new TestSuite(ArvadosTest.class);
-  }
+  @Test(expected=Exception.class)
+  public void testHelp() throws Exception {
+    String[] args = new String[1];
 
-  public void testShowMainHelp() {
-    Arvados.showMainHelp();
+    args[0] = "help";
+    Arvados.help(args); // expect this to succeed with no problems
+
+    args = new String[2];
+
+    args[0] = "help";
+    args[1] = "call";
+    Arvados.main(args); // call via main
+    
+    args[0] = "help";
+    args[1] = "discover";
+    Arvados.help(args); // call help directly
+
+    args[0] = "help";
+    args[1] = "unknown";
+    Arvados.help(args); // expect exception
   }
 
   /**
    * test discover method
    * @throws Exception
    */
+  @Test
   public void testDiscover() throws Exception {
-    Arvados arv = new Arvados();
+    Arvados arv = new Arvados("arvados");
 
     List<String> params = new ArrayList<String>();
     params.add("discover");
@@ -69,16 +81,17 @@ public class ArvadosTest extends TestCase {
    * Test users.list api
    * @throws Exception
    */
+  @Test
   public void testCallUsersList() throws Exception {
-    Arvados arv = new Arvados();
+    Arvados arv = new Arvados("arvados");
 
-    List<String> callParams = new ArrayList<String>();
-    callParams.add("call");
-    callParams.add("arvados");
-    callParams.add("v1");
-    callParams.add("users.list");
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+    params.add("users.list");
 
-    String callResponse = arv.call(callParams);
+    String callResponse = arv.call(params);
     assertTrue("Expected users.list in response", callResponse.contains("arvados#userList"));
     assertTrue("Expected users.list in response", callResponse.contains("uuid"));
 
@@ -103,17 +116,18 @@ public class ArvadosTest extends TestCase {
    * Test users.get <uuid> api
    * @throws Exception
    */
+  @Test
   public void testCallUsersGet() throws Exception {
-    Arvados arv = new Arvados();
+    Arvados arv = new Arvados("arvados");
 
     // call user.system and get uuid of this user
-    List<String> callParams = new ArrayList<String>();
-    callParams.add("call");
-    callParams.add("arvados");
-    callParams.add("v1");
-    callParams.add("users.list");
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+    params.add("users.list");
 
-    String callResponse = arv.call(callParams);
+    String callResponse = arv.call(params);
     JSONParser parser = new JSONParser();
     Object obj = parser.parse(callResponse);
     JSONObject jsonObject = (JSONObject) obj;
@@ -125,14 +139,14 @@ public class ArvadosTest extends TestCase {
     String userUuid = (String)firstUser.get("uuid");
 
     // invoke users.get with the system user uuid
-    callParams = new ArrayList<String>();
-    callParams.add("call");
-    callParams.add("arvados");
-    callParams.add("v1");
-    callParams.add("users.get");
-    callParams.add(userUuid);
+    params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+    params.add("users.get");
+    params.add(userUuid);
 
-    callResponse = arv.call(callParams);
+    callResponse = arv.call(params);
 
     //JSONParser parser = new JSONParser();
     jsonObject = (JSONObject) parser.parse(callResponse);;
@@ -144,9 +158,9 @@ public class ArvadosTest extends TestCase {
    * Test users.create api
    * @throws Exception
    */
-  //@Ignore
+  @Test
   public void testCreateUser() throws Exception {
-    Arvados arv = new Arvados();
+    Arvados arv = new Arvados("arvados");
 
     // POST request needs an input file
     File file = new File("/tmp/arvados_test.json");
@@ -154,13 +168,13 @@ public class ArvadosTest extends TestCase {
     output.write("{}");
     output.close();
 
-    List<String> callParams = new ArrayList<String>();
-    callParams.add("call");
-    callParams.add("arvados");
-    callParams.add("v1");
-    callParams.add("users.create");
-    callParams.add("/tmp/arvados_test.json");
-    String callResponse = arv.call(callParams);
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+    params.add("users.create");
+    params.add("/tmp/arvados_test.json");
+    String callResponse = arv.call(params);
 
     JSONParser parser = new JSONParser();
     JSONObject jsonObject = (JSONObject) parser.parse(callResponse);
@@ -169,5 +183,91 @@ public class ArvadosTest extends TestCase {
     
     file.delete();
   }
-}
 
+  /**
+   * Test unsupported api version api
+   * @throws Exception
+   */
+  @Test
+  public void testUnsupportedApiName() throws Exception {
+    Arvados arv = new Arvados("not_arvados");
+
+    // POST request needs an input file
+    File file = new File("/tmp/arvados_test.json");
+    BufferedWriter output = new BufferedWriter(new FileWriter(file));
+    output.write("{}");
+    output.close();
+
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("not_arvados");
+    params.add("v1");
+    params.add("users.list");
+
+    Exception caught = null;
+    try {
+      arv.call(params);
+    } catch (Exception e) {
+      caught = e;
+    }
+
+    assertNotNull ("expected exception", caught);
+    assertTrue ("Expected 404 when unsupported api is used", caught.getMessage().contains("404 Not Found"));
+  }
+
+  /**
+   * Test unsupported api version api
+   * @throws Exception
+   */
+  @Test
+  public void testUnsupportedVersion() throws Exception {
+    Arvados arv = new Arvados("arvados");
+
+    // POST request needs an input file
+    File file = new File("/tmp/arvados_test.json");
+    BufferedWriter output = new BufferedWriter(new FileWriter(file));
+    output.write("{}");
+    output.close();
+
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v2");         // no such version
+    params.add("users.list");
+
+    Exception caught = null;
+    try {
+      arv.call(params);
+    } catch (Exception e) {
+      caught = e;
+    }
+
+    assertNotNull ("expected exception", caught);
+    assertTrue ("Expected 404 when unsupported version is used", caught.getMessage().contains("404 Not Found"));
+  }
+  
+  /**
+   * Test unsupported api version api
+   * @throws Exception
+   */
+  @Test
+  public void testCallWithTooFewParams() throws Exception {
+    Arvados arv = new Arvados("arvados");
+
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+
+    Exception caught = null;
+    try {
+      arv.call(params);
+    } catch (Exception e) {
+      caught = e;
+    }
+
+    assertNotNull ("expected exception", caught);
+    assertTrue ("Expected ERROR: missing method name", caught.getMessage().contains("ERROR: missing method name"));
+  }
+  
+}
