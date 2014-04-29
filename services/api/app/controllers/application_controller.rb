@@ -88,7 +88,7 @@ class ApplicationController < ActionController::Base
         # disappointed: when Rails reloads model classes, we get two
         # distinct classes called Link which do not equal each
         # other. But we can still rely on klass.to_s to be "Link".
-      when 'ApiClientAuthorization'
+      when 'ApiClientAuthorization', 'UserAgreement'
         # Do not want.
       else
         @objects = klass.readable_by(current_user)
