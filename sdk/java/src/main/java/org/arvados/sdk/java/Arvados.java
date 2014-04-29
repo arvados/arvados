@@ -46,6 +46,9 @@ public class Arvados {
 
   private static final Logger logger = Logger.getLogger(Arvados.class);
   
+  // Get it on a discover call and reuse on the call requests
+  RestDescription restDescription = null;
+  
   public static void main(String[] args) throws Exception {
     if (args.length == 0) {
       showMainHelp();
@@ -154,6 +157,12 @@ public class Arvados {
     }
   }
   
+  /**
+   * Make a discover call and cache the response in-memory. Reload the document on each invocation.
+   * @param params
+   * @return
+   * @throws Exception
+   */
   public RestDescription discover(List<String> params) throws Exception {
     if (params.size() == 1) {
       error("call", "missing api name");
@@ -161,7 +170,7 @@ public class Arvados {
       error("call", "missing api version");
     } 
 
-    RestDescription restDescription = loadArvadosApi(params.get(1), params.get(2));
+    restDescription = loadArvadosApi(params.get(1), params.get(2));
 
     // compute method details
     ArrayList<MethodDetails> result = Lists.newArrayList();
@@ -209,7 +218,11 @@ public class Arvados {
       error("call", "invalid method name: " + fullMethodName);
     }
 
-    RestDescription restDescription = loadArvadosApi(callParams.get(1), callParams.get(2));
+    // initialize rest description if not already
+    if (restDescription == null) {
+      restDescription = loadArvadosApi(callParams.get(1), callParams.get(2));
+    }
+
     Map<String, RestMethod> methodMap = null;
     int curIndex = 0;
     int nextIndex = fullMethodName.indexOf('.');
@@ -314,6 +327,8 @@ public class Arvados {
       request.getHeaders().put("Authorization", authHeader);
       String response = request.execute().parseAsString();
 
+      logger.debug(response);
+      
       return response;
     } catch (Exception e) {
       e.printStackTrace();
