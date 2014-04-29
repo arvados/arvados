@@ -540,27 +540,37 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def self.accept_attribute_as_json(attr, force_class=nil)
-    before_filter lambda { accept_attribute_as_json attr, force_class }
+  def load_json_value(hash, key, must_be_class=nil)
+    if hash[key].is_a? String
+      hash[key] = Oj.load(hash[key], symbol_keys: false)
+      if must_be_class and !hash[key].is_a? must_be_class
+        raise TypeError.new("parameter #{key.to_s} must be a #{must_be_class.to_s}")
+      end
+    end
+  end
+
+  def self.accept_attribute_as_json(attr, must_be_class=nil)
+    before_filter lambda { accept_attribute_as_json attr, must_be_class }
   end
   accept_attribute_as_json :properties, Hash
   accept_attribute_as_json :info, Hash
-  def accept_attribute_as_json(attr, force_class)
+  def accept_attribute_as_json(attr, must_be_class)
     if params[resource_name] and resource_attrs.is_a? Hash
-      if resource_attrs[attr].is_a? String
-        resource_attrs[attr] = Oj.load(resource_attrs[attr],
-                                       symbol_keys: false)
-        if force_class and !resource_attrs[attr].is_a? force_class
-          raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
-        end
-      elsif resource_attrs[attr].is_a? Hash
+      if resource_attrs[attr].is_a? Hash
         # Convert symbol keys to strings (in hashes provided by
         # resource_attrs)
         resource_attrs[attr] = resource_attrs[attr].
           with_indifferent_access.to_hash
+      else
+        load_json_value(resource_attrs, attr, must_be_class)
       end
     end
   end
+
+  def self.accept_param_as_json(key, must_be_class=nil)
+    prepend_before_filter lambda { load_json_value(params, key, must_be_class) }
+  end
+  accept_param_as_json :reader_tokens, Array
 
   def render_list
     @object_list = {

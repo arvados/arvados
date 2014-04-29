@@ -7,18 +7,32 @@ class Arvados::V1::ReaderTokensTest < ActionController::IntegrationTest
     specimens(:owned_by_spectator).uuid
   end
 
-  def get_specimens(main_auth, read_auth)
+  def get_specimens(main_auth, read_auth, formatter=:to_a)
     params = {}
-    params[:reader_tokens] = [api_token(read_auth)] if read_auth
+    params[:reader_tokens] = [api_token(read_auth)].send(formatter) if read_auth
     headers = {}
     headers.merge!(auth(main_auth)) if main_auth
     get('/arvados/v1/specimens', params, headers)
   end
 
-  def get_specimen_uuids(main_auth, read_auth)
-    get_specimens(main_auth, read_auth)
+  def get_specimen_uuids(main_auth, read_auth, formatter=:to_a)
+    get_specimens(main_auth, read_auth, formatter)
     assert_response :success
     json_response['items'].map { |spec| spec['uuid'] }
+  end
+
+  def assert_post_denied(main_auth, read_auth, formatter=:to_a)
+    if main_auth
+      headers = auth(main_auth)
+      expected = 403
+    else
+      headers = {}
+      expected = 401
+    end
+    post('/arvados/v1/specimens.json',
+         {specimen: {}, reader_tokens: [api_token(read_auth)].send(formatter)},
+         headers)
+    assert_response expected
   end
 
   test "active user can't see spectator specimen" do
@@ -37,17 +51,17 @@ class Arvados::V1::ReaderTokensTest < ActionController::IntegrationTest
                         spectator_specimen, "did not find spectator specimen")
       end
 
+      test "#{main_auth} auth with JSON read token #{read_auth} can read" do
+        assert_includes(get_specimen_uuids(main_auth, read_auth, :to_json),
+                        spectator_specimen, "did not find spectator specimen")
+      end
+
       test "#{main_auth} auth with reader token #{read_auth} can't write" do
-        if main_auth
-          headers = auth(main_auth)
-          expected = 403
-        else
-          headers = {}
-          expected = 401
-        end
-        post('/arvados/v1/specimens.json',
-             {specimen: {}, reader_tokens: [api_token(read_auth)]}, headers)
-        assert_response expected
+        assert_post_denied(main_auth, read_auth)
+      end
+
+      test "#{main_auth} auth with JSON read token #{read_auth} can't write" do
+        assert_post_denied(main_auth, read_auth, :to_json)
       end
     end
   end
