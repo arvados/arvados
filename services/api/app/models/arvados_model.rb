@@ -72,19 +72,26 @@ class ArvadosModel < ActiveRecord::Base
   #   end
   # end
 
-  def self.readable_by user
-    uuid_list = [user.uuid, *user.groups_i_can(:read)]
+  def self.readable_by(*users_list)
+    users_list.compact!
+    user_uuids = users_list.map { |u| u.uuid }
+    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
     sanitized_uuid_list = uuid_list.
       collect { |uuid| sanitize(uuid) }.join(', ')
-    or_references_me = ''
-    if self == Link and user
-      or_references_me = "OR (#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND #{sanitize user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
+    sql_conds = []
+    sql_params = []
+    if users_list.select { |u| u.is_admin }.empty?
+      sql_conds += ["#{table_name}.owner_uuid in (?)",
+                    "#{table_name}.uuid in (?)",
+                    "permissions.head_uuid IS NOT NULL"]
+      sql_params += [uuid_list, user_uuids]
+      if self == Link and users_list.any?
+        sql_conds += ["(#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{table_name}.head_uuid IN (?) OR #{table_name}.tail_uuid IN (?)))"]
+        sql_params += [user_uuids, user_uuids]
+      end
     end
-    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
-            true, user.is_admin,
-            uuid_list,
-            user.uuid)
+    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'")
+      .where(sql_conds.join(' OR '), *sql_params)
   end
 
   def logged_attributes
@@ -251,7 +258,7 @@ class ArvadosModel < ActiveRecord::Base
       self.class.kind
     end
 
-    def self.readable_by (u)
+    def self.readable_by (*u)
       self
     end
 
