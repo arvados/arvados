@@ -9,4 +9,10 @@ class SelectTest < ActionDispatch::IntegrationTest
     }.count
   end
 
+  test "should only get distinct values" do
+    get "/arvados/v1/links", {:format => :json, :select => ['link_class'], :distinct => "link_class"}, auth(:active)
+    assert_response :success
+    assert_equal json_response['items'].uniq.count, json_response['items'].count
+  end
+
 end

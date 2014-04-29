@@ -261,6 +261,11 @@ class ApplicationController < ActionController::Base
     end
 
     @select = params[:select] if params[:select].andand.is_a? Array
+
+    if params[:distinct].is_a? String
+      @distinct = params[:distinct]
+      @orders.select! { |o| @select.include? o } if @select
+    end
   end
 
   def find_objects_for_index
@@ -377,6 +382,7 @@ class ApplicationController < ActionController::Base
     end
 
     @objects = @objects.select(@select.map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }.join ", ") if @select
+    @objects = @objects.uniq(ActiveRecord::Base.connection.quote_column_name @distinct.to_s) if @distinct
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
