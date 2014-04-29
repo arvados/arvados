@@ -43,8 +43,6 @@ class ActiveSupport::TestCase
 end
 
 class ActionDispatch::IntegrationTest
-  include ArvadosTestSupport
-
   teardown do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
