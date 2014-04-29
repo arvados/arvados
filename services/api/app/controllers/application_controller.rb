@@ -13,9 +13,9 @@ class ApplicationController < ActionController::Base
   before_filter :find_object_by_uuid, :except => [:index, :create,
                                                   :render_error,
                                                   :render_not_found]
-  before_filter :load_limit_offset_order_params, only: [:index, :owned_items]
-  before_filter :load_where_param, only: [:index, :owned_items]
-  before_filter :load_filters_param, only: [:index, :owned_items]
+  before_filter :load_limit_offset_order_params, only: [:index, :contents]
+  before_filter :load_where_param, only: [:index, :contents]
+  before_filter :load_filters_param, only: [:index, :contents]
   before_filter :find_objects_for_index, :only => :index
   before_filter :reload_object_before_update, :only => :update
   before_filter :render_404_if_no_object, except: [:index, :create,
@@ -59,7 +59,7 @@ class ApplicationController < ActionController::Base
     show
   end
 
-  def self._owned_items_requires_parameters
+  def self._contents_requires_parameters
     _index_requires_parameters.
       merge({
               include_linked: {
@@ -68,7 +68,7 @@ class ApplicationController < ActionController::Base
             })
   end
 
-  def owned_items
+  def contents
     all_objects = []
     all_available = 0
 
@@ -95,7 +95,7 @@ class ApplicationController < ActionController::Base
         cond_sql = "#{klass.table_name}.owner_uuid = ?"
         cond_params = [@object.uuid]
         if params[:include_linked]
-          cond_sql += " OR #{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.owner_uuid=#{klass.sanitize @object.uuid} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
+          cond_sql += " OR #{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
         end
         @objects = @objects.where(cond_sql, *cond_params).order("#{klass.table_name}.uuid")
         @limit = limit_all - all_objects.count

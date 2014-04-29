@@ -1,6 +1,6 @@
 class Group < ArvadosBase
-  def owned_items params={}
-    res = $arvados_api_client.api self.class, "/#{self.uuid}/owned_items", {
+  def contents params={}
+    res = $arvados_api_client.api self.class, "/#{self.uuid}/contents", {
       _method: 'GET'
     }.merge(params)
     ret = ArvadosResourceList.new
