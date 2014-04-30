@@ -25,17 +25,23 @@ class ArvadosBase < ActiveRecord::Base
     super(*args)
     @attribute_sortkey ||= {
       'id' => nil,
-      'uuid' => '000',
-      'owner_uuid' => '001',
-      'created_at' => '002',
-      'modified_at' => '003',
-      'modified_by_user_uuid' => '004',
-      'modified_by_client_uuid' => '005',
-      'name' => '050',
-      'tail_uuid' => '100',
-      'head_uuid' => '101',
-      'info' => 'zzz-000',
-      'updated_at' => 'zzz-999'
+      'name' => '000',
+      'owner_uuid' => '002',
+      'event_type' => '100',
+      'link_class' => '100',
+      'group_class' => '100',
+      'tail_uuid' => '101',
+      'head_uuid' => '102',
+      'object_uuid' => '102',
+      'summary' => '104',
+      'description' => '104',
+      'properties' => '150',
+      'info' => '150',
+      'created_at' => '200',
+      'modified_at' => '201',
+      'modified_by_user_uuid' => '202',
+      'modified_by_client_uuid' => '203',
+      'uuid' => '999',
     }
   end
 

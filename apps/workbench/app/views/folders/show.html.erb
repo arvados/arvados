@@ -152,16 +152,24 @@
       <div class="panel-body">
         <p>
         </p>
-        <table class="table">
+        <table class="table table-condensed arv-index">
           <tbody>
             <colgroup>
+              <col width="3%" />
+              <col width="8%" />
               <col width="30%" />
-              <col width="20%" />
-              <col width="20%" />
-              <col width="30%" />
+              <col width="15%" />
+              <col width="15%" />
+              <col width="29%" />
             </colgroup>
             <% @objects.each do |object| %>
             <tr>
+              <td>
+                <%= render :partial => "selection_checkbox", :locals => {object: object} %>
+              </td>
+              <td>
+                <%= render :partial => "show_object_button", :locals => {object: object} %>
+              </td>
               <td>
                 <% name_link = @objects.links_for(object, 'name').first || Link.new(link_class: "name", owner_uuid: @object.uuid, tail_uuid: @object.uuid, head_uuid: object.uuid, name: "") %>
                 <%= render_editable_attribute name_link, 'name', nil, { 'data-emptytext' => "Unnamed #{object.class}" } %>
@@ -175,7 +183,7 @@
                 </span>
               </td>
               <td class="arvados-uuid">
-                <%= link_to_if_arvados_object(object, {no_tags: true}) %>
+                <%= object.uuid %>
               </td>
             </tr>
             <% end %>
@@ -183,15 +191,20 @@
           <thead>
             <tr>
               <th>
-                Name
               </th>
               <th>
               </th>
               <th>
-                Modified
+                name
               </th>
               <th>
-                UUID
+                type
+              </th>
+              <th>
+                modified
+              </th>
+              <th>
+                uuid
               </th>
             </tr>
           </thead>
