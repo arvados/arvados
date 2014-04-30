@@ -29,19 +29,6 @@ module CurrentApiClient
     Thread.current[:api_client_ip_address]
   end
 
-  # Is the current API client authorization scoped for the request?
-  def current_api_client_auth_has_scope(req_s)
-    (current_api_client_authorization.andand.scopes || []).select { |scope|
-      if scope == 'all'
-        true
-      elsif scope.end_with? '/'
-        req_s.start_with? scope
-      else
-        req_s == scope
-      end
-    }.any?
-  end
-
   def system_user_uuid
     [Server::Application.config.uuid_prefix,
      User.uuid_prefix,
