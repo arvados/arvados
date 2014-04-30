@@ -38,9 +38,9 @@
 	</p>
         <% end %>
         <% if @logs.any? %>
-	<%= link_to raw('Show all activity &nbsp; <i class="fa fa-hand-o-right"></i>'),
+	<%= link_to raw('Show all activity &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
             logs_path(filters: [['object_uuid','=',@object.uuid]].to_json),
-            class: 'btn btn-sm btn-info' %>
+            class: 'btn btn-sm btn-default' %>
         <% else %>
         <p>
           Created: <%= @object.created_at.to_s(:long) %>
@@ -70,6 +70,8 @@
   </div>
 </div>
 
+<% if @show_cards %>
+<!-- disable cards section until we have bookmarks -->
 <div class="row">
   <% @objects[0..3].each do |object| %>
   <div class="card arvados-object">
@@ -83,11 +85,13 @@
       <div class="desc"><%= object.respond_to?(:description) ? object.description : object.uuid %></div>
     </div>
     <div class="card-bottom">
-      <%= link_to_if_arvados_object object, {link_text: 'Open'}, {class: 'btn btn-default btn-block'} %>
+      <%= render :partial => "show_object_button", :locals => {object: object, htmloptions: {class: 'btn-default btn-block'}} %>
     </div>
   </div>
   <% end %>
 </div>
+<!-- end disabled cards section -->
+<% end %>
 
 <div class="row">
   <div class="col-md-12">
@@ -125,7 +129,7 @@
                 <%= render :partial => "selection_checkbox", :locals => {object: object} %>
               </td>
               <td>
-                <%= render :partial => "show_object_button", :locals => {object: object} %>
+                <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
               </td>
               <td>
                 <% name_link = @objects.links_for(object, 'name').first || Link.new(link_class: "name", owner_uuid: @object.uuid, tail_uuid: @object.uuid, head_uuid: object.uuid, name: "") %>

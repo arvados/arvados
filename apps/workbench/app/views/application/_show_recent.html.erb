@@ -36,7 +36,7 @@
         <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
       </td>
       <td>
-        <%= render :partial => "show_object_button", :locals => {object: object} %>
+        <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
       </td>
 
       <% object.attributes_for_display.each do |attr, attrvalue| %>
