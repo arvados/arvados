@@ -1,0 +1,116 @@
+== Arvados Java SDK
+
+  - Using the Arvados Java SDK, you can access API server from a java program.
+
+  - This document highlights the details as to how to use the SDK.
+
+  - The Java SDK is used as a maven project. Hence, you would need a working
+      maven environment to be able to build the source code.
+
+      If you do not have maven setup, you may find the following link useful.
+
+      http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html
+
+  - In this document <ARVADOS_HOME> is used to refer to the directory where
+      arvados code is cloned in your system.
+      For ex: <ARVADOS_HOME> = $HOME/arvados
+
+
+== Setting up the environment
+
+  - The following three environment variables are required by the SDK
+
+      ARVADOS_API_TOKEN, ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE
+
+
+== Building the Arvados SDK
+
+  - cd <ARVADOS_HOME/sdk/java
+
+  - mvn clean package
+
+      This will generate arvados sdk jar file the target directory
+
+
+== Using Arvados SDK at command line
+
+  - This section helps understand how to use the SDK from command line
+
+  - cd <ARVADOS_HOME/sdk/java
+
+  - Getting help
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados help
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados help call
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados help discover
+
+
+  - Getting the discovery document (please see details about accessing log file below to see the document)
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados discover arvados v1
+
+
+  - Making a "call" to the API server
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 users.list
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 users.get <uuid>
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 users.create <filename>
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 pipeline_templates.list
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 pipeline_templates.get <uuid>
+
+      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 pipeline_templates.create <filename>
+
+
+== Implementing your code to use SDK
+
+  - <ARVADOS_HOME>/sdk/java/ArvadosSDKJavaUser.java serves as an example
+      implementation using the java SDK. Please use this file to see how
+      you would want use the SDK from your java program.
+      The steps below use this java class name.
+
+  - ArvadosSDKJavaUser.java creates an instance of Arvados SDK class and
+      uses it to make various "call" requests.
+
+  - To compile ArvadosSDKJavaUser.java
+
+      javac -cp <ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaUser.java
+
+      This results in the generation of the ArvadosSDKJavaUser.class file
+        in the same dir as the java file
+
+  - To run the class file
+
+      java -cp .:<ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaUser
+
+
+== Viewing and managing SDK logging
+
+  - SDK uses log4j logging
+
+  - The default location of the log file is
+      <ARVADOS_HOME>/sdk/java/log/arvados_sdk_java.log
+
+  - Update log4j.properties file to change name and location of the log file.
+
+      Modify the "log4j.appender.fileAppender.File" property in log4j.properties
+        file located at <ARVADOS_HOME>/sdk/java/src/main/resources
+
+      Rebuild by running "mvn clean package"
+
+
+== Using the SDK in eclipse
+
+  - To develop in eclipse, you can use the SDK eclipse project.
+
+  - Install "m2eclipse" plugin in your eclipse
+
+  - Open the SDK project.
+
+      File -> Import -> Existing Projects into Workspace -> Next -> Browse
+          and select <ARVADOS_HOME>/sdk/java
