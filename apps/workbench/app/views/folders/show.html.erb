@@ -39,7 +39,7 @@
         <% end %>
         <% if @logs.any? %>
 	<%= link_to raw('Show all activity &nbsp; <i class="fa fa-hand-o-right"></i>'),
-            logs_path(filters: [['object_uuid','=',@object.uuid]]),
+            logs_path(filters: [['object_uuid','=',@object.uuid]].to_json),
             class: 'btn btn-sm btn-info' %>
         <% else %>
         <p>

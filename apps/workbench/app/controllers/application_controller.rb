@@ -71,7 +71,16 @@ class ApplicationController < ActionController::Base
       offset = 0
     end
 
-    @objects ||= model_class.limit(limit).offset(offset).all
+    if params[:filters]
+      filters = params[:filters]
+      if filters.is_a? String
+        filters = Oj.load filters
+      end
+    else
+      filters = []
+    end
+
+    @objects ||= model_class.filter(filters).limit(limit).offset(offset).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
