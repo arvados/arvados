@@ -45,4 +45,4 @@ common:
   # the websocket server.  When you do this, you need to set the following
   # configuration variable so that the primary server can give out the correct
   # address of the dedicated websocket server:
-  #websocket_address: wss://websocket.local/websockets
+  #websocket_address: wss://websocket.local/websocket

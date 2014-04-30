@@ -7,7 +7,7 @@ Server::Application.configure do
   if ENV['ARVADOS_WEBSOCKETS']
     config.middleware.insert_after ArvadosApiToken, RackSocket, {
       :handler => EventBus,
-      :mount => "/websockets",
+      :mount => "/websocket",
       :websocket_only => (ENV['ARVADOS_WEBSOCKETS'] == "ws-only")
     }
   end

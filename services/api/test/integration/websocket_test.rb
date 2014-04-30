@@ -142,7 +142,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           state = 3
         when 3
           human_ev_uuid = d["object_uuid"]
+          state = 4
           ws.close
+        when 4
+          assert false, "Should not get any more events"
         end
       end
 
@@ -176,7 +179,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           state = 2
         when 2
           human_ev_uuid = d["object_uuid"]
+          state = 3
           ws.close
+        when 3
+          assert false, "Should not get any more events"
         end
       end
 
@@ -219,7 +225,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           state = 4
         when 4
           human_ev_uuid = d["object_uuid"]
+          state = 5
           ws.close
+        when 5
+          assert false, "Should not get any more events"
         end
       end
 
@@ -260,7 +269,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
         when 3
           l2 = d["object_uuid"]
           assert_not_nil l2, "Unexpected message: #{d}"
+          state = 4
           ws.close
+        when 4
+          assert false, "Should not get any more events"
         end
       end
 
@@ -403,7 +415,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           state = 4
         when 4
           human_ev_uuid = d["object_uuid"]
+          state = 5
           ws.close
+        when 5
+          assert false, "Should not get any more events"
         end
       end
 
