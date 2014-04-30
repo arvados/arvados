@@ -95,7 +95,7 @@ class CollectionsController < ApplicationController
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
     self.response.headers['Content-Length'] = params[:size] if params[:size]
     self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
-    self.response_body = FileStreamer.new opts
+    self.response_body = file_enumerator opts
   end
 
   def show
@@ -161,6 +161,11 @@ class CollectionsController < ApplicationController
   end
 
   protected
+
+  def file_enumerator(opts)
+    FileStreamer.new opts
+  end
+
   class FileStreamer
     def initialize(opts={})
       @opts = opts
