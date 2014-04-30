@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   respond_to :json
   protect_from_forgery
   around_filter :thread_with_auth_info, except: ERROR_ACTIONS
+  before_filter :respond_with_json_by_default
   before_filter :remote_ip
   before_filter :load_read_auths
   before_filter :require_auth_scope, except: ERROR_ACTIONS
@@ -496,6 +497,13 @@ class ApplicationController < ActionController::Base
     end
   end
   # /Authentication
+
+  def respond_with_json_by_default
+    html_index = request.accepts.index(Mime::HTML)
+    if html_index.nil? or request.accepts[0...html_index].include?(Mime::JSON)
+      request.format = :json
+    end
+  end
 
   def model_class
     controller_name.classify.constantize
