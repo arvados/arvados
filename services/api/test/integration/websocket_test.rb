@@ -211,6 +211,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
         when 2
           assert_equal 200, d["status"]
           spec = Specimen.create
+          Trait.create # not part of filters, should not be received
           human = Human.create
           state = 3
         when 3
@@ -281,6 +282,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
         EM::Timer.new 3 do
+          # Set a time limit on the test because after unsubscribing the server
+          # still has to process the next event (and then hopefully correctly
+          # decides not to send it because we unsubscribed.)
           ws.close
         end
       end
@@ -290,12 +294,59 @@ class WebsocketTest < ActionDispatch::IntegrationTest
         case state
         when 1
           assert_equal 200, d["status"]
-          filter_id = d["filter_id"]
           spec = Specimen.create
           state = 2
         when 2
           spec_ev_uuid = d["object_uuid"]
-          ws.send ({method: 'unsubscribe', filter_id: filter_id}.to_json)
+          ws.send ({method: 'unsubscribe'}.to_json)
+
+          EM::Timer.new 1 do
+            Specimen.create
+          end
+
+          state = 3
+        when 3
+          assert_equal 200, d["status"]
+          state = 4
+        when 4
+          assert false, "Should not get any more events"
+        end
+      end
+
+    end
+
+    assert_not_nil spec
+    assert_equal spec.uuid, spec_ev_uuid
+  end
+
+  test "connect, subscribe, get event, unsubscribe with filter" do
+    state = 1
+    spec = nil
+    spec_ev_uuid = nil
+
+    authorize_with :admin
+
+    ws_helper :admin, false do |ws|
+      ws.on :open do |event|
+        ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
+        EM::Timer.new 3 do
+          # Set a time limit on the test because after unsubscribing the server
+          # still has to process the next event (and then hopefully correctly
+          # decides not to send it because we unsubscribed.)
+          ws.close
+        end
+      end
+
+      ws.on :message do |event|
+        d = Oj.load event.data
+        case state
+        when 1
+          assert_equal 200, d["status"]
+          spec = Human.create
+          state = 2
+        when 2
+          spec_ev_uuid = d["object_uuid"]
+          ws.send ({method: 'unsubscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
 
           EM::Timer.new 1 do
             Human.create
@@ -317,7 +368,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   end
 
 
-  test "connect, subscribe, get event, try to unsubscribe with bogus filter_id" do
+  test "connect, subscribe, get event, try to unsubscribe with bogus filter" do
     state = 1
     spec = nil
     spec_ev_uuid = nil
@@ -340,7 +391,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           state = 2
         when 2
           spec_ev_uuid = d["object_uuid"]
-          ws.send ({method: 'unsubscribe', filter_id: 100000}.to_json)
+          ws.send ({method: 'unsubscribe', filters: [['foo', 'bar', 'baz']]}.to_json)
 
           EM::Timer.new 1 do
             human = Human.create
@@ -364,52 +415,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal human.uuid, human_ev_uuid
   end
 
-  test "connect, subscribe, get event, try to unsubscribe with missing filter_id" do
-    state = 1
-    spec = nil
-    spec_ev_uuid = nil
-    human = nil
-    human_ev_uuid = nil
-
-    authorize_with :admin
-
-    ws_helper :admin do |ws|
-      ws.on :open do |event|
-        ws.send ({method: 'subscribe'}.to_json)
-      end
-
-      ws.on :message do |event|
-        d = Oj.load event.data
-        case state
-        when 1
-          assert_equal 200, d["status"]
-          spec = Specimen.create
-          state = 2
-        when 2
-          spec_ev_uuid = d["object_uuid"]
-          ws.send ({method: 'unsubscribe'}.to_json)
-
-          EM::Timer.new 1 do
-            human = Human.create
-          end
-
-          state = 3
-        when 3
-          assert_equal 400, d["status"]
-          state = 4
-        when 4
-          human_ev_uuid = d["object_uuid"]
-          ws.close
-        end
-      end
-
-    end
-
-    assert_not_nil spec
-    assert_not_nil human
-    assert_equal spec.uuid, spec_ev_uuid
-    assert_equal human.uuid, human_ev_uuid
-  end
 
 
   test "connected, not subscribed, no event" do
@@ -532,10 +537,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       ws.on :message do |event|
         d = Oj.load event.data
         case state
-        when (1..16)
+        when (1..EventBus::MAX_FILTERS)
           assert_equal 200, d["status"]
           state += 1
-        when 17
+        when (EventBus::MAX_FILTERS+1)
           assert_equal 403, d["status"]
           ws.close
         end

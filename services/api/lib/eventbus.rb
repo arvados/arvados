@@ -20,18 +20,13 @@ class Filter
 
   attr_accessor :filters
 
-  def initialize p, fid
+  def initialize p
     @params = p
-    @filter_id = fid
     load_filters_param
   end
 
   def params
     @params
-  end
-
-  def filter_id
-    @filter_id
   end
 end
 
@@ -51,12 +46,6 @@ class EventBus
     @channel = EventMachine::Channel.new
     @mtx = Mutex.new
     @bgthread = false
-    @filter_id_counter = 0
-  end
-
-  # Allocate a new filter id
-  def alloc_filter_id
-    @filter_id_counter += 1
   end
 
   # Push out any pending events to the connection +ws+
@@ -69,7 +58,8 @@ class EventBus
           logs = Log.readable_by(ws.user).order("id asc")
 
           if ws.last_log_id
-            # Only interested in log rows that are new
+            # Client is only interested in log rows that are newer than the
+            # last log row seen by the client.
             logs = logs.where("logs.id > ?", ws.last_log_id)
           elsif id
             # No last log id, so only look at the most recently changed row
@@ -92,7 +82,7 @@ class EventBus
             logs = logs.where(cond_out.join(' OR '), *param_out)
           end
 
-          # Finally execute query and send matching rows
+          # Finally execute query and actually send the matching log rows
           logs.each do |l|
             ws.send(l.as_api_response.to_json)
             ws.last_log_id = l.id
@@ -137,33 +127,41 @@ class EventBus
     # Set up callback for inbound message dispatch.
     ws.on :message do |event|
       begin
+        # Parse event data as JSON
         p = (Oj.load event.data).symbolize_keys
+
         if p[:method] == 'subscribe'
+          # Handle subscribe event
+
           if p[:last_log_id]
+            # Set or reset the last_log_id.  The event bus only reports events
+            # for rows that come after last_log_id.
             ws.last_log_id = p[:last_log_id].to_i
           end
 
           if ws.filters.length < MAX_FILTERS
-            filter_id = alloc_filter_id
-            ws.filters.push Filter.new(p, filter_id)
-            ws.send ({status: 200, message: 'subscribe ok', filter_id: filter_id}.to_json)
+            # Add a filter.  This gets the :filters field which is the same
+            # format as used for regular index queries.
+            ws.filters << Filter.new(p)
+            ws.send ({status: 200, message: 'subscribe ok'}.to_json)
+
+            # Send any pending events
             push_events ws
           else
             ws.send ({status: 403, message: "maximum of #{MAX_FILTERS} filters allowed per connection"}.to_json)
           end
+
         elsif p[:method] == 'unsubscribe'
-          if filter_id = p[:filter_id]
-            filter_id = filter_id.to_i
-            len = ws.filters.length
-            ws.filters = ws.filters.select { |f| f.filter_id != filter_id }
-            if ws.filters.length < len
-              ws.send ({status: 200, message: 'unsubscribe ok', filter_id: filter_id}.to_json)
-            else
-              ws.send ({status: 404, message: 'filter_id not found', filter_id: filter_id}.to_json)
-            end
+          # Handle unsubscribe event
+
+          len = ws.filters.length
+          ws.filters.select! { |f| not ((f.filters == p[:filters]) or (f.filters.empty? and p[:filters].nil?)) }
+          if ws.filters.length < len
+            ws.send ({status: 200, message: 'unsubscribe ok'}.to_json)
           else
-            ws.send ({status: 400, message: 'must provide filter_id'}.to_json)
+            ws.send ({status: 404, message: 'filter not found'}.to_json)
           end
+
         else
           ws.send ({status: 400, message: "missing or unrecognized method"}.to_json)
         end
@@ -177,11 +175,13 @@ class EventBus
       end
     end
 
+    # Set up socket close callback
     ws.on :close do |event|
       @channel.unsubscribe sub
       ws = nil
     end
 
+    # Start up thread to monitor the Postgres database, if none exists already.
     @mtx.synchronize do
       unless @bgthread
         @bgthread = true
@@ -192,6 +192,12 @@ class EventBus
             begin
               conn.async_exec "LISTEN logs"
               while true
+                # wait_for_notify will block until there is a change
+                # notification from Postgres about the logs table, then push
+                # the notification into the EventMachine channel.  Each
+                # websocket connection subscribes to the other end of the
+                # channel and calls #push_events to actually dispatch the
+                # events to the client.
                 conn.wait_for_notify do |channel, pid, payload|
                   @channel.push payload
                 end
@@ -206,5 +212,9 @@ class EventBus
         end
       end
     end
+
+    # Since EventMachine is an asynchronous event based dispatcher, #on_connect
+    # does not block but instead returns immediately after having set up the
+    # websocket and notification channel callbacks.
   end
 end

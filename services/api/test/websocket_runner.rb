@@ -6,7 +6,7 @@ SERVER_PID_PATH = 'tmp/pids/passenger.3002.pid'
 class WebsocketTestRunner < MiniTest::Unit
   def _system(*cmd)
     Bundler.with_clean_env do
-      if not system({'ARVADOS_WEBSOCKETS' => '1', 'RAILS_ENV' => 'test'}, *cmd)
+      if not system({'ARVADOS_WEBSOCKETS' => 'ws-only', 'RAILS_ENV' => 'test'}, *cmd)
         raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
       end
     end
