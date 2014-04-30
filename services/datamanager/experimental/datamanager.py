@@ -358,9 +358,12 @@ def getKeepBlocks(keep_servers):
   blocks = []
   for host,port in keep_servers:
     response = urllib2.urlopen('http://%s:%d/index' % (host, port))
-    blocks.append([line.split(' ')
-                   for line in response.read().split('\n')
-                   if line])
+    server_blocks = [line.split(' ')
+                     for line in response.read().split('\n')
+                     if line]
+    server_blocks = [(block_id, int(mtime))
+                     for block_id, mtime in server_blocks]
+    blocks.append(server_blocks)
   return blocks
 
 def getKeepStats(keep_servers):
