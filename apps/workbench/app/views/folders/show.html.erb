@@ -1,27 +1,19 @@
-<% content_for :css do %>
-.arvados-nav-container {
-    display:none;
-}
-<% end %>
-
 <div class="row row-fill-height">
   <div class="col-md-6">
     <div class="panel panel-info">
       <div class="panel-heading">
-	<a class="btn btn-xs btn-info pull-right">
-	  Rename
-	</a>
 	<h3 class="panel-title">
-	  <%= @object.name %>
+	  <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New folder" } %>
 	</h3>
       </div>
       <div class="panel-body">
-	<img src="/favicon.ico" class="pull-right" alt=""/>
+        <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
 	<p>
-	  This folder was created <%= @object.created_at %>. (This
-	  description defaults to something generic.)
+	  <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "Created: #{@object.created_at.to_s(:long)}", 'data-toggle' => 'manual', 'id' => "#{@object.uuid}-description" } %>
 	</p>
-	<a href="#" class="btn btn-xs btn-info">Edit description</a>
+        <% if @object.attribute_editable? 'description' %>
+	<a href="#" class="btn btn-xs btn-info" data-toggle="x-editable" data-toggle-selector="#<%= @object.uuid %>-description">Edit description</a>
+        <% end %>
       </div>
     </div>
   </div>
@@ -33,17 +25,30 @@
 	</h3>
       </div>
       <div class="panel-body">
+        <!--
 	<input type="text" class="form-control" placeholder="Search"/>
+        -->
 	<div style="height:0.5em;"></div>
+        <% @logs[0..2].each do |log| %>
 	<p>
-	  11:12 - Some Subfolder added
+	  <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
+          <% if log.object_uuid %>
+          <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
+          <% end %>
 	</p>
-	<p>
-	  10:06 - <%= @object.name %> - renamed from OldFolderName to <%= @object.name %>
-	</p>
-	<p>
-	  10:01 - Test Dataset (4 GiB collection) added to <%= @object.name %> by <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
-	</p>
+        <% end %>
+        <% if @logs.any? %>
+	<%= link_to raw('Show all activity &nbsp; <i class="fa fa-hand-o-right"></i>'),
+            logs_path(filters: [['object_uuid','=',@object.uuid]]),
+            class: 'btn btn-sm btn-info' %>
+        <% else %>
+        <p>
+          Created: <%= @object.created_at.to_s(:long) %>
+        </p>
+        <p>
+          Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid %>
+        </p>
+        <% end %>
       </div>
     </div>
   </div>
@@ -55,25 +60,11 @@
 	</h3>
       </div>
       <div class="panel-body">
+        <!--
 	<input type="text" class="form-control" placeholder="Search"/>
+        -->
 	<div style="height:0.5em;"></div>
-	<table class="table table-condensed">
-	  <tbody>
-	    <tr>
-	      <td><%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></td>
-	      <td>Owner</td>
-	    </tr>
-	    <tr>
-	      <td>Someone Else</td>
-	      <td>read only</td>
-	    </tr>
-	    <tr>
-	      <td>Someone Else</td>
-	      <td>read+write</td>
-	    </tr>
-	  </tbody>
-	  <thead><tr><th>User</th><th>Role</th></tr></thead>
-	</table>
+        <p>Owner: <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></p>
       </div>
     </div>
   </div>

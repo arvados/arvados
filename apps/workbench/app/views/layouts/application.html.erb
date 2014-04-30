@@ -138,7 +138,7 @@
               <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
               <li>
                 <%= link_to(
-                            controller.model_class_for_display.pluralize.underscore.gsub('_', ' '),
+                            controller.controller_name.humanize.downcase,
                             url_for({controller: params[:controller]})) %>
               </li>
               <% if params[:action] != 'index' %>

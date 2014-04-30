@@ -156,7 +156,7 @@ module ApplicationHelper
     end
     ajax_options['data-pk'] = ajax_options['data-pk'].to_json
 
-    link_to attrvalue.to_s, '#', {
+    content_tag 'span', attrvalue.to_s, {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => input_type,

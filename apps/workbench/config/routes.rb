@@ -42,7 +42,7 @@ ArvadosWorkbench::Application.routes.draw do
   match '/collections/graph' => 'collections#graph'
   resources :collections
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
-  resources :folders, controller: :groups, group_class: 'folder'
+  resources :folders
 
   post 'actions' => 'actions#post'
 

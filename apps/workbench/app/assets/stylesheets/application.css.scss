@@ -159,3 +159,11 @@ table.table-fixed-header-row tbody {
 .row-fill-height, .row-fill-height>div[class*='col-'] {
     display: flex;
 }
+.row-fill-height>div[class*='col-']>div {
+    width: 100%;
+}
+
+/* Show editable popover above side-nav */
+.editable-popup.popover {
+    z-index:1055;
+}

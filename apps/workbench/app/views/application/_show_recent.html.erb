@@ -1,7 +1,7 @@
 <% if @objects.empty? %>
 <br/>
 <p style="text-align: center">
-  No <%= controller.model_class_for_display.pluralize.underscore.gsub '_', ' ' %> to display.
+  No <%= controller.controller_name.humanize.downcase %> to display.
 </p>
 
 <% else %>
