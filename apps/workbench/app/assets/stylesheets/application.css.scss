@@ -174,3 +174,7 @@ table.table-fixed-header-row tbody {
 .side-nav {
     border-right: 1px solid #e7e7e7;
 }
+.navbar-nav.side-nav > li > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
