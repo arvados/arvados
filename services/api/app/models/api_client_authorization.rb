@@ -62,6 +62,18 @@ class ApiClientAuthorization < ArvadosModel
   end
   def modified_at=(x) end
 
+  def scopes_allow?(req_s)
+    scopes.each do |scope|
+      return true if (scope == 'all') or (scope == req_s) or
+        ((scope.end_with? '/') and (req_s.start_with? scope))
+    end
+    false
+  end
+
+  def scopes_allow_request?(request)
+    scopes_allow? [request.method, request.path].join(' ')
+  end
+
   def logged_attributes
     attrs = attributes.dup
     attrs.delete('api_token')

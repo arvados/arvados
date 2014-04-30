@@ -77,4 +77,9 @@ class Arvados::V1::ReaderTokensTest < ActionController::IntegrationTest
     get_specimens(:active_noscope, :expired)
     assert_response 403
   end
+
+  test "reader tokens grant no permissions outside their scope" do
+    refute_includes(get_specimen_uuids(:active, :admin_vm), spectator_specimen,
+                    "scoped reader token granted permissions out of scope")
+  end
 end

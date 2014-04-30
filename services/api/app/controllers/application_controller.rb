@@ -3,21 +3,15 @@ class ApplicationController < ActionController::Base
   include ThemesForRails::ActionController
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
-  READ_ACTIONS = [:index, :owned_items, :show]
 
   respond_to :json
   protect_from_forgery
   around_filter :thread_with_auth_info, except: ERROR_ACTIONS
   before_filter :remote_ip
-  before_filter :load_reader_tokens
-
-  # The next two methods should be complementary.
-  # Almost all methods should require either a login or read access.
-  before_filter :require_login, except: READ_ACTIONS + ERROR_ACTIONS
-  before_filter :require_read_access, only: READ_ACTIONS
+  before_filter :load_read_auths
   before_filter :require_auth_scope, except: ERROR_ACTIONS
-  before_filter :catch_redirect_hint
 
+  before_filter :catch_redirect_hint
   before_filter(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
   before_filter :load_limit_offset_order_params, only: [:index, :owned_items]
@@ -396,28 +390,38 @@ class ApplicationController < ActionController::Base
   end
 
   # Authentication
+  def load_read_auths
+    @read_auths = []
+    if current_api_client_authorization
+      @read_auths << current_api_client_authorization
+    end
+    # Load reader tokens if this is a read request.
+    # If there are too many reader tokens, assume the request is malicious
+    # and ignore it.
+    if request.get? and params[:reader_tokens] and
+        params[:reader_tokens].size < 100
+      @read_auths += ApiClientAuthorization
+        .includes(:user)
+        .where('api_token IN (?) AND
+                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
+               params[:reader_tokens])
+        .all
+    end
+    @read_auths.select! { |auth| auth.scopes_allow_request? request }
+    @read_users = @read_auths.map { |auth| auth.user }.uniq
+  end
+
   def require_login
     if not current_user
-      respond_need_login
+      respond_to do |format|
+        format.json {
+          render :json => { errors: ['Not logged in'] }.to_json, status: 401
+        }
+        format.html {
+          redirect_to '/auth/joshid'
+        }
+      end
       false
-    end
-  end
-
-  def require_read_access
-    if @read_auths.empty?
-      respond_need_login
-      false
-    end
-  end
-
-  def respond_need_login
-    respond_to do |format|
-      format.json {
-        render :json => { errors: ['Not logged in'] }.to_json, status: 401
-      }
-      format.html {
-        redirect_to '/auth/joshid'
-      }
     end
   end
 
@@ -427,44 +431,13 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def load_reader_tokens
-    @read_auths = []
-    # If there are too many reader tokens, assume the request is malicious
-    # and ignore it.
-    if params[:reader_tokens] and params[:reader_tokens].size < 100
-      @read_auths += ApiClientAuthorization
-        .includes(:user)
-        .where('api_token IN (?) AND
-                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
-               params[:reader_tokens])
-        .all
-    end
-    @have_scopes = @read_auths.flat_map do |auth|
-      auth.scopes.map do |scope|
-        if scope == 'all'
-          'GET /'
-        elsif scope.start_with? 'GET '
-          scope
-        else
-          nil
-        end
-      end
-    end.compact
-    if current_api_client_authorization
-      @read_auths << current_api_client_authorization
-      @have_scopes += current_api_client_authorization.scopes
-    end
-    @read_users = @read_auths.map { |auth| auth.user }.uniq
-  end
-
   def require_auth_scope
-    need_scope = "#{request.method} #{request.path}"
-    @have_scopes.each do |have_scope|
-      return if (have_scope == 'all') or (have_scope == need_scope) or
-        ((have_scope.end_with? '/') and (need_scope.start_with? have_scope))
+    if @read_auths.empty?
+      if require_login != false
+        render :json => { errors: ['Forbidden'] }.to_json, status: 403
+      end
+      false
     end
-    render :json => { errors: ['Forbidden'] }.to_json, status: 403
-    false
   end
 
   def thread_with_auth_info
