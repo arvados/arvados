@@ -18,4 +18,13 @@ class GroupsController < ApplicationController
     @objects = @object.contents include_linked: true
     super
   end
+
+  def create
+    # params[:group_class]=='folder' if we were routed through /folders
+    logger.error params.inspect
+    if (rsc = params[:group_class])
+      params['group'] = (params[rsc] || {}).merge(group_class: rsc)
+    end
+    super
+  end
 end
