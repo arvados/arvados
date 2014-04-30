@@ -90,9 +90,6 @@ common:
   # Visitors to the API server will be redirected to the workbench
   workbench_address: https://workbench.local:3001/
 
-  # Websocket endpoint
-  websocket_address: wss://localhost:3002/websocket
-
   # The e-mail address of the user you would like to become marked as an admin
   # user on their first login.
   # In the default configuration, authentication happens through the Arvados SSO

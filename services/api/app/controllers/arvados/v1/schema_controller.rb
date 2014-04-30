@@ -21,7 +21,6 @@ class Arvados::V1::SchemaController < ApplicationController
         documentationLink: "http://doc.arvados.org/api/index.html",
         protocol: "rest",
         baseUrl: root_url + "/arvados/v1/",
-        websocketUrl: Rails.application.config.websocket_address,
         basePath: "/arvados/v1/",
         rootUrl: root_url,
         servicePath: "arvados/v1/",
@@ -70,6 +69,12 @@ class Arvados::V1::SchemaController < ApplicationController
         schemas: {},
         resources: {}
       }
+
+      if Rails.application.config.websocket_address
+        discovery[:websocketUrl] = Rails.application.config.websocket_address
+      elsif ENV['ARVADOS_WEBSOCKETS']
+        discovery[:websocketUrl] = (root_url.sub /^http/, 'ws') + "/websockets"
+      end
 
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         begin
