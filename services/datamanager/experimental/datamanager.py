@@ -610,6 +610,11 @@ def loadAllData():
   total_keep_space = sum(map(itemgetter(0), keep_stats))
   free_keep_space = sum(map(itemgetter(1), keep_stats))
 
+  # TODO(misha): Delete this hack when the keep serverse are fixed!
+  # This hack deals with the fact that keep servers report each other's disks.
+  total_keep_space /= len(keep_stats)
+  free_keep_space /= len(keep_stats)
+
   log.info('Total disk space: %s, Free disk space: %s (%d%%).' %
            (fileSizeFormat(total_keep_space),
             fileSizeFormat(free_keep_space),
