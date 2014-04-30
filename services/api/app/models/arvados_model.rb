@@ -75,6 +75,11 @@ class ArvadosModel < ActiveRecord::Base
   # end
 
   def self.readable_by user
+    if user.is_admin
+      # Admins can read anything, so return immediately.
+      return self
+    end
+
     uuid_list = [user.uuid, *user.groups_i_can(:read)]
     sanitized_uuid_list = uuid_list.
       collect { |uuid| sanitize(uuid) }.join(', ')
@@ -100,8 +105,6 @@ class ArvadosModel < ActiveRecord::Base
     # Link is any permission link ('write' and 'manage' implicitly include 'read')
     # The existence of such a link is tested in the where clause as permissions.head_uuid IS NOT NULL.
     # or
-    # User is admin
-    # or
     # This row is owned by this user, or owned by a group readable by this user
     # or
     # This is the users table
@@ -115,8 +118,8 @@ class ArvadosModel < ActiveRecord::Base
     # This object described by this row is owned by this user, or owned by a group readable by this user
 
     joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid #{or_object_uuid}) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("permissions.head_uuid IS NOT NULL OR ?=? OR #{table_name}.owner_uuid in (?) #{or_row_is_me} #{or_references_me} #{or_object_owner}",
-            user.is_admin, true, uuid_list).uniq
+      where("permissions.head_uuid IS NOT NULL OR #{table_name}.owner_uuid in (?) #{or_row_is_me} #{or_references_me} #{or_object_owner}",
+            uuid_list).uniq
   end
 
   def logged_attributes
