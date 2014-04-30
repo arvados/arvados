@@ -29,7 +29,7 @@ def fileSizeFormat(value):
                          byteunits[exponent])
 
 def percentageFloor(x):
-""" Returns a float which is the input rounded down to the neared 0.01.
+  """ Returns a float which is the input rounded down to the neared 0.01.
 
 e.g. precentageFloor(0.941354) = 0.94
 """
@@ -444,6 +444,19 @@ def computeGarbageCollectionHistogram():
   return histogram
 
 
+def logGarbageCollectionHistogram():
+  body = {}
+  # TODO(misha): Decide whether we should specify an object_uuid in
+  # the body and if so, which uuid to use.
+  body['event_type'] = args.block_age_free_space_histogram_log_event_type
+  properties = {}
+  properties['histogram'] = garbage_collection_histogram
+  body['properties'] = properties
+  # TODO(misha): Confirm that this will throw an exception if it
+  # fails to create the log entry.
+  arv.logs().create(body=body).execute()
+
+
 def detectReplicationProblems():
   blocks_not_in_any_collections.update(
     set(block_to_replication.keys()).difference(block_to_collections.keys()))
@@ -524,6 +537,10 @@ parser.add_argument('--user-storage-log-event-type',
                     default='user-storage-report',
                     help=('The event type to set when logging user '
                           'storage usage to workbench.'))
+parser.add_argument('--block-age-free-space-histogram-log-event-type',
+                    default='block-age-free-space-histogram',
+                    help=('The event type to set when logging user '
+                          'storage usage to workbench.'))
 parser.add_argument('--garbage-collection-file',
                     default='',
                     help=('The file to write a garbage collection report, or '
@@ -591,9 +608,8 @@ garbage_collection_histogram = []
 Each entry is of the form (Disk Proportion, mtime).
 
 An entry of the form (0.52, 1388747781) means that if we deleted the
-olded non-presisted blocks until we had 52% of the disk free, the
-oldest non-persisted block we'd have left would have an mtime of
-1388747781.
+oldest non-presisted blocks until we had 52% of the disk free, then
+all blocks with an mtime greater than 1388747781 would be preserved.
 """
 
 # Stuff to report on
@@ -667,7 +683,11 @@ def loadAllData():
              args.garbage_collection_file)
     outputGarbageCollectionReport(args.garbage_collection_file)
 
+  global garbage_collection_histogram
   garbage_collection_histogram = computeGarbageCollectionHistogram()
+
+  if args.log_to_workbench:
+    logGarbageCollectionHistogram()
 
   detectReplicationProblems()
 
