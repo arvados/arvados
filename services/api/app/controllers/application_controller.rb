@@ -2,26 +2,27 @@ class ApplicationController < ActionController::Base
   include CurrentApiClient
   include ThemesForRails::ActionController
 
+  ERROR_ACTIONS = [:render_error, :render_not_found]
+
   respond_to :json
   protect_from_forgery
-  around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
+  around_filter :thread_with_auth_info, except: ERROR_ACTIONS
   before_filter :respond_with_json_by_default
   before_filter :remote_ip
-  before_filter :require_auth_scope, :except => :render_not_found
-  before_filter :catch_redirect_hint
+  before_filter :load_read_auths
+  before_filter :require_auth_scope, except: ERROR_ACTIONS
 
-  before_filter :find_object_by_uuid, :except => [:index, :create,
-                                                  :render_error,
-                                                  :render_not_found]
+  before_filter :catch_redirect_hint
+  before_filter(:find_object_by_uuid,
+                except: [:index, :create] + ERROR_ACTIONS)
   before_filter :load_limit_offset_order_params, only: [:index, :owned_items]
   before_filter :load_where_param, only: [:index, :owned_items]
   before_filter :load_filters_param, only: [:index, :owned_items]
   before_filter :find_objects_for_index, :only => :index
   before_filter :reload_object_before_update, :only => :update
-  before_filter :render_404_if_no_object, except: [:index, :create,
-                                                   :render_error,
-                                                   :render_not_found]
+  before_filter(:render_404_if_no_object,
+                except: [:index, :create] + ERROR_ACTIONS)
 
   theme :select_theme
 
@@ -92,7 +93,7 @@ class ApplicationController < ActionController::Base
       when 'ApiClientAuthorization'
         # Do not want.
       else
-        @objects = klass.readable_by(current_user)
+        @objects = klass.readable_by(*@read_users)
         cond_sql = "#{klass.table_name}.owner_uuid = ?"
         cond_params = [@object.uuid]
         if params[:include_linked]
@@ -249,7 +250,7 @@ class ApplicationController < ActionController::Base
   end
 
   def find_objects_for_index
-    @objects ||= model_class.readable_by(current_user)
+    @objects ||= model_class.readable_by(*@read_users)
     apply_where_limit_order_params
   end
 
@@ -391,15 +392,34 @@ class ApplicationController < ActionController::Base
   end
 
   # Authentication
+  def load_read_auths
+    @read_auths = []
+    if current_api_client_authorization
+      @read_auths << current_api_client_authorization
+    end
+    # Load reader tokens if this is a read request.
+    # If there are too many reader tokens, assume the request is malicious
+    # and ignore it.
+    if request.get? and params[:reader_tokens] and
+        params[:reader_tokens].size < 100
+      @read_auths += ApiClientAuthorization
+        .includes(:user)
+        .where('api_token IN (?) AND
+                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
+               params[:reader_tokens])
+        .all
+    end
+    @read_auths.select! { |auth| auth.scopes_allow_request? request }
+    @read_users = @read_auths.map { |auth| auth.user }.uniq
+  end
+
   def require_login
-    if current_user
-      true
-    else
+    if not current_user
       respond_to do |format|
         format.json {
           render :json => { errors: ['Not logged in'] }.to_json, status: 401
         }
-        format.html  {
+        format.html {
           redirect_to '/auth/joshid'
         }
       end
@@ -414,9 +434,11 @@ class ApplicationController < ActionController::Base
   end
 
   def require_auth_scope
-    return false unless require_login
-    unless current_api_client_auth_has_scope("#{request.method} #{request.path}")
-      render :json => { errors: ['Forbidden'] }.to_json, status: 403
+    if @read_auths.empty?
+      if require_login != false
+        render :json => { errors: ['Forbidden'] }.to_json, status: 403
+      end
+      false
     end
   end
 
