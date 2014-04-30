@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140422011506) do
+ActiveRecord::Schema.define(:version => 20140423133559) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -64,7 +64,7 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.datetime "updated_at",              :null => false
   end
 
-  add_index "authorized_keys", ["authorized_user_uuid", "expires_at"], :name => "index_authorized_keys_on_authorized_user_uuid_and_expires_at"
+  add_index "authorized_keys", ["authorized_user_uuid", "expires_at"], :name => "index_authkeys_on_user_and_expires_at"
   add_index "authorized_keys", ["uuid"], :name => "index_authorized_keys_on_uuid", :unique => true
 
   create_table "collections", :force => true do |t|

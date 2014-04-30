@@ -6,8 +6,9 @@ class ApplicationController < ActionController::Base
   protect_from_forgery
   around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
+  before_filter :respond_with_json_by_default
   before_filter :remote_ip
-  before_filter :require_auth_scope_all, :except => :render_not_found
+  before_filter :require_auth_scope, :except => :render_not_found
   before_filter :catch_redirect_hint
 
   before_filter :find_object_by_uuid, :except => [:index, :create,
@@ -208,6 +209,10 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def default_orders
+    ["#{table_name}.modified_at desc"]
+  end
+
   def load_limit_offset_order_params
     if params[:limit]
       unless params[:limit].to_s.match(/^\d+$/)
@@ -240,7 +245,7 @@ class ApplicationController < ActionController::Base
       end
     end
     if @orders.empty?
-      @orders << "#{table_name}.modified_at desc"
+      @orders = default_orders
     end
   end
 
@@ -316,6 +321,9 @@ class ApplicationController < ActionController::Base
               value[0] == 'contains' then
             ilikes = []
             model_class.searchable_columns('ilike').each do |column|
+              # Including owner_uuid in an "any column" search will
+              # probably just return a lot of false positives.
+              next if column == 'owner_uuid'
               ilikes << "#{ar_table_name}.#{column} ilike ?"
               conditions << "%#{value[1]}%"
             end
@@ -406,12 +414,9 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def require_auth_scope_all
-    require_login and require_auth_scope(['all'])
-  end
-
-  def require_auth_scope(ok_scopes)
-    unless current_api_client_auth_has_scope(ok_scopes)
+  def require_auth_scope
+    return false unless require_login
+    unless current_api_client_auth_has_scope("#{request.method} #{request.path}")
       render :json => { errors: ['Forbidden'] }.to_json, status: 403
     end
   end
@@ -472,6 +477,13 @@ class ApplicationController < ActionController::Base
     end
   end
   # /Authentication
+
+  def respond_with_json_by_default
+    html_index = request.accepts.index(Mime::HTML)
+    if html_index.nil? or request.accepts[0...html_index].include?(Mime::JSON)
+      request.format = :json
+    end
+  end
 
   def model_class
     controller_name.classify.constantize
