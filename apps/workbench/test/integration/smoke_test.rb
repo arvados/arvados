@@ -23,7 +23,7 @@ class SmokeTest < ActionDispatch::IntegrationTest
     visit page_with_token('active_trustedclient', '/')
     assert_visit_success
     click_link 'user-menu'
-    urls = [all_links_in('.arvados-nav'),
+    urls = [all_links_in('nav'),
             all_links_in('.navbar', /^Manage /)].flatten
     seen_urls = ['/']
     while not (url = urls.shift).nil?

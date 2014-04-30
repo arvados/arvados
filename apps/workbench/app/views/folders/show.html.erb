@@ -171,7 +171,7 @@
               </td>
               <td title="<%= object.modified_at %>">
                 <span>
-                  <%= raw distance_of_time_in_words(object.modified_at, Time.now).sub('about ','~').sub(' ','&nbsp;') + '&nbsp;ago' %>
+                  <%= raw distance_of_time_in_words(object.modified_at, Time.now).sub('about ','~').sub(' ','&nbsp;') + '&nbsp;ago' rescue object.modified_at %>
                 </span>
               </td>
               <td class="arvados-uuid">

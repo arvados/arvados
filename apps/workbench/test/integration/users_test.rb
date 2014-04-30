@@ -31,10 +31,10 @@ class UsersTest < ActionDispatch::IntegrationTest
     # go to the Attributes tab
     click_link 'Attributes'
     assert page.has_text? 'modified_by_user_uuid'
-    page.within(:xpath, '//a[@data-name="is_active"]') do
+    page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "true", text, "Expected user's is_active to be true"
     end
-    page.within(:xpath, '//a[@data-name="is_admin"]') do
+    page.within(:xpath, '//span[@data-name="is_admin"]') do
       assert_equal "false", text, "Expected user's is_admin to be false"
     end
 
@@ -82,7 +82,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link new_user_uuid
 
     assert page.has_text? 'modified_by_user_uuid'
-    page.within(:xpath, '//a[@data-name="is_active"]') do
+    page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "false", text, "Expected new user's is_active to be false"
     end
 
@@ -169,7 +169,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     # Verify that is_active is set
     click_link 'Attributes'
     assert page.has_text? 'modified_by_user_uuid'
-    page.within(:xpath, '//a[@data-name="is_active"]') do
+    page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "true", text, "Expected user's is_active to be true"
     end
 
@@ -185,7 +185,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     # Should now be back in the Attributes tab for the user
     page.driver.browser.switch_to.alert.accept
     assert page.has_text? 'modified_by_user_uuid'
-    page.within(:xpath, '//a[@data-name="is_active"]') do
+    page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "false", text, "Expected user's is_active to be false after unsetup"
     end
 
