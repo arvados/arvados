@@ -70,6 +70,12 @@ class Arvados::V1::SchemaController < ApplicationController
         resources: {}
       }
 
+      if Rails.application.config.websocket_address
+        discovery[:websocketUrl] = Rails.application.config.websocket_address
+      elsif ENV['ARVADOS_WEBSOCKETS']
+        discovery[:websocketUrl] = (root_url.sub /^http/, 'ws') + "/websocket"
+      end
+
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         begin
           ctl_class = "Arvados::V1::#{k.to_s.pluralize}Controller".constantize

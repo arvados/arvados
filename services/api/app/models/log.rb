@@ -8,7 +8,7 @@ class Log < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :object_uuid
-    t.add :object, :if => :object
+    t.add :object_owner_uuid
     t.add :object_kind
     t.add :event_at
     t.add :event_type
@@ -24,6 +24,7 @@ class Log < ArvadosModel
 
   def fill_object(thing)
     self.object_uuid ||= thing.uuid
+    self.object_owner_uuid = thing.owner_uuid
     self.summary ||= "#{self.event_type} of #{thing.uuid}"
     self
   end
@@ -69,4 +70,5 @@ class Log < ArvadosModel
   def ensure_valid_uuids
     # logs can have references to deleted objects
   end
+
 end

@@ -38,7 +38,7 @@ class ActiveSupport::TestCase
   end
 
   def authorize_with(api_client_auth_name)
-    self.request.env['HTTP_AUTHORIZATION'] = "OAuth2 #{api_token(api_client_auth_name)}"
+    ArvadosApiToken.new.call ({"rack.input" => "", "HTTP_AUTHORIZATION" => "OAuth2 #{api_client_authorizations(api_client_auth_name).api_token}"})
   end
 end
 
