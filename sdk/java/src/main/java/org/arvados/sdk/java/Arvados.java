@@ -52,7 +52,7 @@ public class Arvados {
   public static void main(String[] args) throws Exception {
     if (args.length == 0) {
       showMainHelp();
-        error(null, "Missing input args");
+      error(null, "Missing input args");
     } else {
       String command = args[0];
       if (command.equals("help")) {
@@ -65,7 +65,8 @@ public class Arvados {
         }
         
         Arvados arv = new Arvados(args[1]);
-        arv.call(params);
+        String response = arv.call(params);
+        System.out.println (response);
       } else if (command.equals("discover")) {
         List<String> params = Arrays.asList(args);
         
@@ -74,7 +75,8 @@ public class Arvados {
         }
         
         Arvados arv = new Arvados(args[1]);
-        arv.discover(params);
+        RestDescription restDescription = arv.discover(params);
+        System.out.println(restDescription);
       } else {
         error(null, "unknown command: " + command);
       }

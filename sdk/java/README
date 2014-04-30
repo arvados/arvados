@@ -47,7 +47,7 @@
       java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados help discover
 
 
-  - Getting the discovery document (please see details about accessing log file below to see the document)
+  - Getting the discovery document
 
       java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados discover arvados v1
 
