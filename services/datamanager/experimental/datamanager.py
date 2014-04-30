@@ -28,6 +28,14 @@ def fileSizeFormat(value):
   return "%7.2f %-3s" % (float(value) / pow(1024, exponent),
                          byteunits[exponent])
 
+def percentageFloor(x):
+""" Returns a float which is the input rounded down to the neared 0.01.
+
+e.g. precentageFloor(0.941354) = 0.94
+"""
+  return math.floor(x*100) / 100.0
+
+
 def byteSizeFromValidUuid(valid_uuid):
   return int(valid_uuid.split('+')[1])
 
@@ -421,6 +429,20 @@ def outputGarbageCollectionReport(filename):
       gcwriter.writerow(line)
 
 
+def computeGarbageCollectionHistogram():
+  histogram = []
+  last_percentage = -1
+  for _,mtime,_,_,disk_free in garbage_collection_report:
+    curr_percentage = percentageFloor(disk_free)
+    if curr_percentage > last_percentage:
+      histogram.append( (curr_percentage, mtime) )
+    last_percentage = curr_percentage
+
+  log.info('Garbage collection histogram is: %s', histogram)
+
+  return histogram
+
+
 def detectReplicationProblems():
   blocks_not_in_any_collections.update(
     set(block_to_replication.keys()).difference(block_to_collections.keys()))
@@ -562,6 +584,17 @@ deleted this block and all the above. So this is (free disk space +
 cumulative disk size) / total disk capacity
 """
 
+garbage_collection_histogram = []
+""" Shows the tradeoff of keep block age vs keep disk free space.
+
+Each entry is of the form (Disk Proportion, mtime).
+
+An entry of the form (0.52, 1388747781) means that if we deleted the
+olded non-presisted blocks until we had 52% of the disk free, the
+oldest non-persisted block we'd have left would have an mtime of
+1388747781.
+"""
+
 # Stuff to report on
 blocks_not_in_any_collections = set()
 underreplicated_persisted_blocks = set()
@@ -610,7 +643,7 @@ def loadAllData():
   total_keep_space = sum(map(itemgetter(0), keep_stats))
   free_keep_space = sum(map(itemgetter(1), keep_stats))
 
-  # TODO(misha): Delete this hack when the keep serverse are fixed!
+  # TODO(misha): Delete this hack when the keep servers are fixed!
   # This hack deals with the fact that keep servers report each other's disks.
   total_keep_space /= len(keep_stats)
   free_keep_space /= len(keep_stats)
@@ -632,6 +665,8 @@ def loadAllData():
     log.info('Writing garbage Collection report to %s',
              args.garbage_collection_file)
     outputGarbageCollectionReport(args.garbage_collection_file)
+
+  garbage_collection_histogram = computeGarbageCollectionHistogram()
 
   detectReplicationProblems()
 
