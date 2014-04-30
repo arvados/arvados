@@ -71,36 +71,7 @@
 </div>
 
 <div class="row">
-  <div class="card arvados-object">
-    <div class="card-top green">
-      <a href="#">
-        <img src="/favicon.ico" alt=""/>
-      </a>
-    </div>
-    <div class="card-info">
-      <a class="title" href="#">Test dataset</a>
-      <div class="desc">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</div>
-    </div>
-    <div class="card-bottom">
-      <button class="btn btn-default btn-block">Show details</button>
-    </div>
-  </div>
-
-  <div class="card arvados-object">
-    <div class="card-top green">
-      <a href="#">
-        <img src="/favicon.ico" alt=""/>
-      </a>
-    </div>
-    <div class="card-info">
-      <a class="title" href="#">GATK Exome Pipeline</a>
-      <div class="desc">exome p.e. fastq -&gt; vcf</div>
-    </div>
-    <div class="card-bottom">
-      <button class="btn btn-default btn-block">Show details</button>
-    </div>
-  </div>
-
+  <% @objects[0..3].each do |object| %>
   <div class="card arvados-object">
     <div class="card-top blue">
       <a href="#">
@@ -108,28 +79,14 @@
       </a>
     </div>
     <div class="card-info">
-      <a class="title" href="#">Reference result</a>
-      <div class="desc">Known good -- checked concordance against other datasets</div>
+      <span class="title"><%= @objects.name_for(object) || object.class_for_display %></span>
+      <div class="desc"><%= object.respond_to?(:description) ? object.description : object.uuid %></div>
     </div>
     <div class="card-bottom">
-      <button class="btn btn-default btn-block">Show details</button>
+      <%= link_to_if_arvados_object object, {link_text: 'Open'}, {class: 'btn btn-default btn-block'} %>
     </div>
   </div>
-
-  <div class="card arvados-object">
-    <div class="card-top blue">
-      <a href="#">
-        <img src="/favicon.ico" alt=""/>
-      </a>
-    </div>
-    <div class="card-info">
-      <a class="title" href="#">Some other thing</a>
-      <div class="desc">(Objects that are "starred" appear in this area)</div>
-    </div>
-    <div class="card-bottom">
-      <button class="btn btn-default btn-block">Show details</button>
-    </div>
-  </div>
+  <% end %>
 </div>
 
 <div class="row">
