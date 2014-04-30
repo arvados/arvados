@@ -335,14 +335,15 @@ def logUserStorageUsage():
     # the object_type field since we don't know which we have.
     body['object_uuid'] = user
     body['event_type'] = args.user_storage_log_event_type
-    info = {}
-    info['read_collections_total_bytes'] = usage[UNWEIGHTED_READ_SIZE_COL]
-    info['read_collections_weighted_bytes'] = usage[WEIGHTED_READ_SIZE_COL]
-    info['persisted_collections_total_bytes'] = (
+    properties = {}
+    properties['read_collections_total_bytes'] = usage[UNWEIGHTED_READ_SIZE_COL]
+    properties['read_collections_weighted_bytes'] = (
+      usage[WEIGHTED_READ_SIZE_COL])
+    properties['persisted_collections_total_bytes'] = (
       usage[UNWEIGHTED_PERSIST_SIZE_COL])
-    info['persisted_collections_weighted_bytes'] = (
+    properties['persisted_collections_weighted_bytes'] = (
       usage[WEIGHTED_PERSIST_SIZE_COL])
-    body['properties'] = info
+    body['properties'] = properties
     # TODO(misha): Confirm that this will throw an exception if it
     # fails to create the log entry.
     arv.logs().create(body=body).execute()
