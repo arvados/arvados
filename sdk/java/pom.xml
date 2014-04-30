@@ -25,11 +25,6 @@
     	<version>1.18.0-rc</version>
     </dependency>
     <dependency>
-      <groupId>com.google.oauth-client</groupId>
-      <artifactId>google-oauth-client-jetty</artifactId>
-      <version>1.18.0-rc</version>
-    </dependency>
-    <dependency>
     	<groupId>com.google.guava</groupId>
     	<artifactId>guava</artifactId>
     	<version>r05</version>
