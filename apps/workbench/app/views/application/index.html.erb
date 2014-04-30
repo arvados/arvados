@@ -12,7 +12,7 @@
           'data-target' => '#user-setup-modal-window', return_to: request.url}  %>
       <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
     <% else %>
-      <%= button_to "Add a new #{controller.controller_name.humanize.downcase}",
+      <%= button_to "Add a new #{controller.controller_name.singularize.humanize.downcase}",
         { action: 'create' },
         { class: 'btn btn-primary pull-right' } %>
     <% end %>

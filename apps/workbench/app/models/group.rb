@@ -7,4 +7,8 @@ class Group < ArvadosBase
     ret.results = $arvados_api_client.unpack_api_response(res)
     ret
   end
+
+  def class_for_display
+    group_class == 'folder' ? 'Folder' : super
+  end
 end

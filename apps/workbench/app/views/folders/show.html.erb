@@ -46,7 +46,7 @@
           Created: <%= @object.created_at.to_s(:long) %>
         </p>
         <p>
-          Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid %>
+          Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
         </p>
         <% end %>
       </div>

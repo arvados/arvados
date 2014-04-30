@@ -14,8 +14,7 @@ class FoldersController < ApplicationController
   end
 
   def create
-    params['folder'] ||= {}.with_indifferent_access
-    params['folder']['group_class'] = 'folder'
+    @new_resource_attrs = (params['folder'] || {}).merge(group_class: 'folder')
     super
   end
 end
