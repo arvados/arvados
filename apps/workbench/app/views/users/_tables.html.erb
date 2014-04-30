@@ -17,36 +17,36 @@
         </colgroup>
 
         <tr>
-	  <th>Script</th>
-	  <th>Output</th>
-	  <th>Log</th>
-	  <th>Age</th>
-	  <th>Status</th>
-	  <th>Progress</th>
-	</tr>
+          <th>Script</th>
+          <th>Output</th>
+          <th>Log</th>
+          <th>Age</th>
+          <th>Status</th>
+          <th>Progress</th>
+        </tr>
 
         <% @my_jobs[0..6].each do |j| %>
-          <tr>
+          <tr data-object-uuid="<%= j.uuid %>">
             <td>
               <small>
-		<%= link_to((j.script.andand[0..31] || j.uuid), job_path(j.uuid)) %>
+                <%= link_to((j.script.andand[0..31] || j.uuid), job_path(j.uuid)) %>
               </small>
             </td>
 
-	    <td>
-	      <small>
-		<% if j.success and j.output %>
+            <td>
+              <small>
+                <% if j.success and j.output %>
 
-		  <a href="<%= collection_path(j.output) %>">
-		    <% Collection.limit(1).where(uuid: j.output).each do |c| %>
-			 <% c.files.each do |file| %>
-		      <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
-		    <% end %>
-		<% end %>
-		</a>
+                  <a href="<%= collection_path(j.output) %>">
+                    <% Collection.limit(1).where(uuid: j.output).each do |c| %>
+                         <% c.files.each do |file| %>
+                      <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
+                    <% end %>
+                <% end %>
+                </a>
 
-	<% end %>
-	</small>
+        <% end %>
+        </small>
 </td>
 
 <td>
@@ -67,8 +67,7 @@
 
 <td>
   <small>
-    <%= raw(distance_of_time_in_words(j.created_at, Time.now).sub('about
-','~').sub(' ','&nbsp;')) if j.created_at %>
+    <%= raw(distance_of_time_in_words(j.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if j.created_at %>
   </small>
 </td>
 
@@ -104,31 +103,30 @@
       </colgroup>
 
       <tr>
-	<th>Instance</th>
-	<th>Template</th>
-	<th>Age</th>
-	<th>Status</th>
-	<th>Progress</th>
+        <th>Instance</th>
+        <th>Template</th>
+        <th>Age</th>
+        <th>Status</th>
+        <th>Progress</th>
       </tr>
 
       <% @my_pipelines[0..6].each do |p| %>
-        <tr>
+        <tr data-object-uuid="<%= p.uuid %>">
           <td>
             <small>
-	      <%= link_to_if_arvados_object p.uuid, friendly_name: true %>
+              <%= link_to_if_arvados_object p.uuid, friendly_name: true %>
             </small>
           </td>
 
           <td>
             <small>
-	      <%= link_to_if_arvados_object p.pipeline_template_uuid, friendly_name: true %>
+              <%= link_to_if_arvados_object p.pipeline_template_uuid, friendly_name: true %>
             </small>
           </td>
 
           <td>
             <small>
-	      <%= raw(distance_of_time_in_words(p.created_at, Time.now).sub('about
-','~').sub(' ','&nbsp;')) if p.created_at %>
+              <%= raw(distance_of_time_in_words(p.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if p.created_at %>
             </small>
           </td>
 
@@ -171,25 +169,27 @@
     <table class="table table-bordered table-condensed table-fixedlayout">
       <colgroup>
         <col width="46%" />
-        <col width="27%" />
-        <col width="27%" />
+        <col width="32%" />
+        <col width="10%" />
+        <col width="12%" />
       </colgroup>
 
       <tr>
-	<th>Contents</th>
-	<th>Tags</th>
-	<th>Age</th>
+        <th>Contents</th>
+        <th>Tags</th>
+        <th>Age</th>
+        <th>Storage</th>
       </tr>
 
       <% @my_collections[0..6].each do |c| %>
-        <tr>
+        <tr data-object-uuid="<%= c.uuid %>">
           <td>
             <small>
-	      <a href="<%= collection_path(c.uuid) %>">
-		<% c.files.each do |file| %>
-		  <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
-		<% end %>
-	      </a>
+              <a href="<%= collection_path(c.uuid) %>">
+                <% c.files.each do |file| %>
+                  <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
+                <% end %>
+              </a>
             </small>
           </td>
           <td>
@@ -201,9 +201,11 @@
           </td>
           <td>
             <small>
-	      <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about
-','~').sub(' ','&nbsp;')) if c.created_at %>
+              <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
             </small>
+          </td>
+          <td>
+            <%= render partial: 'collections/toggle_persist', locals: { uuid: c.uuid, current_state: @persist_state[c.uuid] } %>
           </td>
         </tr>
       <% end %>
@@ -220,19 +222,19 @@
     <div class="col-sm-8">
       <h2>Welcome to Arvados, <%= current_user.first_name %>!</h2>
       <div class="well">
-	<p>
-	  Your account must be activated by an Arvados administrator.  If this
-	  is your first time accessing Arvados and would like to request
-	  access, or you believe you are seeing the page in error, please
-	  <%= link_to "contact us", Rails.configuration.activation_contact_link %>.
-	  You should receive an email at the address you used to log in when
-	  your account is activated.  In the mean time, you can
-	  <%= link_to "learn more about Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %>,
-	  and <%= link_to "read the Arvados user guide", "http://doc.arvados.org/user" %>.
-	</p>
-	<p style="padding-bottom: 1em">
-	  <%= link_to raw('Contact us &#x2709;'),
-	      Rails.configuration.activation_contact_link, class: "pull-right btn btn-primary" %></p>
+        <p>
+          Your account must be activated by an Arvados administrator.  If this
+          is your first time accessing Arvados and would like to request
+          access, or you believe you are seeing the page in error, please
+          <%= link_to "contact us", Rails.configuration.activation_contact_link %>.
+          You should receive an email at the address you used to log in when
+          your account is activated.  In the mean time, you can
+          <%= link_to "learn more about Arvados", "https://arvados.org/projects/arvados/wiki/Introduction_to_Arvados" %>,
+          and <%= link_to "read the Arvados user guide", "http://doc.arvados.org/user" %>.
+        </p>
+        <p style="padding-bottom: 1em">
+          <%= link_to raw('Contact us &#x2709;'),
+              Rails.configuration.activation_contact_link, class: "pull-right btn btn-primary" %></p>
       </div>
     </div>
   </div>

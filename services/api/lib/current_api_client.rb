@@ -29,14 +29,17 @@ module CurrentApiClient
     Thread.current[:api_client_ip_address]
   end
 
-  # Does the current API client authorization include any of ok_scopes?
-  def current_api_client_auth_has_scope(ok_scopes)
-    auth_scopes = current_api_client_authorization.andand.scopes || []
-    unless auth_scopes.index('all') or (auth_scopes & ok_scopes).any?
-      logger.warn "Insufficient auth scope: need #{ok_scopes}, #{current_api_client_authorization.inspect} has #{auth_scopes}"
-      return false
-    end
-    true
+  # Is the current API client authorization scoped for the request?
+  def current_api_client_auth_has_scope(req_s)
+    (current_api_client_authorization.andand.scopes || []).select { |scope|
+      if scope == 'all'
+        true
+      elsif scope.end_with? '/'
+        req_s.start_with? scope
+      else
+        req_s == scope
+      end
+    }.any?
   end
 
   def system_user_uuid

@@ -36,6 +36,43 @@ active_trustedclient:
   api_token: 27bnddk6x2nmq00a1e3gq43n9tsl5v87a3faqar2ijj8tud5en
   expires_at: 2038-01-01 00:00:00
 
+admin_vm:
+  api_client: untrusted
+  user: admin
+  api_token: adminvirtualmachineabcdefghijklmnopqrstuvwxyz12345
+  expires_at: 2038-01-01 00:00:00
+  # scope refers to the testvm fixture.
+  scopes: ["GET /arvados/v1/virtual_machines/zzzzz-2x53u-382brsig8rp3064/logins"]
+
+admin_noscope:
+  api_client: untrusted
+  user: admin
+  api_token: adminnoscopeabcdefghijklmnopqrstuvwxyz123456789012
+  expires_at: 2038-01-01 00:00:00
+  scopes: []
+
+active_userlist:
+  api_client: untrusted
+  user: active
+  api_token: activeuserlistabcdefghijklmnopqrstuvwxyz1234568900
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /arvados/v1/users"]
+
+active_specimens:
+  api_client: untrusted
+  user: active
+  api_token: activespecimensabcdefghijklmnopqrstuvwxyz123456890
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /arvados/v1/specimens/"]
+
+active_apitokens:
+  api_client: trusted_workbench
+  user: active
+  api_token: activeapitokensabcdefghijklmnopqrstuvwxyz123456789
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /arvados/v1/api_client_authorizations",
+           "POST /arvados/v1/api_client_authorizations"]
+
 spectator:
   api_client: untrusted
   user: spectator

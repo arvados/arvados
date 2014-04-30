@@ -42,6 +42,10 @@ module LoadParam
     end
   end
 
+  def default_orders
+    ["#{table_name}.modified_at desc"]
+  end
+
   # Load params[:limit], params[:offset] and params[:order]
   # into @limit, @offset, @orders
   def load_limit_offset_order_params
@@ -76,7 +80,7 @@ module LoadParam
       end
     end
     if @orders.empty?
-      @orders << "#{table_name}.modified_at desc"
+      @orders << default_orders
     end
   end
 

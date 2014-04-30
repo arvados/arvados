@@ -1,12 +1,12 @@
 require 'test_helper'
 
 class PipelineInstancesControllerTest < ActionController::TestCase
-  def create_instance_long_enough_to
+  def create_instance_long_enough_to(instance_attrs={})
     pt_fixture = api_fixture('pipeline_templates')['two_part']
     post :create, {
-      pipeline_instance: {
+      pipeline_instance: instance_attrs.merge({
         pipeline_template_uuid: pt_fixture['uuid']
-      },
+      }),
       format: :json
     }, session_for(:active)
     assert_response :success
@@ -24,6 +24,18 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     create_instance_long_enough_to do |new_instance_uuid, template_fixture|
       assert_equal(template_fixture['components'].to_json,
                    assigns(:object).components.to_json)
+    end
+  end
+
+  test "can render pipeline instance with tagged collections" do
+    # Make sure to pass in a tagged collection to test that part of the
+    # rendering behavior.
+    attrs = {components: {'part-one' => {script_parameters: {input:
+            {value: api_fixture('collections')['foo_file']['uuid']}
+            }}}}
+    create_instance_long_enough_to(attrs) do |new_instance_uuid, template_fixture|
+      get(:show, {id: new_instance_uuid}, session_for(:active))
+      assert_response :success
     end
   end
 

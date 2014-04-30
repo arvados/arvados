@@ -2,7 +2,7 @@ class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :find_objects_for_index
   skip_before_filter :find_object_by_uuid
   skip_before_filter :render_404_if_no_object
-  skip_before_filter :require_auth_scope_all
+  skip_before_filter :require_auth_scope
 
   def index
     expires_in 24.hours, public: true
