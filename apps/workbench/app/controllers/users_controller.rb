@@ -129,10 +129,24 @@ class UsersController < ApplicationController
       limit(10).
       order('created_at desc').
       where(created_by: current_user.uuid)
+    collection_uuids = @my_collections.collect &:uuid
 
-    Link.limit(1000).where(head_uuid: @my_collections.collect(&:uuid),
-                           link_class: 'tag').each do |link|
-      (@my_tag_links[link.head_uuid] ||= []) << link
+    @persist_state = {}
+    collection_uuids.each do |uuid|
+      @persist_state[uuid] = 'cache'
+    end
+
+    Link.limit(1000).filter([['head_uuid', 'in', collection_uuids],
+                             ['link_class', 'in', ['tag', 'resources']]]).
+      each do |link|
+      case link.link_class
+      when 'tag'
+        (@my_tag_links[link.head_uuid] ||= []) << link
+      when 'resources'
+        if link.name == 'wants'
+          @persist_state[link.head_uuid] = 'persistent'
+        end
+      end
     end
 
     @my_pipelines = PipelineInstance.
@@ -140,22 +154,6 @@ class UsersController < ApplicationController
       order('created_at desc').
       where(created_by: current_user.uuid)
 
-
-    # A Tutorial is a Link which has link_class "resources" and name
-    # "wants", and is owned by the Tutorials Group (i.e., named
-    # "Arvados Tutorials" and owned by the system user).
-    @tutorial_group = Group.where(owner_uuid: User.system.uuid,
-                                  name: 'Arvados Tutorials').first
-    if @tutorial_group
-      @tutorial_links = Link.where(tail_uuid: @tutorial_group.uuid,
-                                   link_class: 'resources',
-                                   name: 'wants')
-    else
-      @tutorial_links = []
-    end
-    @tutorial_complete = {
-      'Run a job' => @my_last_job
-    }
     respond_to do |f|
       f.js { render template: 'users/home.js' }
       f.html { render template: 'users/home' }

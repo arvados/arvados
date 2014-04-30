@@ -6,7 +6,7 @@ class Arvados::V1::NodesController < ApplicationController
   def create
     @object = Node.new
     @object.save!
-    @object.start!(lambda { |h| arvados_v1_ping_node_url(h) })
+    @object.start!(lambda { |h| ping_arvados_v1_node_url(h) })
     show
   end
 
