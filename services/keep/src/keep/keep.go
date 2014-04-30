@@ -14,12 +14,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"syscall"
-	"time"
 )
 
 // ======================
@@ -40,7 +37,8 @@ const MIN_FREE_KILOBYTES = BLOCKSIZE / 1024
 
 var PROC_MOUNTS = "/proc/mounts"
 
-var KeepVolumes []string
+// The Keep VolumeManager maintains a list of available volumes.
+var KeepVM VolumeManager
 
 // ==========
 // Error types.
@@ -89,10 +87,13 @@ func main() {
 	//    directories.
 
 	var listen, volumearg string
+	var serialize_io bool
 	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
 		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
 	flag.StringVar(&volumearg, "volumes", "",
 		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
+	flag.BoolVar(&serialize_io, "serialize", false,
+		"If set, all read and write operations on local Keep volumes will be serialized.")
 	flag.Parse()
 
 	// Look for local keep volumes.
@@ -107,19 +108,23 @@ func main() {
 	}
 
 	// Check that the specified volumes actually exist.
-	KeepVolumes = []string(nil)
+	var goodvols []Volume = nil
 	for _, v := range keepvols {
 		if _, err := os.Stat(v); err == nil {
 			log.Println("adding Keep volume:", v)
-			KeepVolumes = append(KeepVolumes, v)
+			newvol := MakeUnixVolume(v, serialize_io)
+			goodvols = append(goodvols, &newvol)
 		} else {
 			log.Printf("bad Keep volume: %s\n", err)
 		}
 	}
 
-	if len(KeepVolumes) == 0 {
+	if len(goodvols) == 0 {
 		log.Fatal("could not find any keep volumes")
 	}
+
+	// Start a round-robin VolumeManager with the volumes we have found.
+	KeepVM = MakeRRVolumeManager(goodvols)
 
 	// Set up REST handlers.
 	//
@@ -226,7 +231,10 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
-	index := IndexLocators(prefix)
+	var index string
+	for _, vol := range KeepVM.Volumes() {
+		index = index + vol.Index(prefix)
+	}
 	w.Write([]byte(index))
 }
 
@@ -271,9 +279,9 @@ func StatusHandler(w http.ResponseWriter, req *http.Request) {
 func GetNodeStatus() *NodeStatus {
 	st := new(NodeStatus)
 
-	st.Volumes = make([]*VolumeStatus, len(KeepVolumes))
-	for i, vol := range KeepVolumes {
-		st.Volumes[i] = GetVolumeStatus(vol)
+	st.Volumes = make([]*VolumeStatus, len(KeepVM.Volumes()))
+	for i, vol := range KeepVM.Volumes() {
+		st.Volumes[i] = vol.Status()
 	}
 	return st
 }
@@ -305,108 +313,42 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 	return &VolumeStatus{volume, devnum, free, used}
 }
 
-// IndexLocators
-//     Returns a string containing a list of locator ids found on this
-//     Keep server.  If {prefix} is given, return only those locator
-//     ids that begin with the given prefix string.
-//
-//     The return string consists of a sequence of newline-separated
-//     strings in the format
-//
-//         locator+size modification-time
-//
-//     e.g.:
-//
-//         e4df392f86be161ca6ed3773a962b8f3+67108864 1388894303
-//         e4d41e6fd68460e0e3fc18cc746959d2+67108864 1377796043
-//         e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
-//
-func IndexLocators(prefix string) string {
-	var output string
-	for _, vol := range KeepVolumes {
-		filepath.Walk(vol,
-			func(path string, info os.FileInfo, err error) error {
-				// This WalkFunc inspects each path in the volume
-				// and prints an index line for all files that begin
-				// with prefix.
-				if err != nil {
-					log.Printf("IndexHandler: %s: walking to %s: %s",
-						vol, path, err)
-					return nil
-				}
-				locator := filepath.Base(path)
-				// Skip directories that do not match prefix.
-				// We know there is nothing interesting inside.
-				if info.IsDir() &&
-					!strings.HasPrefix(locator, prefix) &&
-					!strings.HasPrefix(prefix, locator) {
-					return filepath.SkipDir
-				}
-				// Skip any file that is not apparently a locator, e.g. .meta files
-				if is_valid, err := IsValidLocator(locator); err != nil {
-					return err
-				} else if !is_valid {
-					return nil
-				}
-				// Print filenames beginning with prefix
-				if !info.IsDir() && strings.HasPrefix(locator, prefix) {
-					output = output + fmt.Sprintf(
-						"%s+%d %d\n", locator, info.Size(), info.ModTime().Unix())
-				}
-				return nil
-			})
-	}
-
-	return output
-}
-
 func GetBlock(hash string) ([]byte, error) {
-	var buf = make([]byte, BLOCKSIZE)
-
 	// Attempt to read the requested hash from a keep volume.
-	for _, vol := range KeepVolumes {
-		var f *os.File
-		var err error
-		var nread int
-
-		blockFilename := fmt.Sprintf("%s/%s/%s", vol, hash[0:3], hash)
-
-		f, err = os.Open(blockFilename)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				// A block is stored on only one Keep disk,
-				// so os.IsNotExist is expected.  Report any other errors.
-				log.Printf("%s: opening %s: %s\n", vol, blockFilename, err)
+	for _, vol := range KeepVM.Volumes() {
+		if buf, err := vol.Get(hash); err != nil {
+			// IsNotExist is an expected error and may be ignored.
+			// (If all volumes report IsNotExist, we return a NotFoundError)
+			// A CorruptError should be returned immediately.
+			// Any other errors should be logged but we continue trying to
+			// read.
+			switch {
+			case os.IsNotExist(err):
+				continue
+			default:
+				log.Printf("GetBlock: reading %s: %s\n", hash, err)
 			}
-			continue
-		}
-
-		nread, err = f.Read(buf)
-		if err != nil {
-			log.Printf("%s: reading %s: %s\n", vol, blockFilename, err)
-			continue
-		}
-
-		// Double check the file checksum.
-		//
-		filehash := fmt.Sprintf("%x", md5.Sum(buf[:nread]))
-		if filehash != hash {
-			// TODO(twp): this condition probably represents a bad disk and
-			// should raise major alarm bells for an administrator: e.g.
-			// they should be sent directly to an event manager at high
-			// priority or logged as urgent problems.
+		} else {
+			// Double check the file checksum.
 			//
-			log.Printf("%s: checksum mismatch: %s (actual hash %s)\n",
-				vol, blockFilename, filehash)
-			return buf, CorruptError
+			filehash := fmt.Sprintf("%x", md5.Sum(buf))
+			if filehash != hash {
+				// TODO(twp): this condition probably represents a bad disk and
+				// should raise major alarm bells for an administrator: e.g.
+				// they should be sent directly to an event manager at high
+				// priority or logged as urgent problems.
+				//
+				log.Printf("%s: checksum mismatch for request %s (actual hash %s)\n",
+					vol, hash, filehash)
+				return buf, CorruptError
+			}
+			// Success!
+			return buf, nil
 		}
-
-		// Success!
-		return buf[:nread], nil
 	}
 
 	log.Printf("%s: not found on any volumes, giving up\n", hash)
-	return buf, NotFoundError
+	return nil, NotFoundError
 }
 
 /* PutBlock(block, hash)
@@ -456,98 +398,34 @@ func PutBlock(block []byte, hash string) error {
 		}
 	}
 
-	// Store the block on the first available Keep volume.
-	allFull := true
-	for _, vol := range KeepVolumes {
-		if IsFull(vol) {
-			continue
-		}
-		allFull = false
-		blockDir := fmt.Sprintf("%s/%s", vol, hash[0:3])
-		if err := os.MkdirAll(blockDir, 0755); err != nil {
-			log.Printf("%s: could not create directory %s: %s",
-				hash, blockDir, err)
-			continue
-		}
-
-		tmpfile, tmperr := ioutil.TempFile(blockDir, "tmp"+hash)
-		if tmperr != nil {
-			log.Printf("ioutil.TempFile(%s, tmp%s): %s", blockDir, hash, tmperr)
-			continue
-		}
-		blockFilename := fmt.Sprintf("%s/%s", blockDir, hash)
-
-		if _, err := tmpfile.Write(block); err != nil {
-			log.Printf("%s: writing to %s: %s\n", vol, blockFilename, err)
-			continue
-		}
-		if err := tmpfile.Close(); err != nil {
-			log.Printf("closing %s: %s\n", tmpfile.Name(), err)
-			os.Remove(tmpfile.Name())
-			continue
-		}
-		if err := os.Rename(tmpfile.Name(), blockFilename); err != nil {
-			log.Printf("rename %s %s: %s\n", tmpfile.Name(), blockFilename, err)
-			os.Remove(tmpfile.Name())
-			continue
-		}
-		return nil
-	}
-
-	if allFull {
-		log.Printf("all Keep volumes full")
-		return FullError
+	// Choose a Keep volume to write to.
+	// If this volume fails, try all of the volumes in order.
+	vol := KeepVM.Choose()
+	if err := vol.Put(hash, block); err == nil {
+		return nil // success!
 	} else {
-		log.Printf("all Keep volumes failed")
-		return GenericError
-	}
-}
-
-func IsFull(volume string) (isFull bool) {
-	fullSymlink := volume + "/full"
-
-	// Check if the volume has been marked as full in the last hour.
-	if link, err := os.Readlink(fullSymlink); err == nil {
-		if ts, err := strconv.Atoi(link); err == nil {
-			fulltime := time.Unix(int64(ts), 0)
-			if time.Since(fulltime).Hours() < 1.0 {
-				return true
+		allFull := true
+		for _, vol := range KeepVM.Volumes() {
+			err := vol.Put(hash, block)
+			if err == nil {
+				return nil // success!
+			}
+			if err != FullError {
+				// The volume is not full but the write did not succeed.
+				// Report the error and continue trying.
+				allFull = false
+				log.Printf("%s: Write(%s): %s\n", vol, hash, err)
 			}
 		}
-	}
 
-	if avail, err := FreeDiskSpace(volume); err == nil {
-		isFull = avail < MIN_FREE_KILOBYTES
-	} else {
-		log.Printf("%s: FreeDiskSpace: %s\n", volume, err)
-		isFull = false
+		if allFull {
+			log.Printf("all Keep volumes full")
+			return FullError
+		} else {
+			log.Printf("all Keep volumes failed")
+			return GenericError
+		}
 	}
-
-	// If the volume is full, timestamp it.
-	if isFull {
-		now := fmt.Sprintf("%d", time.Now().Unix())
-		os.Symlink(now, fullSymlink)
-	}
-	return
-}
-
-// FreeDiskSpace(volume)
-//     Returns the amount of available disk space on VOLUME,
-//     as a number of 1k blocks.
-//
-//     TODO(twp): consider integrating this better with
-//     VolumeStatus (e.g. keep a NodeStatus object up-to-date
-//     periodically and use it as the source of info)
-//
-func FreeDiskSpace(volume string) (free uint64, err error) {
-	var fs syscall.Statfs_t
-	err = syscall.Statfs(volume, &fs)
-	if err == nil {
-		// Statfs output is not guaranteed to measure free
-		// space in terms of 1K blocks.
-		free = fs.Bavail * uint64(fs.Bsize) / 1024
-	}
-	return
 }
 
 // ReadAtMost
@@ -573,6 +451,11 @@ func ReadAtMost(r io.Reader, maxbytes int) ([]byte, error) {
 //     When Keep is extended to support hash types other than MD5,
 //     this should be updated to cover those as well.
 //
-func IsValidLocator(loc string) (bool, error) {
-	return regexp.MatchString(`^[0-9a-f]{32}$`, loc)
+func IsValidLocator(loc string) bool {
+	match, err := regexp.MatchString(`^[0-9a-f]{32}$`, loc)
+	if err == nil {
+		return match
+	}
+	log.Printf("IsValidLocator: %s\n", err)
+	return false
 }
