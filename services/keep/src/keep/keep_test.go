@@ -48,8 +48,11 @@ func TestGetBlock(t *testing.T) {
 	defer teardown()
 
 	// Prepare two test Keep volumes. Our block is stored on the second volume.
-	KeepVolumes = setup(2)
-	if err := KeepVolumes[1].Put(TEST_HASH, TEST_BLOCK); err != nil {
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+
+	vols := KeepVM.Volumes()
+	if err := vols[1].Put(TEST_HASH, TEST_BLOCK); err != nil {
 		t.Error(err)
 	}
 
@@ -70,7 +73,8 @@ func TestGetBlockMissing(t *testing.T) {
 	defer teardown()
 
 	// Create two empty test Keep volumes.
-	KeepVolumes = setup(2)
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
@@ -87,8 +91,11 @@ func TestGetBlockCorrupt(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes and store a corrupt block in one.
-	KeepVolumes = setup(2)
-	KeepVolumes[0].Put(TEST_HASH, BAD_BLOCK)
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+
+	vols := KeepVM.Volumes()
+	vols[0].Put(TEST_HASH, BAD_BLOCK)
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
@@ -108,16 +115,18 @@ func TestPutBlockOK(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes.
-	KeepVolumes = setup(2)
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
 
 	// Check that PutBlock stores the data as expected.
 	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
 		t.Fatalf("PutBlock: %v", err)
 	}
 
-	result, err := KeepVolumes[0].Get(TEST_HASH)
+	vols := KeepVM.Volumes()
+	result, err := vols[0].Get(TEST_HASH)
 	if err != nil {
-		t.Fatalf("KeepVolumes[0].Get returned error: %v", err)
+		t.Fatalf("Volume #0 Get returned error: %v", err)
 	}
 	if string(result) != string(TEST_BLOCK) {
 		t.Fatalf("PutBlock stored '%s', Get retrieved '%s'",
@@ -133,8 +142,11 @@ func TestPutBlockOneVol(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes, but cripple one of them.
-	KeepVolumes = setup(2)
-	KeepVolumes[0].(*MockVolume).Bad = true
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+
+	vols := KeepVM.Volumes()
+	vols[0].(*MockVolume).Bad = true
 
 	// Check that PutBlock stores the data as expected.
 	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
@@ -160,7 +172,8 @@ func TestPutBlockMD5Fail(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes.
-	KeepVolumes = setup(2)
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
 
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
@@ -183,10 +196,12 @@ func TestPutBlockCorrupt(t *testing.T) {
 	defer teardown()
 
 	// Create two test Keep volumes.
-	KeepVolumes = setup(2)
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
 
 	// Store a corrupted block under TEST_HASH.
-	KeepVolumes[0].Put(TEST_HASH, BAD_BLOCK)
+	vols := KeepVM.Volumes()
+	vols[0].Put(TEST_HASH, BAD_BLOCK)
 	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
 		t.Errorf("PutBlock: %v", err)
 	}
@@ -212,7 +227,8 @@ func TestPutBlockCollision(t *testing.T) {
 	var locator = "cee9a457e790cf20d4bdaa6d69f01e41"
 
 	// Prepare two test Keep volumes.
-	KeepVolumes = setup(2)
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
 
 	// Store one block, then attempt to store the other. Confirm that
 	// PutBlock reported a CollisionError.
@@ -314,14 +330,17 @@ func TestIndex(t *testing.T) {
 	// Set up Keep volumes and populate them.
 	// Include multiple blocks on different volumes, and
 	// some metadata files.
-	KeepVolumes = setup(2)
-	KeepVolumes[0].Put(TEST_HASH, TEST_BLOCK)
-	KeepVolumes[1].Put(TEST_HASH_2, TEST_BLOCK_2)
-	KeepVolumes[0].Put(TEST_HASH_3, TEST_BLOCK_3)
-	KeepVolumes[0].Put(TEST_HASH+".meta", []byte("metadata"))
-	KeepVolumes[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
 
-	index := KeepVolumes[0].Index("") + KeepVolumes[1].Index("")
+	vols := KeepVM.Volumes()
+	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
+	vols[0].Put(TEST_HASH_3, TEST_BLOCK_3)
+	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
+	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
+
+	index := vols[0].Index("") + vols[1].Index("")
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_3 + `\+\d+ \d+\n` +
 		TEST_HASH_2 + `\+\d+ \d+\n$`
@@ -346,13 +365,16 @@ func TestNodeStatus(t *testing.T) {
 	defer teardown()
 
 	// Set up test Keep volumes with some blocks.
-	KeepVolumes = setup(2)
-	KeepVolumes[0].Put(TEST_HASH, TEST_BLOCK)
-	KeepVolumes[1].Put(TEST_HASH_2, TEST_BLOCK_2)
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+
+	vols := KeepVM.Volumes()
+	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
 
 	// Get node status and make a basic sanity check.
 	st := GetNodeStatus()
-	for i := range KeepVolumes {
+	for i := range vols {
 		volinfo := st.Volumes[i]
 		mtp := volinfo.MountPoint
 		if mtp != "/bogo" {
@@ -374,21 +396,21 @@ func TestNodeStatus(t *testing.T) {
 // Helper functions for unit tests.
 // ========================================
 
-// setup
-//     Create KeepVolumes for testing.
-//     Returns a slice of pathnames to temporary Keep volumes.
+// MakeTestVolumeManager
+//     Creates and returns a RRVolumeManager with the specified number
+//     of MockVolumes.
 //
-func setup(num_volumes int) []Volume {
+func MakeTestVolumeManager(num_volumes int) VolumeManager {
 	vols := make([]Volume, num_volumes)
 	for i := range vols {
 		vols[i] = CreateMockVolume()
 	}
-	return vols
+	return MakeRRVolumeManager(vols)
 }
 
 // teardown
 //     Cleanup to perform after each test.
 //
 func teardown() {
-	KeepVolumes = nil
+	KeepVM = nil
 }

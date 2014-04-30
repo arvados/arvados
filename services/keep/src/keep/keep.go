@@ -37,8 +37,8 @@ const MIN_FREE_KILOBYTES = BLOCKSIZE / 1024
 
 var PROC_MOUNTS = "/proc/mounts"
 
-// KeepVolumes is a slice of volumes on which blocks can be stored.
-var KeepVolumes []Volume
+// The Keep VolumeManager maintains a list of available volumes.
+var KeepVM VolumeManager
 
 // ==========
 // Error types.
@@ -108,20 +108,23 @@ func main() {
 	}
 
 	// Check that the specified volumes actually exist.
-	KeepVolumes = []Volume(nil)
+	var goodvols []Volume = nil
 	for _, v := range keepvols {
 		if _, err := os.Stat(v); err == nil {
 			log.Println("adding Keep volume:", v)
 			newvol := MakeUnixVolume(v, serialize_io)
-			KeepVolumes = append(KeepVolumes, &newvol)
+			goodvols = append(goodvols, &newvol)
 		} else {
 			log.Printf("bad Keep volume: %s\n", err)
 		}
 	}
 
-	if len(KeepVolumes) == 0 {
+	if len(goodvols) == 0 {
 		log.Fatal("could not find any keep volumes")
 	}
+
+	// Start a round-robin VolumeManager with the volumes we have found.
+	KeepVM = MakeRRVolumeManager(goodvols)
 
 	// Set up REST handlers.
 	//
@@ -229,7 +232,7 @@ func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
 	var index string
-	for _, vol := range KeepVolumes {
+	for _, vol := range KeepVM.Volumes() {
 		index = index + vol.Index(prefix)
 	}
 	w.Write([]byte(index))
@@ -276,8 +279,8 @@ func StatusHandler(w http.ResponseWriter, req *http.Request) {
 func GetNodeStatus() *NodeStatus {
 	st := new(NodeStatus)
 
-	st.Volumes = make([]*VolumeStatus, len(KeepVolumes))
-	for i, vol := range KeepVolumes {
+	st.Volumes = make([]*VolumeStatus, len(KeepVM.Volumes()))
+	for i, vol := range KeepVM.Volumes() {
 		st.Volumes[i] = vol.Status()
 	}
 	return st
@@ -312,7 +315,7 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 
 func GetBlock(hash string) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
-	for _, vol := range KeepVolumes {
+	for _, vol := range KeepVM.Volumes() {
 		if buf, err := vol.Get(hash); err != nil {
 			// IsNotExist is an expected error and may be ignored.
 			// (If all volumes report IsNotExist, we return a NotFoundError)
@@ -395,27 +398,33 @@ func PutBlock(block []byte, hash string) error {
 		}
 	}
 
-	// Store the block on the first available Keep volume.
-	allFull := true
-	for _, vol := range KeepVolumes {
-		err := vol.Put(hash, block)
-		if err == nil {
-			return nil // success!
-		}
-		if err != FullError {
-			// The volume is not full but the write did not succeed.
-			// Report the error and continue trying.
-			allFull = false
-			log.Printf("%s: Write(%s): %s\n", vol, hash, err)
-		}
-	}
-
-	if allFull {
-		log.Printf("all Keep volumes full")
-		return FullError
+	// Choose a Keep volume to write to.
+	// If this volume fails, try all of the volumes in order.
+	vol := KeepVM.Choose()
+	if err := vol.Put(hash, block); err == nil {
+		return nil // success!
 	} else {
-		log.Printf("all Keep volumes failed")
-		return GenericError
+		allFull := true
+		for _, vol := range KeepVM.Volumes() {
+			err := vol.Put(hash, block)
+			if err == nil {
+				return nil // success!
+			}
+			if err != FullError {
+				// The volume is not full but the write did not succeed.
+				// Report the error and continue trying.
+				allFull = false
+				log.Printf("%s: Write(%s): %s\n", vol, hash, err)
+			}
+		}
+
+		if allFull {
+			log.Printf("all Keep volumes full")
+			return FullError
+		} else {
+			log.Printf("all Keep volumes failed")
+			return GenericError
+		}
 	}
 }
 
