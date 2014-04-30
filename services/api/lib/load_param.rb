@@ -1,12 +1,15 @@
+# Mixin module for reading out query parameters from request params.
+#
 # Expects:
 #   +params+ Hash
 # Sets:
-#   @where, @filters
-
+#   @where, @filters, @limit, @offset, @orders
 module LoadParam
 
+  # Default limit on number of rows to return in a single query.
   DEFAULT_LIMIT = 100
 
+  # Load params[:where] into @where
   def load_where_param
     if params[:where].nil? or params[:where] == ""
       @where = {}
@@ -23,6 +26,7 @@ module LoadParam
     @where = @where.with_indifferent_access
   end
 
+  # Load params[:filters] into @filters
   def load_filters_param
     @filters ||= []
     if params[:filters].is_a? Array
@@ -38,6 +42,8 @@ module LoadParam
     end
   end
 
+  # Load params[:limit], params[:offset] and params[:order]
+  # into @limit, @offset, @orders
   def load_limit_offset_order_params
     if params[:limit]
       unless params[:limit].to_s.match(/^\d+$/)

@@ -19,12 +19,13 @@ class RackSocket
   # +app+  The next layer of the Rack stack.
   #
   # Accepts options:
-  # +:handler+ (Required) A class to handle new connections.  Initialize will
+  # +:handler+ (Required) A class to handle new connections.  #initialize will
   # call handler.new to create the actual handler instance object.  When a new
   # websocket connection is established, #on_connect on the handler instance
-  # object to notify it about the connection.
+  # object will be called with the new connection.
   #
-  # +:mount+  The path for websocket connect requests, defaults to '/websocket'.
+  # +:mount+ The HTTP request path that will be recognized for websocket
+  # connect requests, defaults to '/websocket'.
   #
   # +:websocket_only+  If true, the server will only handle websocket requests,
   # and all other requests will result in an error.  If false, unhandled

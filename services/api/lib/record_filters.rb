@@ -1,11 +1,20 @@
+# Mixin module providing a method to convert filters into a list of SQL
+# fragments suitable to be fed to ActiveRecord #where.
+#
 # Expects:
-#   @where
-#   @filters
-#   +model_class+
+#   model_class
 # Operates on:
 #   @objects
 module RecordFilters
 
+  # Input:
+  # +filters+  Arvados filters as list of lists.
+  # +ar_table_name+  name of SQL table
+  #
+  # Output:
+  # Hash with two keys:
+  # :cond_out  array of SQL fragments for each filter expression
+  # :param_out  array of values for parameter substitution in cond_out
   def record_filters filters, ar_table_name
     cond_out = []
     param_out = []
