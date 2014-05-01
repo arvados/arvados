@@ -268,6 +268,7 @@ ActiveRecord::Schema.define(:version => 20140423133559) do
     t.datetime "created_at",              :null => false
     t.datetime "updated_at",              :null => false
     t.datetime "modified_at"
+    t.string   "object_owner_uuid"
   end
 
   add_index "logs", ["created_at"], :name => "index_logs_on_created_at"

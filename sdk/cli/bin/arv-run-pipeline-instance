@@ -437,7 +437,7 @@ class WhRunPipelineInstance
           # No job yet associated with this component and is component inputs
           # are fully specified (any output_of script_parameters are resolved
           # to real value)
-          job = JobCache.create {
+          job = JobCache.create({
             :script => c[:script],
             :script_parameters => c[:script_parameters],
             :script_version => c[:script_version],
@@ -457,7 +457,7 @@ class WhRunPipelineInstance
             :minimum_script_version => c[:minimum_script_version],
             :exclude_script_versions => c[:exclude_minimum_script_versions],
             :find_or_create => !(@options[:no_reuse] || c[:nondeterministic]),
-          }
+          })
           if job
             debuglog "component #{cname} new job #{job[:uuid]}"
             c[:job] = job

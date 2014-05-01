@@ -224,4 +224,25 @@ class LogTest < ActiveSupport::TestCase
     auth.destroy
     assert_auth_logged_with_clean_properties(auth, :destroy)
   end
+
+  test "use ownership and permission links to determine which logs a user can see" do
+    c = Log.readable_by(users(:admin)).order("id asc").each.to_a
+    assert_equal 5, c.size
+    assert_equal 1, c[0].id # no-op
+    assert_equal 2, c[1].id # admin changes repository foo, which is owned by active user
+    assert_equal 3, c[2].id # admin changes specimen owned_by_spectator
+    assert_equal 4, c[3].id # foo collection added, readable by active through link
+    assert_equal 5, c[4].id # baz collection added, readable by active and spectator through group 'all users' group membership
+
+    c = Log.readable_by(users(:active)).order("id asc").each.to_a
+    assert_equal 3, c.size
+    assert_equal 2, c[0].id # admin changes repository foo, which is owned by active user
+    assert_equal 4, c[1].id # foo collection added, readable by active through link
+    assert_equal 5, c[2].id # baz collection added, readable by active and spectator through group 'all users' group membership
+
+    c = Log.readable_by(users(:spectator)).order("id asc").each.to_a
+    assert_equal 2, c.size
+    assert_equal 3, c[0].id # admin changes specimen owned_by_spectator
+    assert_equal 5, c[1].id # baz collection added, readable by active and spectator through group 'all users' group membership
+  end
 end

@@ -11,36 +11,40 @@ class ActsAsApi::ApiTemplate
   prepend ApiTemplateOverride
 end
 
+require 'load_param'
+require 'record_filters'
+
 class ApplicationController < ActionController::Base
   include CurrentApiClient
   include ThemesForRails::ActionController
+  include LoadParam
+  include RecordFilters
+
+  ERROR_ACTIONS = [:render_error, :render_not_found]
 
 
   respond_to :json
   protect_from_forgery
-  around_filter :thread_with_auth_info, :except => [:render_error, :render_not_found]
 
+  before_filter :respond_with_json_by_default
   before_filter :remote_ip
-  before_filter :require_auth_scope, :except => :render_not_found
-  before_filter :catch_redirect_hint
+  before_filter :load_read_auths
+  before_filter :require_auth_scope, except: ERROR_ACTIONS
 
-  before_filter :find_object_by_uuid, :except => [:index, :create,
-                                                  :render_error,
-                                                  :render_not_found]
+  before_filter :catch_redirect_hint
+  before_filter(:find_object_by_uuid,
+                except: [:index, :create] + ERROR_ACTIONS)
   before_filter :load_limit_offset_order_params, only: [:index, :owned_items]
   before_filter :load_where_param, only: [:index, :owned_items]
   before_filter :load_filters_param, only: [:index, :owned_items]
   before_filter :find_objects_for_index, :only => :index
   before_filter :reload_object_before_update, :only => :update
-  before_filter :render_404_if_no_object, except: [:index, :create,
-                                                   :render_error,
-                                                   :render_not_found]
+  before_filter(:render_404_if_no_object,
+                except: [:index, :create] + ERROR_ACTIONS)
 
   theme :select_theme
 
   attr_accessor :resource_attrs
-
-  DEFAULT_LIMIT = 100
 
   def index
     @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
@@ -105,7 +109,7 @@ class ApplicationController < ActionController::Base
       when 'ApiClientAuthorization'
         # Do not want.
       else
-        @objects = klass.readable_by(current_user)
+        @objects = klass.readable_by(*@read_users)
         cond_sql = "#{klass.table_name}.owner_uuid = ?"
         cond_params = [@object.uuid]
         if params[:include_linked]
@@ -190,157 +194,19 @@ class ApplicationController < ActionController::Base
 
   protected
 
-  def load_where_param
-    if params[:where].nil? or params[:where] == ""
-      @where = {}
-    elsif params[:where].is_a? Hash
-      @where = params[:where]
-    elsif params[:where].is_a? String
-      begin
-        @where = Oj.load(params[:where])
-        raise unless @where.is_a? Hash
-      rescue
-        raise ArgumentError.new("Could not parse \"where\" param as an object")
-      end
-    end
-    @where = @where.with_indifferent_access
-  end
-
-  def load_filters_param
-    @filters ||= []
-    if params[:filters].is_a? Array
-      @filters += params[:filters]
-    elsif params[:filters].is_a? String and !params[:filters].empty?
-      begin
-        f = Oj.load params[:filters]
-        raise unless f.is_a? Array
-        @filters += f
-      rescue
-        raise ArgumentError.new("Could not parse \"filters\" param as an array")
-      end
-    end
-  end
-
-  def default_orders
-    ["#{table_name}.modified_at desc"]
-  end
-
-  def load_limit_offset_order_params
-    if params[:limit]
-      unless params[:limit].to_s.match(/^\d+$/)
-        raise ArgumentError.new("Invalid value for limit parameter")
-      end
-      @limit = params[:limit].to_i
-    else
-      @limit = DEFAULT_LIMIT
-    end
-
-    if params[:offset]
-      unless params[:offset].to_s.match(/^\d+$/)
-        raise ArgumentError.new("Invalid value for offset parameter")
-      end
-      @offset = params[:offset].to_i
-    else
-      @offset = 0
-    end
-
-    @orders = []
-    if params[:order]
-      params[:order].split(',').each do |order|
-        attr, direction = order.strip.split " "
-        direction ||= 'asc'
-        if attr.match /^[a-z][_a-z0-9]+$/ and
-            model_class.columns.collect(&:name).index(attr) and
-            ['asc','desc'].index direction.downcase
-          @orders << "#{table_name}.#{attr} #{direction.downcase}"
-        end
-      end
-    end
-    if @orders.empty?
-      @orders = default_orders
-    end
-
-    case params[:select]
-    when Array
-      @select = params[:select]
-    when String
-      begin
-        @select = Oj.load params[:select]
-        raise unless @select.is_a? Array
-      rescue
-        raise ArgumentError.new("Could not parse \"select\" param as an array")
-      end
-    end
-
-    if params[:distinct].is_a? String
-      @distinct = params[:distinct]
-      @orders.select! { |o| @select.include? o } if @select
-    end
-  end
-
   def find_objects_for_index
-    @objects ||= model_class.readable_by(current_user)
+    @objects ||= model_class.readable_by(*@read_users)
     apply_where_limit_order_params
   end
 
   def apply_where_limit_order_params
     ar_table_name = @objects.table_name
-    if @filters.is_a? Array and @filters.any?
-      cond_out = []
-      param_out = []
-      @filters.each do |filter|
-        attr, operator, operand = filter
-        if !filter.is_a? Array
-          raise ArgumentError.new("Invalid element in filters array: #{filter.inspect} is not an array")
-        elsif !operator.is_a? String
-          raise ArgumentError.new("Invalid operator '#{operator}' (#{operator.class}) in filter")
-        elsif !model_class.searchable_columns(operator).index attr.to_s
-          raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
-        end
-        case operator.downcase
-        when '=', '<', '<=', '>', '>=', 'like'
-          if operand.is_a? String
-            cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
-            if (# any operator that operates on value rather than
-                # representation:
-                operator.match(/[<=>]/) and
-                model_class.attribute_column(attr).type == :datetime)
-              operand = Time.parse operand
-            end
-            param_out << operand
-          elsif operand.nil? and operator == '='
-            cond_out << "#{ar_table_name}.#{attr} is null"
-          else
-            raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
-                                    "for '#{operator}' operator in filters")
-          end
-        when 'in'
-          if operand.is_a? Array
-            cond_out << "#{ar_table_name}.#{attr} IN (?)"
-            param_out << operand
-          else
-            raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
-                                    "for '#{operator}' operator in filters")
-          end
-        when 'is_a'
-          operand = [operand] unless operand.is_a? Array
-          cond = []
-          operand.each do |op|
-              cl = ArvadosModel::kind_class op
-              if cl
-                cond << "#{ar_table_name}.#{attr} like ?"
-                param_out << cl.uuid_like_pattern
-              else
-                cond << "1=0"
-              end
-          end
-          cond_out << cond.join(' OR ')
-        end
-      end
-      if cond_out.any?
-        @objects = @objects.where(cond_out.join(' AND '), *param_out)
-      end
+
+    ft = record_filters @filters, ar_table_name
+    if ft[:cond_out].any?
+      @objects = @objects.where(ft[:cond_out].join(' AND '), *ft[:param_out])
     end
+
     if @where.is_a? Hash and @where.any?
       conditions = ['1=1']
       @where.each do |attr,value|
@@ -350,6 +216,9 @@ class ApplicationController < ActionController::Base
               value[0] == 'contains' then
             ilikes = []
             model_class.searchable_columns('ilike').each do |column|
+              # Including owner_uuid in an "any column" search will
+              # probably just return a lot of false positives.
+              next if column == 'owner_uuid'
               ilikes << "#{ar_table_name}.#{column} ilike ?"
               conditions << "%#{value[1]}%"
             end
@@ -420,15 +289,34 @@ class ApplicationController < ActionController::Base
   end
 
   # Authentication
+  def load_read_auths
+    @read_auths = []
+    if current_api_client_authorization
+      @read_auths << current_api_client_authorization
+    end
+    # Load reader tokens if this is a read request.
+    # If there are too many reader tokens, assume the request is malicious
+    # and ignore it.
+    if request.get? and params[:reader_tokens] and
+        params[:reader_tokens].size < 100
+      @read_auths += ApiClientAuthorization
+        .includes(:user)
+        .where('api_token IN (?) AND
+                (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
+               params[:reader_tokens])
+        .all
+    end
+    @read_auths.select! { |auth| auth.scopes_allow_request? request }
+    @read_users = @read_auths.map { |auth| auth.user }.uniq
+  end
+
   def require_login
-    if current_user
-      true
-    else
+    if not current_user
       respond_to do |format|
         format.json {
           render :json => { errors: ['Not logged in'] }.to_json, status: 401
         }
-        format.html  {
+        format.html {
           redirect_to '/auth/joshid'
         }
       end
@@ -443,68 +331,20 @@ class ApplicationController < ActionController::Base
   end
 
   def require_auth_scope
-    return false unless require_login
-    unless current_api_client_auth_has_scope("#{request.method} #{request.path}")
-      render :json => { errors: ['Forbidden'] }.to_json, status: 403
+    if @read_auths.empty?
+      if require_login != false
+        render :json => { errors: ['Forbidden'] }.to_json, status: 403
+      end
+      false
     end
   end
 
-  def thread_with_auth_info
-    Thread.current[:request_starttime] = Time.now
-    Thread.current[:api_url_base] = root_url.sub(/\/$/,'') + '/arvados/v1'
-    begin
-      user = nil
-      api_client = nil
-      api_client_auth = nil
-      supplied_token =
-        params[:api_token] ||
-        params[:oauth_token] ||
-        request.headers["Authorization"].andand.match(/OAuth2 ([a-z0-9]+)/).andand[1]
-      if supplied_token
-        api_client_auth = ApiClientAuthorization.
-          includes(:api_client, :user).
-          where('api_token=? and (expires_at is null or expires_at > CURRENT_TIMESTAMP)', supplied_token).
-          first
-        if api_client_auth.andand.user
-          session[:user_id] = api_client_auth.user.id
-          session[:api_client_uuid] = api_client_auth.api_client.andand.uuid
-          session[:api_client_authorization_id] = api_client_auth.id
-          user = api_client_auth.user
-          api_client = api_client_auth.api_client
-        else
-          # Token seems valid, but points to a non-existent (deleted?) user.
-          api_client_auth = nil
-        end
-      elsif session[:user_id]
-        user = User.find(session[:user_id]) rescue nil
-        api_client = ApiClient.
-          where('uuid=?',session[:api_client_uuid]).
-          first rescue nil
-        if session[:api_client_authorization_id] then
-          api_client_auth = ApiClientAuthorization.
-            find session[:api_client_authorization_id]
-        end
-      end
-      Thread.current[:api_client_ip_address] = remote_ip
-      Thread.current[:api_client_authorization] = api_client_auth
-      Thread.current[:api_client_uuid] = api_client.andand.uuid
-      Thread.current[:api_client] = api_client
-      Thread.current[:user] = user
-      if api_client_auth
-        api_client_auth.last_used_at = Time.now
-        api_client_auth.last_used_by_ip_address = remote_ip
-        api_client_auth.save validate: false
-      end
-      yield
-    ensure
-      Thread.current[:api_client_ip_address] = nil
-      Thread.current[:api_client_authorization] = nil
-      Thread.current[:api_client_uuid] = nil
-      Thread.current[:api_client] = nil
-      Thread.current[:user] = nil
+  def respond_with_json_by_default
+    html_index = request.accepts.index(Mime::HTML)
+    if html_index.nil? or request.accepts[0...html_index].include?(Mime::JSON)
+      request.format = :json
     end
   end
-  # /Authentication
 
   def model_class
     controller_name.classify.constantize
@@ -540,27 +380,37 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def self.accept_attribute_as_json(attr, force_class=nil)
-    before_filter lambda { accept_attribute_as_json attr, force_class }
+  def load_json_value(hash, key, must_be_class=nil)
+    if hash[key].is_a? String
+      hash[key] = Oj.load(hash[key], symbol_keys: false)
+      if must_be_class and !hash[key].is_a? must_be_class
+        raise TypeError.new("parameter #{key.to_s} must be a #{must_be_class.to_s}")
+      end
+    end
+  end
+
+  def self.accept_attribute_as_json(attr, must_be_class=nil)
+    before_filter lambda { accept_attribute_as_json attr, must_be_class }
   end
   accept_attribute_as_json :properties, Hash
   accept_attribute_as_json :info, Hash
-  def accept_attribute_as_json(attr, force_class)
+  def accept_attribute_as_json(attr, must_be_class)
     if params[resource_name] and resource_attrs.is_a? Hash
-      if resource_attrs[attr].is_a? String
-        resource_attrs[attr] = Oj.load(resource_attrs[attr],
-                                       symbol_keys: false)
-        if force_class and !resource_attrs[attr].is_a? force_class
-          raise TypeError.new("#{resource_name}[#{attr.to_s}] must be a #{force_class.to_s}")
-        end
-      elsif resource_attrs[attr].is_a? Hash
+      if resource_attrs[attr].is_a? Hash
         # Convert symbol keys to strings (in hashes provided by
         # resource_attrs)
         resource_attrs[attr] = resource_attrs[attr].
           with_indifferent_access.to_hash
+      else
+        load_json_value(resource_attrs, attr, must_be_class)
       end
     end
   end
+
+  def self.accept_param_as_json(key, must_be_class=nil)
+    prepend_before_filter lambda { load_json_value(params, key, must_be_class) }
+  end
+  accept_param_as_json :reader_tokens, Array
 
   def render_list
     @object_list = {
