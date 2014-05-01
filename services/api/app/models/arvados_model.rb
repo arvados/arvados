@@ -87,9 +87,11 @@ class ArvadosModel < ActiveRecord::Base
       # A permission link exists ('write' and 'manage' implicitly include
       # 'read') from a member of users_list, or a group readable by users_list,
       # to this row, or to the owner of this row (see join() below).
+      permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
+
       sql_conds += ["#{table_name}.owner_uuid in (?)",
                     "#{table_name}.uuid in (?)",
-                    "uuid IN (SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"]
+                    "#{table_name}.uuid IN #{permitted_uuids}"]
       sql_params += [uuid_list, user_uuids]
 
       if self == Link and users_list.any?
@@ -102,7 +104,7 @@ class ArvadosModel < ActiveRecord::Base
 
       if self == Log and users_list.any?
         # Link head points to the object described by this row
-        or_object_uuid = ", #{table_name}.object_uuid"
+        sql_conds += ["#{table_name}.object_uuid IN #{permitted_uuids}"]
 
         # This object described by this row is owned by this user, or owned by a group readable by this user
         sql_conds += ["#{table_name}.object_owner_uuid in (?)"]
