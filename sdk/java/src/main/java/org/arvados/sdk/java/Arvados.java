@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 
 public class Arvados {
-  // HttpTransport and JsonFactory are thread-safe. So, use global instances. 
+  // HttpTransport and JsonFactory are thread-safe. So, use global instances.
   private static HttpTransport HTTP_TRANSPORT;
   private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
@@ -40,7 +40,7 @@ public class Arvados {
 
   private static String ARVADOS_API_TOKEN;
   private static String ARVADOS_API_HOST;
-  private static String ARVADOS_API_HOST_INSECURE;
+  private static boolean ARVADOS_API_HOST_INSECURE;
 
   private static String ARVADOS_ROOT_URL;
 
@@ -48,88 +48,14 @@ public class Arvados {
   
   // Get it on a discover call and reuse on the call requests
   RestDescription restDescription = null;
+  String apiName = null;
+  String apiVersion = null;
   
-  public static void main(String[] args) throws Exception {
-    if (args.length == 0) {
-      showMainHelp();
-      error(null, "Missing input args");
-    } else {
-      String command = args[0];
-      if (command.equals("help")) {
-        help(args);
-      } else if (command.equals("call")) {
-        List<String> params = Arrays.asList(args);
-        
-        if (args.length == 1) {
-          error("call", "missing api name");
-        }
-        
-        Arvados arv = new Arvados(args[1]);
-        String response = arv.call(params);
-        System.out.println (response);
-      } else if (command.equals("discover")) {
-        List<String> params = Arrays.asList(args);
-        
-        if (args.length == 1) {
-          error("call", "missing api name");
-        }
-        
-        Arvados arv = new Arvados(args[1]);
-        RestDescription restDescription = arv.discover(params);
-        System.out.println(restDescription);
-      } else {
-        error(null, "unknown command: " + command);
-      }
-    }
-  }
-
-  protected static void help(String[] args) throws Exception {
-    if (args.length == 1) {
-      showMainHelp();
-    } else {
-      String helpCommand = args[1];
-      if (helpCommand.equals("call")) {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append("\nUsage: Arvados call methodName [parameters]");
-        buffer.append("\nExamples:");
-        buffer.append("\n  Arvados call arvados v1 users.list");
-        buffer.append("\n  Arvados call arvados v1 users.get <uuid>");
-        buffer.append("\n  Arvados call arvados v1 pipeline_instances.list");
-        logger.debug(buffer.toString());
-        System.out.println(buffer.toString());
-      } else if (helpCommand.equals("discover")) {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append("\nUsage");
-        buffer.append("\nExamples:");
-        buffer.append("\n  Arvados discover arvados v1");
-        logger.debug(buffer.toString());
-        System.out.println(buffer.toString());
-      } else {
-        error(null, "unknown command: " + helpCommand);
-      }
-    }
-  }
-
-  protected static void showMainHelp() {
-    StringBuffer buffer = new StringBuffer();
-    buffer.append("\narvados");
-    buffer.append("\nFor more help on a specific command, type one of:");
-    buffer.append("\n  Arvados help call");
-    buffer.append("\n  Arvados help discover");
-    logger.debug(buffer.toString());
-    System.out.println(buffer.toString());
-  }
-
-  private static void error(String command, String detail) throws Exception {
-    String errorDetail = "ERROR: " + detail +
-        "For help, type: Arvados" + (command == null ? "" : " help " + command);
-    
-    logger.debug(errorDetail);
-    throw new Exception(errorDetail);
-  }
-
-  public Arvados (String apiName){
+  public Arvados (String apiName, String apiVersion){
     try {
+      this.apiName = apiName;
+      this.apiVersion = apiVersion;
+      
       // Read needed environmental variables
       ARVADOS_API_TOKEN = System.getenv().get("ARVADOS_API_TOKEN");
       if (ARVADOS_API_TOKEN == null) {
@@ -144,14 +70,13 @@ public class Arvados {
       ARVADOS_ROOT_URL = "https://" + ARVADOS_API_HOST;
       ARVADOS_ROOT_URL += (ARVADOS_API_HOST.endsWith("/")) ? "" : "/";
 
-      ARVADOS_API_HOST_INSECURE = System.getenv().get("ARVADOS_API_HOST_INSECURE");
-      if (ARVADOS_API_HOST_INSECURE == null) {
-        throw new Exception("Missing environment variable: ARVADOS_API_HOST_INSECURE");
-      }
+      ARVADOS_API_HOST_INSECURE = "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
 
       // Create HTTP_TRANSPORT object
       NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
-      builder.doNotValidateCertificate();
+      if (ARVADOS_API_HOST_INSECURE) {
+        builder.doNotValidateCertificate();
+      }
       HTTP_TRANSPORT = builder.build();
     } catch (Throwable t) {
       t.printStackTrace();
@@ -164,14 +89,8 @@ public class Arvados {
    * @return
    * @throws Exception
    */
-  public RestDescription discover(List<String> params) throws Exception {
-    if (params.size() == 1) {
-      error("call", "missing api name");
-    } else if (params.size() == 2) {
-      error("call", "missing api version");
-    } 
-
-    restDescription = loadArvadosApi(params.get(1), params.get(2));
+  public RestDescription discover() throws Exception {
+    restDescription = loadArvadosApi(apiName, apiVersion);
 
     // compute method details
     ArrayList<MethodDetails> result = Lists.newArrayList();
@@ -182,7 +101,7 @@ public class Arvados {
     Collections.sort(result);
     StringBuffer buffer = new StringBuffer();
     for (MethodDetails methodDetail : result) {
-      buffer.append("\nArvados call " + params.get(1) + " " + params.get(2) + " " + methodDetail.name);
+      buffer.append("\nArvados call " + apiName + " " + apiVersion + " " + methodDetail.name);
       for (String param : methodDetail.requiredParameters) {
         buffer.append(" <" + param + ">");
       }
@@ -429,5 +348,14 @@ public class Arvados {
       error("call", "duplicate parameter: " + argName);
     }
   }
+  
+  private static void error(String command, String detail) throws Exception {
+    String errorDetail = "ERROR: " + detail +
+        "For help, type: Arvados" + (command == null ? "" : " help " + command);
+    
+    logger.debug(errorDetail);
+    throw new Exception(errorDetail);
+  }
+
 
 }

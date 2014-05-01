@@ -18,10 +18,25 @@
 
 == Setting up the environment
 
-  - The following three environment variables are required by the SDK
+  - The SDK requires a running Arvados API server. The information about the
+  	  API server needs to be passed to the SDK using environment variables.
+  	  
+  - The following two environment variables are required by the SDK
 
-      ARVADOS_API_TOKEN, ARVADOS_API_HOST, ARVADOS_API_HOST_INSECURE
+      ARVADOS_API_TOKEN, ARVADOS_API_HOST
+      
+      Below are examples using a .bashrc file:
+      
+      	export ARVADOS_API_TOKEN=z40gplmla6i58rsg96jhg5u41ewdl5rj4g1py2xg6s6e2lsc3
+		export ARVADOS_API_HOST=localhost:3001
+      
+  - You can also set ARVADOS_API_HOST_INSECURE to true if you are using
+  	  self-signed certificates and want to bypass certificate validations.
 
+      Below is an example using a .bashrc file:
+      
+      	export ARVADOS_API_HOST_INSECURE=true
+      	
 
 == Building the Arvados SDK
 

@@ -20,48 +20,15 @@ import org.json.simple.parser.JSONParser;
  */
 public class ArvadosTest {
 
-  @Test(expected=Exception.class)
-  public void testMainWithNoParams() throws Exception {
-    String[] args = new String[0];
-    Arvados.main(args);
-  }
-
-  @Test(expected=Exception.class)
-  public void testHelp() throws Exception {
-    String[] args = new String[1];
-
-    args[0] = "help";
-    Arvados.help(args); // expect this to succeed with no problems
-
-    args = new String[2];
-
-    args[0] = "help";
-    args[1] = "call";
-    Arvados.main(args); // call via main
-    
-    args[0] = "help";
-    args[1] = "discover";
-    Arvados.help(args); // call help directly
-
-    args[0] = "help";
-    args[1] = "unknown";
-    Arvados.help(args); // expect exception
-  }
-
   /**
    * test discover method
    * @throws Exception
    */
   @Test
   public void testDiscover() throws Exception {
-    Arvados arv = new Arvados("arvados");
+    Arvados arv = new Arvados("arvados", "v1");
 
-    List<String> params = new ArrayList<String>();
-    params.add("discover");
-    params.add("arvados");
-    params.add("v1");
-
-    RestDescription restDescription = arv.discover(params);
+    RestDescription restDescription = arv.discover();
 
     // The discover method returns the supported methods
     Map<String, RestResource> resources = restDescription.getResources();
@@ -81,7 +48,7 @@ public class ArvadosTest {
    */
   @Test
   public void testCallUsersList() throws Exception {
-    Arvados arv = new Arvados("arvados");
+    Arvados arv = new Arvados("arvados", "v1");
 
     List<String> params = new ArrayList<String>();
     params.add("call");
@@ -116,7 +83,7 @@ public class ArvadosTest {
    */
   @Test
   public void testCallUsersGet() throws Exception {
-    Arvados arv = new Arvados("arvados");
+    Arvados arv = new Arvados("arvados", "v1");
 
     // call user.system and get uuid of this user
     List<String> params = new ArrayList<String>();
@@ -158,7 +125,7 @@ public class ArvadosTest {
    */
   @Test
   public void testCreateUser() throws Exception {
-    Arvados arv = new Arvados("arvados");
+    Arvados arv = new Arvados("arvados", "v1");
 
     File file = new File(getClass().getResource( "/create_user.json" ).toURI());
     String filePath = file.getPath();
@@ -183,7 +150,7 @@ public class ArvadosTest {
    */
   @Test
   public void testUnsupportedApiName() throws Exception {
-    Arvados arv = new Arvados("not_arvados");
+    Arvados arv = new Arvados("not_arvados", "v1");
 
     List<String> params = new ArrayList<String>();
     params.add("call");
@@ -208,7 +175,7 @@ public class ArvadosTest {
    */
   @Test
   public void testUnsupportedVersion() throws Exception {
-    Arvados arv = new Arvados("arvados");
+    Arvados arv = new Arvados("arvados", "v1");
 
     List<String> params = new ArrayList<String>();
     params.add("call");
@@ -233,7 +200,7 @@ public class ArvadosTest {
    */
   @Test
   public void testCallWithTooFewParams() throws Exception {
-    Arvados arv = new Arvados("arvados");
+    Arvados arv = new Arvados("arvados", "v1");
 
     List<String> params = new ArrayList<String>();
     params.add("call");
@@ -257,7 +224,7 @@ public class ArvadosTest {
    */
   @Test
   public void testCreateAndGetPipelineTemplate() throws Exception {
-    Arvados arv = new Arvados("arvados");
+    Arvados arv = new Arvados("arvados", "v1");
 
     File file = new File(getClass().getResource( "/first_pipeline.json" ).toURI());
     String filePath = file.getPath();
