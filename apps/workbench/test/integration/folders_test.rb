@@ -9,16 +9,16 @@ class FoldersTest < ActionDispatch::IntegrationTest
     visit page_with_token 'active', '/'
     find('nav a', text: 'Folders').click
     find('tr', text: 'A Folder').
-      find('a', text: 'zzzzz-').
+      find('a,button', text: 'Show').
       click
     within('.panel', text: api_fixture('groups')['afolder']['name']) do
       find('span', text: api_fixture('groups')['afolder']['name']).click
       find('.glyphicon-ok').click
       find('.btn', text: 'Edit description').click
-      find('textarea').set('I just edited this.')
-      find('.glyphicon-ok').click
+      find('.editable-input textarea').set('I just edited this.')
+      find('.editable-submit').click
     end
-    find('.panel', text: 'I just edited this.')
+    #find('.panel', text: 'I just edited this.')
   end
 
 end

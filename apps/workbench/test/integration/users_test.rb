@@ -23,7 +23,9 @@ class UsersTest < ActionDispatch::IntegrationTest
       assert (text.include? 'true false'), 'Expected is_active'
     end
 
-    click_link 'zzzzz-tpzed-xurymjxw79nv3jz'
+    find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
+      find('a,button', text: 'Show').
+      click
     assert page.has_text? 'Attributes'
     assert page.has_text? 'Metadata'
     assert page.has_text? 'Admin'
@@ -63,23 +65,20 @@ class UsersTest < ActionDispatch::IntegrationTest
       click_button "Submit"
     end
 
-    sleep(0.1)
+    sleep 0.1
 
-    # verify that the new user showed up in the users page
-    assert page.has_text? 'foo@example.com'
-
-    new_user_uuid = nil
-    all("tr").each do |elem|
-      if elem.text.include? 'foo@example.com'
-        new_user_uuid = elem.text.split[0]
-        break
-      end
-    end
-
+    # verify that the new user showed up in the users page and find
+    # the new user's UUID
+    new_user_uuid =
+      find('tr[data-object-uuid]', text: 'foo@example.com').
+      find('td', text: '-tpzed-').
+      text
     assert new_user_uuid, "Expected new user uuid not found"
 
     # go to the new user's page
-    click_link new_user_uuid
+    find('tr', text: new_user_uuid).
+      find('a,button', text: 'Show').
+      click
 
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
@@ -102,10 +101,10 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Users'
 
-    assert page.has_link? 'zzzzz-tpzed-xurymjxw79nv3jz'
-
     # click on active user
-    click_link 'zzzzz-tpzed-xurymjxw79nv3jz'
+    find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
+      find('a,button', text: 'Show').
+      click
 
     # Setup user
     click_link 'Admin'
@@ -161,10 +160,10 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Users'
 
-    assert page.has_link? 'zzzzz-tpzed-xurymjxw79nv3jz'
-
     # click on active user
-    click_link 'zzzzz-tpzed-xurymjxw79nv3jz'
+    find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
+      find('a,button', text: 'Show').
+      click
 
     # Verify that is_active is set
     click_link 'Attributes'
