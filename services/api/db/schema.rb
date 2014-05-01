@@ -11,7 +11,9 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140423133559) do
+ActiveRecord::Schema.define(:version => 20140501165548) do
+
+
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -252,6 +254,7 @@ ActiveRecord::Schema.define(:version => 20140423133559) do
   add_index "links", ["created_at"], :name => "index_links_on_created_at"
   add_index "links", ["head_uuid"], :name => "index_links_on_head_uuid"
   add_index "links", ["modified_at"], :name => "index_links_on_modified_at"
+  add_index "links", ["tail_uuid", "name"], :name => "links_tail_name_unique_if_link_class_name", :unique => true, :where => "((link_class)::text = 'name'::text)"
   add_index "links", ["tail_uuid"], :name => "index_links_on_tail_uuid"
   add_index "links", ["uuid"], :name => "index_links_on_uuid", :unique => true
 
@@ -268,6 +271,7 @@ ActiveRecord::Schema.define(:version => 20140423133559) do
     t.datetime "created_at",              :null => false
     t.datetime "updated_at",              :null => false
     t.datetime "modified_at"
+    t.string   "object_owner_uuid"
   end
 
   add_index "logs", ["created_at"], :name => "index_logs_on_created_at"
@@ -421,5 +425,6 @@ ActiveRecord::Schema.define(:version => 20140423133559) do
 
   add_index "virtual_machines", ["hostname"], :name => "index_virtual_machines_on_hostname"
   add_index "virtual_machines", ["uuid"], :name => "index_virtual_machines_on_uuid", :unique => true
+
 
 end

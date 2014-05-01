@@ -47,6 +47,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :folders
 
   post 'actions' => 'actions#post'
+  get 'websockets' => 'websocket#index'
 
   root :to => 'users#welcome'
 
