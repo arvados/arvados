@@ -69,11 +69,16 @@ GEM
     coffee-script-source (1.7.0)
     curb (0.8.5)
     daemon_controller (1.2.0)
+    database_cleaner (1.2.0)
     erubis (2.7.0)
+    eventmachine (1.0.3)
     execjs (2.0.2)
     extlib (0.9.16)
     faraday (0.8.9)
       multipart-post (~> 1.2.0)
+    faye-websocket (0.7.2)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.3.1)
     google-api-client (0.6.4)
       addressable (>= 2.3.2)
       autoparse (>= 0.3.3)
@@ -193,6 +198,7 @@ GEM
       execjs (>= 0.3.0)
       json (>= 1.8.0)
     uuidtools (2.1.4)
+    websocket-driver (0.3.2)
 
 PLATFORMS
   ruby
@@ -202,6 +208,8 @@ DEPENDENCIES
   andand
   arvados-cli (>= 0.1.20140328152103)
   coffee-rails (~> 3.2.0)
+  database_cleaner
+  faye-websocket
   google-api-client (~> 0.6.3)
   jquery-rails
   multi_json
