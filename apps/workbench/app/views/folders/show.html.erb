@@ -65,6 +65,13 @@
         -->
 	<div style="height:0.5em;"></div>
         <p>Owner: <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></p>
+        <% if @share_links.any? %>
+        <p>Shared with:
+          <% @share_links.andand.each do |link| %>
+          <br /><%= link_to_if_arvados_object link.tail_uuid, friendly_name: true %>
+          <% end %>
+        </p>
+        <% end %>
       </div>
     </div>
   </div>

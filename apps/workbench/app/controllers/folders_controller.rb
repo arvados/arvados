@@ -39,6 +39,8 @@ class FoldersController < ApplicationController
 
   def show
     @objects = @object.contents include_linked: true
+    @share_links = Link.filter([['head_uuid', '=', @object.uuid],
+                                ['link_class', '=', 'permission']])
     @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
     super
   end
