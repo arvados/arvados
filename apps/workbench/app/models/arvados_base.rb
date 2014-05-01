@@ -21,8 +21,15 @@ class ArvadosBase < ActiveRecord::Base
       end
   end
 
-  def initialize(*args)
-    super(*args)
+  def initialize raw_params={}
+    begin
+      super self.class.permit_attribute_params(raw_params)
+    rescue Exception => e
+      logger.debug raw_params
+      logger.debug self.class.permit_attribute_params(raw_params).inspect
+      logger.debug self.class.attribute_info.inspect
+      raise e
+    end
     @attribute_sortkey ||= {
       'id' => nil,
       'uuid' => '000',
@@ -58,7 +65,6 @@ class ArvadosBase < ActiveRecord::Base
           @columns << column(k, :text)
           serialize k, coldef[:type].constantize
         end
-        attr_accessible k
         @attribute_info[k] = coldef
       end
     end
@@ -113,6 +119,22 @@ class ArvadosBase < ActiveRecord::Base
 
   def self.all(*args)
     ArvadosResourceList.new(self).all(*args)
+  end
+
+  def self.permit_attribute_params raw_params
+    # strong_parameters does not provide security in Workbench: anyone
+    # who can get this far can just as well do a call directly to our
+    # database (Arvados) with the same credentials we use.
+    ActionController::Parameters.new(raw_params).permit!
+  end
+
+  def self.create raw_params={}
+    logger.error permit_attribute_params(raw_params).inspect
+    super(permit_attribute_params(raw_params))
+  end
+
+  def update_attributes raw_params={}
+    super(self.class.permit_attribute_params(raw_params))
   end
 
   def save
