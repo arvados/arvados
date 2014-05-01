@@ -15,7 +15,7 @@ class ArvadosApiClient
     profile_checkpoint
 
     @@client_mtx.synchronize do
-      if not @@api_client 
+      if not @@api_client
         @@api_client = HTTPClient.new
         if Rails.configuration.arvados_insecure_https
           @@api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -54,11 +54,11 @@ class ArvadosApiClient
     if @@profiling_enabled
       query["_profile"] = "true"
     end
-    
+
     header = {"Accept" => "application/json"}
 
     profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]}" }
-    msg = @@api_client.post(url, 
+    msg = @@api_client.post(url,
                             query,
                             header: header)
     profile_checkpoint 'API transaction'
@@ -68,7 +68,7 @@ class ArvadosApiClient
     end
 
     json = msg.content
-    
+
     begin
       resp = Oj.load(json, :symbol_keys => true)
     rescue Oj::ParseError
@@ -102,7 +102,7 @@ class ArvadosApiClient
     if limit
       (class << ary; self; end).class_eval { attr_accessor :limit }
       ary.limit = limit
-    end    
+    end
     ary
   end
 
