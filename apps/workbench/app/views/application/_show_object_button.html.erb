@@ -1,0 +1,3 @@
+<% htmloptions = {class: ''}.merge(htmloptions || {})
+   htmloptions[:class] += " btn-#{size}" rescue nil %>
+<%= link_to_if_arvados_object object, { link_text: raw('Show <i class="fa fa-fw fa-arrow-circle-right"></i>') }, { class: 'btn btn-default ' + htmloptions[:class] } %>
