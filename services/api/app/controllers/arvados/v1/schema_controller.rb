@@ -225,6 +225,16 @@ class Arvados::V1::SchemaController < ApplicationController
                   type: "string",
                   description: "Order in which to return matching #{k.to_s.underscore.pluralize}.",
                   location: "query"
+                },
+                select: {
+                  type: "array",
+                  description: "Select which fields to return",
+                  location: "query"
+                },
+                distinct: {
+                  type: "string",
+                  description: "Return each distinct value exactly once for the specified column (may skip rows)",
+                  location: "query"
                 }
               },
               response: {

@@ -260,7 +260,17 @@ class ApplicationController < ActionController::Base
       @orders = default_orders
     end
 
-    @select = params[:select] if params[:select].andand.is_a? Array
+    case params[:select]
+    when Array
+      @select = params[:select]
+    when String
+      begin
+        @select = Oj.load params[:select]
+        raise unless @select.is_a? Array
+      rescue
+        raise ArgumentError.new("Could not parse \"select\" param as an array")
+      end
+    end
 
     if params[:distinct].is_a? String
       @distinct = params[:distinct]
