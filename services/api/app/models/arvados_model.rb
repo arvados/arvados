@@ -59,32 +59,71 @@ class ArvadosModel < ActiveRecord::Base
     self.columns.select { |col| col.name == attr.to_s }.first
   end
 
-  # def eager_load_associations
-  #   self.class.columns.each do |col|
-  #     re = col.name.match /^(.*)_kind$/
-  #     if (re and
-  #         self.respond_to? re[1].to_sym and
-  #         (auuid = self.send((re[1] + '_uuid').to_sym)) and
-  #         (aclass = self.class.kind_class(self.send(col.name.to_sym))) and
-  #         (aobject = aclass.where('uuid=?', auuid).first))
-  #       self.instance_variable_set('@'+re[1], aobject)
-  #     end
-  #   end
-  # end
+  # Return a query with read permissions restricted to the union of of the
+  # permissions of the members of users_list, i.e. if something is readable by
+  # any user in users_list, it will be readable in the query returned by this
+  # function.
+  def self.readable_by(*users_list)
+    # Get rid of troublesome nils
+    users_list.compact!
 
-  def self.readable_by user
-    uuid_list = [user.uuid, *user.groups_i_can(:read)]
-    sanitized_uuid_list = uuid_list.
-      collect { |uuid| sanitize(uuid) }.join(', ')
-    or_references_me = ''
-    if self == Link and user
-      or_references_me = "OR (#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND #{sanitize user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
+    # Check if any of the users are admin.  If so, we're done.
+    if users_list.select { |u| u.is_admin }.empty?
+
+      # Collect the uuids for each user and any groups readable by each user.
+      user_uuids = users_list.map { |u| u.uuid }
+      uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+      sanitized_uuid_list = uuid_list.
+        collect { |uuid| sanitize(uuid) }.join(', ')
+      sql_conds = []
+      sql_params = []
+      or_object_uuid = ''
+
+      # This row is owned by a member of users_list, or owned by a group
+      # readable by a member of users_list
+      # or
+      # This row uuid is the uuid of a member of users_list
+      # or
+      # A permission link exists ('write' and 'manage' implicitly include
+      # 'read') from a member of users_list, or a group readable by users_list,
+      # to this row, or to the owner of this row (see join() below).
+      sql_conds += ["#{table_name}.owner_uuid in (?)",
+                    "#{table_name}.uuid in (?)",
+                    "permissions.head_uuid IS NOT NULL"]
+      sql_params += [uuid_list, user_uuids]
+
+      if self == Link and users_list.any?
+        # This row is a 'permission' or 'resources' link class
+        # The uuid for a member of users_list is referenced in either the head
+        # or tail of the link
+        sql_conds += ["(#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{table_name}.head_uuid IN (?) OR #{table_name}.tail_uuid IN (?)))"]
+        sql_params += [user_uuids, user_uuids]
+      end
+
+      if self == Log and users_list.any?
+        # Link head points to the object described by this row
+        or_object_uuid = ", #{table_name}.object_uuid"
+
+        # This object described by this row is owned by this user, or owned by a group readable by this user
+        sql_conds += ["#{table_name}.object_owner_uuid in (?)"]
+        sql_params += [uuid_list]
+      end
+
+      # Link head points to this row, or to the owner of this row (the thing to be read)
+      #
+      # Link tail originates from this user, or a group that is readable by this
+      # user (the identity with authorization to read)
+      #
+      # Link class is 'permission' ('write' and 'manage' implicitly include 'read')
+
+      joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid #{or_object_uuid}) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'")
+        .where(sql_conds.join(' OR '), *sql_params).uniq
+
+    else
+      # At least one user is admin, so don't bother to apply any restrictions.
+      self
     end
-    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
-            true, user.is_admin,
-            uuid_list,
-            user.uuid)
+
   end
 
   def logged_attributes
@@ -251,7 +290,7 @@ class ArvadosModel < ActiveRecord::Base
       self.class.kind
     end
 
-    def self.readable_by (u)
+    def self.readable_by (*u)
       self
     end
 
@@ -293,6 +332,7 @@ class ArvadosModel < ActiveRecord::Base
     log = Log.new(event_type: event_type).fill_object(self)
     yield log
     log.save!
+    connection.execute "NOTIFY logs, '#{log.id}'"
     log_start_state
   end
 
