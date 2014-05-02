@@ -1,12 +1,14 @@
 class ApplicationController < ActionController::Base
+  ERROR_ACTIONS = [:render_exception, :render_not_found]
   respond_to :html, :json, :js
   protect_from_forgery
   around_filter :thread_clear
   around_filter :thread_with_mandatory_api_token, :except => [:render_exception, :render_not_found]
   around_filter :thread_with_optional_api_token
-  before_filter :find_object_by_uuid, :except => [:index, :render_exception, :render_not_found]
-  before_filter :check_user_agreements, :except => [:render_exception, :render_not_found]
-  before_filter :check_user_notifications, :except => [:render_exception, :render_not_found]
+  before_filter :find_object_by_uuid, :except => [:index] + ERROR_ACTIONS
+  before_filter :check_user_agreements, :except => ERROR_ACTIONS
+  before_filter :check_user_notifications, :except => ERROR_ACTIONS
+  before_filter :check_my_folders, :except => ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -386,6 +388,15 @@ class ApplicationController < ActionController::Base
       view.render partial: 'notifications/pipelines_notification'
     }
   }
+
+  def check_my_folders
+    @my_top_level_folders = lambda do
+      @top_level_folders ||= Group.
+        filter([['group_class','=','folder'],
+                ['owner_uuid','=',current_user.uuid]]).
+        sort_by(&:name)
+    end
+  end
 
   def check_user_notifications
     @notification_count = 0

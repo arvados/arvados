@@ -70,12 +70,24 @@
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-hand-o-up fa-fw"></i> Help <b class="caret"></b></a>
               <ul class="dropdown-menu">
-                <li><%= link_to raw('<i class="fa fa-lg fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-                <li><%= link_to raw('<i class="fa fa-lg fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-                <li><%= link_to raw('<i class="fa fa-lg fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
               </ul>
             </li>
 
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-folder-o fa-fw"></i> Folders <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><%= link_to raw('<i class="fa fa-plus fa-fw"></i> Create new folder'), folders_path, method: :post %></li>
+                <% @my_top_level_folders.call.each do |folder| %>
+                <li><%= link_to raw('<i class="fa fa-folder-open fa-fw"></i> ') + folder.name, folder_path(folder) %></li>
+                <% end %>
+                <li><a href="/folders">
+                    <i class="fa fa-ellipsis-h fa-fw"></i> Show all folders
+                </a></li>
+              </ul>
+            </li>
             <li><a href="/collections">
                 <i class="fa fa-lg fa-briefcase fa-fw"></i> Collections (data files)
             </a></li>
@@ -84,9 +96,6 @@
             </a></li>
             <li><a href="/pipeline_templates">
                 <i class="fa fa-lg fa-gears fa-fw"></i> Pipeline templates
-            </a></li>
-            <li><a href="/folders">
-                <i class="fa fa-lg fa-folder-o fa-fw"></i> Folders
             </a></li>
             <li>&nbsp;</li>
             <li><a href="/repositories">
