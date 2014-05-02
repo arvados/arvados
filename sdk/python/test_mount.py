@@ -9,6 +9,8 @@ import tempfile
 import shutil
 import subprocess
 import glob
+import run_test_server
+
 
 class FuseMountTest(unittest.TestCase):
     def setUp(self):
@@ -152,3 +154,13 @@ class FuseMagicTest(unittest.TestCase):
 
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)
+
+class FuseTagsTest(unittest.TestCase):
+    def setUp(self):
+        run_test_server.run()
+
+    def runTest(self):
+        run_test_server.authorize_with("admin")
+
+    def tearDown(self):
+        run_test_server.stop()
