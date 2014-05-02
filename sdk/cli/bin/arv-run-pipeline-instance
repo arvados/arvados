@@ -413,15 +413,25 @@ class WhRunPipelineInstance
   end
 
   def setup_instance
-    @instance ||= PipelineInstance.
-      create(:components => @components,
+    if $options[:submit]
+      @instance ||= PipelineInstance.
+        create(:components => @components,
              :pipeline_template_uuid => @template[:uuid],
              :active => true)
+    else
+      @instance ||= PipelineInstance.
+        create(:components => @components,
+             :pipeline_template_uuid => @template[:uuid],
+             :state => 'RunningOnClient',
+             :active => false)
+    end
     self
   end
 
   def run
     moretodo = true
+    interrupted = false
+
     while moretodo
       moretodo = false
       @components.each do |cname, c|
@@ -544,7 +554,9 @@ class WhRunPipelineInstance
           sleep 10
         rescue Interrupt
           debuglog "interrupt", 0
-          abort
+          interrupted = true
+          break
+          #abort
         end
       end
     end
@@ -565,10 +577,29 @@ class WhRunPipelineInstance
       end
     end
 
-    if ended == @components.length or failed > 0
-      @instance[:active] = false
-      @instance[:success] = (succeeded == @components.length)
+    success = (succeeded == @components.length)
+
+    if interrupted
+     if success
+        @instance[:active] = false
+        @instance[:success] = success
+        @instance[:state] = "Complete"
+     else
+        @instance[:active] = nil
+        @instance[:success] = nil
+        @instance[:state] = 'Paused'
+      end
+    else
+      if ended == @components.length or failed > 0
+        @instance[:active] = false
+        @instance[:success] = success
+        @instance[:state] = success ? "Complete" : "Failed"
+      end
     end
+
+    # set components_summary
+    components_summary = {"todo" => @components.length - ended, "done" => succeeded, "failed" => failed}
+    @instance[:components_summary] = components_summary
 
     @instance.save
   end
