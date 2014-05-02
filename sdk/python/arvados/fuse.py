@@ -25,32 +25,74 @@ class Directory(object):
         self.inode = None
         self.parent_inode = parent_inode
         self._entries = {}
+        self.stale = True
 
-    def __getitem__(self, item):
-        return self._entries[item]
+    #  Overriden by subclasses to implement logic to update the entries dict
+    #  when the directory is stale
+    def update(self):
+        pass
 
-    def __setitem__(self, key, item):
-        self._entries[key] = item
+    # Mark the entries dict as stale
+    def invalidate(self):
+        self.stale = True
 
-    def __iter__(self):
-        return self._entries.iterkeys()
-
-    def items(self):
-        return self._entries.items()
-
-    def __contains__(self, k):
-        return k in self._entries
-
+    # Only used when computing the size of the disk footprint of the directory
+    # (stub)
     def size(self):
         return 0
 
+    def __getitem__(self, item):
+        if self.stale:
+            self.update()
+        return self._entries[item]
+
+    def items(self):
+        if self.stale:
+            self.update()
+        return self._entries.items()
+
+    def __iter__(self):
+        if self.stale:
+            self.update()
+        return self._entries.iterkeys()
+
+    def __contains__(self, k):
+        if self.stale:
+            self.update()
+        return k in self._entries
+
+
+class CollectionDirectory(Directory):
+    '''Represents the root of a directory tree holding a collection.'''
+
+    def __init__(self, parent_inode, inodes, collection_locator):
+        super(CollectionDirectory, self).__init__(parent_inode)
+        self.inodes = inodes
+        self.collection_locator = collection_locator
+
+    def update(self):
+        collection = arvados.CollectionReader(arvados.Keep.get(self.collection_locator))
+        for s in collection.all_streams():
+            cwd = self
+            for part in s.name().split('/'):
+                if part != '' and part != '.':
+                    if part not in cwd._entries:
+                        cwd._entries[part] = self.inodes.add_entry(Directory(cwd.inode))
+                    cwd = cwd._entries[part]
+            for k, v in s.files().items():
+                cwd._entries[k] = self.inodes.add_entry(File(cwd.inode, v))
+        self.stale = False
+
+
 class MagicDirectory(Directory):
-    '''A special directory that logically contains the set of all extant
-    keep locators.  When a file is referenced by lookup(), it is tested
-    to see if it is a valid keep locator to a manifest, and if so, loads the manifest
-    contents as a subdirectory of this directory with the locator as the directory name.
-    Since querying a list of all extant keep locators is impractical, only loaded collections 
-    are visible to readdir().'''
+    '''A special directory that logically contains the set of all extant keep
+    locators.  When a file is referenced by lookup(), it is tested to see if it
+    is a valid keep locator to a manifest, and if so, loads the manifest
+    contents as a subdirectory of this directory with the locator as the
+    directory name.  Since querying a list of all extant keep locators is
+    impractical, only collections that have already been accessed are visible
+    to readdir().
+    '''
 
     def __init__(self, parent_inode, inodes):
         super(MagicDirectory, self).__init__(parent_inode)
@@ -70,10 +112,55 @@ class MagicDirectory(Directory):
 
     def __getitem__(self, item):
         if item not in self._entries:
-            collection = arvados.CollectionReader(arvados.Keep.get(item))
-            self._entries[item] = self.inodes.add_entry(Directory(self.inode))
-            self.inodes.load_collection(self._entries[item], collection)
+            self._entries[item] = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, item))
         return self._entries[item]
+
+
+class TagsDirectory(Directory):
+    '''A special directory that contains as subdirectories all tags visible to the user.'''
+
+    def __init__(self, parent_inode, inodes, api):
+        super(TagsDirectory, self).__init__(parent_inode)
+        self.inodes = inodes
+        self.api = api
+
+    def update(self):
+        tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = 'name').execute()
+        oldentries = self._entries
+        self._entries = {}
+        for n in tags['items']:
+            if n in oldentries:
+                self._entries[n] = oldentries[n]
+            else:
+                self._entries[n] = self.inodes.add_entry(TagDirectory(self, inodes, api, n))
+        self.stale = False
+
+
+class TagDirectory(Directory):
+    '''A special directory that contains as subdirectories all collections visible
+    to the user that are tagged with a particular tag.
+    '''
+
+    def __init__(self, parent_inode, inodes, api, tag):
+        super(TagDirectory, self).__init__(parent_inode)
+        self.inodes = inodes
+        self.api = api
+        self.tag = tag
+
+    def update(self):
+        collections = self.api.links().list(filters=[['link_class', '=', 'tag'],
+                                               ['name', '=', self.tag],
+                                               ['head_uuid', 'is_a', 'arvados#collection']],
+                                      select=['head_uuid']).execute()
+        oldentries = self._entries
+        self._entries = {}
+        for c in collections['items']:
+            if n in oldentries:
+                self._entries[n] = oldentries[n]
+            else:
+                self._entries[n] = self.inodes.add_entry(CollectionDirectory(self, inodes, api, n['head_uuid']))
+        self.stale = False
+
 
 class File(object):
     '''Wraps a StreamFileReader for use by Directory.'''
@@ -86,16 +173,18 @@ class File(object):
     def size(self):
         return self.reader.size()
 
+
 class FileHandle(object):
-    '''Connects a numeric file handle to a File or Directory object that has 
+    '''Connects a numeric file handle to a File or Directory object that has
     been opened by the client.'''
 
     def __init__(self, fh, entry):
         self.fh = fh
         self.entry = entry
 
+
 class Inodes(object):
-    '''Manage the set of inodes.  This is the mapping from a numeric id 
+    '''Manage the set of inodes.  This is the mapping from a numeric id
     to a concrete File or Directory object'''
 
     def __init__(self):
@@ -117,32 +206,19 @@ class Inodes(object):
     def __contains__(self, k):
         return k in self._entries
 
-    def load_collection(self, parent_dir, collection):
-        '''parent_dir is the Directory object that will be populated by the collection.
-        collection is the arvados.CollectionReader to use as the source'''
-        for s in collection.all_streams():
-            cwd = parent_dir
-            for part in s.name().split('/'):
-                if part != '' and part != '.':
-                    if part not in cwd:
-                        cwd[part] = self.add_entry(Directory(cwd.inode))
-                    cwd = cwd[part]
-            for k, v in s.files().items():
-                cwd[k] = self.add_entry(File(cwd.inode, v))
-
     def add_entry(self, entry):
         entry.inode = self._counter
         self._entries[entry.inode] = entry
         self._counter += 1
-        return entry    
+        return entry
 
 class Operations(llfuse.Operations):
     '''This is the main interface with llfuse.  The methods on this object are
-    called by llfuse threads to service FUSE events to query and read from 
+    called by llfuse threads to service FUSE events to query and read from
     the file system.
 
     llfuse has its own global lock which is acquired before calling a request handler,
-    so request handlers do not run concurrently unless the lock is explicitly released 
+    so request handlers do not run concurrently unless the lock is explicitly released
     with llfuse.lock_released.'''
 
     def __init__(self, uid, gid):
@@ -151,7 +227,7 @@ class Operations(llfuse.Operations):
         self.inodes = Inodes()
         self.uid = uid
         self.gid = gid
-        
+
         # dict of inode to filehandle
         self._filehandles = {}
         self._filehandles_counter = 1
@@ -167,7 +243,7 @@ class Operations(llfuse.Operations):
 
     def access(self, inode, mode, ctx):
         return True
-   
+
     def getattr(self, inode):
         e = self.inodes[inode]
 
@@ -218,7 +294,7 @@ class Operations(llfuse.Operations):
             return self.getattr(inode)
         else:
             raise llfuse.FUSEError(errno.ENOENT)
-   
+
     def open(self, inode, flags):
         if inode in self.inodes:
             p = self.inodes[inode]

@@ -46,8 +46,9 @@ class FuseMountTest(unittest.TestCase):
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.Directory(llfuse.ROOT_INODE))
-        operations.inodes.load_collection(e, arvados.CollectionReader(arvados.Keep.get(self.testcollection)))
+        #e = operations.inodes.add_entry(fuse.Directory(llfuse.ROOT_INODE))
+        #operations.inodes.load_collection(e, arvados.CollectionReader(arvados.Keep.get(self.testcollection)))
+        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.testcollection))
 
         self.mounttmp = tempfile.mkdtemp()
 
@@ -74,20 +75,20 @@ class FuseMountTest(unittest.TestCase):
         d4 = os.listdir(os.path.join(self.mounttmp, 'dir2/dir3'))
         d4.sort()
         self.assertEqual(d4, ['thing7.txt', 'thing8.txt'])
-        
+
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',
                  'dir1/thing3.txt': 'data 3',
                  'dir1/thing4.txt': 'data 4',
                  'dir2/thing5.txt': 'data 5',
-                 'dir2/thing6.txt': 'data 6',         
+                 'dir2/thing6.txt': 'data 6',
                  'dir2/dir3/thing7.txt': 'data 7',
                  'dir2/dir3/thing8.txt': 'data 8'}
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, k)) as f:
                 self.assertEqual(f.read(), v)
-        
+
 
     def tearDown(self):
         # llfuse.close is buggy, so use fusermount instead.
@@ -135,14 +136,14 @@ class FuseMagicTest(unittest.TestCase):
         d3 = os.listdir(self.mounttmp)
         d3.sort()
         self.assertEqual(d3, [self.testcollection])
-        
+
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, k)) as f:
                 self.assertEqual(f.read(), v)
-        
+
 
     def tearDown(self):
         # llfuse.close is buggy, so use fusermount instead.
