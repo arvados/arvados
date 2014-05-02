@@ -8,13 +8,19 @@ class ArvadosModel < ActiveRecord::Base
   attr_protected :modified_by_user_uuid
   attr_protected :modified_by_client_uuid
   attr_protected :modified_at
+  after_initialize :log_start_state
   before_create :ensure_permission_to_create
   before_update :ensure_permission_to_update
   before_destroy :ensure_permission_to_destroy
+
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
+  after_create :log_create
+  after_update :log_update
+  after_destroy :log_destroy
   validate :ensure_serialized_attribute_type
   validate :normalize_collection_uuids
+  validate :ensure_valid_uuids
 
   has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
 
@@ -31,7 +37,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def self.kind_class(kind)
-    kind.match(/^arvados\#(.+?)(_list|List)?$/)[1].pluralize.classify.constantize rescue nil
+    kind.match(/^arvados\#(.+)$/)[1].classify.safe_constantize rescue nil
   end
 
   def href
@@ -41,9 +47,7 @@ class ArvadosModel < ActiveRecord::Base
   def self.searchable_columns operator
     textonly_operator = !operator.match(/[<=>]/)
     self.columns.collect do |col|
-      if col.name == 'owner_uuid'
-        nil
-      elsif [:string, :text].index(col.type)
+      if [:string, :text].index(col.type)
         col.name
       elsif !textonly_operator and [:datetime, :integer].index(col.type)
         col.name
@@ -55,32 +59,75 @@ class ArvadosModel < ActiveRecord::Base
     self.columns.select { |col| col.name == attr.to_s }.first
   end
 
-  def eager_load_associations
-    self.class.columns.each do |col|
-      re = col.name.match /^(.*)_kind$/
-      if (re and
-          self.respond_to? re[1].to_sym and
-          (auuid = self.send((re[1] + '_uuid').to_sym)) and
-          (aclass = self.class.kind_class(self.send(col.name.to_sym))) and
-          (aobject = aclass.where('uuid=?', auuid).first))
-        self.instance_variable_set('@'+re[1], aobject)
+  # Return a query with read permissions restricted to the union of of the
+  # permissions of the members of users_list, i.e. if something is readable by
+  # any user in users_list, it will be readable in the query returned by this
+  # function.
+  def self.readable_by(*users_list)
+    # Get rid of troublesome nils
+    users_list.compact!
+
+    # Check if any of the users are admin.  If so, we're done.
+    if users_list.select { |u| u.is_admin }.empty?
+
+      # Collect the uuids for each user and any groups readable by each user.
+      user_uuids = users_list.map { |u| u.uuid }
+      uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+      sanitized_uuid_list = uuid_list.
+        collect { |uuid| sanitize(uuid) }.join(', ')
+      sql_conds = []
+      sql_params = []
+      or_object_uuid = ''
+
+      # This row is owned by a member of users_list, or owned by a group
+      # readable by a member of users_list
+      # or
+      # This row uuid is the uuid of a member of users_list
+      # or
+      # A permission link exists ('write' and 'manage' implicitly include
+      # 'read') from a member of users_list, or a group readable by users_list,
+      # to this row, or to the owner of this row (see join() below).
+      sql_conds += ["#{table_name}.owner_uuid in (?)",
+                    "#{table_name}.uuid in (?)",
+                    "permissions.head_uuid IS NOT NULL"]
+      sql_params += [uuid_list, user_uuids]
+
+      if self == Link and users_list.any?
+        # This row is a 'permission' or 'resources' link class
+        # The uuid for a member of users_list is referenced in either the head
+        # or tail of the link
+        sql_conds += ["(#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{table_name}.head_uuid IN (?) OR #{table_name}.tail_uuid IN (?)))"]
+        sql_params += [user_uuids, user_uuids]
       end
+
+      if self == Log and users_list.any?
+        # Link head points to the object described by this row
+        or_object_uuid = ", #{table_name}.object_uuid"
+
+        # This object described by this row is owned by this user, or owned by a group readable by this user
+        sql_conds += ["#{table_name}.object_owner_uuid in (?)"]
+        sql_params += [uuid_list]
+      end
+
+      # Link head points to this row, or to the owner of this row (the thing to be read)
+      #
+      # Link tail originates from this user, or a group that is readable by this
+      # user (the identity with authorization to read)
+      #
+      # Link class is 'permission' ('write' and 'manage' implicitly include 'read')
+
+      joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid #{or_object_uuid}) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'")
+        .where(sql_conds.join(' OR '), *sql_params).uniq
+
+    else
+      # At least one user is admin, so don't bother to apply any restrictions.
+      self
     end
+
   end
 
-  def self.readable_by user
-    uuid_list = [user.uuid, *user.groups_i_can(:read)]
-    sanitized_uuid_list = uuid_list.
-      collect { |uuid| sanitize(uuid) }.join(', ')
-    or_references_me = ''
-    if self == Link and user
-      or_references_me = "OR (#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND #{sanitize user.uuid} IN (#{table_name}.head_uuid, #{table_name}.tail_uuid))"
-    end
-    joins("LEFT JOIN links permissions ON permissions.head_uuid in (#{table_name}.owner_uuid, #{table_name}.uuid) AND permissions.tail_uuid in (#{sanitized_uuid_list}) AND permissions.link_class='permission'").
-      where("?=? OR #{table_name}.owner_uuid in (?) OR #{table_name}.uuid=? OR permissions.head_uuid IS NOT NULL #{or_references_me}",
-            true, user.is_admin,
-            uuid_list,
-            user.uuid)
+  def logged_attributes
+    attributes
   end
 
   protected
@@ -140,11 +187,11 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def maybe_update_modified_by_fields
-    update_modified_by_fields if self.changed?
+    update_modified_by_fields if self.changed? or self.new_record?
   end
 
   def update_modified_by_fields
-    self.created_at ||= Time.now
+    self.updated_at = Time.now
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
     self.modified_at = Time.now
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
@@ -171,6 +218,14 @@ class ArvadosModel < ActiveRecord::Base
     attributes.keys.select { |a| a.match /_uuid$/ }
   end
 
+  def skip_uuid_read_permission_check
+    %w(modified_by_client_uuid)
+  end
+
+  def skip_uuid_existence_check
+    []
+  end
+
   def normalize_collection_uuids
     foreign_key_attributes.each do |attr|
       attr_value = send attr
@@ -182,6 +237,65 @@ class ArvadosModel < ActiveRecord::Base
           # TODO: abort instead of silently accepting unnormalizable value?
         end
       end
+    end
+  end
+
+  @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
+
+  @@prefixes_hash = nil
+  def self.uuid_prefixes
+    unless @@prefixes_hash
+      @@prefixes_hash = {}
+      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
+        if k.respond_to?(:uuid_prefix)
+          @@prefixes_hash[k.uuid_prefix] = k
+        end
+      end
+    end
+    @@prefixes_hash
+  end
+
+  def self.uuid_like_pattern
+    "_____-#{uuid_prefix}-_______________"
+  end
+
+  def ensure_valid_uuids
+    specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
+
+    foreign_key_attributes.each do |attr|
+      if new_record? or send (attr + "_changed?")
+        next if skip_uuid_existence_check.include? attr
+        attr_value = send attr
+        next if specials.include? attr_value
+        if attr_value
+          if (r = ArvadosModel::resource_class_for_uuid attr_value)
+            unless skip_uuid_read_permission_check.include? attr
+              r = r.readable_by(current_user)
+            end
+            if r.where(uuid: attr_value).count == 0
+              errors.add(attr, "'#{attr_value}' not found")
+            end
+          end
+        end
+      end
+    end
+  end
+
+  class Email
+    def self.kind
+      "email"
+    end
+
+    def kind
+      self.class.kind
+    end
+
+    def self.readable_by (*u)
+      self
+    end
+
+    def self.where (u)
+      [{:uuid => u[:uuid]}]
     end
   end
 
@@ -198,16 +312,48 @@ class ArvadosModel < ActiveRecord::Base
     resource_class = nil
 
     Rails.application.eager_load!
-    uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
-      ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
-        if k.respond_to?(:uuid_prefix)
-          if k.uuid_prefix == re[1]
-            return k
-          end
-        end
-      end
+    uuid.match @@UUID_REGEX do |re|
+      return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
+
+    if uuid.match /.+@.+/
+      return Email
+    end
+
     nil
   end
 
+  def log_start_state
+    @old_etag = etag
+    @old_attributes = logged_attributes
+  end
+
+  def log_change(event_type)
+    log = Log.new(event_type: event_type).fill_object(self)
+    yield log
+    log.save!
+    connection.execute "NOTIFY logs, '#{log.id}'"
+    log_start_state
+  end
+
+  def log_create
+    log_change('create') do |log|
+      log.fill_properties('old', nil, nil)
+      log.update_to self
+    end
+  end
+
+  def log_update
+    log_change('update') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to self
+    end
+  end
+
+  def log_destroy
+    log_change('destroy') do |log|
+      log.fill_properties('old', @old_etag, @old_attributes)
+      log.update_to nil
+    end
+  end
 end

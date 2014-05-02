@@ -70,6 +70,14 @@ class Job < ArvadosModel
     super + %w(output log)
   end
 
+  def skip_uuid_read_permission_check
+    super + %w(cancelled_by_client_uuid)
+  end
+
+  def skip_uuid_existence_check
+    super + %w(output log)
+  end
+
   def ensure_script_version_is_commit
     if self.is_locked_by_uuid and self.started_at
       # Apparently client has already decided to go for it. This is
@@ -78,7 +86,7 @@ class Job < ArvadosModel
       return true
     end
     if new_record? or script_version_changed?
-      sha1 = Commit.find_commit_range(current_user, nil, nil, self.script_version, nil)[0] rescue nil
+      sha1 = Commit.find_commit_range(current_user, self.repository, nil, self.script_version, nil)[0] rescue nil
       if sha1
         self.script_version = sha1
       else

@@ -17,6 +17,11 @@ class User < ArvadosBase
                              end
   end
 
+  def owned_items
+    res = $arvados_api_client.api self.class, "/#{self.uuid}/owned_items"
+    $arvados_api_client.unpack_api_response(res)
+  end
+
   def full_name
     (self.first_name || "") + " " + (self.last_name || "")
   end
@@ -43,6 +48,10 @@ class User < ArvadosBase
     self.private_reload($arvados_api_client.api(self.class,
                                                 "/#{self.uuid}/unsetup",
                                                 {}))
+  end
+
+  def self.setup params
+    $arvados_api_client.api(self, "/setup", params)
   end
 
 end

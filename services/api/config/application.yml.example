@@ -39,3 +39,10 @@ test:
 common:
   #git_repositories_dir: /var/cache/git
   #git_internal_dir: /var/cache/arvados/internal.git
+
+  # You can run the websocket server separately from the regular HTTP service
+  # by setting "ARVADOS_WEBSOCKETS=ws-only" in the environment before running
+  # the websocket server.  When you do this, you need to set the following
+  # configuration variable so that the primary server can give out the correct
+  # address of the dedicated websocket server:
+  #websocket_address: wss://websocket.local/websocket

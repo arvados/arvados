@@ -1,5 +1,5 @@
 class Arvados::V1::KeepDisksController < ApplicationController
-  skip_before_filter :require_auth_scope_all, :only => :ping
+  skip_before_filter :require_auth_scope, :only => :ping
 
   def self._ping_requires_parameters
     {
@@ -12,15 +12,18 @@ class Arvados::V1::KeepDisksController < ApplicationController
       service_ssl_flag: true
     }
   end
+
   def ping
     params[:service_host] ||= request.env['REMOTE_ADDR']
-    if not @object.ping params
-      return render_not_found "object not found"
+    act_as_system_user do
+      if not @object.ping params
+        return render_not_found "object not found"
+      end
+      # Render the :superuser view (i.e., include the ping_secret) even
+      # if !current_user.is_admin. This is safe because @object.ping's
+      # success implies the ping_secret was already known by the client.
+      render json: @object.as_api_response(:superuser)
     end
-    # Render the :superuser view (i.e., include the ping_secret) even
-    # if !current_user.is_admin. This is safe because @object.ping's
-    # success implies the ping_secret was already known by the client.
-    render json: @object.as_api_response(:superuser)
   end
 
   def find_objects_for_index

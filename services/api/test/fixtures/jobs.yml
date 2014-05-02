@@ -6,6 +6,7 @@ running:
   cancelled_by_client_uuid: ~
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
   output: ~
@@ -27,6 +28,7 @@ running_cancelled:
   cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
   running: true
   success: ~
   output: ~
@@ -100,6 +102,7 @@ barbaz:
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
   success: true
+  repository: foo
   output: ea10d51bcf88862dbcc36eb292017dfd+45
   priority: ~
   log: d41d8cd98f00b204e9800998ecf8427e+0
@@ -120,6 +123,18 @@ previous_job_run:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: "1"
   success: true
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+
+previous_job_run_no_output:
+  uuid: zzzzz-8i9sb-cjs4pklxxjykppp
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "2"
+  success: true
+  output: ~
 
 nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
@@ -131,3 +146,22 @@ nondeterminisic_job_run:
     an_integer: "1"
   success: true
   nondeterministic: true
+
+nearly_finished_job:
+  uuid: zzzzz-8i9sb-2gx6rz0pjl033w3
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: arvados
+  script: doesnotexist
+  script_version: 309e25a64fe994867db8459543af372f850e25b9
+  script_parameters:
+    input: b519d9cb706a29fc7ea24dbea2f05851+249025
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  running: true
+  success: ~
+  tasks_summary:
+    failed: 0
+    todo: 0
+    running: 1
+    done: 0
+  runtime_constraints: {}

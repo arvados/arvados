@@ -21,21 +21,30 @@ class Blob
   # The 'opts' argument should include:
   #   [required] :key       - the Arvados server-side blobstore key
   #   [required] :api_token - user's API token
-  #   [optional] :ttl       - number of seconds before this request expires
+  #   [optional] :ttl       - number of seconds before signature should expire
+  #   [optional] :expire    - unix timestamp when signature should expire
   #
   def self.sign_locator blob_locator, opts
     # We only use the hash portion for signatures.
     blob_hash = blob_locator.split('+').first
 
-    # Generate an expiry timestamp (seconds since epoch, base 16)
-    timestamp = (Time.now.to_i + (opts[:ttl] || 600)).to_s(16)
+    # Generate an expiry timestamp (seconds after epoch, base 16)
+    if opts[:expire]
+      if opts[:ttl]
+        raise "Cannot specify both :ttl and :expire options"
+      end
+      timestamp = opts[:expire]
+    else
+      timestamp = Time.now.to_i + (opts[:ttl] || 600)
+    end
+    timestamp_hex = timestamp.to_s(16)
     # => "53163cb4"
 
     # Generate a signature.
     signature =
-      generate_signature opts[:key], blob_hash, opts[:api_token], timestamp
+      generate_signature opts[:key], blob_hash, opts[:api_token], timestamp_hex
 
-    blob_locator + '+A' + signature + '@' + timestamp
+    blob_locator + '+A' + signature + '@' + timestamp_hex
   end
 
   # Blob.verify_signature

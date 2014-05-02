@@ -6,7 +6,11 @@ h2. Running tests
 
 The Workbench application includes a series of integration tests.  When you run these, it starts the API server in a test environment, with all of its fixtures loaded, then tests Workbench by starting that server and making requests against it.
 
-In addition to bundled gems, running the integration tests requires "PhantomJS":http://phantomjs.org/download.html to test JavaScript elements.  The simplest way to get started is to download one of the binary builds provided, and install the executable into one of the directories in your @$PATH@.
+In order for this to work, you must have Firefox installed (or Iceweasel, if you're running Debian), as well as the X Virtual Frame Buffer driver.
+
+<pre>
+$ sudo apt-get install iceweasel xvfb
+</pre>
 
 If you install the Workbench Bundle in deployment mode, you must also install the API server Bundle in deployment mode, and vice versa.  If your Bundle installs have mismatched modes, the integration tests will fail with "Gem not found" errors.
 

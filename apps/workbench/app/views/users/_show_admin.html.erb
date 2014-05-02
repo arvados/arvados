@@ -6,8 +6,18 @@ account.</p>
 <%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
 </blockquote>
 
+<p>As an admin, you can setup this user. Please input a VM and repository for the user. If you had previously provided any of these items, they are pre-filled for you and you can leave them as is if you would like to reuse them.</p>
+
+<blockquote>
+<%= link_to "Setup #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
+</blockquote>
+
 <p>As an admin, you can deactivate and reset this user. This will remove all repository/VM permissions for the user. If you "setup" the user again, the user will have to sign the user agreement again.</p>
 
 <blockquote>
 <%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', confirm: "Are you sure you want to deactivate #{@object.full_name}?"%>
 </blockquote>
+
+<% content_for :footer_html do %>
+<div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+<% end %>

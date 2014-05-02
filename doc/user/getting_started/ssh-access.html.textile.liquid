@@ -1,20 +1,20 @@
 ---
 layout: default
 navsection: userguide
-title: Accessing an Arvados VM over ssh
+title: Accessing an Arvados VM with SSH
 ...
 
-Arvados requires a public ssh key in order to securely log in to an Arvados VM instance, or to access an Arvados @git@ repository.
+Arvados requires a public SSH key in order to securely log in to an Arvados VM instance, or to access an Arvados Git repository.
 
 This document is divided up into three sections.
 
-# "Getting your ssh key":#gettingkey
+# "Getting your SSH key":#gettingkey
 # "Adding your key to Arvados Workbench":#workbench
-# "Using ssh to log into an Arvados VM instance":#login
+# "Using SSH to log into an Arvados VM instance":#login
 
-h1(#gettingkey). Getting your ssh key
+h1(#gettingkey). Getting your SSH key
 
-# "Using Unix ssh":#unix (Linux, OS X, Cygwin)
+# "Using SSH":#unix (Linux, OS X, Cygwin)
 # "Using PuTTY":#windows (Windows)
 
 h2(#unix). Unix: Using ssh-keygen
@@ -61,9 +61,9 @@ If you get the error "Could not open a connection to your authentication agent" 
 
 notextile. <pre><code>$ <span class="userinput">eval $(ssh-agent -s)</span></code></pre>
 
-@ssh-agent -s@ prints out values for environment variables SSH_AUTH_SOCK and SSH_AGENT_PID and then runs in the background.  Using "eval" on the output as shown here causes those variables to be set in the current shell environment so that subsequent calls to @ssh@ can discover how to access the @ssh-agent@ daemon.
+@ssh-agent -s@ prints out values for environment variables SSH_AUTH_SOCK and SSH_AGENT_PID and then runs in the background.  Using "eval" on the output as shown here causes those variables to be set in the current shell environment so that subsequent calls to SSH can discover how to access the agent process.
 
-After running @ssh-agent@, or if @ssh-add -l@ prints "The agent has no identities", then you will need to add your key using the following command.  The passphrase to decrypt the key is the same used to protect the key when it was created with @ssh-keygen@:
+After running @ssh-agent@, or if @ssh-add -l@ prints "The agent has no identities", add your key using the following command.  The passphrase to decrypt the key is the same used to protect the key when it was created with @ssh-keygen@:
 
 <notextile>
 <pre><code>$ <span class="userinput">ssh-add</span>
@@ -84,9 +84,9 @@ You may now proceed to "adding your key to the Arvados Workbench.":#workbench
 
 h2(#windows). Windows: Using PuTTY
 
-(Note: if you are using the @ssh@ client that comes with "Cygwin":http://cygwin.com you should follow the "Unix":#unix instructions).
+(Note: if you are using the SSH client that comes with "Cygwin":http://cygwin.com you should follow the "Unix":#unix instructions).
 
-"PuTTY":http://www.chiark.greenend.org.uk/~sgtatham/putty/ is a free (MIT-licensed) Win32 Telnet and SSH client. PuTTY includes all the tools a Windows user needs to create private keys and make ssh connections to your virtual machines in the Arvados Cloud.
+"PuTTY":http://www.chiark.greenend.org.uk/~sgtatham/putty/ is a free (MIT-licensed) Win32 Telnet and SSH client. PuTTY includes all the tools a Windows user needs to create private keys and make SSH connections to your virtual machines in the Arvados Cloud.
 
 You can "download PuTTY from its Web site":http://www.chiark.greenend.org.uk/~sgtatham/putty/.  Note that you should download the installer or .zip file with all of the PuTTY tools (PuTTYtel is not required).
 
@@ -113,7 +113,7 @@ h3. Step 2 - Creating a Public Key
 
 h3. Step 3 - Set up Pageant
 
-Pageant is a PuTTY utility that manages your private keys so is not necessary to enter your private key passphrase every time you make a new ssh connection.
+Pageant is a PuTTY utility that manages your private keys so is not necessary to enter your private key passphrase every time you make a new SSH connection.
 
 # Start Pageant from the Start Menu or the folder where it was installed.
 # Pageant will now be running in the system tray. Click the Pageant icon to configure.
@@ -125,11 +125,11 @@ h1(#workbench). Adding your key to Arvados Workbench
 
 h3. From the Workbench dashboard
 
-If you have no ssh keys registered, there should be a notification asking you to provide your ssh public key.  On the Workbench dashboard, look for the envelope icon <span class="glyphicon glyphicon-envelope"></span> <span class="badge badge-alert">1</span> in upper right corner (the number indicates there are new notifications).  Click on this icon and a dropdown menu should appear with a message asking you to add your public key.  Paste your public key into the text area provided and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
+If you have no SSH keys registered, there should be a notification asking you to provide your ssh public key.  On the Workbench dashboard, look for the envelope icon <span class="glyphicon glyphicon-envelope"></span> <span class="badge badge-alert">1</span> in upper right corner (the number indicates there are new notifications).  Click on this icon and a dropdown menu should appear with a message asking you to add your public key.  Paste your public key into the text area provided and click on the check button to submit the key.  You are now ready to "log into an Arvados VM":#login.
 
-h3. Alternate way to add ssh keys
+h3. Alternate way to add SSH keys
 
-If you want to add additional ssh keys, click on the user icon <span class="glyphicon glyphicon-user"></span> in the upper right corner to access the user settings menu, and click on the menu item *Manage ssh keys* to go to the Authorized keys page.
+If you want to add more SSH keys, click on the user icon <span class="glyphicon glyphicon-user"></span> in the upper right corner to access the user settings menu, and click on the menu item *Manage ssh keys* to go to the Authorized keys page.
 
 On the *Authorized keys* page, the click on the button <span class="btn btn-primary disabled">Add a new authorized key</span> in the upper right corner.
 
@@ -139,13 +139,13 @@ The page will reload with a new row of information.  Under the *public_key* colu
 
 Paste the public key that you copied to the cliboard in the previous section into the popup text box, then click on the check mark to save it.  This should refresh the page with the public key that you just added now listed under the *public_key* column.  You are now ready to "log into an Arvados VM":#login.
 
-h1(#login). Using ssh to log into an Arvados VM
+h1(#login). Using SSH to log into an Arvados VM
 
 To see a list of virtual machines that you have access to and determine the name and login information, click on Compute %(rarr)&rarr;% Virtual machines.  Once on the *Virtual machines* page, The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Your login name is the text inside the quotes.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login name as appropriate.
 
 This section consists of two sets of instructions, depending on whether you will be logging in using a "Unix":#unixvm (Linux, OS X, Cygwin) or "Windows":#windowsvm client.
 
-h2(#unixvm). Logging in using command line ssh (Unix)
+h2(#unixvm). Logging in using the @ssh@ command
 
 h3. Connecting to the virtual machine
 
@@ -155,12 +155,12 @@ notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -a -x -
 
 This command does several things at once. You usually cannot log in directly to virtual machines over the public Internet.  Instead, you log into a "switchyard" server and then tell the switchyard which virtual machine you want to connect to.
 
-* @-o "ProxyCommand ..."@ configures ssh to run the specified command to create a proxy and route your connection through it.
-* @-a@ tells ssh not to forward your ssh-agent credentials to the switchyard.
-* @-x@ tells ssh not to forward your X session to the switchyard.
+* @-o "ProxyCommand ..."@ configures SSH to run the specified command to create a proxy and route your connection through it.
+* @-a@ tells SSH not to forward your ssh-agent credentials to the switchyard.
+* @-x@ tells SSH not to forward your X session to the switchyard.
 * @-p2222@ specifies that the switchyard is running on non-standard port 2222.
 * <code>turnout@switchyard.{{ site.arvados_api_host }}</code> specifies the user (@turnout@) and hostname (@switchyard.{{ site.arvados_api_host }}@) of the switchyard server that will proxy our connection to the VM.
-* *@shell@* is the name of the VM that we want to connect to.  This is sent to the switchyard server as if it were an ssh command, and the switchyard server connects to the VM on our behalf.
+* *@shell@* is the name of the VM that we want to connect to.  This is sent to the switchyard server as if it were an SSH command, and the switchyard server connects to the VM on our behalf.
 * After the ProxyCommand section, we repeat @-x@ to disable X session forwarding to the virtual machine.
 * @-A@ specifies that we want to forward access to @ssh-agent@ to the VM.
 * Finally, *<code>you@shell</code>* specifies your login name and repeats the hostname of the VM.  The username can be found in the *logins* column in the VMs Workbench page, discussed in the previous section.
@@ -169,7 +169,7 @@ You should now be able to log into the Arvados VM and "check your environment.":
 
 h3. Configuration (recommended)
 
-The command line above is cumbersome, but you can configure ssh to remember many of these settings.  Add this text to the file @.ssh/config@ in your home directory (create a new file if @.ssh/config@ doesn't exist):
+The command line above is cumbersome, but you can configure SSH to remember many of these settings.  Add this text to the file @.ssh/config@ in your home directory (create a new file if @.ssh/config@ doesn't exist):
 
 <notextile>
 <pre><code class="userinput">Host *.arvados

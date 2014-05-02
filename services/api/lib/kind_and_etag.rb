@@ -5,10 +5,13 @@ module KindAndEtag
   end
 
   module ClassMethods
+    def kind
+      'arvados#' + self.to_s.camelcase(:lower)
+    end
   end
 
   def kind
-    'arvados#' + self.class.to_s.camelcase(:lower)
+    self.class.kind
   end
 
   def etag

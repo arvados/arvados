@@ -32,9 +32,7 @@ class ArvadosBase < ActiveRecord::Base
       'modified_by_user_uuid' => '004',
       'modified_by_client_uuid' => '005',
       'name' => '050',
-      'tail_kind' => '100',
       'tail_uuid' => '100',
-      'head_kind' => '101',
       'head_uuid' => '101',
       'info' => 'zzz-000',
       'updated_at' => 'zzz-999'
@@ -137,12 +135,10 @@ class ArvadosBase < ActiveRecord::Base
     @etag = resp[:etag]
     @kind = resp[:kind]
 
-    # these attrs can be modified by "save" -- we should update our copies
-    %w(uuid owner_uuid created_at
-       modified_at modified_by_user_uuid modified_by_client_uuid
-      ).each do |attr|
+    # attributes can be modified during "save" -- we should update our copies
+    resp.keys.each do |attr|
       if self.respond_to? "#{attr}=".to_sym
-        self.send(attr + '=', resp[attr.to_sym])
+        self.send(attr.to_s + '=', resp[attr.to_sym])
       end
     end
 
@@ -164,14 +160,12 @@ class ArvadosBase < ActiveRecord::Base
       true
     end
   end
-      
+
   def links(*args)
     o = {}
     o.merge!(args.pop) if args[-1].is_a? Hash
     o[:link_class] ||= args.shift
     o[:name] ||= args.shift
-    o[:head_kind] ||= args.shift
-    o[:tail_kind] = self.kind
     o[:tail_uuid] = self.uuid
     if all_links
       return all_links.select do |m|

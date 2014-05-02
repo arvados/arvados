@@ -43,11 +43,11 @@ table#users-activity-table .cell-for-span-Last-month {
   <tr>
     <td>
       <small>
-	<% if user.uuid %>
-	<%= link_to_if_arvados_object user, friendly_name: true %>
-	<% else %>
-	<b>Total</b>
-	<% end %>
+        <% if user.uuid %>
+        <%= link_to_if_arvados_object user, friendly_name: true %>
+        <% else %>
+        <b>Total</b>
+        <% end %>
       </small>
     </td>
 
@@ -55,7 +55,7 @@ table#users-activity-table .cell-for-span-Last-month {
     <% ['logins', 'jobs', 'pipeline_instances'].each do |type| %>
     <td class="cell-for-span-<%= span.gsub ' ','-' %>">
       <small>
-	<%= @user_activity[user.uuid][span + " " + type].to_s %>
+        <%= @user_activity[user.uuid][span + " " + type].to_s %>
       </small>
     </td>
     <% end %>
@@ -66,7 +66,7 @@ table#users-activity-table .cell-for-span-Last-month {
 
 <% content_for :footer_js do %>
 $('#users-activity-table td small').each(function(){
-    if ($(this).html().trim() == '0')
-	$(this).css('opacity', '0.3');
+  if ($(this).html().trim() == '0')
+    $(this).css('opacity', '0.3');
 });
 <% end %>

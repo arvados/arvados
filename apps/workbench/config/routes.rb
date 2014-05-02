@@ -7,6 +7,8 @@ ArvadosWorkbench::Application.routes.draw do
     get 'signatures', on: :collection
   end
   get '/user_agreements/signatures' => 'user_agreements#signatures'
+  get "users/setup_popup" => 'users#setup_popup', :as => :setup_user_popup
+  get "users/setup" => 'users#setup', :as => :setup_user
   resources :nodes
   resources :humans
   resources :traits
@@ -22,8 +24,10 @@ ArvadosWorkbench::Application.routes.draw do
     get 'home', :on => :member
     get 'welcome', :on => :collection
     get 'activity', :on => :collection
+    get 'storage', :on => :collection
     post 'sudo', :on => :member
     post 'unsetup', :on => :member
+    get 'setup_popup', :on => :member
   end
   resources :logs
   resources :factory_jobs
@@ -36,10 +40,13 @@ ArvadosWorkbench::Application.routes.draw do
   end
   resources :links
   match '/collections/graph' => 'collections#graph'
-  resources :collections
+  resources :collections do
+    post 'set_persistent', on: :member
+  end
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
 
   post 'actions' => 'actions#post'
+  get 'websockets' => 'websocket#index'
 
   root :to => 'users#welcome'
 

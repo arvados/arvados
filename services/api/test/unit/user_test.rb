@@ -1,13 +1,19 @@
 require 'test_helper'
 
 class UserTest < ActiveSupport::TestCase
+  include CurrentApiClient
 
   # The fixture services/api/test/fixtures/users.yml serves as the input for this test case
   setup do
+    # Make sure system_user exists before making "pre-test users" list
+    system_user
+
     @all_users = User.find(:all)
 
     @all_users.each do |user|
-      if user.is_admin && user.is_active
+      if user.uuid == system_user_uuid
+        @system_user = user
+      elsif user.is_admin && user.is_active
         @admin_user = user
       elsif user.is_active && !user.is_admin
         @active_user = user
@@ -81,6 +87,19 @@ class UserTest < ActiveSupport::TestCase
     assert_equal found_user.identity_url, user.identity_url
   end
 
+  test "full name should not contain spurious whitespace" do
+    Thread.current[:user] = @admin_user   # set admin user as the current user
+
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: 'foo@example.com' })
+
+    assert_equal '', user.full_name
+
+    user.first_name = 'John'
+    user.last_name = 'Smith'
+
+    assert_equal user.first_name + ' ' + user.last_name, user.full_name
+  end
+
   test "create new user" do
     Thread.current[:user] = @admin_user   # set admin user as the current user
 
@@ -89,7 +108,7 @@ class UserTest < ActiveSupport::TestCase
     user.save
 
     # verify there is one extra user in the db now
-    assert (User.find(:all).size == @all_users.size+1)
+    assert_equal @all_users.size+1, User.find(:all).size
 
     user = User.find(user.id)   # get the user back
     assert_equal(user.first_name, 'first_name_for_newly_created_user')
@@ -155,9 +174,7 @@ class UserTest < ActiveSupport::TestCase
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
 
-    user = User.new
-    user.email = email
-    user.uuid = 'abcdefghijklmnop'
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
 
     vm = VirtualMachine.create
 
@@ -167,9 +184,11 @@ class UserTest < ActiveSupport::TestCase
     verify_user resp_user, email
 
     oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
+
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
@@ -182,15 +201,57 @@ class UserTest < ActiveSupport::TestCase
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
 
+  test "setup new user with junk in database" do
+    Thread.current[:user] = @admin_user
+
+    email = 'foo@example.com'
+    openid_prefix = 'http://openid/prefix'
+
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
+
+    vm = VirtualMachine.create
+
+    # Set up the bogus Link
+    bad_uuid = 'zzzzz-tpzed-xyzxyzxyzxyzxyz'
+
+    resp_link = Link.create ({tail_uuid: email, link_class: 'permission',
+        name: 'can_login', head_uuid: bad_uuid})
+    resp_link.save(validate: false)
+
+    verify_link resp_link, 'permission', 'can_login', email, bad_uuid
+
+    response = User.setup user, openid_prefix, 'test_repo', vm.uuid
+
+    resp_user = find_obj_in_resp response, 'User'
+    verify_user resp_user, email
+
+    oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
+
+    verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
+        resp_user[:uuid]
+
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
+        'expected identity_url_prefix not found for oid_login_perm'
+
+    group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
+    verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
+
+    repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
+    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
+
+    vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
+    verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
+  end
+
+
+
   test "setup new user in multiple steps" do
     Thread.current[:user] = @admin_user
 
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
 
-    user = User.new
-    user.email = email
-    user.uuid = 'abcdefghijklmnop'
+    user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
 
     response = User.setup user, openid_prefix
 
@@ -200,7 +261,7 @@ class UserTest < ActiveSupport::TestCase
     oid_login_perm = find_obj_in_resp response, 'Link', 'arvados#user'
     verify_link oid_login_perm, 'permission', 'can_login', resp_user[:email],
         resp_user[:uuid]
-    assert_equal openid_prefix, oid_login_perm[:properties][:identity_url_prefix],
+    assert_equal openid_prefix, oid_login_perm[:properties]['identity_url_prefix'],
         'expected identity_url_prefix not found for oid_login_perm'
 
     group_perm = find_obj_in_resp response, 'Link', 'arvados#group'
@@ -237,16 +298,20 @@ class UserTest < ActiveSupport::TestCase
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
 
-  def find_obj_in_resp (response, object_type, head_kind=nil)
+  def find_obj_in_resp (response_items, object_type, head_kind=nil)
     return_obj = nil
-    response.each { |x|
-      if x.class.name == object_type
-        if head_kind
-          if x.head_kind == head_kind
-            return_obj = x
-            break
-          end
-        else
+    response_items.each { |x|
+      if !x
+        next
+      end
+
+      if object_type == 'User'
+        if ArvadosModel::resource_class_for_uuid(x['uuid']) == User
+          return_obj = x
+          break
+        end
+      else  # looking for a link
+        if ArvadosModel::resource_class_for_uuid(x['head_uuid']).kind == head_kind
           return_obj = x
           break
         end
@@ -263,18 +328,18 @@ class UserTest < ActiveSupport::TestCase
   end
 
   def verify_link (link_object, link_class, link_name, tail_uuid, head_uuid)
-    assert_not_nil link_object, 'expected link for #{link_class} #{link_name}'
+    assert_not_nil link_object, "expected link for #{link_class} #{link_name}"
     assert_not_nil link_object[:uuid],
-        'expected non-nil uuid for link for #{link_class} #{link_name}'
+        "expected non-nil uuid for link for #{link_class} #{link_name}"
     assert_equal link_class, link_object[:link_class],
-        'expected link_class not found for #{link_class} #{link_name}'
+        "expected link_class not found for #{link_class} #{link_name}"
     assert_equal link_name, link_object[:name],
-        'expected link_name not found for #{link_class} #{link_name}'
+        "expected link_name not found for #{link_class} #{link_name}"
     assert_equal tail_uuid, link_object[:tail_uuid],
-        'expected tail_uuid not found for #{link_class} #{link_name}'
+        "expected tail_uuid not found for #{link_class} #{link_name}"
     if head_uuid
       assert_equal head_uuid, link_object[:head_uuid],
-          'expected head_uuid not found for #{link_class} #{link_name}'
+          "expected head_uuid not found for #{link_class} #{link_name}"
     end
   end
 

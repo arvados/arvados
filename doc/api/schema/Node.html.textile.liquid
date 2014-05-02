@@ -6,27 +6,13 @@ title: Node
 
 ...
 
-
-
-A **Node** represents...
+A **Node** represents a host that can be used to run Crunch job tasks.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "nodes":{{site.baseurl}}/api/methods/nodes.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/nodes@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a Node.
-
-h3. Side effects
-
-Side effects of creating a Node.
-
-h2. Resources
+h2. Resource
 
 Each Node has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
@@ -38,5 +24,4 @@ table(table table-bordered table-condensed).
 |ip_address|string|||
 |first_ping_at|datetime|||
 |last_ping_at|datetime|||
-|info|Hash|||
-|updated_at|datetime|||
+|info|hash|||

@@ -19,12 +19,12 @@ class Arvados::V1::UserAgreementsController < ApplicationController
     else
       current_user_uuid = current_user.uuid
       act_as_system_user do
-        uuids = Link.where(owner_uuid: system_user_uuid,
-                           link_class: 'signature',
-                           name: 'require',
-                           tail_kind: 'arvados#user',
-                           tail_uuid: system_user_uuid,
-                           head_kind: 'arvados#collection').
+        uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                           system_user_uuid,
+                           'signature',
+                           'require',
+                           system_user_uuid,
+                           Collection.uuid_like_pattern).
           collect &:head_uuid
         @objects = Collection.where('uuid in (?)', uuids)
       end
@@ -37,12 +37,12 @@ class Arvados::V1::UserAgreementsController < ApplicationController
     current_user_uuid = (current_user.andand.is_admin && params[:uuid]) ||
       current_user.uuid
     act_as_system_user do
-      @objects = Link.where(owner_uuid: system_user_uuid,
-                            link_class: 'signature',
-                            name: 'click',
-                            tail_kind: 'arvados#user',
-                            tail_uuid: current_user_uuid,
-                            head_kind: 'arvados#collection')
+      @objects = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                            system_user_uuid,
+                            'signature',
+                            'click',
+                            current_user_uuid,
+                            Collection.uuid_like_pattern)
     end
     @response_resource_name = 'link'
     render_list
@@ -53,9 +53,7 @@ class Arvados::V1::UserAgreementsController < ApplicationController
     act_as_system_user do
       @object = Link.create(link_class: 'signature',
                             name: 'click',
-                            tail_kind: 'arvados#user',
                             tail_uuid: current_user_uuid,
-                            head_kind: 'arvados#collection',
                             head_uuid: params[:uuid])
     end
     show

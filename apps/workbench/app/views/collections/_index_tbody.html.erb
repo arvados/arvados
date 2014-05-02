@@ -2,10 +2,14 @@
 
 <tr class="collection" data-object-uuid="<%= c.uuid %>">
   <td>
-    <%= render :partial => "selection_checkbox", :locals => {:object => c} %>
+    <% friendly_name = c.friendly_link_name  %>
+    <% @collection_info[c.uuid][:tag_links].each do |tag_link| %>
+      <% friendly_name += raw(" <span class='label label-info'>#{tag_link.name}</span>") %>
+    <% end %>
+    <%= render :partial => "selection_checkbox", :locals => {:object => c, :friendly_name => friendly_name} %>
   </td>
   <td>
-    <%= link_to_if_arvados_object c.uuid %>
+    <%= link_to_if_arvados_object c.uuid, {:no_tags => true } %>
   </td>
   <td>
     <% i = 0 %>
@@ -19,18 +23,12 @@
       &vellip;
     <% end %>
   </td>
-  <td><%= link_to_if_arvados_object c.owner_uuid, friendly_name: true %></td>
   <td>
     <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
   </td>
   <td>
-    <% if @collection_info[c.uuid][:wanted_by_me] %>
-      <span class="label label-info">2&times;</span>
-    <% elsif @collection_info[c.uuid][:wanted] %>
-      <span class="label">2&times;</span>
-    <% else %>
-      <span class="label">cache</span>
-    <% end %>
+    <% current_state = @collection_info[c.uuid][:wanted_by_me] ? 'persistent' : 'cache' %>
+    <%= render partial: 'toggle_persist', locals: { uuid: c.uuid, current_state: current_state } %>
   </td>
   <td class="add-tag-button">
     <a class="btn btn-xs btn-info add-tag-button pull-right" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>

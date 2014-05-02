@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140402001908) do
+ActiveRecord::Schema.define(:version => 20140423133559) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -64,13 +64,13 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.datetime "updated_at",              :null => false
   end
 
-  add_index "authorized_keys", ["authorized_user_uuid", "expires_at"], :name => "index_authorized_keys_on_authorized_user_uuid_and_expires_at"
+  add_index "authorized_keys", ["authorized_user_uuid", "expires_at"], :name => "index_authkeys_on_user_and_expires_at"
   add_index "authorized_keys", ["uuid"], :name => "index_authorized_keys_on_uuid", :unique => true
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",                          :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -80,7 +80,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "redundancy_confirmed_by_client_uuid"
     t.datetime "redundancy_confirmed_at"
     t.integer  "redundancy_confirmed_as"
-    t.datetime "updated_at"
+    t.datetime "updated_at",                          :null => false
     t.string   "uuid"
     t.text     "manifest_text"
   end
@@ -104,8 +104,8 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "repository_name"
     t.string   "sha1"
     t.string   "message"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",      :null => false
+    t.datetime "updated_at",      :null => false
   end
 
   add_index "commits", ["repository_name", "sha1"], :name => "index_commits_on_repository_name_and_sha1", :unique => true
@@ -120,9 +120,11 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "name"
     t.text     "description"
     t.datetime "updated_at",              :null => false
+    t.string   "group_class"
   end
 
   add_index "groups", ["created_at"], :name => "index_groups_on_created_at"
+  add_index "groups", ["group_class"], :name => "index_groups_on_group_class"
   add_index "groups", ["modified_at"], :name => "index_groups_on_modified_at"
   add_index "groups", ["uuid"], :name => "index_groups_on_uuid", :unique => true
 
@@ -133,8 +135,8 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.text     "properties"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",              :null => false
+    t.datetime "updated_at",              :null => false
   end
 
   add_index "humans", ["uuid"], :name => "index_humans_on_uuid", :unique => true
@@ -235,25 +237,21 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
   create_table "links", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",              :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "tail_uuid"
-    t.string   "tail_kind"
     t.string   "link_class"
     t.string   "name"
     t.string   "head_uuid"
     t.text     "properties"
-    t.datetime "updated_at"
-    t.string   "head_kind"
+    t.datetime "updated_at",              :null => false
   end
 
   add_index "links", ["created_at"], :name => "index_links_on_created_at"
-  add_index "links", ["head_kind"], :name => "index_links_on_head_kind"
   add_index "links", ["head_uuid"], :name => "index_links_on_head_uuid"
   add_index "links", ["modified_at"], :name => "index_links_on_modified_at"
-  add_index "links", ["tail_kind"], :name => "index_links_on_tail_kind"
   add_index "links", ["tail_uuid"], :name => "index_links_on_tail_uuid"
   add_index "links", ["uuid"], :name => "index_links_on_uuid", :unique => true
 
@@ -262,22 +260,21 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.string   "owner_uuid"
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
-    t.string   "object_kind"
     t.string   "object_uuid"
     t.datetime "event_at"
     t.string   "event_type"
     t.text     "summary"
-    t.text     "info"
+    t.text     "properties"
     t.datetime "created_at",              :null => false
     t.datetime "updated_at",              :null => false
     t.datetime "modified_at"
+    t.string   "object_owner_uuid"
   end
 
   add_index "logs", ["created_at"], :name => "index_logs_on_created_at"
   add_index "logs", ["event_at"], :name => "index_logs_on_event_at"
   add_index "logs", ["event_type"], :name => "index_logs_on_event_type"
   add_index "logs", ["modified_at"], :name => "index_logs_on_modified_at"
-  add_index "logs", ["object_kind"], :name => "index_logs_on_object_kind"
   add_index "logs", ["object_uuid"], :name => "index_logs_on_object_uuid"
   add_index "logs", ["summary"], :name => "index_logs_on_summary"
   add_index "logs", ["uuid"], :name => "index_logs_on_uuid", :unique => true
@@ -308,7 +305,7 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
   create_table "pipeline_instances", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",                                 :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -317,8 +314,10 @@ ActiveRecord::Schema.define(:version => 20140402001908) do
     t.text     "components"
     t.boolean  "success"
     t.boolean  "active",                  :default => false
-    t.datetime "updated_at"
+    t.datetime "updated_at",                                 :null => false
     t.text     "properties"
+    t.string   "state"
+    t.text     "components_summary"
   end
 
   add_index "pipeline_instances", ["created_at"], :name => "index_pipeline_instances_on_created_at"

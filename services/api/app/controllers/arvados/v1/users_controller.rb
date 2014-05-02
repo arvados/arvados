@@ -60,22 +60,21 @@ class Arvados::V1::UsersController < ApplicationController
         raise ArgumentError.new "Cannot activate without being invited."
       end
       act_as_system_user do
-        required_uuids = Link.where(owner_uuid: system_user_uuid,
-                                    link_class: 'signature',
-                                    name: 'require',
-                                    tail_uuid: system_user_uuid,
-                                    head_kind: 'arvados#collection').
+        required_uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                                    system_user_uuid,
+                                    'signature',
+                                    'require',
+                                    system_user_uuid,
+                                    Collection.uuid_like_pattern).
           collect(&:head_uuid)
         signed_uuids = Link.where(owner_uuid: system_user_uuid,
                                   link_class: 'signature',
                                   name: 'click',
-                                  tail_kind: 'arvados#user',
                                   tail_uuid: @object.uuid,
-                                  head_kind: 'arvados#collection',
                                   head_uuid: required_uuids).
           collect(&:head_uuid)
         todo_uuids = required_uuids - signed_uuids
-        if todo_uuids == []
+        if todo_uuids.empty?
           @object.update_attributes is_active: true
           logger.info "User #{@object.uuid} activated"
         else
@@ -124,13 +123,19 @@ class Arvados::V1::UsersController < ApplicationController
     end
 
     if object_found
-      @response = @object.setup_repo_vm_links params[:repo_name], params[:vm_uuid]
+      @response = @object.setup_repo_vm_links params[:repo_name],
+                    params[:vm_uuid], params[:openid_prefix]
     else
       @response = User.setup @object, params[:openid_prefix],
                     params[:repo_name], params[:vm_uuid]
     end
 
-    render json: { kind: "arvados#HashList", items: @response }
+    # setup succeeded. send email to user
+    if params[:send_notification_email] == true || params[:send_notification_email] == 'true'
+      UserNotifier.account_is_setup(@object).deliver
+    end
+
+    render json: { kind: "arvados#HashList", items: @response.as_api_response(nil) }
   end
 
   # delete user agreements, vm, repository, login links; set state to inactive
@@ -138,6 +143,14 @@ class Arvados::V1::UsersController < ApplicationController
     reload_object_before_update
     @object.unsetup
     show
+  end
+
+  protected
+
+  def self._setup_requires_parameters
+    {
+      send_notification_email: { type: 'boolean', required: true },
+    }
   end
 
 end

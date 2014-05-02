@@ -179,7 +179,7 @@ EOS
 
   test "get full provenance for baz file" do
     authorize_with :active
-    get :provenance, uuid: 'ea10d51bcf88862dbcc36eb292017dfd+45'
+    get :provenance, id: 'ea10d51bcf88862dbcc36eb292017dfd+45'
     assert_response :success
     resp = JSON.parse(@response.body)
     assert_not_nil resp['ea10d51bcf88862dbcc36eb292017dfd+45'] # baz
@@ -192,14 +192,14 @@ EOS
   test "get no provenance for foo file" do
     # spectator user cannot even see baz collection
     authorize_with :spectator
-    get :provenance, uuid: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
+    get :provenance, id: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     assert_response 404
   end
 
   test "get partial provenance for baz file" do
     # spectator user can see bar->baz job, but not foo->bar job
     authorize_with :spectator
-    get :provenance, uuid: 'ea10d51bcf88862dbcc36eb292017dfd+45'
+    get :provenance, id: 'ea10d51bcf88862dbcc36eb292017dfd+45'
     assert_response :success
     resp = JSON.parse(@response.body)
     assert_not_nil resp['ea10d51bcf88862dbcc36eb292017dfd+45'] # baz

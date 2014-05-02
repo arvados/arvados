@@ -1,13 +1,17 @@
 development:
-  adapter: sqlite3
-  database: db/arvados_development.sqlite3
+  adapter: postgresql
+  encoding: utf8
+  database: arvados_development
+  username: arvados
+  password: xxxxxxxx
+  host: localhost
 
 test:
   adapter: postgresql
   encoding: utf8
   database: arvados_test
   username: arvados
-  password: ********
+  password: xxxxxxxx
   host: localhost
 
 production:
@@ -15,6 +19,6 @@ production:
   encoding: utf8
   database: arvados_production
   username: arvados
-  password: ********
+  password: xxxxxxxx
   host: localhost
 

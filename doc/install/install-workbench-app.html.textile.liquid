@@ -9,11 +9,40 @@ h2. Prerequisites
 # A GNU/linux (virtual) machine (can be shared with the API server)
 # A hostname for your Workbench application
 
+h2. Install dependencies
+
+If you haven't already installed the API server on the same host:
+
+* Install Ruby 2.1 and Bundler: see the "dependencies" and "Ruby" sections on the "API server installation page":install-api-server.html#dependencies for details.
+* Omit postgresql. Workbench doesn't need its own database.
+
+Install graphviz.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install graphviz</span>
+</code></pre>
+</notextile>
+
 h2. Download the source tree
 
 Please follow the instructions on the "Download page":https://arvados.org/projects/arvados/wiki/Download in the wiki.
 
-The Workbench application is in @arvados/apps/workbench@.
+The Workbench application is in @apps/workbench@ in the source tree.
+
+h2. Install gem dependencies
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd arvados/apps/workbench</span>
+~/arvados/apps/workbench$ <span class="userinput">bundle install</span>
+</code></pre>
+</notextile>
+
+Alternatively, if you don't have sudo/root privileges on the host, install the gems in your own directory instead of installing them system-wide:
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd arvados/apps/workbench</span>
+~/arvados/apps/workbench$ <span class="userinput">bundle install --path=vendor/bundle</span>
+</code></pre></notextile>
 
 h2. Configure the Workbench application
 
@@ -42,11 +71,14 @@ h2. Trusted client setting
 
 Log in to Workbench once (this ensures that the Arvados API server has a record of the Workbench client).
 
-In the API server project root, start the rails console.  Locate the ApiClient record for your Workbench installation, then set the `is_trusted` flag for the appropriate client record:
+In the API server project root, start the rails console.  Locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
 
 <notextile><pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=development bundle exec rails console</span>
-irb(main):001:0&gt; <span class="userinput">ApiClient.where('url_prefix like ?', '%workbench%')</span>
-=&gt; {:id => 1234}
-irb(main):002:0&gt; <span class="userinput">ApiClient.find(1234).update_attributes is_trusted: true</span>
+irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
+=&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
+irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
+=&gt; true
+irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attributes!(is_trusted: true) end</span>
+=&gt; true
 </code></pre>
 </notextile>

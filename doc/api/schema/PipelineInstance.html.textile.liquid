@@ -6,27 +6,13 @@ title: PipelineInstance
 
 ...
 
-
-
-A **PipelineInstance** represents...
+A **PipelineInstance** is the act or record of applying a pipeline template to a specific set of inputs; generally, a pipeline instance refers to a set of jobs that have been run to satisfy the pipeline components.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "pipeline_instances":{{site.baseurl}}/api/methods/pipeline_instances.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_instances@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a PipelineInstance.
-
-h3. Side effects
-
-Side effects of creating a PipelineInstance.
-
-h2. Resources
+h2. Resource
 
 Each PipelineInstance has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
@@ -34,8 +20,7 @@ table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |pipeline_template_uuid|string|||
 |name|string|||
-|components|Hash|||
+|components|hash|||
 |success|boolean|||
 |active|boolean|||
-|updated_at|datetime|||
 |properties|Hash|||

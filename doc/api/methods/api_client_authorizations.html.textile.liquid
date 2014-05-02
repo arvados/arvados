@@ -6,7 +6,9 @@ title: "api_client_authorizations"
 
 ...
 
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/api_client_authorizations@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
@@ -42,16 +44,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the ApiClientAuthorization in question.|path||
 
-h2. destroy
-
-destroy api_client_authorizations
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
-
 h2. get
 
 Gets a ApiClientAuthorization's metadata by UUID.
@@ -61,17 +53,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the ApiClientAuthorization in question.|path||
-
-h2. index
-
-index api_client_authorizations
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
 
 h2. list
 
@@ -83,19 +64,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of api_client_authorizations to return.|query||
 |order|string|Order in which to return matching api_client_authorizations.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching api_client_authorizations.|query||
-|where|object|Conditions for filtering api_client_authorizations.|query||
-
-h2. show
-
-show api_client_authorizations
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
+|filters|array|Conditions for filtering api_client_authorizations.|query||
 
 h2. update
 

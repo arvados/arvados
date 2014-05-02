@@ -6,7 +6,9 @@ title: "repositories"
 
 ...
 
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/repositories@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
@@ -31,16 +33,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Repository in question.|path||
 
-h2. destroy
-
-destroy repositories
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
-
 h2. get
 
 Gets a Repository's metadata by UUID.
@@ -60,17 +52,6 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 
-h2. index
-
-index repositories
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List repositories.
@@ -81,19 +62,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of repositories to return.|query||
 |order|string|Order in which to return matching repositories.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching repositories.|query||
-|where|object|Conditions for filtering repositories.|query||
-
-h2. show
-
-show repositories
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
+|filters|array|Conditions for filtering repositories.|query||
 
 h2. update
 

@@ -11,4 +11,12 @@ class LoginsTest < ActionDispatch::IntegrationTest
     visit page_with_token('expired_trustedclient')
     assert page.has_text? 'Log in'
   end
+
+  test "expired token yields login page, not error page" do
+    skip
+    visit page_with_token('expired_trustedclient')
+    # Even the error page has a "Log in" link. We should look for
+    # something that only appears the real login page.
+    assert page.has_text? 'Please log in'
+  end
 end

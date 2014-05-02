@@ -14,7 +14,7 @@ class Arvados::V1::RepositoriesController < ApplicationController
       gitolite_permissions = ''
       perms = []
       repo.permissions.each do |perm|
-        if perm.tail_kind == 'arvados#group'
+        if ArvadosModel::resource_class_for_uuid(perm.tail_uuid) == Group
           @users.each do |user_uuid, user|
             user.group_permissions.each do |group_uuid, perm_mask|
               if perm_mask[:write]

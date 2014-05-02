@@ -9,7 +9,7 @@ This tutorial introduces you to the Arvados file storage system.
 
 *This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
 
-The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file, rather than human-assigned file names (specifically, the md5 hash).  This has a number of advantages:
+The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file, rather than human-assigned file names (specifically, the MD5 hash).  This has a number of advantages:
 * Files can be stored and replicated across a cluster of servers without requiring a central name server.
 * Both the server and client systematically validate data integrity because the checksum is built into the identifier.
 * Data duplication is minimized—two files with the same contents will have in the same identifier, and will not be stored twice.
@@ -119,7 +119,7 @@ You can also download individual files:
 </code></pre>
 </notextile>
 
-With a local copy of the file, we can do some computation, for example computing the md5 hash of the complete file:
+With a local copy of the file, we can do some computation, for example computing the MD5 hash of the complete file:
 
 <notextile>
 <pre><code>/scratch/<b>you</b>$ <span class="userinput">md5sum var-GS000016015-ASM.tsv.bz2</span>

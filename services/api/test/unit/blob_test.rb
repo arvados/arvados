@@ -7,6 +7,33 @@ class BlobTest < ActiveSupport::TestCase
   @@blob_locator = Digest::MD5.hexdigest(@@blob_data) +
     '+' + @@blob_data.size.to_s
 
+  @@known_locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3'
+  @@known_token = 'hocfupkn2pjhrpgp2vxv8rsku7tvtx49arbc9s4bvu7p7wxqvk'
+  @@known_key = '13u9fkuccnboeewr0ne3mvapk28epf68a3bhj9q8sb4l6e4e5mkk' +
+    'p6nhj2mmpscgu1zze5h5enydxfe3j215024u16ij4hjaiqs5u4pzsl3nczmaoxnc' +
+    'ljkm4875xqn4xv058koz3vkptmzhyheiy6wzevzjmdvxhvcqsvr5abhl15c2d4o4' +
+    'jhl0s91lojy1mtrzqqvprqcverls0xvy9vai9t1l1lvvazpuadafm71jl4mrwq2y' +
+    'gokee3eamvjy8qq1fvy238838enjmy5wzy2md7yvsitp5vztft6j4q866efym7e6' +
+    'vu5wm9fpnwjyxfldw3vbo01mgjs75rgo7qioh8z8ij7jpyp8508okhgbbex3ceei' +
+    '786u5rw2a9gx743dj3fgq2irk'
+  @@known_signed_locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3' +
+    '+A257f3f5f5f0a4e4626a18fc74bd42ec34dcb228a@7fffffff'
+
+  test 'generate predictable invincible signature' do
+    signed = Blob.sign_locator @@known_locator, {
+      api_token: @@known_token,
+      key: @@known_key,
+      expire: 0x7fffffff,
+    }
+    assert_equal @@known_signed_locator, signed
+  end
+
+  test 'verify predictable invincible signature' do
+    assert_equal true, Blob.verify_signature!(@@known_signed_locator,
+                                              api_token: @@known_token,
+                                              key: @@known_key)
+  end
+
   test 'correct' do
     signed = Blob.sign_locator @@blob_locator, api_token: @@api_token, key: @@key
     assert_equal true, Blob.verify_signature!(signed, api_token: @@api_token, key: @@key)

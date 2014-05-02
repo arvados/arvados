@@ -5,6 +5,37 @@ class CollectionsController < ApplicationController
   def show_pane_list
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
+
+  def set_persistent
+    case params[:value]
+    when 'persistent', 'cache'
+      persist_links = Link.filter([['owner_uuid', '=', current_user.uuid],
+                                   ['link_class', '=', 'resources'],
+                                   ['name', '=', 'wants'],
+                                   ['tail_uuid', '=', current_user.uuid],
+                                   ['head_uuid', '=', @object.uuid]])
+      logger.debug persist_links.inspect
+    else
+      return unprocessable "Invalid value #{value.inspect}"
+    end
+    if params[:value] == 'persistent'
+      if not persist_links.any?
+        Link.create(link_class: 'resources',
+                    name: 'wants',
+                    tail_uuid: current_user.uuid,
+                    head_uuid: @object.uuid)
+      end
+    else
+      persist_links.each do |link|
+        link.destroy || raise
+      end
+    end
+
+    respond_to do |f|
+      f.json { render json: @object }
+    end
+  end
+
   def index
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
@@ -67,7 +98,6 @@ class CollectionsController < ApplicationController
     self.response_body = FileStreamer.new opts
   end
 
-
   def show
     return super if !@object
     @provenance = []
@@ -99,12 +129,15 @@ class CollectionsController < ApplicationController
     Link.where(head_uuid: @sourcedata.keys | @output2job.keys).each do |link|
       if link.link_class == 'resources' and link.name == 'wants'
         @protected[link.head_uuid] = true
+        if link.tail_uuid == current_user.uuid
+          @is_persistent = true
+        end
       end
     end
     Link.where(tail_uuid: @sourcedata.keys).each do |link|
       if link.link_class == 'data_origin'
         @sourcedata[link.tail_uuid][:data_origins] ||= []
-        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_kind, link.head_uuid]
+        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_uuid]
       end
     end
     Collection.where(uuid: @sourcedata.keys).each do |collection|
@@ -112,17 +145,17 @@ class CollectionsController < ApplicationController
         @sourcedata[collection.uuid][:collection] = collection
       end
     end
-    
+
     Collection.where(uuid: @object.uuid).each do |u|
       puts request
-      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg", 
+      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg",
                                                             {:request => request,
-                                                              :direction => :bottom_up, 
+                                                              :direction => :bottom_up,
                                                               :combine_jobs => :script_only}) rescue nil
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg", 
+      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg",
                                                                {:request => request,
-                                                                 :direction => :top_down, 
-                                                                 :combine_jobs => :script_only, 
+                                                                 :direction => :top_down,
+                                                                 :combine_jobs => :script_only,
                                                                  :pdata_only => true}) rescue nil
     end
   end

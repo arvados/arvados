@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity]
+  skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity, :storage]
   skip_around_filter :thread_with_mandatory_api_token, :only => :welcome
-  before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup]
+  before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
   def welcome
     if current_user
@@ -63,6 +63,33 @@ class UsersController < ApplicationController
     @users = [OpenStruct.new(uuid: nil)] + @users
   end
 
+  def storage
+    @breadcrumb_page_name = nil
+    @users = User.limit(params[:limit] || 1000).all
+    @user_storage = {}
+    total_storage = {}
+    @log_date = {}
+    @users.each do |u|
+      @user_storage[u.uuid] ||= {}
+      storage_log = Log.
+        filter([[:object_uuid, '=', u.uuid],
+                [:event_type, '=', 'user-storage-report']]).
+        order(:created_at => :desc).
+        limit(1)
+      storage_log.each do |log_entry|
+        # We expect this block to only execute once since we specified limit(1)
+        @user_storage[u.uuid] = log_entry['properties']
+        @log_date[u.uuid] = log_entry['event_at']
+      end
+      total_storage.merge!(@user_storage[u.uuid]) { |k,v1,v2| v1 + v2 }
+    end
+    @users = @users.sort_by { |u|
+      [-@user_storage[u.uuid].values.push(0).inject(:+), u.full_name]}
+    # Prepend a "Total" pseudo-user to the sorted list
+    @users = [OpenStruct.new(uuid: nil)] + @users
+    @user_storage[nil] = total_storage
+  end
+
   def show_pane_list
     if current_user.andand.is_admin
       super | %w(Admin)
@@ -91,9 +118,6 @@ class UsersController < ApplicationController
   def home
     @showallalerts = false
     @my_ssh_keys = AuthorizedKey.where(authorized_user_uuid: current_user.uuid)
-    # @my_vm_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#virtual_machine', link_class: 'permission', name: 'can_login')
-    # @my_repo_perms = Link.where(tail_uuid: current_user.uuid, head_kind: 'arvados#repository', link_class: 'permission', name: 'can_write')
-
     @my_tag_links = {}
 
     @my_jobs = Job.
@@ -105,10 +129,24 @@ class UsersController < ApplicationController
       limit(10).
       order('created_at desc').
       where(created_by: current_user.uuid)
+    collection_uuids = @my_collections.collect &:uuid
 
-    Link.limit(1000).where(head_uuid: @my_collections.collect(&:uuid),
-                           link_class: 'tag').each do |link|
-      (@my_tag_links[link.head_uuid] ||= []) << link
+    @persist_state = {}
+    collection_uuids.each do |uuid|
+      @persist_state[uuid] = 'cache'
+    end
+
+    Link.limit(1000).filter([['head_uuid', 'in', collection_uuids],
+                             ['link_class', 'in', ['tag', 'resources']]]).
+      each do |link|
+      case link.link_class
+      when 'tag'
+        (@my_tag_links[link.head_uuid] ||= []) << link
+      when 'resources'
+        if link.name == 'wants'
+          @persist_state[link.head_uuid] = 'persistent'
+        end
+      end
     end
 
     @my_pipelines = PipelineInstance.
@@ -116,22 +154,6 @@ class UsersController < ApplicationController
       order('created_at desc').
       where(created_by: current_user.uuid)
 
-
-    # A Tutorial is a Link which has link_class "resources" and name
-    # "wants", and is owned by the Tutorials Group (i.e., named
-    # "Arvados Tutorials" and owned by the system user).
-    @tutorial_group = Group.where(owner_uuid: User.system.uuid,
-                                  name: 'Arvados Tutorials').first
-    if @tutorial_group
-      @tutorial_links = Link.where(tail_uuid: @tutorial_group.uuid,
-                                   link_class: 'resources',
-                                   name: 'wants')
-    else
-      @tutorial_links = []
-    end
-    @tutorial_complete = {
-      'Run a job' => @my_last_job
-    }
     respond_to do |f|
       f.js { render template: 'users/home.js' }
       f.html { render template: 'users/home' }
@@ -143,6 +165,97 @@ class UsersController < ApplicationController
       @object.unsetup
     end
     show
+  end
+
+  def setup
+    respond_to do |format|
+      if current_user.andand.is_admin
+        setup_params = {}
+        setup_params[:send_notification_email] = "#{Rails.configuration.send_user_setup_notification_email}"
+        if params['user_uuid'] && params['user_uuid'].size>0
+          setup_params[:uuid] = params['user_uuid']
+        end
+        if params['email'] && params['email'].size>0
+          user = {email: params['email']}
+          setup_params[:user] = user
+        end
+        if params['openid_prefix'] && params['openid_prefix'].size>0
+          setup_params[:openid_prefix] = params['openid_prefix']
+        end
+        if params['repo_name'] && params['repo_name'].size>0
+          setup_params[:repo_name] = params['repo_name']
+        end
+        if params['vm_uuid'] && params['vm_uuid'].size>0
+          setup_params[:vm_uuid] = params['vm_uuid']
+        end
+
+        if User.setup setup_params
+          format.js
+        else
+          self.render_error status: 422
+        end
+      else
+        self.render_error status: 422
+      end
+    end
+  end
+
+  def setup_popup
+    @vms = VirtualMachine.all.results
+
+    @current_selections = find_current_links @object
+
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
+  protected
+
+  def find_current_links user
+    current_selections = {}
+
+    if !user
+      return current_selections
+    end
+
+    # oid login perm
+    oid_login_perms = Link.where(tail_uuid: user.email,
+                                   head_kind: 'arvados#user',
+                                   link_class: 'permission',
+                                   name: 'can_login')
+
+    if oid_login_perms.any?
+      prefix_properties = oid_login_perms.first.properties
+      current_selections[:identity_url_prefix] = prefix_properties[:identity_url_prefix]
+    end
+
+    # repo perm
+    repo_perms = Link.where(tail_uuid: user.uuid,
+                            head_kind: 'arvados#repository',
+                            link_class: 'permission',
+                            name: 'can_write')
+    if repo_perms.any?
+      repo_uuid = repo_perms.first.head_uuid
+      repos = Repository.where(head_uuid: repo_uuid)
+      if repos.any?
+        repo_name = repos.first.name
+        current_selections[:repo_name] = repo_name
+      end
+    end
+
+    # vm login perm
+    vm_login_perms = Link.where(tail_uuid: user.uuid,
+                              head_kind: 'arvados#virtualMachine',
+                              link_class: 'permission',
+                              name: 'can_login')
+    if vm_login_perms.any?
+      vm_uuid = vm_login_perms.first.head_uuid
+      current_selections[:vm_uuid] = vm_uuid
+    end
+
+    return current_selections
   end
 
 end

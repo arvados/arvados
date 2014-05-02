@@ -1,5 +1,16 @@
 <% self.formats = [:html] %>
 var new_content = "<%= escape_javascript(render template: 'pipeline_instances/show') %>";
-if ($('div.body-content').html() != new_content)
-   $('div.body-content').html(new_content);
+var selected_tab_hrefs = [];
+if ($('div.body-content').html() != new_content) {
+    $('.nav-tabs li.active a').each(function() {
+        selected_tab_hrefs.push($(this).attr('href'));
+    });
+
+    $('div.body-content').html(new_content);
+
+    // Show the same tabs that were active before we rewrote body-content
+    $.each(selected_tab_hrefs, function(i, href) {
+        $('.nav-tabs li a[href="' + href + '"]').tab('show');
+    });
+}
 $(document).trigger('ajax:complete');

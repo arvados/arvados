@@ -18,6 +18,8 @@
 //= require bootstrap/tooltip
 //= require bootstrap/popover
 //= require bootstrap/collapse
+//= require bootstrap/modal
+//= require bootstrap/button
 //= require bootstrap3-editable/bootstrap-editable
 //= require_tree .
 
@@ -89,7 +91,6 @@ jQuery(function($){
                            {dataType: 'json',
                             type: $(this).attr('data-remote-method'),
                             data: {
-                                'link[head_kind]': 'arvados#collection',
                                 'link[head_uuid]': tag_head_uuid,
                                 'link[link_class]': 'tag',
                                 'link[name]': new_tag
@@ -103,6 +104,12 @@ jQuery(function($){
                     this.addClass('label-danger').fadeTo('fast', '1');
                 });
             return false;
+        });
+
+    $(document).
+        on('ajax:complete ready', function() {
+            // See http://getbootstrap.com/javascript/#buttons
+            $('.btn').button();
         });
 
     HeaderRowFixer = function(selector) {
@@ -129,7 +136,7 @@ jQuery(function($){
             });
         }
     }
-    
+
     var fixer = new HeaderRowFixer('.table-fixed-header-row');
     fixer.duplicateTheadTr();
     fixer.fixThead();

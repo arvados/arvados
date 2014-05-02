@@ -34,17 +34,35 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
 
   protected
 
+  def default_orders
+    ["#{table_name}.created_at desc"]
+  end
+
   def find_objects_for_index
     # Here we are deliberately less helpful about searching for client
-    # authorizations. Rather than use the generic index/where/order
-    # features, we look up tokens belonging to the current user and
-    # filter by exact match on api_token (which we expect in the form
-    # of a where[uuid] parameter to make things easier for API client
-    # libraries).
+    # authorizations.  We look up tokens belonging to the current user
+    # and filter by exact matches on api_token and scopes.
+    wanted_scopes = []
+    if @filters
+      wanted_scopes.concat(@filters.map { |attr, operator, operand|
+        ((attr == 'scopes') and (operator == '=')) ? operand : nil
+      })
+      @filters.select! { |attr, operator, operand|
+        (attr == 'uuid') and (operator == '=')
+      }
+    end
+    if @where
+      wanted_scopes << @where['scopes']
+      @where.select! { |attr, val| attr == 'uuid' }
+    end
     @objects = model_class.
       includes(:user, :api_client).
-      where('user_id=? and (? or api_token=?)', current_user.id, !@where['uuid'], @where['uuid']).
-      order('created_at desc')
+      where('user_id=?', current_user.id)
+    super
+    wanted_scopes.compact.each do |scope_list|
+      sorted_scopes = scope_list.sort
+      @objects = @objects.select { |auth| auth.scopes.sort == sorted_scopes }
+    end
   end
 
   def find_object_by_uuid

@@ -14,50 +14,62 @@ class Arvados::V1::JobsController < ApplicationController
       end
     end
 
-    r = Commit.find_commit_range(current_user,
-                                 resource_attrs[:repository],
-                                 resource_attrs[:minimum_script_version],
-                                 resource_attrs[:script_version],
-                                 resource_attrs[:exclude_script_versions])
-    if !resource_attrs[:nondeterministic] and !resource_attrs[:no_reuse]
-      # Search for jobs where the script_version is in the list of commits
+    # We used to ask for the minimum_, exclude_, and no_reuse params
+    # in the job resource. Now we advertise them as flags that alter
+    # the behavior of the create action.
+    [:minimum_script_version, :exclude_script_versions].each do |attr|
+      if resource_attrs.has_key? attr
+        params[attr] = resource_attrs.delete attr
+      end
+    end
+    if resource_attrs.has_key? :no_reuse
+      params[:find_or_create] = !resource_attrs.delete(:no_reuse)
+    end
+
+    if params[:find_or_create]
+      r = Commit.find_commit_range(current_user,
+                                   resource_attrs[:repository],
+                                   params[:minimum_script_version],
+                                   resource_attrs[:script_version],
+                                   params[:exclude_script_versions])
+      # Search for jobs whose script_version is in the list of commits
       # returned by find_commit_range
       @object = nil
+      incomplete_job = nil
       Job.readable_by(current_user).where(script: resource_attrs[:script],
                                           script_version: r).
         each do |j|
         if j.nondeterministic != true and
-            j.success != false and
+            ((j.success == true and j.output != nil) or j.running == true) and
             j.script_parameters == resource_attrs[:script_parameters]
-          # Record the first job in the list
-          if !@object
-            @object = j
-          end
-          # Ensure that all candidate jobs actually did produce the same output
-          if @object.output != j.output
-            @object = nil
-            break
+          if j.running
+            # We'll use this if we don't find a job that has completed
+            incomplete_job ||= j
+          else
+            # Record the first job in the list
+            if !@object
+              @object = j
+            end
+            # Ensure that all candidate jobs actually did produce the same output
+            if @object.output != j.output
+              @object = nil
+              break
+            end
           end
         end
+        @object ||= incomplete_job
         if @object
           return show
         end
       end
     end
-    if r
-      resource_attrs[:script_version] = r[0]
-    end
 
-    # Don't pass these on to activerecord
-    resource_attrs.delete(:minimum_script_version)
-    resource_attrs.delete(:exclude_script_versions)
-    resource_attrs.delete(:no_reuse)
     super
   end
 
   def cancel
     reload_object_before_update
-    @object.update_attributes cancelled_at: Time.now
+    @object.update_attributes! cancelled_at: Time.now
     show
   end
 

@@ -8,7 +8,7 @@ This tutorial introduces how to run individual Crunch jobs using the @arv@ comma
 
 *This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
 
-You will create a job to run the "hash" Crunch script.  The "hash" script computes the md5 hash of each file in a collection.
+You will create a job to run the "hash" Crunch script.  The "hash" script computes the MD5 hash of each file in a collection.
 
 h2. Jobs
 
@@ -34,9 +34,9 @@ EOF
 * @cat@ is a standard Unix utility that writes a sequence of input to standard output.
 * @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@.
 * @>~/the_job@ redirects standard output to a file called @~/the_job@.
-* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "*Compute* %(rarr)&rarr;% *Code repositories*":https://{{site.arvados_workbench_host}}/repositories.
-* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit git revision hash, a tag, or a branch (in which case it will use the most recent commit on the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
-* @"script"@ specifies the name of the script to run.  The script is searched for in the @crunch_scripts/@ subdirectory of the git repository.
+* @"repository"@ is the name of a Git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "*Compute* %(rarr)&rarr;% *Code repositories*":https://{{site.arvados_workbench_host}}/repositories.
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit Git revision hash, a tag, or a branch.  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
+* @"script"@ specifies the name of the script to run.  The script must be given relative to the @crunch_scripts/@ subdirectory of the Git repository.
 * @"script_parameters"@ are provided to the script.  In this case, the input is the PGP data Collection that we "put in Keep earlier":{{site.baseurl}}/user/tutorials/tutorial-keep.html.
 * Setting the @"no_reuse"@ flag tells Crunch not to reuse work from past jobs.  This helps ensure that you can watch a new Job process for the rest of this tutorial, without reusing output from a past run that you made, or somebody else marked as public.  (If you want to experiment, after the first run below finishes, feel free to edit this job to remove the @"no_reuse"@ line and resubmit it.  See what happens!)
 
@@ -166,7 +166,7 @@ This collection consists of the @md5sum.txt@ file.  Use @arv keep get@ to show t
 </code></pre>
 </notextile>
 
-This md5 hash matches the md5 hash which we "computed earlier":{{site.baseurl}}/user/tutorials/tutorial-keep.html.
+This MD5 hash matches the MD5 hash which we "computed earlier":{{site.baseurl}}/user/tutorials/tutorial-keep.html.
 
 h2. The job log
 

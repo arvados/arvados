@@ -1,30 +1,33 @@
 class Arvados::V1::NodesController < ApplicationController
-  skip_before_filter :require_auth_scope_all, :only => :ping
+  skip_before_filter :require_auth_scope, :only => :ping
   skip_before_filter :find_object_by_uuid, :only => :ping
   skip_before_filter :render_404_if_no_object, :only => :ping
 
   def create
     @object = Node.new
     @object.save!
-    @object.start!(lambda { |h| arvados_v1_ping_node_url(h) })
+    @object.start!(lambda { |h| ping_arvados_v1_node_url(h) })
     show
   end
 
   def self._ping_requires_parameters
     { ping_secret: true }
   end
+
   def ping
-    @object = Node.where(uuid: (params[:id] || params[:uuid])).first
-    if !@object
-      return render_not_found
-    end
-    @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
-                   ping_secret: params[:ping_secret],
-                   ec2_instance_id: params[:instance_id] })
-    if @object.info[:ping_secret] == params[:ping_secret]
-      render json: @object.as_api_response(:superuser)
-    else
-      raise "Invalid ping_secret after ping"
+    act_as_system_user do
+      @object = Node.where(uuid: (params[:id] || params[:uuid])).first
+      if !@object
+        return render_not_found
+      end
+      @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
+                     ping_secret: params[:ping_secret],
+                     ec2_instance_id: params[:instance_id] })
+      if @object.info[:ping_secret] == params[:ping_secret]
+        render json: @object.as_api_response(:superuser)
+      else
+        raise "Invalid ping_secret after ping"
+      end
     end
   end
 

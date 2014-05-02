@@ -22,6 +22,10 @@ class KeepDisk < ArvadosModel
     t.add :ping_secret
   end
 
+  def foreign_key_attributes
+    super.reject { |a| a == "filesystem_uuid" }
+  end
+
   def ping(o)
     raise "must have :service_host and :ping_secret" unless o[:service_host] and o[:ping_secret]
 
@@ -31,7 +35,7 @@ class KeepDisk < ArvadosModel
     end
 
     @bypass_arvados_authorization = true
-    self.update_attributes(o.select { |k,v|
+    self.update_attributes!(o.select { |k,v|
                              [:service_host,
                               :service_port,
                               :service_ssl_flag,

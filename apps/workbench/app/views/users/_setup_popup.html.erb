@@ -1,0 +1,69 @@
+<div class="modal-dialog">
+  <div class="modal-content">
+
+    <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get',
+        class: 'form-search', remote: true} do %>
+
+    <div class="modal-header">
+      <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
+      <h4 class="modal-title">Setup User</h4>
+    </div>
+
+    <div class="modal-body">
+      <% if @object%>
+        <% uuid = @object.uuid %>
+        <% email = @object.email %>
+      <% end %>
+      <% disable_email = uuid != nil %>
+      <% identity_url_prefix = @current_selections[:identity_url_prefix] %>
+      <% disable_url_prefix = identity_url_prefix != nil %>
+      <% selected_repo = @current_selections[:repo_name] %>
+      <% selected_vm = @current_selections[:vm_uuid] %>
+
+      <input id="user_uuid" maxlength="250" name="user_uuid" type="hidden" value="<%=uuid%>">
+      <div class="form-group">
+	<label for="email">Email</label>
+        <% if disable_email %>
+        <input class="form-control" id="email" maxlength="250" name="email" type="text" value="<%=email%>" disabled>
+        <% else %>
+        <input class="form-control" id="email" maxlength="250" name="email" type="text">
+        <% end %>
+      </div>
+      <div class="form-group">
+        <label for="openid_prefix">Identity URL Prefix</label>
+        <% if disable_url_prefix %>
+        <input class="form-control" id="openid_prefix" maxlength="250" name="openid_prefix" type="text"
+               value="<%=identity_url_prefix%>" disabled=true>
+        <% else %>
+        <input class="form-control" id="openid_prefix" maxlength="250" name="openid_prefix" type="text"
+               value="<%= Rails.configuration.default_openid_prefix %>">
+        <% end %>
+      </div>
+      <div class="form-group">
+        <label for="repo_name">Repository Name</label>
+        <input class="form-control" id="repo_name" maxlength="250" name="repo_name" type="text" value="<%=selected_repo%>">
+      </div>
+      <div class="form-group">
+        <label for="vm_uuid">Virtual Machine</label>
+        <select class="form-control" name="vm_uuid">
+          <option value="" <%= 'selected' unless selected_vm %>>
+	    Choose One:
+	  </option>
+          <% @vms.each do |vm| %>
+            <option value="<%=vm.uuid%>"
+		    <%= 'selected' if selected_vm == vm.uuid %>>
+	      <%= vm.hostname %>
+	    </option>
+          <% end %>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" id="register" class="btn btn-primary" autofocus>Submit</button>
+      <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+    </div>
+
+    <% end #form %>
+  </div>
+</div>

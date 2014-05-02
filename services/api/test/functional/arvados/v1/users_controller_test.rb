@@ -13,7 +13,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
-    post :activate, uuid: me['uuid']
+    post :activate, id: me['uuid']
     assert_response :success
     assert_not_nil assigns(:object)
     me = JSON.parse(@response.body)
@@ -21,12 +21,37 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   test "refuse to activate a user before signing UA" do
+    act_as_system_user do
+    required_uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
+                                system_user_uuid,
+                                'signature',
+                                'require',
+                                system_user_uuid,
+                                Collection.uuid_like_pattern).
+      collect(&:head_uuid)
+
+      assert required_uuids.length > 0
+
+      signed_uuids = Link.where(owner_uuid: system_user_uuid,
+                                link_class: 'signature',
+                                name: 'click',
+                                tail_uuid: users(:inactive).uuid,
+                                head_uuid: required_uuids).
+        collect(&:head_uuid)
+
+      assert_equal 0, signed_uuids.length
+    end
+
     authorize_with :inactive
+
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
-    post :activate, uuid: me['uuid']
+    assert_equal false, me['is_active']
+
+    post :activate, id: me['uuid']
     assert_response 403
+
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
@@ -38,10 +63,16 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     get :current
     assert_response :success
     me = JSON.parse(@response.body)
-    post :activate, uuid: me['uuid']
+    post :activate, id: me['uuid']
     assert_response :success
     me = JSON.parse(@response.body)
     assert_equal true, me['is_active']
+  end
+
+  test "respond 401 if given token exists but user record is missing" do
+    authorize_with :valid_token_deleted_user
+    get :current, {format: :json}
+    assert_response 401
   end
 
   test "create new user with user as input" do
@@ -67,7 +98,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       repo_name: repo_name,
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {
-        uuid: "this_is_agreeable",
+        uuid: 'zzzzz-tpzed-abcdefghijklmno',
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
         email: "foo@example.com"
@@ -77,9 +108,10 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
 
     created = find_obj_in_resp response_items, 'User', nil
+
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
-    assert_equal 'this_is_agreeable', created['uuid']
+    assert_equal 'zzzzz-tpzed-abcdefghijklmno', created['uuid']
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
@@ -106,7 +138,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       vm_uuid: @vm_uuid,
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       user: {
-        uuid: "this_is_agreeable",
+        uuid: 'zzzzz-tpzed-abcdefghijklmno',
         first_name: "in_create_test_first_name",
         last_name: "test_last_name",
         email: "foo@example.com"
@@ -118,7 +150,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     created = find_obj_in_resp response_items, 'User', nil
     assert_equal 'in_create_test_first_name', created['first_name']
     assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
-    assert_equal 'this_is_agreeable', created['uuid']
+    assert_equal 'zzzzz-tpzed-abcdefghijklmno', created['uuid']
     assert_not_nil created['email'], 'expected non-nil email'
     assert_nil created['identity_url'], 'expected no identity_url'
 
@@ -409,8 +441,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expected same uuid as first create operation'
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
-    # +1 extra login link +1 extra system_group link pointing to the new User
-    verify_num_links @all_links_at_start, 6
+    # +1 extra can_read 'all users' group link
+    # +1 extra system_group can_manage link pointing to the new User
+    # +1 extra can_login permission link
+    # no repo link, no vm link
+    verify_num_links @all_links_at_start, 7
   end
 
   test "setup user with openid prefix" do
@@ -659,17 +694,17 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
-    verify_link_existence created['uuid'], created['email'], true, true, true, false
+    verify_link_existence created['uuid'], created['email'], true, true, true, true, false
 
     # now unsetup this user
-    post :unsetup, uuid: created['uuid']
+    post :unsetup, id: created['uuid']
     assert_response :success
 
     created2 = JSON.parse(@response.body)
     assert_not_nil created2['uuid'], 'expected uuid for the newly created user'
     assert_equal created['uuid'], created2['uuid'], 'expected uuid not found'
 
-    verify_link_existence created['uuid'], created['email'], false, false, false, false
+    verify_link_existence created['uuid'], created['email'], false, false, false, false, false
   end
 
   test "unsetup active user" do
@@ -679,23 +714,77 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     active_user = JSON.parse(@response.body)
     assert_not_nil active_user['uuid'], 'expected uuid for the active user'
     assert active_user['is_active'], 'expected is_active for active user'
+    assert active_user['is_invited'], 'expected is_invited for active user'
 
     verify_link_existence active_user['uuid'], active_user['email'],
-          false, false, false, true
+          false, false, false, true, true
 
     authorize_with :admin
 
     # now unsetup this user
-    post :unsetup, uuid: active_user['uuid']
+    post :unsetup, id: active_user['uuid']
     assert_response :success
 
     response_user = JSON.parse(@response.body)
     assert_not_nil response_user['uuid'], 'expected uuid for the upsetup user'
     assert_equal active_user['uuid'], response_user['uuid'], 'expected uuid not found'
     assert !response_user['is_active'], 'expected user to be inactive'
+    assert !response_user['is_invited'], 'expected user to be uninvited'
 
     verify_link_existence response_user['uuid'], response_user['email'],
-          false, false, false, false
+          false, false, false, false, false
+  end
+
+  test "setup user with send notification param false and verify no email" do
+    authorize_with :admin
+
+    post :setup, {
+      openid_prefix: 'http://www.example.com/account',
+      send_notification_email: 'false',
+      user: {
+        email: "foo@example.com"
+      }
+    }
+
+    assert_response :success
+    response_items = JSON.parse(@response.body)['items']
+    created = find_obj_in_resp response_items, 'User', nil
+    assert_not_nil created['uuid'], 'expected uuid for the new user'
+    assert_equal created['email'], 'foo@example.com', 'expected given email'
+
+    setup_email = ActionMailer::Base.deliveries.last
+    assert_nil setup_email, 'expected no setup email'
+  end
+
+  test "setup user with send notification param true and verify email" do
+    authorize_with :admin
+
+    post :setup, {
+      openid_prefix: 'http://www.example.com/account',
+      send_notification_email: 'true',
+      user: {
+        email: "foo@example.com"
+      }
+    }
+
+    assert_response :success
+    response_items = JSON.parse(@response.body)['items']
+    created = find_obj_in_resp response_items, 'User', nil
+    assert_not_nil created['uuid'], 'expected uuid for the new user'
+    assert_equal created['email'], 'foo@example.com', 'expected given email'
+
+    setup_email = ActionMailer::Base.deliveries.last
+    assert_not_nil setup_email, 'Expected email after setup'
+
+    assert_equal Rails.configuration.user_notifier_email_from, setup_email.from[0]
+    assert_equal 'foo@example.com', setup_email.to[0]
+    assert_equal 'Welcome to Curoverse', setup_email.subject
+    assert (setup_email.body.to_s.include? 'Your Arvados account has been set up'),
+        'Expected Your Arvados account has been set up in email body'
+    assert (setup_email.body.to_s.include? 'foo@example.com'),
+        'Expected user email in email body'
+    assert (setup_email.body.to_s.include? Rails.configuration.workbench_address),
+        'Expected workbench url in email body'
   end
 
   def verify_num_links (original_links, expected_additional_links)
@@ -712,12 +801,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       end
 
       if object_type == 'User'
-        if !x['head_kind']
+        if ArvadosModel::resource_class_for_uuid(x['uuid']) == User
           return_obj = x
           break
         end
       else  # looking for a link
-        if x['head_kind'] == head_kind
+        if x['head_uuid'] and ArvadosModel::resource_class_for_uuid(x['head_uuid']).kind == head_kind
           return_obj = x
           break
         end
@@ -743,29 +832,28 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       assert [] != object, "expected #{class_name} with name #{head_uuid}"
       head_uuid = object.first[:uuid]
     end
-    assert_equal link['link_class'], link_class,
+    assert_equal link_class, link['link_class'],
         "did not find expected link_class for #{link_object_name}"
 
-    assert_equal link['name'], link_name,
+    assert_equal link_name, link['name'],
         "did not find expected link_name for #{link_object_name}"
 
-    assert_equal link['tail_uuid'], tail_uuid,
+    assert_equal tail_uuid, link['tail_uuid'],
         "did not find expected tail_uuid for #{link_object_name}"
 
-    assert_equal link['head_kind'], head_kind,
+    assert_equal head_kind, link['head_kind'],
         "did not find expected head_kind for #{link_object_name}"
 
-    assert_equal link['head_uuid'], head_uuid,
+    assert_equal head_uuid, link['head_uuid'],
         "did not find expected head_uuid for #{link_object_name}"
   end
 
   def verify_link_existence uuid, email, expect_oid_login_perms,
-        expect_repo_perms, expect_vm_perms, expect_signatures
+      expect_repo_perms, expect_vm_perms, expect_group_perms, expect_signatures
     # verify that all links are deleted for the user
     oid_login_perms = Link.where(tail_uuid: email,
-                                 head_kind: 'arvados#user',
                                  link_class: 'permission',
-                                 name: 'can_login')
+                                 name: 'can_login').where("head_uuid like ?", User.uuid_like_pattern)
     if expect_oid_login_perms
       assert oid_login_perms.any?, "expected oid_login_perms"
     else
@@ -773,9 +861,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
 
     repo_perms = Link.where(tail_uuid: uuid,
-                              head_kind: 'arvados#repository',
                               link_class: 'permission',
-                              name: 'can_write')
+                              name: 'can_write').where("head_uuid like ?", Repository.uuid_like_pattern)
     if expect_repo_perms
       assert repo_perms.any?, "expected repo_perms"
     else
@@ -783,17 +870,28 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
 
     vm_login_perms = Link.where(tail_uuid: uuid,
-                              head_kind: 'arvados#virtualMachine',
                               link_class: 'permission',
-                              name: 'can_login')
+                              name: 'can_login').where("head_uuid like ?", VirtualMachine.uuid_like_pattern)
     if expect_vm_perms
       assert vm_login_perms.any?, "expected vm_login_perms"
     else
       assert !vm_login_perms.any?, "expected all vm_login_perms deleted"
     end
 
+    group = Group.where(name: 'All users').select do |g|
+      g[:uuid].match /-f+$/
+    end.first
+    group_read_perms = Link.where(tail_uuid: uuid,
+                             head_uuid: group[:uuid],
+                             link_class: 'permission',
+                             name: 'can_read')
+    if expect_group_perms
+      assert group_read_perms.any?, "expected all users group read perms"
+    else
+      assert !group_read_perms.any?, "expected all users group perm deleted"
+    end
+
     signed_uuids = Link.where(link_class: 'signature',
-                                  tail_kind: 'arvados#user',
                                   tail_uuid: uuid)
 
     if expect_signatures
@@ -809,5 +907,81 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                                name: 'can_manage',
                                tail_uuid: system_group_uuid,
                                head_uuid: user_uuid).count
+  end
+
+  test 'get user-owned objects' do
+    authorize_with :active
+    get :owned_items, {
+      id: users(:active).uuid,
+      limit: 500,
+      format: :json,
+    }
+    assert_response :success
+    assert_operator 2, :<=, json_response['items_available']
+    assert_operator 2, :<=, json_response['items'].count
+    kinds = json_response['items'].collect { |i| i['kind'] }.uniq
+    expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
+    assert_equal expect_kinds, (expect_kinds & kinds)
+  end
+
+  [false, true].each do |inc_ind|
+    test "get all pages of user-owned #{'and -linked ' if inc_ind}objects" do
+      authorize_with :active
+      limit = 5
+      offset = 0
+      items_available = nil
+      uuid_received = {}
+      owner_received = {}
+      while true
+        # Behaving badly here, using the same controller multiple
+        # times within a test.
+        @json_response = nil
+        get :owned_items, {
+          id: users(:active).uuid,
+          include_linked: inc_ind,
+          limit: limit,
+          offset: offset,
+          format: :json,
+        }
+        assert_response :success
+        assert_operator(0, :<, json_response['items'].count,
+                        "items_available=#{items_available} but received 0 "\
+                        "items with offset=#{offset}")
+        items_available ||= json_response['items_available']
+        assert_equal(items_available, json_response['items_available'],
+                     "items_available changed between page #{offset/limit} "\
+                     "and page #{1+offset/limit}")
+        json_response['items'].each do |item|
+          uuid = item['uuid']
+          assert_equal(nil, uuid_received[uuid],
+                       "Received '#{uuid}' again on page #{1+offset/limit}")
+          uuid_received[uuid] = true
+          owner_received[item['owner_uuid']] = true
+          offset += 1
+          if not inc_ind
+            assert_equal users(:active).uuid, item['owner_uuid']
+          end
+        end
+        break if offset >= items_available
+      end
+      if inc_ind
+        assert_operator 0, :<, (json_response.keys - [users(:active).uuid]).count,
+        "Set include_linked=true but did not receive any non-owned items"
+      end
+    end
+  end
+
+  %w(offset limit).each do |arg|
+    ['foo', '', '1234five', '0x10', '-8'].each do |val|
+      test "Raise error on bogus #{arg} parameter #{val.inspect}" do
+        authorize_with :active
+        get :owned_items, {
+          :id => users(:active).uuid,
+          :format => :json,
+          arg => val,
+        }
+        assert_response 422
+      end
+    end
   end
 end
