@@ -80,7 +80,7 @@ module LoadParam
       end
     end
     if @orders.empty?
-      @orders << default_orders
+      @orders = default_orders
     end
 
     case params[:select]
@@ -95,10 +95,19 @@ module LoadParam
       end
     end
 
+    if @select
+      # Any ordering columns must be selected when doing select,
+      # otherwise it is an SQL error, so filter out invaliding orderings.
+      @orders.select! { |o|
+        # match select column against order array entry
+        @select.select { |s| /^#{table_name}.#{s}( (asc|desc))?$/.match o }.any?
+      }
+    end
+
     if params[:distinct].is_a? String
       @distinct = params[:distinct]
-      @orders.select! { |o| @select.include? o } if @select
     end
+
   end
 
 

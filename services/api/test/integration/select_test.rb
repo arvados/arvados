@@ -15,4 +15,17 @@ class SelectTest < ActionDispatch::IntegrationTest
     assert_equal json_response['items'].uniq.count, json_response['items'].count
   end
 
+  test "select with order" do
+    get "/arvados/v1/links", {:format => :json, :select => ['uuid'], :order => "uuid asc"}, auth(:active)
+    assert_response :success
+
+    assert json_response['items'].length > 0
+
+    p = ""
+    json_response['items'].each do |i|
+      assert i['uuid'] > p
+      p = i['uuid']
+    end
+  end
+
 end
