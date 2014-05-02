@@ -8,11 +8,11 @@
       </div>
       <div class="panel-body">
         <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
-	<p>
-	  <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "Created: #{@object.created_at.to_s(:long)}", 'data-toggle' => 'manual', 'id' => "#{@object.uuid}-description" } %>
-	</p>
+	<%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "Created: #{@object.created_at.to_s(:long)}", 'data-toggle' => 'manual', 'id' => "#{@object.uuid}-description" } %>
         <% if @object.attribute_editable? 'description' %>
-	<a href="#" class="btn btn-xs btn-info" data-toggle="x-editable" data-toggle-selector="#<%= @object.uuid %>-description">Edit description</a>
+        <div style="margin-top: 1em;">
+          <a href="#" class="btn btn-xs btn-default" data-toggle="x-editable" data-toggle-selector="#<%= @object.uuid %>-description"><i class="fa fa-fw fa-pencil"></i> Edit description</a>
+        </div>
         <% end %>
       </div>
     </div>
@@ -40,7 +40,7 @@
         <% if @logs.any? %>
 	<%= link_to raw('Show all activity &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
             logs_path(filters: [['object_uuid','=',@object.uuid]].to_json),
-            class: 'btn btn-sm btn-default' %>
+            class: 'btn btn-xs btn-default' %>
         <% else %>
         <p>
           Created: <%= @object.created_at.to_s(:long) %>
