@@ -488,7 +488,28 @@ if (!$have_slurm)
   must_lock_now("$ENV{CRUNCH_TMP}/.lock", "a job is already running here.");
 }
 
-
+# If this job requires a Docker image, install that.
+my $docker_bin = "/usr/bin/docker.io";
+my $docker_image = $Job->{runtime_constraints}->{docker_image};
+if (defined($docker_image)) {
+  my $docker_pid = fork();
+  if ($docker_pid == 0)
+  {
+    srun (["srun", "--nodelist=" . join(' ', @node)],
+          [$docker_bin, 'pull', $docker_image]);
+    exit ($?);
+  }
+  while (1)
+  {
+    last if $docker_pid == waitpid (-1, WNOHANG);
+    freeze_if_want_freeze ($docker_pid);
+    select (undef, undef, undef, 0.1);
+  }
+  if ($? != 0)
+  {
+    croak("Installing Docker image $docker_image returned exit code $?");
+  }
+}
 
 foreach (qw (script script_version script_parameters runtime_constraints))
 {
@@ -593,7 +614,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       qw(-n1 -c1 -N1 -D), $ENV{'TMPDIR'},
       "--job-name=$job_id.$id.$$",
 	);
-    my @execargs = qw(sh);
     my $build_script_to_send = "";
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
@@ -606,10 +626,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	  "&& perl -";
     }
     $command .= "&& exec arv-mount $ENV{TASK_KEEPMOUNT} --exec ";
-    my $docker_image = $Job->{runtime_constraints}->{docker_image};
     if (defined($docker_image))
     {
-      $command .= "docker run -i -a stdin -a stdout -a stderr ";
+      $command .= "$docker_bin run -i -a stdin -a stdout -a stderr ";
       foreach my $env_key (qw(CRUNCH_SRC CRUNCH_TMP TASK_KEEPMOUNT))
       {
         $command .= "-v \Q$ENV{$env_key}:$ENV{$env_key}:rw\E ";
