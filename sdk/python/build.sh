@@ -13,4 +13,4 @@
 minor_version=`git log --format=format:%ct.%h -n1 .`
 
 sed "s|%%MINOR_VERSION%%|$minor_version|" < setup.py.src > setup.py
-
+sed "s|%%MINOR_VERSION%%|$minor_version|" < setup_fuse.py.src > setup_fuse.py
