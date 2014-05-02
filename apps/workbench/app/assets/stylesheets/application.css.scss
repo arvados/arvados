@@ -171,8 +171,11 @@ table.table-fixed-header-row tbody {
     z-index:1055;
 }
 
-.side-nav {
-    border-right: 1px solid #e7e7e7;
+.navbar-nav.side-nav {
+    box-shadow: inset -1px 0 #e7e7e7;
+}
+.navbar-nav.side-nav > li:first-child {
+    margin-top: 5px; /* keep "hover" bg below top nav bottom border */
 }
 .navbar-nav.side-nav > li > a {
     padding-top: 10px;
@@ -181,4 +184,10 @@ table.table-fixed-header-row tbody {
 .navbar-nav.side-nav > li.dropdown > ul.dropdown-menu > li > a {
     padding-top: 5px;
     padding-bottom: 5px;
+}
+.navbar-nav.side-nav a.active,
+.navbar-nav.side-nav a:hover,
+.navbar-nav.side-nav a:focus {
+    border-right: 1px solid #ffffff;
+    background: #ffffff;
 }
