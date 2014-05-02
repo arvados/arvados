@@ -164,7 +164,8 @@ class ArvadosResourceList
     end
   end
 
-  def name_for item_or_uuid
+  # Note: this arbitrarily chooses one of (possibly) multiple names.
+  def names_for item_or_uuid
     links_for(item_or_uuid, 'name').first.andand.name
   end
 

@@ -35,6 +35,7 @@ class FoldersController < ApplicationController
         @shared_with_me << folder
       end
     end
+    @object
   end
 
   def show
@@ -42,6 +43,22 @@ class FoldersController < ApplicationController
     @share_links = Link.filter([['head_uuid', '=', @object.uuid],
                                 ['link_class', '=', 'permission']])
     @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
+
+    @objects_and_names = []
+    @objects.each do |object|
+      if !(name_links = @objects.links_for(object, 'name')).empty?
+        name_links.each do |name_link|
+          @objects_and_names << [object, name_link]
+        end
+      else
+        @objects_and_names << [object,
+                               Link.new(tail_uuid: @object.uuid,
+                                        head_uuid: object.uuid,
+                                        link_class: "name",
+                                        name: "")]
+      end
+    end
+
     super
   end
 

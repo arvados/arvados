@@ -130,7 +130,7 @@
               <col width="15%" />
               <col width="29%" />
             </colgroup>
-            <% @objects.each do |object| %>
+            <% @objects_and_names.each do |object, name_link| %>
             <tr>
               <td>
                 <%= render :partial => "selection_checkbox", :locals => {object: object} %>
@@ -139,7 +139,6 @@
                 <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
               </td>
               <td>
-                <% name_link = @objects.links_for(object, 'name').first || Link.new(link_class: "name", owner_uuid: @object.uuid, tail_uuid: @object.uuid, head_uuid: object.uuid, name: "") %>
                 <%= render_editable_attribute name_link, 'name', nil, { 'data-emptytext' => "Unnamed #{object.class}" } %>
               </td>
               <td>

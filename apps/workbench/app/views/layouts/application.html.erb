@@ -178,6 +178,7 @@
             </a>
               <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
                 <%= form_tag '/actions' do %>
+                <%= hidden_field_tag 'uuid', @object.andand.uuid %>
                 <div id="selection-form-content"></div>
                 <% end %>
             </ul>

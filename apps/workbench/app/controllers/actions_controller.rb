@@ -1,8 +1,39 @@
 class ActionsController < ApplicationController
 
-  skip_before_filter :find_object_by_uuid, only: :post
+  @@exposed_actions = {}
+  def self.expose_action method, &block
+    @@exposed_actions[method] = true
+    define_method method, block
+  end
 
-  def combine_selected_files_into_collection
+  def model_class
+    ArvadosBase::resource_class_for_uuid(params[:uuid])
+  end
+
+  def post
+    params.keys.collect(&:to_sym).each do |param|
+      if @@exposed_actions[param]
+        return self.send(param.to_s)
+      end
+    end
+    redirect_to :back
+  end
+
+  expose_action :copy_selections_into_folder do
+    already_named = Link.
+      filter([['tail_uuid','=',@object.uuid],
+              ['head_uuid','in',params["selection"]]]).
+      collect(&:head_uuid)
+    (params["selection"] - already_named).each do |s|
+      Link.create(tail_uuid: @object.uuid,
+                  head_uuid: s,
+                  link_class: 'name',
+                  name: "#{s} added #{Time.now}")
+    end
+    redirect_to @object
+  end
+
+  expose_action :combine_selected_files_into_collection do
     lst = []
     files = []
     params["selection"].each do |s|
@@ -87,11 +118,4 @@ class ActionsController < ApplicationController
     redirect_to controller: 'collections', action: :show, id: newc.uuid
   end
 
-  def post
-    if params["combine_selected_files_into_collection"]
-      combine_selected_files_into_collection
-    else
-      redirect_to :back
-    end
-  end
 end

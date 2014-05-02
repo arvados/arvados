@@ -200,8 +200,14 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    if params[:uuid].is_a? String
-      @object = model_class.find(params[:uuid])
+    if not model_class
+      @object = nil
+    elsif params[:uuid].is_a? String
+      if params[:uuid].empty?
+        @object = nil
+      else
+        @object = model_class.find(params[:uuid])
+      end
     else
       @object = model_class.where(uuid: params[:uuid]).first
     end
