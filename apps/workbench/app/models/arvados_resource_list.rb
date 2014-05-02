@@ -139,9 +139,10 @@ class ArvadosResourceList
   end
 
   def links_for item_or_uuid, link_class=nil
+    return [] if !result_links
     unless @links_for_uuid
       @links_for_uuid = {}
-      results.links.each do |link|
+      result_links.each do |link|
         if link.respond_to? :head_uuid
           @links_for_uuid[link.head_uuid] ||= []
           @links_for_uuid[link.head_uuid] << link
