@@ -310,7 +310,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def content_summary
-    self.class.to_s
+    self.class_for_display
   end
 
   def selection_label

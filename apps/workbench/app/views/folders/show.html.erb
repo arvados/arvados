@@ -139,7 +139,7 @@
                 <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
               </td>
               <td>
-                <%= render_editable_attribute name_link, 'name', nil, { 'data-emptytext' => "Unnamed #{object.class}" } %>
+                <%= render_editable_attribute name_link, 'name', nil, { 'data-emptytext' => "Unnamed #{object.class_for_display}" } %>
               </td>
               <td>
                 <%= object.content_summary %>
