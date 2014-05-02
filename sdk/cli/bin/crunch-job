@@ -635,7 +635,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .=
 	  "&& perl -";
     }
-    $command .= "&& exec arv-mount $ENV{TASK_KEEPMOUNT} --exec ";
+    $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if (defined($docker_image))
     {
       $command .= "$docker_bin run -i -a stdin -a stdout -a stderr ";
