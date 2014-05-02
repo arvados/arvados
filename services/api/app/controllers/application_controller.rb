@@ -114,8 +114,7 @@ class ApplicationController < ActionController::Base
       end
     end
     @objects = all_objects || []
-    @links = Link.where('link_class=? and owner_uuid=?'\
-                        ' and owner_uuid=tail_uuid'\
+    @links = Link.where('link_class=? and tail_uuid=?'\
                         ' and head_uuid in (?)',
                         'name',
                         @object.uuid,
