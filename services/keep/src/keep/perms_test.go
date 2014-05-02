@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 var (
@@ -20,21 +21,16 @@ var (
 	known_signed_locator = known_locator + "+A" + known_signature + "@" + known_timestamp
 )
 
-func TestGeneratePerms(t *testing.T) {
-	PermissionSecret = []byte(known_key)
-	defer func() { PermissionSecret = nil }()
-
-	if known_signature != GeneratePerms(known_hash, known_token, known_timestamp) {
-		t.Fail()
-	}
-}
-
 func TestSignLocator(t *testing.T) {
 	PermissionSecret = []byte(known_key)
 	defer func() { PermissionSecret = nil }()
 
-	if known_signed_locator != SignLocator(known_locator, known_token, known_timestamp) {
-		t.Fail()
+	if ts, err := ParseHexTimestamp(known_timestamp); err != nil {
+		t.Errorf("bad known_timestamp %s", known_timestamp)
+	} else {
+		if known_signed_locator != SignLocator(known_locator, known_token, ts) {
+			t.Fail()
+		}
 	}
 }
 
@@ -92,6 +88,17 @@ func TestVerifySignatureBadToken(t *testing.T) {
 	defer func() { PermissionSecret = nil }()
 
 	if VerifySignature(known_signed_locator, "00000000") {
+		t.Fail()
+	}
+}
+
+func TestVerifySignatureExpired(t *testing.T) {
+	PermissionSecret = []byte(known_key)
+	defer func() { PermissionSecret = nil }()
+
+	yesterday := time.Now().AddDate(0, 0, -1)
+	expired_locator := SignLocator(known_hash, known_token, yesterday)
+	if VerifySignature(expired_locator, known_token) {
 		t.Fail()
 	}
 }
