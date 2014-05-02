@@ -261,10 +261,10 @@ class ApplicationController < ActionController::Base
     end
 
     @objects = @objects.select(@select.map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }.join ", ") if @select
-    @objects = @objects.uniq(ActiveRecord::Base.connection.quote_column_name @distinct.to_s) if @distinct
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
+    @objects = @objects.uniq(@distinct) if not @distinct.nil?
   end
 
   def resource_attrs
@@ -444,7 +444,9 @@ class ApplicationController < ActionController::Base
     {
       filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
-      order: { type: 'string', required: false },
+      order: { type: 'array', required: false },
+      select: { type: 'array', required: false },
+      distinct: { type: 'boolean', required: false },
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
     }

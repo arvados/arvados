@@ -74,7 +74,7 @@ class UsersController < ApplicationController
       storage_log = Log.
         filter([[:object_uuid, '=', u.uuid],
                 [:event_type, '=', 'user-storage-report']]).
-        order(:created_at => :desc).
+        order(['created_at desc']).
         limit(1)
       storage_log.each do |log_entry|
         # We expect this block to only execute once since we specified limit(1)
@@ -122,12 +122,12 @@ class UsersController < ApplicationController
 
     @my_jobs = Job.
       limit(10).
-      order('created_at desc').
+      order(['created_at desc']).
       where(created_by: current_user.uuid)
 
     @my_collections = Collection.
       limit(10).
-      order('created_at desc').
+      order(['created_at desc']).
       where(created_by: current_user.uuid)
     collection_uuids = @my_collections.collect &:uuid
 
@@ -151,7 +151,7 @@ class UsersController < ApplicationController
 
     @my_pipelines = PipelineInstance.
       limit(10).
-      order('created_at desc').
+      order(['created_at desc']).
       where(created_by: current_user.uuid)
 
     respond_to do |f|

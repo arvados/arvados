@@ -238,8 +238,8 @@ class Arvados::V1::SchemaController < ApplicationController
                   location: "query"
                 },
                 distinct: {
-                  type: "string",
-                  description: "Return each distinct value exactly once for the specified column (may skip rows)",
+                  type: "boolean",
+                  description: "Return each distinct object",
                   location: "query"
                 }
               },

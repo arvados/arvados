@@ -69,7 +69,18 @@ module LoadParam
 
     @orders = []
     if params[:order]
-      params[:order].split(',').each do |order|
+      od = []
+      (case params[:order]
+       when String
+         od = Oj.load(params[:order])
+         raise unless od.is_a? Array
+         od
+       when Array
+         params[:order]
+       else
+         []
+       end).each do |order|
+        order = order.to_s
         attr, direction = order.strip.split " "
         direction ||= 'asc'
         if attr.match /^[a-z][_a-z0-9]+$/ and
@@ -79,6 +90,7 @@ module LoadParam
         end
       end
     end
+
     if @orders.empty?
       @orders = default_orders
     end
@@ -104,10 +116,8 @@ module LoadParam
       }
     end
 
-    if params[:distinct].is_a? String
-      @distinct = params[:distinct]
-    end
-
+    @distinct = true if (params[:distinct] == true || params[:distinct] == "true")
+    @distinct = false if (params[:distinct] == false || params[:distinct] == "false")
   end
 
 

@@ -4,7 +4,7 @@ require 'rails/test_help'
 
 module ArvadosTestSupport
   def json_response
-    @json_response ||= ActiveSupport::JSON.decode @response.body
+    ActiveSupport::JSON.decode @response.body
   end
 
   def api_token(api_client_auth_name)
