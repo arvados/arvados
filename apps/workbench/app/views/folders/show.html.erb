@@ -128,7 +128,8 @@
               <col width="30%" />
               <col width="15%" />
               <col width="15%" />
-              <col width="29%" />
+              <col width="24%" />
+              <col width="5%" />
             </colgroup>
             <% @objects_and_names.each do |object, name_link| %>
             <tr>
@@ -152,6 +153,13 @@
               <td class="arvados-uuid">
                 <%= object.uuid %>
               </td>
+              <td>
+                <% if @object.editable? %>
+                  <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: object.uuid}, method: :delete, remote: true, data: {confirm: "You are about to remove #{object.class_for_display} #{object.uuid} from this folder.\n\nAre you sure?"}, class: 'btn btn-xs btn-default') do %>
+                    Remove <i class="fa fa-fw fa-ban"></i>
+                  <% end %>
+                <% end %>
+              </td>
             </tr>
             <% end %>
           </tbody>
@@ -172,6 +180,8 @@
               </th>
               <th>
                 uuid
+              </th>
+              <th>
               </th>
             </tr>
           </thead>

@@ -7,6 +7,10 @@ class FoldersController < ApplicationController
     %w(My_folders Shared_with_me)
   end
 
+  def remove_item
+    raise "Not implemented yet!"
+  end
+
   def index
     @my_folders = []
     @shared_with_me = []
