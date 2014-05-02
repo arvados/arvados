@@ -43,12 +43,13 @@ import (
 	"strings"
 )
 
-// The PermissionSecret is the secret key used to generate SHA1 digests
-// for permission hints. apiserver and Keep must use the same key.
+// The PermissionSecret is the secret key used to generate SHA1
+// digests for permission hints. apiserver and Keep must use the same
+// key.
 var PermissionSecret []byte
 
-// GeneratePerms returns a string representing the permission hint for a blob
-// with the given hash, API token and timestamp.
+// GeneratePerms returns a string representing the signed permission
+// hint for the blob identified by blob_hash, api_token and timestamp.
 func GeneratePerms(blob_hash string, api_token string, timestamp string) string {
 	hmac := hmac.New(sha1.New, PermissionSecret)
 	hmac.Write([]byte(blob_hash))
@@ -60,6 +61,8 @@ func GeneratePerms(blob_hash string, api_token string, timestamp string) string 
 	return fmt.Sprintf("%x", digest)
 }
 
+// SignLocator takes a blob_locator, an api_token and a timestamp, and
+// returns a signed locator string.
 func SignLocator(blob_locator string, api_token string, timestamp string) string {
 	// Extract the hash from the blob locator, omitting any size hint that may be present.
 	blob_hash := strings.Split(blob_locator, "+")[0]
@@ -67,6 +70,8 @@ func SignLocator(blob_locator string, api_token string, timestamp string) string
 	return blob_locator + "+A" + GeneratePerms(blob_hash, api_token, timestamp) + "@" + timestamp
 }
 
+// VerifySignature returns true if the signature on the signed_locator
+// can be verified using the given api_token.
 func VerifySignature(signed_locator string, api_token string) bool {
 	if re, err := regexp.Compile(`^(.*)\+A(.*)@(.*)$`); err == nil {
 		if matches := re.FindStringSubmatch(signed_locator); matches != nil {
