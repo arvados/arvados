@@ -57,4 +57,26 @@ class SelectTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "select two columns with old-style order syntax" do
+    get "/arvados/v1/links", {:format => :json, :select => ['link_class', 'uuid'], :order => 'link_class asc, uuid desc'}, auth(:active)
+    assert_response :success
+
+    assert json_response['items'].length > 0
+
+    prev_link_class = ""
+    prev_uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+
+    json_response['items'].each do |i|
+      if prev_link_class != i['link_class']
+        prev_uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+      end
+
+      assert i['link_class'] >= prev_link_class
+      assert i['uuid'] < prev_uuid
+
+      prev_link_class = i['link_class']
+      prev_uuid = i['uuid']
+    end
+  end
+
 end

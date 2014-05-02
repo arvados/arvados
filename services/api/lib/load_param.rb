@@ -72,9 +72,13 @@ module LoadParam
       od = []
       (case params[:order]
        when String
-         od = Oj.load(params[:order])
-         raise unless od.is_a? Array
-         od
+         if params[:order].starts_with? '['
+           od = Oj.load(params[:order])
+           raise unless od.is_a? Array
+           od
+         else
+           params[:order].split(',')
+         end
        when Array
          params[:order]
        else
