@@ -362,5 +362,9 @@ public class Arvados {
     logger.debug(errorDetail);
     throw new Exception(errorDetail);
   }
-
+  
+  public static void main(String[] args){
+    System.out.println("Welcome to Arvados Java SDK.");
+    System.out.println("Please refer to README to learn to use the SDK.");
+  }
 }

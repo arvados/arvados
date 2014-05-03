@@ -84,24 +84,24 @@
 
 == Implementing your code to use SDK
 
-  - <ARVADOS_HOME>/sdk/java/ArvadosSDKJavaUser.java serves as an example
+  - <ARVADOS_HOME>/sdk/java/ArvadosSDKJavaExample.java serves as an example
       implementation using the java SDK. Please use this file to see how
       you would want use the SDK from your java program.
       The steps below use this java class name.
 
-  - ArvadosSDKJavaUser.java creates an instance of Arvados SDK class and
+  - ArvadosSDKJavaExample.java creates an instance of Arvados SDK class and
       uses it to make various "call" requests.
 
-  - To compile ArvadosSDKJavaUser.java
+  - To compile ArvadosSDKJavaExample.java
 
-      javac -cp <ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaUser.java
+      javac -cp <ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaExample.java
 
-      This results in the generation of the ArvadosSDKJavaUser.class file
+      This results in the generation of the ArvadosSDKJavaExample.class file
         in the same dir as the java file
 
   - To run the class file
 
-      java -cp .:<ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaUser
+      java -cp .:<ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaExample
 
 
 == Viewing and managing SDK logging
