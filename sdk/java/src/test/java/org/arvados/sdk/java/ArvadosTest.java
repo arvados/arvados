@@ -56,7 +56,7 @@ public class ArvadosTest {
     params.add("v1");
     params.add("users.list");
 
-    String response = arv.call(params);
+    String response = arv.call("users", "list", params);
     assertTrue("Expected users.list in response", response.contains("arvados#userList"));
     assertTrue("Expected users.list in response", response.contains("uuid"));
 
@@ -92,7 +92,7 @@ public class ArvadosTest {
     params.add("v1");
     params.add("users.list");
 
-    String response = arv.call(params);
+    String response = arv.call("users", "list", params);
     JSONParser parser = new JSONParser();
     Object obj = parser.parse(response);
     JSONObject jsonObject = (JSONObject) obj;
@@ -111,7 +111,7 @@ public class ArvadosTest {
     params.add("users.get");
     params.add(userUuid);
 
-    response = arv.call(params);
+    response = arv.call("user", "get", params);
 
     //JSONParser parser = new JSONParser();
     jsonObject = (JSONObject) parser.parse(response);;
@@ -136,7 +136,7 @@ public class ArvadosTest {
     params.add("v1");
     params.add("users.create");
     params.add(filePath);
-    String response = arv.call(params);
+    String response = arv.call("users", "create", params);
 
     JSONParser parser = new JSONParser();
     JSONObject jsonObject = (JSONObject) parser.parse(response);
@@ -160,7 +160,7 @@ public class ArvadosTest {
 
     Exception caught = null;
     try {
-      arv.call(params);
+      arv.call("users", "list", params);
     } catch (Exception e) {
       caught = e;
     }
@@ -185,7 +185,7 @@ public class ArvadosTest {
 
     Exception caught = null;
     try {
-      arv.call(params);
+      arv.call("users", "list", params);
     } catch (Exception e) {
       caught = e;
     }
@@ -199,25 +199,51 @@ public class ArvadosTest {
    * @throws Exception
    */
   @Test
-  public void testCallWithTooFewParams() throws Exception {
+  public void testCallForNoSuchResrouce() throws Exception {
     Arvados arv = new Arvados("arvados", "v1");
 
     List<String> params = new ArrayList<String>();
+    params.add("users.list");
     params.add("call");
     params.add("arvados");
     params.add("v1");
 
     Exception caught = null;
     try {
-      arv.call(params);
+      arv.call("abcd", "list", params);
     } catch (Exception e) {
       caught = e;
     }
 
     assertNotNull ("expected exception", caught);
-    assertTrue ("Expected ERROR: missing method name", caught.getMessage().contains("ERROR: missing method name"));
+    assertTrue ("Expected ERROR: 404 not found", caught.getMessage().contains("404 Not Found"));
   }
   
+  /**
+   * Test unsupported api version api
+   * @throws Exception
+   */
+  @Test
+  public void testCallForNoSuchResrouceMethod() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    List<String> params = new ArrayList<String>();
+    params.add("users.list");
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+
+    Exception caught = null;
+    try {
+      arv.call("users", "abcd", params);
+    } catch (Exception e) {
+      caught = e;
+    }
+
+    assertNotNull ("expected exception", caught);
+    assertTrue ("Expected ERROR: 404 not found", caught.getMessage().contains("404 Not Found"));
+  }
+
   /**
    * Test pipeline_tempates.create api
    * @throws Exception
@@ -235,7 +261,7 @@ public class ArvadosTest {
     params.add("v1");
     params.add("pipeline_templates.create");
     params.add(filePath);
-    String response = arv.call(params);
+    String response = arv.call("pipeline_templates", "create", params);
 
     JSONParser parser = new JSONParser();
     JSONObject jsonObject = (JSONObject) parser.parse(response);
@@ -250,7 +276,7 @@ public class ArvadosTest {
     params.add("v1");
     params.add("pipeline_templates.get");
     params.add(uuid);
-    response = arv.call(params);
+    response = arv.call("pipeline_templates", "get", params);
 
     parser = new JSONParser();
     jsonObject = (JSONObject) parser.parse(response);
@@ -277,7 +303,7 @@ public class ArvadosTest {
     params.add("v1");
     params.add("users.list");
 
-    String response = arv.call(params);
+    String response = arv.call("users", "list", params);
     assertTrue("Expected users.list in response", response.contains("arvados#userList"));
     assertTrue("Expected users.list in response", response.contains("uuid"));
 

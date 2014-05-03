@@ -137,19 +137,18 @@ public class Arvados {
     return (restDescription);
   }
 
-  public String call(List<String> callParams) throws Exception {
-    if (callParams.size() == 1) {
-      error("call", "missing api name");
-    } else if (callParams.size() == 2) {
-      error("call", "missing api version");
-    } else if (callParams.size() == 3) {
-      error("call", "missing method name");
+  public String call(String resourceName, String methodName, List<String> callParams) throws Exception {
+    if (resourceName == null) {
+      error("missing resource name");      
     }
-
+    if (methodName == null) {
+      error("missing method name");      
+    }
+    
     String fullMethodName = callParams.get(3);
     Matcher m = METHOD_PATTERN.matcher(fullMethodName);
     if (!m.matches()) {
-      error("call", "invalid method name: " + fullMethodName);
+      error ("invalid method name: " + fullMethodName);
     }
 
     // initialize rest description if not already
@@ -182,7 +181,7 @@ public class Arvados {
     RestMethod method =
         methodMap == null ? null : methodMap.get(fullMethodName.substring(curIndex));
     if (method == null) {
-      error("call", "method not found: " + fullMethodName);
+      error("method not found: " + fullMethodName);
     }
 
     HashMap<String, Object> parameters = Maps.newHashMap();
@@ -197,7 +196,7 @@ public class Arvados {
         JsonSchema parameter = method.getParameters().get(parameterName);
         if (Boolean.TRUE.equals(parameter.getRequired())) {
           if (i == callParams.size()) {
-            error("call", "missing required parameter: " + parameter);
+            error("missing required parameter: " + parameter);
           } else {
             putParameter(null, parameters, parameterName, parameter, callParams.get(i++));
           }
@@ -210,24 +209,24 @@ public class Arvados {
       String fileName = callParams.get(i++);
       requestBodyFile = new File(fileName);
       if (!requestBodyFile.canRead()) {
-        error("call", "POST method requires input file. Unable to read file: " + fileName);
+        error("POST method requires input file. Unable to read file: " + fileName);
       }
     }
 
     while (i < callParams.size()) {
       String argName = callParams.get(i++);
       if (!argName.startsWith("--")) {
-        error("call", "optional parameters must start with \"--\": " + argName);
+        error("optional parameters must start with \"--\": " + argName);
       }
       String parameterName = argName.substring(2);
       if (i == callParams.size()) {
-        error("call", "missing parameter value for: " + argName);
+        error("missing parameter value for: " + argName);
       }
       String parameterValue = callParams.get(i++);
       if (parameterName.equals("contentType")) {
         contentType = parameterValue;
         if (method.getHttpMethod().equals("GET") || method.getHttpMethod().equals("DELETE")) {
-          error("call", "HTTP content type cannot be specified for this method: " + argName);
+          error("HTTP content type cannot be specified for this method: " + argName);
         }
       } else {
         JsonSchema parameter = null;
@@ -359,13 +358,12 @@ public class Arvados {
     }
     Object oldValue = parameters.put(parameterName, value);
     if (oldValue != null) {
-      error("call", "duplicate parameter: " + argName);
+      error("duplicate parameter: " + argName);
     }
   }
   
-  private static void error(String command, String detail) throws Exception {
-    String errorDetail = "ERROR: " + detail +
-        "For help, type: Arvados" + (command == null ? "" : " help " + command);
+  private static void error(String detail) throws Exception {
+    String errorDetail = "ERROR: " + detail;
     
     logger.debug(errorDetail);
     throw new Exception(errorDetail);
