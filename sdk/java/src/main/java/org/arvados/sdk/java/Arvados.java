@@ -10,7 +10,6 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.UriTemplate;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.Lists;
 import com.google.api.client.util.Maps;
 import com.google.api.services.discovery.Discovery;
 import com.google.api.services.discovery.model.JsonSchema;
@@ -21,7 +20,6 @@ import com.google.api.services.discovery.model.RestResource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,35 +107,6 @@ public class Arvados {
    */
   public RestDescription discover() throws Exception {
     restDescription = loadArvadosApi();
-
-    // compute method details
-    ArrayList<MethodDetails> result = Lists.newArrayList();
-    String resourceName = "";
-    processResources(result, resourceName, restDescription.getResources());
-
-    // display method details
-    Collections.sort(result);
-    StringBuffer buffer = new StringBuffer();
-    for (MethodDetails methodDetail : result) {
-      buffer.append("\nArvados call " + apiName + " " + apiVersion + " " + methodDetail.name);
-      for (String param : methodDetail.requiredParameters) {
-        buffer.append(" <" + param + ">");
-      }
-      if (methodDetail.hasContent) {
-        buffer.append(" contentFile");
-      }
-      if (methodDetail.optionalParameters.isEmpty() && !methodDetail.hasContent) {
-        buffer.append("\n");
-      } else {
-        buffer.append("\n [optional parameters...]");
-        buffer.append("\n  --contentType <value> (default is \"application/json\")");
-        for (String param : methodDetail.optionalParameters) {
-          buffer.append("\n  --" + param + " <value>");
-        }
-      }
-    }
-    logger.debug(buffer.toString());
-
     return (restDescription);
   }
 
@@ -225,7 +194,7 @@ public class Arvados {
         if (restDescription.getParameters() != null) {
           parameter = restDescription.getParameters().get(parameterName);
         }
-        if (parameter == null && method.getParameters() == null) {
+        if (parameter == null && method.getParameters() != null) {
           parameter = method.getParameters().get(parameterName);
         }
         putParameter(parameterName, parameters, parameterName, parameter, parameterValue);
@@ -291,55 +260,6 @@ public class Arvados {
     }
   }
 
-  private void processMethods(
-      ArrayList<MethodDetails> result, String resourceName, Map<String, RestMethod> methodMap) {
-    if (methodMap == null) {
-      return;
-    }
-    for (Map.Entry<String, RestMethod> methodEntry : methodMap.entrySet()) {
-      MethodDetails details = new MethodDetails();
-      String methodName = methodEntry.getKey();
-      RestMethod method = methodEntry.getValue();
-      details.name = (resourceName.isEmpty() ? "" : resourceName + ".") + methodName;
-      details.hasContent =
-          !method.getHttpMethod().equals("GET") && !method.getHttpMethod().equals("DELETE");
-      // required parameters
-      if (method.getParameterOrder() != null) {
-        for (String parameterName : method.getParameterOrder()) {
-          JsonSchema parameter = method.getParameters().get(parameterName);
-          if (Boolean.TRUE.equals(parameter.getRequired())) {
-            details.requiredParameters.add(parameterName);
-          }
-        }
-      }
-      // optional parameters
-      Map<String, JsonSchema> parameters = method.getParameters();
-      if (parameters != null) {
-        for (Map.Entry<String, JsonSchema> parameterEntry : parameters.entrySet()) {
-          String parameterName = parameterEntry.getKey();
-          JsonSchema parameter = parameterEntry.getValue();
-          if (!Boolean.TRUE.equals(parameter.getRequired())) {
-            details.optionalParameters.add(parameterName);
-          }
-        }
-      }
-      result.add(details);
-    }
-  }
-
-  private void processResources(
-      ArrayList<MethodDetails> result, String resourceName, Map<String, RestResource> resourceMap) {
-    if (resourceMap == null) {
-      return;
-    }
-    for (Map.Entry<String, RestResource> entry : resourceMap.entrySet()) {
-      RestResource resource = entry.getValue();
-      String curResourceName = (resourceName.isEmpty() ? "" : resourceName + ".") + entry.getKey();
-      processMethods(result, curResourceName, resource.getMethods());
-      processResources(result, curResourceName, resource.getResources());
-    }
-  }
-
   private void putParameter(String argName, Map<String, Object> parameters,
       String parameterName, JsonSchema parameter, Object parameterValue) throws Exception {
     Object value = parameterValue;
@@ -350,6 +270,8 @@ public class Arvados {
         value = new BigDecimal(parameterValue.toString());
       } else if ("integer".equals(parameter.getType())) {
         value = new BigInteger(parameterValue.toString());
+      } else if ("array".equals(parameter.getType())) {
+        // TBD
       }
     }
     

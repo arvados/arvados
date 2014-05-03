@@ -388,4 +388,23 @@ public class ArvadosTest {
     assertEquals ("Got more users than requested", numUsersListItems-1, numUsersListItems2);
   }
 
+  @Test
+  public void testGetLinksWithFilters() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+
+    String response = arv.call("links", "list", params);
+    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+
+    /*
+    String[] filters = new String[1];
+    filters[0] = "name != 'can_manage'";
+    
+    params.put("filters", filters);
+    response = arv.call("links", "list", params);
+    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+    */   
+  }
+
 }

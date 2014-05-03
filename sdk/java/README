@@ -2,6 +2,9 @@
 
   - Using the Arvados Java SDK, you can access API server from a java program.
 
+  - Please refer to http://doc.arvados.org/api/index.html for a complete list
+    of supported resources and methods.
+
   - This document highlights the details as to how to use the SDK.
 
   - The Java SDK is used as a maven project. Hence, you would need a working
