@@ -125,7 +125,28 @@ public class ArvadosTest {
     JSONParser parser = new JSONParser();
     JSONObject jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
-    assertNotNull("Expected uuid for first user", jsonObject.get("uuid"));
+    
+    Object uuid = jsonObject.get("uuid");
+    assertNotNull("Expected uuid for first user", uuid);
+    
+    // delete the object
+    params = new HashMap<String, Object>();
+    params.put("uuid", uuid);
+    response = arv.call("users", "delete", params);
+    
+    // invoke users.get with the system user uuid
+    params = new HashMap<String, Object>();
+    params.put("uuid", uuid);
+
+    Exception caught = null;
+    try {
+      arv.call("users", "get", params);
+    } catch (Exception e) {
+      caught = e;
+    }
+
+    assertNotNull ("expected exception", caught);
+    assertTrue ("Expected 404", caught.getMessage().contains("Path not found"));
   }
 
   @Test
@@ -177,6 +198,11 @@ public class ArvadosTest {
     
     uuid = jsonObject.get("uuid");
     assertNotNull("Expected uuid for first user", uuid);
+    
+    // delete the object
+    params = new HashMap<String, Object>();
+    params.put("uuid", uuid);
+    response = arv.call("users", "delete", params);
   }
 
   /**
@@ -285,6 +311,11 @@ public class ArvadosTest {
     jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#pipelineTemplate", jsonObject.get("kind"));
     assertEquals("Expected uuid for pipeline template", uuid, jsonObject.get("uuid"));
+    
+    // delete the object
+    params = new HashMap<String, Object>();
+    params.put("uuid", uuid);
+    response = arv.call("pipeline_templates", "delete", params);
   }
 
   /**
