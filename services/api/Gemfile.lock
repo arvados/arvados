@@ -175,6 +175,10 @@ GEM
       faraday (~> 0.8.1)
       jwt (>= 0.1.5)
       multi_json (>= 1.0.0)
+    simplecov (0.7.1)
+      multi_json (~> 1.0)
+      simplecov-html (~> 0.7.1)
+    simplecov-html (0.7.1)
     sprockets (2.2.2)
       hike (~> 1.2)
       multi_json (~> 1.0)
@@ -222,6 +226,7 @@ DEPENDENCIES
   redis
   rvm-capistrano
   sass-rails (>= 3.2.0)
+  simplecov (~> 0.7.1)
   sqlite3
   test_after_commit
   themes_for_rails

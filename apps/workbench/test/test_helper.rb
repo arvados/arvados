@@ -1,4 +1,7 @@
 ENV["RAILS_ENV"] = "test"
+require 'simplecov'
+SimpleCov.start
+
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 
@@ -70,6 +73,7 @@ class ApiServerBackedTestRunner < MiniTest::Unit
   def _run(args=[])
     Capybara.javascript_driver = :poltergeist
     server_pid = Dir.chdir($ARV_API_SERVER_DIR) do |apidir|
+      ENV["NO_COVERAGE_TEST"] = "1"
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')

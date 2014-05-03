@@ -29,6 +29,7 @@ group :test do
   gem 'capybara'
   gem 'poltergeist'
   gem 'headless'
+  gem 'simplecov', '~> 0.7.1', require: false
 end
 
 gem 'jquery-rails'
