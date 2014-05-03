@@ -22,22 +22,28 @@
 == Setting up the environment
 
   - The SDK requires a running Arvados API server. The information about the
-  	  API server needs to be passed to the SDK using environment variables.
+  	  API server needs to be passed to the SDK using environment variables or
+  	  during the construction of the Arvados instance.
   	  
-  - The following two environment variables are required by the SDK
-
-      ARVADOS_API_TOKEN, ARVADOS_API_HOST
+  - If you would like to use environment variables, below are the details.
+  	
+      1. ARVADOS_API_TOKEN
       
-      Below are examples using a .bashrc file:
+        API client token to be used to authorize with API server.
       
-      	export ARVADOS_API_TOKEN=z40gplmla6i58rsg96jhg5u41ewdl5rj4g1py2xg6s6e2lsc3
+      	export ARVADOS_API_TOKEN=z40gplmla6i58rsg96jhg5u41ewdl5rj4g1py2s6e2lsc3
+	
+	  2. ARVADOS_API_HOST
+	  
+	    Host name of the API server.
+	  
 		export ARVADOS_API_HOST=localhost:3001
-      
-  - You can also set ARVADOS_API_HOST_INSECURE to true if you are using
-  	  self-signed certificates and want to bypass certificate validations.
 
-      Below is an example using a .bashrc file:
-      
+      3. ARVADOS_API_HOST_INSECURE
+      	
+      	Set this to true if you are using self-signed certificates and
+      	would like to bypass certificate validations.
+
       	export ARVADOS_API_HOST_INSECURE=true
       	
 
@@ -92,6 +98,8 @@
   - To develop in eclipse, you can use the SDK eclipse project.
 
   - Install "m2eclipse" plugin in your eclipse
+  
+  - Set M2_REPO to your .m2/repository directory
 
   - Open the SDK project.
 
