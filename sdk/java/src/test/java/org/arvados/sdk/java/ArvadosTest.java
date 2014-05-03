@@ -111,7 +111,7 @@ public class ArvadosTest {
     params.add("users.get");
     params.add(userUuid);
 
-    response = arv.call("user", "get", params);
+    response = arv.call("users", "get", params);
 
     //JSONParser parser = new JSONParser();
     jsonObject = (JSONObject) parser.parse(response);;
@@ -175,7 +175,7 @@ public class ArvadosTest {
    */
   @Test
   public void testUnsupportedVersion() throws Exception {
-    Arvados arv = new Arvados("arvados", "v1");
+    Arvados arv = new Arvados("arvados", "v2");
 
     List<String> params = new ArrayList<String>();
     params.add("call");
@@ -203,10 +203,10 @@ public class ArvadosTest {
     Arvados arv = new Arvados("arvados", "v1");
 
     List<String> params = new ArrayList<String>();
-    params.add("users.list");
     params.add("call");
     params.add("arvados");
     params.add("v1");
+    params.add("users.list");
 
     Exception caught = null;
     try {
@@ -216,7 +216,7 @@ public class ArvadosTest {
     }
 
     assertNotNull ("expected exception", caught);
-    assertTrue ("Expected ERROR: 404 not found", caught.getMessage().contains("404 Not Found"));
+    assertTrue ("Expected ERROR: 404 not found", caught.getMessage().contains("ERROR: resource not found"));
   }
   
   /**
@@ -228,10 +228,10 @@ public class ArvadosTest {
     Arvados arv = new Arvados("arvados", "v1");
 
     List<String> params = new ArrayList<String>();
-    params.add("users.list");
     params.add("call");
     params.add("arvados");
     params.add("v1");
+    params.add("users.list");
 
     Exception caught = null;
     try {
@@ -241,7 +241,7 @@ public class ArvadosTest {
     }
 
     assertNotNull ("expected exception", caught);
-    assertTrue ("Expected ERROR: 404 not found", caught.getMessage().contains("404 Not Found"));
+    assertTrue ("Expected ERROR: 404 not found", caught.getMessage().contains("ERROR: method not found"));
   }
 
   /**

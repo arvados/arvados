@@ -26,16 +26,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 import org.apache.log4j.Logger;
 
 public class Arvados {
   // HttpTransport and JsonFactory are thread-safe. So, use global instances.
   private HttpTransport HTTP_TRANSPORT;
   private final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-
-  private static final Pattern METHOD_PATTERN = Pattern.compile("((\\w+)\\.)*(\\w+)");
 
   private String ARVADOS_API_TOKEN;
   private String ARVADOS_API_HOST;
@@ -44,21 +41,21 @@ public class Arvados {
   private String ARVADOS_ROOT_URL;
 
   private static final Logger logger = Logger.getLogger(Arvados.class);
-  
+
   // Get it on a discover call and reuse on the call requests
   RestDescription restDescription = null;
   String apiName = null;
   String apiVersion = null;
-  
+
   public Arvados (String apiName, String apiVersion){
     this (apiName, apiVersion, null, null, null);
   }
-  
+
   public Arvados (String apiName, String apiVersion, String token, String host, String hostInsecure){
     try {
       this.apiName = apiName;
       this.apiVersion = apiVersion;
-      
+
       // Read needed environmental variables if they are not passed
       if (token != null) {
         ARVADOS_API_TOKEN = token;
@@ -85,7 +82,7 @@ public class Arvados {
       } else {
         ARVADOS_API_HOST_INSECURE = "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
       }
-      
+
       // Create HTTP_TRANSPORT object
       NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
       if (ARVADOS_API_HOST_INSECURE) {
@@ -96,7 +93,7 @@ public class Arvados {
       t.printStackTrace();
     }
   }
-  
+
   /**
    * Make a discover call and cache the response in-memory. Reload the document on each invocation.
    * @param params
@@ -104,7 +101,7 @@ public class Arvados {
    * @throws Exception
    */
   public RestDescription discover() throws Exception {
-    restDescription = loadArvadosApi(apiName, apiVersion);
+    restDescription = loadArvadosApi();
 
     // compute method details
     ArrayList<MethodDetails> result = Lists.newArrayList();
@@ -133,60 +130,15 @@ public class Arvados {
       }
     }
     logger.debug(buffer.toString());
-    
+
     return (restDescription);
   }
 
   public String call(String resourceName, String methodName, List<String> callParams) throws Exception {
-    if (resourceName == null) {
-      error("missing resource name");      
-    }
-    if (methodName == null) {
-      error("missing method name");      
-    }
-    
-    String fullMethodName = callParams.get(3);
-    Matcher m = METHOD_PATTERN.matcher(fullMethodName);
-    if (!m.matches()) {
-      error ("invalid method name: " + fullMethodName);
-    }
-
-    // initialize rest description if not already
-    if (restDescription == null) {
-      restDescription = loadArvadosApi(callParams.get(1), callParams.get(2));
-    }
-
-    Map<String, RestMethod> methodMap = null;
-    int curIndex = 0;
-    int nextIndex = fullMethodName.indexOf('.');
-    if (nextIndex == -1) {
-      methodMap = restDescription.getMethods();
-    } else {
-      Map<String, RestResource> resources = restDescription.getResources();
-      while (true) {
-        RestResource resource = resources.get(fullMethodName.substring(curIndex, nextIndex));
-        if (resource == null) {
-          break;
-        }
-        curIndex = nextIndex + 1;
-        nextIndex = fullMethodName.indexOf(curIndex + 1, '.');
-        if (nextIndex == -1) {
-          methodMap = resource.getMethods();
-          break;
-        }
-        resources = resource.getResources();
-      }
-    }
-
-    RestMethod method =
-        methodMap == null ? null : methodMap.get(fullMethodName.substring(curIndex));
-    if (method == null) {
-      error("method not found: " + fullMethodName);
-    }
+    RestMethod method = getMatchingMethod(resourceName, methodName);
 
     HashMap<String, Object> parameters = Maps.newHashMap();
     File requestBodyFile = null;
-    String contentType = "application/json";
 
     // Start looking for params at index 4. The first 4 were: call arvados v1 <method_name>
     int i = 4;
@@ -224,7 +176,7 @@ public class Arvados {
       }
       String parameterValue = callParams.get(i++);
       if (parameterName.equals("contentType")) {
-        contentType = parameterValue;
+        String contentType = parameterValue;
         if (method.getHttpMethod().equals("GET") || method.getHttpMethod().equals("DELETE")) {
           error("HTTP content type cannot be specified for this method: " + argName);
         }
@@ -246,7 +198,7 @@ public class Arvados {
 
     HttpContent content = null;
     if (requestBodyFile != null) {
-      content = new FileContent(contentType, requestBodyFile);
+      content = new FileContent("application/json", requestBodyFile);
     }
 
     try {
@@ -261,12 +213,42 @@ public class Arvados {
       String response = request.execute().parseAsString();
 
       logger.debug(response);
-      
+
       return response;
     } catch (Exception e) {
       e.printStackTrace();
       throw e;
     }
+  }
+
+  private RestMethod getMatchingMethod(String resourceName, String methodName)
+              throws Exception {
+    if (resourceName == null) {
+      error("missing resource name");      
+    }
+    if (methodName == null) {
+      error("missing method name");      
+    }
+
+    // initialize rest description if not already
+    if (restDescription == null) {
+      restDescription = loadArvadosApi();
+    }
+
+    Map<String, RestMethod> methodMap = null;
+    Map<String, RestResource> resources = restDescription.getResources();
+    RestResource resource = resources.get(resourceName);
+    if (resource == null) {
+      error("resource not found");
+    }
+    methodMap = resource.getMethods();
+    RestMethod method =
+        methodMap == null ? null : methodMap.get(methodName);
+    if (method == null) {
+      error("method not found: ");
+    }
+    
+    return method;
   }
 
   /**
@@ -276,16 +258,16 @@ public class Arvados {
    * @return
    * @throws Exception
    */
-  private RestDescription loadArvadosApi(String apiName, String apiVersion)
+  private RestDescription loadArvadosApi()
       throws Exception {
     try {
       Discovery discovery;
-      
+
       Discovery.Builder discoveryBuilder = new Discovery.Builder(HTTP_TRANSPORT, JSON_FACTORY, null);
 
       discoveryBuilder.setRootUrl(ARVADOS_ROOT_URL);
       discoveryBuilder.setApplicationName(apiName);
-      
+
       discovery = discoveryBuilder.build();
 
       return discovery.apis().getRest(apiName, apiVersion).execute();
@@ -361,10 +343,10 @@ public class Arvados {
       error("duplicate parameter: " + argName);
     }
   }
-  
+
   private static void error(String detail) throws Exception {
     String errorDetail = "ERROR: " + detail;
-    
+
     logger.debug(errorDetail);
     throw new Exception(errorDetail);
   }
