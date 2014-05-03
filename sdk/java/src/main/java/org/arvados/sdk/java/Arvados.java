@@ -22,7 +22,6 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,16 +32,16 @@ import org.apache.log4j.Logger;
 
 public class Arvados {
   // HttpTransport and JsonFactory are thread-safe. So, use global instances.
-  private static HttpTransport HTTP_TRANSPORT;
-  private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+  private HttpTransport HTTP_TRANSPORT;
+  private final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
   private static final Pattern METHOD_PATTERN = Pattern.compile("((\\w+)\\.)*(\\w+)");
 
-  private static String ARVADOS_API_TOKEN;
-  private static String ARVADOS_API_HOST;
-  private static boolean ARVADOS_API_HOST_INSECURE;
+  private String ARVADOS_API_TOKEN;
+  private String ARVADOS_API_HOST;
+  private boolean ARVADOS_API_HOST_INSECURE;
 
-  private static String ARVADOS_ROOT_URL;
+  private String ARVADOS_ROOT_URL;
 
   private static final Logger logger = Logger.getLogger(Arvados.class);
   
@@ -52,26 +51,41 @@ public class Arvados {
   String apiVersion = null;
   
   public Arvados (String apiName, String apiVersion){
+    this (apiName, apiVersion, null, null, null);
+  }
+  
+  public Arvados (String apiName, String apiVersion, String token, String host, String hostInsecure){
     try {
       this.apiName = apiName;
       this.apiVersion = apiVersion;
       
-      // Read needed environmental variables
-      ARVADOS_API_TOKEN = System.getenv().get("ARVADOS_API_TOKEN");
-      if (ARVADOS_API_TOKEN == null) {
-        throw new Exception("Missing environment variable: ARVADOS_API_TOKEN");
+      // Read needed environmental variables if they are not passed
+      if (token != null) {
+        ARVADOS_API_TOKEN = token;
+      } else {
+        ARVADOS_API_TOKEN = System.getenv().get("ARVADOS_API_TOKEN");
+        if (ARVADOS_API_TOKEN == null) {
+          throw new Exception("Missing environment variable: ARVADOS_API_TOKEN");
+        }
       }
 
-      ARVADOS_API_HOST = System.getenv().get("ARVADOS_API_HOST");      
-      if (ARVADOS_API_HOST == null) {
-        throw new Exception("Missing environment variable: ARVADOS_API_HOST");
+      if (host != null) {
+        ARVADOS_API_HOST = host;
+      } else {
+        ARVADOS_API_HOST = System.getenv().get("ARVADOS_API_HOST");      
+        if (ARVADOS_API_HOST == null) {
+          throw new Exception("Missing environment variable: ARVADOS_API_HOST");
+        }
       }
-
       ARVADOS_ROOT_URL = "https://" + ARVADOS_API_HOST;
       ARVADOS_ROOT_URL += (ARVADOS_API_HOST.endsWith("/")) ? "" : "/";
 
-      ARVADOS_API_HOST_INSECURE = "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
-
+      if (hostInsecure != null) {
+        ARVADOS_API_HOST_INSECURE = Boolean.valueOf(hostInsecure);
+      } else {
+        ARVADOS_API_HOST_INSECURE = "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
+      }
+      
       // Create HTTP_TRANSPORT object
       NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
       if (ARVADOS_API_HOST_INSECURE) {
@@ -356,6 +370,5 @@ public class Arvados {
     logger.debug(errorDetail);
     throw new Exception(errorDetail);
   }
-
 
 }

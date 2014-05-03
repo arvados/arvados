@@ -26,21 +26,17 @@ public class ArvadosSDKJavaUser {
     String apiName = "arvados";
     String apiVersion = "v1";
 
-    Arvados arv = new Arvados(apiName);
+    Arvados arv = new Arvados(apiName, apiVersion);
 
     // Make a discover request. 
     System.out.println("Making an arvados discovery api request");
-    List<String> params = new ArrayList<String>();
-    params.add("discover");
-    params.add("arvados");
-    params.add("v1");
-
-    RestDescription restDescription = arv.discover(params);
+    RestDescription restDescription = arv.discover();
     System.out.println("Arvados discovery docuemnt:\n" + restDescription);
     
     // Make a users.list call
     System.out.println("Making an arvados users.list api call");
 
+    List<String> params = new ArrayList<String>();
     params = new ArrayList<String>();
     params.add("call");
     params.add("arvados");

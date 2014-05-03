@@ -259,4 +259,32 @@ public class ArvadosTest {
   }
 
 
+  /**
+   * Test users.list api
+   * @throws Exception
+   */
+  @Test
+  public void testArvadosWithTokenPassed() throws Exception {
+    String token = System.getenv().get("ARVADOS_API_TOKEN");
+    String host = System.getenv().get("ARVADOS_API_HOST");      
+    String hostInsecure = System.getenv().get("ARVADOS_API_HOST_INSECURE");
+
+    Arvados arv = new Arvados("arvados", "v1", token, host, hostInsecure);
+
+    List<String> params = new ArrayList<String>();
+    params.add("call");
+    params.add("arvados");
+    params.add("v1");
+    params.add("users.list");
+
+    String response = arv.call(params);
+    assertTrue("Expected users.list in response", response.contains("arvados#userList"));
+    assertTrue("Expected users.list in response", response.contains("uuid"));
+
+    JSONParser parser = new JSONParser();
+    Object obj = parser.parse(response);
+    JSONObject jsonObject = (JSONObject) obj;
+    assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
+  }
+
 }
