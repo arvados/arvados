@@ -1,7 +1,7 @@
 package org.arvados.sdk.java;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,11 +50,7 @@ public class ArvadosTest {
   public void testCallUsersList() throws Exception {
     Arvados arv = new Arvados("arvados", "v1");
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("users.list");
+    Map<String, Object> params = new HashMap<String, Object>();
 
     String response = arv.call("users", "list", params);
     assertTrue("Expected users.list in response", response.contains("arvados#userList"));
@@ -86,11 +82,7 @@ public class ArvadosTest {
     Arvados arv = new Arvados("arvados", "v1");
 
     // call user.system and get uuid of this user
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("users.list");
+    Map<String, Object> params = new HashMap<String, Object>();
 
     String response = arv.call("users", "list", params);
     JSONParser parser = new JSONParser();
@@ -104,12 +96,8 @@ public class ArvadosTest {
     String userUuid = (String)firstUser.get("uuid");
 
     // invoke users.get with the system user uuid
-    params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("users.get");
-    params.add(userUuid);
+    params = new HashMap<String, Object>();
+    params.put("uuid", userUuid);
 
     response = arv.call("users", "get", params);
 
@@ -130,18 +118,65 @@ public class ArvadosTest {
     File file = new File(getClass().getResource( "/create_user.json" ).toURI());
     String filePath = file.getPath();
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("users.create");
-    params.add(filePath);
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put("user", "{}");
     String response = arv.call("users", "create", params);
 
     JSONParser parser = new JSONParser();
     JSONObject jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
     assertNotNull("Expected uuid for first user", jsonObject.get("uuid"));
+  }
+
+  @Test
+  public void testCreateUserWithMissingRequiredParam() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+
+    Exception caught = null;
+    try {
+      arv.call("users", "create", params);
+    } catch (Exception e) {
+      caught = e;
+    }
+
+    assertNotNull ("expected exception", caught);
+    assertTrue ("Expected POST method requires content object user", 
+        caught.getMessage().contains("ERROR: POST method requires content object user"));
+  }
+
+  /**
+   * Test users.create api
+   * @throws Exception
+   */
+  @Test
+  public void testCreateAndUpdateUser() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put("user", "{}");
+    String response = arv.call("users", "create", params);
+
+    JSONParser parser = new JSONParser();
+    JSONObject jsonObject = (JSONObject) parser.parse(response);
+    assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
+    
+    Object uuid = jsonObject.get("uuid");
+    assertNotNull("Expected uuid for first user", uuid);
+    
+    // update this user
+    params = new HashMap<String, Object>();
+    params.put("user", "{}");
+    params.put("uuid", uuid);
+    response = arv.call("users", "update", params);
+
+    parser = new JSONParser();
+    jsonObject = (JSONObject) parser.parse(response);
+    assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
+    
+    uuid = jsonObject.get("uuid");
+    assertNotNull("Expected uuid for first user", uuid);
   }
 
   /**
@@ -152,15 +187,9 @@ public class ArvadosTest {
   public void testUnsupportedApiName() throws Exception {
     Arvados arv = new Arvados("not_arvados", "v1");
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("not_arvados");
-    params.add("v1");
-    params.add("users.list");
-
     Exception caught = null;
     try {
-      arv.call("users", "list", params);
+      arv.call("users", "list", null);
     } catch (Exception e) {
       caught = e;
     }
@@ -177,15 +206,9 @@ public class ArvadosTest {
   public void testUnsupportedVersion() throws Exception {
     Arvados arv = new Arvados("arvados", "v2");
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v2");         // no such version
-    params.add("users.list");
-
     Exception caught = null;
     try {
-      arv.call("users", "list", params);
+      arv.call("users", "list", null);
     } catch (Exception e) {
       caught = e;
     }
@@ -202,15 +225,9 @@ public class ArvadosTest {
   public void testCallForNoSuchResrouce() throws Exception {
     Arvados arv = new Arvados("arvados", "v1");
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("users.list");
-
     Exception caught = null;
     try {
-      arv.call("abcd", "list", params);
+      arv.call("abcd", "list", null);
     } catch (Exception e) {
       caught = e;
     }
@@ -227,15 +244,9 @@ public class ArvadosTest {
   public void testCallForNoSuchResrouceMethod() throws Exception {
     Arvados arv = new Arvados("arvados", "v1");
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("users.list");
-
     Exception caught = null;
     try {
-      arv.call("users", "abcd", params);
+      arv.call("users", "abcd", null);
     } catch (Exception e) {
       caught = e;
     }
@@ -255,12 +266,8 @@ public class ArvadosTest {
     File file = new File(getClass().getResource( "/first_pipeline.json" ).toURI());
     String filePath = file.getPath();
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("pipeline_templates.create");
-    params.add(filePath);
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put("pipeline_template", "{}");                          // TBD - read file and send
     String response = arv.call("pipeline_templates", "create", params);
 
     JSONParser parser = new JSONParser();
@@ -270,12 +277,8 @@ public class ArvadosTest {
     assertNotNull("Expected uuid for pipeline template", uuid);
     
     // get the pipeline
-    params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("pipeline_templates.get");
-    params.add(uuid);
+    params = new HashMap<String, Object>();
+    params.put("uuid", uuid);
     response = arv.call("pipeline_templates", "get", params);
 
     parser = new JSONParser();
@@ -297,11 +300,7 @@ public class ArvadosTest {
 
     Arvados arv = new Arvados("arvados", "v1", token, host, hostInsecure);
 
-    List<String> params = new ArrayList<String>();
-    params.add("call");
-    params.add("arvados");
-    params.add("v1");
-    params.add("users.list");
+    Map<String, Object> params = new HashMap<String, Object>();
 
     String response = arv.call("users", "list", params);
     assertTrue("Expected users.list in response", response.contains("arvados#userList"));
@@ -311,6 +310,52 @@ public class ArvadosTest {
     Object obj = parser.parse(response);
     JSONObject jsonObject = (JSONObject) obj;
     assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
+  }
+
+  /**
+   * Test users.list api
+   * @throws Exception
+   */
+  @Test
+  public void testCallUsersListWithLimit() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+
+    String response = arv.call("users", "list", params);
+    assertTrue("Expected users.list in response", response.contains("arvados#userList"));
+    assertTrue("Expected users.list in response", response.contains("uuid"));
+
+    JSONParser parser = new JSONParser();
+    Object obj = parser.parse(response);
+    JSONObject jsonObject = (JSONObject) obj;
+
+    assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
+
+    List items = (List)jsonObject.get("items");
+    assertNotNull("expected users list items", items);
+    assertTrue("expected at least one item in users list", items.size()>0);
+
+    int numUsersListItems = items.size();
+
+    // make the request again with limit
+    params = new HashMap<String, Object>();
+    params.put("limit", numUsersListItems-1);
+    
+    response = arv.call("users", "list", params);
+
+    parser = new JSONParser();
+    obj = parser.parse(response);
+    jsonObject = (JSONObject) obj;
+
+    assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
+
+    items = (List)jsonObject.get("items");
+    assertNotNull("expected users list items", items);
+    assertTrue("expected at least one item in users list", items.size()>0);
+
+    int numUsersListItems2 = items.size();
+    assertEquals ("Got more users than requested", numUsersListItems-1, numUsersListItems2);
   }
 
 }

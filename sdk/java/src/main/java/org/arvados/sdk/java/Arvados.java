@@ -1,7 +1,7 @@
 package org.arvados.sdk.java;
 
 import com.google.api.client.http.javanet.*;
-import com.google.api.client.http.FileContent;
+import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
 import com.google.api.client.http.HttpRequest;
@@ -18,7 +18,6 @@ import com.google.api.services.discovery.model.RestDescription;
 import com.google.api.services.discovery.model.RestMethod;
 import com.google.api.services.discovery.model.RestResource;
 
-import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -134,79 +133,36 @@ public class Arvados {
     return (restDescription);
   }
 
-  public String call(String resourceName, String methodName, List<String> callParams) throws Exception {
+  public String call(String resourceName, String methodName, Map<String, Object> paramsMap) throws Exception {
     RestMethod method = getMatchingMethod(resourceName, methodName);
 
-    HashMap<String, Object> parameters = Maps.newHashMap();
-    File requestBodyFile = null;
-
-    // Start looking for params at index 4. The first 4 were: call arvados v1 <method_name>
-    int i = 4;
-    // required parameters
-    if (method.getParameterOrder() != null) {
-      for (String parameterName : method.getParameterOrder()) {
-        JsonSchema parameter = method.getParameters().get(parameterName);
-        if (Boolean.TRUE.equals(parameter.getRequired())) {
-          if (i == callParams.size()) {
-            error("missing required parameter: " + parameter);
-          } else {
-            putParameter(null, parameters, parameterName, parameter, callParams.get(i++));
-          }
-        }
-      }
-    }
-
-    // possibly required content
-    if (!method.getHttpMethod().equals("GET") && !method.getHttpMethod().equals("DELETE")) {
-      String fileName = callParams.get(i++);
-      requestBodyFile = new File(fileName);
-      if (!requestBodyFile.canRead()) {
-        error("POST method requires input file. Unable to read file: " + fileName);
-      }
-    }
-
-    while (i < callParams.size()) {
-      String argName = callParams.get(i++);
-      if (!argName.startsWith("--")) {
-        error("optional parameters must start with \"--\": " + argName);
-      }
-      String parameterName = argName.substring(2);
-      if (i == callParams.size()) {
-        error("missing parameter value for: " + argName);
-      }
-      String parameterValue = callParams.get(i++);
-      if (parameterName.equals("contentType")) {
-        String contentType = parameterValue;
-        if (method.getHttpMethod().equals("GET") || method.getHttpMethod().equals("DELETE")) {
-          error("HTTP content type cannot be specified for this method: " + argName);
-        }
-      } else {
-        JsonSchema parameter = null;
-        if (restDescription.getParameters() != null) {
-          parameter = restDescription.getParameters().get(parameterName);
-        }
-        if (parameter == null && method.getParameters() == null) {
-          parameter = method.getParameters().get(parameterName);
-        }
-        putParameter(argName, parameters, parameterName, parameter, parameterValue);
-      }
-    }
+    HashMap<String, Object> parameters = loadParameters(paramsMap, method);
 
     GenericUrl url = new GenericUrl(UriTemplate.expand(
-        ARVADOS_ROOT_URL + restDescription.getBasePath() + method.getPath(), parameters,
-        true));
-
-    HttpContent content = null;
-    if (requestBodyFile != null) {
-      content = new FileContent("application/json", requestBodyFile);
-    }
+        ARVADOS_ROOT_URL + restDescription.getBasePath() + method.getPath(), 
+        parameters, true));
 
     try {
+      // construct the request
       HttpRequestFactory requestFactory;
       requestFactory = HTTP_TRANSPORT.createRequestFactory();
 
+      // possibly required content
+      HttpContent content = null;
+
+      if (!method.getHttpMethod().equals("GET") && !method.getHttpMethod().equals("DELETE")) {
+        String objectName = resourceName.substring(0, resourceName.length()-1);
+        Object requestBody = paramsMap.get(objectName);
+        if (requestBody == null) {
+          error("POST method requires content object " + objectName);
+        }
+        
+        content = new ByteArrayContent("application/json", ((String)requestBody).getBytes());
+      }
+      
       HttpRequest request = requestFactory.buildRequest(method.getHttpMethod(), url, content);
 
+      // make the request
       List<String> authHeader = new ArrayList<String>();
       authHeader.add("OAuth2 " + ARVADOS_API_TOKEN);
       request.getHeaders().put("Authorization", authHeader);
@@ -219,6 +175,48 @@ public class Arvados {
       e.printStackTrace();
       throw e;
     }
+  }
+
+  private HashMap<String, Object> loadParameters(Map<String, Object> paramsMap,
+      RestMethod method) throws Exception {
+    HashMap<String, Object> parameters = Maps.newHashMap();
+
+    // required parameters
+    if (method.getParameterOrder() != null) {
+      for (String parameterName : method.getParameterOrder()) {
+        JsonSchema parameter = method.getParameters().get(parameterName);
+        if (Boolean.TRUE.equals(parameter.getRequired())) {
+          Object parameterValue = paramsMap.get(parameterName);
+          if (parameterValue == null) {
+            error("missing required parameter: " + parameter);
+          } else {
+            putParameter(null, parameters, parameterName, parameter, parameterValue);
+          }
+        }
+      }
+    }
+
+    for (Map.Entry<String, Object> entry : paramsMap.entrySet()) {
+      String parameterName = entry.getKey();
+      Object parameterValue = entry.getValue();
+      
+      if (parameterName.equals("contentType")) {
+        if (method.getHttpMethod().equals("GET") || method.getHttpMethod().equals("DELETE")) {
+          error("HTTP content type cannot be specified for this method: " + parameterName);
+        }
+      } else {
+        JsonSchema parameter = null;
+        if (restDescription.getParameters() != null) {
+          parameter = restDescription.getParameters().get(parameterName);
+        }
+        if (parameter == null && method.getParameters() == null) {
+          parameter = method.getParameters().get(parameterName);
+        }
+        putParameter(parameterName, parameters, parameterName, parameter, parameterValue);
+      }
+    }
+    
+    return parameters;
   }
 
   private RestMethod getMatchingMethod(String resourceName, String methodName)
@@ -327,21 +325,19 @@ public class Arvados {
   }
 
   private void putParameter(String argName, Map<String, Object> parameters,
-      String parameterName, JsonSchema parameter, String parameterValue) throws Exception {
+      String parameterName, JsonSchema parameter, Object parameterValue) throws Exception {
     Object value = parameterValue;
     if (parameter != null) {
       if ("boolean".equals(parameter.getType())) {
-        value = Boolean.valueOf(parameterValue);
+        value = Boolean.valueOf(parameterValue.toString());
       } else if ("number".equals(parameter.getType())) {
-        value = new BigDecimal(parameterValue);
+        value = new BigDecimal(parameterValue.toString());
       } else if ("integer".equals(parameter.getType())) {
-        value = new BigInteger(parameterValue);
+        value = new BigInteger(parameterValue.toString());
       }
     }
-    Object oldValue = parameters.put(parameterName, value);
-    if (oldValue != null) {
-      error("duplicate parameter: " + argName);
-    }
+    
+    parameters.put(parameterName, value);
   }
 
   private static void error(String detail) throws Exception {
