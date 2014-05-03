@@ -44,42 +44,7 @@
 
   - mvn clean package
 
-      This will generate arvados sdk jar file the target directory
-
-
-== Using Arvados SDK at command line
-
-  - This section helps understand how to use the SDK from command line
-
-  - cd <ARVADOS_HOME/sdk/java
-
-  - Getting help
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados help
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados help call
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados help discover
-
-
-  - Getting the discovery document
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados discover arvados v1
-
-
-  - Making a "call" to the API server
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 users.list
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 users.get <uuid>
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 users.create <filename>
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 pipeline_templates.list
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 pipeline_templates.get <uuid>
-
-      java -cp target/java-1.0-SNAPSHOT-jar-with-dependencies.jar org.arvados.sdk.java.Arvados call arvados v1 pipeline_templates.create <filename>
+      This will generate arvados sdk jar file in the target directory
 
 
 == Implementing your code to use SDK
@@ -94,14 +59,14 @@
 
   - To compile ArvadosSDKJavaExample.java
 
-      javac -cp <ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaExample.java
+      javac -cp <ARVADOS_HOME>/sdk/java/target/arvados-sdk-1.0-jar-with-dependencies.jar ArvadosSDKJavaExample.java
 
       This results in the generation of the ArvadosSDKJavaExample.class file
-        in the same dir as the java file
+        in the same directory as the java file
 
   - To run the class file
 
-      java -cp .:<ARVADOS_HOME>/sdk/java/target/java-1.0-SNAPSHOT-jar-with-dependencies.jar ArvadosSDKJavaExample
+      java -cp .:<ARVADOS_HOME>/sdk/java/target/arvados-sdk-1.0-jar-with-dependencies.jar ArvadosSDKJavaExample
 
 
 == Viewing and managing SDK logging
