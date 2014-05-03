@@ -63,6 +63,10 @@ class Log < ArvadosModel
     self.event_at ||= Time.now
   end
 
+  def log_start_state
+    # don't log start state on logs
+  end
+
   def log_change(event_type)
     # Don't log changes to logs.
   end
