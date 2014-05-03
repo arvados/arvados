@@ -173,7 +173,7 @@ class Arvados::V1::JobsController < ApplicationController
                     cancelled_at: nil,
                     success: nil
                   })
-    params[:order] ||= 'priority desc, created_at'
+    params[:order] ||= ['priority desc', 'created_at']
     find_objects_for_index
     index
   end
