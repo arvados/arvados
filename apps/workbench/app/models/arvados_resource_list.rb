@@ -144,10 +144,15 @@ class ArvadosResourceList
     results.links if results.respond_to? :links
   end
 
-  def links_for item_or_uuid, link_class=nil
+  # Return links provided with API response that point to the
+  # specified object, and have the specified link_class. If link_class
+  # is false or omitted, return all links pointing to the specified
+  # object.
+  def links_for item_or_uuid, link_class=false
+    return [] if !result_links
     unless @links_for_uuid
       @links_for_uuid = {}
-      results.links.each do |link|
+      result_links.each do |link|
         if link.respond_to? :head_uuid
           @links_for_uuid[link.head_uuid] ||= []
           @links_for_uuid[link.head_uuid] << link
@@ -160,7 +165,7 @@ class ArvadosResourceList
       uuid = item_or_uuid
     end
     (@links_for_uuid[uuid] || []).select do |link|
-      link.link_class == link_class
+      link_class == false or link.link_class == link_class
     end
   end
 
