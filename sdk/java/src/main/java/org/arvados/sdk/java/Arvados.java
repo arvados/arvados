@@ -28,16 +28,24 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+/**
+ * This class provides a java SDK interface to Arvados API server.
+ * 
+ * Please refer to http://doc.arvados.org/api/ to learn about the
+ *  various resources and methods exposed by the API server.
+ *  
+ * @author radhika
+ */
 public class Arvados {
   // HttpTransport and JsonFactory are thread-safe. So, use global instances.
-  private HttpTransport HTTP_TRANSPORT;
-  private final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+  private HttpTransport httpTransport;
+  private final JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 
-  private String ARVADOS_API_TOKEN;
-  private String ARVADOS_API_HOST;
-  private boolean ARVADOS_API_HOST_INSECURE;
+  private String arvadosApiToken;
+  private String arvadosApiHost;
+  private boolean arvadosApiHostInsecure;
 
-  private String ARVADOS_ROOT_URL;
+  private String arvadosRootUrl;
 
   private static final Logger logger = Logger.getLogger(Arvados.class);
 
@@ -57,46 +65,46 @@ public class Arvados {
 
       // Read needed environmental variables if they are not passed
       if (token != null) {
-        ARVADOS_API_TOKEN = token;
+        arvadosApiToken = token;
       } else {
-        ARVADOS_API_TOKEN = System.getenv().get("ARVADOS_API_TOKEN");
-        if (ARVADOS_API_TOKEN == null) {
+        arvadosApiToken = System.getenv().get("ARVADOS_API_TOKEN");
+        if (arvadosApiToken == null) {
           throw new Exception("Missing environment variable: ARVADOS_API_TOKEN");
         }
       }
 
       if (host != null) {
-        ARVADOS_API_HOST = host;
+        arvadosApiHost = host;
       } else {
-        ARVADOS_API_HOST = System.getenv().get("ARVADOS_API_HOST");      
-        if (ARVADOS_API_HOST == null) {
+        arvadosApiHost = System.getenv().get("ARVADOS_API_HOST");      
+        if (arvadosApiHost == null) {
           throw new Exception("Missing environment variable: ARVADOS_API_HOST");
         }
       }
-      ARVADOS_ROOT_URL = "https://" + ARVADOS_API_HOST;
-      ARVADOS_ROOT_URL += (ARVADOS_API_HOST.endsWith("/")) ? "" : "/";
+      arvadosRootUrl = "https://" + arvadosApiHost;
+      arvadosRootUrl += (arvadosApiHost.endsWith("/")) ? "" : "/";
 
       if (hostInsecure != null) {
-        ARVADOS_API_HOST_INSECURE = Boolean.valueOf(hostInsecure);
+        arvadosApiHostInsecure = Boolean.valueOf(hostInsecure);
       } else {
-        ARVADOS_API_HOST_INSECURE = "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
+        arvadosApiHostInsecure = "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
       }
 
       // Create HTTP_TRANSPORT object
       NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
-      if (ARVADOS_API_HOST_INSECURE) {
+      if (arvadosApiHostInsecure) {
         builder.doNotValidateCertificate();
       }
-      HTTP_TRANSPORT = builder.build();
+      httpTransport = builder.build();
     } catch (Throwable t) {
       t.printStackTrace();
     }
   }
 
   /**
-   * Make a discover call and cache the response in-memory. Reload the document on each invocation.
-   * @param params
-   * @return
+   * Make a discover call and cache the response in-memory.
+   *  Reload the document on each invocation.
+   * @return RestDescription
    * @throws Exception
    */
   public RestDescription discover() throws Exception {
@@ -133,19 +141,27 @@ public class Arvados {
     return (restDescription);
   }
 
+  /**
+   * Make a call to API server with the provide call information.
+   * @param resourceName
+   * @param methodName
+   * @param paramsMap
+   * @return Object
+   * @throws Exception
+   */
   public String call(String resourceName, String methodName, Map<String, Object> paramsMap) throws Exception {
     RestMethod method = getMatchingMethod(resourceName, methodName);
 
     HashMap<String, Object> parameters = loadParameters(paramsMap, method);
 
     GenericUrl url = new GenericUrl(UriTemplate.expand(
-        ARVADOS_ROOT_URL + restDescription.getBasePath() + method.getPath(), 
+        arvadosRootUrl + restDescription.getBasePath() + method.getPath(), 
         parameters, true));
 
     try {
       // construct the request
       HttpRequestFactory requestFactory;
-      requestFactory = HTTP_TRANSPORT.createRequestFactory();
+      requestFactory = httpTransport.createRequestFactory();
 
       // possibly required content
       HttpContent content = null;
@@ -164,7 +180,7 @@ public class Arvados {
 
       // make the request
       List<String> authHeader = new ArrayList<String>();
-      authHeader.add("OAuth2 " + ARVADOS_API_TOKEN);
+      authHeader.add("OAuth2 " + arvadosApiToken);
       request.getHeaders().put("Authorization", authHeader);
       String response = request.execute().parseAsString();
 
@@ -261,9 +277,9 @@ public class Arvados {
     try {
       Discovery discovery;
 
-      Discovery.Builder discoveryBuilder = new Discovery.Builder(HTTP_TRANSPORT, JSON_FACTORY, null);
+      Discovery.Builder discoveryBuilder = new Discovery.Builder(httpTransport, jsonFactory, null);
 
-      discoveryBuilder.setRootUrl(ARVADOS_ROOT_URL);
+      discoveryBuilder.setRootUrl(arvadosRootUrl);
       discoveryBuilder.setApplicationName(apiName);
 
       discovery = discoveryBuilder.build();

@@ -287,7 +287,6 @@ public class ArvadosTest {
     assertEquals("Expected uuid for pipeline template", uuid, jsonObject.get("uuid"));
   }
 
-
   /**
    * Test users.list api
    * @throws Exception
