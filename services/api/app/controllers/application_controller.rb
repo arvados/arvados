@@ -83,9 +83,7 @@ class ApplicationController < ActionController::Base
     offset_all = @offset
     @orders = []
 
-    ArvadosModel.descendants.
-      reject(&:abstract_class?).
-      sort_by(&:to_s).
+    ArvadosModel.descendants.reject(&:abstract_class?).sort_by(&:to_s).
       each do |klass|
       case klass.to_s
         # We might expect klass==Link etc. here, but we would be
