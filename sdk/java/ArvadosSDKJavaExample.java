@@ -5,18 +5,17 @@
  *
  */
 
+import org.arvados.sdk.java.Arvados;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
 import java.io.File;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.arvados.sdk.java.Arvados;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
-import com.google.api.services.discovery.model.RestDescription;
 
 public class ArvadosSDKJavaExample {
   /** Make sure the following environment variables are set before using Arvados:
@@ -28,11 +27,6 @@ public class ArvadosSDKJavaExample {
 
     Arvados arv = new Arvados(apiName, apiVersion);
 
-    // Make a discover request. 
-    System.out.println("Making an arvados discovery api request");
-    RestDescription restDescription = arv.discover();
-    System.out.println("Arvados discovery docuemnt:\n" + restDescription);
-    
     // Make a users.list call
     System.out.println("Making an arvados users.list api call");
 

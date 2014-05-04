@@ -1,10 +1,8 @@
 package org.arvados.sdk.java;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,9 +11,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-import com.google.api.services.discovery.model.RestDescription;
-import com.google.api.services.discovery.model.RestResource;
-
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -23,28 +18,6 @@ import org.json.simple.parser.JSONParser;
  * Unit test for Arvados.
  */
 public class ArvadosTest {
-
-  /**
-   * test discover method
-   * @throws Exception
-   */
-  @Test
-  public void testDiscover() throws Exception {
-    Arvados arv = new Arvados("arvados", "v1");
-
-    RestDescription restDescription = arv.discover();
-
-    // The discover method returns the supported methods
-    Map<String, RestResource> resources = restDescription.getResources();
-    assertNotNull("Expected resources", resources);
-
-    Object users = resources.get("users");
-    assertNotNull ("Expected users.list method", users);
-    assertEquals("Exepcted users.list to be a RestResource type", RestResource.class, users.getClass());
-
-    assertTrue("Root URL expected to match ARVADOS_API_HOST env paramdeter", 
-        restDescription.getRootUrl().contains(System.getenv().get("ARVADOS_API_HOST")));
-  }
 
   /**
    * Test users.list api
@@ -405,14 +378,39 @@ public class ArvadosTest {
     String response = arv.call("links", "list", params);
     assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
 
-    /*
-    String[] filters = new String[1];
-    filters[0] = "name != 'can_manage'";
-
+    String[] filters = new String[3];
+    filters[0] = "name";
+    filters[1] = "is_a";
+    filters[2] = "can_manage";
+    
     params.put("filters", filters);
+    
     response = arv.call("links", "list", params);
+    
     assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
-     */   
+    assertFalse("Expected no can_manage in response", response.contains("\"name\":\"can_manage\""));
+  }
+
+  @Test
+  public void testGetLinksWithFiltersAsList() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+
+    String response = arv.call("links", "list", params);
+    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+
+    List<String> filters = new ArrayList<String>();
+    filters.add("name");
+    filters.add("is_a");
+    filters.add("can_manage");
+    
+    params.put("filters", filters);
+    
+    response = arv.call("links", "list", params);
+    
+    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+    assertFalse("Expected no can_manage in response", response.contains("\"name\":\"can_manage\""));
   }
 
 }

@@ -20,11 +20,13 @@ import com.google.api.services.discovery.model.RestResource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.json.simple.JSONArray;
 
 /**
  * This class provides a java SDK interface to Arvados API server.
@@ -100,17 +102,6 @@ public class Arvados {
   }
 
   /**
-   * Make a discover call and cache the response in-memory.
-   *  Reload the document on each invocation.
-   * @return RestDescription
-   * @throws Exception
-   */
-  public RestDescription discover() throws Exception {
-    restDescription = loadArvadosApi();
-    return (restDescription);
-  }
-
-  /**
    * Make a call to API server with the provide call information.
    * @param resourceName
    * @param methodName
@@ -141,10 +132,10 @@ public class Arvados {
         if (requestBody == null) {
           error("POST method requires content object " + objectName);
         }
-        
+
         content = new ByteArrayContent("application/json", ((String)requestBody).getBytes());
       }
-      
+
       HttpRequest request = requestFactory.buildRequest(method.getHttpMethod(), url, content);
 
       // make the request
@@ -184,7 +175,7 @@ public class Arvados {
     for (Map.Entry<String, Object> entry : paramsMap.entrySet()) {
       String parameterName = entry.getKey();
       Object parameterValue = entry.getValue();
-      
+
       if (parameterName.equals("contentType")) {
         if (method.getHttpMethod().equals("GET") || method.getHttpMethod().equals("DELETE")) {
           error("HTTP content type cannot be specified for this method: " + parameterName);
@@ -200,12 +191,12 @@ public class Arvados {
         putParameter(parameterName, parameters, parameterName, parameter, parameterValue);
       }
     }
-    
+
     return parameters;
   }
 
   private RestMethod getMatchingMethod(String resourceName, String methodName)
-              throws Exception {
+      throws Exception {
     if (resourceName == null) {
       error("missing resource name");      
     }
@@ -230,7 +221,7 @@ public class Arvados {
     if (method == null) {
       error("method not found: ");
     }
-    
+
     return method;
   }
 
@@ -271,10 +262,31 @@ public class Arvados {
       } else if ("integer".equals(parameter.getType())) {
         value = new BigInteger(parameterValue.toString());
       } else if ("array".equals(parameter.getType())) {
-        // TBD
+        if (parameterValue.getClass().isArray()){
+          String arrayStr = Arrays.deepToString((Object[])parameterValue);
+          arrayStr = arrayStr.substring(1, arrayStr.length()-1);
+          Object[] array = arrayStr.split(",");
+          Object[] trimmedArray = new Object[array.length];
+          for (int i=0; i<array.length; i++){
+            trimmedArray[i] = array[i].toString().trim();
+          }
+          String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
+          value = "["+ jsonString +"]";
+        } else if (List.class.isAssignableFrom(parameterValue.getClass())) {
+          List paramList = (List)parameterValue;
+          Object[] array = new Object[paramList.size()];
+          String arrayStr = Arrays.deepToString(paramList.toArray(array));
+          arrayStr = arrayStr.substring(1, arrayStr.length()-1);
+          array = arrayStr.split(",");
+          Object[] trimmedArray = new Object[array.length];
+          for (int i=0; i<array.length; i++){
+            trimmedArray[i] = array[i].toString().trim();
+          }
+          String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
+          value = "["+ jsonString +"]";
+        }
       }
     }
-    
     parameters.put(parameterName, value);
   }
 
@@ -284,9 +296,10 @@ public class Arvados {
     logger.debug(errorDetail);
     throw new Exception(errorDetail);
   }
-  
+
   public static void main(String[] args){
     System.out.println("Welcome to Arvados Java SDK.");
     System.out.println("Please refer to README to learn to use the SDK.");
   }
+  
 }
