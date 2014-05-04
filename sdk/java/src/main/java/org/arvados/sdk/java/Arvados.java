@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 /**
  * This class provides a java SDK interface to Arvados API server.
@@ -266,31 +267,60 @@ public class Arvados {
       } else if (("array".equals(parameter.getType())) ||
                  ("Array".equals(parameter.getType()))) {
         if (parameterValue.getClass().isArray()){
-          String arrayStr = Arrays.deepToString((Object[])parameterValue);
-          arrayStr = arrayStr.substring(1, arrayStr.length()-1);
-          Object[] array = arrayStr.split(",");
-          Object[] trimmedArray = new Object[array.length];
-          for (int i=0; i<array.length; i++){
-            trimmedArray[i] = array[i].toString().trim();
-          }
-          String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
-          value = "["+ jsonString +"]";
+          value = getValueFromArrayType(parameterValue);
         } else if (List.class.isAssignableFrom(parameterValue.getClass())) {
-          List paramList = (List)parameterValue;
-          Object[] array = new Object[paramList.size()];
-          String arrayStr = Arrays.deepToString(paramList.toArray(array));
-          arrayStr = arrayStr.substring(1, arrayStr.length()-1);
-          array = arrayStr.split(",");
-          Object[] trimmedArray = new Object[array.length];
-          for (int i=0; i<array.length; i++){
-            trimmedArray[i] = array[i].toString().trim();
-          }
-          String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
-          value = "["+ jsonString +"]";
+          value = getValueFromListType(parameterValue);
+        }
+      } else if (("Hash".equals(parameter.getType())) ||
+                 ("hash".equals(parameter.getType()))) {
+        value = getValueFromMapType(parameterValue);
+      } else {
+        if (parameterValue.getClass().isArray()){
+          value = getValueFromArrayType(parameterValue);
+        } else if (List.class.isAssignableFrom(parameterValue.getClass())) {
+          value = getValueFromListType(parameterValue);
+        } else if (Map.class.isAssignableFrom(parameterValue.getClass())) {
+          value = getValueFromMapType(parameterValue);
         }
       }
     }
+    
     parameters.put(parameterName, value);
+  }
+
+  private String getValueFromArrayType (Object parameterValue) {
+    String arrayStr = Arrays.deepToString((Object[])parameterValue);
+    arrayStr = arrayStr.substring(1, arrayStr.length()-1);
+    Object[] array = arrayStr.split(",");
+    Object[] trimmedArray = new Object[array.length];
+    for (int i=0; i<array.length; i++){
+      trimmedArray[i] = array[i].toString().trim();
+    }
+    String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
+    String value = "["+ jsonString +"]";
+
+    return value;
+  }
+
+  private String getValueFromListType (Object parameterValue) {
+    List paramList = (List)parameterValue;
+    Object[] array = new Object[paramList.size()];
+    String arrayStr = Arrays.deepToString(paramList.toArray(array));
+    arrayStr = arrayStr.substring(1, arrayStr.length()-1);
+    array = arrayStr.split(",");
+    Object[] trimmedArray = new Object[array.length];
+    for (int i=0; i<array.length; i++){
+      trimmedArray[i] = array[i].toString().trim();
+    }
+    String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
+    String value = "["+ jsonString +"]";
+
+    return value;
+  }
+
+  private String getValueFromMapType (Object parameterValue) {
+    JSONObject json = new JSONObject((Map)parameterValue);
+    return json.toString();
   }
 
   private static void error(String detail) throws Exception {
@@ -304,5 +334,5 @@ public class Arvados {
     System.out.println("Welcome to Arvados Java SDK.");
     System.out.println("Please refer to README to learn to use the SDK.");
   }
-  
+
 }

@@ -413,4 +413,23 @@ public class ArvadosTest {
     assertFalse("Expected no can_manage in response", response.contains("\"name\":\"can_manage\""));
   }
 
+  @Test
+  public void testGetLinksWithWhereClause() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+
+    String response = arv.call("links", "list", params);
+    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+
+    Map<String, String> where = new HashMap<String, String>();
+    where.put("where", "updated_at > '2014-05-01'");
+    
+    params.put("where", where);
+    
+    response = arv.call("links", "list", params);
+    
+    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+  }
+
 }
