@@ -1,6 +1,10 @@
 package org.arvados.sdk.java;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,9 +119,6 @@ public class ArvadosTest {
   public void testCreateUser() throws Exception {
     Arvados arv = new Arvados("arvados", "v1");
 
-    File file = new File(getClass().getResource( "/create_user.json" ).toURI());
-    String filePath = file.getPath();
-
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("user", "{}");
     String response = arv.call("users", "create", params);
@@ -125,15 +126,15 @@ public class ArvadosTest {
     JSONParser parser = new JSONParser();
     JSONObject jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
-    
+
     Object uuid = jsonObject.get("uuid");
     assertNotNull("Expected uuid for first user", uuid);
-    
+
     // delete the object
     params = new HashMap<String, Object>();
     params.put("uuid", uuid);
     response = arv.call("users", "delete", params);
-    
+
     // invoke users.get with the system user uuid
     params = new HashMap<String, Object>();
     params.put("uuid", uuid);
@@ -182,10 +183,10 @@ public class ArvadosTest {
     JSONParser parser = new JSONParser();
     JSONObject jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
-    
+
     Object uuid = jsonObject.get("uuid");
     assertNotNull("Expected uuid for first user", uuid);
-    
+
     // update this user
     params = new HashMap<String, Object>();
     params.put("user", "{}");
@@ -195,10 +196,10 @@ public class ArvadosTest {
     parser = new JSONParser();
     jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
-    
+
     uuid = jsonObject.get("uuid");
     assertNotNull("Expected uuid for first user", uuid);
-    
+
     // delete the object
     params = new HashMap<String, Object>();
     params.put("uuid", uuid);
@@ -242,7 +243,7 @@ public class ArvadosTest {
     assertNotNull ("expected exception", caught);
     assertTrue ("Expected 404 when unsupported version is used", caught.getMessage().contains("404 Not Found"));
   }
-  
+
   /**
    * Test unsupported api version api
    * @throws Exception
@@ -261,7 +262,7 @@ public class ArvadosTest {
     assertNotNull ("expected exception", caught);
     assertTrue ("Expected ERROR: 404 not found", caught.getMessage().contains("ERROR: resource not found"));
   }
-  
+
   /**
    * Test unsupported api version api
    * @throws Exception
@@ -290,10 +291,17 @@ public class ArvadosTest {
     Arvados arv = new Arvados("arvados", "v1");
 
     File file = new File(getClass().getResource( "/first_pipeline.json" ).toURI());
-    String filePath = file.getPath();
+    byte[] data = new byte[(int)file.length()];
+    try {
+      FileInputStream is = new FileInputStream(file);
+      is.read(data);
+      is.close();
+    }catch(Exception e) {
+      e.printStackTrace();
+    }
 
     Map<String, Object> params = new HashMap<String, Object>();
-    params.put("pipeline_template", "{}");                          // TBD - read file and send
+    params.put("pipeline_template", new String(data));
     String response = arv.call("pipeline_templates", "create", params);
 
     JSONParser parser = new JSONParser();
@@ -301,7 +309,7 @@ public class ArvadosTest {
     assertEquals("Expected kind to be user", "arvados#pipelineTemplate", jsonObject.get("kind"));
     String uuid = (String)jsonObject.get("uuid");
     assertNotNull("Expected uuid for pipeline template", uuid);
-    
+
     // get the pipeline
     params = new HashMap<String, Object>();
     params.put("uuid", uuid);
@@ -311,7 +319,7 @@ public class ArvadosTest {
     jsonObject = (JSONObject) parser.parse(response);
     assertEquals("Expected kind to be user", "arvados#pipelineTemplate", jsonObject.get("kind"));
     assertEquals("Expected uuid for pipeline template", uuid, jsonObject.get("uuid"));
-    
+
     // delete the object
     params = new HashMap<String, Object>();
     params.put("uuid", uuid);
@@ -371,7 +379,7 @@ public class ArvadosTest {
     // make the request again with limit
     params = new HashMap<String, Object>();
     params.put("limit", numUsersListItems-1);
-    
+
     response = arv.call("users", "list", params);
 
     parser = new JSONParser();
@@ -400,11 +408,11 @@ public class ArvadosTest {
     /*
     String[] filters = new String[1];
     filters[0] = "name != 'can_manage'";
-    
+
     params.put("filters", filters);
     response = arv.call("links", "list", params);
     assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
-    */   
+     */   
   }
 
 }

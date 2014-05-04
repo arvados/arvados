@@ -7,6 +7,8 @@
 
   - This document highlights the details as to how to use the SDK.
 
+  - The Java SDK requires Java 6 or later
+  
   - The Java SDK is used as a maven project. Hence, you would need a working
       maven environment to be able to build the source code.
 
@@ -25,7 +27,8 @@
   	  API server needs to be passed to the SDK using environment variables or
   	  during the construction of the Arvados instance.
   	  
-  - If you would like to use environment variables, below are the details.
+  - Below are the details about the environment variables and example setup
+  	  statements for a .bashrc file.
   	
       1. ARVADOS_API_TOKEN
       
