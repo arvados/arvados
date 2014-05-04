@@ -267,20 +267,20 @@ public class Arvados {
       } else if (("array".equals(parameter.getType())) ||
                  ("Array".equals(parameter.getType()))) {
         if (parameterValue.getClass().isArray()){
-          value = getValueFromArrayType(parameterValue);
+          value = getJsonValueFromArrayType(parameterValue);
         } else if (List.class.isAssignableFrom(parameterValue.getClass())) {
-          value = getValueFromListType(parameterValue);
+          value = getJsonValueFromListType(parameterValue);
         }
       } else if (("Hash".equals(parameter.getType())) ||
                  ("hash".equals(parameter.getType()))) {
-        value = getValueFromMapType(parameterValue);
+        value = getJsonValueFromMapType(parameterValue);
       } else {
         if (parameterValue.getClass().isArray()){
-          value = getValueFromArrayType(parameterValue);
+          value = getJsonValueFromArrayType(parameterValue);
         } else if (List.class.isAssignableFrom(parameterValue.getClass())) {
-          value = getValueFromListType(parameterValue);
+          value = getJsonValueFromListType(parameterValue);
         } else if (Map.class.isAssignableFrom(parameterValue.getClass())) {
-          value = getValueFromMapType(parameterValue);
+          value = getJsonValueFromMapType(parameterValue);
         }
       }
     }
@@ -288,7 +288,7 @@ public class Arvados {
     parameters.put(parameterName, value);
   }
 
-  private String getValueFromArrayType (Object parameterValue) {
+  private String getJsonValueFromArrayType (Object parameterValue) {
     String arrayStr = Arrays.deepToString((Object[])parameterValue);
     arrayStr = arrayStr.substring(1, arrayStr.length()-1);
     Object[] array = arrayStr.split(",");
@@ -302,7 +302,7 @@ public class Arvados {
     return value;
   }
 
-  private String getValueFromListType (Object parameterValue) {
+  private String getJsonValueFromListType (Object parameterValue) {
     List paramList = (List)parameterValue;
     Object[] array = new Object[paramList.size()];
     String arrayStr = Arrays.deepToString(paramList.toArray(array));
@@ -318,7 +318,7 @@ public class Arvados {
     return value;
   }
 
-  private String getValueFromMapType (Object parameterValue) {
+  private String getJsonValueFromMapType (Object parameterValue) {
     JSONObject json = new JSONObject((Map)parameterValue);
     return json.toString();
   }
