@@ -59,7 +59,8 @@ public class Arvados {
     this (apiName, apiVersion, null, null, null);
   }
 
-  public Arvados (String apiName, String apiVersion, String token, String host, String hostInsecure){
+  public Arvados (String apiName, String apiVersion, String token,
+            String host, String hostInsecure){
     try {
       this.apiName = apiName;
       this.apiVersion = apiVersion;
@@ -88,7 +89,8 @@ public class Arvados {
       if (hostInsecure != null) {
         arvadosApiHostInsecure = Boolean.valueOf(hostInsecure);
       } else {
-        arvadosApiHostInsecure = "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
+        arvadosApiHostInsecure =
+            "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
       }
 
       // Create HTTP_TRANSPORT object
@@ -110,7 +112,8 @@ public class Arvados {
    * @return Object
    * @throws Exception
    */
-  public String call(String resourceName, String methodName, Map<String, Object> paramsMap) throws Exception {
+  public Map call(String resourceName, String methodName,
+      Map<String, Object> paramsMap) throws Exception {
     RestMethod method = getMatchingMethod(resourceName, methodName);
 
     HashMap<String, Object> parameters = loadParameters(paramsMap, method);
@@ -127,17 +130,19 @@ public class Arvados {
       // possibly required content
       HttpContent content = null;
 
-      if (!method.getHttpMethod().equals("GET") && !method.getHttpMethod().equals("DELETE")) {
+      if (!method.getHttpMethod().equals("GET") &&
+          !method.getHttpMethod().equals("DELETE")) {
         String objectName = resourceName.substring(0, resourceName.length()-1);
         Object requestBody = paramsMap.get(objectName);
         if (requestBody == null) {
           error("POST method requires content object " + objectName);
         }
 
-        content = new ByteArrayContent("application/json", ((String)requestBody).getBytes());
+        content = new ByteArrayContent("application/json",((String)requestBody).getBytes());
       }
 
-      HttpRequest request = requestFactory.buildRequest(method.getHttpMethod(), url, content);
+      HttpRequest request =
+          requestFactory.buildRequest(method.getHttpMethod(), url, content);
 
       // make the request
       List<String> authHeader = new ArrayList<String>();
@@ -145,9 +150,11 @@ public class Arvados {
       request.getHeaders().put("Authorization", authHeader);
       String response = request.execute().parseAsString();
 
-      logger.debug(response);
+      Map responseMap = jsonFactory.createJsonParser(response).parse(HashMap.class);
 
-      return response;
+      logger.debug(responseMap);
+
+      return responseMap;
     } catch (Exception e) {
       e.printStackTrace();
       throw e;
@@ -238,7 +245,8 @@ public class Arvados {
     try {
       Discovery discovery;
 
-      Discovery.Builder discoveryBuilder = new Discovery.Builder(httpTransport, jsonFactory, null);
+      Discovery.Builder discoveryBuilder =
+          new Discovery.Builder(httpTransport, jsonFactory, null);
 
       discoveryBuilder.setRootUrl(arvadosRootUrl);
       discoveryBuilder.setApplicationName(apiName);
@@ -253,7 +261,8 @@ public class Arvados {
   }
 
   private void putParameter(String argName, Map<String, Object> parameters,
-      String parameterName, JsonSchema parameter, Object parameterValue) throws Exception {
+      String parameterName, JsonSchema parameter, Object parameterValue)
+          throws Exception {
     Object value = parameterValue;
     if (parameter != null) {
       if ("boolean".equals(parameter.getType())) {

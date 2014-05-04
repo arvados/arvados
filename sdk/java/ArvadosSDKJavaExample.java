@@ -7,9 +7,6 @@
 
 import org.arvados.sdk.java.Arvados;
 
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
 import java.io.File;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -32,16 +29,13 @@ public class ArvadosSDKJavaExample {
 
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("users", "list", params);
+    Map response = arv.call("users", "list", params);
     System.out.println("Arvados users.list:\n" + response);
 
     // get uuid of the first user from the response
-    JSONParser parser = new JSONParser();
-    Object obj = parser.parse(response);
-    JSONObject jsonObject = (JSONObject) obj;
-    List items = (List)jsonObject.get("items");
+    List items = (List)response.get("items");
 
-    JSONObject firstUser = (JSONObject)items.get(0);
+    Map firstUser = (Map)items.get(0);
     String userUuid = (String)firstUser.get("uuid");
     
     // Make a users.get call on the uuid obtained above
@@ -60,10 +54,7 @@ public class ArvadosSDKJavaExample {
     System.out.println("Arvados users.create:\n" + response);
 
     // delete the newly created user
-    parser = new JSONParser();
-    obj = parser.parse(response);
-    jsonObject = (JSONObject) obj;
-    userUuid = (String)jsonObject.get("uuid");
+    userUuid = (String)response.get("uuid");
     params = new HashMap<String, Object>();
     params.put("uuid", userUuid);
     response = arv.call("users", "delete", params);

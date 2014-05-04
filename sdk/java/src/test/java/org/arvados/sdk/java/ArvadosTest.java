@@ -11,9 +11,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-
 /**
  * Unit test for Arvados.
  */
@@ -29,21 +26,14 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("users", "list", params);
-    assertTrue("Expected users.list in response", response.contains("arvados#userList"));
-    assertTrue("Expected users.list in response", response.contains("uuid"));
+    Map response = arv.call("users", "list", params);
+    assertEquals("Expected kind to be users.list", "arvados#userList", response.get("kind"));
 
-    JSONParser parser = new JSONParser();
-    Object obj = parser.parse(response);
-    JSONObject jsonObject = (JSONObject) obj;
-
-    assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
-
-    List items = (List)jsonObject.get("items");
+    List items = (List)response.get("items");
     assertNotNull("expected users list items", items);
     assertTrue("expected at least one item in users list", items.size()>0);
 
-    JSONObject firstUser = (JSONObject)items.get(0);
+    Map firstUser = (Map)items.get(0);
     assertNotNull ("Expcted at least one user", firstUser);
 
     assertEquals("Expected kind to be user", "arvados#user", firstUser.get("kind"));
@@ -61,15 +51,13 @@ public class ArvadosTest {
     // call user.system and get uuid of this user
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("users", "list", params);
-    JSONParser parser = new JSONParser();
-    Object obj = parser.parse(response);
-    JSONObject jsonObject = (JSONObject) obj;
-    assertNotNull("expected users list", jsonObject);
-    List items = (List)jsonObject.get("items");
+    Map response = arv.call("users", "list", params);
+
+    assertNotNull("expected users list", response);
+    List items = (List)response.get("items");
     assertNotNull("expected users list items", items);
 
-    JSONObject firstUser = (JSONObject)items.get(0);
+    Map firstUser = (Map)items.get(0);
     String userUuid = (String)firstUser.get("uuid");
 
     // invoke users.get with the system user uuid
@@ -78,10 +66,8 @@ public class ArvadosTest {
 
     response = arv.call("users", "get", params);
 
-    //JSONParser parser = new JSONParser();
-    jsonObject = (JSONObject) parser.parse(response);;
-    assertNotNull("Expected uuid for first user", jsonObject.get("uuid"));
-    assertEquals("Expected system user uuid", userUuid, jsonObject.get("uuid"));
+    assertNotNull("Expected uuid for first user", response.get("uuid"));
+    assertEquals("Expected system user uuid", userUuid, response.get("uuid"));
   }
 
   /**
@@ -94,13 +80,11 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("user", "{}");
-    String response = arv.call("users", "create", params);
+    Map response = arv.call("users", "create", params);
 
-    JSONParser parser = new JSONParser();
-    JSONObject jsonObject = (JSONObject) parser.parse(response);
-    assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
+    assertEquals("Expected kind to be user", "arvados#user", response.get("kind"));
 
-    Object uuid = jsonObject.get("uuid");
+    Object uuid = response.get("uuid");
     assertNotNull("Expected uuid for first user", uuid);
 
     // delete the object
@@ -151,13 +135,11 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("user", "{}");
-    String response = arv.call("users", "create", params);
+    Map response = arv.call("users", "create", params);
 
-    JSONParser parser = new JSONParser();
-    JSONObject jsonObject = (JSONObject) parser.parse(response);
-    assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
+    assertEquals("Expected kind to be user", "arvados#user", response.get("kind"));
 
-    Object uuid = jsonObject.get("uuid");
+    Object uuid = response.get("uuid");
     assertNotNull("Expected uuid for first user", uuid);
 
     // update this user
@@ -166,11 +148,9 @@ public class ArvadosTest {
     params.put("uuid", uuid);
     response = arv.call("users", "update", params);
 
-    parser = new JSONParser();
-    jsonObject = (JSONObject) parser.parse(response);
-    assertEquals("Expected kind to be user", "arvados#user", jsonObject.get("kind"));
+    assertEquals("Expected kind to be user", "arvados#user", response.get("kind"));
 
-    uuid = jsonObject.get("uuid");
+    uuid = response.get("uuid");
     assertNotNull("Expected uuid for first user", uuid);
 
     // delete the object
@@ -275,12 +255,10 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("pipeline_template", new String(data));
-    String response = arv.call("pipeline_templates", "create", params);
+    Map response = arv.call("pipeline_templates", "create", params);
 
-    JSONParser parser = new JSONParser();
-    JSONObject jsonObject = (JSONObject) parser.parse(response);
-    assertEquals("Expected kind to be user", "arvados#pipelineTemplate", jsonObject.get("kind"));
-    String uuid = (String)jsonObject.get("uuid");
+    assertEquals("Expected kind to be user", "arvados#pipelineTemplate", response.get("kind"));
+    String uuid = (String)response.get("uuid");
     assertNotNull("Expected uuid for pipeline template", uuid);
 
     // get the pipeline
@@ -288,10 +266,8 @@ public class ArvadosTest {
     params.put("uuid", uuid);
     response = arv.call("pipeline_templates", "get", params);
 
-    parser = new JSONParser();
-    jsonObject = (JSONObject) parser.parse(response);
-    assertEquals("Expected kind to be user", "arvados#pipelineTemplate", jsonObject.get("kind"));
-    assertEquals("Expected uuid for pipeline template", uuid, jsonObject.get("uuid"));
+    assertEquals("Expected kind to be user", "arvados#pipelineTemplate", response.get("kind"));
+    assertEquals("Expected uuid for pipeline template", uuid, response.get("uuid"));
 
     // delete the object
     params = new HashMap<String, Object>();
@@ -313,14 +289,8 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("users", "list", params);
-    assertTrue("Expected users.list in response", response.contains("arvados#userList"));
-    assertTrue("Expected users.list in response", response.contains("uuid"));
-
-    JSONParser parser = new JSONParser();
-    Object obj = parser.parse(response);
-    JSONObject jsonObject = (JSONObject) obj;
-    assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
+    Map response = arv.call("users", "list", params);
+    assertEquals("Expected kind to be users.list", "arvados#userList", response.get("kind"));
   }
 
   /**
@@ -333,17 +303,10 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("users", "list", params);
-    assertTrue("Expected users.list in response", response.contains("arvados#userList"));
-    assertTrue("Expected users.list in response", response.contains("uuid"));
+    Map response = arv.call("users", "list", params);
+    assertEquals("Expected users.list in response", "arvados#userList", response.get("kind"));
 
-    JSONParser parser = new JSONParser();
-    Object obj = parser.parse(response);
-    JSONObject jsonObject = (JSONObject) obj;
-
-    assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
-
-    List items = (List)jsonObject.get("items");
+    List items = (List)response.get("items");
     assertNotNull("expected users list items", items);
     assertTrue("expected at least one item in users list", items.size()>0);
 
@@ -355,13 +318,9 @@ public class ArvadosTest {
 
     response = arv.call("users", "list", params);
 
-    parser = new JSONParser();
-    obj = parser.parse(response);
-    jsonObject = (JSONObject) obj;
+    assertEquals("Expected kind to be users.list", "arvados#userList", response.get("kind"));
 
-    assertEquals("Expected kind to be users.list", "arvados#userList", jsonObject.get("kind"));
-
-    items = (List)jsonObject.get("items");
+    items = (List)response.get("items");
     assertNotNull("expected users list items", items);
     assertTrue("expected at least one item in users list", items.size()>0);
 
@@ -375,8 +334,8 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("links", "list", params);
-    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+    Map response = arv.call("links", "list", params);
+    assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
 
     String[] filters = new String[3];
     filters[0] = "name";
@@ -387,8 +346,8 @@ public class ArvadosTest {
     
     response = arv.call("links", "list", params);
     
-    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
-    assertFalse("Expected no can_manage in response", response.contains("\"name\":\"can_manage\""));
+    assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
+    assertFalse("Expected no can_manage in response", response.toString().contains("\"name\":\"can_manage\""));
   }
 
   @Test
@@ -397,8 +356,8 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("links", "list", params);
-    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+    Map response = arv.call("links", "list", params);
+    assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
 
     List<String> filters = new ArrayList<String>();
     filters.add("name");
@@ -409,8 +368,8 @@ public class ArvadosTest {
     
     response = arv.call("links", "list", params);
     
-    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
-    assertFalse("Expected no can_manage in response", response.contains("\"name\":\"can_manage\""));
+    assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
+    assertFalse("Expected no can_manage in response", response.toString().contains("\"name\":\"can_manage\""));
   }
 
   @Test
@@ -419,17 +378,14 @@ public class ArvadosTest {
 
     Map<String, Object> params = new HashMap<String, Object>();
 
-    String response = arv.call("links", "list", params);
-    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
-
     Map<String, String> where = new HashMap<String, String>();
     where.put("where", "updated_at > '2014-05-01'");
     
     params.put("where", where);
     
-    response = arv.call("links", "list", params);
+    Map response = arv.call("links", "list", params);
     
-    assertTrue("Expected links.list in response", response.contains("arvados#linkList"));
+    assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
   }
 
 }
