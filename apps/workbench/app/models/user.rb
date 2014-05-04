@@ -6,20 +6,20 @@ class User < ArvadosBase
   end
 
   def self.current
-    res = $arvados_api_client.api self, '/current'
-    $arvados_api_client.unpack_api_response(res)
+    res = arvados_api_client.api self, '/current'
+    arvados_api_client.unpack_api_response(res)
   end
 
   def self.system
-    $arvados_system_user ||= begin
-                               res = $arvados_api_client.api self, '/system'
-                               $arvados_api_client.unpack_api_response(res)
-                             end
+    @@arvados_system_user ||= begin
+                                res = arvados_api_client.api self, '/system'
+                                arvados_api_client.unpack_api_response(res)
+                              end
   end
 
   def owned_items
-    res = $arvados_api_client.api self.class, "/#{self.uuid}/owned_items"
-    $arvados_api_client.unpack_api_response(res)
+    res = arvados_api_client.api self.class, "/#{self.uuid}/owned_items"
+    arvados_api_client.unpack_api_response(res)
   end
 
   def full_name
@@ -27,9 +27,9 @@ class User < ArvadosBase
   end
 
   def activate
-    self.private_reload($arvados_api_client.api(self.class,
-                                                "/#{self.uuid}/activate",
-                                                {}))
+    self.private_reload(arvados_api_client.api(self.class,
+                                               "/#{self.uuid}/activate",
+                                               {}))
   end
 
   def attributes_for_display
@@ -45,13 +45,13 @@ class User < ArvadosBase
   end
 
   def unsetup
-    self.private_reload($arvados_api_client.api(self.class,
-                                                "/#{self.uuid}/unsetup",
-                                                {}))
+    self.private_reload(arvados_api_client.api(self.class,
+                                               "/#{self.uuid}/unsetup",
+                                               {}))
   end
 
   def self.setup params
-    $arvados_api_client.api(self, "/setup", params)
+    arvados_api_client.api(self, "/setup", params)
   end
 
 end

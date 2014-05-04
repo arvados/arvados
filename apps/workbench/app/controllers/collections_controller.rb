@@ -170,7 +170,7 @@ class CollectionsController < ApplicationController
       env = Hash[ENV].
         merge({
                 'ARVADOS_API_HOST' =>
-                $arvados_api_client.arvados_v1_base.
+                arvados_api_client.arvados_v1_base.
                 sub(/\/arvados\/v1/, '').
                 sub(/^https?:\/\//, ''),
                 'ARVADOS_API_TOKEN' =>

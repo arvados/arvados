@@ -26,11 +26,11 @@ class Collection < ArvadosBase
   end
 
   def provenance
-    $arvados_api_client.api "collections/#{self.uuid}/", "provenance"
+    arvados_api_client.api "collections/#{self.uuid}/", "provenance"
   end
 
   def used_by
-    $arvados_api_client.api "collections/#{self.uuid}/", "used_by"
+    arvados_api_client.api "collections/#{self.uuid}/", "used_by"
   end
 
 end
