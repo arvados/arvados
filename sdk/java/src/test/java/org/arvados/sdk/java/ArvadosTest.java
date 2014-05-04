@@ -165,11 +165,9 @@ public class ArvadosTest {
    */
   @Test
   public void testUnsupportedApiName() throws Exception {
-    Arvados arv = new Arvados("not_arvados", "v1");
-
     Exception caught = null;
     try {
-      arv.call("users", "list", null);
+      Arvados arv = new Arvados("not_arvados", "v1");
     } catch (Exception e) {
       caught = e;
     }
@@ -184,11 +182,9 @@ public class ArvadosTest {
    */
   @Test
   public void testUnsupportedVersion() throws Exception {
-    Arvados arv = new Arvados("arvados", "v2");
-
     Exception caught = null;
     try {
-      arv.call("users", "list", null);
+      Arvados arv = new Arvados("arvados", "v2");
     } catch (Exception e) {
       caught = e;
     }

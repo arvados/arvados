@@ -50,58 +50,57 @@ public class Arvados {
 
   private static final Logger logger = Logger.getLogger(Arvados.class);
 
-  // Get it on a discover call and reuse on the call requests
+  // Get it once and reuse on the call requests
   RestDescription restDescription = null;
   String apiName = null;
   String apiVersion = null;
 
-  public Arvados (String apiName, String apiVersion){
+  public Arvados (String apiName, String apiVersion) throws Exception {
     this (apiName, apiVersion, null, null, null);
   }
 
   public Arvados (String apiName, String apiVersion, String token,
-            String host, String hostInsecure){
-    try {
-      this.apiName = apiName;
-      this.apiVersion = apiVersion;
+      String host, String hostInsecure) throws Exception {
+    this.apiName = apiName;
+    this.apiVersion = apiVersion;
 
-      // Read needed environmental variables if they are not passed
-      if (token != null) {
-        arvadosApiToken = token;
-      } else {
-        arvadosApiToken = System.getenv().get("ARVADOS_API_TOKEN");
-        if (arvadosApiToken == null) {
-          throw new Exception("Missing environment variable: ARVADOS_API_TOKEN");
-        }
+    // Read needed environmental variables if they are not passed
+    if (token != null) {
+      arvadosApiToken = token;
+    } else {
+      arvadosApiToken = System.getenv().get("ARVADOS_API_TOKEN");
+      if (arvadosApiToken == null) {
+        throw new Exception("Missing environment variable: ARVADOS_API_TOKEN");
       }
-
-      if (host != null) {
-        arvadosApiHost = host;
-      } else {
-        arvadosApiHost = System.getenv().get("ARVADOS_API_HOST");      
-        if (arvadosApiHost == null) {
-          throw new Exception("Missing environment variable: ARVADOS_API_HOST");
-        }
-      }
-      arvadosRootUrl = "https://" + arvadosApiHost;
-      arvadosRootUrl += (arvadosApiHost.endsWith("/")) ? "" : "/";
-
-      if (hostInsecure != null) {
-        arvadosApiHostInsecure = Boolean.valueOf(hostInsecure);
-      } else {
-        arvadosApiHostInsecure =
-            "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
-      }
-
-      // Create HTTP_TRANSPORT object
-      NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
-      if (arvadosApiHostInsecure) {
-        builder.doNotValidateCertificate();
-      }
-      httpTransport = builder.build();
-    } catch (Throwable t) {
-      t.printStackTrace();
     }
+
+    if (host != null) {
+      arvadosApiHost = host;
+    } else {
+      arvadosApiHost = System.getenv().get("ARVADOS_API_HOST");      
+      if (arvadosApiHost == null) {
+        throw new Exception("Missing environment variable: ARVADOS_API_HOST");
+      }
+    }
+    arvadosRootUrl = "https://" + arvadosApiHost;
+    arvadosRootUrl += (arvadosApiHost.endsWith("/")) ? "" : "/";
+
+    if (hostInsecure != null) {
+      arvadosApiHostInsecure = Boolean.valueOf(hostInsecure);
+    } else {
+      arvadosApiHostInsecure =
+          "true".equals(System.getenv().get("ARVADOS_API_HOST_INSECURE")) ? true : false;
+    }
+
+    // Create HTTP_TRANSPORT object
+    NetHttpTransport.Builder builder = new NetHttpTransport.Builder();
+    if (arvadosApiHostInsecure) {
+      builder.doNotValidateCertificate();
+    }
+    httpTransport = builder.build();
+
+    // initialize rest description
+    restDescription = loadArvadosApi();
   }
 
   /**
@@ -109,7 +108,7 @@ public class Arvados {
    * @param resourceName
    * @param methodName
    * @param paramsMap
-   * @return Object
+   * @return Map
    * @throws Exception
    */
   public Map call(String resourceName, String methodName,
@@ -212,11 +211,6 @@ public class Arvados {
       error("missing method name");      
     }
 
-    // initialize rest description if not already
-    if (restDescription == null) {
-      restDescription = loadArvadosApi();
-    }
-
     Map<String, RestMethod> methodMap = null;
     Map<String, RestResource> resources = restDescription.getResources();
     RestResource resource = resources.get(resourceName);
@@ -274,14 +268,14 @@ public class Arvados {
       } else if ("float".equals(parameter.getType())) {
         value = new BigDecimal(parameterValue.toString());
       } else if (("array".equals(parameter.getType())) ||
-                 ("Array".equals(parameter.getType()))) {
+          ("Array".equals(parameter.getType()))) {
         if (parameterValue.getClass().isArray()){
           value = getJsonValueFromArrayType(parameterValue);
         } else if (List.class.isAssignableFrom(parameterValue.getClass())) {
           value = getJsonValueFromListType(parameterValue);
         }
       } else if (("Hash".equals(parameter.getType())) ||
-                 ("hash".equals(parameter.getType()))) {
+          ("hash".equals(parameter.getType()))) {
         value = getJsonValueFromMapType(parameterValue);
       } else {
         if (parameterValue.getClass().isArray()){
@@ -293,7 +287,7 @@ public class Arvados {
         }
       }
     }
-    
+
     parameters.put(parameterName, value);
   }
 
