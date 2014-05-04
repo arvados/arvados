@@ -261,7 +261,10 @@ public class Arvados {
         value = new BigDecimal(parameterValue.toString());
       } else if ("integer".equals(parameter.getType())) {
         value = new BigInteger(parameterValue.toString());
-      } else if ("array".equals(parameter.getType())) {
+      } else if ("float".equals(parameter.getType())) {
+        value = new BigDecimal(parameterValue.toString());
+      } else if (("array".equals(parameter.getType())) ||
+                 ("Array".equals(parameter.getType()))) {
         if (parameterValue.getClass().isArray()){
           String arrayStr = Arrays.deepToString((Object[])parameterValue);
           arrayStr = arrayStr.substring(1, arrayStr.length()-1);
