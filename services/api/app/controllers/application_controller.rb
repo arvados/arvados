@@ -1,3 +1,16 @@
+module ApiTemplateOverride
+  def allowed_to_render?(fieldset, field, model, options)
+    if options[:select]
+      return options[:select].include? field.to_s
+    end
+    super
+  end
+end
+
+class ActsAsApi::ApiTemplate
+  prepend ApiTemplateOverride
+end
+
 require 'load_param'
 require 'record_filters'
 
@@ -8,6 +21,7 @@ class ApplicationController < ActionController::Base
   include RecordFilters
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
+
 
   respond_to :json
   protect_from_forgery
@@ -33,7 +47,7 @@ class ApplicationController < ActionController::Base
   attr_accessor :resource_attrs
 
   def index
-    @objects.uniq!(&:id)
+    @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)
     end
@@ -244,9 +258,11 @@ class ApplicationController < ActionController::Base
       end
     end
 
+    @objects = @objects.select(@select.map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }.join ", ") if @select
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
+    @objects = @objects.uniq(@distinct) if not @distinct.nil?
   end
 
   def resource_attrs
@@ -401,7 +417,7 @@ class ApplicationController < ActionController::Base
       :self_link => "",
       :offset => @offset,
       :limit => @limit,
-      :items => @objects.as_api_response(nil)
+      :items => @objects.as_api_response(nil, {select: @select})
     }
     if @objects.respond_to? :except
       @object_list[:items_available] = @objects.
@@ -426,7 +442,9 @@ class ApplicationController < ActionController::Base
     {
       filters: { type: 'array', required: false },
       where: { type: 'object', required: false },
-      order: { type: 'string', required: false },
+      order: { type: 'array', required: false },
+      select: { type: 'array', required: false },
+      distinct: { type: 'boolean', required: false },
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
     }

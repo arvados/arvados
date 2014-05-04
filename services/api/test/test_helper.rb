@@ -4,7 +4,7 @@ require 'rails/test_help'
 
 module ArvadosTestSupport
   def json_response
-    @json_response ||= ActiveSupport::JSON.decode @response.body
+    ActiveSupport::JSON.decode @response.body
   end
 
   def api_token(api_client_auth_name)
@@ -17,10 +17,6 @@ module ArvadosTestSupport
 end
 
 class ActiveSupport::TestCase
-  # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in alphabetical order.
-  #
-  # Note: You'll currently still have to declare fixtures explicitly in integration tests
-  # -- they do not yet inherit this setting
   fixtures :all
 
   include ArvadosTestSupport
