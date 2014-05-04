@@ -9,8 +9,10 @@ class ArvadosModel < ActiveRecord::Base
   attr_protected :modified_by_client_uuid
   attr_protected :modified_at
   after_initialize :log_start_state
-  before_create :ensure_permission_to_create
-  before_update :ensure_permission_to_update
+  before_save :ensure_permission_to_save
+  before_save :ensure_owner_uuid_is_permitted
+  before_save :ensure_ownership_path_leads_to_user
+  before_destroy :ensure_owner_uuid_is_permitted
   before_destroy :ensure_permission_to_destroy
 
   before_create :update_modified_by_fields
@@ -130,16 +132,69 @@ class ArvadosModel < ActiveRecord::Base
 
   protected
 
-  def ensure_permission_to_create
-    raise PermissionDeniedError unless permission_to_create
+  def ensure_ownership_path_leads_to_user
+    if new_record? or owner_uuid_changed?
+      uuid_in_path = {owner_uuid => true, uuid => true}
+      x = owner_uuid
+      while (owner_class = self.class.resource_class_for_uuid(x)) != User
+        begin
+          if x == uuid
+            # Test for cycles with the new version, not the DB contents
+            x = owner_uuid
+          else
+            x = owner_class.find_by_uuid(x).owner_uuid
+          end
+        rescue ActiveRecord::RecordNotFound => e
+          errors.add :owner_uuid, "is not owned by any user: #{e}"
+          return false
+        end
+        if uuid_in_path[x]
+          if x == owner_uuid
+            errors.add :owner_uuid, "would create an ownership cycle"
+          else
+            errors.add :owner_uuid, "has an ownership cycle"
+          end
+          return false
+        end
+        uuid_in_path[x] = true
+      end
+    end
+    true
+  end
+
+  def ensure_owner_uuid_is_permitted
+    return false if !current_user
+    self.owner_uuid ||= current_user.uuid
+    if self.owner_uuid_changed?
+      if current_user.uuid == self.owner_uuid or
+          current_user.can? write: self.owner_uuid
+        # current_user is, or has :write permission on, the new owner
+      else
+        logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
+        return false
+      end
+    end
+    if new_record?
+      return true
+    elsif current_user.uuid == self.owner_uuid_was or
+        current_user.uuid == self.uuid or
+        current_user.can? write: self.owner_uuid_was
+      # current user is, or has :write permission on, the previous owner
+      return true
+    else
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
+      raise PermissionDeniedError
+    end
+  end
+
+  def ensure_permission_to_save
+    unless (new_record? ? permission_to_create : permission_to_update)
+      raise PermissionDeniedError
+    end
   end
 
   def permission_to_create
     current_user.andand.is_active
-  end
-
-  def ensure_permission_to_update
-    raise PermissionDeniedError unless permission_to_update
   end
 
   def permission_to_update
@@ -156,24 +211,7 @@ class ArvadosModel < ActiveRecord::Base
       logger.warn "User #{current_user.uuid} tried to change uuid of #{self.class.to_s} #{self.uuid_was} to #{self.uuid}"
       return false
     end
-    if self.owner_uuid_changed?
-      if current_user.uuid == self.owner_uuid or
-          current_user.can? write: self.owner_uuid
-        # current_user is, or has :write permission on, the new owner
-      else
-        logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
-        return false
-      end
-    end
-    if current_user.uuid == self.owner_uuid_was or
-        current_user.uuid == self.uuid or
-        current_user.can? write: self.owner_uuid_was
-      # current user is, or has :write permission on, the previous owner
-      return true
-    else
-      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
-      return false
-    end
+    return true
   end
 
   def ensure_permission_to_destroy
