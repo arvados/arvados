@@ -17,10 +17,6 @@ module ArvadosTestSupport
 end
 
 class ActiveSupport::TestCase
-  # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in alphabetical order.
-  #
-  # Note: You'll currently still have to declare fixtures explicitly in integration tests
-  # -- they do not yet inherit this setting
   fixtures :all
 
   include ArvadosTestSupport
@@ -31,6 +27,13 @@ class ActiveSupport::TestCase
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
+  end
+
+  def set_user_from_auth(auth_name)
+    client_auth = api_client_authorizations(auth_name)
+    Thread.current[:api_client_authorization] = client_auth
+    Thread.current[:api_client] = client_auth.api_client
+    Thread.current[:user] = client_auth.user
   end
 
   def expect_json

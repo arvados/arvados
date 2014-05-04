@@ -51,7 +51,7 @@ class Link < ArvadosModel
 
     # All users can grant permissions on objects they own
     head_obj = self.class.
-      kind_class(self.head_uuid).
+      resource_class_for_uuid(self.head_uuid).
       where('uuid=?',head_uuid).
       first
     if head_obj
