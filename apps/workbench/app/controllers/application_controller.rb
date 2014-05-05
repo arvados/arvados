@@ -2,12 +2,17 @@ class ApplicationController < ActionController::Base
   ERROR_ACTIONS = [:render_exception, :render_not_found]
   respond_to :html, :json, :js
   protect_from_forgery
+
+  ERROR_ACTIONS = [:render_error, :render_not_found]
+
   around_filter :thread_clear
-  around_filter :thread_with_mandatory_api_token, :except => [:render_exception, :render_not_found]
+  around_filter(:thread_with_mandatory_api_token,
+                except: [:index, :show] + ERROR_ACTIONS)
   around_filter :thread_with_optional_api_token
-  before_filter :find_object_by_uuid, :except => [:index] + ERROR_ACTIONS
-  before_filter :check_user_agreements, :except => ERROR_ACTIONS
-  before_filter :check_user_notifications, :except => ERROR_ACTIONS
+  before_filter :check_user_agreements, except: ERROR_ACTIONS
+  before_filter :check_user_notifications, except: ERROR_ACTIONS
+  around_filter :using_reader_tokens, only: [:index, :show]
+  before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
   before_filter :check_my_folders, :except => ERROR_ACTIONS
   theme :select_theme
 
@@ -190,7 +195,56 @@ class ApplicationController < ActionController::Base
   end
 
   protected
-    
+
+  def redirect_to_login
+    respond_to do |f|
+      f.html {
+        if request.method == 'GET'
+          redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+        else
+          flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
+          redirect_to :back
+        end
+      }
+      f.json {
+        @errors = ['You do not seem to be logged in. You did not supply an API token with this request, and your session (if any) has timed out.']
+        self.render_error status: 422
+      }
+    end
+    false  # For convenience to return from callbacks
+  end
+
+  def using_reader_tokens(login_optional=false)
+    if params[:reader_tokens].is_a?(Array) and params[:reader_tokens].any?
+      Thread.current[:reader_tokens] = params[:reader_tokens]
+    end
+    begin
+      yield
+    rescue ArvadosApiClient::NotLoggedInException
+      if login_optional
+        raise
+      else
+        return redirect_to_login
+      end
+    ensure
+      Thread.current[:reader_tokens] = nil
+    end
+  end
+
+  def using_specific_api_token(api_token)
+    start_values = {}
+    [:arvados_api_token, :user].each do |key|
+      start_values[key] = Thread.current[key]
+    end
+    Thread.current[:arvados_api_token] = api_token
+    Thread.current[:user] = nil
+    begin
+      yield
+    ensure
+      start_values.each_key { |key| Thread.current[key] = start_values[key] }
+    end
+  end
+
   def find_object_by_uuid
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
@@ -255,20 +309,7 @@ class ApplicationController < ActionController::Base
       end
       if try_redirect_to_login
         unless login_optional
-          respond_to do |f|
-            f.html {
-              if request.method == 'GET'
-                redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
-              else
-                flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
-                redirect_to :back
-              end
-            }
-            f.json {
-              @errors = ['You do not seem to be logged in. You did not supply an API token with this request, and your session (if any) has timed out.']
-              self.render_error status: 422
-            }
-          end
+          redirect_to_login
         else
           # login is optional for this route so go on to the regular controller
           Thread.current[:arvados_api_token] = nil
@@ -294,7 +335,7 @@ class ApplicationController < ActionController::Base
       yield
     else
       # We skipped thread_with_mandatory_api_token. Use the optional version.
-      thread_with_api_token(true) do 
+      thread_with_api_token(true) do
         yield
       end
     end
@@ -347,7 +388,7 @@ class ApplicationController < ActionController::Base
   @@notification_tests = []
 
   @@notification_tests.push lambda { |controller, current_user|
-    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do   
+    AuthorizedKey.limit(1).where(authorized_user_uuid: current_user.uuid).each do
       return nil
     end
     return lambda { |view|
@@ -396,7 +437,7 @@ class ApplicationController < ActionController::Base
     @notifications = []
 
     if current_user
-      @showallalerts = false      
+      @showallalerts = false
       @@notification_tests.each do |t|
         a = t.call(self, current_user)
         if a

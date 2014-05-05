@@ -15,7 +15,7 @@ class ArvadosApiClient
     profile_checkpoint
 
     @@client_mtx.synchronize do
-      if not @@api_client 
+      if not @@api_client
         @@api_client = HTTPClient.new
         if Rails.configuration.arvados_insecure_https
           @@api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -26,16 +26,16 @@ class ArvadosApiClient
       end
     end
 
-    api_token = Thread.current[:arvados_api_token]
-    api_token ||= ''
-
     resources_kind = class_kind(resources_kind).pluralize if resources_kind.is_a? Class
     url = "#{self.arvados_v1_base}/#{resources_kind}#{action}"
 
     # Clean up /arvados/v1/../../discovery/v1 to /discovery/v1
     url.sub! '/arvados/v1/../../', '/'
 
-    query = {"api_token" => api_token}
+    query = {
+      'api_token' => Thread.current[:arvados_api_token] || '',
+      'reader_tokens' => (Thread.current[:reader_tokens] || []).to_json,
+    }
     if !data.nil?
       data.each do |k,v|
         if v.is_a? String or v.nil?
@@ -54,11 +54,11 @@ class ArvadosApiClient
     if @@profiling_enabled
       query["_profile"] = "true"
     end
-    
+
     header = {"Accept" => "application/json"}
 
     profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]}" }
-    msg = @@api_client.post(url, 
+    msg = @@api_client.post(url,
                             query,
                             header: header)
     profile_checkpoint 'API transaction'
@@ -68,7 +68,7 @@ class ArvadosApiClient
     end
 
     json = msg.content
-    
+
     begin
       resp = Oj.load(json, :symbol_keys => true)
     rescue Oj::ParseError

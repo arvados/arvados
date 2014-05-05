@@ -186,7 +186,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def ensure_owner_uuid_is_permitted
-    return false if !current_user
+    raise PermissionDeniedError if !current_user
     self.owner_uuid ||= current_user.uuid
     if self.owner_uuid_changed?
       if current_user.uuid == self.owner_uuid or
