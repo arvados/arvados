@@ -17,11 +17,6 @@ class User < ArvadosBase
                              end
   end
 
-  def owned_items
-    res = $arvados_api_client.api self.class, "/#{self.uuid}/owned_items"
-    $arvados_api_client.unpack_api_response(res)
-  end
-
   def full_name
     (self.first_name || "") + " " + (self.last_name || "")
   end

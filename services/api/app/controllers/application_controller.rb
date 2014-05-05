@@ -34,9 +34,9 @@ class ApplicationController < ActionController::Base
   before_filter :catch_redirect_hint
   before_filter(:find_object_by_uuid,
                 except: [:index, :create] + ERROR_ACTIONS)
-  before_filter :load_limit_offset_order_params, only: [:index, :owned_items]
-  before_filter :load_where_param, only: [:index, :owned_items]
-  before_filter :load_filters_param, only: [:index, :owned_items]
+  before_filter :load_limit_offset_order_params, only: [:index, :contents]
+  before_filter :load_where_param, only: [:index, :contents]
+  before_filter :load_filters_param, only: [:index, :contents]
   before_filter :find_objects_for_index, :only => :index
   before_filter :reload_object_before_update, :only => :update
   before_filter(:render_404_if_no_object,
@@ -77,7 +77,7 @@ class ApplicationController < ActionController::Base
     show
   end
 
-  def self._owned_items_requires_parameters
+  def self._contents_requires_parameters
     _index_requires_parameters.
       merge({
               include_linked: {
@@ -86,7 +86,7 @@ class ApplicationController < ActionController::Base
             })
   end
 
-  def owned_items
+  def contents
     all_objects = []
     all_available = 0
 
@@ -97,31 +97,23 @@ class ApplicationController < ActionController::Base
     offset_all = @offset
     @orders = []
 
-    ArvadosModel.descendants.
-      reject(&:abstract_class?).
-      sort_by(&:to_s).
+    ArvadosModel.descendants.reject(&:abstract_class?).sort_by(&:to_s).
       each do |klass|
       case klass.to_s
         # We might expect klass==Link etc. here, but we would be
         # disappointed: when Rails reloads model classes, we get two
         # distinct classes called Link which do not equal each
         # other. But we can still rely on klass.to_s to be "Link".
-      when 'ApiClientAuthorization'
+      when 'ApiClientAuthorization', 'UserAgreement'
         # Do not want.
       else
         @objects = klass.readable_by(*@read_users)
         cond_sql = "#{klass.table_name}.owner_uuid = ?"
         cond_params = [@object.uuid]
         if params[:include_linked]
-          @objects = @objects.
-            joins("LEFT JOIN links mng_links"\
-                  " ON mng_links.link_class=#{klass.sanitize 'permission'}"\
-                  "    AND mng_links.name=#{klass.sanitize 'can_manage'}"\
-                  "    AND mng_links.tail_uuid=#{klass.sanitize @object.uuid}"\
-                  "    AND mng_links.head_uuid=#{klass.table_name}.uuid")
-          cond_sql += " OR mng_links.uuid IS NOT NULL"
+          cond_sql += " OR #{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
         end
-        @objects = @objects.where(cond_sql, *cond_params).order(:uuid)
+        @objects = @objects.where(cond_sql, *cond_params).order("#{klass.table_name}.uuid")
         @limit = limit_all - all_objects.count
         apply_where_limit_order_params
         items_available = @objects.
@@ -134,10 +126,16 @@ class ApplicationController < ActionController::Base
       end
     end
     @objects = all_objects || []
+    @links = Link.where('link_class=? and tail_uuid=?'\
+                        ' and head_uuid in (?)',
+                        'name',
+                        @object.uuid,
+                        @objects.collect(&:uuid))
     @object_list = {
       :kind  => "arvados#objectList",
       :etag => "",
       :self_link => "",
+      :links => @links.as_api_response(nil),
       :offset => offset_all,
       :limit => limit_all,
       :items_available => all_available,
