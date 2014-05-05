@@ -152,7 +152,6 @@ module ApplicationHelper
     else
       ajax_options['data-url'] = url_for(action: "create", controller: object.class.to_s.pluralize.underscore)
       ajax_options['data-pk'][:defaults] = object.attributes
-      ajax_options['data-pk'][:_method] = 'post'
     end
     ajax_options['data-pk'] = ajax_options['data-pk'].to_json
 

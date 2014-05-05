@@ -9,6 +9,7 @@ class FoldersController < ApplicationController
 
   def remove_item
     @removed_uuids = []
+    links = []
     item = ArvadosBase.find params[:item_uuid]
     if (item.class == Link and
         item.link_class == 'name' and
@@ -16,8 +17,15 @@ class FoldersController < ApplicationController
       # Given uuid is a name link, linking an object to this
       # folder. First follow the link to find the item we're removing,
       # then delete the link.
-      link = item
-      item = ArvadosBase.find link.head_uuid
+      links << item
+      item = ArvadosBase.find item.head_uuid
+    else
+      # Given uuid is an object. Delete all names.
+      links += Link.where(tail_uuid: @object.uuid,
+                          head_uuid: item.uuid,
+                          link_class: 'name')
+    end
+    links.each do |link|
       @removed_uuids << link.uuid
       link.destroy
     end

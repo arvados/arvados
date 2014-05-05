@@ -132,35 +132,35 @@
               <col width="8%" />
             </colgroup>
             <% @objects_and_names.each do |object, name_link| %>
-            <tr data-object-uuid="<%= (name_link || object).uuid %>">
-              <td>
-                <%= render :partial => "selection_checkbox", :locals => {object: object} %>
-              </td>
-              <td>
-                <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
-              </td>
-              <td>
-                <%= render_editable_attribute name_link, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
-              </td>
-              <td>
-                <%= object.content_summary %>
-              </td>
-              <td title="<%= object.modified_at %>">
-                <span>
-                  <%= raw distance_of_time_in_words(object.modified_at, Time.now).sub('about ','~').sub(' ','&nbsp;') + '&nbsp;ago' rescue object.modified_at %>
-                </span>
-              </td>
-              <td class="arvados-uuid">
-                <%= object.uuid %>
-              </td>
-              <td>
-                <% if @object.editable? %>
-                  <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: (name_link || object).uuid}, method: :delete, remote: true, data: {confirm: "You are about to remove #{object.class_for_display} #{object.uuid} from this folder.\n\nAre you sure?"}, class: 'btn btn-xs btn-default') do %>
-                    Remove <i class="fa fa-fw fa-ban"></i>
+              <tr data-object-uuid="<%= (name_link && name_link.uuid) || object.uuid %>">
+                <td>
+                  <%= render :partial => "selection_checkbox", :locals => {object: object} %>
+                </td>
+                <td>
+                  <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
+                </td>
+                <td>
+                  <%= render_editable_attribute name_link, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
+                </td>
+                <td>
+                  <%= object.content_summary %>
+                </td>
+                <td title="<%= object.modified_at %>">
+                  <span>
+                    <%= raw distance_of_time_in_words(object.modified_at, Time.now).sub('about ','~').sub(' ','&nbsp;') + '&nbsp;ago' rescue object.modified_at %>
+                  </span>
+                </td>
+                <td class="arvados-uuid">
+                  <%= object.uuid %>
+                </td>
+                <td>
+                  <% if @object.editable? %>
+                    <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "You are about to remove #{object.class_for_display} #{object.uuid} from this folder.\n\nAre you sure?"}, class: 'btn btn-xs btn-default') do %>
+                      Remove <i class="fa fa-fw fa-ban"></i>
+                    <% end %>
                   <% end %>
-                <% end %>
-              </td>
-            </tr>
+                </td>
+              </tr>
             <% end %>
           </tbody>
           <thead>

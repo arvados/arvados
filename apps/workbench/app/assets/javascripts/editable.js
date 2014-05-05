@@ -12,11 +12,17 @@ $.fn.editable.defaults.send = 'always';
 $.fn.editable.defaults.params = function (params) {
     var a = {};
     var key = params.pk.key;
-    a.id = params.pk.id;
+    a.id = $(this).attr('data-object-uuid') || params.pk.id;
     a[key] = params.pk.defaults || {};
+    // Remove null values. Otherwise they get transmitted as empty
+    // strings in request params.
+    for (i in a[key]) {
+        if (a[key][i] == null)
+            delete a[key][i];
+    }
     a[key][params.name] = params.value;
-    if (params.pk._method) {
-        a['_method'] = params.pk._method;
+    if (!a.id) {
+        a['_method'] = 'post';
     } else {
         a['_method'] = 'put';
     }
@@ -35,20 +41,34 @@ $(document).
             console.log($(this));
         });
         $('.editable').
-            editable().
-            on('hidden', function(e, reason) {
-                if (reason == 'save') {
-                    var html = $(this).html();
-                    var uuid = $(this).attr('data-object-uuid');
-                    var attr = $(this).attr('data-name');
-                    var edited = this;
-                    if (uuid && attr) {
-                        $("[data-object-uuid='" + uuid + "']" +
-                          "[data-name='" + attr + "']").each(function() {
-                              if (this != edited)
-                                  $(this).html(html);
-                          });
+            editable({
+                success: function(response, newValue) {
+                    // If we just created a new object, stash its UUID
+                    // so we edit it next time instead of creating
+                    // another new object.
+                    if (!$(this).attr('data-object-uuid') && response.uuid) {
+                        $(this).attr('data-object-uuid', response.uuid);
                     }
+                    if (response.href) {
+                        $(this).editable('option', 'url', response.href);
+                    }
+                    return;
+                }
+            }).
+            on('hidden', function(e, reason) {
+                // After saving a new attribute, update the same
+                // information if it appears elsewhere on the page.
+                if (reason != 'save') return;
+                var html = $(this).html();
+                var uuid = $(this).attr('data-object-uuid');
+                var attr = $(this).attr('data-name');
+                var edited = this;
+                if (uuid && attr) {
+                    $("[data-object-uuid='" + uuid + "']" +
+                      "[data-name='" + attr + "']").each(function() {
+                          if (this != edited)
+                              $(this).html(html);
+                      });
                 }
             });
     });

@@ -95,7 +95,7 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object }
+      f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
         if request.method == 'GET'
           render
@@ -145,14 +145,7 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs
     @object.save!
-
-    respond_to do |f|
-      f.json { render json: @object }
-      f.html {
-        redirect_to(params[:return_to] || @object)
-      }
-      f.js { render }
-    end
+    show
   end
 
   def destroy
