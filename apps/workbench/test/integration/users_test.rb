@@ -65,7 +65,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       click_button "Submit"
     end
 
-    sleep 0.1
+    visit '/users'
 
     # verify that the new user showed up in the users page and find
     # the new user's UUID
