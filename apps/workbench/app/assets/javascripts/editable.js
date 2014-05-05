@@ -34,6 +34,23 @@ $(document).
         $('#editable-submit').click(function() {
             console.log($(this));
         });
+        $('.editable').
+            editable().
+            on('hidden', function(e, reason) {
+                if (reason == 'save') {
+                    var html = $(this).html();
+                    var uuid = $(this).attr('data-object-uuid');
+                    var attr = $(this).attr('data-name');
+                    var edited = this;
+                    if (uuid && attr) {
+                        $("[data-object-uuid='" + uuid + "']" +
+                          "[data-name='" + attr + "']").each(function() {
+                              if (this != edited)
+                                  $(this).html(html);
+                          });
+                    }
+                }
+            });
     });
 
 $.fn.editabletypes.text.defaults.tpl = '<input type="text" name="editable-text">'

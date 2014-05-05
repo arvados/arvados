@@ -149,7 +149,7 @@
                   <span class="glyphicon glyphicon-arrow-right"></span>
                 </li>
                 <li>
-                  <%= link_to_if_arvados_object @object %>
+                  <%= link_to_if_arvados_object @object, {friendly_name: true}, {data: {object_uuid: @object.andand.uuid, name: 'name'}} %>
                 </li>
                 <li style="padding: 14px 0 14px">
                   <%= form_tag do |f| %>

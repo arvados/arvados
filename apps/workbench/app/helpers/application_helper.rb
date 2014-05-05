@@ -162,6 +162,7 @@ module ApplicationHelper
       "data-type" => input_type,
       "data-title" => "Update #{attr.gsub '_', ' '}",
       "data-name" => attr,
+      "data-object-uuid" => object.uuid,
       :class => "editable"
     }.merge(htmloptions).merge(ajax_options)
   end

@@ -29,7 +29,6 @@ jQuery(function($){
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         }
     });
-    $('.editable').editable();
     $('[data-toggle=tooltip]').tooltip();
 
     $('.expand-collapse-row').on('click', function(event) {

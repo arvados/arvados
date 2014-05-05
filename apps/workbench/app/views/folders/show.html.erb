@@ -3,7 +3,7 @@
     <div class="panel panel-info">
       <div class="panel-heading">
 	<h3 class="panel-title">
-	  <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New folder" } %>
+	  <%= render_editable_attribute @object, 'name', nil, {data: {emptytext: "New folder"}} %>
 	</h3>
       </div>
       <div class="panel-body">
@@ -128,8 +128,8 @@
               <col width="30%" />
               <col width="15%" />
               <col width="15%" />
-              <col width="24%" />
-              <col width="5%" />
+              <col width="20%" />
+              <col width="8%" />
             </colgroup>
             <% @objects_and_names.each do |object, name_link| %>
             <tr>
@@ -140,7 +140,7 @@
                 <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
               </td>
               <td>
-                <%= render_editable_attribute name_link, 'name', nil, { 'data-emptytext' => "Unnamed #{object.class_for_display}" } %>
+                <%= render_editable_attribute name_link, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
               </td>
               <td>
                 <%= object.content_summary %>
