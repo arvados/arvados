@@ -104,6 +104,20 @@ func TestGetBlockCorrupt(t *testing.T) {
 	}
 }
 
+/*
+// TestGetBlockPermissionOK
+//     When enforce_permissions is set, GetBlock correctly
+//     handles a request with a valid permission signature.
+func TestGetBlockPermissionOK(t *testing.T) {
+	defer teardown()
+
+	enforce_permissions = true
+	PermissionSecret =
+	// Create two test Keep volumes and store a block.
+
+}
+*/
+
 // ========================================
 // PutBlock tests
 // ========================================
@@ -412,5 +426,6 @@ func MakeTestVolumeManager(num_volumes int) VolumeManager {
 //     Cleanup to perform after each test.
 //
 func teardown() {
+	PermissionSecret = nil
 	KeepVM = nil
 }

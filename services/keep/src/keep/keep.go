@@ -49,13 +49,15 @@ type KeepError struct {
 }
 
 var (
-	CollisionError = &KeepError{400, "Collision"}
-	MD5Error       = &KeepError{401, "MD5 Failure"}
-	CorruptError   = &KeepError{402, "Corruption"}
-	NotFoundError  = &KeepError{404, "Not Found"}
-	GenericError   = &KeepError{500, "Fail"}
-	FullError      = &KeepError{503, "Full"}
-	TooLongError   = &KeepError{504, "Too Long"}
+	CollisionError  = &KeepError{400, "Collision"}
+	MD5Error        = &KeepError{401, "MD5 Failure"}
+	PermissionError = &KeepError{401, "Permission denied"}
+	CorruptError    = &KeepError{402, "Corruption"}
+	ExpiredError    = &KeepError{403, "Expired permission signature"}
+	NotFoundError   = &KeepError{404, "Not Found"}
+	GenericError    = &KeepError{500, "Fail"}
+	FullError       = &KeepError{503, "Full"}
+	TooLongError    = &KeepError{504, "Too Long"}
 )
 
 func (e *KeepError) Error() string {
@@ -86,14 +88,28 @@ func main() {
 	//    by looking at currently mounted filesystems for /keep top-level
 	//    directories.
 
-	var listen, volumearg string
+	var listen, permission_key, volumearg string
 	var serialize_io bool
-	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
+	flag.StringVar(
+		&listen,
+		"listen",
+		DEFAULT_ADDR,
 		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
-	flag.StringVar(&volumearg, "volumes", "",
-		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
-	flag.BoolVar(&serialize_io, "serialize", false,
+	flag.StringVar(
+		&permission_key,
+		"permission-key",
+		"",
+		"Secret key to use for generating and verifying permission signatures.")
+	flag.BoolVar(
+		&serialize_io,
+		"serialize",
+		false,
 		"If set, all read and write operations on local Keep volumes will be serialized.")
+	flag.StringVar(
+		&volumearg,
+		"volumes",
+		"",
+		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
 	flag.Parse()
 
 	// Look for local keep volumes.
@@ -121,6 +137,11 @@ func main() {
 
 	if len(goodvols) == 0 {
 		log.Fatal("could not find any keep volumes")
+	}
+
+	// Initialize permission key.
+	if permission_key != "" {
+		PermissionSecret = []byte(permission_key)
 	}
 
 	// Start a round-robin VolumeManager with the volumes we have found.
@@ -179,6 +200,13 @@ func FindKeepVolumes() []string {
 func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
+	// Find an API token, if present.
+	var api_token string
+	if auth, ok := req.Header["Authorization"]; ok {
+		if strings.StartsWith(auth[0], "OAuth ") {
+			api_token = auth[0][6:]
+		}
+	}
 	block, err := GetBlock(hash)
 	if err != nil {
 		http.Error(w, err.Error(), 404)
@@ -314,6 +342,13 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 }
 
 func GetBlock(hash string) ([]byte, error) {
+	// Check the permission signature of this request if necessary.
+	if PermissionSecret != nil {
+		if !VerifySignature(hash) {
+			return nil, PermissionError
+		}
+	}
+
 	// Attempt to read the requested hash from a keep volume.
 	for _, vol := range KeepVM.Volumes() {
 		if buf, err := vol.Get(hash); err != nil {
