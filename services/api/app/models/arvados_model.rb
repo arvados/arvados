@@ -176,7 +176,7 @@ class ArvadosModel < ActiveRecord::Base
         # current_user is, or has :write permission on, the new owner
       else
         logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
-        return false
+        raise PermissionDeniedError
       end
     end
     if new_record?
