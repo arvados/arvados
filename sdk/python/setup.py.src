@@ -27,5 +27,6 @@ setup(name='arvados-python-client',
         'google-api-python-client',
         'httplib2',
         'urllib3',
+        'ws4py'
         ],
       zip_safe=False)
