@@ -20,7 +20,7 @@ with "--".
 """)
     parser.add_argument('mountpoint', type=str, help="""Mount point.""")
     parser.add_argument('--collection', type=str, help="""Mount only the specified collection at the mount point.""")
-    parser.add_argument('--tags', type=str, help="""Mount as a virtual directory consisting of subdirectories representing tagged
+    parser.add_argument('--tags', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing tagged
 collections on the server.""")
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
@@ -32,10 +32,12 @@ collections on the server.""")
     # Create the request handler
     operations = Operations(os.getuid(), os.getgid())
 
-    if args.collection != None:
+    if args.tags:
+        api = arvados.api('v1')
+        e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+    elif args.collection != None:
         # Set up the request handler with the collection at the root
-        e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
-        operations.inodes.load_collection(e, arvados.CollectionReader(arvados.Keep.get(args.collection)))
+        e = operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
     else:
         # Set up the request handler with the 'magic directory' at the root
         operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))

@@ -22,9 +22,6 @@ def find_server_pid():
     if not good_pid:
         raise Exception("could not find API server Rails pid")
 
-    os.environ["ARVADOS_API_HOST"] = "localhost:3001"
-    os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
-
     return server_pid
 
 def run():
@@ -33,8 +30,10 @@ def run():
     os.environ["RAILS_ENV"] = "test"
     subprocess.call(['bundle', 'exec', 'rake', 'db:test:load'])
     subprocess.call(['bundle', 'exec', 'rake', 'db:fixtures:load'])
-    subprocess.call(['bundle', 'exec', 'rails', 'server', '-d'])
+    subprocess.call(['bundle', 'exec', 'rails', 'server', '-d', '-p3001'])
     find_server_pid()
+    os.environ["ARVADOS_API_HOST"] = "localhost:3001"
+    os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
     os.chdir(cwd)
 
 def stop():

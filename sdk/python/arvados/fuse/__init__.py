@@ -22,7 +22,10 @@ class Directory(object):
     '''
 
     def __init__(self, parent_inode):
+        '''parent_inode is the integer inode number'''
         self.inode = None
+        if not isinstance(parent_inode, int):
+            raise Exception("parent_inode should be an int")
         self.parent_inode = parent_inode
         self._entries = {}
         self.stale = True
@@ -129,10 +132,11 @@ class TagsDirectory(Directory):
         oldentries = self._entries
         self._entries = {}
         for n in tags['items']:
+            n = n['name']
             if n in oldentries:
                 self._entries[n] = oldentries[n]
             else:
-                self._entries[n] = self.inodes.add_entry(TagDirectory(self, inodes, api, n))
+                self._entries[n] = self.inodes.add_entry(TagDirectory(self.inode, self.inodes, self.api, n))
         self.stale = False
 
 
@@ -155,10 +159,11 @@ class TagDirectory(Directory):
         oldentries = self._entries
         self._entries = {}
         for c in collections['items']:
+            n = c['head_uuid']
             if n in oldentries:
                 self._entries[n] = oldentries[n]
             else:
-                self._entries[n] = self.inodes.add_entry(CollectionDirectory(self, inodes, api, n['head_uuid']))
+                self._entries[n] = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, n))
         self.stale = False
 
 
@@ -345,7 +350,8 @@ class Operations(llfuse.Operations):
         if p.parent_inode in self.inodes:
             parent = self.inodes[p.parent_inode]
         else:
-            parent = None
+            raise llfuse.FUSEError(errno.EIO)
+
         self._filehandles[fh] = FileHandle(fh, [('.', p), ('..', parent)] + list(p.items()))
         return fh
 

@@ -12,10 +12,24 @@ import glob
 import run_test_server
 
 
-class FuseMountTest(unittest.TestCase):
+class MountTestBase(unittest.TestCase):
     def setUp(self):
         self.keeptmp = tempfile.mkdtemp()
         os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
+        self.mounttmp = tempfile.mkdtemp()
+
+    def tearDown(self):
+        # llfuse.close is buggy, so use fusermount instead.
+        #llfuse.close(unmount=True)
+        subprocess.call(["fusermount", "-u", self.mounttmp])
+
+        os.rmdir(self.mounttmp)
+        shutil.rmtree(self.keeptmp)
+
+
+class FuseMountTest(MountTestBase):
+    def setUp(self):
+        super(FuseMountTest, self).setUp()
 
         cw = arvados.CollectionWriter()
 
@@ -48,11 +62,7 @@ class FuseMountTest(unittest.TestCase):
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        #e = operations.inodes.add_entry(fuse.Directory(llfuse.ROOT_INODE))
-        #operations.inodes.load_collection(e, arvados.CollectionReader(arvados.Keep.get(self.testcollection)))
         e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.testcollection))
-
-        self.mounttmp = tempfile.mkdtemp()
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -92,18 +102,9 @@ class FuseMountTest(unittest.TestCase):
                 self.assertEqual(f.read(), v)
 
 
-    def tearDown(self):
-        # llfuse.close is buggy, so use fusermount instead.
-        #llfuse.close(unmount=True)
-        subprocess.call(["fusermount", "-u", self.mounttmp])
-
-        os.rmdir(self.mounttmp)
-        shutil.rmtree(self.keeptmp)
-
-class FuseMagicTest(unittest.TestCase):
+class FuseMagicTest(MountTestBase):
     def setUp(self):
-        self.keeptmp = tempfile.mkdtemp()
-        os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
+        super(FuseMagicTest, self).setUp()
 
         cw = arvados.CollectionWriter()
 
@@ -147,20 +148,54 @@ class FuseMagicTest(unittest.TestCase):
                 self.assertEqual(f.read(), v)
 
 
-    def tearDown(self):
-        # llfuse.close is buggy, so use fusermount instead.
-        #llfuse.close(unmount=True)
-        subprocess.call(["fusermount", "-u", self.mounttmp])
-
-        os.rmdir(self.mounttmp)
-        shutil.rmtree(self.keeptmp)
-
-class FuseTagsTest(unittest.TestCase):
+class FuseTagsTest(MountTestBase):
     def setUp(self):
+        super(FuseTagsTest, self).setUp()
+
+        cw = arvados.CollectionWriter()
+
+        cw.start_new_file('foo')
+        cw.write("foo")
+
+        self.testcollection = cw.finish()
+
         run_test_server.run()
 
     def runTest(self):
         run_test_server.authorize_with("admin")
+        api = arvados.api('v1')
+
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertEqual(d1, ['foo_tag'])
+
+        d2 = os.listdir(os.path.join(self.mounttmp, 'foo_tag'))
+        d2.sort()
+        self.assertEqual(d2, ['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'])
+
+        d3 = os.listdir(os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'))
+        d3.sort()
+        self.assertEqual(d3, ['foo'])
+
+        files = {}
+        files[os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45', 'foo')] = 'foo'
+
+        for k, v in files.items():
+            with open(os.path.join(self.mounttmp, k)) as f:
+                self.assertEqual(f.read(), v)
+
 
     def tearDown(self):
         run_test_server.stop()
+
+        super(FuseTagsTest, self).tearDown()
