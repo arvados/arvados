@@ -28,6 +28,12 @@ class Arvados::V1::RepositoriesController < ApplicationController
           perms << {name: perm.name, user_uuid: perm.tail_uuid}
         end
       end
+      # Owner of the repository, and all admins, can RW
+      ([repo.owner_uuid] + @users.keys).each do |user_uuid|
+        %w(can_read can_write).each do |name|
+          perms << {name: name, user_uuid: user_uuid}
+        end
+      end
       perms.each do |perm|
         user_uuid = perm[:user_uuid]
         @user_aks[user_uuid] = @users[user_uuid].andand.authorized_keys.andand.

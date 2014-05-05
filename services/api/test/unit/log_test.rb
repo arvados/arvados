@@ -65,13 +65,6 @@ class LogTest < ActiveSupport::TestCase
     end
   end
 
-  def set_user_from_auth(auth_name)
-    client_auth = api_client_authorizations(auth_name)
-    Thread.current[:api_client_authorization] = client_auth
-    Thread.current[:api_client] = client_auth.api_client
-    Thread.current[:user] = client_auth.user
-  end
-
   test "creating a user makes a log" do
     set_user_from_auth :admin_trustedclient
     u = User.new(first_name: "Log", last_name: "Test")
