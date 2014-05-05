@@ -56,6 +56,8 @@ navbar:
       - sdk/perl/index.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
+    - Java:
+      - sdk/java/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
   api:

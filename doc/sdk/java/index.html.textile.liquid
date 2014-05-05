@@ -1,0 +1,130 @@
+---
+layout: default
+navsection: sdk
+navmenu: Java
+title: "Java SDK"
+
+...
+
+The Java SDK provides a generic set of wrappers so you can make API calls in java.
+
+h3. Introdution
+
+* The Java SDK requires Java 6 or later
+  
+* The Java SDK is implemented as a maven project. Hence, you would need a working
+maven environment to be able to build the source code. If you do not have maven setup,
+you may find the following link useful. 
+
+<code class="userinput">http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html</code>
+
+* In this document $ARVADOS_HOME is used to refer to the directory where
+arvados code is cloned in your system. For ex: $ARVADOS_HOME = $HOME/arvados
+
+
+h3. Setting up the environment
+
+* The SDK requires a running Arvados API server. The information about the
+  	  API server needs to be passed to the SDK using environment variables or
+  	  during the construction of the Arvados instance.
+  	  
+* Below are the details about the environment variables and example setup
+  	  statements for a .bashrc file.
+  	
+<notextile>
+<pre>
+ARVADOS_API_TOKEN: API client token to be used to authorize with API server.
+$ <code class="userinput">export ARVADOS_API_TOKEN=z40gplmla6i58rsg96jhg5u41ewdl5rj4g1py2s6e2lsc3</code>
+
+ARVADOS_API_HOST: Host name of the API server.
+$ <code class="userinput">export ARVADOS_API_HOST=localhost:3001</code>
+
+ARVADOS_API_HOST_INSECURE: Set this to true if you are using self-signed
+certificates and would like to bypass certificate validations.
+$ <code class="userinput">export ARVADOS_API_HOST_INSECURE=true</code>
+</pre>
+</notextile>
+
+
+h3. Building the Arvados SDK
+
+<notextile>
+<pre>
+$ <code class="userinput">cd $ARVADOS_HOME/sdk/java</code>
+
+$ <code class="userinput">mvn clean package</code>
+  This will generate arvados sdk jar file in the target directory
+</pre>
+</notextile>
+
+
+h3. Implementing your code to use SDK
+
+<code class="userinput">$ARVADOS_HOME/sdk/java/ArvadosSDKJavaExample.java</code> serves as a sample
+implementation using the SDK.
+
+Please use this file to see how you would want use the SDK from your java program.
+
+Also, refer to <code class="userinput">$ARVADOS_HOME/arvados/sdk/java/src/test/java/org/arvados/sdk/java/ArvadosTest.java</code>
+for more sample API invocation examples.
+
+Below are the steps to compile and run this java program.
+
+* <code class="userinput">ArvadosSDKJavaExample.java</code> creates an instance of Arvados SDK class and uses it to
+make various <code class="userinput">call</code> requests.
+
+* To compile ArvadosSDKJavaExample.java
+<notextile>
+<pre>
+$ <code class="userinput">javac -cp $ARVADOS_HOME/sdk/java/target/arvados-sdk-1.0-jar-with-dependencies.jar \
+ArvadosSDKJavaExample.java</code>
+This results in the generation of the ArvadosSDKJavaExample.class file
+in the same directory as the java file
+</pre>
+</notextile>
+
+* To run the sample
+<notextile>
+<pre>
+$ <code class="userinput">java -cp .:$ARVADOS_HOME/sdk/java/target/arvados-sdk-1.0-jar-with-dependencies.jar \
+ArvadosSDKJavaExample</code>
+</pre>
+</notextile>
+
+
+h3. Viewing and Managing SDK logging
+
+* SDK uses log4j logging
+
+* The default location of the log file is
+  <code class="userinput">$ARVADOS_HOME/sdk/java/log/arvados_sdk_java.log</code>
+
+* Update <code class="userinput">log4j.properties</code> file to change name and location of the log file.
+
+<notextile>
+<pre>
+<code class="userinput">$ nano $ARVADOS_HOME/sdk/java/src/main/resources/log4j.properties</code>
+and modify the <code class="userinput">log4j.appender.fileAppender.File</code> property as needed.
+
+Rebuild the SDK:
+<code class="userinput">$ mvn clean package</code>
+</pre>
+</notextile>
+
+
+h3. Using the SDK in eclipse
+
+* To develop in eclipse, you can use the provided <code class="userinput">eclipse project</code>
+
+* Install <code class="userinput">m2eclipse</code> plugin in your eclipse
+* Set <code class="userinput">M2_REPO</code> in eclipse to your <code class="userinput">.m2/repository</code> directory
+
+* Open the SDK project in eclipse
+<notextile>
+<pre>
+File -> Import -> Existing Projects into Workspace -> Next -> Browse
+and select $ARVADOS_HOME/sdk/java
+</pre>
+</notextile>
+
+
