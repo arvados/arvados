@@ -266,7 +266,8 @@ class ArvadosBase < ActiveRecord::Base
   def editable?
     (current_user and current_user.is_active and
      (current_user.is_admin or
-      current_user.uuid == self.owner_uuid))
+      current_user.uuid == self.owner_uuid or
+      new_record?))
   end
 
   def attribute_editable?(attr)
@@ -277,7 +278,9 @@ class ArvadosBase < ActiveRecord::Base
     elsif "uuid owner_uuid".index(attr.to_s) or current_user.is_admin
       current_user.is_admin
     else
-      current_user.uuid == self.owner_uuid or current_user.uuid == self.uuid
+      current_user.uuid == self.owner_uuid or
+        current_user.uuid == self.uuid or
+        new_record?
     end
   end
 

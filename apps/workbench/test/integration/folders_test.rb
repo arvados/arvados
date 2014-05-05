@@ -8,8 +8,7 @@ class FoldersTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = Capybara.javascript_driver
     visit page_with_token 'active', '/'
     find('nav a', text: 'Folders').click
-    find('.side-nav', text: 'A Folder').
-      find('a,button', text: 'Show').
+    find('.side-nav a,button', text: 'A Folder').
       click
     within('.panel', text: api_fixture('groups')['afolder']['name']) do
       find('span', text: api_fixture('groups')['afolder']['name']).click
@@ -26,8 +25,8 @@ class FoldersTest < ActionDispatch::IntegrationTest
     folder_uuid = api_fixture('groups')['afolder']['uuid']
     specimen_uuid = api_fixture('specimens')['owned_by_afolder_with_no_name_link']['uuid']
     visit page_with_token 'active', '/folders/' + folder_uuid
-    within('.panel', text: 'Contents') do
-      find('.tr[data-object-uuid="'+specimen_uuid+'"] .editable[data-name="name"]').click
+    within('.panel tr', text: specimen_uuid) do
+      find(".editable[data-name='name']").click
       find('.editable-input input').set('Now I have a name.')
       find('.glyphicon-ok').click
       find('.editable', text: 'Now I have a name.').click

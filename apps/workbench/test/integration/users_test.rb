@@ -166,7 +166,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       click
 
     # Verify that is_active is set
-    click_link 'Attributes'
+    find('a,button', text: 'Attributes').click
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "true", text, "Expected user's is_active to be true"
