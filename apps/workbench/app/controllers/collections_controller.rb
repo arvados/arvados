@@ -1,6 +1,7 @@
 class CollectionsController < ApplicationController
-  skip_before_filter :find_object_by_uuid, :only => [:provenance]
-  skip_before_filter :check_user_agreements, :only => [:show_file]
+  skip_around_filter :thread_with_mandatory_api_token, only: [:show_file]
+  skip_before_filter :find_object_by_uuid, only: [:provenance, :show_file]
+  skip_before_filter :check_user_agreements, only: [:show_file]
 
   def show_pane_list
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
@@ -87,10 +88,21 @@ class CollectionsController < ApplicationController
   end
 
   def show_file
-    opts = params.merge(arvados_api_token: Thread.current[:arvados_api_token])
-    if r = params[:file].match(/(\.\w+)/)
-      ext = r[1]
+    # We pipe from arv-get to send the file to the user.  Before we start it,
+    # we ask the API server if the file actually exists.  This serves two
+    # purposes: it lets us return a useful status code for common errors, and
+    # helps us figure out which token to provide to arv-get.
+    coll = nil
+    usable_token = find_usable_token do
+      coll = Collection.find(params[:uuid])
     end
+    if usable_token.nil?
+      return  # Response already rendered.
+    elsif params[:file].nil? or not file_in_collection?(coll, params[:file])
+      return render_not_found
+    end
+    opts = params.merge(arvados_api_token: usable_token)
+    ext = File.extname(params[:file])
     self.response.headers['Content-Type'] =
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
     self.response.headers['Content-Length'] = params[:size] if params[:size]
@@ -161,6 +173,53 @@ class CollectionsController < ApplicationController
   end
 
   protected
+
+  def find_usable_token
+    # Iterate over every token available to make it the current token and
+    # yield the given block.
+    # If the block succeeds, return the token it used.
+    # Otherwise, render an error response based on the most specific
+    # error we encounter, and return nil.
+    read_tokens = [Thread.current[:arvados_api_token]].compact
+    if params[:reader_tokens].is_a? Array
+      read_tokens += params[:reader_tokens]
+    end
+    most_specific_error = [401]
+    read_tokens.each do |api_token|
+      using_specific_api_token(api_token) do
+        begin
+          yield
+          return api_token
+        rescue ArvadosApiClient::NotLoggedInException => error
+          status = 401
+        rescue => error
+          status = (error.message =~ /\[API: (\d+)\]$/) ? $1.to_i : nil
+          raise unless [401, 403, 404].include?(status)
+        end
+        if status >= most_specific_error.first
+          most_specific_error = [status, error]
+        end
+      end
+    end
+    case most_specific_error.shift
+    when 401, 403
+      redirect_to_login
+    when 404
+      render_not_found(*most_specific_error)
+    end
+    return nil
+  end
+
+  def file_in_collection?(collection, filename)
+    def normalized_path(part_list)
+      File.join(part_list).sub(%r{^\./}, '')
+    end
+    target = normalized_path([filename])
+    collection.files.each do |file_spec|
+      return true if (normalized_path(file_spec[0, 2]) == target)
+    end
+    false
+  end
 
   def file_enumerator(opts)
     FileStreamer.new opts

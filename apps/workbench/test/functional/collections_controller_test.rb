@@ -88,6 +88,47 @@ class CollectionsControllerTest < ActionController::TestCase
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:spectator)
     get(:show_file, params, sess)
-    assert_includes([403, 422], @response.code.to_i)
+    assert_includes([403, 404], @response.code.to_i)
+  end
+
+  test "trying to get a nonexistent file from Keep returns a 404" do
+    params = collection_params(:foo_file, 'gone')
+    sess = session_for(:admin)
+    get(:show_file, params, sess)
+    assert_response 404
+  end
+
+  test "getting a file from Keep with a good reader token" do
+    params = collection_params(:foo_file, 'foo')
+    read_token = api_fixture('api_client_authorizations')['active']['api_token']
+    params[:reader_tokens] = [read_token]
+    get(:show_file, params)
+    assert_response :success
+    assert_equal(expected_contents(params, read_token), @response.body,
+                 "failed to get a correct file from Keep using a reader token")
+    assert_not_equal(read_token, session[:arvados_api_token],
+                     "using a reader token set the session's API token")
+  end
+
+  test "trying to get from Keep with an unscoped reader token prompts login" do
+    params = collection_params(:foo_file, 'foo')
+    read_token =
+      api_fixture('api_client_authorizations')['active_noscope']['api_token']
+    params[:reader_tokens] = [read_token]
+    get(:show_file, params)
+    assert_response :redirect
+  end
+
+  test "can get a file with an unpermissioned auth but in-scope reader token" do
+    params = collection_params(:foo_file, 'foo')
+    sess = session_for(:expired)
+    read_token = api_fixture('api_client_authorizations')['active']['api_token']
+    params[:reader_tokens] = [read_token]
+    get(:show_file, params, sess)
+    assert_response :success
+    assert_equal(expected_contents(params, read_token), @response.body,
+                 "failed to get a correct file from Keep using a reader token")
+    assert_not_equal(read_token, session[:arvados_api_token],
+                     "using a reader token set the session's API token")
   end
 end
