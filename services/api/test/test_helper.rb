@@ -2,7 +2,11 @@ ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]
   begin
     require 'simplecov'
-    SimpleCov.start
+    SimpleCov.start do
+      add_filter '/test/'
+      add_filter 'initializers/secret_token'
+      add_filter 'initializers/omniauth'
+    end
   rescue Exception => e
     $stderr.puts "SimpleCov unavailable (#{e}). Proceeding without."
   end
