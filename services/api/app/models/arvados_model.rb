@@ -144,6 +144,8 @@ class ArvadosModel < ActiveRecord::Base
           if x == uuid
             # Test for cycles with the new version, not the DB contents
             x = owner_uuid
+          elsif !owner_class.respond_to? :find_by_uuid
+            raise ActiveRecord::RecordNotFound.new
           else
             x = owner_class.find_by_uuid(x).owner_uuid
           end
