@@ -5,6 +5,7 @@ import signal
 import yaml
 import sys
 import argparse
+import arvados.config
 
 ARV_API_SERVER_DIR = '../../services/api'
 SERVER_PID_PATH = 'tmp/pids/server.pid'
@@ -71,7 +72,7 @@ def fixture(fix):
 
 def authorize_with(token):
     '''token is the symbolic name of the token from the api_client_authorizations fixture'''
-    os.environ["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[token]["api_token"]
+    arvados.config.settings()["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[token]["api_token"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

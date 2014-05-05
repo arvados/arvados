@@ -74,19 +74,19 @@ class FuseMountTest(MountTestBase):
         # now check some stuff
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertEqual(d1, ['dir1', 'dir2', 'thing1.txt', 'thing2.txt'])
+        self.assertEqual(['dir1', 'dir2', 'thing1.txt', 'thing2.txt'], d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'dir1'))
         d2.sort()
-        self.assertEqual(d2, ['thing3.txt', 'thing4.txt'])
+        self.assertEqual(['thing3.txt', 'thing4.txt'], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'dir2'))
         d3.sort()
-        self.assertEqual(d3, ['dir3', 'thing5.txt', 'thing6.txt'])
+        self.assertEqual(['dir3', 'thing5.txt', 'thing6.txt'], d3)
 
         d4 = os.listdir(os.path.join(self.mounttmp, 'dir2/dir3'))
         d4.sort()
-        self.assertEqual(d4, ['thing7.txt', 'thing8.txt'])
+        self.assertEqual(['thing7.txt', 'thing8.txt'], d4)
 
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',
@@ -99,7 +99,7 @@ class FuseMountTest(MountTestBase):
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, k)) as f:
-                self.assertEqual(f.read(), v)
+                self.assertEqual(v, f.read())
 
 
 class FuseMagicTest(MountTestBase):
@@ -130,22 +130,22 @@ class FuseMagicTest(MountTestBase):
         # now check some stuff
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertEqual(d1, [])
+        self.assertEqual([], d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, self.testcollection))
         d2.sort()
-        self.assertEqual(d2, ['thing1.txt'])
+        self.assertEqual(['thing1.txt'], d2)
 
         d3 = os.listdir(self.mounttmp)
         d3.sort()
-        self.assertEqual(d3, [self.testcollection])
+        self.assertEqual([self.testcollection], d3)
 
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, k)) as f:
-                self.assertEqual(f.read(), v)
+                self.assertEqual(v, f.read())
 
 
 class FuseTagsTest(MountTestBase):
@@ -177,25 +177,99 @@ class FuseTagsTest(MountTestBase):
 
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertEqual(d1, ['foo_tag'])
+        self.assertEqual(['foo_tag'], d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'foo_tag'))
         d2.sort()
-        self.assertEqual(d2, ['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'])
+        self.assertEqual(['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'))
         d3.sort()
-        self.assertEqual(d3, ['foo'])
+        self.assertEqual(['foo'], d3)
 
         files = {}
         files[os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45', 'foo')] = 'foo'
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, k)) as f:
-                self.assertEqual(f.read(), v)
+                self.assertEqual(v, f.read())
 
 
     def tearDown(self):
         run_test_server.stop()
 
         super(FuseTagsTest, self).tearDown()
+
+class FuseTagsUpdateTestBase(MountTestBase):
+
+    def runRealTest(self):
+        run_test_server.authorize_with("admin")
+        api = arvados.api('v1')
+
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api, poll_time=1))
+
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertEqual(d1, ['foo_tag'])
+
+        api.links().create(body={'link': {
+            'head_uuid': 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+            'link_class': 'tag',
+            'name': 'bar_tag'
+        }}).execute()
+
+        time.sleep(1)
+
+        d2 = os.listdir(self.mounttmp)
+        d2.sort()
+        self.assertEqual(['bar_tag', 'foo_tag'], d2)
+
+        d3 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d3.sort()
+        self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d3)
+
+        api.links().create(body={'link': {
+            'head_uuid': 'ea10d51bcf88862dbcc36eb292017dfd+45',
+            'link_class': 'tag',
+            'name': 'bar_tag'
+        }}).execute()
+
+        time.sleep(1)
+
+        d4 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d4.sort()
+        self.assertEqual(['ea10d51bcf88862dbcc36eb292017dfd+45', 'fa7aeb5140e2848d39b416daeef4ffc5+45'], d4)
+
+
+class FuseTagsUpdateTestWebsockets(FuseTagsUpdateTestBase):
+    def setUp(self):
+        super(FuseTagsUpdateTestWebsockets, self).setUp()
+        run_test_server.run(True)
+
+    def runTest(self):
+        self.runRealTest()
+
+    def tearDown(self):
+        run_test_server.stop(True)
+        super(FuseTagsUpdateTestWebsockets, self).tearDown()
+
+
+class FuseTagsUpdateTestPoll(FuseTagsUpdateTestBase):
+    def setUp(self):
+        super(FuseTagsUpdateTestPoll, self).setUp()
+        run_test_server.run(False)
+
+    def runTest(self):
+        self.runRealTest()
+
+    def tearDown(self):
+        run_test_server.stop(False)
+        super(FuseTagsUpdateTestPoll, self).tearDown()

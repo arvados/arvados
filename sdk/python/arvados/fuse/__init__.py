@@ -11,6 +11,7 @@ import stat
 import threading
 import arvados
 import pprint
+import arvados.events
 
 from time import time
 from llfuse import FUSEError
@@ -28,7 +29,10 @@ class Directory(object):
             raise Exception("parent_inode should be an int")
         self.parent_inode = parent_inode
         self._entries = {}
-        self.stale = True
+        self._stale = True
+        self._poll = False
+        self._last_update = time()
+        self._poll_time = 60
 
     #  Overriden by subclasses to implement logic to update the entries dict
     #  when the directory is stale
@@ -37,7 +41,19 @@ class Directory(object):
 
     # Mark the entries dict as stale
     def invalidate(self):
-        self.stale = True
+        self._stale = True
+
+    # Test if the entries dict is stale
+    def stale(self):
+        if self._stale:
+            return True
+        if self._poll:
+            return (self._last_update + self._poll_time) < time()
+        return False
+
+    def fresh(self):
+        self._stale = False
+        self._last_update = time()
 
     # Only used when computing the size of the disk footprint of the directory
     # (stub)
@@ -45,22 +61,22 @@ class Directory(object):
         return 0
 
     def __getitem__(self, item):
-        if self.stale:
+        if self.stale():
             self.update()
         return self._entries[item]
 
     def items(self):
-        if self.stale:
+        if self.stale():
             self.update()
         return self._entries.items()
 
     def __iter__(self):
-        if self.stale:
+        if self.stale():
             self.update()
         return self._entries.iterkeys()
 
     def __contains__(self, k):
-        if self.stale:
+        if self.stale():
             self.update()
         return k in self._entries
 
@@ -84,8 +100,7 @@ class CollectionDirectory(Directory):
                     cwd = cwd._entries[part]
             for k, v in s.files().items():
                 cwd._entries[k] = self.inodes.add_entry(File(cwd.inode, v))
-        self.stale = False
-
+        self.fresh()
 
 class MagicDirectory(Directory):
     '''A special directory that logically contains the set of all extant keep
@@ -122,10 +137,21 @@ class MagicDirectory(Directory):
 class TagsDirectory(Directory):
     '''A special directory that contains as subdirectories all tags visible to the user.'''
 
-    def __init__(self, parent_inode, inodes, api):
+    def __init__(self, parent_inode, inodes, api, poll_time=60):
         super(TagsDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
+        try:
+            arvados.events.subscribe(self.api, [['object_uuid', 'is_a', 'arvados#link']], lambda ev: self.invalidate())
+        except:
+            self._poll = True
+            self._poll_time = poll_time
+
+    def invalidate(self):
+        with llfuse.lock:
+            super(TagsDirectory, self).invalidate()
+            for a in self._entries:
+                self._entries[a].invalidate()
 
     def update(self):
         tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = 'name').execute()
@@ -136,8 +162,8 @@ class TagsDirectory(Directory):
             if n in oldentries:
                 self._entries[n] = oldentries[n]
             else:
-                self._entries[n] = self.inodes.add_entry(TagDirectory(self.inode, self.inodes, self.api, n))
-        self.stale = False
+                self._entries[n] = self.inodes.add_entry(TagDirectory(self.inode, self.inodes, self.api, n, poll=self._poll, poll_time=self._poll_time))
+        self.fresh()
 
 
 class TagDirectory(Directory):
@@ -145,11 +171,13 @@ class TagDirectory(Directory):
     to the user that are tagged with a particular tag.
     '''
 
-    def __init__(self, parent_inode, inodes, api, tag):
+    def __init__(self, parent_inode, inodes, api, tag, poll=False, poll_time=60):
         super(TagDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
         self.tag = tag
+        self._poll = poll
+        self._poll_time = poll_time
 
     def update(self):
         collections = self.api.links().list(filters=[['link_class', '=', 'tag'],
@@ -164,8 +192,7 @@ class TagDirectory(Directory):
                 self._entries[n] = oldentries[n]
             else:
                 self._entries[n] = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, n))
-        self.stale = False
-
+        self.fresh()
 
 class File(object):
     '''Wraps a StreamFileReader for use by Directory.'''
