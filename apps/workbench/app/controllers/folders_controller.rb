@@ -68,6 +68,7 @@ class FoldersController < ApplicationController
 
   def create
     @new_resource_attrs = (params['folder'] || {}).merge(group_class: 'folder')
+    @new_resource_attrs[:name] ||= 'New folder'
     super
   end
 end

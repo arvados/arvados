@@ -394,7 +394,7 @@ class ApplicationController < ActionController::Base
       @top_level_folders ||= Group.
         filter([['group_class','=','folder'],
                 ['owner_uuid','=',current_user.uuid]]).
-        sort_by(&:name)
+        sort_by { |x| x.name || '' }
     end
   end
 
