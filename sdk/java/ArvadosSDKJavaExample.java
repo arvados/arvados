@@ -43,20 +43,6 @@ public class ArvadosSDKJavaExample {
     response = arv.call("users", "get", params);
     System.out.println("Arvados users.get:\n" + response);
 
-    // Make a users.create call
-    System.out.println("Making a users.create call.");
-    
-    params = new HashMap<String, Object>();
-    params.put("user", "{}");
-    response = arv.call("users", "create", params);
-    System.out.println("Arvados users.create:\n" + response);
-
-    // delete the newly created user
-    userUuid = (String)response.get("uuid");
-    params = new HashMap<String, Object>();
-    params.put("uuid", userUuid);
-    response = arv.call("users", "delete", params);
-
     // Make a pipeline_templates.list call
     System.out.println("Making a pipeline_templates.list call.");
 
