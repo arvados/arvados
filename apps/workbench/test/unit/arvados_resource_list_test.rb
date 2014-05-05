@@ -43,9 +43,10 @@ class ResourceListTest < ActiveSupport::TestCase
       items: [{kind: 'arvados#specimen',
                 uuid: specimen_uuid}]
     }
-    results = ArvadosApiClient.new.unpack_api_response(api_response)
+    arl = ArvadosResourceList.new
+    arl.results = ArvadosApiClient.new.unpack_api_response(api_response)
     assert_equal(['name', 'foo', nil],
-                 (results.
+                 (arl.
                   links_for(specimen_uuid).
                   collect { |x| x.link_class }),
                  "Expected links_for to return all link_classes")
