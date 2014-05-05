@@ -17,8 +17,8 @@ expressed as a hexadecimal number.  e.g.:
 The signature represents a guarantee that this locator was generated
 by either Keep or the API server for use with the supplied API token.
 If a request to Keep includes a locator with a valid signature and is
-accompanied by the proper API token, the user has permission to
-perform any action on that object (GET, PUT or DELETE).
+accompanied by the proper API token, the user has permission to GET
+that object.
 
 The signature may be generated either by Keep (after the user writes a
 block) or by the API server (if the user has can_read permission on
@@ -51,25 +51,25 @@ import (
 var PermissionSecret []byte
 
 // makePermSignature returns a string representing the signed permission
-// hint for the blob identified by blob_hash, api_token and timestamp.
-func makePermSignature(blob_hash string, api_token string, timestamp string) string {
+// hint for the blob identified by blob_hash, api_token and expiration timestamp.
+func makePermSignature(blob_hash string, api_token string, expiry string) string {
 	hmac := hmac.New(sha1.New, PermissionSecret)
 	hmac.Write([]byte(blob_hash))
 	hmac.Write([]byte("@"))
 	hmac.Write([]byte(api_token))
 	hmac.Write([]byte("@"))
-	hmac.Write([]byte(timestamp))
+	hmac.Write([]byte(expiry))
 	digest := hmac.Sum(nil)
 	return fmt.Sprintf("%x", digest)
 }
 
-// SignLocator takes a blob_locator, an api_token and a timestamp, and
+// SignLocator takes a blob_locator, an api_token and an expiry time, and
 // returns a signed locator string.
-func SignLocator(blob_locator string, api_token string, timestamp time.Time) string {
+func SignLocator(blob_locator string, api_token string, expiry time.Time) string {
 	// Extract the hash from the blob locator, omitting any size hint that may be present.
 	blob_hash := strings.Split(blob_locator, "+")[0]
 	// Return the signed locator string.
-	timestamp_hex := fmt.Sprintf("%08x", timestamp.Unix())
+	timestamp_hex := fmt.Sprintf("%08x", expiry.Unix())
 	return blob_locator +
 		"+A" + makePermSignature(blob_hash, api_token, timestamp_hex) +
 		"@" + timestamp_hex
