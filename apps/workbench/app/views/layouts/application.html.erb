@@ -80,7 +80,7 @@
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-folder-o fa-fw"></i> Folders <b class="caret"></b></a>
               <ul class="dropdown-menu">
                 <li><%= link_to raw('<i class="fa fa-plus fa-fw"></i> Create new folder'), folders_path, method: :post %></li>
-                <% @my_top_level_folders.call.each do |folder| %>
+                <% @my_top_level_folders.call[0..7].each do |folder| %>
                 <li><%= link_to raw('<i class="fa fa-folder-open fa-fw"></i> ') + folder.name, folder_path(folder) %></li>
                 <% end %>
                 <li><a href="/folders">

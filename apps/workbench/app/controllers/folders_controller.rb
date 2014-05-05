@@ -8,7 +8,25 @@ class FoldersController < ApplicationController
   end
 
   def remove_item
-    raise "Not implemented yet!"
+    @removed_uuids = []
+    item = ArvadosBase.find params[:item_uuid]
+    if (item.class == Link and
+        item.link_class == 'name' and
+        item.tail_uuid = @object.uuid)
+      # Given uuid is a name link, linking an object to this
+      # folder. First follow the link to find the item we're removing,
+      # then delete the link.
+      link = item
+      item = ArvadosBase.find link.head_uuid
+      @removed_uuids << link.uuid
+      link.destroy
+    end
+    if item.owner_uuid == @object.uuid
+      # Object is owned by this folder. Remove it from the folder by
+      # changing owner to the current user.
+      item.update_attributes owner_uuid: current_user
+      @removed_uuids << item.uuid
+    end
   end
 
   def index

@@ -132,7 +132,7 @@
               <col width="8%" />
             </colgroup>
             <% @objects_and_names.each do |object, name_link| %>
-            <tr>
+            <tr data-object-uuid="<%= (name_link || object).uuid %>">
               <td>
                 <%= render :partial => "selection_checkbox", :locals => {object: object} %>
               </td>
@@ -155,7 +155,7 @@
               </td>
               <td>
                 <% if @object.editable? %>
-                  <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: object.uuid}, method: :delete, remote: true, data: {confirm: "You are about to remove #{object.class_for_display} #{object.uuid} from this folder.\n\nAre you sure?"}, class: 'btn btn-xs btn-default') do %>
+                  <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: (name_link || object).uuid}, method: :delete, remote: true, data: {confirm: "You are about to remove #{object.class_for_display} #{object.uuid} from this folder.\n\nAre you sure?"}, class: 'btn btn-xs btn-default') do %>
                     Remove <i class="fa fa-fw fa-ban"></i>
                   <% end %>
                 <% end %>

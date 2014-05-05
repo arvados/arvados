@@ -85,6 +85,11 @@ class ArvadosBase < ActiveRecord::Base
       raise 'argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx'
     end
 
+    if self == ArvadosBase
+      # Determine type from uuid and defer to the appropriate subclass.
+      return resource_class_for_uuid(uuid).find(uuid, opts)
+    end
+
     # Only do one lookup on the API side per {class, uuid, workbench
     # request} unless {cache: false} is given via opts.
     cache_key = "request_#{Thread.current.object_id}_#{self.to_s}_#{uuid}"
