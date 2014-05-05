@@ -5,9 +5,10 @@ class GroupTest < ActiveSupport::TestCase
   test "cannot set owner_uuid to object with existing ownership cycle" do
     set_user_from_auth :active_trustedclient
 
-    # First make sure we have lots of permission on the bad group
+    # First make sure we have lots of permission on the bad group by
+    # renaming it to "{current name} is mine all mine"
     g = groups(:bad_group_has_ownership_cycle_b)
-    g.name += " xyz"
+    g.name += " is mine all mine"
     assert g.save, "active user should be able to modify group #{g.uuid}"
 
     # Use the group as the owner of a new object
