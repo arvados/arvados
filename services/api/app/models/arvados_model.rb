@@ -162,6 +162,8 @@ class ArvadosModel < ActiveRecord::Base
           if x == uuid
             # Test for cycles with the new version, not the DB contents
             x = owner_uuid
+          elsif !owner_class.respond_to? :find_by_uuid
+            raise ActiveRecord::RecordNotFound.new
           else
             x = owner_class.find_by_uuid(x).owner_uuid
           end
@@ -192,7 +194,7 @@ class ArvadosModel < ActiveRecord::Base
         # current_user is, or has :write permission on, the new owner
       else
         logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
-        return false
+        raise PermissionDeniedError
       end
     end
     if new_record?
