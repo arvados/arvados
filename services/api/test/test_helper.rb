@@ -1,7 +1,11 @@
 ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]
-  require 'simplecov'
-  SimpleCov.start
+  begin
+    require 'simplecov'
+    SimpleCov.start
+  rescue Exception => e
+    $stderr.puts "SimpleCov unavailable (#{e}). Proceeding without."
+  end
 end
 
 require File.expand_path('../../config/environment', __FILE__)
