@@ -413,18 +413,10 @@ class WhRunPipelineInstance
   end
 
   def setup_instance
-    if $options[:submit]
-      @instance ||= PipelineInstance.
-        create(:components => @components,
+    @instance ||= PipelineInstance.
+      create(:components => @components,
              :pipeline_template_uuid => @template[:uuid],
-             :active => true)
-    else
-      @instance ||= PipelineInstance.
-        create(:components => @components,
-             :pipeline_template_uuid => @template[:uuid],
-             :state => 'RunningOnClient',
-             :active => false)
-    end
+             :state => 'RunningOnClient')
     self
   end
 
