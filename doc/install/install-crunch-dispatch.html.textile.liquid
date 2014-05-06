@@ -11,22 +11,15 @@ The dispatcher normally runs on the same host/VM as the API server.
 
 h4. Perl SDK dependencies
 
-* @apt-get install libjson-perl libwww-perl libio-socket-ssl-perl libipc-system-simple-perl@
+Install the Perl SDK on the controller.
 
-Add this to @/etc/apt/sources.list@
-
-@deb http://git.oxf.freelogy.org/apt wheezy main contrib@
-
-Then
-
-@apt-get install libwarehouse-perl@
+* See "Perl SDK":{{site.baseurl}}/sdk/perl/index.html page for details.
 
 h4. Python SDK dependencies
 
-On controller and all compute nodes:
+Install the Python SDK and CLI tools on controller and all compute nodes.
 
-* @apt-get install python-pip@
-* @pip install --upgrade virtualenv arvados-python-client@
+* See "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html page for details.
 
 h4. Likely crunch job dependencies
 
