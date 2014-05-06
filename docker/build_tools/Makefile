@@ -132,13 +132,7 @@ doc-image: base-image $(BUILD) $(DOC_DEPS)
 	date >doc-image
 
 jobs-image: base-image $(BUILD) $(JOBS_DEPS)
-	$(DOCKER_BUILD) -t arvados/jobswofuse jobs
-	docker run --privileged --name jobsaddfuse --user root \
-	  arvados/jobswofuse /bin/sh -c \
-	    "/bin/mknod -m 0660 /dev/fuse c 10 229 && \
-	     /bin/chown root:fuse /dev/fuse"
-	docker commit --run='{"User": "crunch"}' jobsaddfuse arvados/jobs
-	docker rm jobsaddfuse
+	$(DOCKER_BUILD) -t arvados/jobs jobs
 	date >jobs-image
 
 workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
