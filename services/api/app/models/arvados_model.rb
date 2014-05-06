@@ -64,6 +64,24 @@ class ArvadosModel < ActiveRecord::Base
     self.columns.select { |col| col.name == attr.to_s }.first
   end
 
+  # Return nil if current user is not allowed to see the list of
+  # writers. Otherwise, return a list of user_ and group_uuids with
+  # write permission. (If not returning nil, current_user is always in
+  # the list because can_manage permission is needed to see the list
+  # of writers.)
+  def writable_by
+    unless (owner_uuid == current_user.uuid or
+            current_user.is_admin or
+            current_user.groups_i_can(:manage).index(owner_uuid))
+      return nil
+    end
+    [owner_uuid, current_user.uuid] + permissions.collect do |p|
+      if ['can_write', 'can_manage'].index p.name
+        p.tail_uuid
+      end
+    end.compact.uniq
+  end
+
   # Return a query with read permissions restricted to the union of of the
   # permissions of the members of users_list, i.e. if something is readable by
   # any user in users_list, it will be readable in the query returned by this
