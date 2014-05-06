@@ -34,6 +34,8 @@
       <th>d/l</th>
     </tr>
   </thead><tbody>
+    <% download_params = {controller: 'collections', action: 'show_file', disposition: 'attachment'} -%>
+    <% download_params[:reader_tokens] = Thread.current[:reader_tokens] if Thread.current[:reader_tokens].andand.any? -%>
     <% if @object then @object.files.sort_by{|f|[f[0],f[1]]}.each do |file| %>
       <% file_path = CollectionsHelper::file_path file %>
       <tr>
@@ -66,7 +68,7 @@
 
         <td>
           <div style="display:inline-block">
-            <%= link_to raw('<i class="glyphicon glyphicon-download-alt"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'btn btn-info btn-sm', title: 'Download'} %>
+            <%= link_to raw('<i class="glyphicon glyphicon-download-alt"></i>'), download_params.merge({uuid: @object.uuid, file: file_path, size: file[2]}), {class: 'btn btn-info btn-sm', title: 'Download'} %>
           </div>
         </td>
       </tr>
