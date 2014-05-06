@@ -90,7 +90,7 @@ class ArvadosApiClient
     resp
   end
 
-  def self.patch_paging_vars(ary, items_available, offset, limit)
+  def self.patch_paging_vars(ary, items_available, offset, limit, links=nil)
     if items_available
       (class << ary; self; end).class_eval { attr_accessor :items_available }
       ary.items_available = items_available
@@ -103,13 +103,21 @@ class ArvadosApiClient
       (class << ary; self; end).class_eval { attr_accessor :limit }
       ary.limit = limit
     end
+    if links
+      (class << ary; self; end).class_eval { attr_accessor :links }
+      ary.links = links
+    end
     ary
   end
 
   def unpack_api_response(j, kind=nil)
     if j.is_a? Hash and j[:items].is_a? Array and j[:kind].match(/(_list|List)$/)
       ary = j[:items].collect { |x| unpack_api_response x, x[:kind] }
-      self.class.patch_paging_vars(ary, j[:items_available], j[:offset], j[:limit])
+      links = ArvadosResourceList.new Link
+      links.results = (j[:links] || []).collect do |x|
+        unpack_api_response x, x[:kind]
+      end
+      self.class.patch_paging_vars(ary, j[:items_available], j[:offset], j[:limit], links)
     elsif j.is_a? Hash and (kind || j[:kind])
       oclass = self.kind_class(kind || j[:kind])
       if oclass
