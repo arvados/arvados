@@ -1,10 +1,37 @@
-<div class="modal-dialog">
+
+<div class="modal-dialog" style="width: 90%">
   <div class="modal-content">
     <div class="modal-header">
       <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
       <h4 class="modal-title">Sharing</h4>
     </div>
     <div class="modal-body">
+      <div id="sharing-text" style="text-align: center">
+        <% if @search_sharing.any? %>
+          Use this link to share this collection:<br>
+          <big>
+          <% link = collection_url + "?api_token=#{@search_sharing.first.api_token}" %>
+          <%= link_to link, link %>
+          </big>
+        <% else %>
+          Not shared.
+        <% end %>
+      </div>
+      <div style="text-align: center; padding-top: 1em">
+      <% if @search_sharing and @search_sharing.any? %>
+        <%= link_to "Unshare", unshare_collection_url, {
+            class: 'btn btn-success',
+              remote: true,
+            method: 'post'
+            } %>
+      <% else %>
+        <%= link_to "Share", share_collection_url, {
+              class: 'btn btn-info',
+              remote: true,
+              method: 'post'
+            } %>
+      <% end %>
+      </div>
     </div>
   </div>
 </div>

@@ -43,6 +43,8 @@ ArvadosWorkbench::Application.routes.draw do
   resources :collections do
     post 'set_persistent', on: :member
     get 'sharing_popup', :on => :member
+    post 'share', :on => :member
+    post 'unshare', :on => :member
   end
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   resources :folders do

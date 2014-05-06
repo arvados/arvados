@@ -110,6 +110,10 @@ class CollectionsController < ApplicationController
     self.response_body = file_enumerator opts
   end
 
+  def search_scopes
+    ApiClientAuthorization.where(filters: [['scopes', '=', "/arvados/v1/collections/#{@object.uuid}"]])
+  end
+
   def show
     return super if !@object
     @provenance = []
@@ -117,6 +121,7 @@ class CollectionsController < ApplicationController
     @output2colorindex = {}
     @sourcedata = {params[:uuid] => {uuid: params[:uuid]}}
     @protected = {}
+    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
 
     colorindex = -1
     any_hope_left = true
@@ -172,10 +177,26 @@ class CollectionsController < ApplicationController
   end
 
   def sharing_popup
+    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
     respond_to do |format|
       format.html
       format.js
     end
+  end
+
+  def share
+    a = ApiClientAuthorization.create(scopes: ["/arvados/v1/collections/#{@object.uuid}"])
+    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+    render 'sharing_popup'
+  end
+
+  def unshare
+    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+    @search_sharing.each do |s|
+      s.destroy
+    end
+    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+    render 'sharing_popup'
   end
 
   protected
