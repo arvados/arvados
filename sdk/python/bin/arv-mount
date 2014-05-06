@@ -22,6 +22,7 @@ with "--".
     parser.add_argument('--collection', type=str, help="""Mount only the specified collection at the mount point.""")
     parser.add_argument('--tags', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing tagged
 collections on the server.""")
+    parser.add_argument('--groups', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing groups on the server.""")
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                         dest="exec_args", metavar=('command', 'args', '...', '--'),
@@ -32,7 +33,10 @@ collections on the server.""")
     # Create the request handler
     operations = Operations(os.getuid(), os.getgid())
 
-    if args.tags:
+    if args.groups:
+        api = arvados.api('v1')
+        e = operations.inodes.add_entry(GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+    elif args.tags:
         api = arvados.api('v1')
         e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
     elif args.collection != None:
