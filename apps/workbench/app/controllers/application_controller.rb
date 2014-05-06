@@ -1,5 +1,4 @@
 class ApplicationController < ActionController::Base
-  ERROR_ACTIONS = [:render_exception, :render_not_found]
   respond_to :html, :json, :js
   protect_from_forgery
 
