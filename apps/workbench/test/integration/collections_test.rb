@@ -45,7 +45,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     visit "/collections/#{uuid}?#{q_string}"
     # It seems that Capybara can't inspect tags outside the body, so this is
     # a very blunt approach.
-    assert_no_match(/\bnofollow\b/i, page.html,
+    assert_no_match(/<\s*meta[^>]+\bnofollow\b/i, page.html,
                     "wget prohibited from recursing the collection page")
     # TODO: When we can test against a Keep server, actually click the link
     # and check the contents, rather than testing the href directly
