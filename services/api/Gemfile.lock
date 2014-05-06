@@ -135,6 +135,9 @@ GEM
       rack
       rake (>= 0.8.1)
     pg (0.17.1)
+    pg_power (1.6.4)
+      pg
+      rails (~> 3.1)
     polyglot (0.3.4)
     rack (1.4.5)
     rack-cache (1.2)
@@ -218,6 +221,7 @@ DEPENDENCIES
   omniauth-oauth2 (= 1.1.1)
   passenger
   pg
+  pg_power
   rails (~> 3.2.0)
   redis
   rvm-capistrano

@@ -15,7 +15,7 @@ Server::Application.routes.draw do
         get 'used_by', on: :member
       end
       resources :groups do
-        get 'owned_items', on: :member
+        get 'contents', on: :member
       end
       resources :humans
       resources :job_tasks
@@ -50,7 +50,6 @@ Server::Application.routes.draw do
         post 'activate', on: :member
         post 'setup', on: :collection
         post 'unsetup', on: :member
-        get 'owned_items', on: :member
       end
       resources :virtual_machines do
         get 'logins', on: :member

@@ -74,18 +74,6 @@ table(table table-bordered table-condensed).
 |order|string|Order in which to return matching users.|query||
 |filters|array|Conditions for filtering users.|query||
 
-h2. owned_items
-
-Retrieve a list of items which are owned by the given user.
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the user in question.|path||
-|include_linked|boolean|If true, results will also include items on which the given user has _can_manage_ permission, even if they are owned by different users/groups.|path|{white-space:nowrap}. @false@ (default)
-@true@|
-
 h2. show
 
 show users

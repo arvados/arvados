@@ -56,18 +56,22 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get group-owned objects' do
     authorize_with :active
-    get :owned_items, {
+    get :contents, {
       id: groups(:afolder).uuid,
       format: :json,
+      include_linked: true,
     }
     assert_response :success
     assert_operator 2, :<=, json_response['items_available']
     assert_operator 2, :<=, json_response['items'].count
+    kinds = json_response['items'].collect { |i| i['kind'] }.uniq
+    expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
+    assert_equal expect_kinds, (expect_kinds & kinds)
   end
 
   test 'get group-owned objects with limit' do
     authorize_with :active
-    get :owned_items, {
+    get :contents, {
       id: groups(:afolder).uuid,
       limit: 1,
       format: :json,
@@ -79,7 +83,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get group-owned objects with limit and offset' do
     authorize_with :active
-    get :owned_items, {
+    get :contents, {
       id: groups(:afolder).uuid,
       limit: 1,
       offset: 12345,
@@ -92,7 +96,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test 'get group-owned objects with additional filter matching nothing' do
     authorize_with :active
-    get :owned_items, {
+    get :contents, {
       id: groups(:afolder).uuid,
       filters: [['uuid', 'in', ['foo_not_a_uuid','bar_not_a_uuid']]],
       format: :json,
@@ -105,7 +109,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get group-owned objects without include_linked' do
     unexpected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
     authorize_with :active
-    get :owned_items, {
+    get :contents, {
       id: groups(:asubfolder).uuid,
       format: :json,
     }
@@ -117,7 +121,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get group-owned objects with include_linked' do
     expected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
     authorize_with :active
-    get :owned_items, {
+    get :contents, {
       id: groups(:asubfolder).uuid,
       include_linked: true,
       format: :json,
@@ -125,5 +129,81 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_response :success
     uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes uuids, expected_uuid, "Did not get #{expected_uuid}"
+
+    expected_name = links(:specimen_is_in_two_folders).name
+    found_specimen_name = false
+    assert(json_response['links'].any?,
+           "Expected a non-empty array of links in response")
+    json_response['links'].each do |link|
+      if link['head_uuid'] == expected_uuid
+        if link['name'] == expected_name
+          found_specimen_name = true
+        end
+      end
+    end
+    assert(found_specimen_name,
+           "Expected to find name '#{expected_name}' in response")
   end
+
+  [false, true].each do |inc_ind|
+    test "get all pages of group-owned #{'and -linked ' if inc_ind}objects" do
+      authorize_with :active
+      limit = 5
+      offset = 0
+      items_available = nil
+      uuid_received = {}
+      owner_received = {}
+      while true
+        # Behaving badly here, using the same controller multiple
+        # times within a test.
+        @json_response = nil
+        get :contents, {
+          id: groups(:afolder).uuid,
+          include_linked: inc_ind,
+          limit: limit,
+          offset: offset,
+          format: :json,
+        }
+        assert_response :success
+        assert_operator(0, :<, json_response['items'].count,
+                        "items_available=#{items_available} but received 0 "\
+                        "items with offset=#{offset}")
+        items_available ||= json_response['items_available']
+        assert_equal(items_available, json_response['items_available'],
+                     "items_available changed between page #{offset/limit} "\
+                     "and page #{1+offset/limit}")
+        json_response['items'].each do |item|
+          uuid = item['uuid']
+          assert_equal(nil, uuid_received[uuid],
+                       "Received '#{uuid}' again on page #{1+offset/limit}")
+          uuid_received[uuid] = true
+          owner_received[item['owner_uuid']] = true
+          offset += 1
+          if not inc_ind
+            assert_equal groups(:afolder).uuid, item['owner_uuid']
+          end
+        end
+        break if offset >= items_available
+      end
+      if inc_ind
+        assert_operator 0, :<, (json_response.keys - [users(:active).uuid]).count,
+        "Set include_linked=true but did not receive any non-owned items"
+      end
+    end
+  end
+
+  %w(offset limit).each do |arg|
+    ['foo', '', '1234five', '0x10', '-8'].each do |val|
+      test "Raise error on bogus #{arg} parameter #{val.inspect}" do
+        authorize_with :active
+        get :contents, {
+          :id => groups(:afolder).uuid,
+          :format => :json,
+          arg => val,
+        }
+        assert_response 422
+      end
+    end
+  end
+
 end
