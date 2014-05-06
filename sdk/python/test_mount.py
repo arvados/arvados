@@ -236,7 +236,7 @@ class FuseTagsUpdateTestBase(MountTestBase):
         d3.sort()
         self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d3)
 
-        api.links().create(body={'link': {
+        l = api.links().create(body={'link': {
             'head_uuid': 'ea10d51bcf88862dbcc36eb292017dfd+45',
             'link_class': 'tag',
             'name': 'bar_tag'
@@ -247,6 +247,14 @@ class FuseTagsUpdateTestBase(MountTestBase):
         d4 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
         d4.sort()
         self.assertEqual(['ea10d51bcf88862dbcc36eb292017dfd+45', 'fa7aeb5140e2848d39b416daeef4ffc5+45'], d4)
+
+        api.links().delete(uuid=l['uuid']).execute()
+
+        time.sleep(1)
+
+        d5 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d5.sort()
+        self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d5)
 
 
 class FuseTagsUpdateTestWebsockets(FuseTagsUpdateTestBase):

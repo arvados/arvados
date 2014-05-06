@@ -4,6 +4,7 @@ from arvados.fuse import *
 import arvados
 import subprocess
 import argparse
+import daemon
 
 if __name__ == '__main__':
     # Handle command line parameters
@@ -24,6 +25,7 @@ with "--".
 collections on the server.""")
     parser.add_argument('--groups', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing groups on the server.""")
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
+    parser.add_argument('--foreground', action='store_true', help="""Run in foreground (default is to daemonize unless --exec specified)""", default=False)
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                         dest="exec_args", metavar=('command', 'args', '...', '--'),
                         help="""Mount, run a command, then unmount and exit""")
@@ -53,10 +55,10 @@ collections on the server.""")
     if args.debug:
         opts += ['debug']
 
-    # Initialize the fuse connection
-    llfuse.init(operations, args.mountpoint, opts)
-
     if args.exec_args:
+        # Initialize the fuse connection
+        llfuse.init(operations, args.mountpoint, opts)
+
         t = threading.Thread(None, lambda: llfuse.main())
         t.start()
 
@@ -76,4 +78,12 @@ collections on the server.""")
 
         exit(rc)
     else:
-        llfuse.main()
+        if args.foreground:
+            # Initialize the fuse connection
+            llfuse.init(operations, args.mountpoint, opts)
+            llfuse.main()
+        else:
+            with daemon.DaemonContext():
+                # Initialize the fuse connection
+                llfuse.init(operations, args.mountpoint, opts)
+                llfuse.main()
