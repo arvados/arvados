@@ -10,8 +10,10 @@
   <div class="col-md-6"></div>
   <div class="col-md-6">
     <div class="pull-right">
-      Collection storage status:
+      <%= link_to "Share", sharing_popup_collection_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#collection-sharing-modal-window'}  %>
+      <span style="padding-left: 1em">Collection storage status:</span>
       <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
+
     </div>
   </div>
 </div>
@@ -73,3 +75,7 @@
     <% end; end %>
   </tbody>
 </table>
+
+<% content_for :footer_html do %>
+<div id="collection-sharing-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+<% end %>

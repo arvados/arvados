@@ -171,6 +171,13 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def sharing_popup
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
   protected
 
   def find_usable_token
