@@ -4,3 +4,4 @@ python-gflags==2.0
 urllib3==1.7.1
 llfuse==0.40
 ws4py==0.3.4
+PyYAML==3.11
