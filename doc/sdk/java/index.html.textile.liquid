@@ -52,7 +52,7 @@ h3. Building the Arvados SDK
 <pre>
 $ <code class="userinput">cd $ARVADOS_HOME/sdk/java</code>
 
-$ <code class="userinput">mvn clean package</code>
+$ <code class="userinput">mvn -Dmaven.test.skip=true clean package</code>
   This will generate arvados sdk jar file in the target directory
 </pre>
 </notextile>
@@ -103,11 +103,11 @@ h3. Viewing and Managing SDK logging
 
 <notextile>
 <pre>
-<code class="userinput">$ nano $ARVADOS_HOME/sdk/java/src/main/resources/log4j.properties</code>
+$ <code class="userinput">nano $ARVADOS_HOME/sdk/java/src/main/resources/log4j.properties</code>
 and modify the <code class="userinput">log4j.appender.fileAppender.File</code> property as needed.
 
 Rebuild the SDK:
-<code class="userinput">$ mvn clean package</code>
+$ <code class="userinput">mvn -Dmaven.test.skip=true clean package</code>
 </pre>
 </notextile>
 
