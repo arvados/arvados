@@ -13,7 +13,7 @@ class ActionsController < ApplicationController
   def post
     params.keys.collect(&:to_sym).each do |param|
       if @@exposed_actions[param]
-        return self.send(param.to_s)
+        return self.send(param)
       end
     end
     redirect_to :back
