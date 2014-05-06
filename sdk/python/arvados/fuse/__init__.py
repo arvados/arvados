@@ -345,6 +345,8 @@ class GroupDirectory(Directory):
         def same(a, i):
             if isinstance(a, CollectionDirectory):
                 return a.collection_locator == i['uuid']
+            elif isinstance(a, GroupDirectory):
+                return a.uuid == i['uuid']
             elif isinstance(a, ObjectFile):
                 return a.uuid == i['uuid'] and not a.stale()
             return False

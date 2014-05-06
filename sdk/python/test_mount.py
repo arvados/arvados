@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import glob
 import run_test_server
-
+import json
 
 class MountTestBase(unittest.TestCase):
     def setUp(self):
@@ -281,3 +281,51 @@ class FuseTagsUpdateTestPoll(FuseTagsUpdateTestBase):
     def tearDown(self):
         run_test_server.stop(False)
         super(FuseTagsUpdateTestPoll, self).tearDown()
+
+
+class FuseGroupsTest(MountTestBase):
+    def setUp(self):
+        super(FuseGroupsTest, self).setUp()
+        run_test_server.run()
+
+    def runTest(self):
+        run_test_server.authorize_with("admin")
+        api = arvados.api('v1')
+
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertIn('zzzzz-j7d0g-v955i6s2oi1cbso', d1)
+
+        d2 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso'))
+        d2.sort()
+        self.assertEqual(["I'm a job in a folder",
+                          "I'm a template in a folder",
+                          "zzzzz-j58dm-5gid26432uujf79",
+                          "zzzzz-j58dm-7r18rnd5nzhg5yk",
+                          "zzzzz-j7d0g-axqo7eu9pwvna1x"
+                      ], d2)
+
+        d3 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', 'zzzzz-j7d0g-axqo7eu9pwvna1x'))
+        d3.sort()
+        self.assertEqual(["I'm in a subfolder, too",
+                          "zzzzz-j58dm-c40lddwcqqr1ffs",
+                          "zzzzz-o0j2j-ryhm1bn83ni03sn"
+                      ], d3)
+
+        with open(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', "I'm a template in a folder")) as f:
+            j = json.load(f)
+            self.assertEqual("Two Part Pipeline Template", j['name'])
+
+    def tearDown(self):
+        run_test_server.stop()
+        super(FuseGroupsTest, self).tearDown()
