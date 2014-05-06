@@ -149,6 +149,12 @@ GEM
       multi_json (~> 1.0)
       rubyzip (~> 1.0)
       websocket (~> 1.0.4)
+    simplecov (0.7.1)
+      multi_json (~> 1.0)
+      simplecov-html (~> 0.7.1)
+    simplecov-html (0.7.1)
+    simplecov-rcov (0.2.3)
+      simplecov (>= 0.4.1)
     sprockets (2.2.2)
       hike (~> 1.2)
       multi_json (~> 1.0)
@@ -200,6 +206,8 @@ DEPENDENCIES
   sass
   sass-rails (~> 3.2.0)
   selenium-webdriver
+  simplecov (~> 0.7.1)
+  simplecov-rcov
   sqlite3
   themes_for_rails
   therubyracer
