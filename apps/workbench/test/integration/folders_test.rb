@@ -20,8 +20,8 @@ class FoldersTest < ActionDispatch::IntegrationTest
       page.assert_no_selector '.editable-submit'
     end
     visit current_path
-    # Raise exception if description update did not survive page refresh:
-    find '.panel', text: 'I just edited this.'
+    assert(find?('.panel', text: 'I just edited this.'),
+           "Description update did not survive page refresh")
   end
 
   test 'Add a new name, then edit it, without creating a duplicate' do
