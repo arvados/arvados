@@ -25,17 +25,23 @@ class ArvadosBase < ActiveRecord::Base
     super(*args)
     @attribute_sortkey ||= {
       'id' => nil,
-      'uuid' => '000',
-      'owner_uuid' => '001',
-      'created_at' => '002',
-      'modified_at' => '003',
-      'modified_by_user_uuid' => '004',
-      'modified_by_client_uuid' => '005',
-      'name' => '050',
-      'tail_uuid' => '100',
-      'head_uuid' => '101',
-      'info' => 'zzz-000',
-      'updated_at' => 'zzz-999'
+      'name' => '000',
+      'owner_uuid' => '002',
+      'event_type' => '100',
+      'link_class' => '100',
+      'group_class' => '100',
+      'tail_uuid' => '101',
+      'head_uuid' => '102',
+      'object_uuid' => '102',
+      'summary' => '104',
+      'description' => '104',
+      'properties' => '150',
+      'info' => '150',
+      'created_at' => '200',
+      'modified_at' => '201',
+      'modified_by_user_uuid' => '202',
+      'modified_by_client_uuid' => '203',
+      'uuid' => '999',
     }
   end
 
@@ -77,6 +83,11 @@ class ArvadosBase < ActiveRecord::Base
   def self.find(uuid, opts={})
     if uuid.class != String or uuid.length < 27 then
       raise 'argument to find() must be a uuid string. Acceptable formats: warehouse locator or string with format xxxxx-xxxxx-xxxxxxxxxxxxxxx'
+    end
+
+    if self == ArvadosBase
+      # Determine type from uuid and defer to the appropriate subclass.
+      return resource_class_for_uuid(uuid).find(uuid, opts)
     end
 
     # Only do one lookup on the API side per {class, uuid, workbench
@@ -244,6 +255,10 @@ class ArvadosBase < ActiveRecord::Base
     }
   end
 
+  def class_for_display
+    self.class.to_s
+  end
+
   def self.creatable?
     current_user
   end
@@ -251,7 +266,8 @@ class ArvadosBase < ActiveRecord::Base
   def editable?
     (current_user and current_user.is_active and
      (current_user.is_admin or
-      current_user.uuid == self.owner_uuid))
+      current_user.uuid == self.owner_uuid or
+      new_record?))
   end
 
   def attribute_editable?(attr)
@@ -262,7 +278,9 @@ class ArvadosBase < ActiveRecord::Base
     elsif "uuid owner_uuid".index(attr.to_s) or current_user.is_admin
       current_user.is_admin
     else
-      current_user.uuid == self.owner_uuid or current_user.uuid == self.uuid
+      current_user.uuid == self.owner_uuid or
+        current_user.uuid == self.uuid or
+        new_record?
     end
   end
 
@@ -297,6 +315,10 @@ class ArvadosBase < ActiveRecord::Base
 
   def friendly_link_name
     (name if self.respond_to? :name) || uuid
+  end
+
+  def content_summary
+    self.class_for_display
   end
 
   def selection_label

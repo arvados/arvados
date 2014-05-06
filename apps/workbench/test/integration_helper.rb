@@ -22,4 +22,16 @@ class ActionDispatch::IntegrationTest
     q_string = URI.encode_www_form('api_token' => api_token)
     "#{path}#{sep}#{q_string}"
   end
+
+  # Find a page element, but return false instead of raising an
+  # exception if not found. Use this with assertions to explain that
+  # the error signifies a failed test rather than an unexpected error
+  # during a testing procedure.
+  def find? *args
+    begin
+      find *args
+    rescue Capybara::ElementNotFound
+      false
+    end
+  end
 end
