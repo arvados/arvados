@@ -105,7 +105,7 @@ module LoadParam
     when String
       begin
         @select = Oj.load params[:select]
-        raise unless @select.is_a? Array
+        raise unless @select.is_a? Array or @select.nil?
       rescue
         raise ArgumentError.new("Could not parse \"select\" param as an array")
       end

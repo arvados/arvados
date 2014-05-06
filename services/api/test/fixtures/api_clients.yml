@@ -2,12 +2,14 @@
 
 trusted_workbench:
   uuid: zzzzz-ozdt8-teyxzyd8qllg11h
+  owner_uuid: zzzzz-tpzed-000000000000000
   name: Official Workbench
   url_prefix: https://official-workbench.local/
   is_trusted: true
 
 untrusted:
   uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  owner_uuid: zzzzz-tpzed-000000000000000
   name: Untrusted
   url_prefix: https://untrusted.local/
   is_trusted: false
