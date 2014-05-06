@@ -501,6 +501,7 @@ func MakeTestVolumeManager(num_volumes int) VolumeManager {
 //     Cleanup to perform after each test.
 //
 func teardown() {
+	enforce_permissions = false
 	PermissionSecret = nil
 	KeepVM = nil
 }
