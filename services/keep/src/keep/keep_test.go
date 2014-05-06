@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"regexp"
 	"testing"
+	"time"
 )
 
 var TEST_BLOCK = []byte("The quick brown fox jumps over the lazy dog.")
@@ -103,20 +106,6 @@ func TestGetBlockCorrupt(t *testing.T) {
 		t.Errorf("Expected CorruptError, got %v (buf: %v)", err, result)
 	}
 }
-
-/*
-// TestGetBlockPermissionOK
-//     When enforce_permissions is set, GetBlock correctly
-//     handles a request with a valid permission signature.
-func TestGetBlockPermissionOK(t *testing.T) {
-	defer teardown()
-
-	enforce_permissions = true
-	PermissionSecret =
-	// Create two test Keep volumes and store a block.
-
-}
-*/
 
 // ========================================
 // PutBlock tests
@@ -403,6 +392,92 @@ func TestNodeStatus(t *testing.T) {
 		if volinfo.BytesUsed == 0 {
 			t.Errorf("uninitialized bytes_used in %v", volinfo)
 		}
+	}
+}
+
+// ========================================
+// Tests for HTTP handlers
+// ========================================
+
+func TestGetHandler(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes. Our block is stored on the second volume.
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+
+	vols := KeepVM.Volumes()
+	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
+		t.Error(err)
+	}
+
+	// Set up a REST router for testing the handlers.
+	rest := NewRESTRouter()
+
+	// Test an unsigned GET request.
+	test_url := "http://localhost:25107/" + TEST_HASH
+	req, _ := http.NewRequest("GET", test_url, nil)
+	resp := httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != 200 {
+		t.Errorf("bad response code: %v", resp)
+	}
+	if bytes.Compare(resp.Body.Bytes(), TEST_BLOCK) != 0 {
+		t.Errorf("bad response body: %v", resp)
+	}
+
+	// Enable permissions.
+	enforce_permissions = true
+	PermissionSecret = []byte(known_key)
+	permission_ttl = 300
+	expiry := time.Now().Add(time.Duration(permission_ttl) * time.Second)
+
+	// Test GET with a signed locator.
+	test_url = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, expiry)
+	resp = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", test_url, nil)
+	req.Header.Set("Authorization", "OAuth "+known_token)
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != 200 {
+		t.Errorf("signed request: bad response code: %v", resp)
+	}
+	if bytes.Compare(resp.Body.Bytes(), TEST_BLOCK) != 0 {
+		t.Errorf("signed request: bad response body: %v", resp)
+	}
+
+	// Test GET with an unsigned locator.
+	test_url = "http://localhost:25107/" + TEST_HASH
+	resp = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", test_url, nil)
+	req.Header.Set("Authorization", "OAuth "+known_token)
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != PermissionError.HTTPCode {
+		t.Errorf("unsigned request: bad response code: %v", resp)
+	}
+
+	// Test GET with a signed locator and an unauthenticated request.
+	test_url = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, expiry)
+	resp = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", test_url, nil)
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != PermissionError.HTTPCode {
+		t.Errorf("signed locator, unauthenticated request: bad response code: %v", resp)
+	}
+
+	// Test GET with an expired, signed locator.
+	expired_ts := time.Now().Add(-time.Hour)
+	test_url = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, expired_ts)
+	resp = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", test_url, nil)
+	req.Header.Set("Authorization", "OAuth "+known_token)
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != ExpiredError.HTTPCode {
+		t.Errorf("expired signature: bad response code: %v", resp)
 	}
 }
 

@@ -50,9 +50,9 @@ import (
 // key.
 var PermissionSecret []byte
 
-// makePermSignature returns a string representing the signed permission
+// MakePermSignature returns a string representing the signed permission
 // hint for the blob identified by blob_hash, api_token and expiration timestamp.
-func makePermSignature(blob_hash string, api_token string, expiry string) string {
+func MakePermSignature(blob_hash string, api_token string, expiry string) string {
 	hmac := hmac.New(sha1.New, PermissionSecret)
 	hmac.Write([]byte(blob_hash))
 	hmac.Write([]byte("@"))
@@ -66,12 +66,16 @@ func makePermSignature(blob_hash string, api_token string, expiry string) string
 // SignLocator takes a blob_locator, an api_token and an expiry time, and
 // returns a signed locator string.
 func SignLocator(blob_locator string, api_token string, expiry time.Time) string {
+	// If the permission secret has not been set, return an unsigned locator.
+	if PermissionSecret == nil {
+		return blob_locator
+	}
 	// Extract the hash from the blob locator, omitting any size hint that may be present.
 	blob_hash := strings.Split(blob_locator, "+")[0]
 	// Return the signed locator string.
 	timestamp_hex := fmt.Sprintf("%08x", expiry.Unix())
 	return blob_locator +
-		"+A" + makePermSignature(blob_hash, api_token, timestamp_hex) +
+		"+A" + MakePermSignature(blob_hash, api_token, timestamp_hex) +
 		"@" + timestamp_hex
 }
 

@@ -15,8 +15,10 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // ======================
@@ -39,6 +41,19 @@ var PROC_MOUNTS = "/proc/mounts"
 
 // The Keep VolumeManager maintains a list of available volumes.
 var KeepVM VolumeManager
+
+// enforce_permissions controls whether permission signatures
+// should be enforced (affecting GET and DELETE requests)
+var enforce_permissions bool
+
+// permission_ttl is the time duration (in seconds) for which
+// new permission signatures (returned by PUT requests) will be
+// valid.
+var permission_ttl int
+
+// data_manager_token represents the API token used by the
+// Data Manager, and is required on certain privileged operations.
+var data_manager_token string
 
 // ==========
 // Error types.
@@ -88,8 +103,18 @@ func main() {
 	//    by looking at currently mounted filesystems for /keep top-level
 	//    directories.
 
-	var listen, permission_key, volumearg string
+	var data_manager_token, listen, permission_key, volumearg string
 	var serialize_io bool
+	flag.StringVar(
+		&data_manager_token,
+		"data-manager-token",
+		"",
+		"API token used by the Data Manager. All DELETE requests or unqualified GET /index requests must carry this token.")
+	flag.BoolVar(
+		&enforce_permissions,
+		"enforce-permissions",
+		false,
+		"Enforce permission signatures on requests.")
 	flag.StringVar(
 		&listen,
 		"listen",
@@ -100,6 +125,11 @@ func main() {
 		"permission-key",
 		"",
 		"Secret key to use for generating and verifying permission signatures.")
+	flag.IntVar(
+		&permission_ttl,
+		"permission-ttl",
+		300,
+		"Expiration time (in seconds) for newly generated permission signatures.")
 	flag.BoolVar(
 		&serialize_io,
 		"serialize",
@@ -144,27 +174,35 @@ func main() {
 		PermissionSecret = []byte(permission_key)
 	}
 
+	// If --enforce-permissions is true, we must have a permission key to continue.
+	if enforce_permissions && PermissionSecret == nil {
+		log.Fatal("--enforce-permissions requires a permission key")
+	}
+
 	// Start a round-robin VolumeManager with the volumes we have found.
 	KeepVM = MakeRRVolumeManager(goodvols)
 
-	// Set up REST handlers.
-	//
-	// Start with a router that will route each URL path to an
-	// appropriate handler.
-	//
+	// Tell the built-in HTTP server to direct all requests to the REST
+	// router.
+	http.Handle("/", NewRESTRouter())
+
+	// Start listening for requests.
+	http.ListenAndServe(listen, nil)
+}
+
+// NewRESTRouter
+//     Returns a mux.Router that passes GET and PUT requests to the
+//     appropriate handlers.
+//
+func NewRESTRouter() *mux.Router {
 	rest := mux.NewRouter()
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`, GetBlockHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
-
-	// Tell the built-in HTTP server to direct all requests to the REST
-	// router.
-	http.Handle("/", rest)
-
-	// Start listening for requests.
-	http.ListenAndServe(listen, nil)
+	return rest
 }
 
 // FindKeepVolumes
@@ -199,18 +237,27 @@ func FindKeepVolumes() []string {
 
 func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+	signature := mux.Vars(req)["signature"]
+	timestamp := mux.Vars(req)["timestamp"]
 
 	// If permission checking is in effect, verify this
 	// request's permission signature.
-	if PermissionSecret != nil {
-		if !VerifySignature(hash, GetApiToken(req)) {
-			http.Error(w, PermissionError.Error(), 401)
+	if enforce_permissions {
+		if signature == "" || timestamp == "" {
+			http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
+			return
+		} else if IsExpired(timestamp) {
+			http.Error(w, ExpiredError.Error(), ExpiredError.HTTPCode)
+			return
+		} else if signature != MakePermSignature(hash, GetApiToken(req), timestamp) {
+			http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
+			return
 		}
 	}
 
 	block, err := GetBlock(hash)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		http.Error(w, err.Error(), err.(*KeepError).HTTPCode)
 		return
 	}
 
@@ -237,7 +284,12 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 	//
 	if buf, err := ReadAtMost(req.Body, BLOCKSIZE); err == nil {
 		if err := PutBlock(buf, hash); err == nil {
-			w.WriteHeader(http.StatusOK)
+			// Success; sign the locator and return it to the client.
+			api_token := GetApiToken(req)
+			expiry := time.Now().Add( // convert permission_ttl to time.Duration
+				time.Duration(permission_ttl) * time.Second)
+			signed_loc := SignLocator(hash, api_token, expiry)
+			w.Write([]byte(signed_loc))
 		} else {
 			ke := err.(*KeepError)
 			http.Error(w, ke.Error(), ke.HTTPCode)
@@ -260,6 +312,13 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
+	// Only the data manager may issue unqualified "GET /index" requests.
+	if prefix == "" {
+		if data_manager_token != GetApiToken(req) {
+			http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
+			return
+		}
+	}
 	var index string
 	for _, vol := range KeepVM.Volumes() {
 		index = index + vol.Index(prefix)
@@ -499,4 +558,15 @@ func GetApiToken(req *http.Request) string {
 		}
 	}
 	return ""
+}
+
+// IsExpired returns true if the given Unix timestamp (expressed as a
+// hexadecimal string) is in the past.
+func IsExpired(timestamp_hex string) bool {
+	ts, err := strconv.ParseInt(timestamp_hex, 16, 0)
+	if err != nil {
+		log.Printf("IsExpired: %s\n", err)
+		return true
+	}
+	return time.Unix(ts, 0).Before(time.Now())
 }
