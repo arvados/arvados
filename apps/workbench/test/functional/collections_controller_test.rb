@@ -126,7 +126,7 @@ class CollectionsControllerTest < ActionController::TestCase
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:spectator)
     get(:show_file, params, sess)
-    assert_includes([403, 404], @response.code.to_i)
+    assert_response 404
   end
 
   test "trying to get a nonexistent file from Keep returns a 404" do
