@@ -16,8 +16,12 @@ class FoldersTest < ActionDispatch::IntegrationTest
       find('.btn', text: 'Edit description').click
       find('.editable-input textarea').set('I just edited this.')
       find('.editable-submit').click
+      # Wait for editable popup to go away
+      page.assert_no_selector '.editable-submit'
     end
-    #find('.panel', text: 'I just edited this.')
+    visit current_path
+    assert(find('.panel', text: 'I just edited this.'),
+           "Description should stay updated after editing and refreshing page.")
   end
 
   test 'Add a new name, then edit it, without creating a duplicate' do
