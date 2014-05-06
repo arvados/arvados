@@ -200,13 +200,14 @@ func FindKeepVolumes() []string {
 func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
-	// Find an API token, if present.
-	var api_token string
-	if auth, ok := req.Header["Authorization"]; ok {
-		if strings.StartsWith(auth[0], "OAuth ") {
-			api_token = auth[0][6:]
+	// If permission checking is in effect, verify this
+	// request's permission signature.
+	if PermissionSecret != nil {
+		if !VerifySignature(hash, GetApiToken(req)) {
+			http.Error(w, PermissionError.Error(), 401)
 		}
 	}
+
 	block, err := GetBlock(hash)
 	if err != nil {
 		http.Error(w, err.Error(), 404)
@@ -342,13 +343,6 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 }
 
 func GetBlock(hash string) ([]byte, error) {
-	// Check the permission signature of this request if necessary.
-	if PermissionSecret != nil {
-		if !VerifySignature(hash) {
-			return nil, PermissionError
-		}
-	}
-
 	// Attempt to read the requested hash from a keep volume.
 	for _, vol := range KeepVM.Volumes() {
 		if buf, err := vol.Get(hash); err != nil {
@@ -493,4 +487,16 @@ func IsValidLocator(loc string) bool {
 	}
 	log.Printf("IsValidLocator: %s\n", err)
 	return false
+}
+
+// GetApiToken returns the OAuth token from the Authorization
+// header of a HTTP request, or an empty string if no matching
+// token is found.
+func GetApiToken(req *http.Request) string {
+	if auth, ok := req.Header["Authorization"]; ok {
+		if strings.HasPrefix(auth[0], "OAuth ") {
+			return auth[0][6:]
+		}
+	}
+	return ""
 }
