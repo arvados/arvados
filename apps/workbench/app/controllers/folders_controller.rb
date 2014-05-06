@@ -65,7 +65,6 @@ class FoldersController < ApplicationController
         @shared_with_me << folder
       end
     end
-    @object
   end
 
   def show
