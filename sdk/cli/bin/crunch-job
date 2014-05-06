@@ -500,8 +500,8 @@ if (!$have_slurm)
 
 # If this job requires a Docker image, install that.
 my $docker_bin = "/usr/bin/docker.io";
-my $docker_image = $Job->{runtime_constraints}->{docker_image};
-if (defined($docker_image)) {
+my $docker_image = $Job->{runtime_constraints}->{docker_image} || "";
+if ($docker_image) {
   my $docker_pid = fork();
   if ($docker_pid == 0)
   {
@@ -636,7 +636,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	  "&& perl -";
     }
     $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
-    if (defined($docker_image))
+    if ($docker_image)
     {
       $command .= "$docker_bin run -i -a stdin -a stdout -a stderr ";
       # Dynamically configure the container to use the host system as its
