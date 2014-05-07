@@ -515,7 +515,9 @@ if ($docker_image) {
     freeze_if_want_freeze ($docker_pid);
     select (undef, undef, undef, 0.1);
   }
-  if ($? != 0)
+  # If the Docker image was specified as a hash, pull will fail.
+  # Ignore that error.  We'll see what happens when we try to run later.
+  if (($? != 0) && ($docker_image !~ /^[0-9a-fA-F]{5,}$/))
   {
     croak("Installing Docker image $docker_image returned exit code $?");
   }
