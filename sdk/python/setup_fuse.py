@@ -1,15 +1,8 @@
 from setuptools import setup
-import distutils
-import shutil
-
-minor_version = '%%MINOR_VERSION%%'
-
-# setup.py and setup_fuse.py both share the build/ directory (argh!) so
-# make sure to delete it to avoid scooping up the wrong files.
-shutil.rmtree('build')
+import setup_header
 
 setup(name='arvados-fuse-driver',
-      version='0.1.' + minor_version,
+      version='0.1.' + setup_header.minor_version,
       description='Arvados FUSE driver',
       author='Arvados',
       author_email='info@arvados.org',

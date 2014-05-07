@@ -19,8 +19,8 @@ def find_server_pid(PID_PATH):
         try:
             with open(PID_PATH, 'r') as f:
                 server_pid = int(f.read())
-            good_pid = (server_pid > 0) and (os.kill(server_pid, 0) == None)
-        except:
+            good_pid = (os.kill(server_pid, 0) == None)
+        except Exception:
             good_pid = False
 
     if not good_pid:
