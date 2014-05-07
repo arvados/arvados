@@ -1,4 +1,5 @@
-<% content_for :tab_panes do %>
+<% if @histogram_date > 0 %>
+  <% content_for :tab_panes do %>
   <%# We use protocol-relative paths here to avoid browsers refusing to load javascript over http in a page that was loaded over https. %>
   <%= javascript_include_tag '//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.2/raphael-min.js' %>
   <%= javascript_include_tag '//cdnjs.cloudflare.com/ajax/libs/morris.js/0.4.3/morris.min.js' %>
@@ -9,9 +10,11 @@
   </script>
   <div class='graph'>
     <h3>Cache Age vs. Disk Utilization</h3>
+    <h4>circa <%= @histogram_pretty_date %></h4>
     <div id='cache-age-vs-disk-histogram'>
     </div>
   </div>
+  <% end %>
 <% end %>
 <%= content_for :content_top %>
 <%= content_for :tab_line_buttons %>

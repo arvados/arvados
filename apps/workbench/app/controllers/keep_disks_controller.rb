@@ -19,6 +19,7 @@ class KeepDisksController < ApplicationController
       @cache_age_histogram = log_entry['properties'][:histogram]
       # Javascript wants dates in milliseconds.
       @histogram_date = log_entry['event_at'].to_i * 1000
+      @histogram_pretty_date = log_entry['event_at'].strftime('%b %-d, %Y')
 
       total_free_cache = @cache_age_histogram[-1][1]
       persisted_storage = 1 - total_free_cache
