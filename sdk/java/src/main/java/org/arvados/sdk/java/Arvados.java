@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
@@ -160,6 +161,16 @@ public class Arvados {
     }
   }
 
+  public Set<String> getAvailableResourses() {
+    return (restDescription.getResources().keySet());
+  }
+  
+  public Set<String> getAvailableMethodsForResourse(String resourceName)
+        throws Exception {
+    Map<String, RestMethod> methodMap = getMatchingMethodMap (resourceName);
+    return (methodMap.keySet());
+  }
+  
   private HashMap<String, Object> loadParameters(Map<String, Object> paramsMap,
       RestMethod method) throws Exception {
     HashMap<String, Object> parameters = Maps.newHashMap();
@@ -204,11 +215,25 @@ public class Arvados {
 
   private RestMethod getMatchingMethod(String resourceName, String methodName)
       throws Exception {
-    if (resourceName == null) {
-      error("missing resource name");      
-    }
+    Map<String, RestMethod> methodMap = getMatchingMethodMap(resourceName);
+
     if (methodName == null) {
       error("missing method name");      
+    }
+
+    RestMethod method =
+        methodMap == null ? null : methodMap.get(methodName);
+    if (method == null) {
+      error("method not found: ");
+    }
+
+    return method;
+  }
+
+  private Map<String, RestMethod> getMatchingMethodMap(String resourceName)
+          throws Exception {
+    if (resourceName == null) {
+      error("missing resource name");      
     }
 
     Map<String, RestMethod> methodMap = null;
@@ -218,13 +243,7 @@ public class Arvados {
       error("resource not found");
     }
     methodMap = resource.getMethods();
-    RestMethod method =
-        methodMap == null ? null : methodMap.get(methodName);
-    if (method == null) {
-      error("method not found: ");
-    }
-
-    return method;
+    return methodMap;
   }
 
   /**
