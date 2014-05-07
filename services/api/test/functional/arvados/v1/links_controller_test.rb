@@ -20,7 +20,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     end
   end
 
-  %w(created_at updated_at modified_at).each do |attr|
+  %w(created_at modified_at).each do |attr|
     {nil: nil, bogus: 2.days.ago}.each do |bogustype, bogusvalue|
       test "cannot set #{bogustype} #{attr} in create" do
         authorize_with :active
@@ -270,4 +270,17 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
   end
 
+  test "refuse duplicate name" do
+    the_name = links(:job_name_in_afolder).name
+    the_folder = links(:job_name_in_afolder).tail_uuid
+    authorize_with :active
+    post :create, link: {
+      tail_uuid: the_folder,
+      head_uuid: specimens(:owned_by_active_user).uuid,
+      link_class: 'name',
+      name: the_name,
+      properties: {this_s: "a duplicate name"}
+    }
+    assert_response 422
+  end
 end

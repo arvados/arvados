@@ -8,7 +8,7 @@ class Log < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :object_uuid
-    t.add :object, :if => :object
+    t.add :object_owner_uuid
     t.add :object_kind
     t.add :event_at
     t.add :event_type
@@ -24,6 +24,11 @@ class Log < ArvadosModel
 
   def fill_object(thing)
     self.object_uuid ||= thing.uuid
+    if respond_to? :object_owner_uuid=
+      # Skip this if the object_owner_uuid migration hasn't happened
+      # yet, i.e., we're in the process of migrating an old database.
+      self.object_owner_uuid = thing.owner_uuid
+    end
     self.summary ||= "#{self.event_type} of #{thing.uuid}"
     self
   end
@@ -62,6 +67,10 @@ class Log < ArvadosModel
     self.event_at ||= Time.now
   end
 
+  def log_start_state
+    # don't log start state on logs
+  end
+
   def log_change(event_type)
     # Don't log changes to logs.
   end
@@ -69,4 +78,5 @@ class Log < ArvadosModel
   def ensure_valid_uuids
     # logs can have references to deleted objects
   end
+
 end

@@ -1,4 +1,9 @@
 foo:
-  uuid: zzzzz-2x53u-382brsig8rp3666
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  uuid: zzzzz-s0uqq-382brsig8rp3666
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   name: foo
+
+repository2:
+  uuid: zzzzz-s0uqq-382brsig8rp3667
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
+  name: foo2

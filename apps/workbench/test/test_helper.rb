@@ -1,4 +1,24 @@
 ENV["RAILS_ENV"] = "test"
+unless ENV["NO_COVERAGE_TEST"]
+  begin
+    require 'simplecov'
+    require 'simplecov-rcov'
+    class SimpleCov::Formatter::MergedFormatter
+      def format(result)
+        SimpleCov::Formatter::HTMLFormatter.new.format(result)
+        SimpleCov::Formatter::RcovFormatter.new.format(result)
+      end
+    end
+    SimpleCov.formatter = SimpleCov::Formatter::MergedFormatter
+    SimpleCov.start do
+      add_filter '/test/'
+      add_filter 'initializers/secret_token'
+    end
+  rescue Exception => e
+    $stderr.puts "SimpleCov unavailable (#{e}). Proceeding without."
+  end
+end
+
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 
@@ -6,13 +26,21 @@ $ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
 SERVER_PID_PATH = 'tmp/pids/server.pid'
 
 class ActiveSupport::TestCase
-  # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in alphabetical order.
+  # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in
+  # alphabetical order.
   #
-  # Note: You'll currently still have to declare fixtures explicitly in integration tests
-  # -- they do not yet inherit this setting
+  # Note: You'll currently still have to declare fixtures explicitly
+  # in integration tests -- they do not yet inherit this setting
   fixtures :all
+  def use_token token_name
+    auth = api_fixture('api_client_authorizations')[token_name.to_s]
+    Thread.current[:arvados_api_token] = auth['api_token']
+  end
 
-  # Add more helper methods to be used by all tests here...
+  def teardown
+    Thread.current[:arvados_api_token] = nil
+    super
+  end
 end
 
 module ApiFixtureLoader
@@ -62,6 +90,7 @@ class ApiServerBackedTestRunner < MiniTest::Unit
   def _run(args=[])
     Capybara.javascript_driver = :poltergeist
     server_pid = Dir.chdir($ARV_API_SERVER_DIR) do |apidir|
+      ENV["NO_COVERAGE_TEST"] = "1"
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')

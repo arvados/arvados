@@ -6,31 +6,16 @@ title: VirtualMachine
 
 ...
 
-
-
-A **VirtualMachine** represents...
+A **VirtualMachine** represents a network host, running within an Arvados installation, on which Arvados users are given login accounts.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "virtual_machines":{{site.baseurl}}/api/methods/virtual_machines.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/virtual_machines@
-
-h2. Creation
-
-h3. Prerequisites
-
-Prerequisites for creating a VirtualMachine.
-
-h3. Side effects
-
-Side effects of creating a VirtualMachine.
-
-h2. Resources
+h2. Resource
 
 Each VirtualMachine has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
 |hostname|string|||
-|updated_at|datetime|||

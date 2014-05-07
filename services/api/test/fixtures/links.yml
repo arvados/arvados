@@ -233,6 +233,20 @@ foo_repository_readable_by_spectator:
   tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   link_class: permission
   name: can_read
+  head_uuid: zzzzz-s0uqq-382brsig8rp3666
+  properties: {}
+
+foo_repository_writable_by_active:
+  uuid: zzzzz-o0j2j-8tdfjd8g0s4rn1k
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_write
   head_uuid: zzzzz-2x53u-382brsig8rp3666
   properties: {}
 
@@ -288,4 +302,74 @@ test_timestamps:
   updated_at: 2014-04-15 13:17:14 -0400
   link_class: test
   name: test
+  properties: {}
+
+specimen_is_in_two_folders:
+  uuid: zzzzz-o0j2j-ryhm1bn83ni03sn
+  owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  tail_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
+  head_uuid: zzzzz-j58dm-5gid26432uujf79
+  link_class: name
+  name: "I'm in a subfolder, too"
+  properties: {}
+
+template_name_in_afolder:
+  uuid: zzzzz-o0j2j-4kpwf3d6rwkeqhl
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-29 16:47:26 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-29 16:47:26 -0400
+  updated_at: 2014-04-29 16:47:26 -0400
+  tail_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  head_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
+  link_class: name
+  name: "I'm a template in a folder"
+  properties: {}
+
+job_name_in_afolder:
+  uuid: zzzzz-o0j2j-1kt6dppqcxbl1yt
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-29 16:47:26 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-29 16:47:26 -0400
+  updated_at: 2014-04-29 16:47:26 -0400
+  tail_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  head_uuid: zzzzz-8i9sb-pshmckwoma9plh7
+  link_class: name
+  name: "I'm a job in a folder"
+  properties: {}
+
+foo_collection_tag:
+  uuid: zzzzz-o0j2j-eedahfaho8aphiv
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  tail_uuid: ~
+  head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  link_class: tag
+  name: foo_tag
+  properties: {}
+
+active_user_can_manage_bad_group_cx2al9cqkmsf1hs:
+  uuid: zzzzz-o0j2j-ezv55ahzc9lvjwe
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-05-03 18:50:08 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-05-03 18:50:08 -0400
+  updated_at: 2014-05-03 18:50:08 -0400
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_manage
+  head_uuid: zzzzz-j7d0g-cx2al9cqkmsf1hs
   properties: {}

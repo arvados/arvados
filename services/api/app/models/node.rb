@@ -119,8 +119,8 @@ class Node < ArvadosModel
   end
 
   def start!(ping_url_method)
-    ensure_permission_to_update
-    ping_url = ping_url_method.call({ uuid: self.uuid, ping_secret: self.info[:ping_secret] })
+    ensure_permission_to_save
+    ping_url = ping_url_method.call({ id: self.uuid, ping_secret: self.info[:ping_secret] })
     if (Rails.configuration.compute_node_ec2run_args and
         Rails.configuration.compute_node_ami)
       ec2_args = ["--user-data '#{ping_url}'",

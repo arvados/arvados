@@ -9,6 +9,7 @@ class Link < ArvadosModel
   after_create :maybe_invalidate_permissions_cache
   after_destroy :maybe_invalidate_permissions_cache
   attr_accessor :head_kind, :tail_kind
+  validate :name_link_has_valid_name
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
@@ -51,7 +52,7 @@ class Link < ArvadosModel
 
     # All users can grant permissions on objects they own
     head_obj = self.class.
-      kind_class(self.head_uuid).
+      resource_class_for_uuid(self.head_uuid).
       where('uuid=?',head_uuid).
       first
     if head_obj
@@ -79,6 +80,16 @@ class Link < ArvadosModel
       # cache for only those users. (This would require a browseable
       # cache.)
       User.invalidate_permissions_cache
+    end
+  end
+
+  def name_link_has_valid_name
+    if link_class == 'name'
+      unless name.is_a? String and !name.empty?
+        errors.add('name', 'must be a non-empty string')
+      end
+    else
+      true
     end
   end
 end

@@ -11,7 +11,9 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140422011506) do
+ActiveRecord::Schema.define(:version => 20140501165548) do
+
+
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -64,13 +66,13 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.datetime "updated_at",              :null => false
   end
 
-  add_index "authorized_keys", ["authorized_user_uuid", "expires_at"], :name => "index_authorized_keys_on_authorized_user_uuid_and_expires_at"
+  add_index "authorized_keys", ["authorized_user_uuid", "expires_at"], :name => "index_authkeys_on_user_and_expires_at"
   add_index "authorized_keys", ["uuid"], :name => "index_authorized_keys_on_uuid", :unique => true
 
   create_table "collections", :force => true do |t|
     t.string   "locator"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",                          :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -80,7 +82,7 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.string   "redundancy_confirmed_by_client_uuid"
     t.datetime "redundancy_confirmed_at"
     t.integer  "redundancy_confirmed_as"
-    t.datetime "updated_at"
+    t.datetime "updated_at",                          :null => false
     t.string   "uuid"
     t.text     "manifest_text"
   end
@@ -104,8 +106,8 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.string   "repository_name"
     t.string   "sha1"
     t.string   "message"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",      :null => false
+    t.datetime "updated_at",      :null => false
   end
 
   add_index "commits", ["repository_name", "sha1"], :name => "index_commits_on_repository_name_and_sha1", :unique => true
@@ -120,9 +122,11 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.string   "name"
     t.text     "description"
     t.datetime "updated_at",              :null => false
+    t.string   "group_class"
   end
 
   add_index "groups", ["created_at"], :name => "index_groups_on_created_at"
+  add_index "groups", ["group_class"], :name => "index_groups_on_group_class"
   add_index "groups", ["modified_at"], :name => "index_groups_on_modified_at"
   add_index "groups", ["uuid"], :name => "index_groups_on_uuid", :unique => true
 
@@ -133,8 +137,8 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.text     "properties"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",              :null => false
+    t.datetime "updated_at",              :null => false
   end
 
   add_index "humans", ["uuid"], :name => "index_humans_on_uuid", :unique => true
@@ -182,8 +186,8 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.boolean  "running"
     t.boolean  "success"
     t.string   "output"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",                                  :null => false
+    t.datetime "updated_at",                                  :null => false
     t.string   "priority"
     t.string   "is_locked_by_uuid"
     t.string   "log"
@@ -235,7 +239,7 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
   create_table "links", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",              :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
@@ -244,14 +248,13 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.string   "name"
     t.string   "head_uuid"
     t.text     "properties"
-    t.datetime "updated_at"
-    t.string   "head_kind"
-    t.string   "tail_kind"
+    t.datetime "updated_at",              :null => false
   end
 
   add_index "links", ["created_at"], :name => "index_links_on_created_at"
   add_index "links", ["head_uuid"], :name => "index_links_on_head_uuid"
   add_index "links", ["modified_at"], :name => "index_links_on_modified_at"
+  add_index "links", ["tail_uuid", "name"], :name => "links_tail_name_unique_if_link_class_name", :unique => true, :where => "((link_class)::text = 'name'::text)"
   add_index "links", ["tail_uuid"], :name => "index_links_on_tail_uuid"
   add_index "links", ["uuid"], :name => "index_links_on_uuid", :unique => true
 
@@ -268,6 +271,7 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
     t.datetime "created_at",              :null => false
     t.datetime "updated_at",              :null => false
     t.datetime "modified_at"
+    t.string   "object_owner_uuid"
   end
 
   add_index "logs", ["created_at"], :name => "index_logs_on_created_at"
@@ -304,17 +308,17 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
   create_table "pipeline_instances", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at"
+    t.datetime "created_at",                                 :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "pipeline_template_uuid"
     t.string   "name"
     t.text     "components"
-    t.datetime "updated_at"
-    t.text     "properties"
-    t.boolean  "active"
     t.boolean  "success"
+    t.boolean  "active",                  :default => false
+    t.datetime "updated_at",                                 :null => false
+    t.text     "properties"
     t.string   "state"
     t.text     "components_summary"
   end
@@ -421,5 +425,6 @@ ActiveRecord::Schema.define(:version => 20140422011506) do
 
   add_index "virtual_machines", ["hostname"], :name => "index_virtual_machines_on_hostname"
   add_index "virtual_machines", ["uuid"], :name => "index_virtual_machines_on_uuid", :unique => true
+
 
 end

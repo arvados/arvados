@@ -1,5 +1,5 @@
 class UserSessionsController < ApplicationController
-  before_filter :require_auth_scope_all, :only => [ :destroy ]
+  before_filter :require_auth_scope, :only => [ :destroy ]
 
   skip_before_filter :find_object_by_uuid
   skip_before_filter :render_404_if_no_object
@@ -9,7 +9,6 @@ class UserSessionsController < ApplicationController
   # omniauth callback method
   def create
     omniauth = env['omniauth.auth']
-    #logger.debug "+++ #{omniauth}"
 
     identity_url_ok = (omniauth['info']['identity_url'].length > 0) rescue false
     unless identity_url_ok
@@ -58,7 +57,7 @@ class UserSessionsController < ApplicationController
     # "unauthorized":
     Thread.current[:user] = user
 
-    user.save!
+    user.save or raise Exception.new(user.errors.messages)
 
     omniauth.delete('extra')
 

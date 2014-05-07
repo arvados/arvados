@@ -141,16 +141,29 @@ module ApplicationHelper
 
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
 
-    link_to attrvalue.to_s, '#', {
+    ajax_options = {
+      "data-pk" => {
+        id: object.uuid,
+        key: object.class.to_s.underscore
+      }
+    }
+    if object.uuid
+      ajax_options['data-url'] = url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore)
+    else
+      ajax_options['data-url'] = url_for(action: "create", controller: object.class.to_s.pluralize.underscore)
+      ajax_options['data-pk'][:defaults] = object.attributes
+    end
+    ajax_options['data-pk'] = ajax_options['data-pk'].to_json
+
+    content_tag 'span', attrvalue.to_s, {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
       "data-title" => "Update #{attr.gsub '_', ' '}",
       "data-name" => attr,
-      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+      "data-object-uuid" => object.uuid,
       :class => "editable"
-    }.merge(htmloptions)
+    }.merge(htmloptions).merge(ajax_options)
   end
 
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
@@ -218,27 +231,27 @@ module ApplicationHelper
       dn += '[value]'
     end
 
-    items = []
+    selectables = []
     attrtext = attrvalue
     if dataclass and dataclass.is_a? Class
       if attrvalue and !attrvalue.empty?
         Link.where(head_uuid: attrvalue, link_class: ["tag", "identifier"]).each do |tag|
           attrtext += " [#{tag.name}]"
         end
-        items.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
+        selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
       end
       #dataclass.where(uuid: attrvalue).each do |item|
-      #  items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+      #  selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       #end
       itemuuids = []
       dataclass.limit(10).each do |item|
         itemuuids << item.uuid
-        items.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
+        selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       end
       Link.where(head_uuid: itemuuids, link_class: ["tag", "identifier"]).each do |tag|
-        items.each do |item|
-          if item.uuid == tag.head_uuid
-            item.name += ' [' + tag.name + ']'
+        selectables.each do |selectable|
+          if selectable['uuid'] == tag.head_uuid
+            selectable['name'] += ' [' + tag.name + ']'
           end
         end
       end
@@ -260,8 +273,8 @@ module ApplicationHelper
 
     lt += raw("\n<script>")
 
-    if items.any?
-      lt += raw("add_form_selection_sources(#{items.to_json});\n")
+    if selectables.any?
+      lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
     end
 
     lt += raw("$('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")

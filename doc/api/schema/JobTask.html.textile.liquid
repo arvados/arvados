@@ -6,8 +6,6 @@ title: JobTask
 
 ...
 
-
-
 A Job Task is a well defined independently-computable portion of a "Job":Job.html.
 
 Job tasks are created two ways:
@@ -22,11 +20,9 @@ Job tasks have particular update semantics:
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+See "job_tasks":{{site.baseurl}}/api/methods/job_tasks.html
 
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/job_tasks@
-
-h2. Resources
+h2. Resource
 
 Each JobTask has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
 
@@ -35,7 +31,7 @@ table(table table-bordered table-condensed).
 |sequence|integer|Execution sequence.
 A step cannot be run until all steps with lower sequence numbers have completed.
 Job steps with the same sequence number can be run in any order.||
-|parameters{}|list|||
+|parameters|hash|||
 |output|text|||
 |progress|float|||
 |success|boolean|Is null if the task has neither completed successfully nor failed permanently.||

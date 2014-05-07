@@ -14,7 +14,9 @@ Server::Application.routes.draw do
         get 'provenance', on: :member
         get 'used_by', on: :member
       end
-      resources :groups
+      resources :groups do
+        get 'contents', on: :member
+      end
       resources :humans
       resources :job_tasks
       resources :jobs do

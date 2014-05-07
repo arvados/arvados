@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import hashlib      # Import the hashlib module to compute md5.
+import hashlib      # Import the hashlib module to compute MD5.
 import arvados      # Import the Arvados sdk module
 
 # Automatically parallelize this job by running one task per file.
@@ -10,7 +10,7 @@ import arvados      # Import the Arvados sdk module
 arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True, 
                                           input_as_path=True)
 
-# Create the message digest object that will compute the md5 hash
+# Create the message digest object that will compute the MD5 hash
 digestor = hashlib.new('md5')
 
 # Get the input file for the task
@@ -22,7 +22,7 @@ with open(input_file) as f:
         buf = f.read(2**20)      # read a 1 megabyte block from the file
         if len(buf) == 0:        # break when there is no more data left
             break
-        digestor.update(buf)     # update the md5 hash object
+        digestor.update(buf)     # update the MD5 hash object
 
 # Get object representing the current task
 this_task = arvados.current_task()
@@ -33,7 +33,7 @@ out = arvados.CollectionWriter()
  # Set output file within the collection
 out.set_current_file_name("md5sum.txt")
 
-# Write an output line with the md5 value and input
+# Write an output line with the MD5 value and input
 out.write("%s %s\n" % (digestor.hexdigest(), this_task['parameters']['input']))
 
  # Commit the output to keep.  This returns a Keep id.

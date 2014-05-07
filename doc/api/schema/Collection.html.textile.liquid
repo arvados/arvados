@@ -6,16 +6,11 @@ title: Collection
 
 ...
 
-
-
-This resource concerns metadata, usage accounting, and integrity checks for data stored on the cloud.  Reading and writing the data _per se_ is achieved by the "Keep":{{site.baseurl}}/user/tutorials/tutorial-keep.html storage system.
-
+Note: This resource concerns indexing, usage accounting, and integrity checks for data stored in Arvados. Reading and writing the data _per se_ is achieved by the "Keep":{{site.baseurl}}/user/tutorials/tutorial-keep.html storage system.
 
 h2. Methods
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
-API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/links@
+See "collections":{{site.baseurl}}/api/methods/collections.html
 
 h3. Conditions of creating a Collection
 
@@ -23,7 +18,7 @@ The @uuid@ and @manifest_text@ attributes must be provided when creating a Colle
 
 h3. Side effects of creating a Collection
 
-Referenced data can be protected from garbage collection.
+Referenced data can be protected from garbage collection. See the section about "resources" links on the "Links":Link.html page.
 
 Data can be shared with other users via the Arvados permission model.
 

@@ -66,4 +66,13 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_response 401
   end
 
+  test "create node" do
+    authorize_with :admin
+    post :create
+    assert_response :success
+    assert_not_nil json_response['uuid']
+    assert_not_nil json_response['info'].is_a? Hash
+    assert_not_nil json_response['info']['ping_secret']
+  end
+
 end

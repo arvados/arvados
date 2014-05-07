@@ -6,7 +6,9 @@ title: "users"
 
 ...
 
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/users@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
@@ -40,16 +42,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the User in question.|path||
 
-h2. destroy
-
-destroy users
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
-
 h2. event_stream
 
 event_stream users
@@ -70,17 +62,6 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the User in question.|path||
 
-h2. index
-
-index users
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|order|string||query||
-|where|object||query||
-
 h2. list
 
 List users.
@@ -91,9 +72,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |limit|integer (default 100)|Maximum number of users to return.|query||
 |order|string|Order in which to return matching users.|query||
-|pageToken|string|Page token.|query||
-|q|string|Query string for searching users.|query||
-|where|object|Conditions for filtering users.|query||
+|filters|array|Conditions for filtering users.|query||
 
 h2. show
 
