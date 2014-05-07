@@ -416,7 +416,8 @@ class WhRunPipelineInstance
     if $options[:submit]
       @instance ||= PipelineInstance.
         create(:components => @components,
-              :pipeline_template_uuid => @template[:uuid])
+              :pipeline_template_uuid => @template[:uuid],
+              :state => 'New')
     else
       @instance ||= PipelineInstance.
         create(:components => @components,

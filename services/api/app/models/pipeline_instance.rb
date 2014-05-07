@@ -199,6 +199,10 @@ class PipelineInstance < ArvadosModel
         self.state = Ready
       end
     end
+
+    if self.state == Ready || self.state == New
+      self.active = nil
+    end 
   end
 
 end
