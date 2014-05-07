@@ -22,3 +22,5 @@
 /Capfile*
 /config/deploy*
 
+# SimpleCov reports
+/coverage

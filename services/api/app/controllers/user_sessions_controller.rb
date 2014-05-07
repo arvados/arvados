@@ -9,7 +9,6 @@ class UserSessionsController < ApplicationController
   # omniauth callback method
   def create
     omniauth = env['omniauth.auth']
-    #logger.debug "+++ #{omniauth}"
 
     identity_url_ok = (omniauth['info']['identity_url'].length > 0) rescue false
     unless identity_url_ok
@@ -58,7 +57,7 @@ class UserSessionsController < ApplicationController
     # "unauthorized":
     Thread.current[:user] = user
 
-    user.save!
+    user.save or raise Exception.new(user.errors.messages)
 
     omniauth.delete('extra')
 

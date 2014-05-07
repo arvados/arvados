@@ -247,6 +247,7 @@ class ArvadosModel < ActiveRecord::Base
 
   def maybe_update_modified_by_fields
     update_modified_by_fields if self.changed? or self.new_record?
+    true
   end
 
   def update_modified_by_fields
@@ -255,6 +256,7 @@ class ArvadosModel < ActiveRecord::Base
     self.modified_at = Time.now
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
+    true
   end
 
   def ensure_serialized_attribute_type

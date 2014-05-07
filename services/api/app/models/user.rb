@@ -177,6 +177,10 @@ class User < ArvadosModel
 
   protected
 
+  def ensure_ownership_path_leads_to_user
+    true
+  end
+
   def permission_to_update
     # users must be able to update themselves (even if they are
     # inactive) in order to create sessions
