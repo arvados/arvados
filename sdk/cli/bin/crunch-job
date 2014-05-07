@@ -501,6 +501,27 @@ if (!$have_slurm)
 # If this job requires a Docker image, install that.
 my $docker_bin = "/usr/bin/docker.io";
 my $docker_image = $Job->{runtime_constraints}->{docker_image} || "";
+if ($docker_image) {
+  my $docker_pid = fork();
+  if ($docker_pid == 0)
+  {
+    srun (["srun", "--nodelist=" . join(' ', @node)],
+          [$docker_bin, 'pull', $docker_image]);
+    exit ($?);
+  }
+  while (1)
+  {
+    last if $docker_pid == waitpid (-1, WNOHANG);
+    freeze_if_want_freeze ($docker_pid);
+    select (undef, undef, undef, 0.1);
+  }
+  # If the Docker image was specified as a hash, pull will fail.
+  # Ignore that error.  We'll see what happens when we try to run later.
+  if (($? != 0) && ($docker_image !~ /^[0-9a-fA-F]{5,}$/))
+  {
+    croak("Installing Docker image $docker_image returned exit code $?");
+  }
+}
 
 foreach (qw (script script_version script_parameters runtime_constraints))
 {
