@@ -14,9 +14,7 @@ h3. Introdution
   
 * The Java SDK is implemented as a maven project. Hence, you would need a working
 maven environment to be able to build the source code. If you do not have maven setup,
-you may find the following link useful. 
-
-<code class="userinput">http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html</code>
+you may find the "Maven in 5 Minutes":http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html link useful. 
 
 * In this document $ARVADOS_HOME is used to refer to the directory where
 arvados code is cloned in your system. For ex: $ARVADOS_HOME = $HOME/arvados
@@ -24,27 +22,23 @@ arvados code is cloned in your system. For ex: $ARVADOS_HOME = $HOME/arvados
 
 h3. Setting up the environment
 
-* The SDK requires a running Arvados API server. The information about the
-  	  API server needs to be passed to the SDK using environment variables or
-  	  during the construction of the Arvados instance.
-  	  
-* Below are the details about the environment variables and example setup
-  	  statements for a .bashrc file.
-  	
+* The SDK requires a running Arvados API server. The following information
+  	  about the API server needs to be passed to the SDK using environment
+  	  variables or during the construction of the Arvados instance.
+
 <notextile>
 <pre>
 ARVADOS_API_TOKEN: API client token to be used to authorize with API server.
-$ <code class="userinput">export ARVADOS_API_TOKEN=z40gplmla6i58rsg96jhg5u41ewdl5rj4g1py2s6e2lsc3</code>
 
 ARVADOS_API_HOST: Host name of the API server.
-$ <code class="userinput">export ARVADOS_API_HOST=localhost:3001</code>
 
 ARVADOS_API_HOST_INSECURE: Set this to true if you are using self-signed
-certificates and would like to bypass certificate validations.
-$ <code class="userinput">export ARVADOS_API_HOST_INSECURE=true</code>
+    certificates and would like to bypass certificate validations.
 </pre>
 </notextile>
 
+* Please see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for full details.
+  	  
 
 h3. Building the Arvados SDK
 
@@ -116,15 +110,26 @@ h3. Using the SDK in eclipse
 
 * To develop in eclipse, you can use the provided <code class="userinput">eclipse project</code>
 
-* Install <code class="userinput">m2eclipse</code> plugin in your eclipse
-* Set <code class="userinput">M2_REPO</code> in eclipse to your <code class="userinput">.m2/repository</code> directory
+* Install "m2eclipse":https://www.eclipse.org/m2e/ plugin in your eclipse
 
-* Open the SDK project in eclipse
+* Set <code class="userinput">M2_REPO</code> classpath variable in eclipse to point to your local repository.
+The local repository is usually located in your home directory at <code class="userinput">$HOME/.m2/repository</code>.
+
 <notextile>
 <pre>
-File -> Import -> Existing Projects into Workspace -> Next -> Browse
-and select $ARVADOS_HOME/sdk/java
+In Eclipse IDE:
+Window -> Preferences -> Java -> Build Path -> Classpath Variables
+    Click on the "New..." button and add a new 
+    M2_REPO variable and set it to your local Maven repository
 </pre>
 </notextile>
 
 
+* Open the SDK project in eclipse
+<notextile>
+<pre>
+In Eclipse IDE:
+File -> Import -> Existing Projects into Workspace -> Next -> Browse
+    and select $ARVADOS_HOME/sdk/java
+</pre>
+</notextile>
