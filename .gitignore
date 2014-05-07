@@ -14,3 +14,5 @@ sdk/perl/pm_to_blib
 services/keep/bin
 services/keep/pkg
 services/keep/src/github.com
+sdk/java/target
+*.class

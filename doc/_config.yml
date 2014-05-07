@@ -56,6 +56,8 @@ navbar:
       - sdk/perl/index.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
+    - Java:
+      - sdk/java/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
   api:
@@ -112,10 +114,9 @@ navbar:
       - admin/cheat_sheet.html.textile.liquid
   installguide:
     - Install:
-      - install/index.html.md.liquid
+      - install/index.html.textile.liquid
       - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
-      - install/client.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid

@@ -206,4 +206,41 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
+  test 'get writable_by list for owned group' do
+    authorize_with :active
+    get :show, {
+      id: groups(:afolder).uuid,
+      format: :json
+    }
+    assert_response :success
+    assert_not_nil(json_response['writable_by'],
+                   "Should receive uuid list in 'writable_by' field")
+    assert_includes(json_response['writable_by'], users(:active).uuid,
+                    "owner should be included in writable_by list")
+  end
+
+  test 'no writable_by list for group with read-only access' do
+    authorize_with :rominiadmin
+    get :show, {
+      id: groups(:testusergroup_admins).uuid,
+      format: :json
+    }
+    assert_response :success
+    assert_nil(json_response['writable_by'],
+               "Should not receive uuid list in 'writable_by' field")
+  end
+
+  test 'get writable_by list by admin user' do
+    authorize_with :admin
+    get :show, {
+      id: groups(:testusergroup_admins).uuid,
+      format: :json
+    }
+    assert_response :success
+    assert_not_nil(json_response['writable_by'],
+                   "Should receive uuid list in 'writable_by' field")
+    assert_includes(json_response['writable_by'],
+                    users(:admin).uuid,
+                    "Current user should be included in 'writable_by' field")
+  end
 end

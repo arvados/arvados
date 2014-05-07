@@ -28,3 +28,6 @@
 
 # This can be a symlink to ../../../doc/.site in dev setups
 /public/doc
+
+# SimpleCov reports
+/coverage

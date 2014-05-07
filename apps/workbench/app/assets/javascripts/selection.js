@@ -49,15 +49,21 @@ jQuery(function($){
     }
 
     var update_count = function(e) {
+        var html;
+        var this_object_uuid = $('#selection-form-content').
+            closest('form').
+            find('input[name=uuid]').val();
         var lst = get_selection_list();
         $("#persistent-selection-count").text(lst.length);
         if (lst.length > 0) {
-            $('#selection-form-content').html(
-                '<li><a href="#" id="clear_selections_button">Clear selections</a></li>'
-                    + '<li><input type="submit" name="combine_selected_files_into_collection" '
-                    + ' id="combine_selected_files_into_collection" '
-                    + ' value="Combine selected collections and files into a new collection" /></li>'
-                    + '<li class="notification"><table style="width: 100%"></table></li>');
+            html = '<li><a href="#" class="btn btn-xs btn-info" id="clear_selections_button"><i class="fa fa-fw fa-ban"></i> Clear selections</a></li>';
+            if (this_object_uuid.match('-j7d0g-'))
+                html += '<li><button class="btn btn-xs btn-info" type="submit" name="copy_selections_into_folder" id="copy_selections_into_folder"><i class="fa fa-fw fa-folder-open"></i> Copy selections into this folder</button></li>';
+            html += '<li><button class="btn btn-xs btn-info" type="submit" name="combine_selected_files_into_collection" '
+                + ' id="combine_selected_files_into_collection">'
+                + '<i class="fa fa-fw fa-archive"></i> Combine selected collections and files into a new collection</button></li>'
+                + '<li class="notification"><table style="width: 100%"></table></li>';
+            $('#selection-form-content').html(html);
 
             for (var i = 0; i < lst.length; i++) {
                 $('#selection-form-content > li > table').append("<tr>"

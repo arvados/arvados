@@ -2,18 +2,8 @@
     width: 500px;
 }
 
-#selection-form-content > li > a, #selection-form-content > li > input {
-    display: block;
-    padding: 3px 20px;
-    clear: both;
-    font-weight: normal;
-    line-height: 1.42857;
-    color: rgb(51, 51, 51);
-    white-space: nowrap;    
-    border: none;
-    background: transparent;
-    width: 100%;
-    text-align: left;
+#selection-form-content > li > a, #selection-form-content > li > button {
+    margin: 3px 20px;
 }
 
 #selection-form-content li table tr {
@@ -22,8 +12,6 @@
     border-top: 1px solid rgb(221, 221, 221);
 }
 
-#selection-form-content a:hover, #selection-form-content a:focus, #selection-form-content input:hover, #selection-form-content input:focus, #selection-form-content tr:hover {
-    text-decoration: none;
-    color: rgb(38, 38, 38);
-    background-color: whitesmoke;
+#selection-form-content li table tr:last-child {
+    border-bottom: 1px solid rgb(221, 221, 221);
 }
