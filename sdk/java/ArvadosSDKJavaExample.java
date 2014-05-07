@@ -1,6 +1,5 @@
 /**
  * This Sample test program is useful in getting started with working with Arvados Java SDK.
- * Please also see arvadso 
  * @author radhika
  *
  */
