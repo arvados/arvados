@@ -54,34 +54,39 @@ $ <code class="userinput">mvn -Dmaven.test.skip=true clean package</code>
 
 h3. Implementing your code to use SDK
 
-<code class="userinput">$ARVADOS_HOME/sdk/java/ArvadosSDKJavaExample.java</code> serves as a sample
-implementation using the SDK.
+* The following two sample programs serve as sample implementations using the SDK.
+<code class="userinput">$ARVADOS_HOME/sdk/java/ArvadosSDKJavaExample.java</code> is a simple program
+        that makes a few calls to API server.
+<code class="userinput">$ARVADOS_HOME/sdk/java/ArvadosSDKJavaExampleWithPrompt.java</code> can be
+        used to make calls to API server interactively.
 
-Please use this file to see how you would want use the SDK from your java program.
+Please use these implementations to see how you would want use the SDK from your java program.
 
 Also, refer to <code class="userinput">$ARVADOS_HOME/arvados/sdk/java/src/test/java/org/arvados/sdk/java/ArvadosTest.java</code>
 for more sample API invocation examples.
 
-Below are the steps to compile and run this java program.
+Below are the steps to compile and run these java program.
 
-* <code class="userinput">ArvadosSDKJavaExample.java</code> creates an instance of Arvados SDK class and uses it to
+* These programs create an instance of Arvados SDK class and use it to
 make various <code class="userinput">call</code> requests.
 
-* To compile ArvadosSDKJavaExample.java
+* To compile the examples
 <notextile>
 <pre>
 $ <code class="userinput">javac -cp $ARVADOS_HOME/sdk/java/target/arvados-sdk-1.0-jar-with-dependencies.jar \
-ArvadosSDKJavaExample.java</code>
-This results in the generation of the ArvadosSDKJavaExample.class file
-in the same directory as the java file
+ArvadosSDKJavaExample*.java</code>
+This results in the generation of the ArvadosSDKJavaExample*.class files
+in the same directory as the java files
 </pre>
 </notextile>
 
-* To run the sample
+* To run the samples
 <notextile>
 <pre>
 $ <code class="userinput">java -cp .:$ARVADOS_HOME/sdk/java/target/arvados-sdk-1.0-jar-with-dependencies.jar \
 ArvadosSDKJavaExample</code>
+$ <code class="userinput">java -cp .:$ARVADOS_HOME/sdk/java/target/arvados-sdk-1.0-jar-with-dependencies.jar \
+ArvadosSDKJavaExampleWithPrompt</code>
 </pre>
 </notextile>
 
