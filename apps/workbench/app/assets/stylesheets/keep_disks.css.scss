@@ -3,8 +3,9 @@
 // You can use Sass (SCSS) here: http://sass-lang.com/
 
 /* Margin allows us some space between the table above. */
-div.cache-age-vs-disk-histogram {
+div.graph {
     margin-top: 20px;
 }
-
-
+div.graph h3 {
+    text-align: center;
+}

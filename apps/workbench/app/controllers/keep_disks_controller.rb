@@ -4,8 +4,8 @@ class KeepDisksController < ApplicationController
     @object = KeepDisk.new defaults.merge(params[:keep_disk] || {})
     super
   end
-  def index
 
+  def index
     # Retrieve cache age histogram info
     @cache_age_histogram = []
     @histogram_date = 0
@@ -26,6 +26,8 @@ class KeepDisksController < ApplicationController
           :cache => total_free_cache - x[1],
           :persisted => persisted_storage} }
     end
+
+    # Do the regular control work needed.
     super
   end
 end
