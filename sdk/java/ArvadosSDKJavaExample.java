@@ -38,17 +38,7 @@ public class ArvadosSDKJavaExample {
 
     Map response = arv.call("users", "list", params);
     System.out.println("Arvados users.list:\n");
-    Set<Entry<String,Object>> entrySet = (Set<Entry<String,Object>>)response.entrySet();
-    for (Map.Entry<String, Object> entry : entrySet) {
-      if ("items".equals(entry.getKey())) {
-        List items = (List)entry.getValue();
-        for (Object item : items) {
-          System.out.println("    " + item);
-        }            
-      } else {
-        System.out.println(entry.getKey() + " = " + entry.getValue());
-      }
-    }
+    printResponse(response);
     
     // get uuid of the first user from the response
     List items = (List)response.get("items");
@@ -62,17 +52,7 @@ public class ArvadosSDKJavaExample {
     params.put("uuid", userUuid);
     response = arv.call("users", "get", params);
     System.out.println("Arvados users.get:\n");
-    entrySet = (Set<Entry<String,Object>>)response.entrySet();
-    for (Map.Entry<String, Object> entry : entrySet) {
-      if ("items".equals(entry.getKey())) {
-        items = (List)entry.getValue();
-        for (Object item : items) {
-          System.out.println("    " + item);
-        }            
-      } else {
-        System.out.println(entry.getKey() + " = " + entry.getValue());
-      }
-    }
+    printResponse(response);
 
     // Make a pipeline_templates list call
     System.out.println("\n\n\nMaking a pipeline_templates.list call.");
@@ -81,10 +61,14 @@ public class ArvadosSDKJavaExample {
     response = arv.call("pipeline_templates", "list", params);
 
     System.out.println("Arvados pipelinetempates.list:\n");
-    entrySet = (Set<Entry<String,Object>>)response.entrySet();
+    printResponse(response);
+  }
+  
+  private static void printResponse(Map response){
+    Set<Entry<String,Object>> entrySet = (Set<Entry<String,Object>>)response.entrySet();
     for (Map.Entry<String, Object> entry : entrySet) {
       if ("items".equals(entry.getKey())) {
-        items = (List)entry.getValue();
+        List items = (List)entry.getValue();
         for (Object item : items) {
           System.out.println("    " + item);
         }            
