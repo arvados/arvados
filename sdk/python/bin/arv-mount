@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from arvados.fuse import * 
+from arvados.fuse import *
 import arvados
 import subprocess
 import argparse
@@ -15,6 +15,8 @@ mountpoint before --exec, or mark the end of your --exec arguments
 with "--".
 """)
     parser.add_argument('mountpoint', type=str, help="""Mount point.""")
+    parser.add_argument('--allow-other', action='store_true',
+                        help="""Let other users read the mount""")
     parser.add_argument('--collection', type=str, help="""Collection locator""")
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
@@ -35,12 +37,9 @@ with "--".
         operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
 
     # FUSE options, see mount.fuse(8)
-    opts = []
+    opts = [optname for optname in ['allow_other', 'debug']
+            if getattr(args, optname)]
 
-    # Enable FUSE debugging (logs each FUSE request)
-    if args.debug:
-        opts += ['debug']    
-    
     # Initialize the fuse connection
     llfuse.init(operations, args.mountpoint, opts)
 
