@@ -62,7 +62,7 @@ public class ArvadosSDKJavaExampleWithPrompt {
             break;
           int index = param.indexOf(","); // first comma
           String paramName = param.substring(0, index);
-          String paramValue = param.substring(index);
+          String paramValue = param.substring(index+1);
           System.out.println(paramName + " " + paramValue);
           paramsMap.put(paramName.trim(), paramValue.trim());
 
