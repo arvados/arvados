@@ -178,39 +178,37 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   end
 
   test "search jobs by uuid with 'not in' query" do
+    exclude_uuids = [jobs(:running).uuid,
+                     jobs(:running_cancelled).uuid]
     authorize_with :active
     get :index, {
-      filters: [['uuid', 'not in', ['zzzzz-8i9sb-pshmckwoma9plh7']]]
+      filters: [['uuid', 'not in', exclude_uuids]]
     }
     assert_response :success
     found = assigns(:objects).collect(&:uuid)
-    assert_not_equal [], found, "'not in' query returned nothing"
-    assert_not_includes found, 'zzzzz-8i9sb-pshmckwoma9plh7',
-    "'not in' query returned the very thing I did not want"
+    assert_not_empty found, "'not in' query returned nothing"
+    assert_empty(found & exclude_uuids,
+                 "'not in' query returned uuids I asked not to get")
   end
 
-  test "search jobs by uuid with '!=' query" do
-    authorize_with :active
-    get :index, {
-      filters: [['uuid', '!=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
-    }
-    assert_response :success
-    found = assigns(:objects).collect(&:uuid)
-    assert_not_equal [], found, "'!=' query returned nothing"
-    assert_not_includes found, 'zzzzz-8i9sb-pshmckwoma9plh7',
-    "'!=' query returned the very thing I did not want"
-  end
-
-  test "search jobs by output with '!= nil' query" do
-    authorize_with :active
-    get :index, {
-      filters: [['output', '!=', nil]]
-    }
-    assert_response :success
-    found = assigns(:objects).collect(&:output)
-    assert_not_equal [], found, "'!= nil' query returned nothing"
-    assert_not_includes found, nil,
-    "'!= nil' query returned the very thing I did not want"
+  ['=', '!='].each do |operator|
+    [['uuid', 'zzzzz-8i9sb-pshmckwoma9plh7'],
+     ['output', nil]].each do |attr, operand|
+      test "search jobs with #{attr} #{operator} #{operand.inspect} query" do
+        authorize_with :active
+        get :index, {
+          filters: [[attr, operator, operand]]
+        }
+        assert_response :success
+        values = assigns(:objects).collect { |x| x.send(attr) }
+        assert_not_empty values, "query should return non-empty result"
+        if operator == '='
+          assert_empty values - [operand], "query results do not satisfy query"
+        else
+          assert_empty values & [operand], "query results do not satisfy query"
+        end
+      end
+    end
   end
 
   test "search jobs by started_at with < query" do
