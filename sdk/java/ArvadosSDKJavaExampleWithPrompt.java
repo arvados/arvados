@@ -13,7 +13,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Map.Entry;
+import java.util.Set;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
@@ -76,7 +77,18 @@ public class ArvadosSDKJavaExampleWithPrompt {
       try {
         System.out.println ("Making a call for " + resourceName + " " + methodName);
         Map response = arv.call(resourceName, methodName, paramsMap);
-        System.out.println(response);
+        
+        Set<Entry<String,Object>> entrySet = (Set<Entry<String,Object>>)response.entrySet();
+        for (Map.Entry<String, Object> entry : entrySet) {
+          if ("items".equals(entry.getKey())) {
+            List items = (List)entry.getValue();
+            for (Object item : items) {
+              System.out.println("    " + item);
+            }            
+          } else {
+            System.out.println(entry.getKey() + " = " + entry.getValue());
+          }
+        }
       } catch (Exception e){
         System.out.println (e.getMessage());
         System.out.println ("\nStart over");

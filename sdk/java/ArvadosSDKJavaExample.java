@@ -10,6 +10,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class ArvadosSDKJavaExample {
   /** Make sure the following environment variables are set before using Arvados:
@@ -35,8 +37,19 @@ public class ArvadosSDKJavaExample {
     Map<String, Object> params = new HashMap<String, Object>();
 
     Map response = arv.call("users", "list", params);
-    System.out.println("Arvados users.list:\n" + response);
-
+    System.out.println("Arvados users.list:\n");
+    Set<Entry<String,Object>> entrySet = (Set<Entry<String,Object>>)response.entrySet();
+    for (Map.Entry<String, Object> entry : entrySet) {
+      if ("items".equals(entry.getKey())) {
+        List items = (List)entry.getValue();
+        for (Object item : items) {
+          System.out.println("    " + item);
+        }            
+      } else {
+        System.out.println(entry.getKey() + " = " + entry.getValue());
+      }
+    }
+    
     // get uuid of the first user from the response
     List items = (List)response.get("items");
 
@@ -48,7 +61,18 @@ public class ArvadosSDKJavaExample {
     params = new HashMap<String, Object>();
     params.put("uuid", userUuid);
     response = arv.call("users", "get", params);
-    System.out.println("Arvados users.get:\n" + response);
+    System.out.println("Arvados users.get:\n");
+    entrySet = (Set<Entry<String,Object>>)response.entrySet();
+    for (Map.Entry<String, Object> entry : entrySet) {
+      if ("items".equals(entry.getKey())) {
+        items = (List)entry.getValue();
+        for (Object item : items) {
+          System.out.println("    " + item);
+        }            
+      } else {
+        System.out.println(entry.getKey() + " = " + entry.getValue());
+      }
+    }
 
     // Make a pipeline_templates list call
     System.out.println("\n\n\nMaking a pipeline_templates.list call.");
@@ -56,6 +80,17 @@ public class ArvadosSDKJavaExample {
     params = new HashMap<String, Object>();
     response = arv.call("pipeline_templates", "list", params);
 
-    System.out.println("Arvados pipelinetempates.list:\n" + response);
+    System.out.println("Arvados pipelinetempates.list:\n");
+    entrySet = (Set<Entry<String,Object>>)response.entrySet();
+    for (Map.Entry<String, Object> entry : entrySet) {
+      if ("items".equals(entry.getKey())) {
+        items = (List)entry.getValue();
+        for (Object item : items) {
+          System.out.println("    " + item);
+        }            
+      } else {
+        System.out.println(entry.getKey() + " = " + entry.getValue());
+      }
+    }
   }
 }
