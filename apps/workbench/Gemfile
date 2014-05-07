@@ -29,6 +29,11 @@ group :test do
   gem 'capybara'
   gem 'poltergeist'
   gem 'headless'
+  # Note: "require: false" here tells bunder not to automatically
+  # 'require' the packages during application startup. Installation is
+  # still mandatory.
+  gem 'simplecov', '~> 0.7.1', require: false
+  gem 'simplecov-rcov', require: false
 end
 
 gem 'jquery-rails'

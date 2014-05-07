@@ -7,5 +7,6 @@ class Group < ArvadosModel
     t.add :name
     t.add :group_class
     t.add :description
+    t.add :writable_by
   end
 end

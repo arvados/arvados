@@ -1,4 +1,24 @@
 ENV["RAILS_ENV"] = "test"
+unless ENV["NO_COVERAGE_TEST"]
+  begin
+    require 'simplecov'
+    require 'simplecov-rcov'
+    class SimpleCov::Formatter::MergedFormatter
+      def format(result)
+        SimpleCov::Formatter::HTMLFormatter.new.format(result)
+        SimpleCov::Formatter::RcovFormatter.new.format(result)
+      end
+    end
+    SimpleCov.formatter = SimpleCov::Formatter::MergedFormatter
+    SimpleCov.start do
+      add_filter '/test/'
+      add_filter 'initializers/secret_token'
+    end
+  rescue Exception => e
+    $stderr.puts "SimpleCov unavailable (#{e}). Proceeding without."
+  end
+end
+
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 
@@ -70,6 +90,7 @@ class ApiServerBackedTestRunner < MiniTest::Unit
   def _run(args=[])
     Capybara.javascript_driver = :poltergeist
     server_pid = Dir.chdir($ARV_API_SERVER_DIR) do |apidir|
+      ENV["NO_COVERAGE_TEST"] = "1"
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')

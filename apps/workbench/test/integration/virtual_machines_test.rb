@@ -7,8 +7,8 @@ class VirtualMachinesTest < ActionDispatch::IntegrationTest
     click_link 'Virtual machines'
     assert page.has_text? 'testvm.shell'
     click_on 'Add a new virtual machine'
-    assert page.has_text? 'none'
-    click_link 'none'
+    find('tr', text: 'hostname').
+      find('span', text: 'none').click
     assert page.has_text? 'Update hostname'
     fill_in 'editable-text', with: 'testname'
     click_button 'editable-submit'

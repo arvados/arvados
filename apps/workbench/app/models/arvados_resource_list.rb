@@ -90,6 +90,12 @@ class ArvadosResourceList
     self
   end
 
+  def collect
+    results.collect do |m|
+      yield m
+    end
+  end
+
   def first
     results.first
   end

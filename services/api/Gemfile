@@ -6,7 +6,11 @@ gem 'rails', '~> 3.2.0'
 # gem 'rails',     :git => 'git://github.com/rails/rails.git'
 
 group :test, :development do
-  gem 'sqlite3'
+  # Note: "require: false" here tells bunder not to automatically
+  # 'require' the packages during application startup. Installation is
+  # still mandatory.
+  gem 'simplecov', '~> 0.7.1', require: false
+  gem 'simplecov-rcov', require: false
 end
 
 # This might not be needed in :test and :development, but we load it

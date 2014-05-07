@@ -4,7 +4,7 @@
 <% pane_list ||= %w(recent) %>
 <% panes = Hash[pane_list.map { |pane|
      [pane, render(partial: 'show_' + pane.downcase,
-                   locals: { comparable: comparable })]
+                   locals: { comparable: comparable, objects: @objects })]
    }.compact] %>
 
 <ul class="nav nav-tabs">

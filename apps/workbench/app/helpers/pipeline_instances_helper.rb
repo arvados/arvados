@@ -30,7 +30,6 @@ module PipelineInstancesHelper
     i = -1
 
     object.components.each do |cname, c|
-      puts cname, c
       i += 1
       pj = {index: i, name: cname}
       pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}

@@ -44,6 +44,9 @@ ArvadosWorkbench::Application.routes.draw do
     post 'set_persistent', on: :member
   end
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
+  resources :folders do
+    match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
+  end
 
   post 'actions' => 'actions#post'
   get 'websockets' => 'websocket#index'

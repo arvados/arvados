@@ -159,7 +159,6 @@ class CollectionsController < ApplicationController
     end
 
     Collection.where(uuid: @object.uuid).each do |u|
-      puts request
       @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg",
                                                             {:request => request,
                                                               :direction => :bottom_up,
