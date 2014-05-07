@@ -170,7 +170,13 @@ public class Arvados {
     Map<String, RestMethod> methodMap = getMatchingMethodMap (resourceName);
     return (methodMap.keySet());
   }
-  
+
+  public Set<String> getAvailableParametersForMethod(String resourceName, String methodName)
+      throws Exception {
+    RestMethod method = getMatchingMethod(resourceName, methodName);
+    return (method.getParameters().keySet());
+  }
+
   private HashMap<String, Object> loadParameters(Map<String, Object> paramsMap,
       RestMethod method) throws Exception {
     HashMap<String, Object> parameters = Maps.newHashMap();

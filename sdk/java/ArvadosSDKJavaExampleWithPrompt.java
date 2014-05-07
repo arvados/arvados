@@ -68,6 +68,9 @@ public class ArvadosSDKJavaExampleWithPrompt {
 
         // read method parameters
         System.out.println("\nEnter parameter name, value (for example uuid, uuid-value)");
+        System.out.println("\nAvailable parameters are: " + 
+              arv.getAvailableParametersForMethod(resourceName, methodName));
+        
         System.out.print("\n>>> ");
         Map paramsMap = new HashMap();
         String param = "";
