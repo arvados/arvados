@@ -12,6 +12,7 @@ class ApplicationController < ActionController::Base
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   around_filter :using_reader_tokens, only: [:index, :show]
   before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
+  before_filter :check_my_folders, :except => ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -76,7 +77,16 @@ class ApplicationController < ActionController::Base
       offset = 0
     end
 
-    @objects ||= model_class.limit(limit).offset(offset).all
+    if params[:filters]
+      filters = params[:filters]
+      if filters.is_a? String
+        filters = Oj.load filters
+      end
+    else
+      filters = []
+    end
+
+    @objects ||= model_class.filter(filters).limit(limit).offset(offset).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -89,7 +99,7 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object }
+      f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
         if request.method == 'GET'
           render
@@ -134,16 +144,12 @@ class ApplicationController < ActionController::Base
   end
 
   def create
-    @object ||= model_class.new params[model_class.to_s.underscore.singularize]
+    @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
+    @new_resource_attrs ||= {}
+    @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
+    @object ||= model_class.new @new_resource_attrs
     @object.save!
-
-    respond_to do |f|
-      f.json { render json: @object }
-      f.html {
-        redirect_to(params[:return_to] || @object)
-      }
-      f.js { render }
-    end
+    show
   end
 
   def destroy
@@ -242,8 +248,14 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    if params[:uuid].is_a? String
-      @object = model_class.find(params[:uuid])
+    if not model_class
+      @object = nil
+    elsif params[:uuid].is_a? String
+      if params[:uuid].empty?
+        @object = nil
+      else
+        @object = model_class.find(params[:uuid])
+      end
     else
       @object = model_class.where(uuid: params[:uuid]).first
     end
@@ -409,6 +421,15 @@ class ApplicationController < ActionController::Base
       view.render partial: 'notifications/pipelines_notification'
     }
   }
+
+  def check_my_folders
+    @my_top_level_folders = lambda do
+      @top_level_folders ||= Group.
+        filter([['group_class','=','folder'],
+                ['owner_uuid','=',current_user.uuid]]).
+        sort_by { |x| x.name || '' }
+    end
+  end
 
   def check_user_notifications
     @notification_count = 0

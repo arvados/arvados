@@ -7,4 +7,14 @@ class Group < ArvadosBase
     ret.results = $arvados_api_client.unpack_api_response(res)
     ret
   end
+
+  def class_for_display
+    group_class == 'folder' ? 'Folder' : super
+  end
+
+  def editable?
+    respond_to?(:writable_by) and
+      writable_by and
+      writable_by.index(current_user.uuid)
+  end
 end
