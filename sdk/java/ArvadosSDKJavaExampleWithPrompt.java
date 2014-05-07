@@ -52,8 +52,7 @@ public class ArvadosSDKJavaExampleWithPrompt {
       String methodName = in.readLine().trim();
 
       // read method parameters
-      System.out
-          .println("\nEnter parameter name, value (for example uuid, uuid-value): ");
+      System.out.println("\nEnter parameter name, value (for example uuid, uuid-value): ");
       Map paramsMap = new HashMap();
       String param = "";
       try {
@@ -61,9 +60,11 @@ public class ArvadosSDKJavaExampleWithPrompt {
           param = in.readLine();
           if (param.isEmpty())
             break;
-
-          String[] params = param.split(",");
-          paramsMap.put(params[0].trim(), params[1].trim());
+          int index = param.indexOf(","); // first comma
+          String paramName = param.substring(0, index);
+          String paramValue = param.substring(index);
+          System.out.println(paramName + " " + paramValue);
+          paramsMap.put(paramName.trim(), paramValue.trim());
 
           System.out.println("\nEnter parameter name, value (for example uuid, uuid-value): ");
         } while (!param.isEmpty());
