@@ -312,9 +312,15 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
-	// Only the data manager may issue unqualified "GET /index" requests.
+	// Only the data manager may issue unqualified "GET /index" requests,
+	// and only if enforce_permissions is enabled.
+	// If the request is unauthenticated, or does not match the data manager's
+	// API token, return 403 Permission denied.
 	if prefix == "" {
-		if data_manager_token != GetApiToken(req) {
+		api_token := GetApiToken(req)
+		if !enforce_permissions ||
+			api_token == "" ||
+			data_manager_token != GetApiToken(req) {
 			http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
 			return
 		}

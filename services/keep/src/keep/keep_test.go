@@ -351,7 +351,7 @@ func TestIndex(t *testing.T) {
 	match, err := regexp.MatchString(expected, index)
 	if err == nil {
 		if !match {
-			t.Errorf("IndexLocators returned:\n-----\n%s-----\n", index)
+			t.Errorf("IndexLocators returned:\n%s", index)
 		}
 	} else {
 		t.Errorf("regexp.MatchString: %s", err)
@@ -481,6 +481,148 @@ func TestGetHandler(t *testing.T) {
 	}
 }
 
+func TestPutHandler(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes.
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+
+	// Set up a REST router for testing the handlers.
+	rest := NewRESTRouter()
+
+	// Execute a PUT request.
+	test_url := "http://localhost:25107/" + TEST_HASH
+	test_body := bytes.NewReader(TEST_BLOCK)
+	req, _ := http.NewRequest("PUT", test_url, test_body)
+	resp := httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != 200 {
+		t.Errorf("bad response code: %v", resp)
+	}
+	if resp.Body.String() != TEST_HASH {
+		t.Errorf("bad response body: %v", resp)
+	}
+
+	// Add a permission key.
+	// When a permission key is available, the locator returned
+	// from a PUT request will be signed.
+	PermissionSecret = []byte(known_key)
+
+	// An authenticated PUT request returns a signed locator.
+	test_url = "http://localhost:25107/" + TEST_HASH
+	test_body = bytes.NewReader(TEST_BLOCK)
+	req, _ = http.NewRequest("PUT", test_url, test_body)
+	req.Header.Set("Authorization", "OAuth "+known_token)
+	resp = httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != 200 {
+		t.Errorf("bad response code: %v", resp)
+	}
+	if !VerifySignature(resp.Body.String(), known_token) {
+		t.Errorf("bad response body: %v", resp)
+	}
+
+	// An unauthenticated PUT request returns an unsigned locator
+	// even when a permission key is available.
+	test_url = "http://localhost:25107/" + TEST_HASH
+	test_body = bytes.NewReader(TEST_BLOCK)
+	req, _ = http.NewRequest("PUT", test_url, test_body)
+	resp = httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != 200 {
+		t.Errorf("bad response code: %v", resp)
+	}
+	if resp.Body.String() != TEST_HASH {
+		t.Errorf("bad response body: %v", resp)
+	}
+}
+
+func TestIndexHandler(t *testing.T) {
+	defer teardown()
+
+	// Set up Keep volumes and populate them.
+	// Include multiple blocks on different volumes, and
+	// some metadata files.
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+
+	vols := KeepVM.Volumes()
+	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
+
+	// Set up a REST router for testing the handlers.
+	rest := NewRESTRouter()
+
+	// Requests for /index with a prefix are okay even if unauthenticated.
+	test_url := "http://localhost:25107/index/" + TEST_HASH[0:5]
+	req, _ := http.NewRequest("GET", test_url, nil)
+	resp := httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	expected := `^` + TEST_HASH + `\+\d+ \d+\n$`
+	match, _ := regexp.MatchString(expected, resp.Body.String())
+	if !match {
+		t.Errorf("IndexHandler returned:\n%s", resp.Body.String())
+	}
+
+	// Unauthenticated /index requests: fail.
+	test_url = "http://localhost:25107/index"
+	req, _ = http.NewRequest("GET", test_url, nil)
+	resp = httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != PermissionError.HTTPCode {
+		t.Errorf("unauthenticated /index: %+v", resp)
+	}
+
+	// Authenticated /index requests by a non-superuser: also fail.
+	test_url = "http://localhost:25107/index"
+	req, _ = http.NewRequest("GET", test_url, nil)
+	req.Header.Set("Authorization", "OAuth "+known_token)
+	resp = httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != PermissionError.HTTPCode {
+		t.Errorf("authenticated /index: %+v", resp)
+	}
+
+	// Even superuser /index requests fail if enforce_permissions is off!
+	enforce_permissions = false
+	data_manager_token = "DATA MANAGER TOKEN"
+	test_url = "http://localhost:25107/index"
+	req, _ = http.NewRequest("GET", test_url, nil)
+	req.Header.Set("Authorization", "OAuth "+data_manager_token)
+	resp = httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != PermissionError.HTTPCode {
+		t.Errorf("superuser /index (permissions off): %+v", resp)
+	}
+
+	// Superuser /index requests with enforce_permissions set: succeed!
+	enforce_permissions = true
+	data_manager_token = "DATA MANAGER TOKEN"
+	test_url = "http://localhost:25107/index"
+	req, _ = http.NewRequest("GET", test_url, nil)
+	req.Header.Set("Authorization", "OAuth "+data_manager_token)
+	resp = httptest.NewRecorder()
+	rest.ServeHTTP(resp, req)
+
+	if resp.Code != http.StatusOK {
+		t.Errorf("superuser /index: %+v", resp)
+	}
+	expected = `^` + TEST_HASH + `\+\d+ \d+\n` +
+		TEST_HASH_2 + `\+\d+ \d+\n$`
+	match, _ = regexp.MatchString(expected, resp.Body.String())
+	if !match {
+		t.Errorf("superuser /index:\n%s", resp.Body.String())
+	}
+}
+
 // ========================================
 // Helper functions for unit tests.
 // ========================================
@@ -501,6 +643,7 @@ func MakeTestVolumeManager(num_volumes int) VolumeManager {
 //     Cleanup to perform after each test.
 //
 func teardown() {
+	data_manager_token = ""
 	enforce_permissions = false
 	PermissionSecret = nil
 	KeepVM = nil

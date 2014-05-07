@@ -66,8 +66,9 @@ func MakePermSignature(blob_hash string, api_token string, expiry string) string
 // SignLocator takes a blob_locator, an api_token and an expiry time, and
 // returns a signed locator string.
 func SignLocator(blob_locator string, api_token string, expiry time.Time) string {
-	// If the permission secret has not been set, return an unsigned locator.
-	if PermissionSecret == nil {
+	// If no permission secret or API token is available,
+	// return an unsigned locator.
+	if PermissionSecret == nil || api_token == "" {
 		return blob_locator
 	}
 	// Extract the hash from the blob locator, omitting any size hint that may be present.
