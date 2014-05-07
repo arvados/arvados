@@ -74,16 +74,11 @@ class ActiveSupport::TestCase
 end
 
 class ApiServerBackedTestRunner < MiniTest::Unit
-  # Make a hash that unsets Bundle's environment variables.
-  # We'll use this environment when we launch Bundle commands in the API
-  # server.  Otherwise, those commands will try to use Workbench's gems, etc.
-  @@APIENV = Hash[ENV.map { |key, val|
-                    (key =~ /^BUNDLE_/) ? [key, nil] : nil
-                  }.compact]
-
   def _system(*cmd)
-    if not system(@@APIENV, *cmd)
-      raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
+    Bundler.with_clean_env do
+      if not system({'RAILS_ENV' => 'test'}, *cmd)
+        raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
+      end
     end
   end
 
@@ -95,15 +90,16 @@ class ApiServerBackedTestRunner < MiniTest::Unit
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
       _system('bundle', 'exec', 'rails', 'server', '-d')
       timeout = Time.now.tv_sec + 10
-      begin
+      good_pid = false
+      while (not good_pid) and (Time.now.tv_sec < timeout)
         sleep 0.2
         begin
           server_pid = IO.read(SERVER_PID_PATH).to_i
-          good_pid = (server_pid > 0) and (Process.kill(0, pid) rescue false)
+          good_pid = (server_pid > 0) and (Process.kill(0, server_pid) rescue false)
         rescue Errno::ENOENT
           good_pid = false
         end
-      end while (not good_pid) and (Time.now.tv_sec < timeout)
+      end
       if not good_pid
         raise RuntimeError, "could not find API server Rails pid"
       end

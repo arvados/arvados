@@ -11,22 +11,15 @@ The dispatcher normally runs on the same host/VM as the API server.
 
 h4. Perl SDK dependencies
 
-* @apt-get install libjson-perl libwww-perl libio-socket-ssl-perl libipc-system-simple-perl@
+Install the Perl SDK on the controller.
 
-Add this to @/etc/apt/sources.list@
-
-@deb http://git.oxf.freelogy.org/apt wheezy main contrib@
-
-Then
-
-@apt-get install libwarehouse-perl@
+* See "Perl SDK":{{site.baseurl}}/sdk/perl/index.html page for details.
 
 h4. Python SDK dependencies
 
-On controller and all compute nodes:
+Install the Python SDK and CLI tools on controller and all compute nodes.
 
-* @apt-get install python-pip@
-* @pip install --upgrade virtualenv arvados-python-client@
+* See "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html page for details.
 
 h4. Likely crunch job dependencies
 
@@ -50,29 +43,16 @@ The crunch user should have the same UID, GID, and home directory on all compute
 
 h4. Repositories
 
-Crunch scripts must be in Git repositories in @/var/cache/git/*/.git@ (or whatever is configured in @services/api/config/environments/production.rb@).
+Crunch scripts must be in Git repositories in @/var/lib/arvados/git/*.git@ (or whatever is configured in @services/api/config/environments/production.rb@).
 
-h4. Importing commits
-
-@services/api/script/import_commits.rb production@ must run periodically. Example @/var/service/arvados_import_commits/run@ script for daemontools or runit:
-
-<pre>
-#!/bin/sh
-set -e
-while sleep 60
-do
-  cd /path/to/arvados/services/api
-  setuidgid www-data env RAILS_ENV=production /usr/local/rvm/bin/rvm-exec 2.0.0 bundle exec ./script/import_commits.rb 2>&1
-done
-</pre>
-
-Once you have imported some commits, you should be able to create a new job:
+Once you have a repository with commits -- and you have read access to the repository -- you should be able to create a new job:
 
 <pre>
 read -rd $'\000' newjob <<EOF; arv job create --job "$newjob"
 {"script_parameters":{"input":"f815ec01d5d2f11cb12874ab2ed50daa"},
  "script_version":"master",
- "script":"hash"}
+ "script":"hash",
+ "repository":"arvados"}
 EOF
 </pre>
 
@@ -94,8 +74,12 @@ Example @/var/service/arvados_crunch_dispatch/run@ script:
 <pre>
 #!/bin/sh
 set -e
+
+rvmexec=""
+## uncomment this line if you use rvm:
+#rvmexec="/usr/local/rvm/bin/rvm-exec 2.1.1"
+
 export PATH="$PATH":/path/to/arvados/services/crunch
-export PERLLIB=/path/to/arvados/sdk/perl/lib:/path/to/warehouse-apps/libwarehouse-perl/lib
 export ARVADOS_API_HOST={{ site.arvados_api_host }}
 export CRUNCH_DISPATCH_LOCKFILE=/var/lock/crunch-dispatch
 
@@ -106,5 +90,5 @@ fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
 
 cd /path/to/arvados/services/api
 export RAILS_ENV=production
-exec /usr/local/rvm/bin/rvm-exec 2.0.0 bundle exec ./script/crunch-dispatch.rb 2>&1
+exec $rvmexec bundle exec ./script/crunch-dispatch.rb 2>&1
 </pre>

@@ -15,7 +15,7 @@ Required arguments are displayed in %{background:#ccffcc}green%.
 
 h2. create
 
-Create a new Log.
+Create a new log entry.
 
 Arguments:
 
@@ -25,43 +25,43 @@ table(table table-bordered table-condensed).
 
 h2. delete
 
-Delete an existing Log.
+Delete an existing log entry. This method can only be used by privileged (system administrator) users.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the Log in question.|path||
+{background:#ccffcc}.|uuid|string|The UUID of the log entry in question.|path||
 
 h2. get
 
-Gets a Log's metadata by UUID.
+Retrieve a log entry.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the Log in question.|path||
+{background:#ccffcc}.|uuid|string|The UUID of the log entry in question.|path||
 
 h2. list
 
-List logs.
+List log entries.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of logs to return.|query||
-|order|string|Order in which to return matching logs.|query||
-|filters|array|Conditions for filtering logs.|query||
+|limit|integer (default 100)|Maximum number of log entries to return.|query||
+|order|string|Order in which to return matching log entries.|query||
+|filters|array|Conditions for filtering log entries.|query||
 
 h2. update
 
-Update attributes of an existing Log.
+Update attributes of an existing log entry. This method can only be used by privileged (system administrator) users.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the Log in question.|path||
+{background:#ccffcc}.|uuid|string|The UUID of the log entry in question.|path||
 |log|object||query||

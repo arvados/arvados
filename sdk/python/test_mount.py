@@ -9,11 +9,27 @@ import tempfile
 import shutil
 import subprocess
 import glob
+import run_test_server
+import json
 
-class FuseMountTest(unittest.TestCase):
+class MountTestBase(unittest.TestCase):
     def setUp(self):
         self.keeptmp = tempfile.mkdtemp()
         os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
+        self.mounttmp = tempfile.mkdtemp()
+
+    def tearDown(self):
+        # llfuse.close is buggy, so use fusermount instead.
+        #llfuse.close(unmount=True)
+        subprocess.call(["fusermount", "-u", self.mounttmp])
+
+        os.rmdir(self.mounttmp)
+        shutil.rmtree(self.keeptmp)
+
+
+class FuseMountTest(MountTestBase):
+    def setUp(self):
+        super(FuseMountTest, self).setUp()
 
         cw = arvados.CollectionWriter()
 
@@ -46,10 +62,7 @@ class FuseMountTest(unittest.TestCase):
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.Directory(llfuse.ROOT_INODE))
-        operations.inodes.load_collection(e, arvados.CollectionReader(arvados.Keep.get(self.testcollection)))
-
-        self.mounttmp = tempfile.mkdtemp()
+        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.testcollection))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -61,46 +74,37 @@ class FuseMountTest(unittest.TestCase):
         # now check some stuff
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertEqual(d1, ['dir1', 'dir2', 'thing1.txt', 'thing2.txt'])
+        self.assertEqual(['dir1', 'dir2', 'thing1.txt', 'thing2.txt'], d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'dir1'))
         d2.sort()
-        self.assertEqual(d2, ['thing3.txt', 'thing4.txt'])
+        self.assertEqual(['thing3.txt', 'thing4.txt'], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'dir2'))
         d3.sort()
-        self.assertEqual(d3, ['dir3', 'thing5.txt', 'thing6.txt'])
+        self.assertEqual(['dir3', 'thing5.txt', 'thing6.txt'], d3)
 
         d4 = os.listdir(os.path.join(self.mounttmp, 'dir2/dir3'))
         d4.sort()
-        self.assertEqual(d4, ['thing7.txt', 'thing8.txt'])
-        
+        self.assertEqual(['thing7.txt', 'thing8.txt'], d4)
+
         files = {'thing1.txt': 'data 1',
                  'thing2.txt': 'data 2',
                  'dir1/thing3.txt': 'data 3',
                  'dir1/thing4.txt': 'data 4',
                  'dir2/thing5.txt': 'data 5',
-                 'dir2/thing6.txt': 'data 6',         
+                 'dir2/thing6.txt': 'data 6',
                  'dir2/dir3/thing7.txt': 'data 7',
                  'dir2/dir3/thing8.txt': 'data 8'}
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, k)) as f:
-                self.assertEqual(f.read(), v)
-        
+                self.assertEqual(v, f.read())
 
-    def tearDown(self):
-        # llfuse.close is buggy, so use fusermount instead.
-        #llfuse.close(unmount=True)
-        subprocess.call(["fusermount", "-u", self.mounttmp])
 
-        os.rmdir(self.mounttmp)
-        shutil.rmtree(self.keeptmp)
-
-class FuseMagicTest(unittest.TestCase):
+class FuseMagicTest(MountTestBase):
     def setUp(self):
-        self.keeptmp = tempfile.mkdtemp()
-        os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
+        super(FuseMagicTest, self).setUp()
 
         cw = arvados.CollectionWriter()
 
@@ -126,28 +130,202 @@ class FuseMagicTest(unittest.TestCase):
         # now check some stuff
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertEqual(d1, [])
+        self.assertEqual([], d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, self.testcollection))
         d2.sort()
-        self.assertEqual(d2, ['thing1.txt'])
+        self.assertEqual(['thing1.txt'], d2)
 
         d3 = os.listdir(self.mounttmp)
         d3.sort()
-        self.assertEqual(d3, [self.testcollection])
-        
+        self.assertEqual([self.testcollection], d3)
+
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
 
         for k, v in files.items():
             with open(os.path.join(self.mounttmp, k)) as f:
-                self.assertEqual(f.read(), v)
-        
+                self.assertEqual(v, f.read())
+
+
+class FuseTagsTest(MountTestBase):
+    def setUp(self):
+        super(FuseTagsTest, self).setUp()
+
+        cw = arvados.CollectionWriter()
+
+        cw.start_new_file('foo')
+        cw.write("foo")
+
+        self.testcollection = cw.finish()
+
+        run_test_server.run()
+
+    def runTest(self):
+        run_test_server.authorize_with("admin")
+        api = arvados.api('v1')
+
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertEqual(['foo_tag'], d1)
+
+        d2 = os.listdir(os.path.join(self.mounttmp, 'foo_tag'))
+        d2.sort()
+        self.assertEqual(['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'], d2)
+
+        d3 = os.listdir(os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'))
+        d3.sort()
+        self.assertEqual(['foo'], d3)
+
+        files = {}
+        files[os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45', 'foo')] = 'foo'
+
+        for k, v in files.items():
+            with open(os.path.join(self.mounttmp, k)) as f:
+                self.assertEqual(v, f.read())
+
 
     def tearDown(self):
-        # llfuse.close is buggy, so use fusermount instead.
-        #llfuse.close(unmount=True)
-        subprocess.call(["fusermount", "-u", self.mounttmp])
+        run_test_server.stop()
 
-        os.rmdir(self.mounttmp)
-        shutil.rmtree(self.keeptmp)
+        super(FuseTagsTest, self).tearDown()
+
+class FuseTagsUpdateTestBase(MountTestBase):
+
+    def runRealTest(self):
+        run_test_server.authorize_with("admin")
+        api = arvados.api('v1')
+
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api, poll_time=1))
+
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertEqual(d1, ['foo_tag'])
+
+        api.links().create(body={'link': {
+            'head_uuid': 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+            'link_class': 'tag',
+            'name': 'bar_tag'
+        }}).execute()
+
+        time.sleep(1)
+
+        d2 = os.listdir(self.mounttmp)
+        d2.sort()
+        self.assertEqual(['bar_tag', 'foo_tag'], d2)
+
+        d3 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d3.sort()
+        self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d3)
+
+        l = api.links().create(body={'link': {
+            'head_uuid': 'ea10d51bcf88862dbcc36eb292017dfd+45',
+            'link_class': 'tag',
+            'name': 'bar_tag'
+        }}).execute()
+
+        time.sleep(1)
+
+        d4 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d4.sort()
+        self.assertEqual(['ea10d51bcf88862dbcc36eb292017dfd+45', 'fa7aeb5140e2848d39b416daeef4ffc5+45'], d4)
+
+        api.links().delete(uuid=l['uuid']).execute()
+
+        time.sleep(1)
+
+        d5 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d5.sort()
+        self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d5)
+
+
+class FuseTagsUpdateTestWebsockets(FuseTagsUpdateTestBase):
+    def setUp(self):
+        super(FuseTagsUpdateTestWebsockets, self).setUp()
+        run_test_server.run(True)
+
+    def runTest(self):
+        self.runRealTest()
+
+    def tearDown(self):
+        run_test_server.stop(True)
+        super(FuseTagsUpdateTestWebsockets, self).tearDown()
+
+
+class FuseTagsUpdateTestPoll(FuseTagsUpdateTestBase):
+    def setUp(self):
+        super(FuseTagsUpdateTestPoll, self).setUp()
+        run_test_server.run(False)
+
+    def runTest(self):
+        self.runRealTest()
+
+    def tearDown(self):
+        run_test_server.stop(False)
+        super(FuseTagsUpdateTestPoll, self).tearDown()
+
+
+class FuseGroupsTest(MountTestBase):
+    def setUp(self):
+        super(FuseGroupsTest, self).setUp()
+        run_test_server.run()
+
+    def runTest(self):
+        run_test_server.authorize_with("admin")
+        api = arvados.api('v1')
+
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertIn('zzzzz-j7d0g-v955i6s2oi1cbso', d1)
+
+        d2 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso'))
+        d2.sort()
+        self.assertEqual(["I'm a job in a folder",
+                          "I'm a template in a folder",
+                          "zzzzz-j58dm-5gid26432uujf79",
+                          "zzzzz-j58dm-7r18rnd5nzhg5yk",
+                          "zzzzz-j7d0g-axqo7eu9pwvna1x"
+                      ], d2)
+
+        d3 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', 'zzzzz-j7d0g-axqo7eu9pwvna1x'))
+        d3.sort()
+        self.assertEqual(["I'm in a subfolder, too",
+                          "zzzzz-j58dm-c40lddwcqqr1ffs",
+                          "zzzzz-o0j2j-ryhm1bn83ni03sn"
+                      ], d3)
+
+        with open(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', "I'm a template in a folder")) as f:
+            j = json.load(f)
+            self.assertEqual("Two Part Pipeline Template", j['name'])
+
+    def tearDown(self):
+        run_test_server.stop()
+        super(FuseGroupsTest, self).tearDown()
