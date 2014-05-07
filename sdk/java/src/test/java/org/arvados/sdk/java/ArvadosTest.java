@@ -335,7 +335,7 @@ public class ArvadosTest {
 
     String[] filters = new String[3];
     filters[0] = "name";
-    filters[1] = "is_a";
+    filters[1] = "=";
     filters[2] = "can_manage";
     
     params.put("filters", filters);

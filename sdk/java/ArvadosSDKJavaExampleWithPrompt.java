@@ -32,27 +32,35 @@ public class ArvadosSDKJavaExampleWithPrompt {
     String apiName = "arvados";
     String apiVersion = "v1";
 
-    System.out.print("Welcome to Arvados Java SDK");
-    System.out.println("You can use this example to call API methods");
-    System.out.println("Enter ^C when you want to quit");
+    System.out.print("Welcome to Arvados Java SDK.");
+    System.out.println("\nYou can use this example to call API methods interactively.");
+    System.out.println("\nTo make the calls, enter input data at the prompt.");
+    System.out.println("When entering parameters, you may enter a simple string or a well-formed json.");
+    System.out.println("For example to get a user you may enter:  user, zzzzz-12345-67890");
+    System.out.println("Or to filter links, you may enter:  filters, [[ \"name\", \"=\", \"can_manage\"]]");
+    
+    System.out.println("\nEnter ^C when you want to quit");
 
     // use configured env variables for API TOKEN, HOST and HOST_INSECURE
     Arvados arv = new Arvados(apiName, apiVersion);
 
     while (true) {
       // prompt for resource
-      System.out.println("\n\nEnter Resource name (for example users): ");
+      System.out.println("\n\nEnter Resource name (for example users)");
+      System.out.print("\n>>> ");
 
       // read resource name
       BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
       String resourceName = in.readLine().trim();
 
       // read method name
-      System.out.println("\nEnter method name (for example get): ");
+      System.out.println("\nEnter method name (for example get)");
+      System.out.print("\n>>> ");
       String methodName = in.readLine().trim();
 
       // read method parameters
-      System.out.println("\nEnter parameter name, value (for example uuid, uuid-value): ");
+      System.out.println("\nEnter parameter name, value (for example uuid, uuid-value)");
+      System.out.print("\n>>> ");
       Map paramsMap = new HashMap();
       String param = "";
       try {
@@ -63,14 +71,14 @@ public class ArvadosSDKJavaExampleWithPrompt {
           int index = param.indexOf(","); // first comma
           String paramName = param.substring(0, index);
           String paramValue = param.substring(index+1);
-          System.out.println(paramName + " " + paramValue);
           paramsMap.put(paramName.trim(), paramValue.trim());
 
-          System.out.println("\nEnter parameter name, value (for example uuid, uuid-value): ");
+          System.out.println("\nEnter parameter name, value (for example uuid, uuid-value)");
+          System.out.print("\n>>> ");
         } while (!param.isEmpty());
       } catch (Exception e) {
         System.out.println (e.getMessage());
-        System.out.println ("\nStart over");
+        System.out.println ("\nSet up a new call");
         continue;
       }
 
@@ -92,7 +100,7 @@ public class ArvadosSDKJavaExampleWithPrompt {
         }
       } catch (Exception e){
         System.out.println (e.getMessage());
-        System.out.println ("\nStart over");
+        System.out.println ("\nSet up a new call");
       }
     }
   }
