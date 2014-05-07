@@ -177,6 +177,42 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                               'zzzzz-8i9sb-pshmckwoma9plh7']
   end
 
+  test "search jobs by uuid with 'not in' query" do
+    authorize_with :active
+    get :index, {
+      filters: [['uuid', 'not in', ['zzzzz-8i9sb-pshmckwoma9plh7']]]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_not_equal [], found, "'not in' query returned nothing"
+    assert_not_includes found, 'zzzzz-8i9sb-pshmckwoma9plh7',
+    "'not in' query returned the very thing I did not want"
+  end
+
+  test "search jobs by uuid with '!=' query" do
+    authorize_with :active
+    get :index, {
+      filters: [['uuid', '!=', 'zzzzz-8i9sb-pshmckwoma9plh7']]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_not_equal [], found, "'!=' query returned nothing"
+    assert_not_includes found, 'zzzzz-8i9sb-pshmckwoma9plh7',
+    "'!=' query returned the very thing I did not want"
+  end
+
+  test "search jobs by output with '!= nil' query" do
+    authorize_with :active
+    get :index, {
+      filters: [['output', '!=', nil]]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:output)
+    assert_not_equal [], found, "'!= nil' query returned nothing"
+    assert_not_includes found, nil,
+    "'!= nil' query returned the very thing I did not want"
+  end
+
   test "search jobs by started_at with < query" do
     authorize_with :active
     get :index, {

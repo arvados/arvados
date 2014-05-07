@@ -24,12 +24,39 @@ filters=[["owner_uuid","=","xyzzy-tpzed-a4lcehql0dv2u25"]]
 
 table(table table-bordered table-condensed).
 |*Parameter name*|*Value*|*Description*|
-|limit   |integer|Maximum number of resources to return|
-|offset  |integer|Skip the first 'offset' objects|
-|filters |array  |Conditions for selecting resources to return|
-|order   |array  |List of fields to use to determine sorting order for returned objects|
-|select  |array  |Specify which fields to return|
-|distinct|boolean|true: (default) do not return duplicate objects<br> false: permitted to return duplicates|
+|limit   |integer|Maximum number of resources to return.|
+|offset  |integer|Skip the first 'offset' resources that match the given filter conditions.|
+|filters |array  |Conditions for selecting resources to return (see below).|
+|order   |array  |Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order.
+Example: @["head_uuid asc","modified_at desc"]@
+Default: @["created_at desc"]@|
+|select  |array  |Set of attributes to include in the response.
+Example: @["head_uuid","tail_uuid"]@
+Default: all available attributes, minus "manifest_text" in the case of collections.|
+|distinct|boolean|@true@: (default) do not return duplicate objects
+@false@: permitted to return duplicates|
+
+h3. Filters
+
+The value of the @filters@ parameter is an array of conditions. The @list@ method returns only the resources that satisfy all of the given conditions. In other words, the conjunction @AND@ is implicit.
+
+Each condition is expressed as an array with three elements: @[attribute, operator, operand]@.
+
+table(table table-bordered table-condensed).
+|_. Index|_. Element|_. Type|_. Description|_. Examples|
+|0|attribute|string|Name of the attribute to compare|@script_version@, @head_uuid@|
+|1|operator|string|Comparison operator|@>@, @>=@, @like@, @not in@|
+|2|operand|string, array, or null|Value to compare with the resource attribute|@"d00220fb%"@, @"1234"@, @["foo","bar"]@, @nil@|
+
+The following operators are available.
+
+table(table table-bordered table-condensed).
+|_. Operator|_. Operand type|_. Example|
+|@<@, @<=@, @>=@, @>@, @like@|string|@["script_version","like","d00220fb%"]@|
+|@=@, @!=@|string or null|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@
+@["tail_uuid","!=",null]@|
+|@in@, @not in@|array of strings|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
+|@is_a@|string|@["head_uuid","is_a","arvados#pipelineInstance"]@|
 
 h2. Create
 
