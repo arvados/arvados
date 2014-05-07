@@ -111,7 +111,7 @@ class CollectionsController < ApplicationController
   end
 
   def search_scopes
-    ApiClientAuthorization.where(filters: [['scopes', '=', "/arvados/v1/collections/#{@object.uuid}"]])
+    ApiClientAuthorization.where(filters: [['scopes', '=', ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/collections/#{@object.uuid}/"]]])
   end
 
   def show
@@ -185,7 +185,7 @@ class CollectionsController < ApplicationController
   end
 
   def share
-    a = ApiClientAuthorization.create(scopes: ["/arvados/v1/collections/#{@object.uuid}"])
+    a = ApiClientAuthorization.create(scopes: ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/collections/#{@object.uuid}/"])
     @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
     render 'sharing_popup'
   end

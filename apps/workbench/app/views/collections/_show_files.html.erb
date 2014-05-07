@@ -10,14 +10,9 @@
   <div class="col-md-6"></div>
   <div class="col-md-6">
     <div class="pull-right">
-      <% if @search_sharing.any? %>
-        <% linktext = "Shared" %>
-        <% btnstyle = "btn-success" %>
-      <% else %>
-        <% linktext = "Share" %>
-        <% btnstyle = "btn-info" %>
-      <% end %>
-      <%= link_to linktext, sharing_popup_collection_url(id: @object.uuid),  {class: "btn #{btnstyle}", :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#collection-sharing-modal-window'}  %>
+      <span id="sharing-button">
+        <%= render partial: 'sharing_button' %>
+      </span>
       <span style="padding-left: 1em">Collection storage status:</span>
       <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
 
