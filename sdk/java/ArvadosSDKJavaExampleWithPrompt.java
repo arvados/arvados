@@ -34,6 +34,7 @@ public class ArvadosSDKJavaExampleWithPrompt {
 
     System.out.print("Welcome to Arvados Java SDK.");
     System.out.println("\nYou can use this example to call API methods interactively.");
+    System.out.println("\nPlease refer to http://doc.arvados.org/api/index.html for api documentation");
     System.out.println("\nTo make the calls, enter input data at the prompt.");
     System.out.println("When entering parameters, you may enter a simple string or a well-formed json.");
     System.out.println("For example to get a user you may enter:  user, zzzzz-12345-67890");
