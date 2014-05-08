@@ -20,7 +20,7 @@ class Arvados::V1::SchemaController < ApplicationController
         description: "The API to interact with Arvados.",
         documentationLink: "http://doc.arvados.org/api/index.html",
         protocol: "rest",
-        baseUrl: root_url + "/arvados/v1/",
+        baseUrl: root_url + "arvados/v1/",
         basePath: "/arvados/v1/",
         rootUrl: root_url,
         servicePath: "arvados/v1/",
@@ -73,7 +73,7 @@ class Arvados::V1::SchemaController < ApplicationController
       if Rails.application.config.websocket_address
         discovery[:websocketUrl] = Rails.application.config.websocket_address
       elsif ENV['ARVADOS_WEBSOCKETS']
-        discovery[:websocketUrl] = (root_url.sub /^http/, 'ws') + "/websocket"
+        discovery[:websocketUrl] = (root_url.sub /^http/, 'ws') + "websocket"
       end
 
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
@@ -204,17 +204,17 @@ class Arvados::V1::SchemaController < ApplicationController
                 limit: {
                   type: "integer",
                   description: "Maximum number of #{k.to_s.underscore.pluralize} to return.",
-                  default: 100,
+                  default: "100",
                   format: "int32",
-                  minimum: 0,
+                  minimum: "0",
                   location: "query",
                 },
                 offset: {
                   type: "integer",
                   description: "Number of #{k.to_s.underscore.pluralize} to skip before first returned record.",
-                  default: 0,
+                  default: "0",
                   format: "int32",
-                  minimum: 0,
+                  minimum: "0",
                   location: "query",
                   },
                 filters: {
@@ -365,6 +365,9 @@ class Arvados::V1::SchemaController < ApplicationController
                   method[:parameters][k] = v
                 else
                   method[:parameters][k] = {}
+                end
+                if !method[:parameters][k][:default].nil?
+                  method[:parameters][k][:default] = 'string'
                 end
                 method[:parameters][k][:type] ||= 'string'
                 method[:parameters][k][:description] ||= ''

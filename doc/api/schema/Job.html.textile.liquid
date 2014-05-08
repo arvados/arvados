@@ -50,6 +50,7 @@ h3. Runtime constraints
 
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Implemented|
+|docker_image|string|The name of a Docker image that this Job needs to run.  If specified, Crunch will create a Docker container from this image, and run the Job's script inside that.  The Keep mount and work directories will be available as volumes inside this container.  You may specify the image in any format that Docker accepts, such as "arvados/jobs" or a hash identifier.  If you specify a name, Crunch will try to install the latest version using @docker.io pull@.|&#10003;|
 |min_nodes|integer||&#10003;|
 |max_nodes|integer|||
 |max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#10003;|

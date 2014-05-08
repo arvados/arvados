@@ -37,7 +37,8 @@ sudo gem install bundler</span>
 h2. Download the source tree
 
 <notextile>
-<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
+<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
+~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
 </code></pre></notextile>
 
 See also: "Downloading the source code":https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
@@ -140,7 +141,7 @@ To enable streaming so users can monitor crunch jobs in real time, add to your P
 </code></pre>
 </notextile>
 
-h2. Add an admin user
+h2(#admin-user). Add an admin user
 
 Point your browser to the API server's login endpoint:
 
