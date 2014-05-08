@@ -176,7 +176,10 @@ class PipelineInstance < ArvadosModel
           self.state = RunningOnServer
         end
       else
-        if self.components_look_ready?
+        if self.state == RunningOnServer # state was RunningOnServer
+          self.active = nil
+          self.state = Paused
+        elsif self.components_look_ready?
           self.state = Ready
         else
           self.state = New
