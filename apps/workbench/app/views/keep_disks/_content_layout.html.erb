@@ -1,4 +1,4 @@
-<% if @histogram_date > 0 %>
+<% unless @histogram_pretty_date.nil? %>
   <% content_for :tab_panes do %>
   <%# We use protocol-relative paths here to avoid browsers refusing to load javascript over http in a page that was loaded over https. %>
   <%= javascript_include_tag '//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.2/raphael-min.js' %>
