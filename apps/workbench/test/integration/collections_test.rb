@@ -39,4 +39,13 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     change_persist 'persistent', 'cache'
   end
 
+  test "Collection page renders default name links" do
+    uuid = api_fixture('collections')['foo_file']['uuid']
+    coll_name = api_fixture('links')['foo_collection_name_in_afolder']['name']
+    visit page_with_token('active', "/collections/#{uuid}")
+    assert(page.has_text?(coll_name), "Collection page did not include name")
+    # Now check that the page is otherwise normal, and the collection name
+    # isn't only showing up in an error message.
+    assert(page.has_link?('foo'), "Collection page did not include file link")
+  end
 end
