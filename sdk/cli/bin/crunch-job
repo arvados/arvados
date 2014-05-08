@@ -946,13 +946,19 @@ sub reapchildren
   delete $proc{$pid};
 
   # Load new tasks
-  my $newtask_list = $arv->{'job_tasks'}->{'list'}->execute(
-    'where' => {
-      'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
-    },
-    'order' => 'qsequence'
-  );
-  foreach my $arvados_task (@{$newtask_list->{'items'}}) {
+  my $newtask_list = [];
+  my $newtask_results;
+  do {
+    $newtask_results = $arv->{'job_tasks'}->{'list'}->execute(
+      'where' => {
+        'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
+      },
+      'order' => 'qsequence',
+      'offset' => scalar(@$newtask_list),
+    );
+    push(@$newtask_list, @{$newtask_results->{items}});
+  } while (@{$newtask_results->{items}});
+  foreach my $arvados_task (@$newtask_list) {
     my $jobstep = {
       'level' => $arvados_task->{'sequence'},
       'failures' => 0,
