@@ -15,6 +15,7 @@ import com.google.api.services.discovery.Discovery;
 import com.google.api.services.discovery.model.JsonSchema;
 import com.google.api.services.discovery.model.RestDescription;
 import com.google.api.services.discovery.model.RestMethod;
+import com.google.api.services.discovery.model.RestMethod.Request;
 import com.google.api.services.discovery.model.RestResource;
 
 import java.math.BigDecimal;
@@ -161,20 +162,52 @@ public class Arvados {
     }
   }
 
+  /**
+   * Get all supported resources by the API
+   * @return Set
+   */
   public Set<String> getAvailableResourses() {
     return (restDescription.getResources().keySet());
   }
-  
+
+  /**
+   * Get all supported method names for the given resource
+   * @param resourceName
+   * @return Set
+   * @throws Exception
+   */
   public Set<String> getAvailableMethodsForResourse(String resourceName)
-        throws Exception {
+      throws Exception {
     Map<String, RestMethod> methodMap = getMatchingMethodMap (resourceName);
     return (methodMap.keySet());
   }
 
+  /**
+   * Get the parameters for the method in the resource sought.
+   * @param resourceName
+   * @param methodName
+   * @return Set
+   * @throws Exception
+   */
   public Set<String> getAvailableParametersForMethod(String resourceName, String methodName)
       throws Exception {
     RestMethod method = getMatchingMethod(resourceName, methodName);
-    return (method.getParameters().keySet());
+    Set<String> parameters = method.getParameters().keySet();
+    Request request = method.getRequest();
+    if (request != null) {
+      Object requestProperties = request.get("properties");
+      if (requestProperties != null) {
+        if (requestProperties instanceof Map) {
+          Map properties = (Map)requestProperties;
+          Set<String> propertyKeys = properties.keySet();
+          if (propertyKeys.size()>0) {
+            propertyKeys.addAll(parameters);
+            parameters = propertyKeys;
+          }
+        }
+      }
+    }
+    return parameters;
   }
 
   private HashMap<String, Object> loadParameters(Map<String, Object> paramsMap,
@@ -237,7 +270,7 @@ public class Arvados {
   }
 
   private Map<String, RestMethod> getMatchingMethodMap(String resourceName)
-          throws Exception {
+      throws Exception {
     if (resourceName == null) {
       error("missing resource name");      
     }

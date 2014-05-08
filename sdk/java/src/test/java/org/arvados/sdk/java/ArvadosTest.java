@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -382,6 +383,38 @@ public class ArvadosTest {
     Map response = arv.call("links", "list", params);
     
     assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
+  }
+
+  @Test
+  public void testGetAvailableResources() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+    Set<String> resources = arv.getAvailableResourses();
+    assertNotNull("Expected resources", resources);
+    assertTrue("Excected users in resrouces", resources.contains("users"));
+  }
+
+  @Test
+  public void testGetAvailableMethodsResources() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+    Set<String> methods = arv.getAvailableMethodsForResourse("users");
+    assertNotNull("Expected resources", methods);
+    assertTrue("Excected create method for users", methods.contains("create"));
+  }
+
+  @Test
+  public void testGetAvailableParametersForUsersGetMethod() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+    Set<String> parameters = arv.getAvailableParametersForMethod("users", "get");
+    assertNotNull("Expected parameters", parameters);
+    assertTrue("Excected uuid parameter for get method for users", parameters.contains("uuid"));
+  }
+
+  @Test
+  public void testGetAvailableParametersForUsersCreateMethod() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+    Set<String> parameters = arv.getAvailableParametersForMethod("users", "create");
+    assertNotNull("Expected parameters", parameters);
+    assertTrue("Excected user parameter for create method for users", parameters.contains("user"));
   }
 
 }
