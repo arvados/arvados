@@ -98,7 +98,7 @@ class PipelineInstance < ArvadosModel
   end
 
   def self.queue
-    self.where("active = true or state = 'RunningOnClient'")
+    self.where("state = 'RunningOnServer'")
   end
 
   protected
