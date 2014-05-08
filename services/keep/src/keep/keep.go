@@ -28,6 +28,7 @@ import (
 // and/or configuration file settings.
 
 // Default TCP address on which to listen for requests.
+// Initialized by the --listen flag.
 const DEFAULT_ADDR = ":25107"
 
 // A Keep "block" is 64MB.
@@ -40,19 +41,22 @@ const MIN_FREE_KILOBYTES = BLOCKSIZE / 1024
 var PROC_MOUNTS = "/proc/mounts"
 
 // The Keep VolumeManager maintains a list of available volumes.
+// Initialized by the --volumes flag (or by FindKeepVolumes).
 var KeepVM VolumeManager
 
 // enforce_permissions controls whether permission signatures
-// should be enforced (affecting GET and DELETE requests)
+// should be enforced (affecting GET and DELETE requests).
+// Initialized by the --enforce-permissions flag.
 var enforce_permissions bool
 
-// permission_ttl is the time duration (in seconds) for which
-// new permission signatures (returned by PUT requests) will be
-// valid.
-var permission_ttl int
+// permission_ttl is the time duration for which new permission
+// signatures (returned by PUT requests) will be valid.
+// Initialized by the --permission-ttl flag.
+var permission_ttl time.Duration
 
 // data_manager_token represents the API token used by the
 // Data Manager, and is required on certain privileged operations.
+// Initialized by the --data-manager-token-file flag.
 var data_manager_token string
 
 // ==========
@@ -103,8 +107,14 @@ func main() {
 	//    by looking at currently mounted filesystems for /keep top-level
 	//    directories.
 
-	var data_manager_token_file, listen, permission_key_file, volumearg string
-	var serialize_io bool
+	var (
+		data_manager_token_file string
+		listen                  string
+		permission_key_file     string
+		permission_ttl_sec      int
+		serialize_io            bool
+		volumearg               string
+	)
 	flag.StringVar(
 		&data_manager_token_file,
 		"data-manager-token-file",
@@ -126,7 +136,7 @@ func main() {
 		"",
 		"File containing the secret key for generating and verifying permission signatures.")
 	flag.IntVar(
-		&permission_ttl,
+		&permission_ttl_sec,
 		"permission-ttl",
 		300,
 		"Expiration time (in seconds) for newly generated permission signatures.")
@@ -184,6 +194,9 @@ func main() {
 			log.Printf("reading data_manager_token: %s\n", err)
 		}
 	}
+
+	// Initialize permission TTL
+	permission_ttl = time.Duration(permission_ttl_sec) * time.Second
 
 	// If --enforce-permissions is true, we must have a permission key to continue.
 	if enforce_permissions && PermissionSecret == nil {
@@ -297,8 +310,7 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 		if err := PutBlock(buf, hash); err == nil {
 			// Success; sign the locator and return it to the client.
 			api_token := GetApiToken(req)
-			expiry := time.Now().Add( // convert permission_ttl to time.Duration
-				time.Duration(permission_ttl) * time.Second)
+			expiry := time.Now().Add(permission_ttl)
 			signed_loc := SignLocator(hash, api_token, expiry)
 			w.Write([]byte(signed_loc))
 		} else {

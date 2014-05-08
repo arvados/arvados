@@ -39,12 +39,8 @@ func TestGetHandler(t *testing.T) {
 	resp := httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != 200 {
-		t.Errorf("bad response code: %v", resp)
-	}
-	if bytes.Compare(resp.Body.Bytes(), TEST_BLOCK) != 0 {
-		t.Errorf("bad response body: %v", resp)
-	}
+	ExpectStatusCode(t, "unsigned GET", resp, http.StatusOK)
+	ExpectBody(t, "unsigned GET", resp, string(TEST_BLOCK))
 
 	// Enable permissions.
 	enforce_permissions = true
@@ -59,12 +55,8 @@ func TestGetHandler(t *testing.T) {
 	req.Header.Set("Authorization", "OAuth "+known_token)
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != 200 {
-		t.Errorf("signed request: bad response code: %v", resp)
-	}
-	if bytes.Compare(resp.Body.Bytes(), TEST_BLOCK) != 0 {
-		t.Errorf("signed request: bad response body: %v", resp)
-	}
+	ExpectStatusCode(t, "signed GET", resp, http.StatusOK)
+	ExpectBody(t, "signed GET", resp, string(TEST_BLOCK))
 
 	// Test GET with an unsigned locator.
 	test_url = "http://localhost:25107/" + TEST_HASH
@@ -73,9 +65,7 @@ func TestGetHandler(t *testing.T) {
 	req.Header.Set("Authorization", "OAuth "+known_token)
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != PermissionError.HTTPCode {
-		t.Errorf("unsigned request: bad response code: %v", resp)
-	}
+	ExpectStatusCode(t, "unsigned locator", resp, PermissionError.HTTPCode)
 
 	// Test GET with a signed locator and an unauthenticated request.
 	test_url = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, expiry)
@@ -83,9 +73,7 @@ func TestGetHandler(t *testing.T) {
 	req, _ = http.NewRequest("GET", test_url, nil)
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != PermissionError.HTTPCode {
-		t.Errorf("signed locator, unauthenticated request: bad response code: %v", resp)
-	}
+	ExpectStatusCode(t, "signed locator", resp, PermissionError.HTTPCode)
 
 	// Test GET with an expired, signed locator.
 	expired_ts := time.Now().Add(-time.Hour)
@@ -95,9 +83,7 @@ func TestGetHandler(t *testing.T) {
 	req.Header.Set("Authorization", "OAuth "+known_token)
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != ExpiredError.HTTPCode {
-		t.Errorf("expired signature: bad response code: %v", resp)
-	}
+	ExpectStatusCode(t, "expired signature", resp, ExpiredError.HTTPCode)
 }
 
 func TestPutHandler(t *testing.T) {
@@ -117,12 +103,8 @@ func TestPutHandler(t *testing.T) {
 	resp := httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != 200 {
-		t.Errorf("bad response code: %v", resp)
-	}
-	if resp.Body.String() != TEST_HASH {
-		t.Errorf("bad response body: %v", resp)
-	}
+	ExpectStatusCode(t, "permissions off", resp, http.StatusOK)
+	ExpectBody(t, "permissions off", resp, TEST_HASH)
 
 	// Add a permission key.
 	// When a permission key is available, the locator returned
@@ -137,11 +119,10 @@ func TestPutHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != 200 {
-		t.Errorf("bad response code: %v", resp)
-	}
+	ExpectStatusCode(t, "authenticated PUT", resp, http.StatusOK)
 	if !VerifySignature(resp.Body.String(), known_token) {
-		t.Errorf("bad response body: %v", resp)
+		t.Errorf("authenticated PUT: response '%s' failed signature check",
+			resp.Body.String())
 	}
 
 	// An unauthenticated PUT request returns an unsigned locator
@@ -152,12 +133,8 @@ func TestPutHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != 200 {
-		t.Errorf("bad response code: %v", resp)
-	}
-	if resp.Body.String() != TEST_HASH {
-		t.Errorf("bad response body: %v", resp)
-	}
+	ExpectStatusCode(t, "anon PUT with server key", resp, http.StatusOK)
+	ExpectBody(t, "anon PUT with server key", resp, TEST_HASH)
 }
 
 func TestIndexHandler(t *testing.T) {
@@ -185,7 +162,8 @@ func TestIndexHandler(t *testing.T) {
 	expected := `^` + TEST_HASH + `\+\d+ \d+\n$`
 	match, _ := regexp.MatchString(expected, resp.Body.String())
 	if !match {
-		t.Errorf("IndexHandler returned:\n%s", resp.Body.String())
+		t.Errorf("IndexHandler expected: %s, returned:\n%s",
+			expected, resp.Body.String())
 	}
 
 	// Unauthenticated /index requests: fail.
@@ -194,9 +172,7 @@ func TestIndexHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != PermissionError.HTTPCode {
-		t.Errorf("unauthenticated /index: %+v", resp)
-	}
+	ExpectStatusCode(t, "unauthenticated /index", resp, PermissionError.HTTPCode)
 
 	// Authenticated /index requests by a non-superuser: also fail.
 	test_url = "http://localhost:25107/index"
@@ -205,9 +181,7 @@ func TestIndexHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != PermissionError.HTTPCode {
-		t.Errorf("authenticated /index: %+v", resp)
-	}
+	ExpectStatusCode(t, "authenticated /index", resp, PermissionError.HTTPCode)
 
 	// Even superuser /index requests fail if enforce_permissions is off!
 	enforce_permissions = false
@@ -218,9 +192,7 @@ func TestIndexHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != PermissionError.HTTPCode {
-		t.Errorf("superuser /index (permissions off): %+v", resp)
-	}
+	ExpectStatusCode(t, "superuser /index (permissions off)", resp, PermissionError.HTTPCode)
 
 	// Superuser /index requests with enforce_permissions set: succeed!
 	enforce_permissions = true
@@ -231,13 +203,36 @@ func TestIndexHandler(t *testing.T) {
 	resp = httptest.NewRecorder()
 	rest.ServeHTTP(resp, req)
 
-	if resp.Code != http.StatusOK {
-		t.Errorf("superuser /index: %+v", resp)
-	}
+	ExpectStatusCode(t, "superuser /index (permissions on)", resp, http.StatusOK)
 	expected = `^` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_2 + `\+\d+ \d+\n$`
 	match, _ = regexp.MatchString(expected, resp.Body.String())
 	if !match {
-		t.Errorf("superuser /index:\n%s", resp.Body.String())
+		t.Errorf("superuser /index: expected %s, got:\n%s",
+			expected, resp.Body.String())
+	}
+}
+
+// ExpectStatusCode checks whether a response has the specified status code,
+// and reports a test failure if not.
+func ExpectStatusCode(
+	t *testing.T,
+	testname string,
+	response *httptest.ResponseRecorder,
+	expected_status int) {
+	if response.Code != expected_status {
+		t.Errorf("%s: expected status %s, got %+v",
+			testname, expected_status, response)
+	}
+}
+
+func ExpectBody(
+	t *testing.T,
+	testname string,
+	response *httptest.ResponseRecorder,
+	expected_body string) {
+	if response.Body.String() != expected_body {
+		t.Errorf("%s: expected response body '%s', got %+v",
+			testname, expected_body, response)
 	}
 }
