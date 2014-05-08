@@ -126,12 +126,11 @@ def run_keep():
     cwd = os.getcwd()
     os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
     os.environ["GOPATH"] = os.getcwd()
-
-    shutil.rmtree("tmp", True)
-    os.mkdir("tmp")
-
-    keep1 = tempfile.mkdtemp()
     subprocess.call(["go", "install", "keep"])
+
+    if not os.path.exists("tmp"):
+        os.mkdir("tmp")
+
     _start_keep(0)
     _start_keep(1)
 
@@ -146,17 +145,18 @@ def run_keep():
 
     os.chdir(cwd)
 
+def _stop_keep(n):
+    kill_server_pid("tmp/keep{}.pid".format(n), 0)
+    if os.path.exists("tmp/keep{}.volume".format(n)):
+        with open("tmp/keep{}.volume".format(n), 'r') as r:
+            shutil.rmtree(r.read(), True)
+
 def stop_keep():
     cwd = os.getcwd()
     os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
 
-    kill_server_pid("keep0.pid", 0)
-    kill_server_pid("keep1.pid", 0)
-
-    with open("keep0.volume", 'r') as r:
-        shutil.rmtree(r.read(), True)
-    with open("keep1.volume", 'r') as r:
-        shutil.rmtree(r.read(), True)
+    _stop_keep(0)
+    _stop_keep(1)
 
     shutil.rmtree("tmp", True)
 

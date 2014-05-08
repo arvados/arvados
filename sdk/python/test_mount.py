@@ -308,7 +308,8 @@ class FuseGroupsTest(MountTestBase):
 
         d2 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso'))
         d2.sort()
-        self.assertEqual(["I'm a job in a folder",
+        self.assertEqual(['1f4b0bc7583c2a7f9102c395f4ffc5e3+45 added sometime',
+                          "I'm a job in a folder",
                           "I'm a template in a folder",
                           "zzzzz-j58dm-5gid26432uujf79",
                           "zzzzz-j58dm-7r18rnd5nzhg5yk",
