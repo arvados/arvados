@@ -655,7 +655,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       {
         $command .= "-e \Q$env_key=$env_val\E ";
       }
-      $command .= "$docker_image ";
+      $command .= "\Q$docker_image\E ";
     }
     $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
