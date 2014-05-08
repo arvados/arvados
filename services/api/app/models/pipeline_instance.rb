@@ -98,7 +98,7 @@ class PipelineInstance < ArvadosModel
   end
 
   def self.queue
-    self.where('active = true')
+    self.where("state = 'RunningOnServer'")
   end
 
   protected
@@ -139,34 +139,18 @@ class PipelineInstance < ArvadosModel
   end
 
   def verify_status
-    if active_changed?
-      if self.active
-        self.state = RunningOnServer
-      else
-        if self.components_look_ready?
-          self.state = Ready
-        else
-          self.state = New
-        end
-      end
-    elsif success_changed?
-      if self.success
-        self.active = false
-        self.state = Complete
-      else
-        self.active = false
-        self.state = Failed
-      end
-    elsif state_changed?
+    changed_attributes = self.changed
+
+    if 'state'.in? changed_attributes
       case self.state
       when New, Ready, Paused
-        self.active = false
+        self.active = nil
         self.success = nil
       when RunningOnServer
         self.active = true
         self.success = nil
       when RunningOnClient
-        self.active = false
+        self.active = nil
         self.success = nil
       when Failed
         self.active = false
@@ -178,25 +162,44 @@ class PipelineInstance < ArvadosModel
       else
         return false
       end
-    elsif components_changed?
-      if !self.state || self.state == New || !self.active
-        if self.components_look_ready?
+    elsif 'success'.in? changed_attributes
+      if self.success
+        self.active = false
+        self.state = Complete
+      else
+        self.active = false
+        self.state = Failed
+      end
+    elsif 'active'.in? changed_attributes
+      if self.active
+        if self.state == New || self.state == Ready || self.state == Paused
+          self.state = RunningOnServer
+        end
+      else
+        if self.state == RunningOnServer # state was RunningOnServer
+          self.active = nil
+          self.state = Paused
+        elsif self.components_look_ready?
           self.state = Ready
         else
           self.state = New
         end
       end
     end
+
+    if 'components'.in? changed_attributes
+      if self.components_look_ready? && (!self.state || self.state == New)
+        self.state = Ready
+      end
+    end
   end
 
   def set_state_before_save
-    if !self.state || self.state == New
+    if !self.state || self.state == New || self.state == Ready || self.state == Paused
       if self.active
         self.state = RunningOnServer
-      elsif self.components_look_ready?
+      elsif self.components_look_ready? && (!self.state || self.state == New)
         self.state = Ready
-      else
-        self.state = New
       end
     end
   end
