@@ -517,7 +517,7 @@ if ($docker_image) {
   }
   # If the Docker image was specified as a hash, pull will fail.
   # Ignore that error.  We'll see what happens when we try to run later.
-  if (($? != 0) && ($docker_image !~ /^[0-9a-fA-F]{5,}$/))
+  if (($? != 0) && ($docker_image !~ /^[0-9a-fA-F]{5,64}$/))
   {
     croak("Installing Docker image $docker_image returned exit code $?");
   }
