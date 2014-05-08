@@ -103,13 +103,13 @@ func main() {
 	//    by looking at currently mounted filesystems for /keep top-level
 	//    directories.
 
-	var data_manager_token, listen, permission_key, volumearg string
+	var data_manager_token_file, listen, permission_key_file, volumearg string
 	var serialize_io bool
 	flag.StringVar(
-		&data_manager_token,
-		"data-manager-token",
+		&data_manager_token_file,
+		"data-manager-token-file",
 		"",
-		"API token used by the Data Manager. All DELETE requests or unqualified GET /index requests must carry this token.")
+		"File with the API token used by the Data Manager. All DELETE requests or unqualified GET /index requests must carry this token.")
 	flag.BoolVar(
 		&enforce_permissions,
 		"enforce-permissions",
@@ -121,10 +121,10 @@ func main() {
 		DEFAULT_ADDR,
 		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
 	flag.StringVar(
-		&permission_key,
-		"permission-key",
+		&permission_key_file,
+		"permission-key-file",
 		"",
-		"Secret key to use for generating and verifying permission signatures.")
+		"File containing the secret key for generating and verifying permission signatures.")
 	flag.IntVar(
 		&permission_ttl,
 		"permission-ttl",
@@ -169,9 +169,20 @@ func main() {
 		log.Fatal("could not find any keep volumes")
 	}
 
-	// Initialize permission key.
-	if permission_key != "" {
-		PermissionSecret = []byte(permission_key)
+	// Initialize data manager token and permission key.
+	if data_manager_token_file != "" {
+		if buf, err := ioutil.ReadFile(data_manager_token_file); err == nil {
+			data_manager_token = strings.TrimSpace(string(buf))
+		} else {
+			log.Printf("reading data_manager_token: %s\n", err)
+		}
+	}
+	if permission_key_file != "" {
+		if buf, err := ioutil.ReadFile(permission_key_file); err == nil {
+			PermissionSecret = bytes.TrimSpace(buf)
+		} else {
+			log.Printf("reading data_manager_token: %s\n", err)
+		}
 	}
 
 	// If --enforce-permissions is true, we must have a permission key to continue.
