@@ -5,9 +5,14 @@
 import unittest
 import arvados
 import apiclient
+import run_test_server
 
 class PipelineTemplateTest(unittest.TestCase):
+    def setUp(self):
+        run_test_server.run()
+
     def runTest(self):
+        run_test_server.authorize_with("admin")
         pt_uuid = arvados.api('v1').pipeline_templates().create(
             body={'name':__file__}
             ).execute()['uuid']
@@ -50,3 +55,6 @@ class PipelineTemplateTest(unittest.TestCase):
             geterror_response = arvados.api('v1').pipeline_templates().get(
                 uuid=pt_uuid
                 ).execute()
+
+    def tearDown(self):
+        run_test_server.stop()

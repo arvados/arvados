@@ -218,7 +218,7 @@ class FuseTagsUpdateTestBase(MountTestBase):
 
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertEqual(d1, ['foo_tag'])
+        self.assertEqual(['foo_tag'], d1)
 
         api.links().create(body={'link': {
             'head_uuid': 'fa7aeb5140e2848d39b416daeef4ffc5+45',
@@ -266,7 +266,7 @@ class FuseTagsUpdateTestWebsockets(FuseTagsUpdateTestBase):
         self.runRealTest()
 
     def tearDown(self):
-        run_test_server.stop(True)
+        run_test_server.stop()
         super(FuseTagsUpdateTestWebsockets, self).tearDown()
 
 
@@ -279,7 +279,7 @@ class FuseTagsUpdateTestPoll(FuseTagsUpdateTestBase):
         self.runRealTest()
 
     def tearDown(self):
-        run_test_server.stop(False)
+        run_test_server.stop()
         super(FuseTagsUpdateTestPoll, self).tearDown()
 
 
@@ -312,14 +312,14 @@ class FuseGroupsTest(MountTestBase):
                           "I'm a template in a folder",
                           "zzzzz-j58dm-5gid26432uujf79",
                           "zzzzz-j58dm-7r18rnd5nzhg5yk",
+                          "zzzzz-j58dm-ypsjlol9dofwijz",
                           "zzzzz-j7d0g-axqo7eu9pwvna1x"
                       ], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', 'zzzzz-j7d0g-axqo7eu9pwvna1x'))
         d3.sort()
         self.assertEqual(["I'm in a subfolder, too",
-                          "zzzzz-j58dm-c40lddwcqqr1ffs",
-                          "zzzzz-o0j2j-ryhm1bn83ni03sn"
+                          "zzzzz-j58dm-c40lddwcqqr1ffs"
                       ], d3)
 
         with open(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', "I'm a template in a folder")) as f:

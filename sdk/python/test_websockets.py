@@ -29,4 +29,4 @@ class WebsocketTest(unittest.TestCase):
         time.sleep(1)
 
     def tearDown(self):
-        run_test_server.stop(True)
+        run_test_server.stop()
