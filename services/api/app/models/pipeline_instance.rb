@@ -150,7 +150,7 @@ class PipelineInstance < ArvadosModel
         self.active = true
         self.success = nil
       when RunningOnClient
-        self.active = false
+        self.active = nil
         self.success = nil
       when Failed
         self.active = false
@@ -199,10 +199,6 @@ class PipelineInstance < ArvadosModel
         self.state = Ready
       end
     end
-
-    if self.state == Ready || self.state == New
-      self.active = nil
-    end 
   end
 
 end
