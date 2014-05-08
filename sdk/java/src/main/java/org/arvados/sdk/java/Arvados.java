@@ -201,8 +201,12 @@ public class Arvados {
           Map properties = (Map)requestProperties;
           Set<String> propertyKeys = properties.keySet();
           if (propertyKeys.size()>0) {
-            propertyKeys.addAll(parameters);
-            parameters = propertyKeys;
+            try {
+              propertyKeys.addAll(parameters);
+              return propertyKeys;
+            } catch (Exception e){
+              logger.error(e);
+            }
           }
         }
       }
