@@ -1296,6 +1296,7 @@ sub save_meta
       . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;
+  chomp($loglocator);
 
   $local_logfile = undef;   # the temp file is automatically deleted
   Log (undef, "log manifest is $loglocator");
