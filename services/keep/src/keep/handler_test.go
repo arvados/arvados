@@ -110,6 +110,7 @@ func TestPutHandler(t *testing.T) {
 	// When a permission key is available, the locator returned
 	// from a PUT request will be signed.
 	PermissionSecret = []byte(known_key)
+	permission_ttl = time.Duration(300) * time.Second
 
 	// An authenticated PUT request returns a signed locator.
 	test_url = "http://localhost:25107/" + TEST_HASH
