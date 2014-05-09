@@ -23,7 +23,7 @@ function smart_scroll_fixup(s) {
         a = s[i];
         var h = window.innerHeight - a.getBoundingClientRect().top - 20;
         height = String(h) + "px";
-        a.style.height = height;
+        a.style['max-height'] = height;
     }
 }
 
