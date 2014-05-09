@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-setup(name='arvados-fuse-driver',
+setup(name='arvados_fuse',
       version='0.1',
       description='Arvados FUSE driver',
       author='Arvados',
