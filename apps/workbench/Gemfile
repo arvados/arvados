@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem 'rails', '~> 3.2.0'
+gem 'rails', '~> 4.0.0'
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
@@ -14,8 +14,8 @@ gem 'sass'
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails',   '~> 3.2.0'
-  gem 'coffee-rails', '~> 3.2.0'
+  gem 'sass-rails',   '~> 4.0.0'
+  gem 'coffee-rails', '~> 4.0.0'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   gem 'therubyracer', :platforms => :ruby
@@ -64,5 +64,8 @@ gem 'RedCloth'
 
 gem 'piwik_analytics'
 gem 'httpclient'
-gem 'themes_for_rails'
+
+# This fork has Rails 4 compatible routes
+gem 'themes_for_rails', git: 'https://github.com/holtkampw/themes_for_rails', ref: '1fd2d7897d75ae0d6375f4c390df87b8e91ad417'
+
 gem "deep_merge", :require => 'deep_merge/rails_compat'

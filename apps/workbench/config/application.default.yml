@@ -3,15 +3,12 @@
 
 development:
   cache_classes: false
-  whiny_nils: true
+  eager_load: true
   consider_all_requests_local: true
   action_controller.perform_caching: false
   action_mailer.raise_delivery_errors: false
   active_support.deprecation: :log
   action_dispatch.best_standards_support: :builtin
-  active_record.mass_assignment_sanitizer: :strict
-  active_record.auto_explain_threshold_in_seconds: 0.5
-  assets.compress: false
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
@@ -19,10 +16,10 @@ development:
 production:
   force_ssl: true
   cache_classes: true
+  eager_load: true
   consider_all_requests_local: false
   action_controller.perform_caching: true
   serve_static_assets: false
-  assets.compress: true
   assets.compile: false
   assets.digest: true
   i18n.fallbacks: true
@@ -38,18 +35,18 @@ production:
 
 test:
   cache_classes: true
+  eager_load: false
   serve_static_assets: true
   static_cache_control: public, max-age=3600
-  whiny_nils: true
   consider_all_requests_local: true
   action_controller.perform_caching: false
   action_dispatch.show_exceptions: false
   action_controller.allow_forgery_protection: false
   action_mailer.delivery_method: :test
-  active_record.mass_assignment_sanitizer: :strict
   active_support.deprecation: :stderr
   profiling_enabled: false
   secret_token: <%= rand(2**256).to_s(36) %>
+  secret_key_base: <%= rand(2**256).to_s(36) %>
 
   # When you run the Workbench's integration tests, it starts the API
   # server as a dependency.  These settings should match the API
@@ -62,6 +59,8 @@ test:
   site_name: Workbench:test
 
 common:
+  assets.js_compressor: false
+  assets.css_compressor: false
   data_import_dir: /tmp/arvados-workbench-upload
   data_export_dir: /tmp/arvados-workbench-download
   arvados_login_base: https://arvados.local/login
@@ -72,5 +71,6 @@ common:
   arvados_theme: default
   show_user_agreement_inline: false
   secret_token: ~
+  secret_key_base: ~
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true

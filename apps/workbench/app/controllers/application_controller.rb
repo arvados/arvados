@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  include ArvadosApiClientHelper
+
   respond_to :html, :json, :js
   protect_from_forgery
 
@@ -199,7 +201,7 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.html {
         if request.method == 'GET'
-          redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+          redirect_to arvados_api_client.arvados_login_url(return_to: request.url)
         else
           flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
           redirect_to :back

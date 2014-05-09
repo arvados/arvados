@@ -229,7 +229,7 @@
             </ul>
           </li>
           <% else %>
-            <li><a href="<%= $arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
           <% end %>
         </ul>
       </div><!-- /.navbar-collapse -->
