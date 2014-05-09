@@ -27,13 +27,16 @@ class PipelineInstance < ArvadosModel
   end
 
   # Supported states for a pipeline instance
-  New = 'New'
-  Ready = 'Ready'
-  RunningOnServer = 'RunningOnServer'
-  RunningOnClient = 'RunningOnClient'
-  Paused = 'Paused'
-  Failed = 'Failed'
-  Complete = 'Complete'
+  States =
+    [
+     (New = 'New'),
+     (Ready = 'Ready'),
+     (RunningOnServer = 'RunningOnServer'),
+     (RunningOnClient = 'RunningOnClient'),
+     (Paused = 'Paused'),
+     (Failed = 'Failed'),
+     (Complete = 'Complete'),
+    ]
 
   def dependencies
     dependency_search(self.components).keys
@@ -172,7 +175,7 @@ class PipelineInstance < ArvadosModel
       end
     elsif 'active'.in? changed_attributes
       if self.active
-        if self.state == New || self.state == Ready || self.state == Paused
+        if self.state.in? [New, Ready, Paused]
           self.state = RunningOnServer
         end
       else
@@ -185,12 +188,23 @@ class PipelineInstance < ArvadosModel
           self.state = New
         end
       end
+    elsif new_record? and self.state.nil?
+      # No state, active, or success given
+      self.state = New
     end
 
-    if 'components'.in? changed_attributes
-      if self.components_look_ready? && (!self.state || self.state == New)
+    if new_record? or 'components'.in? changed_attributes
+      state ||= New
+      if state == New and self.components_look_ready?
         self.state = Ready
       end
+    end
+
+    if self.state.in?(States)
+      true
+    else
+      errors.add :state, "'#{state.inspect} must be one of: [#{States.join ', '}]"
+      false
     end
   end
 
