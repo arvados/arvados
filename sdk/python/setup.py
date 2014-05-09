@@ -1,8 +1,7 @@
 from setuptools import setup
-import setup_header
 
 setup(name='arvados-python-client',
-      version='0.1.' + setup_header.minor_version,
+      version='0.1',
       description='Arvados client library',
       author='Arvados',
       author_email='info@arvados.org',
