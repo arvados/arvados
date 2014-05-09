@@ -1,15 +1,16 @@
-from setuptools import setup
-import setup_header
+#!/usr/bin/env python
 
-setup(name='arvados-fuse-driver',
-      version='0.1.' + setup_header.minor_version,
+from setuptools import setup
+
+setup(name='arvados_fuse',
+      version='0.1',
       description='Arvados FUSE driver',
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",
       download_url="https://github.com/curoverse/arvados.git",
       license='Apache 2.0',
-      packages=['arvados.fuse'],
+      packages=['arvados_fuse'],
       scripts=[
         'bin/arv-mount'
         ],
