@@ -9,7 +9,7 @@ setup(name='arvados_fuse',
       author_email='info@arvados.org',
       url="https://arvados.org",
       download_url="https://github.com/curoverse/arvados.git",
-      license='Apache 2.0',
+      license='GNU Affero General Public License, version 3.0',
       packages=['arvados_fuse'],
       scripts=[
         'bin/arv-mount'
