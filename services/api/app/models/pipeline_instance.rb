@@ -166,6 +166,7 @@ class PipelineInstance < ArvadosModel
         return false
       end
     elsif 'success'.in? changed_attributes
+      logger.info "pipeline_instance changed_attributes for success"
       if self.success
         self.active = false
         self.state = Complete
@@ -174,6 +175,7 @@ class PipelineInstance < ArvadosModel
         self.state = Failed
       end
     elsif 'active'.in? changed_attributes
+      logger.info "pipeline_instance changed_attributes for active"
       if self.active
         if self.state.in? [New, Ready, Paused]
           self.state = RunningOnServer
