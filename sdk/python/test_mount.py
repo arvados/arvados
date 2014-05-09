@@ -163,7 +163,7 @@ class FuseTagsTest(MountTestBase):
 
     def runTest(self):
         run_test_server.authorize_with("admin")
-        api = arvados.api('v1')
+        api = arvados.api('v1', cache=False)
 
         operations = fuse.Operations(os.getuid(), os.getgid())
         e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
@@ -204,7 +204,7 @@ class FuseTagsUpdateTestBase(MountTestBase):
 
     def runRealTest(self):
         run_test_server.authorize_with("admin")
-        api = arvados.api('v1')
+        api = arvados.api('v1', cache=False)
 
         operations = fuse.Operations(os.getuid(), os.getgid())
         e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api, poll_time=1))
@@ -290,7 +290,7 @@ class FuseGroupsTest(MountTestBase):
 
     def runTest(self):
         run_test_server.authorize_with("admin")
-        api = arvados.api('v1')
+        api = arvados.api('v1', cache=False)
 
         operations = fuse.Operations(os.getuid(), os.getgid())
         e = operations.inodes.add_entry(fuse.GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))

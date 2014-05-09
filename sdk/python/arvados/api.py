@@ -55,13 +55,13 @@ def http_cache(data_type):
         path = None
     return path
 
-def api(version=None):
+def api(version=None, cache=True):
     global services
 
     if 'ARVADOS_DEBUG' in config.settings():
         logging.basicConfig(level=logging.DEBUG)
 
-    if not services.get(version):
+    if not cache or not services.get(version):
         apiVersion = version
         if not version:
             apiVersion = 'v1'
@@ -80,12 +80,13 @@ def api(version=None):
             ca_certs = None             # use httplib2 default
 
         http = httplib2.Http(ca_certs=ca_certs,
-                             cache=http_cache('discovery'))
+                             cache=(http_cache('discovery') if cache else None))
         http = credentials.authorize(http)
         if re.match(r'(?i)^(true|1|yes)$',
                     config.get('ARVADOS_API_HOST_INSECURE', 'no')):
             http.disable_ssl_certificate_validation=True
         services[version] = apiclient.discovery.build(
             'arvados', apiVersion, http=http, discoveryServiceUrl=url)
+        http.cache = None
     return services[version]
 
