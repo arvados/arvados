@@ -125,7 +125,11 @@ def run_keep():
 
     cwd = os.getcwd()
     os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
-    os.environ["GOPATH"] = os.getcwd()
+    if os.environ.get('GOPATH') == None:
+        os.environ["GOPATH"] = os.getcwd()
+    else:
+        os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
+
     subprocess.call(["go", "install", "keep"])
 
     if not os.path.exists("tmp"):
