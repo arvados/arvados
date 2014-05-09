@@ -40,11 +40,13 @@ def kill_server_pid(PID_PATH, wait=10):
     try:
         now = time.time()
         timeout = now + wait
+        with open(PID_PATH, 'r') as f:
+            server_pid = int(f.read())
         while now <= timeout:
-            with open(PID_PATH, 'r') as f:
-                server_pid = int(f.read())
             os.kill(server_pid, signal.SIGTERM) == None
+            os.getpgid(server_pid) # throw OSError if no such pid
             now = time.time()
+            time.sleep(0.1)
     except IOError:
         good_pid = False
     except OSError:
@@ -62,8 +64,8 @@ def run(websockets=False, reuse_server=False):
     test_pid = find_server_pid(pid_file, 0)
 
     if test_pid == None or not reuse_server:
-        if test_pid != None:
-            stop()
+        # do not try to run both server variants at once
+        stop()
 
         # delete cached discovery document
         shutil.rmtree(arvados.http_cache('discovery'))
@@ -148,7 +150,7 @@ def run_keep():
     _start_keep(1)
 
     authorize_with("admin")
-    api = arvados.api('v1')
+    api = arvados.api('v1', cache=False)
     a = api.keep_disks().list().execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
@@ -185,6 +187,7 @@ def authorize_with(token):
     '''token is the symbolic name of the token from the api_client_authorizations fixture'''
     arvados.config.settings()["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[token]["api_token"]
     arvados.config.settings()["ARVADOS_API_HOST"] = os.environ.get("ARVADOS_API_HOST")
+    arvados.config.settings()["ARVADOS_API_HOST_INSECURE"] = "true"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
