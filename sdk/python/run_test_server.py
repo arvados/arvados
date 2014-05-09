@@ -6,13 +6,14 @@ import yaml
 import sys
 import argparse
 import arvados.config
+import arvados.api
 import shutil
 import tempfile
 
 ARV_API_SERVER_DIR = '../../services/api'
 KEEP_SERVER_DIR = '../../services/keep'
-SERVER_PID_PATH = 'tmp/pids/server.pid'
-WEBSOCKETS_SERVER_PID_PATH = 'tmp/pids/passenger.3001.pid'
+SERVER_PID_PATH = 'tmp/pids/webrick-test.pid'
+WEBSOCKETS_SERVER_PID_PATH = 'tmp/pids/passenger-test.pid'
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -39,11 +40,13 @@ def kill_server_pid(PID_PATH, wait=10):
     try:
         now = time.time()
         timeout = now + wait
+        with open(PID_PATH, 'r') as f:
+            server_pid = int(f.read())
         while now <= timeout:
-            with open(PID_PATH, 'r') as f:
-                server_pid = int(f.read())
             os.kill(server_pid, signal.SIGTERM) == None
+            os.getpgid(server_pid) # throw OSError if no such pid
             now = time.time()
+            time.sleep(0.1)
     except IOError:
         good_pid = False
     except OSError:
@@ -61,14 +64,15 @@ def run(websockets=False, reuse_server=False):
     test_pid = find_server_pid(pid_file, 0)
 
     if test_pid == None or not reuse_server:
-        if test_pid != None:
-            stop()
+        # do not try to run both server variants at once
+        stop()
 
         # delete cached discovery document
-        shutil.rmtree(os.path.join("~", ".cache", "arvados", "discovery"), True)
+        shutil.rmtree(arvados.http_cache('discovery'))
 
         # Setup database
         os.environ["RAILS_ENV"] = "test"
+        subprocess.call(['bundle', 'exec', 'rake', 'tmp:cache:clear'])
         subprocess.call(['bundle', 'exec', 'rake', 'db:test:load'])
         subprocess.call(['bundle', 'exec', 'rake', 'db:fixtures:load'])
 
@@ -79,16 +83,23 @@ def run(websockets=False, reuse_server=False):
                              '-keyout', './self-signed.key',
                              '-days', '3650',
                              '-subj', '/CN=localhost'])
-            subprocess.call(['passenger', 'start', '-d', '-p3001', '--ssl',
+            subprocess.call(['bundle', 'exec',
+                             'passenger', 'start', '-d', '-p3333',
+                             '--pid-file',
+                             os.path.join(os.getcwd(), WEBSOCKETS_SERVER_PID_PATH),
+                             '--ssl',
                              '--ssl-certificate', 'self-signed.pem',
                              '--ssl-certificate-key', 'self-signed.key'])
+            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3333"
         else:
-            subprocess.call(['bundle', 'exec', 'rails', 'server', '-d', '-p3001'])
+            subprocess.call(['bundle', 'exec', 'rails', 'server', '-d',
+                             '--pid',
+                             os.path.join(os.getcwd(), SERVER_PID_PATH),
+                             '-p3001'])
+            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
 
         pid = find_server_pid(SERVER_PID_PATH)
 
-    #os.environ["ARVADOS_API_HOST"] = "localhost:3001"
-    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
     os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
     os.environ["ARVADOS_API_TOKEN"] = ""
     os.chdir(cwd)
@@ -125,7 +136,11 @@ def run_keep():
 
     cwd = os.getcwd()
     os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
-    os.environ["GOPATH"] = os.getcwd()
+    if os.environ.get('GOPATH') == None:
+        os.environ["GOPATH"] = os.getcwd()
+    else:
+        os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
+
     subprocess.call(["go", "install", "keep"])
 
     if not os.path.exists("tmp"):
@@ -135,7 +150,7 @@ def run_keep():
     _start_keep(1)
 
     authorize_with("admin")
-    api = arvados.api('v1')
+    api = arvados.api('v1', cache=False)
     a = api.keep_disks().list().execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
@@ -171,6 +186,8 @@ def fixture(fix):
 def authorize_with(token):
     '''token is the symbolic name of the token from the api_client_authorizations fixture'''
     arvados.config.settings()["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[token]["api_token"]
+    arvados.config.settings()["ARVADOS_API_HOST"] = os.environ.get("ARVADOS_API_HOST")
+    arvados.config.settings()["ARVADOS_API_HOST_INSECURE"] = "true"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -181,7 +198,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.action == 'start':
-        run(args.websockets, args.reuse)
+        run(websockets=args.websockets, reuse_server=args.reuse)
         if args.auth != None:
             authorize_with(args.auth)
             print("export ARVADOS_API_HOST={}".format(arvados.config.settings()["ARVADOS_API_HOST"]))

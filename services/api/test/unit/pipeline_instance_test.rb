@@ -5,9 +5,9 @@ class PipelineInstanceTest < ActiveSupport::TestCase
   test "check active and success for a pipeline in new state" do
     pi = pipeline_instances :new_pipeline
 
-    assert !pi.active, 'expected active to be false for a new pipeline'
-    assert !pi.success, 'expected success to be false for a new pipeline'
-    assert !pi.state, 'expected state to be nil because the fixture had no state specified'
+    assert !pi.active, 'expected active to be false for :new_pipeline'
+    assert !pi.success, 'expected success to be false for :new_pipeline'
+    assert_equal 'New', pi.state, 'expected state to be New for :new_pipeline'
 
     # save the pipeline and expect state to be New
     Thread.current[:user] = users(:admin)
@@ -17,6 +17,18 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     assert_equal PipelineInstance::New, pi.state, 'expected state to be New for new pipeline'
     assert !pi.active, 'expected active to be false for a new pipeline'
     assert !pi.success, 'expected success to be false for a new pipeline'
+  end
+
+  test "check active and success for a newly created pipeline" do
+    set_user_from_auth :active
+
+    pi = PipelineInstance.create(state: 'Ready')
+    pi.save
+
+    assert pi.valid?, 'expected newly created empty pipeline to be valid ' + pi.errors.messages.to_s
+    assert !pi.active, 'expected active to be false for a new pipeline'
+    assert !pi.success, 'expected success to be false for a new pipeline'
+    assert_equal 'Ready', pi.state, 'expected state to be Ready for a new empty pipeline'
   end
 
   test "update attributes for pipeline" do
@@ -58,7 +70,7 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     assert !pi.success, 'expected success to be false for a new pipeline'
 
     pi.active = true
-    pi.save
+    assert_equal true, pi.save, 'expected pipeline instance to save, but ' + pi.errors.messages.to_s
     pi = PipelineInstance.find_by_uuid 'zzzzz-d1hrv-f4gneyn6br1xize'
     assert_equal PipelineInstance::RunningOnServer, pi.state, 'expected state to be RunningOnServer after updating active to true'
     assert pi.active, 'expected active to be true after update'
@@ -134,9 +146,9 @@ class PipelineInstanceTest < ActiveSupport::TestCase
 
       Thread.current[:user] = users(:active)
       # Make sure we go through the "active_changed? and active" code:
-      pi.update_attributes active: true
-      pi.update_attributes active: false
-      assert_equal PipelineInstance::Ready, pi.state
+      assert_equal true, pi.update_attributes(active: true), pi.errors.messages
+      assert_equal true, pi.update_attributes(active: false), pi.errors.messages
+      assert_equal PipelineInstance::Paused, pi.state
     end
   end
 end

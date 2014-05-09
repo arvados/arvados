@@ -15,7 +15,7 @@ setup(name='arvados-fuse-driver',
         ],
       install_requires=[
         'arvados-python-client',
-	'llfuse',
+        'llfuse',
         'python-daemon'
         ],
       zip_safe=False)
