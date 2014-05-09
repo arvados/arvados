@@ -1,5 +1,5 @@
 google-api-python-client>=1.2
-httplib2>=0.8
+httplib2>=0.7
 python-gflags>=2.0
 urllib3>=1.7.0
 ws4py>=0.3
