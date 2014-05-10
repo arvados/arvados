@@ -14,7 +14,6 @@ class ArvadosModel < ActiveRecord::Base
   before_save :ensure_ownership_path_leads_to_user
   before_destroy :ensure_owner_uuid_is_permitted
   before_destroy :ensure_permission_to_destroy
-
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
   after_create :log_create
