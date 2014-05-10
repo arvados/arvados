@@ -3,15 +3,18 @@ package keepclient
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"sort"
 )
 
 type KeepDisk struct {
 	Hostname string `json:"service_host"`
 	Port     int    `json:"service_port"`
+	SSL      bool   `json:"service_ssl_flag"`
 }
 
-func KeepDisks() (disks []KeepDisk, err error) {
+func KeepDisks() (service_roots []string, err error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -37,5 +40,23 @@ func KeepDisks() (disks []KeepDisk, err error) {
 		return nil, err
 	}
 
-	return m.Items, nil
+	service_roots = make([]string, len(m.Items))
+	for index, element := range m.Items {
+		n := ""
+		if element.SSL {
+			n = "s"
+		}
+		service_roots[index] = fmt.Sprintf("http%s://%s:%d",
+			n, element.Hostname, element.Port)
+	}
+	sort.Strings(service_roots)
+	return service_roots, nil
 }
+
+/*
+func ProbeSequence(service_roots []string) (pseq []string) {
+	pseq = make([]string, 0, len(disks))
+	pool := disks[:]
+
+}
+*/

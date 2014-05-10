@@ -13,11 +13,10 @@ type MySuite struct{}
 var _ = Suite(&MySuite{})
 
 func (s *MySuite) TestGetKeepDisks(c *C) {
-	k, err := KeepDisks()
+	sr, err := KeepDisks()
 	c.Assert(err, Equals, nil)
-	c.Assert(len(k), Equals, 2)
-	c.Assert(k[0].Hostname, Equals, "localhost")
-	c.Assert(k[0].Port, Equals, 25108)
-	c.Assert(k[1].Hostname, Equals, "localhost")
-	c.Assert(k[1].Port, Equals, 25107)
+	c.Assert(len(sr), Equals, 2)
+	c.Assert(sr[0], Equals, "http://localhost:25107")
+	c.Assert(sr[1], Equals, "http://localhost:25108")
+
 }
