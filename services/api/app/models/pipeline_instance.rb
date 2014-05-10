@@ -196,8 +196,8 @@ class PipelineInstance < ArvadosModel
     end
 
     if new_record? or 'components'.in? changed_attributes
-      state ||= New
-      if state == New and self.components_look_ready?
+      self.state ||= New
+      if self.state == New and self.components_look_ready?
         self.state = Ready
       end
     end

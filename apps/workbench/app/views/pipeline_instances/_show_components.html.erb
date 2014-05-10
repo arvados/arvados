@@ -100,7 +100,7 @@ setInterval(function(){$('a.refresh').click()}, 15000);
     <% end %>
   <% end %>
 
-  <% if @object.state == 'New' %>
+  <% if @object.state.in? ['New', 'Ready'] %>
     <%= render partial: 'show_components_editable', locals: {editable: true} %>
   <% else %>
     <%= render partial: 'show_components_editable', locals: {editable: false} %>

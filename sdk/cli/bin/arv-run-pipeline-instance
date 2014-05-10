@@ -541,7 +541,6 @@ class WhRunPipelineInstance
         end
       end
       @instance[:components] = @components
-#      @instance[:active] = moretodo
       report_status
 
       if @options[:no_wait]
@@ -555,7 +554,6 @@ class WhRunPipelineInstance
           debuglog "interrupt", 0
           interrupted = true
           break
-          #abort
         end
       end
     end
@@ -580,18 +578,12 @@ class WhRunPipelineInstance
 
     if interrupted
      if success
-#        @instance[:active] = false
-#        @instance[:success] = success
         @instance[:state] = 'Complete'
      else
-#        @instance[:active] = nil
-#        @instance[:success] = nil
         @instance[:state] = 'Paused'
       end
     else
       if ended == @components.length or failed > 0
-#        @instance[:active] = false
-#        @instance[:success] = success
         @instance[:state] = success ? 'Complete' : 'Failed'
       end
     end
@@ -604,9 +596,8 @@ class WhRunPipelineInstance
   end
 
   def cleanup
-    if @instance
-#      @instance[:active] = false
-      @instance[:state] = 'New'  # should it be Failed?
+    if @instance and @instance[:state] == 'RunningOnClient'
+      @instance[:state] = 'Paused'
       @instance.save
     end
   end
