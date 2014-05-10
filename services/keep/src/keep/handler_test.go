@@ -190,105 +190,137 @@ func TestPutHandler(t *testing.T) {
 }
 
 // Test /index requests:
-//   - unauthenticated /index/{prefix} request
-//   - unauthenticated /index request
-//   - authenticated /index request, non-superuser
-//   - authenticated /index request by superuser, enforce_permissions = false
-//   - authenticated /index request by superuser, enforce_permissions = true
+//   - enforce_permissions off, unauthenticated /index request
+//   - enforce_permissions off, authenticated /index request, non-superuser
+//   - enforce_permissions off, authenticated /index request, superuser
+//   - enforce_permissions on, unauthenticated /index request
+//   - enforce_permissions on, authenticated /index request, non-superuser
+//   - enforce_permissions on, authenticated /index request, superuser
+//   - enforce_permissions on, authenticated /index/prefix request, superuser
+//
+// The only /index requests that should succeed are those issued by the
+// superuser when enforce_permissions = true.
 //
 func TestIndexHandler(t *testing.T) {
 	defer teardown()
 
 	// Set up Keep volumes and populate them.
 	// Include multiple blocks on different volumes, and
-	// some metadata files.
+	// some metadata files (which should be omitted from index listings)
 	KeepVM = MakeTestVolumeManager(2)
 	defer func() { KeepVM.Quit() }()
 
 	vols := KeepVM.Volumes()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 	vols[1].Put(TEST_HASH_2, TEST_BLOCK_2)
+	vols[0].Put(TEST_HASH+".meta", []byte("metadata"))
+	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
 
 	// Set up a REST router for testing the handlers.
 	rest := NewRESTRouter()
 
-	// Unauthenticated /index/{prefix}
-	// => OK
-	response := IssueRequest(rest,
-		&RequestTester{
-			method: "GET",
-			uri:    "http://localhost:25107/index/" + TEST_HASH[0:5],
-		})
-
-	expected := `^` + TEST_HASH + `\+\d+ \d+\n$`
-	match, _ := regexp.MatchString(expected, response.Body.String())
-	if !match {
-		t.Errorf("IndexHandler expected: %s, returned:\n%s",
-			expected, response.Body.String())
-	}
-
-	// Unauthenticated /index
-	// => PermissionError
-	response = IssueRequest(rest,
-		&RequestTester{
-			method: "GET",
-			uri:    "http://localhost:25107/index",
-		})
-
-	ExpectStatusCode(t,
-		"unauthenticated /index", PermissionError.HTTPCode, response)
-
-	// Authenticated /index request by non-superuser
-	// => PermissionError
-	response = IssueRequest(rest,
-		&RequestTester{
-			method:    "GET",
-			uri:       "http://localhost:25107/index",
-			api_token: known_token,
-		})
-
-	ExpectStatusCode(t,
-		"authenticated /index by non-superuser",
-		PermissionError.HTTPCode,
-		response)
-
-	// Authenticated /index request by superuser, enforce_permissions = false
-	// => PermissionError
-	enforce_permissions = false
 	data_manager_token = "DATA MANAGER TOKEN"
 
-	response = IssueRequest(rest,
-		&RequestTester{
-			method:    "GET",
-			uri:       "http://localhost:25107/index",
-			api_token: data_manager_token,
-		})
+	unauthenticated_req := &RequestTester{
+		method: "GET",
+		uri:    "http://localhost:25107/index",
+	}
+	authenticated_req := &RequestTester{
+		method:    "GET",
+		uri:       "http://localhost:25107/index",
+		api_token: known_token,
+	}
+	superuser_req := &RequestTester{
+		method:    "GET",
+		uri:       "http://localhost:25107/index",
+		api_token: data_manager_token,
+	}
 
+	// ----------------------------
+	// enforce_permissions disabled
+	// All /index requests should fail.
+	enforce_permissions = false
+
+	// unauthenticated /index request
+	// => PermissionError
+	response := IssueRequest(rest, unauthenticated_req)
 	ExpectStatusCode(t,
-		"authenticated /index request by superuser (permissions off)",
+		"enforce_permissions off, unauthenticated request",
 		PermissionError.HTTPCode,
 		response)
 
-	// Authenticated /index request by superuser, enforce_permissions = true
-	// => OK
-	enforce_permissions = true
-	response = IssueRequest(rest,
-		&RequestTester{
-			method:    "GET",
-			uri:       "http://localhost:25107/index",
-			api_token: data_manager_token,
-		})
-
+	// authenticated /index request, non-superuser
+	// => PermissionError
+	response = IssueRequest(rest, authenticated_req)
 	ExpectStatusCode(t,
-		"authenticated /index request by superuser (permissions on)",
+		"enforce_permissions off, authenticated request, non-superuser",
+		PermissionError.HTTPCode,
+		response)
+
+	// authenticated /index request, superuser
+	// => PermissionError
+	response = IssueRequest(rest, superuser_req)
+	ExpectStatusCode(t,
+		"enforce_permissions off, superuser request",
+		PermissionError.HTTPCode,
+		response)
+
+	// ---------------------------
+	// enforce_permissions enabled
+	// Only the superuser should be allowed to issue /index requests.
+	enforce_permissions = true
+
+	// unauthenticated /index request
+	// => PermissionError
+	response = IssueRequest(rest, unauthenticated_req)
+	ExpectStatusCode(t,
+		"enforce_permissions on, unauthenticated request",
+		PermissionError.HTTPCode,
+		response)
+
+	// authenticated /index request, non-superuser
+	// => PermissionError
+	response = IssueRequest(rest, authenticated_req)
+	ExpectStatusCode(t,
+		"permissions on, authenticated request, non-superuser",
+		PermissionError.HTTPCode,
+		response)
+
+	// superuser /index request
+	// => OK
+	response = IssueRequest(rest, superuser_req)
+	ExpectStatusCode(t,
+		"permissions on, superuser request",
 		http.StatusOK,
 		response)
 
-	expected = `^` + TEST_HASH + `\+\d+ \d+\n` +
+	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_2 + `\+\d+ \d+\n$`
+	match, _ := regexp.MatchString(expected, response.Body.String())
+	if !match {
+		t.Errorf(
+			"permissions on, superuser request: expected %s, got:\n%s",
+			expected, response.Body.String())
+	}
+
+	// superuser /index/prefix request
+	// => OK
+	response = IssueRequest(rest,
+		&RequestTester{
+			method:    "GET",
+			uri:       "http://localhost:25107/index/" + TEST_HASH[0:3],
+			api_token: data_manager_token,
+		})
+	ExpectStatusCode(t,
+		"permissions on, superuser request",
+		http.StatusOK,
+		response)
+
+	expected = `^` + TEST_HASH + `\+\d+ \d+\n$`
 	match, _ = regexp.MatchString(expected, response.Body.String())
 	if !match {
-		t.Errorf("superuser /index: expected %s, got:\n%s",
+		t.Errorf(
+			"permissions on, superuser /index/prefix request: expected %s, got:\n%s",
 			expected, response.Body.String())
 	}
 }
