@@ -24,6 +24,20 @@ class OwnerTest < ActiveSupport::TestCase
       assert Specimen.where(uuid: i.uuid).any?, "new item should really be in DB"
     end
 
+    test "create object with non-existent #{o_class} owner" do
+      assert_raises(ActiveRecord::RecordInvalid,
+                    "create should fail with random owner_uuid") do
+        i = Specimen.create!(owner_uuid: o_class.generate_uuid)
+      end
+
+      i = Specimen.create(owner_uuid: o_class.generate_uuid)
+      assert !i.valid?, "object with random owner_uuid should not be valid?"
+
+      i = Specimen.new(owner_uuid: o_class.generate_uuid)
+      assert !i.valid?, "new item should not pass validation"
+      assert !i.uuid, "new item should not have an ID"
+    end
+
     [User, Group].each do |new_o_class|
       test "change owner from legit #{o_class} to legit #{new_o_class} owner" do
         o = o_class.create
