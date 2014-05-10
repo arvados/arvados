@@ -159,18 +159,46 @@ class KeepClient(object):
             finally:
                 self.lock.release()
 
+        # Build an ordering with which to query the Keep servers based on the
+        # contents of the hash.
+        # "hash" is a hex-encoded number at least 8 digits
+        # (32 bits) long
+
+        # seed used to calculate the next keep server from 'pool'
+        # to be added to 'pseq'
         seed = hash
+
+        # Keep servers still to be added to the ordering
         pool = self.service_roots[:]
+
+        # output probe sequence
         pseq = []
+
+        # iterate while there are servers left to be assigned
         while len(pool) > 0:
             if len(seed) < 8:
-                if len(pseq) < len(hash) / 4: # first time around
+                # ran out of digits in the seed
+                if len(pseq) < len(hash) / 4:
+                    # the number of servers added to the probe sequence is less
+                    # than the number of 4-digit slices in 'hash' so refill the
+                    # seed with the last 4 digits and then append the contents
+                    # of 'hash'.
                     seed = hash[-4:] + hash
                 else:
+                    # refill the seed with the contents of 'hash'
                     seed += hash
+
+            # Take the next 8 digits (32 bytes) and interpret as an integer,
+            # then modulus with the size of the remaining pool to get the next
+            # selected server.
             probe = int(seed[0:8], 16) % len(pool)
+
+            # Append the selected server to the probe sequence and remove it
+            # from the pool.
             pseq += [pool[probe]]
             pool = pool[:probe] + pool[probe+1:]
+
+            # Remove the digits just used from the seed
             seed = seed[8:]
         logging.debug(str(pseq))
         return pseq
@@ -208,7 +236,7 @@ class KeepClient(object):
             self._cache_lock.release()
 
     def reserve_cache(self, locator):
-        '''Reserve a cache slot for the specified locator, 
+        '''Reserve a cache slot for the specified locator,
         or return the existing slot.'''
         self._cache_lock.acquire()
         try:
@@ -281,8 +309,8 @@ class KeepClient(object):
             with timer.Timer() as t:
                 resp, content = h.request(url.encode('utf-8'), 'GET',
                                           headers=headers)
-            logging.info("Received %s bytes in %s msec (%s MiB/sec)" % (len(content), 
-                                                                        t.msecs, 
+            logging.info("Received %s bytes in %s msec (%s MiB/sec)" % (len(content),
+                                                                        t.msecs,
                                                                         (len(content)/(1024*1024))/t.secs))
             if re.match(r'^2\d\d$', resp['status']):
                 m = hashlib.new('md5')

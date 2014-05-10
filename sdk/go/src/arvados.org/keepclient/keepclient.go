@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 )
 
 type KeepDisk struct {
@@ -53,10 +54,49 @@ func KeepDisks() (service_roots []string, err error) {
 	return service_roots, nil
 }
 
-/*
-func ProbeSequence(service_roots []string) (pseq []string) {
-	pseq = make([]string, 0, len(disks))
-	pool := disks[:]
+func ShuffledServiceRoots(service_roots []string, hash string) (pseq []string) {
+	// Build an ordering with which to query the Keep servers based on the
+	// contents of the hash.  "hash" is a hex-encoded number at least 8
+	// digits (32 bits) long
 
+	// seed used to calculate the next keep server from 'pool' to be added
+	// to 'pseq'
+	seed := hash
+
+	// Keep servers still to be added to the ordering
+	pool := service_roots[:]
+
+	// output probe sequence
+	pseq = make([]string, 0, len(service_roots))
+
+	// iterate while there are servers left to be assigned
+	for len(pool) > 0 {
+
+		if len(seed) < 8 {
+			// ran out of digits in the seed
+			if len(pseq) < (len(hash) / 4) {
+				// the number of servers added to the probe
+				// sequence is less than the number of 4-digit
+				// slices in 'hash' so refill the seed with the
+				// last 4 digits.
+				seed = hash[len(hash)-4:]
+			}
+			seed += hash
+		}
+
+		// Take the next 8 digits (32 bytes) and interpret as an integer,
+		// then modulus with the size of the remaining pool to get the next
+		// selected server.
+		probe, _ := strconv.ParseInt(seed[0:8], 16, 32)
+		probe %= int64(len(pool))
+
+		// Append the selected server to the probe sequence and remove it
+		// from the pool.
+		pseq = append(pseq, pool[probe])
+		pool = append(pool[:probe], pool[probe+1:]...)
+
+		// Remove the digits just used from the seed
+		seed = seed[8:]
+	}
+	return pseq
 }
-*/
