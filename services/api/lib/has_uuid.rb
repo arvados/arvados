@@ -1,4 +1,4 @@
-module AssignUuid
+module HasUuid
 
   def self.included(base)
     base.extend(ClassMethods)

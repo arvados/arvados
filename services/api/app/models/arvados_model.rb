@@ -1,4 +1,5 @@
-require 'assign_uuid'
+require 'has_uuid'
+
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 

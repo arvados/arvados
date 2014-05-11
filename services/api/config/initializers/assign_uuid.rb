@@ -1,1 +1,0 @@
-require 'assign_uuid'

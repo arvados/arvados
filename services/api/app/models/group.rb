@@ -1,7 +1,7 @@
 require 'can_be_an_owner'
 
 class Group < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   include CanBeAnOwner
