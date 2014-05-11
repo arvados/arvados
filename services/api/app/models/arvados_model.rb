@@ -26,7 +26,7 @@ class ArvadosModel < ActiveRecord::Base
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
   # user.uuid==object.owner_uuid.
-  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
+  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'", dependent: :destroy
 
   class PermissionDeniedError < StandardError
     def http_status
@@ -234,6 +234,11 @@ class ArvadosModel < ActiveRecord::Base
       return false
     end
     return true
+  end
+
+  def destroy_permission_links
+    Link.destroy_all(['link_class=? and (head_uuid=? or tail_uuid=?)',
+                      'permission', uuid, uuid])
   end
 
   def ensure_permission_to_destroy

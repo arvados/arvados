@@ -3,6 +3,9 @@ module AssignUuid
   def self.included(base)
     base.extend(ClassMethods)
     base.before_create :assign_uuid
+    base.before_destroy :destroy_permission_links
+    base.has_many :links_via_head, class_name: 'Link', foreign_key: :head_uuid, primary_key: :uuid, conditions: "not (link_class = 'permission')", dependent: :restrict
+    base.has_many :links_via_tail, class_name: 'Link', foreign_key: :tail_uuid, primary_key: :uuid, conditions: "not (link_class = 'permission')", dependent: :restrict
   end
 
   module ClassMethods
