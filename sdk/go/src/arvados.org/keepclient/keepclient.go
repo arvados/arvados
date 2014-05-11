@@ -4,10 +4,15 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 	"strconv"
 )
+
+type KeepClient struct {
+	Service_roots []string
+}
 
 type KeepDisk struct {
 	Hostname string `json:"service_host"`
@@ -54,7 +59,15 @@ func KeepDisks() (service_roots []string, err error) {
 	return service_roots, nil
 }
 
-func ShuffledServiceRoots(service_roots []string, hash string) (pseq []string) {
+func MakeKeepClient() (kc *KeepClient, err error) {
+	sv, err := KeepDisks()
+	if err != nil {
+		return nil, err
+	}
+	return &KeepClient{sv}, nil
+}
+
+func (this KeepClient) ShuffledServiceRoots(hash string) (pseq []string) {
 	// Build an ordering with which to query the Keep servers based on the
 	// contents of the hash.  "hash" is a hex-encoded number at least 8
 	// digits (32 bits) long
@@ -64,10 +77,11 @@ func ShuffledServiceRoots(service_roots []string, hash string) (pseq []string) {
 	seed := hash
 
 	// Keep servers still to be added to the ordering
-	pool := service_roots[:]
+	pool := make([]string, len(this.Service_roots))
+	copy(pool, this.Service_roots)
 
 	// output probe sequence
-	pseq = make([]string, 0, len(service_roots))
+	pseq = make([]string, 0, len(this.Service_roots))
 
 	// iterate while there are servers left to be assigned
 	for len(pool) > 0 {
@@ -87,8 +101,8 @@ func ShuffledServiceRoots(service_roots []string, hash string) (pseq []string) {
 		// Take the next 8 digits (32 bytes) and interpret as an integer,
 		// then modulus with the size of the remaining pool to get the next
 		// selected server.
-		probe, _ := strconv.ParseInt(seed[0:8], 16, 32)
-		probe %= int64(len(pool))
+		probe, _ := strconv.ParseUint(seed[0:8], 16, 32)
+		probe %= uint64(len(pool))
 
 		// Append the selected server to the probe sequence and remove it
 		// from the pool.
@@ -99,4 +113,29 @@ func ShuffledServiceRoots(service_roots []string, hash string) (pseq []string) {
 		seed = seed[8:]
 	}
 	return pseq
+}
+
+func Fill(buffer []byte, r io.Reader, c chan []byte, errorchan chan error) {
+	ptr := buffer[:]
+
+	for {
+		n, err := r.Read(ptr)
+		if err != nil {
+			errorchan <- err
+			return
+		}
+		c <- ptr[:n]
+		ptr = ptr[n:]
+	}
+}
+
+func (this KeepClient) KeepPut(hash string, r io.Reader) {
+	//sv := this.ShuffledServiceRoots(hash)
+	//n := 0
+	buffer := make([]byte, 0, 1024*1024*64)
+	//success := make(chan int)
+	reads := make(chan []byte)
+	errorchan := make(chan error)
+
+	go Fill(buffer, r, reads, errorchan)
 }

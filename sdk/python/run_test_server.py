@@ -149,6 +149,10 @@ def run_keep():
     _start_keep(0)
     _start_keep(1)
 
+
+    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+    os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
+
     authorize_with("admin")
     api = arvados.api('v1', cache=False)
     a = api.keep_disks().list().execute()
@@ -210,3 +214,5 @@ if __name__ == "__main__":
         run_keep()
     elif args.action == 'stop_keep':
         stop_keep()
+    else:
+        print('Unrecognized action "{}", actions are "start", "stop", "start_keep", "stop_keep"'.format(args.action))
