@@ -6,7 +6,7 @@
 
 <%= content_for :content_top do %>
   <h2>
-    <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => 'Unnamed pipeline', 'data-mode' => 'inline' } %>
+    <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => 'Unnamed pipeline' } %>
   </h2>
   <% if template %>
   <h4>
