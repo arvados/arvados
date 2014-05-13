@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.executables << "arv-run-pipeline-instance"
   s.executables << "arv-crunch-job"
   s.executables << "arv-tag"
+  s.required_ruby_version = '>= 2.1.0'
   s.add_runtime_dependency 'arvados', '~> 0.1.0'
   s.add_runtime_dependency 'google-api-client', '~> 0.6.3'
   s.add_runtime_dependency 'activesupport', '~> 3.2', '>= 3.2.13'
