@@ -11,10 +11,19 @@
 # 5. Section in application.default.yml called "common"
 
 development:
+  # The permission_key needs to be identical to the
+  # permission key given to Keep.  If you run both
+  # apiserver and Keep in development, change this to
+  # a hardcoded string and make sure both systems use
+  # the same value.
+  permission_key: <%= rand(2**512).to_s(36) %>
 
 production:
   # At minimum, you need a nice long randomly generated secret_token here.
   secret_token: ~
+
+  # The permission key must be identical to the key provisioned to Keep.
+  permission_key: ~
 
   uuid_prefix: bogus
 
@@ -35,6 +44,7 @@ production:
 test:
   uuid_prefix: zzzzz
   secret_token: <%= rand(2**512).to_s(36) %>
+  permission_key: <%= rand(2**512).to_s(36) %>
 
 common:
   #git_repositories_dir: /var/cache/git

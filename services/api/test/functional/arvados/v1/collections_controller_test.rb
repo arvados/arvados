@@ -220,4 +220,49 @@ EOS
     assert_equal true, !!found.index('1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
   end
 
+  test "create collection with signed manifest" do
+    authorize_with :active
+    locators = %w(
+      d41d8cd98f00b204e9800998ecf8427e+0
+      acbd18db4cc2f85cedef654fccc4a4d8+3
+      ea10d51bcf88862dbcc36eb292017dfd+45)
+
+    unsigned_manifest = locators.map { |loc|
+      ". " + loc + " 0:0:foo.txt\n"
+    }.join()
+    manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest) +
+      '+' +
+      unsigned_manifest.length.to_s
+
+    # build a manifest with both signed and unsigned locators.
+    # TODO(twp): in phase 4, all locators will need to be signed, so
+    # this test should break and will need to be rewritten. Issue #2755.
+    signing_opts = {
+      key: Rails.configuration.permission_key,
+      api_token: api_token(:active),
+    }
+    signed_manifest =
+      ". " + locators[0] + " 0:0:foo.txt\n" +
+      ". " + Blob.sign_locator(locators[1], signing_opts) + " 0:0:foo.txt\n" +
+      ". " + Blob.sign_locator(locators[2], signing_opts) + " 0:0:foo.txt\n"
+
+    post :create, {
+      collection: {
+        manifest_text: signed_manifest,
+        uuid: manifest_uuid,
+      }
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    resp = JSON.parse(@response.body)
+    assert_equal manifest_uuid, resp['uuid']
+    assert_equal 48, resp['data_size']
+    # All of the locators in the output must be signed.
+    resp['manifest_text'].lines.each do |entry|
+      m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
+      if m
+        assert Blob.verify_signature m[0], signing_opts
+      end
+    end
+  end
 end

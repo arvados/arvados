@@ -10,6 +10,35 @@ class Arvados::V1::CollectionsController < ApplicationController
       logger.warn "User #{current_user.andand.uuid} tried to set collection owner_uuid to #{owner_uuid}"
       raise ArvadosModel::PermissionDeniedError
     end
+
+    # Check permissions on the collection manifest.
+    # If any signature cannot be verified, return 403 Permission denied.
+    perms_ok = true
+    api_token = current_api_client_authorization.andand.api_token
+    signing_opts = { key: Rails.configuration.permission_key, api_token: api_token }
+    resource_attrs[:manifest_text].lines.each do |entry|
+      # TODO(twp): fail the request if this match fails.
+      # Add in Phase 4 (see #2755)
+      m = /([[:xdigit:]]{32}(\+[[:digit:]]+)?)(\+A\S*)?/.match(entry)
+      if m and m[3]
+        if !api_token
+          logger.warn "No API token present; cannot verify signature #{m[0]}"
+          perms_ok = false
+        elsif !Blob.verify_signature m[0], signing_opts
+          logger.warn "Invalid signature on locator #{m[0]}"
+          perms_ok = false
+        end
+      end
+    end
+    unless perms_ok
+      raise ArvadosModel::PermissionDeniedError
+    end
+
+    # Remove any permission signatures from the manifest.
+    resource_attrs[:manifest_text]
+      .gsub!(/^(\S+\s+)([[:xdigit:]]{32}(\+[[:digit:]]+)?)(\+A\S*)/, '\1\2')
+
+    # Save the collection with the stripped manifest.
     act_as_system_user do
       @object = model_class.new resource_attrs.reject { |k,v| k == :owner_uuid }
       begin
@@ -45,6 +74,16 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def show
+    if current_api_client_authorization
+      signing_opts = {
+        key: Rails.configuration.permission_key,
+        api_token: current_api_client_authorization.api_token,
+      }
+      @object[:manifest_text]
+        .gsub!(/^(\S+\s+)([[:xdigit:]]{32}(\+[[:digit:]]+)?)/) { |m|
+        $1 + Blob.sign_locator($2, signing_opts)
+      }
+    end
     render json: @object.as_api_response(:with_data)
   end
 
