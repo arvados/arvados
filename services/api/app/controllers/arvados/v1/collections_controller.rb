@@ -1,3 +1,5 @@
+require 'locator'
+
 class Arvados::V1::CollectionsController < ApplicationController
   def create
     # Collections are owned by system_user. Creating a collection has
@@ -10,6 +12,48 @@ class Arvados::V1::CollectionsController < ApplicationController
       logger.warn "User #{current_user.andand.uuid} tried to set collection owner_uuid to #{owner_uuid}"
       raise ArvadosModel::PermissionDeniedError
     end
+
+    # Check permissions on the collection manifest.
+    # If any signature cannot be verified, return 403 Permission denied.
+    perms_ok = true
+    api_token = current_api_client_authorization.andand.api_token
+    signing_opts = {
+      key: Rails.configuration.blob_signing_key,
+      api_token: api_token,
+      ttl: Rails.configuration.blob_signing_ttl,
+    }
+    resource_attrs[:manifest_text].lines.each do |entry|
+      entry.split[1..-1].each do |tok|
+        # TODO(twp): fail the request if this match fails.
+        # Add in Phase 4 (see #2755)
+        loc = Locator.parse(tok)
+        if loc and loc.signature
+          if !api_token
+            logger.warn "No API token present; cannot verify signature on #{loc}"
+            perms_ok = false
+          elsif !Blob.verify_signature tok, signing_opts
+            logger.warn "Invalid signature on locator #{loc}"
+            perms_ok = false
+          end
+        end
+      end
+    end
+    unless perms_ok
+      raise ArvadosModel::PermissionDeniedError
+    end
+
+    # Remove any permission signatures from the manifest.
+    resource_attrs[:manifest_text]
+      .gsub!(/[[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
+      loc = Locator.parse(word)
+      if loc
+        loc.without_signature.to_s
+      else
+        word
+      end
+    }
+
+    # Save the collection with the stripped manifest.
     act_as_system_user do
       @object = model_class.new resource_attrs.reject { |k,v| k == :owner_uuid }
       begin
@@ -25,7 +69,6 @@ class Arvados::V1::CollectionsController < ApplicationController
           @object = @existing_object || @object
         end
       end
-
       if @object
         link_attrs = {
           owner_uuid: owner_uuid,
@@ -45,6 +88,22 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def show
+    if current_api_client_authorization
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: current_api_client_authorization.api_token,
+        ttl: Rails.configuration.blob_signing_ttl,
+      }
+      @object[:manifest_text]
+        .gsub!(/[[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
+        loc = Locator.parse(word)
+        if loc
+          Blob.sign_locator(word, signing_opts)
+        else
+          word
+        end
+      }
+    end
     render json: @object.as_api_response(:with_data)
   end
 
@@ -214,5 +273,4 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     end
   end
-
 end

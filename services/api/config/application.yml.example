@@ -11,10 +11,22 @@
 # 5. Section in application.default.yml called "common"
 
 development:
+  # The blob_signing_key is a string of alphanumeric characters used
+  # to sign permission hints for Keep locators. It must be identical
+  # to the permission key given to Keep.  If you run both apiserver
+  # and Keep in development, change this to a hardcoded string and
+  # make sure both systems use the same value.
+  blob_signing_key: ~
 
 production:
   # At minimum, you need a nice long randomly generated secret_token here.
+  # Use a long string of alphanumeric characters (at least 36).
   secret_token: ~
+
+  # blob_signing_key is required and must be identical to the
+  # permission secret provisioned to Keep.
+  # Use a long string of alphanumeric characters (at least 36).
+  blob_signing_key: ~
 
   uuid_prefix: bogus
 
