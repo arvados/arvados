@@ -112,3 +112,13 @@ common:
   assets.version: "1.0"
 
   arvados_theme: default
+
+  # Default: do not advertise a websocket server.
+  websocket_address: false
+
+  # You can run the websocket server separately from the regular HTTP service
+  # by setting "ARVADOS_WEBSOCKETS=ws-only" in the environment before running
+  # the websocket server.  When you do this, you need to set the following
+  # configuration variable so that the primary server can give out the correct
+  # address of the dedicated websocket server:
+  #websocket_address: wss://127.0.0.1:3333/websocket

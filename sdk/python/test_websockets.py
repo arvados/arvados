@@ -6,7 +6,7 @@ import time
 
 class WebsocketTest(unittest.TestCase):
     def setUp(self):
-        run_test_server.run(True)
+        run_test_server.run(websockets=True)
 
     def on_event(self, ev):
         if self.state == 1:
@@ -22,11 +22,11 @@ class WebsocketTest(unittest.TestCase):
         self.state = 1
 
         run_test_server.authorize_with("admin")
-        api = arvados.api('v1')
+        api = arvados.api('v1', cache=False)
         arvados.events.subscribe(api, [['object_uuid', 'is_a', 'arvados#human']], lambda ev: self.on_event(ev))
         time.sleep(1)
         self.h = api.humans().create(body={}).execute()
         time.sleep(1)
 
     def tearDown(self):
-        run_test_server.stop(True)
+        run_test_server.stop()
