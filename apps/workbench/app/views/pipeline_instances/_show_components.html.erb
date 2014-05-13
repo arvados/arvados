@@ -106,3 +106,5 @@ setInterval(function(){$('a.refresh').click()}, 15000);
     <%= render partial: 'show_components_editable', locals: {editable: false} %>
   <% end %>
 <% end %>
+
+<%= render partial: 'show_event_log', locals: {object: @object} %>
