@@ -1,10 +1,14 @@
 package keepclient
 
 import (
+	"crypto/md5"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"sort"
@@ -16,6 +20,8 @@ type KeepClient struct {
 	ApiToken      string
 	ApiInsecure   bool
 	Service_roots []string
+	Want_replicas int
+	client        *http.Client
 }
 
 type KeepDisk struct {
@@ -30,50 +36,68 @@ func MakeKeepClient() (kc *KeepClient, err error) {
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
 		ApiInsecure: (os.Getenv("ARVADOS_API_HOST_INSECURE") != "")}
 
-	if err := kc.DiscoverKeepDisks(); err != nil {
-		return nil, err
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: kc.ApiInsecure},
 	}
 
-	return kc, nil
+	kc.client = &http.Client{Transport: tr}
+
+	err = kc.DiscoverKeepDisks()
+
+	return kc, err
 }
 
 func (this *KeepClient) DiscoverKeepDisks() error {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: this.ApiInsecure},
-	}
-	client := &http.Client{Transport: tr}
-
+	// Construct request of keep disk list
 	var req *http.Request
 	var err error
-	if req, err = http.NewRequest("GET", "https://localhost:3001/arvados/v1/keep_disks", nil); err != nil {
+	if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_disks", this.ApiServer), nil); err != nil {
 		return err
 	}
 
-	var resp *http.Response
+	// Add api token header
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
-	if resp, err = client.Do(req); err != nil {
+
+	// Make the request
+	var resp *http.Response
+	if resp, err = this.client.Do(req); err != nil {
 		return err
 	}
 
 	type SvcList struct {
 		Items []KeepDisk `json:"items"`
 	}
+
+	// Decode json reply
 	dec := json.NewDecoder(resp.Body)
 	var m SvcList
 	if err := dec.Decode(&m); err != nil {
 		return err
 	}
 
-	this.Service_roots = make([]string, len(m.Items))
-	for index, element := range m.Items {
+	listed := make(map[string]bool)
+	this.Service_roots = make([]string, 0, len(m.Items))
+
+	for _, element := range m.Items {
 		n := ""
 		if element.SSL {
 			n = "s"
 		}
-		this.Service_roots[index] = fmt.Sprintf("http%s://%s:%d",
-			n, element.Hostname, element.Port)
+
+		// Construct server URL
+		url := fmt.Sprintf("http%s://%s:%d", n, element.Hostname, element.Port)
+
+		// Skip duplicates
+		if !listed[url] {
+			listed[url] = true
+			this.Service_roots = append(this.Service_roots, url)
+		}
 	}
+
+	// Must be sorted for ShuffledServiceRoots() to produce consistent
+	// results.
 	sort.Strings(this.Service_roots)
+
 	return nil
 }
 
@@ -130,92 +154,125 @@ type ReaderSlice struct {
 	reader_error error
 }
 
-type Source <-chan ReaderSlice
-type Sink chan<- ReaderSlice
-type Status chan error
-
 // Read repeatedly from the reader into the specified buffer, and report each
-// read to channel 'c'.  Completes when Reader 'r' reports an error and closes
-// channel 'c'.
-func ReadIntoBuffer(buffer []byte, r io.Reader, c Sink) {
-	defer close(c)
+// read to channel 'c'.  Completes when Reader 'r' reports on the error channel
+// and closes channel 'c'.
+func ReadIntoBuffer(buffer []byte, r io.Reader, slices chan<- ReaderSlice) {
+	defer close(slices)
 
 	// Initially use entire buffer as scratch space
 	ptr := buffer[:]
-	for len(ptr) > 0 {
-		// Read into the scratch space
-		n, err := r.Read(ptr)
+	for {
+		log.Printf("ReadIntoBuffer doing read")
+		var n int
+		var err error
+		if len(ptr) > 0 {
+			// Read into the scratch space
+			n, err = r.Read(ptr)
+		} else {
+			// Ran out of scratch space, try reading one more byte
+			var b [1]byte
+			n, err = r.Read(b[:])
 
-		// End on error (includes EOF)
-		if err != nil {
-			c <- ReaderSlice{nil, err}
+			if n > 0 {
+				// Reader has more data but we have nowhere to
+				// put it, so we're stuffed
+				slices <- ReaderSlice{nil, io.ErrShortBuffer}
+			} else {
+				// Return some other error (hopefully EOF)
+				slices <- ReaderSlice{nil, err}
+			}
 			return
 		}
 
-		// Make a slice with the contents of the read
-		c <- ReaderSlice{ptr[:n], nil}
+		// End on error (includes EOF)
+		if err != nil {
+			log.Printf("ReadIntoBuffer sending error %d %s", n, err.Error())
+			slices <- ReaderSlice{nil, err}
+			return
+		}
 
-		// Adjust the scratch space slice
-		ptr = ptr[n:]
-	}
-	if len(ptr) == 0 {
-		c <- ReaderSlice{nil, io.ErrShortBuffer}
-	}
-}
+		log.Printf("ReadIntoBuffer got %d", n)
 
-// Take slices from 'source' channel and write them to Writer 'w'.  Reports read
-// or write errors on 'status'.  Completes when 'source' channel is closed.
-/*func SinkWriter(source Source, w io.Writer, status Status) {
-	can_write = true
+		if n > 0 {
+			log.Printf("ReadIntoBuffer sending readerslice")
+			// Make a slice with the contents of the read
+			slices <- ReaderSlice{ptr[:n], nil}
+			log.Printf("ReadIntoBuffer sent readerslice")
 
-	for {
-		// Get the next block from the source
-		rs, valid := <-source
-
-		if valid {
-			if rs.error != nil {
-				// propagate reader status (should only be EOF)
-				status <- rs.error
-			} else if can_write {
-				buf := rs.slice[:]
-				for len(buf) > 0 {
-					n, err := w.Write(buf)
-					buf = buf[n:]
-					if err == io.ErrShortWrite {
-						// short write, so go around again
-					} else if err != nil {
-						// some other write error,
-						// propagate error and stop
-						// further writes
-						status <- err
-						can_write = false
-					}
-				}
-			}
-		} else {
-			// source channel closed
-			break
+			// Adjust the scratch space slice
+			ptr = ptr[n:]
 		}
 	}
-}*/
+}
 
-func closeSinks(sinks_slice []Sink) {
-	for _, s := range sinks_slice {
-		close(s)
+// A read request to the Transfer() function
+type ReadRequest struct {
+	offset int
+	p      []byte
+	result chan<- ReadResult
+}
+
+// A read result from the Transfer() function
+type ReadResult struct {
+	n   int
+	err error
+}
+
+// Reads from the buffer managed by the Transfer()
+type BufferReader struct {
+	offset    *int
+	requests  chan<- ReadRequest
+	responses chan ReadResult
+}
+
+func MakeBufferReader(requests chan<- ReadRequest) BufferReader {
+	return BufferReader{new(int), requests, make(chan ReadResult)}
+}
+
+// Reads from the buffer managed by the Transfer()
+func (this BufferReader) Read(p []byte) (n int, err error) {
+	this.requests <- ReadRequest{*this.offset, p, this.responses}
+	rr, valid := <-this.responses
+	if valid {
+		*this.offset += rr.n
+		return rr.n, rr.err
+	} else {
+		return 0, io.ErrUnexpectedEOF
 	}
 }
 
-// Transfer data from a source (either an already-filled buffer, or a reader)
-// into one or more 'sinks'.  If 'source' is valid, it will read from the
-// reader into the buffer and send the data to the sinks.  Otherwise 'buffer'
-// it will just send the contents of the buffer to the sinks.  Completes when
-// the 'sinks' channel is closed.
-func Transfer(source_buffer []byte, source_reader io.Reader, sinks <-chan Sink, reader_error chan error) {
+// Close the responses channel
+func (this BufferReader) Close() error {
+	close(this.responses)
+	return nil
+}
+
+// Handle a read request.  Returns true if a response was sent, and false if
+// the request should be queued.
+func HandleReadRequest(req ReadRequest, body []byte, complete bool) bool {
+	log.Printf("HandleReadRequest %d %d %t", req.offset, len(body), complete)
+	if req.offset < len(body) {
+		req.result <- ReadResult{copy(req.p, body[req.offset:]), nil}
+		return true
+	} else if complete && req.offset >= len(body) {
+		req.result <- ReadResult{0, io.EOF}
+		return true
+	} else {
+		return false
+	}
+}
+
+// If 'source_reader' is not nil, reads data from 'source_reader' and stores it
+// in the provided buffer.  Otherwise, use the contents of 'buffer' as is.
+// Accepts read requests on the buffer on the 'requests' channel.  Completes
+// when 'requests' channel is closed.
+func Transfer(source_buffer []byte, source_reader io.Reader, requests <-chan ReadRequest, reader_error chan error) {
 	// currently buffered data
 	var body []byte
 
 	// for receiving slices from ReadIntoBuffer
-	var slices chan []byte = nil
+	var slices chan ReaderSlice = nil
 
 	// indicates whether the buffered data is complete
 	var complete bool = false
@@ -224,47 +281,45 @@ func Transfer(source_buffer []byte, source_reader io.Reader, sinks <-chan Sink, 
 		// 'body' is the buffer slice representing the body content read so far
 		body = source_buffer[:0]
 
-		// used to communicate slices of the buffer as read
-		reader_slices := make(chan []ReaderSlice)
+		// used to communicate slices of the buffer as they are
+		slices = make(chan ReaderSlice)
 
 		// Spin it off
-		go ReadIntoBuffer(source_buffer, source_reader, reader_slices)
+		go ReadIntoBuffer(source_buffer, source_reader, slices)
 	} else {
 		// use the whole buffer
 		body = source_buffer[:]
 
-		// that's it
+		// buffer is complete
 		complete = true
 	}
 
-	// list of sinks to send to
-	sinks_slice := make([]Sink, 0)
-	defer closeSinks(sinks_slice)
+	pending_requests := make([]ReadRequest, 0)
 
 	for {
+		log.Printf("Doing select")
 		select {
-		case s, valid := <-sinks:
+		case req, valid := <-requests:
+			log.Printf("Got read request")
+			// Handle a buffer read request
 			if valid {
-				// add to the sinks slice
-				sinks_slice = append(sinks_slice, s)
-
-				// catch up the sink with the current body contents
-				if len(body) > 0 {
-					s <- ReaderSlice{body, nil}
-					if complete {
-						s <- ReaderSlice{nil, io.EOF}
-					}
+				if !HandleReadRequest(req, body, complete) {
+					log.Printf("Queued")
+					pending_requests = append(pending_requests, req)
 				}
 			} else {
-				// closed 'sinks' channel indicates we're done
+				// closed 'requests' channel indicates we're done
 				return
 			}
 
 		case bk, valid := <-slices:
+			// Got a new slice from the reader
 			if valid {
-				if bk.err != nil {
-					reader_error <- bk.err
-					if bk.err == io.EOF {
+				log.Printf("Got readerslice %d", len(bk.slice))
+
+				if bk.reader_error != nil {
+					reader_error <- bk.reader_error
+					if bk.reader_error == io.EOF {
 						// EOF indicates the reader is done
 						// sending, so our buffer is complete.
 						complete = true
@@ -279,86 +334,95 @@ func Transfer(source_buffer []byte, source_reader io.Reader, sinks <-chan Sink, 
 					body = source_buffer[0 : len(body)+len(bk.slice)]
 				}
 
-				// send the new slice to the sinks
-				for _, s := range sinks_slice {
-					s <- bk
-				}
+				// handle pending reads
+				n := 0
+				for n < len(pending_requests) {
+					if HandleReadRequest(pending_requests[n], body, complete) {
+						log.Printf("ReadRequest handled")
 
-				if complete {
-					// got an EOF, so close the sinks
-					closeSinks(sinks_slice)
+						// move the element from the
+						// back of the slice to
+						// position 'n', then shorten
+						// the slice by one element
+						pending_requests[n] = pending_requests[len(pending_requests)-1]
+						pending_requests = pending_requests[0 : len(pending_requests)-1]
+					} else {
+						log.Printf("ReadRequest re-queued")
 
-					// truncate sinks slice
-					sinks_slice = sinks_slice[:0]
+						// Request wasn't handled, so keep it in the request slice
+						n += 1
+					}
 				}
 			} else {
-				// no more reads
-				slices = nil
+				if complete {
+					// no more reads
+					slices = nil
+				} else {
+					// reader channel closed without signaling EOF
+					reader_error <- io.ErrUnexpectedEOF
+					return
+				}
 			}
 		}
 	}
 }
 
-func (this KeepClient) ConnectToKeepServer(url string, sinks chan<- Sink, write_status chan<- error) {
-	pipereader, pipewriter := io.Pipe()
+type UploadError struct {
+	err error
+	url string
+}
 
+func (this KeepClient) uploadToKeepServer(host string, hash string, readChannel chan<- ReadRequest, upload_status chan<- UploadError) {
 	var req *http.Request
-	if req, err = http.NewRequest("POST", url, nil); err != nil {
-		write_status <- err
+	var err error
+	var url = fmt.Sprintf("%s/%s", host, hash)
+	if req, err = http.NewRequest("PUT", url, nil); err != nil {
+		upload_status <- UploadError{err, url}
+		return
 	}
+
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
-	req.Body = pipereader
-
-	// create channel to transfer slices from reader to writer
-	tr := make(chan ReaderSlice)
-
-	// start the writer goroutine
-	go SinkWriter(tr, pipewriter, write_status)
-
-	// now transfer the channel to the reader goroutine
-	sinks <- tr
+	req.Body = MakeBufferReader(readChannel)
 
 	var resp *http.Response
+	if resp, err = this.client.Do(req); err != nil {
+		upload_status <- UploadError{err, url}
+	}
 
-	if resp, err = client.Do(req); err != nil {
-		return nil, err
+	if resp.StatusCode == http.StatusOK {
+		upload_status <- UploadError{io.EOF, url}
 	}
 }
 
-var KeepWriteError = errors.new("Could not write sufficient replicas")
+var KeepWriteError = errors.New("Could not write sufficient replicas")
 
-func (this KeepClient) KeepPut(hash string, r io.Reader, want_replicas int) error {
-	// Calculate the ordering to try writing to servers
+func (this KeepClient) putReplicas(
+	hash string,
+	requests chan ReadRequest,
+	reader_status chan error) error {
+
+	// Calculate the ordering for uploading to servers
 	sv := this.ShuffledServiceRoots(hash)
 
 	// The next server to try contacting
-	n := 0
+	next_server := 0
 
 	// The number of active writers
 	active := 0
 
-	// Used to buffer reads from 'r'
-	buffer := make([]byte, 64*1024*1024)
+	// Used to communicate status from the upload goroutines
+	upload_status := make(chan UploadError)
+	defer close(upload_status)
 
-	// Used to send writers to the reader goroutine
-	sinks := make(chan Sink)
-	defer close(sinks)
-
-	// Used to communicate status from the reader goroutine
-	reader_status := make(chan error)
-
-	// Start the reader goroutine
-	go Transfer(buffer, r, sinks, reader_status)
-
-	// Used to communicate status from the writer goroutines
-	write_status := make(chan error)
+	// Desired number of replicas
+	want_replicas := this.Want_replicas
 
 	for want_replicas > 0 {
 		for active < want_replicas {
-			// Start some writers
-			if n < len(sv) {
-				go this.ConnectToKeepServer(sv[n], sinks, write_status)
-				n += 1
+			// Start some upload requests
+			if next_server < len(sv) {
+				go this.uploadToKeepServer(sv[next_server], hash, requests, upload_status)
+				next_server += 1
 				active += 1
 			} else {
 				return KeepWriteError
@@ -374,14 +438,58 @@ func (this KeepClient) KeepPut(hash string, r io.Reader, want_replicas int) erro
 				// bad news
 				return status
 			}
-		case status := <-write_status:
-			if status == io.EOF {
+		case status := <-upload_status:
+			if status.err == io.EOF {
 				// good news!
 				want_replicas -= 1
 			} else {
-				// writing to keep server failed for some reason.
+				// writing to keep server failed for some reason
+				log.Printf("Got error %s uploading to %s", status.err, status.url)
 			}
 			active -= 1
 		}
+	}
+
+	return nil
+}
+
+func (this KeepClient) PutHR(hash string, r io.Reader) error {
+
+	// Buffer for reads from 'r'
+	buffer := make([]byte, 64*1024*1024)
+
+	// Read requests on Transfer() buffer
+	requests := make(chan ReadRequest)
+	defer close(requests)
+
+	// Reporting reader error states
+	reader_status := make(chan error)
+
+	// Start the transfer goroutine
+	go Transfer(buffer, r, requests, reader_status)
+
+	return this.putReplicas(hash, requests, reader_status)
+}
+
+func (this KeepClient) PutHB(hash string, buffer []byte) error {
+	// Read requests on Transfer() buffer
+	requests := make(chan ReadRequest)
+	defer close(requests)
+
+	// Start the transfer goroutine
+	go Transfer(buffer, nil, requests, nil)
+
+	return this.putReplicas(hash, requests, nil)
+}
+
+func (this KeepClient) PutB(buffer []byte) error {
+	return this.PutHB(fmt.Sprintf("%x", md5.Sum(buffer)), buffer)
+}
+
+func (this KeepClient) PutR(r io.Reader) error {
+	if buffer, err := ioutil.ReadAll(r); err != nil {
+		return err
+	} else {
+		return this.PutB(buffer)
 	}
 }
