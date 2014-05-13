@@ -119,7 +119,8 @@ func main() {
 		&data_manager_token_file,
 		"data-manager-token-file",
 		"",
-		"File with the API token used by the Data Manager. All DELETE requests or unqualified GET /index requests must carry this token.")
+		"File with the API token used by the Data Manager. All DELETE "+
+			"requests or GET /index requests must carry this token.")
 	flag.BoolVar(
 		&enforce_permissions,
 		"enforce-permissions",
@@ -129,27 +130,35 @@ func main() {
 		&listen,
 		"listen",
 		DEFAULT_ADDR,
-		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
+		"Interface on which to listen for requests, in the format "+
+			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
+			"to listen on all network interfaces.")
 	flag.StringVar(
 		&permission_key_file,
 		"permission-key-file",
 		"",
-		"File containing the secret key for generating and verifying permission signatures.")
+		"File containing the secret key for generating and verifying "+
+			"permission signatures.")
 	flag.IntVar(
 		&permission_ttl_sec,
 		"permission-ttl",
 		300,
-		"Expiration time (in seconds) for newly generated permission signatures.")
+		"Expiration time (in seconds) for newly generated permission "+
+			"signatures.")
 	flag.BoolVar(
 		&serialize_io,
 		"serialize",
 		false,
-		"If set, all read and write operations on local Keep volumes will be serialized.")
+		"If set, all read and write operations on local Keep volumes will "+
+			"be serialized.")
 	flag.StringVar(
 		&volumearg,
 		"volumes",
 		"",
-		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
+		"Comma-separated list of directories to use for Keep volumes, "+
+			"e.g. -volumes=/var/keep1,/var/keep2. If empty or not "+
+			"supplied, Keep will scan mounted filesystems for volumes "+
+			"with a /keep top-level directory.")
 	flag.Parse()
 
 	// Look for local keep volumes.
@@ -180,18 +189,20 @@ func main() {
 	}
 
 	// Initialize data manager token and permission key.
+	// If these tokens are specified but cannot be read,
+	// raise a fatal error.
 	if data_manager_token_file != "" {
 		if buf, err := ioutil.ReadFile(data_manager_token_file); err == nil {
 			data_manager_token = strings.TrimSpace(string(buf))
 		} else {
-			log.Printf("reading data_manager_token: %s\n", err)
+			log.Fatalf("reading data manager token: %s\n", err)
 		}
 	}
 	if permission_key_file != "" {
 		if buf, err := ioutil.ReadFile(permission_key_file); err == nil {
 			PermissionSecret = bytes.TrimSpace(buf)
 		} else {
-			log.Printf("reading data_manager_token: %s\n", err)
+			log.Fatalf("reading permission key: %s\n", err)
 		}
 	}
 
@@ -221,10 +232,13 @@ func main() {
 func NewRESTRouter() *mux.Router {
 	rest := mux.NewRouter()
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`, GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(
+		`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
+		GetBlockHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(
+		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 	return rest
 }
@@ -452,7 +466,7 @@ func GetBlock(hash string) ([]byte, error) {
 				// they should be sent directly to an event manager at high
 				// priority or logged as urgent problems.
 				//
-				log.Printf("%s: checksum mismatch for request %s (actual hash %s)\n",
+				log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
 					vol, hash, filehash)
 				return buf, CorruptError
 			}

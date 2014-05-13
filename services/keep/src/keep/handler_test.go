@@ -50,34 +50,41 @@ func TestGetHandler(t *testing.T) {
 	// Set up a REST router for testing the handlers.
 	rest := NewRESTRouter()
 
-	// -----------------
-	// Permissions: off.
-
-	// Unauthenticated request, unsigned locator
-	// => OK
-	unsigned_locator := "http://localhost:25107/" + TEST_HASH
-	response := IssueRequest(rest,
-		&RequestTester{
-			method: "GET",
-			uri:    unsigned_locator,
-		})
-	ExpectStatusCode(t, "unsigned GET (permissions off)", http.StatusOK, response)
-	ExpectBody(t, "unsigned GET (permissions off)", string(TEST_BLOCK), response)
-
-	// ----------------
-	// Permissions: on.
-
-	// Create signed and expired locators for testing.
+	// Create locators for testing.
+	// Turn on permission settings so we can generate signed locators.
 	enforce_permissions = true
 	PermissionSecret = []byte(known_key)
 	permission_ttl = time.Duration(300) * time.Second
 
 	var (
-		expiration        = time.Now().Add(permission_ttl)
+		unsigned_locator  = "http://localhost:25107/" + TEST_HASH
+		valid_timestamp   = time.Now().Add(permission_ttl)
 		expired_timestamp = time.Now().Add(-time.Hour)
-		signed_locator    = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, expiration)
+		signed_locator    = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, valid_timestamp)
 		expired_locator   = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, expired_timestamp)
 	)
+
+	// -----------------
+	// Test unauthenticated request with permissions off.
+	enforce_permissions = false
+
+	// Unauthenticated request, unsigned locator
+	// => OK
+	response := IssueRequest(rest,
+		&RequestTester{
+			method: "GET",
+			uri:    unsigned_locator,
+		})
+	ExpectStatusCode(t,
+		"Unauthenticated request, unsigned locator", http.StatusOK, response)
+	ExpectBody(t,
+		"Unauthenticated request, unsigned locator",
+		string(TEST_BLOCK),
+		response)
+
+	// ----------------
+	// Permissions: on.
+	enforce_permissions = true
 
 	// Authenticated request, signed locator
 	// => OK
@@ -86,8 +93,10 @@ func TestGetHandler(t *testing.T) {
 		uri:       signed_locator,
 		api_token: known_token,
 	})
-	ExpectStatusCode(t, "signed GET (permissions on)", http.StatusOK, response)
-	ExpectBody(t, "signed GET (permissions on)", string(TEST_BLOCK), response)
+	ExpectStatusCode(t,
+		"Authenticated request, signed locator", http.StatusOK, response)
+	ExpectBody(t,
+		"Authenticated request, signed locator", string(TEST_BLOCK), response)
 
 	// Authenticated request, unsigned locator
 	// => PermissionError
@@ -104,7 +113,9 @@ func TestGetHandler(t *testing.T) {
 		method: "GET",
 		uri:    signed_locator,
 	})
-	ExpectStatusCode(t, "signed locator", PermissionError.HTTPCode, response)
+	ExpectStatusCode(t,
+		"Unauthenticated request, signed locator",
+		PermissionError.HTTPCode, response)
 
 	// Authenticated request, expired locator
 	// => ExpiredError
@@ -113,7 +124,9 @@ func TestGetHandler(t *testing.T) {
 		uri:       expired_locator,
 		api_token: known_token,
 	})
-	ExpectStatusCode(t, "expired signature", ExpiredError.HTTPCode, response)
+	ExpectStatusCode(t,
+		"Authenticated request, expired locator",
+		ExpiredError.HTTPCode, response)
 }
 
 // Test PutBlockHandler on the following situations:
@@ -145,8 +158,8 @@ func TestPutHandler(t *testing.T) {
 		})
 
 	ExpectStatusCode(t,
-		"unauthenticated PUT (no server key)", http.StatusOK, response)
-	ExpectBody(t, "unauthenticated PUT (no server key)", TEST_HASH, response)
+		"Unauthenticated request, no server key", http.StatusOK, response)
+	ExpectBody(t, "Unauthenticated request, no server key", TEST_HASH, response)
 
 	// ------------------
 	// With a server key.
@@ -168,9 +181,11 @@ func TestPutHandler(t *testing.T) {
 		})
 
 	ExpectStatusCode(t,
-		"authenticated PUT (with server key)", http.StatusOK, response)
+		"Authenticated PUT, signed locator, with server key",
+		http.StatusOK, response)
 	if !VerifySignature(response.Body.String(), known_token) {
-		t.Errorf("authenticated PUT (with server key): response '%s' does not contain a valid signature",
+		t.Errorf("Authenticated PUT, signed locator, with server key:\n"+
+			"response '%s' does not contain a valid signature",
 			response.Body.String())
 	}
 
@@ -184,19 +199,26 @@ func TestPutHandler(t *testing.T) {
 		})
 
 	ExpectStatusCode(t,
-		"unauthenticated PUT (with server key)", http.StatusOK, response)
+		"Unauthenticated PUT, unsigned locator, with server key",
+		http.StatusOK, response)
 	ExpectBody(t,
-		"unauthenticated PUT (with server key)", TEST_HASH, response)
+		"Unauthenticated PUT, unsigned locator, with server key",
+		TEST_HASH, response)
 }
 
 // Test /index requests:
-//   - enforce_permissions off, unauthenticated /index request
-//   - enforce_permissions off, authenticated /index request, non-superuser
-//   - enforce_permissions off, authenticated /index request, superuser
-//   - enforce_permissions on, unauthenticated /index request
-//   - enforce_permissions on, authenticated /index request, non-superuser
-//   - enforce_permissions on, authenticated /index request, superuser
-//   - enforce_permissions on, authenticated /index/prefix request, superuser
+//   - enforce_permissions off | unauthenticated /index request
+//   - enforce_permissions off | unauthenticated /index/prefix request
+//   - enforce_permissions off | authenticated /index request        | non-superuser
+//   - enforce_permissions off | authenticated /index/prefix request | non-superuser
+//   - enforce_permissions off | authenticated /index request        | superuser
+//   - enforce_permissions off | authenticated /index/prefix request | superuser
+//   - enforce_permissions on  | unauthenticated /index request
+//   - enforce_permissions on  | unauthenticated /index/prefix request
+//   - enforce_permissions on  | authenticated /index request        | non-superuser
+//   - enforce_permissions on  | authenticated /index/prefix request | non-superuser
+//   - enforce_permissions on  | authenticated /index request        | superuser
+//   - enforce_permissions on  | authenticated /index/prefix request | superuser
 //
 // The only /index requests that should succeed are those issued by the
 // superuser when enforce_permissions = true.
@@ -235,6 +257,20 @@ func TestIndexHandler(t *testing.T) {
 		uri:       "http://localhost:25107/index",
 		api_token: data_manager_token,
 	}
+	unauth_prefix_req := &RequestTester{
+		method: "GET",
+		uri:    "http://localhost:25107/index/" + TEST_HASH[0:3],
+	}
+	auth_prefix_req := &RequestTester{
+		method:    "GET",
+		uri:       "http://localhost:25107/index/" + TEST_HASH[0:3],
+		api_token: known_token,
+	}
+	superuser_prefix_req := &RequestTester{
+		method:    "GET",
+		uri:       "http://localhost:25107/index/" + TEST_HASH[0:3],
+		api_token: data_manager_token,
+	}
 
 	// ----------------------------
 	// enforce_permissions disabled
@@ -249,6 +285,14 @@ func TestIndexHandler(t *testing.T) {
 		PermissionError.HTTPCode,
 		response)
 
+	// unauthenticated /index/prefix request
+	// => PermissionError
+	response = IssueRequest(rest, unauth_prefix_req)
+	ExpectStatusCode(t,
+		"enforce_permissions off, unauthenticated /index/prefix request",
+		PermissionError.HTTPCode,
+		response)
+
 	// authenticated /index request, non-superuser
 	// => PermissionError
 	response = IssueRequest(rest, authenticated_req)
@@ -257,11 +301,27 @@ func TestIndexHandler(t *testing.T) {
 		PermissionError.HTTPCode,
 		response)
 
+	// authenticated /index/prefix request, non-superuser
+	// => PermissionError
+	response = IssueRequest(rest, auth_prefix_req)
+	ExpectStatusCode(t,
+		"enforce_permissions off, authenticated /index/prefix request, non-superuser",
+		PermissionError.HTTPCode,
+		response)
+
 	// authenticated /index request, superuser
 	// => PermissionError
 	response = IssueRequest(rest, superuser_req)
 	ExpectStatusCode(t,
 		"enforce_permissions off, superuser request",
+		PermissionError.HTTPCode,
+		response)
+
+	// superuser /index/prefix request
+	// => PermissionError
+	response = IssueRequest(rest, superuser_prefix_req)
+	ExpectStatusCode(t,
+		"enforce_permissions off, superuser /index/prefix request",
 		PermissionError.HTTPCode,
 		response)
 
@@ -278,11 +338,27 @@ func TestIndexHandler(t *testing.T) {
 		PermissionError.HTTPCode,
 		response)
 
+	// unauthenticated /index/prefix request
+	// => PermissionError
+	response = IssueRequest(rest, unauth_prefix_req)
+	ExpectStatusCode(t,
+		"permissions on, unauthenticated /index/prefix request",
+		PermissionError.HTTPCode,
+		response)
+
 	// authenticated /index request, non-superuser
 	// => PermissionError
 	response = IssueRequest(rest, authenticated_req)
 	ExpectStatusCode(t,
 		"permissions on, authenticated request, non-superuser",
+		PermissionError.HTTPCode,
+		response)
+
+	// authenticated /index/prefix request, non-superuser
+	// => PermissionError
+	response = IssueRequest(rest, auth_prefix_req)
+	ExpectStatusCode(t,
+		"permissions on, authenticated /index/prefix request, non-superuser",
 		PermissionError.HTTPCode,
 		response)
 
@@ -305,12 +381,7 @@ func TestIndexHandler(t *testing.T) {
 
 	// superuser /index/prefix request
 	// => OK
-	response = IssueRequest(rest,
-		&RequestTester{
-			method:    "GET",
-			uri:       "http://localhost:25107/index/" + TEST_HASH[0:3],
-			api_token: data_manager_token,
-		})
+	response = IssueRequest(rest, superuser_prefix_req)
 	ExpectStatusCode(t,
 		"permissions on, superuser request",
 		http.StatusOK,
