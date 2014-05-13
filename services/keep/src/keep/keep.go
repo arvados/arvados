@@ -209,7 +209,8 @@ func main() {
 	// Initialize permission TTL
 	permission_ttl = time.Duration(permission_ttl_sec) * time.Second
 
-	// If --enforce-permissions is true, we must have a permission key to continue.
+	// If --enforce-permissions is true, we must have a permission key
+	// to continue.
 	if enforce_permissions && PermissionSecret == nil {
 		log.Fatal("--enforce-permissions requires a permission key")
 	}
@@ -231,7 +232,8 @@ func main() {
 //
 func NewRESTRouter() *mux.Router {
 	rest := mux.NewRouter()
-	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(
+		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(
 		`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
 		GetBlockHandler).Methods("GET", "HEAD")
@@ -259,7 +261,8 @@ func FindKeepVolumes() []string {
 		for scanner.Scan() {
 			args := strings.Fields(scanner.Text())
 			dev, mount := args[0], args[1]
-			if (dev == "tmpfs" || strings.HasPrefix(dev, "/dev/")) && mount != "/" {
+			if mount != "/" &&
+				(dev == "tmpfs" || strings.HasPrefix(dev, "/dev/")) {
 				keep := mount + "/keep"
 				if st, err := os.Stat(keep); err == nil && st.IsDir() {
 					vols = append(vols, keep)
@@ -287,9 +290,12 @@ func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 		} else if IsExpired(timestamp) {
 			http.Error(w, ExpiredError.Error(), ExpiredError.HTTPCode)
 			return
-		} else if signature != MakePermSignature(hash, GetApiToken(req), timestamp) {
-			http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
-			return
+		} else {
+			validsig := MakePermSignature(hash, GetApiToken(req), timestamp)
+			if signature != validsig {
+				http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
+				return
+			}
 		}
 	}
 
@@ -516,8 +522,8 @@ func PutBlock(block []byte, hash string) error {
 	// If we already have a block on disk under this identifier, return
 	// success (but check for MD5 collisions).
 	// The only errors that GetBlock can return are ErrCorrupt and ErrNotFound.
-	// In either case, we want to write our new (good) block to disk, so there is
-	// nothing special to do if err != nil.
+	// In either case, we want to write our new (good) block to disk,
+	// so there is nothing special to do if err != nil.
 	if oldblock, err := GetBlock(hash); err == nil {
 		if bytes.Compare(block, oldblock) == 0 {
 			return nil
