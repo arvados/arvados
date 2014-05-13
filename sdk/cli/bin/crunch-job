@@ -139,7 +139,7 @@ $SIG{'USR2'} = sub
 
 
 my $arv = Arvados->new('apiVersion' => 'v1');
-my $metastream;
+my $local_logfile;
 
 my $User = $arv->{'users'}->{'current'}->execute;
 
@@ -185,7 +185,7 @@ else
 $job_id = $Job->{'uuid'};
 
 my $keep_logfile = $job_id . '.log.txt';
-my $local_logfile = File::Temp->new();
+$local_logfile = File::Temp->new();
 
 $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
@@ -1251,15 +1251,15 @@ sub Log				# ($jobstep_id, $logmessage)
   $message =~ s{([^ -\176])}{"\\" . sprintf ("%03o", ord($1))}ge;
   $message .= "\n";
   my $datetime;
-  if ($metastream || -t STDERR) {
+  if ($local_logfile || -t STDERR) {
     my @gmtime = gmtime;
     $datetime = sprintf ("%04d-%02d-%02d_%02d:%02d:%02d",
 			 $gmtime[5]+1900, $gmtime[4]+1, @gmtime[3,2,1,0]);
   }
   print STDERR ((-t STDERR) ? ($datetime." ".$message) : $message);
 
-  if ($metastream) {
-    print $metastream $datetime . " " . $message;
+  if ($local_logfile) {
+    print $local_logfile $datetime . " " . $message;
   }
 }
 
@@ -1272,7 +1272,7 @@ sub croak
   freeze() if @jobstep_todo;
   collate_output() if @jobstep_todo;
   cleanup();
-  save_meta() if $metastream;
+  save_meta() if $local_logfile;
   die;
 }
 
