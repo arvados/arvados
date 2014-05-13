@@ -2,7 +2,53 @@
 .file-list-inline-image {
   width: 50%;
   height: auto;
+  margin: auto auto;
 }
+
+div#collection_files {
+  width: 49%;
+  float: left;
+  overflow: auto;
+}
+
+i.jstree-icon {
+  font-style: normal;
+}
+
+div#collections_file_pane {
+  width: 50%;
+  float: right;
+}
+
+div#collections_file_pane h3 {
+  margin: 0;
+}
+
+.collections_file_size {
+  margin-top: 0em;
+  font-style: italic;
+}
+<% end %>
+
+<% content_for :js do %>
+$(function () {
+$("div#collection_files")
+.on("activate_node.jstree", function(event, data) {
+  if (data.instance.is_leaf(data.node)) {
+    var file_info = $("div[title=\"" + data.node.li_attr.title + "\"]").html();
+    $("div#collections_file_pane").html(file_info);
+  } else {
+    data.instance.toggle_node(data.node);
+  }
+})
+.jstree({
+  "core": {
+    "themes": {"stripes": true},
+    "multiple": false
+  },
+  "plugins": ["wholerow"],
+});
+});
 <% end %>
 
 <% content_for :tab_line_buttons do %>
@@ -17,59 +63,59 @@
 </div>
 <% end %>
 
-<table class="table table-condensed table-fixedlayout">
-  <colgroup>
-    <col width="4%" />
-    <col width="35%" />
-    <col width="40%" />
-    <col width="15%" />
-    <col width="10%" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th></th>
-      <th>path</th>
-      <th>file</th>
-      <th style="text-align:right">size</th>
-      <th>d/l</th>
-    </tr>
-  </thead><tbody>
-    <% if @object then @object.files.sort_by{|f|[f[0],f[1]]}.each do |file| %>
-      <% file_path = CollectionsHelper::file_path file %>
-      <tr>
-        <td>
-          <%= check_box_tag 'uuids[]', @object.uuid+'/'+file_path, false, {
-                :class => 'persistent-selection',
-                :friendly_type => "File",
-                :friendly_name => "#{@object.uuid}/#{file_path}",
-                :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}",
-                :title => "Click to add this item to your selection list"
-              } %>
-        </td>
-        <td>
-          <%= file[0] %>
-        </td>
-
-      <td>
-        <%= link_to (if CollectionsHelper::is_image file[1]
-                       image_tag "#{url_for @object}/#{file_path}", class: "file-list-inline-image"
-                     else
-                       file[1]
-                     end),
-            {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'},
-            {title: file_path} %>
-      </td>
-
-        <td style="text-align:right">
-          <%= raw(human_readable_bytes_html(file[2])) %>
-        </td>
-
-        <td>
-          <div style="display:inline-block">
-            <%= link_to raw('<i class="glyphicon glyphicon-download-alt"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'btn btn-info btn-sm', title: 'Download'} %>
-          </div>
-        </td>
-      </tr>
-    <% end; end %>
-  </tbody>
-</table>
+<% file_tree = @object.andand.files_tree %>
+<% if file_tree.nil? or file_tree.empty? %>
+  <p>This collection is empty.</p>
+<% else %>
+  <div id="collection_files"><ul>
+  <% dirstack = ["."] %>
+  <% file_tree.each do |dirname, filename, size| %>
+    <% while dirstack.any? and (dirstack.last != dirname) %>
+      <% dirstack.pop %></ul></li>
+    <% end %>
+    <% if size.nil?  # This is a subdirectory. %>
+      <% dirstack.push(File.join(dirname, filename)) %>
+      <li data-jstree='{"icon": "fa-folder"}' class="jstree-open"><%= filename %><ul>
+    <% else %>
+      <% data = {'icon' => (CollectionsHelper::is_image(filename) ? 'fa-bar-chart-o' : 'fa-file') } %>
+      <li data-jstree='<%= data.to_json %>'
+          title="<%= CollectionsHelper::file_path([dirname, filename]) %>"><%= filename %></li>
+    <% end %>
+  <% end %>
+  </ul></div>
+  <div id="collections_file_pane">Select a file to view more information.</div>
+  <% file_tree.reject { |data| data.last.nil? }.each do |dirname, filename, size| %>
+    <% file_path = CollectionsHelper::file_path([dirname, filename])
+       link_params = {controller: 'collections',
+                      action: 'show_file',
+                      uuid: @object.uuid,
+                      file: file_path,
+                      size: size} %>
+    <div title="<%= file_path %>" style="display: none;">
+    <h3><%= file_path %></h3>
+    <p class="collections_file_size"><%= raw(human_readable_bytes_html(size)) %></p>
+    <%= link_to("View", link_params.merge(disposition: 'inline'),
+                {class: "btn btn-primary"}) %>
+    <%= link_to("Download", link_params.merge(disposition: 'attachment'),
+                {class: "btn btn-primary"}) %>
+    <p>
+    <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
+          :class => 'persistent-selection',
+          :friendly_type => "File",
+          :friendly_name => "#{@object.uuid}/#{file_path}",
+          :href => url_for(controller: 'collections', action: 'show_file',
+                           uuid: @object.uuid, file: file_path),
+          :title => "Include this file in your selections",
+        } %>
+    Include this file in your selections
+    </p>
+    <% if CollectionsHelper::is_image(filename) %>
+     <div style="text-align: center;">
+      <%= link_to(image_tag("#{url_for @object}/#{file_path}", class: "file-list-inline-image"),
+                  link_params.merge(disposition: 'inline'),
+                  {title: file_path}) %>
+     </div>
+    <% end %>
+    </div>
+  <% end %>
+<% end %>

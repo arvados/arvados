@@ -12,6 +12,7 @@
 //
 //= require jquery
 //= require jquery_ujs
+//= require jstree
 //= require bootstrap
 //= require bootstrap/dropdown
 //= require bootstrap/tab

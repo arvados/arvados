@@ -37,6 +37,7 @@ group :test do
 end
 
 gem 'jquery-rails'
+gem 'jstree-rails', :git => 'git://github.com/xinlangzi/jstree-rails.git'
 gem 'bootstrap-sass', '~> 3.1.0'
 gem 'bootstrap-x-editable-rails'
 

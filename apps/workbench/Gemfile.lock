@@ -1,3 +1,10 @@
+GIT
+  remote: git://github.com/xinlangzi/jstree-rails.git
+  revision: bdf08b19a7fba167e8cdf7db57669a54dedd9bf3
+  specs:
+    jstree-rails (1.0.0)
+      rails (>= 3.2)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -194,6 +201,7 @@ DEPENDENCIES
   headless
   httpclient
   jquery-rails
+  jstree-rails!
   less
   less-rails
   multi_json
