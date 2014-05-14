@@ -366,7 +366,7 @@ type StubHandler struct {
 }
 
 func (this StubHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	this.c.Check(req.URL.Path, Equals, this.expectPath)
+	this.c.Check(req.URL.Path, Equals, "/"+this.expectPath)
 	this.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", this.expectApiToken))
 	body, err := ioutil.ReadAll(req.Body)
 	this.c.Check(err, Equals, nil)
@@ -375,19 +375,21 @@ func (this StubHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	this.handled <- true
 }
 
-func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
+func UploadToStubHelper(c *C, f func(*KeepClient, string, StubHandler,
+	io.ReadCloser, io.WriteCloser, chan UploadError)) {
+
 	st := StubHandler{
 		c,
-		"/acbd18db4cc2f85cedef654fccc4a4d8",
+		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
 		"foo",
 		make(chan bool)}
 	server := http.Server{Handler: st}
 
-	listener, _ := net.ListenTCP("tcp", &net.TCPAddr{Port: 2999})
+	listener, _ := net.ListenTCP("tcp", &net.TCPAddr{})
 	defer listener.Close()
 
-	log.Printf("%s", listener.Addr().String())
+	url := fmt.Sprintf("http://localhost:%d", listener.Addr().(*net.TCPAddr).Port)
 
 	go server.Serve(listener)
 	kc, _ := MakeKeepClient()
@@ -396,14 +398,59 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 	reader, writer := io.Pipe()
 	upload_status := make(chan UploadError)
 
-	go kc.uploadToKeepServer("http://localhost:2999", "acbd18db4cc2f85cedef654fccc4a4d8", reader, upload_status)
+	f(kc, url, st, reader, writer, upload_status)
+}
 
-	writer.Write([]byte("foo"))
-	writer.Close()
+func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
+	log.Printf("Started TestUploadToStubKeepServer")
 
-	<-st.handled
-	status := <-upload_status
-	c.Check(status, DeepEquals, UploadError{io.EOF, "http://localhost:2999/acbd18db4cc2f85cedef654fccc4a4d8"})
+	UploadToStubHelper(c, func(kc *KeepClient, url string, st StubHandler,
+		reader io.ReadCloser, writer io.WriteCloser, upload_status chan UploadError) {
+
+		go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status)
+
+		writer.Write([]byte("foo"))
+		writer.Close()
+
+		<-st.handled
+		status := <-upload_status
+		c.Check(status, DeepEquals, UploadError{io.EOF, fmt.Sprintf("%s/%s", url, st.expectPath)})
+	})
+}
+
+func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
+	log.Printf("Started TestUploadToStubKeepServerBufferReader")
+
+	UploadToStubHelper(c, func(kc *KeepClient, url string, st StubHandler,
+		reader io.ReadCloser, writer io.WriteCloser, upload_status chan UploadError) {
+
+		// Buffer for reads from 'r'
+		buffer := make([]byte, 512)
+
+		// Read requests on Transfer() buffer
+		requests := make(chan ReadRequest)
+		defer close(requests)
+
+		// Reporting reader error states
+		reader_status := make(chan error)
+
+		go Transfer(buffer, reader, requests, reader_status)
+
+		br1 := MakeBufferReader(requests)
+
+		go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status)
+
+		writer.Write([]byte("foo"))
+		writer.Close()
+
+		<-reader_status
+		<-st.handled
+
+		status := <-upload_status
+		c.Check(status, DeepEquals, UploadError{io.EOF, fmt.Sprintf("%s/%s", url, st.expectPath)})
+
+		//c.Check(true, Equals, false)
+	})
 }
 
 type FailHandler struct {

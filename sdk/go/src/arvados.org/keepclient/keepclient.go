@@ -208,15 +208,15 @@ func ReadIntoBuffer(buffer []byte, r io.Reader, slices chan<- ReaderSlice) {
 
 // A read request to the Transfer() function
 type ReadRequest struct {
-	offset int
-	p      []byte
-	result chan<- ReadResult
+	offset  int
+	maxsize int
+	result  chan<- ReadResult
 }
 
 // A read result from the Transfer() function
 type ReadResult struct {
-	n   int
-	err error
+	slice []byte
+	err   error
 }
 
 // Reads from the buffer managed by the Transfer()
@@ -232,13 +232,33 @@ func MakeBufferReader(requests chan<- ReadRequest) BufferReader {
 
 // Reads from the buffer managed by the Transfer()
 func (this BufferReader) Read(p []byte) (n int, err error) {
-	this.requests <- ReadRequest{*this.offset, p, this.responses}
+	log.Printf("BufferReader Read %d", len(p))
+	this.requests <- ReadRequest{*this.offset, len(p), this.responses}
 	rr, valid := <-this.responses
 	if valid {
-		*this.offset += rr.n
-		return rr.n, rr.err
+		*this.offset += len(rr.slice)
+		return copy(p, rr.slice), rr.err
 	} else {
 		return 0, io.ErrUnexpectedEOF
+	}
+}
+
+func (this BufferReader) WriteTo(dest io.Writer) (written int64, err error) {
+	log.Printf("BufferReader WriteTo")
+	for {
+		this.requests <- ReadRequest{*this.offset, 64 * 1024, this.responses}
+		rr, valid := <-this.responses
+		if valid {
+			*this.offset += len(rr.slice)
+			if err != nil {
+				return int64(*this.offset), err
+			} else {
+				dest.Write(rr.slice)
+			}
+
+		} else {
+			return int64(*this.offset), io.ErrUnexpectedEOF
+		}
 	}
 }
 
@@ -251,12 +271,18 @@ func (this BufferReader) Close() error {
 // Handle a read request.  Returns true if a response was sent, and false if
 // the request should be queued.
 func HandleReadRequest(req ReadRequest, body []byte, complete bool) bool {
-	log.Printf("HandleReadRequest %d %d %t", req.offset, len(body), complete)
+	log.Printf("HandleReadRequest offset: %d  max: %d body: %d %t", req.offset, req.maxsize, len(body), complete)
 	if req.offset < len(body) {
-		req.result <- ReadResult{copy(req.p, body[req.offset:]), nil}
+		var end int
+		if req.offset+req.maxsize < len(body) {
+			end = req.offset + req.maxsize
+		} else {
+			end = len(body)
+		}
+		req.result <- ReadResult{body[req.offset:end], nil}
 		return true
 	} else if complete && req.offset >= len(body) {
-		req.result <- ReadResult{0, io.EOF}
+		req.result <- ReadResult{nil, io.EOF}
 		return true
 	} else {
 		return false
