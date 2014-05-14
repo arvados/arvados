@@ -163,7 +163,6 @@ func ReadIntoBuffer(buffer []byte, r io.Reader, slices chan<- ReaderSlice) {
 	// Initially use entire buffer as scratch space
 	ptr := buffer[:]
 	for {
-		log.Printf("ReadIntoBuffer doing read")
 		var n int
 		var err error
 		if len(ptr) > 0 {
@@ -187,18 +186,13 @@ func ReadIntoBuffer(buffer []byte, r io.Reader, slices chan<- ReaderSlice) {
 
 		// End on error (includes EOF)
 		if err != nil {
-			log.Printf("ReadIntoBuffer sending error %d %s", n, err.Error())
 			slices <- ReaderSlice{nil, err}
 			return
 		}
 
-		log.Printf("ReadIntoBuffer got %d", n)
-
 		if n > 0 {
-			log.Printf("ReadIntoBuffer sending readerslice")
 			// Make a slice with the contents of the read
 			slices <- ReaderSlice{ptr[:n], nil}
-			log.Printf("ReadIntoBuffer sent readerslice")
 
 			// Adjust the scratch space slice
 			ptr = ptr[n:]
@@ -232,7 +226,6 @@ func MakeBufferReader(requests chan<- ReadRequest) BufferReader {
 
 // Reads from the buffer managed by the Transfer()
 func (this BufferReader) Read(p []byte) (n int, err error) {
-	log.Printf("BufferReader Read %d", len(p))
 	this.requests <- ReadRequest{*this.offset, len(p), this.responses}
 	rr, valid := <-this.responses
 	if valid {
@@ -244,18 +237,24 @@ func (this BufferReader) Read(p []byte) (n int, err error) {
 }
 
 func (this BufferReader) WriteTo(dest io.Writer) (written int64, err error) {
-	log.Printf("BufferReader WriteTo")
+	// Record starting offset in order to correctly report the number of bytes sent
+	starting_offset := *this.offset
 	for {
-		this.requests <- ReadRequest{*this.offset, 64 * 1024, this.responses}
+		this.requests <- ReadRequest{*this.offset, 32 * 1024, this.responses}
 		rr, valid := <-this.responses
 		if valid {
+			log.Printf("WriteTo slice %v %d %v", *this.offset, len(rr.slice), rr.err)
 			*this.offset += len(rr.slice)
-			if err != nil {
-				return int64(*this.offset), err
+			if rr.err != nil {
+				if rr.err == io.EOF {
+					// EOF is not an error.
+					return int64(*this.offset - starting_offset), nil
+				} else {
+					return int64(*this.offset - starting_offset), rr.err
+				}
 			} else {
 				dest.Write(rr.slice)
 			}
-
 		} else {
 			return int64(*this.offset), io.ErrUnexpectedEOF
 		}
@@ -271,7 +270,7 @@ func (this BufferReader) Close() error {
 // Handle a read request.  Returns true if a response was sent, and false if
 // the request should be queued.
 func HandleReadRequest(req ReadRequest, body []byte, complete bool) bool {
-	log.Printf("HandleReadRequest offset: %d  max: %d body: %d %t", req.offset, req.maxsize, len(body), complete)
+	log.Printf("HandleReadRequest %d %d %d", req.offset, req.maxsize, len(body))
 	if req.offset < len(body) {
 		var end int
 		if req.offset+req.maxsize < len(body) {
@@ -308,6 +307,7 @@ func Transfer(source_buffer []byte, source_reader io.Reader, requests <-chan Rea
 		body = source_buffer[:0]
 
 		// used to communicate slices of the buffer as they are
+		// ReadIntoBuffer will close 'slices' when it is done with it
 		slices = make(chan ReaderSlice)
 
 		// Spin it off
@@ -323,14 +323,11 @@ func Transfer(source_buffer []byte, source_reader io.Reader, requests <-chan Rea
 	pending_requests := make([]ReadRequest, 0)
 
 	for {
-		log.Printf("Doing select")
 		select {
 		case req, valid := <-requests:
-			log.Printf("Got read request")
 			// Handle a buffer read request
 			if valid {
 				if !HandleReadRequest(req, body, complete) {
-					log.Printf("Queued")
 					pending_requests = append(pending_requests, req)
 				}
 			} else {
@@ -341,8 +338,6 @@ func Transfer(source_buffer []byte, source_reader io.Reader, requests <-chan Rea
 		case bk, valid := <-slices:
 			// Got a new slice from the reader
 			if valid {
-				log.Printf("Got readerslice %d", len(bk.slice))
-
 				if bk.reader_error != nil {
 					reader_error <- bk.reader_error
 					if bk.reader_error == io.EOF {
@@ -364,7 +359,6 @@ func Transfer(source_buffer []byte, source_reader io.Reader, requests <-chan Rea
 				n := 0
 				for n < len(pending_requests) {
 					if HandleReadRequest(pending_requests[n], body, complete) {
-						log.Printf("ReadRequest handled")
 
 						// move the element from the
 						// back of the slice to
@@ -373,7 +367,6 @@ func Transfer(source_buffer []byte, source_reader io.Reader, requests <-chan Rea
 						pending_requests[n] = pending_requests[len(pending_requests)-1]
 						pending_requests = pending_requests[0 : len(pending_requests)-1]
 					} else {
-						log.Printf("ReadRequest re-queued")
 
 						// Request wasn't handled, so keep it in the request slice
 						n += 1
@@ -393,18 +386,27 @@ func Transfer(source_buffer []byte, source_reader io.Reader, requests <-chan Rea
 	}
 }
 
-type UploadError struct {
-	err error
-	url string
+type UploadStatus struct {
+	Err        error
+	Url        string
+	StatusCode int
 }
 
-func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser, upload_status chan<- UploadError) {
+func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
+	upload_status chan<- UploadStatus, expectedLength int64) {
+
+	log.Printf("Uploading to %s", host)
+
 	var req *http.Request
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		upload_status <- UploadError{err, url}
+		upload_status <- UploadStatus{err, url, 0}
 		return
+	}
+
+	if expectedLength > 0 {
+		req.ContentLength = expectedLength
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
@@ -412,20 +414,24 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 
 	var resp *http.Response
 	if resp, err = this.client.Do(req); err != nil {
-		upload_status <- UploadError{err, url}
+		upload_status <- UploadStatus{err, url, 0}
+		return
 	}
 
 	if resp.StatusCode == http.StatusOK {
-		upload_status <- UploadError{io.EOF, url}
+		upload_status <- UploadStatus{nil, url, resp.StatusCode}
+	} else {
+		upload_status <- UploadStatus{errors.New(resp.Status), url, resp.StatusCode}
 	}
 }
 
-var KeepWriteError = errors.New("Could not write sufficient replicas")
+var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
 
 func (this KeepClient) putReplicas(
 	hash string,
 	requests chan ReadRequest,
-	reader_status chan error) error {
+	reader_status chan error,
+	expectedLength int64) error {
 
 	// Calculate the ordering for uploading to servers
 	sv := this.ShuffledServiceRoots(hash)
@@ -437,7 +443,7 @@ func (this KeepClient) putReplicas(
 	active := 0
 
 	// Used to communicate status from the upload goroutines
-	upload_status := make(chan UploadError)
+	upload_status := make(chan UploadStatus)
 	defer close(upload_status)
 
 	// Desired number of replicas
@@ -447,11 +453,11 @@ func (this KeepClient) putReplicas(
 		for active < want_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
-				go this.uploadToKeepServer(sv[next_server], hash, MakeBufferReader(requests), upload_status)
+				go this.uploadToKeepServer(sv[next_server], hash, MakeBufferReader(requests), upload_status, expectedLength)
 				next_server += 1
 				active += 1
 			} else {
-				return KeepWriteError
+				return InsufficientReplicasError
 			}
 		}
 
@@ -465,24 +471,36 @@ func (this KeepClient) putReplicas(
 				return status
 			}
 		case status := <-upload_status:
-			if status.err == io.EOF {
+			if status.StatusCode == 200 {
 				// good news!
 				want_replicas -= 1
 			} else {
 				// writing to keep server failed for some reason
-				log.Printf("Got error %s uploading to %s", status.err, status.url)
+				log.Printf("Keep server put to %v failed with '%v'",
+					status.Url, status.Err)
 			}
 			active -= 1
+			log.Printf("Upload status %v %v %v", status.StatusCode, want_replicas, active)
 		}
 	}
 
 	return nil
 }
 
-func (this KeepClient) PutHR(hash string, r io.Reader) error {
+var OversizeBlockError = errors.New("Block too big")
+
+func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) error {
 
 	// Buffer for reads from 'r'
-	buffer := make([]byte, 64*1024*1024)
+	var buffer []byte
+	if expectedLength > 0 {
+		if expectedLength > 64*1024*1024 {
+			return OversizeBlockError
+		}
+		buffer = make([]byte, expectedLength)
+	} else {
+		buffer = make([]byte, 64*1024*1024)
+	}
 
 	// Read requests on Transfer() buffer
 	requests := make(chan ReadRequest)
@@ -490,11 +508,12 @@ func (this KeepClient) PutHR(hash string, r io.Reader) error {
 
 	// Reporting reader error states
 	reader_status := make(chan error)
+	defer close(reader_status)
 
 	// Start the transfer goroutine
 	go Transfer(buffer, r, requests, reader_status)
 
-	return this.putReplicas(hash, requests, reader_status)
+	return this.putReplicas(hash, requests, reader_status, expectedLength)
 }
 
 func (this KeepClient) PutHB(hash string, buffer []byte) error {
@@ -505,7 +524,7 @@ func (this KeepClient) PutHB(hash string, buffer []byte) error {
 	// Start the transfer goroutine
 	go Transfer(buffer, nil, requests, nil)
 
-	return this.putReplicas(hash, requests, nil)
+	return this.putReplicas(hash, requests, nil, int64(len(buffer)))
 }
 
 func (this KeepClient) PutB(buffer []byte) error {
