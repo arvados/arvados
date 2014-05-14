@@ -372,7 +372,7 @@ type UploadError struct {
 	url string
 }
 
-func (this KeepClient) uploadToKeepServer(host string, hash string, readChannel chan<- ReadRequest, upload_status chan<- UploadError) {
+func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser, upload_status chan<- UploadError) {
 	var req *http.Request
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
@@ -382,7 +382,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, readChannel 
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
-	req.Body = MakeBufferReader(readChannel)
+	req.Body = body
 
 	var resp *http.Response
 	if resp, err = this.client.Do(req); err != nil {
@@ -421,7 +421,7 @@ func (this KeepClient) putReplicas(
 		for active < want_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
-				go this.uploadToKeepServer(sv[next_server], hash, requests, upload_status)
+				go this.uploadToKeepServer(sv[next_server], hash, MakeBufferReader(requests), upload_status)
 				next_server += 1
 				active += 1
 			} else {

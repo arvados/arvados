@@ -2,10 +2,13 @@ package keepclient
 
 import (
 	"flag"
-	//"fmt"
+	"fmt"
 	. "gopkg.in/check.v1"
 	"io"
-	//"log"
+	"io/ioutil"
+	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"testing"
@@ -353,3 +356,101 @@ func (s *StandaloneSuite) TestTransferShortBuffer(c *C) {
 	status := <-reader_status
 	c.Check(status, Equals, io.ErrShortBuffer)
 }
+
+type StubHandler struct {
+	c              *C
+	expectPath     string
+	expectApiToken string
+	expectBody     string
+	handled        chan bool
+}
+
+func (this StubHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	this.c.Check(req.URL.Path, Equals, this.expectPath)
+	this.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", this.expectApiToken))
+	body, err := ioutil.ReadAll(req.Body)
+	this.c.Check(err, Equals, nil)
+	this.c.Check(body, DeepEquals, []byte(this.expectBody))
+	resp.WriteHeader(200)
+	this.handled <- true
+}
+
+func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
+	st := StubHandler{
+		c,
+		"/acbd18db4cc2f85cedef654fccc4a4d8",
+		"abc123",
+		"foo",
+		make(chan bool)}
+	server := http.Server{Handler: st}
+
+	listener, _ := net.ListenTCP("tcp", &net.TCPAddr{Port: 2999})
+	defer listener.Close()
+
+	log.Printf("%s", listener.Addr().String())
+
+	go server.Serve(listener)
+	kc, _ := MakeKeepClient()
+	kc.ApiToken = "abc123"
+
+	reader, writer := io.Pipe()
+	upload_status := make(chan UploadError)
+
+	go kc.uploadToKeepServer("http://localhost:2999", "acbd18db4cc2f85cedef654fccc4a4d8", reader, upload_status)
+
+	writer.Write([]byte("foo"))
+	writer.Close()
+
+	<-st.handled
+	status := <-upload_status
+	c.Check(status, DeepEquals, UploadError{io.EOF, "http://localhost:2999/acbd18db4cc2f85cedef654fccc4a4d8"})
+}
+
+type FailHandler struct {
+	handled chan bool
+}
+
+func (this FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(400)
+	this.handled <- true
+}
+
+/*func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
+	log.Printf("blup")
+
+	c.Check(true, Equals, false)
+
+	log.Printf("blug")
+
+	st := FailHandler{make(chan bool)}
+	server := http.Server{Handler: st}
+
+	listener, _ := net.ListenTCP("tcp", &net.TCPAddr{})
+	defer listener.Close()
+
+	go server.Serve(listener)
+	kc, _ := MakeKeepClient()
+	kc.ApiToken = "abc123"
+
+	reader, writer := io.Pipe()
+	upload_status := make(chan UploadError)
+
+	go kc.uploadToKeepServer(fmt.Sprintf("http://localhost:%s", listener.Addr().String()), "acbd18db4cc2f85cedef654fccc4a4d8", reader, upload_status)
+
+	log.Printf("Writing 1")
+
+	writer.Write([]byte("foo"))
+
+	log.Printf("Writing 2")
+
+	writer.Close()
+
+	log.Printf("Writing 3")
+
+	<-st.handled
+
+	log.Printf("Handled?!")
+
+	status := <-upload_status
+	c.Check(status, DeepEquals, UploadError{io.EOF, "http://localhost:2999/acbd18db4cc2f85cedef654fccc4a4d8"})
+}*/
