@@ -1,4 +1,5 @@
-# Protect 
+# Protect referential integrity of owner_uuid columns in other tables
+# that can refer to the uuid column in this table.
 
 module CanBeAnOwner
 
