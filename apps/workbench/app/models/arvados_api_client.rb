@@ -69,7 +69,7 @@ class ArvadosApiClient
 
     profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]}" }
     msg = @client_mtx.synchronize do
-      @api_client.post(url, 
+      @api_client.post(url,
                        query,
                        header: header)
     end
