@@ -30,14 +30,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def initialize raw_params={}
-    begin
-      super self.class.permit_attribute_params(raw_params)
-    rescue Exception => e
-      logger.debug raw_params
-      logger.debug self.class.permit_attribute_params(raw_params).inspect
-      logger.debug self.class.attribute_info.inspect
-      raise e
-    end
+    super self.class.permit_attribute_params(raw_params)
     @attribute_sortkey ||= {
       'id' => nil,
       'name' => '000',
@@ -144,11 +137,14 @@ class ArvadosBase < ActiveRecord::Base
     # strong_parameters does not provide security in Workbench: anyone
     # who can get this far can just as well do a call directly to our
     # database (Arvados) with the same credentials we use.
+    #
+    # The following permit! is necessary even with
+    # "ActionController::Parameters.permit_all_parameters = true",
+    # because permit_all does not permit nested attributes.
     ActionController::Parameters.new(raw_params).permit!
   end
 
   def self.create raw_params={}
-    logger.error permit_attribute_params(raw_params).inspect
     super(permit_attribute_params(raw_params))
   end
 
