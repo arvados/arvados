@@ -32,9 +32,10 @@ type KeepDisk struct {
 
 func MakeKeepClient() (kc *KeepClient, err error) {
 	kc = &KeepClient{
-		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
-		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
-		ApiInsecure: (os.Getenv("ARVADOS_API_HOST_INSECURE") != "")}
+		ApiServer:     os.Getenv("ARVADOS_API_HOST"),
+		ApiToken:      os.Getenv("ARVADOS_API_TOKEN"),
+		ApiInsecure:   (os.Getenv("ARVADOS_API_HOST_INSECURE") != ""),
+		Want_replicas: 2}
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: kc.ApiInsecure},
@@ -432,7 +433,7 @@ func (this KeepClient) putReplicas(
 	hash string,
 	requests chan ReadRequest,
 	reader_status chan error,
-	expectedLength int64) error {
+	expectedLength int64) (replicas int, err error) {
 
 	// Calculate the ordering for uploading to servers
 	sv := this.ShuffledServiceRoots(hash)
@@ -448,17 +449,17 @@ func (this KeepClient) putReplicas(
 	defer close(upload_status)
 
 	// Desired number of replicas
-	want_replicas := this.Want_replicas
+	remaining_replicas := this.Want_replicas
 
-	for want_replicas > 0 {
-		for active < want_replicas {
+	for remaining_replicas > 0 {
+		for active < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
 				go this.uploadToKeepServer(sv[next_server], hash, MakeBufferReader(requests), upload_status, expectedLength)
 				next_server += 1
 				active += 1
 			} else {
-				return InsufficientReplicasError
+				return (this.Want_replicas - remaining_replicas), InsufficientReplicasError
 			}
 		}
 
@@ -469,34 +470,34 @@ func (this KeepClient) putReplicas(
 				// good news!
 			} else {
 				// bad news
-				return status
+				return (this.Want_replicas - remaining_replicas), status
 			}
 		case status := <-upload_status:
 			if status.StatusCode == 200 {
 				// good news!
-				want_replicas -= 1
+				remaining_replicas -= 1
 			} else {
 				// writing to keep server failed for some reason
 				log.Printf("Keep server put to %v failed with '%v'",
 					status.Url, status.Err)
 			}
 			active -= 1
-			log.Printf("Upload status %v %v %v", status.StatusCode, want_replicas, active)
+			log.Printf("Upload status %v %v %v", status.StatusCode, remaining_replicas, active)
 		}
 	}
 
-	return nil
+	return (this.Want_replicas - remaining_replicas), nil
 }
 
 var OversizeBlockError = errors.New("Block too big")
 
-func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) error {
+func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (replicas int, err error) {
 
 	// Buffer for reads from 'r'
 	var buffer []byte
 	if expectedLength > 0 {
 		if expectedLength > 64*1024*1024 {
-			return OversizeBlockError
+			return 0, OversizeBlockError
 		}
 		buffer = make([]byte, expectedLength)
 	} else {
@@ -517,7 +518,7 @@ func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) err
 	return this.putReplicas(hash, requests, reader_status, expectedLength)
 }
 
-func (this KeepClient) PutHB(hash string, buffer []byte) error {
+func (this KeepClient) PutHB(hash string, buffer []byte) (replicas int, err error) {
 	// Read requests on Transfer() buffer
 	requests := make(chan ReadRequest)
 	defer close(requests)
@@ -528,13 +529,15 @@ func (this KeepClient) PutHB(hash string, buffer []byte) error {
 	return this.putReplicas(hash, requests, nil, int64(len(buffer)))
 }
 
-func (this KeepClient) PutB(buffer []byte) error {
-	return this.PutHB(fmt.Sprintf("%x", md5.Sum(buffer)), buffer)
+func (this KeepClient) PutB(buffer []byte) (hash string, replicas int, err error) {
+	hash = fmt.Sprintf("%x", md5.Sum(buffer))
+	replicas, err = this.PutHB(hash, buffer)
+	return hash, replicas, err
 }
 
-func (this KeepClient) PutR(r io.Reader) error {
+func (this KeepClient) PutR(r io.Reader) (hash string, replicas int, err error) {
 	if buffer, err := ioutil.ReadAll(r); err != nil {
-		return err
+		return "", 0, err
 	} else {
 		return this.PutB(buffer)
 	}

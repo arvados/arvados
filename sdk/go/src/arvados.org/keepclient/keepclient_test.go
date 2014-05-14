@@ -48,7 +48,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	exec.Command("python", "run_test_server.py", "stop").Run()
 }
 
-func (s *ServerRequiredSuite) TestInit(c *C) {
+func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
@@ -712,11 +712,13 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	shuff := kc.ShuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
 
-	err := kc.PutB([]byte("foo"))
+	phash, replicas, err := kc.PutB([]byte("foo"))
 
 	<-fh.handled
 
 	c.Check(err, Equals, nil)
+	c.Check(phash, Equals, hash)
+	c.Check(replicas, Equals, 2)
 	c.Check(<-st.handled, Equals, shuff[1])
 	c.Check(<-st.handled, Equals, shuff[2])
 }
@@ -758,9 +760,10 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	shuff := kc.ShuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
 
-	err := kc.PutB([]byte("foo"))
+	_, replicas, err := kc.PutB([]byte("foo"))
 
 	c.Check(err, Equals, InsufficientReplicasError)
+	c.Check(replicas, Equals, 1)
 	c.Check(<-st.handled, Equals, shuff[1])
 }
 
@@ -860,6 +863,29 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	c.Check(err, Equals, nil)
 	c.Check(n, Equals, int64(3))
 	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks1[0].url, hash))
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, []byte("foo"))
+}
+
+func (s *ServerRequiredSuite) TestPutAndGet(c *C) {
+	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
+	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
+
+	kc, err := MakeKeepClient()
+	c.Assert(err, Equals, nil)
+
+	hash, replicas, err := kc.PutB([]byte("foo"))
+	c.Check(hash, Equals, fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	c.Check(replicas, Equals, 2)
+	c.Check(err, Equals, nil)
+
+	r, n, url2, err := kc.Get(hash)
+	c.Check(err, Equals, nil)
+	c.Check(n, Equals, int64(3))
+	c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
 
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
