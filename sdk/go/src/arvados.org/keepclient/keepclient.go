@@ -410,6 +410,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+	req.Header.Add("Content-Type", "application/octet-stream")
 	req.Body = body
 
 	var resp *http.Response
@@ -537,4 +538,35 @@ func (this KeepClient) PutR(r io.Reader) error {
 	} else {
 		return this.PutB(buffer)
 	}
+}
+
+var BlockNotFound = errors.New("Block not found")
+
+func (this KeepClient) Get(hash string) (reader io.ReadCloser,
+	contentLength int64, url string, err error) {
+
+	// Calculate the ordering for uploading to servers
+	sv := this.ShuffledServiceRoots(hash)
+
+	for _, host := range sv {
+		var req *http.Request
+		var err error
+		var url = fmt.Sprintf("%s/%s", host, hash)
+		if req, err = http.NewRequest("GET", url, nil); err != nil {
+			continue
+		}
+
+		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+
+		var resp *http.Response
+		if resp, err = this.client.Do(req); err != nil {
+			continue
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			return resp.Body, resp.ContentLength, url, nil
+		}
+	}
+
+	return nil, 0, "", BlockNotFound
 }

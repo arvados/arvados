@@ -431,7 +431,7 @@ func (s *StandaloneSuite) TestTransferIoCopy(c *C) {
 	io.Copy(writer, br1)
 }
 
-type StubHandler struct {
+type StubPutHandler struct {
 	c              *C
 	expectPath     string
 	expectApiToken string
@@ -439,7 +439,7 @@ type StubHandler struct {
 	handled        chan string
 }
 
-func (this StubHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (this StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	this.c.Check(req.URL.Path, Equals, "/"+this.expectPath)
 	this.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", this.expectApiToken))
 	body, err := ioutil.ReadAll(req.Body)
@@ -480,7 +480,7 @@ func UploadToStubHelper(c *C, st http.Handler, f func(*KeepClient, string,
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
-	st := StubHandler{
+	st := StubPutHandler{
 		c,
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
@@ -503,7 +503,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
-	st := StubHandler{
+	st := StubPutHandler{
 		c,
 		"acbd18db4cc2f85cedef654fccc4a4d8",
 		"abc123",
@@ -597,7 +597,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := StubHandler{
+	st := StubPutHandler{
 		c,
 		hash,
 		"abc123",
@@ -632,7 +632,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := StubHandler{
+	st := StubPutHandler{
 		c,
 		hash,
 		"abc123",
@@ -664,9 +664,15 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 	kc.PutHR(hash, reader, 3)
 
 	shuff := kc.ShuffledServiceRoots(hash)
+	log.Print(shuff)
 
-	c.Check(<-st.handled, Equals, shuff[0])
-	c.Check(<-st.handled, Equals, shuff[1])
+	s1 := <-st.handled
+	s2 := <-st.handled
+
+	c.Check((s1 == shuff[0] && s2 == shuff[1]) ||
+		(s1 == shuff[1] && s2 == shuff[0]),
+		Equals,
+		true)
 }
 
 func (s *StandaloneSuite) TestPutWithFail(c *C) {
@@ -674,7 +680,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := StubHandler{
+	st := StubPutHandler{
 		c,
 		hash,
 		"abc123",
@@ -720,7 +726,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	st := StubHandler{
+	st := StubPutHandler{
 		c,
 		hash,
 		"abc123",
@@ -756,4 +762,106 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(<-st.handled, Equals, shuff[1])
+}
+
+type StubGetHandler struct {
+	c              *C
+	expectPath     string
+	expectApiToken string
+	returnBody     []byte
+}
+
+func (this StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	this.c.Check(req.URL.Path, Equals, "/"+this.expectPath)
+	this.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", this.expectApiToken))
+	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(this.returnBody)))
+	resp.Write(this.returnBody)
+}
+
+func (s *StandaloneSuite) TestGet(c *C) {
+
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetHandler{
+		c,
+		hash,
+		"abc123",
+		[]byte("foo")}
+
+	listener, url := RunBogusKeepServer(st, 2990)
+	defer listener.Close()
+
+	kc, _ := MakeKeepClient()
+	kc.ApiToken = "abc123"
+	kc.Service_roots = []string{url}
+
+	r, n, url2, err := kc.Get(hash)
+	c.Check(err, Equals, nil)
+	c.Check(n, Equals, int64(3))
+	c.Check(url2, Equals, fmt.Sprintf("%s/%s", url, hash))
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, []byte("foo"))
+}
+
+func (s *StandaloneSuite) TestGetFail(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := FailHandler{make(chan string, 1)}
+
+	listener, url := RunBogusKeepServer(st, 2990)
+	defer listener.Close()
+
+	kc, _ := MakeKeepClient()
+	kc.ApiToken = "abc123"
+	kc.Service_roots = []string{url}
+
+	r, n, url2, err := kc.Get(hash)
+	c.Check(err, Equals, BlockNotFound)
+	c.Check(n, Equals, int64(0))
+	c.Check(url2, Equals, "")
+	c.Check(r, Equals, nil)
+}
+
+func (s *StandaloneSuite) TestGetWithFailures(c *C) {
+
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	fh := FailHandler{
+		make(chan string, 1)}
+
+	st := StubGetHandler{
+		c,
+		hash,
+		"abc123",
+		[]byte("foo")}
+
+	kc, _ := MakeKeepClient()
+	kc.ApiToken = "abc123"
+	kc.Service_roots = make([]string, 5)
+
+	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
+	ks2 := RunSomeFakeKeepServers(fh, 4, 2991)
+
+	for i, k := range ks1 {
+		kc.Service_roots[i] = k.url
+		defer k.listener.Close()
+	}
+	for i, k := range ks2 {
+		kc.Service_roots[len(ks1)+i] = k.url
+		defer k.listener.Close()
+	}
+
+	sort.Strings(kc.Service_roots)
+
+	r, n, url2, err := kc.Get(hash)
+	<-fh.handled
+	c.Check(err, Equals, nil)
+	c.Check(n, Equals, int64(3))
+	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks1[0].url, hash))
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, []byte("foo"))
 }
