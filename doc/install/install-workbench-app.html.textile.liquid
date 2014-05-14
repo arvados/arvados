@@ -49,6 +49,17 @@ Alternatively, if you don't have sudo/root privileges on the host, install the g
 ~/arvados/apps/workbench$ <span class="userinput">bundle install --path=vendor/bundle</span>
 </code></pre></notextile>
 
+The @bundle install@ command might produce a warning about the themes_for_rails gem. This is OK:
+
+<notextile>
+<pre><code>themes_for_rails at /home/<b>you</b>/.rvm/gems/ruby-2.1.1/bundler/gems/themes_for_rails-1fd2d7897d75 did not have a valid gemspec.
+This prevents bundler from installing bins or native extensions, but that may not affect its functionality.
+The validation message from Rubygems was:
+  duplicate dependency on rails (= 3.0.11, development), (>= 3.0.0) use:
+    add_runtime_dependency 'rails', '= 3.0.11', '>= 3.0.0'
+Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
+</code></pre></notextile>
+
 h2. Configure the Workbench application
 
 This application needs a secret token. Generate a new secret:
