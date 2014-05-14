@@ -220,10 +220,10 @@ func main() {
 		if enforce_permissions {
 			log.Fatal("--enforce-permissions requires a permission key")
 		} else {
-			log.Warning("Running without a PermissionSecret. Block locators " +
+			log.Println("Running without a PermissionSecret. Block locators " +
 				"returned by this server will not be signed, and will be rejected " +
 				"by a server that enforces permissions.")
-			log.Warning("To fix this, run Keep with --permission-key-file=<path> " +
+			log.Println("To fix this, run Keep with --permission-key-file=<path> " +
 				"to define the location of a file containing the permission key.")
 		}
 	}
