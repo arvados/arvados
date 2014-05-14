@@ -22,9 +22,6 @@ end
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 
-$ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
-SERVER_PID_PATH = 'tmp/pids/server.pid'
-
 class ActiveSupport::TestCase
   # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in
   # alphabetical order.
@@ -54,7 +51,8 @@ module ApiFixtureLoader
       # Returns the data structure from the named API server test fixture.
       @@api_fixtures[name] ||= \
       begin
-        path = File.join($ARV_API_SERVER_DIR, 'test', 'fixtures', "#{name}.yml")
+        path = File.join(ApiServerForTests::ARV_API_SERVER_DIR,
+                         'test', 'fixtures', "#{name}.yml")
         YAML.load(IO.read(path))
       end
     end
@@ -73,8 +71,13 @@ class ActiveSupport::TestCase
   end
 end
 
-class ApiServerBackedTestRunner < MiniTest::Unit
-  def _system(*cmd)
+class ApiServerForTests
+  ARV_API_SERVER_DIR = File.expand_path('../../../../services/api', __FILE__)
+  SERVER_PID_PATH = File.expand_path('tmp/pids/wbtest-server.pid', ARV_API_SERVER_DIR)
+  @main_process_pid = $$
+
+  def self._system(*cmd)
+    $stderr.puts "_system #{cmd.inspect}"
     Bundler.with_clean_env do
       if not system({'RAILS_ENV' => 'test'}, *cmd)
         raise RuntimeError, "#{cmd[0]} returned exit code #{$?.exitstatus}"
@@ -82,35 +85,66 @@ class ApiServerBackedTestRunner < MiniTest::Unit
     end
   end
 
-  def _run(args=[])
+  def self.make_ssl_cert
+    unless File.exists? './self-signed.key'
+      _system('openssl', 'req', '-new', '-x509', '-nodes',
+              '-out', './self-signed.pem',
+              '-keyout', './self-signed.key',
+              '-days', '3650',
+              '-subj', '/CN=localhost')
+    end
+  end
+
+  def self.kill_server
+    if (pid = find_server_pid)
+      $stderr.puts "Sending TERM to API server, pid #{pid}"
+      Process.kill 'TERM', pid
+    end
+  end
+
+  def self.find_server_pid
+    pid = nil
+    begin
+      pid = IO.read(SERVER_PID_PATH).to_i
+      $stderr.puts "API server is running, pid #{pid.inspect}"
+    rescue Errno::ENOENT
+    end
+    return pid
+  end
+
+  def self.run(args=[])
+    ::MiniTest.after_run do
+      self.kill_server
+    end
+
+    # Kill server left over from previous test run
+    self.kill_server
+
     Capybara.javascript_driver = :poltergeist
-    server_pid = Dir.chdir($ARV_API_SERVER_DIR) do |apidir|
+    Dir.chdir(ARV_API_SERVER_DIR) do |apidir|
       ENV["NO_COVERAGE_TEST"] = "1"
+      make_ssl_cert
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
-      _system('bundle', 'exec', 'rails', 'server', '-d')
+      _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3001',
+              '--pid-file', SERVER_PID_PATH,
+              '--ssl',
+              '--ssl-certificate', 'self-signed.pem',
+              '--ssl-certificate-key', 'self-signed.key')
       timeout = Time.now.tv_sec + 10
       good_pid = false
       while (not good_pid) and (Time.now.tv_sec < timeout)
         sleep 0.2
-        begin
-          server_pid = IO.read(SERVER_PID_PATH).to_i
-          good_pid = (server_pid > 0) and (Process.kill(0, server_pid) rescue false)
-        rescue Errno::ENOENT
-          good_pid = false
-        end
+        server_pid = find_server_pid
+        good_pid = (server_pid and
+                    (server_pid > 0) and
+                    (Process.kill(0, server_pid) rescue false))
       end
       if not good_pid
         raise RuntimeError, "could not find API server Rails pid"
       end
-      server_pid
-    end
-    begin
-      super(args)
-    ensure
-      Process.kill('TERM', server_pid)
     end
   end
 end
 
-MiniTest::Unit.runner = ApiServerBackedTestRunner.new
+ApiServerForTests.run

@@ -195,7 +195,7 @@ DEPENDENCIES
   bootstrap-sass (~> 3.1.0)
   bootstrap-x-editable-rails
   capybara
-  coffee-rails (~> 4.0.0)
+  coffee-rails
   deep_merge
   headless
   httpclient
@@ -211,7 +211,7 @@ DEPENDENCIES
   rails (~> 4.1.0)
   rvm-capistrano
   sass
-  sass-rails (~> 4.0.0)
+  sass-rails
   selenium-webdriver
   simplecov (~> 0.7.1)
   simplecov-rcov
