@@ -42,7 +42,7 @@ class OwnerTest < ActiveSupport::TestCase
       test "change owner from legit #{o_class} to legit #{new_o_class} owner" do
         o = o_class.create
         i = Specimen.create(owner_uuid: o.uuid)
-        new_o = o_class.create
+        new_o = new_o_class.create
         assert(Specimen.where(uuid: i.uuid).any?,
                "new item should really be in DB")
         assert(i.update_attributes(owner_uuid: new_o.uuid),
