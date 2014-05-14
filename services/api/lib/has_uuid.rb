@@ -31,4 +31,9 @@ module HasUuid
     return true if uuid and current_user and current_user.is_admin
     self.uuid = self.class.generate_uuid
   end
+
+  def destroy_permission_links
+    Link.destroy_all(['link_class=? and (head_uuid=? or tail_uuid=?)',
+                      'permission', uuid, uuid])
+  end
 end

@@ -237,11 +237,6 @@ class ArvadosModel < ActiveRecord::Base
     return true
   end
 
-  def destroy_permission_links
-    Link.destroy_all(['link_class=? and (head_uuid=? or tail_uuid=?)',
-                      'permission', uuid, uuid])
-  end
-
   def ensure_permission_to_destroy
     raise PermissionDeniedError unless permission_to_destroy
   end
