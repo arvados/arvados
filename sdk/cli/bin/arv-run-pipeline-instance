@@ -226,10 +226,10 @@ class PipelineInstance
                              :parameters => {
                                :uuid => uuid
                              },
-                             :body => {
-                               :api_token => ENV['ARVADOS_API_TOKEN']
-                             },
-                             :authenticated => false)
+                             :authenticated => false,
+                             :headers => {
+                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                             })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
       debuglog "Failed to get pipeline_instance: #{j[:errors] rescue nil}", 0
@@ -242,10 +242,12 @@ class PipelineInstance
   def self.create(attributes)
     result = $client.execute(:api_method => $arvados.pipeline_instances.create,
                              :body => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :pipeline_instance => attributes
                              },
-                             :authenticated => false)
+                             :authenticated => false,
+                             :headers => {
+                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                             })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
       abort "Failed to create pipeline_instance: #{j[:errors] rescue nil} #{j.inspect}"
@@ -259,10 +261,12 @@ class PipelineInstance
                                :uuid => @pi[:uuid]
                              },
                              :body => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :pipeline_instance => @attributes_to_update.to_json
                              },
-                             :authenticated => false)
+                             :authenticated => false,
+                             :headers => {
+                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                             })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
       debuglog "Failed to save pipeline_instance: #{j[:errors] rescue nil}", 0
@@ -291,20 +295,24 @@ class JobCache
     @cache ||= {}
     result = $client.execute(:api_method => $arvados.jobs.get,
                              :parameters => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :uuid => uuid
                              },
-                             :authenticated => false)
+                             :authenticated => false,
+                             :headers => {
+                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                             })
     @cache[uuid] = JSON.parse result.body, :symbolize_names => true
   end
   def self.where(conditions)
     result = $client.execute(:api_method => $arvados.jobs.list,
                              :parameters => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
                                :limit => 10000,
                                :where => conditions.to_json
                              },
-                             :authenticated => false)
+                             :authenticated => false,
+                             :headers => {
+                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                             })
     list = JSON.parse result.body, :symbolize_names => true
     if list and list[:items].is_a? Array
       list[:items]
@@ -315,11 +323,13 @@ class JobCache
   def self.create(job, create_params)
     @cache ||= {}
     result = $client.execute(:api_method => $arvados.jobs.create,
-                             :parameters => {
-                               :api_token => ENV['ARVADOS_API_TOKEN'],
+                             :body => {
                                :job => job.to_json
                              }.merge(create_params),
-                             :authenticated => false)
+                             :authenticated => false,
+                             :headers => {
+                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                             })
     j = JSON.parse result.body, :symbolize_names => true
     if j.is_a? Hash and j[:uuid]
       @cache[j[:uuid]] = j
@@ -348,10 +358,12 @@ class WhRunPipelineInstance
     else
       result = $client.execute(:api_method => $arvados.pipeline_templates.get,
                                :parameters => {
-                                 :api_token => ENV['ARVADOS_API_TOKEN'],
                                  :uuid => template
                                },
-                               :authenticated => false)
+                               :authenticated => false,
+                               :headers => {
+                                 authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                               })
       @template = JSON.parse result.body, :symbolize_names => true
       if !@template[:uuid]
         abort "#{$0}: fatal: failed to retrieve pipeline template #{template} #{@template[:errors].inspect rescue nil}"
@@ -541,7 +553,6 @@ class WhRunPipelineInstance
         end
       end
       @instance[:components] = @components
-      @instance[:active] = moretodo
       report_status
 
       if @options[:no_wait]
@@ -555,7 +566,6 @@ class WhRunPipelineInstance
           debuglog "interrupt", 0
           interrupted = true
           break
-          #abort
         end
       end
     end
@@ -580,19 +590,13 @@ class WhRunPipelineInstance
 
     if interrupted
      if success
-        @instance[:active] = false
-        @instance[:success] = success
-        @instance[:state] = "Complete"
+        @instance[:state] = 'Complete'
      else
-        @instance[:active] = nil
-        @instance[:success] = nil
         @instance[:state] = 'Paused'
       end
     else
       if ended == @components.length or failed > 0
-        @instance[:active] = false
-        @instance[:success] = success
-        @instance[:state] = success ? "Complete" : "Failed"
+        @instance[:state] = success ? 'Complete' : 'Failed'
       end
     end
 
@@ -604,8 +608,8 @@ class WhRunPipelineInstance
   end
 
   def cleanup
-    if @instance
-      @instance[:active] = false
+    if @instance and @instance[:state] == 'RunningOnClient'
+      @instance[:state] = 'Paused'
       @instance.save
     end
   end

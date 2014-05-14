@@ -54,6 +54,10 @@ module RecordFilters
         if operand.is_a? Array
           cond_out << "#{ar_table_name}.#{attr} #{operator} (?)"
           param_out << operand
+          if operator == 'not in' and not operand.include?(nil)
+            # explicitly allow NULL
+            cond_out[-1] = "(#{cond_out[-1]} OR #{ar_table_name}.#{attr} IS NULL)"
+          end
         else
           raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                   "for '#{operator}' operator in filters")

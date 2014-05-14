@@ -16,7 +16,7 @@
   <% end %>
 <% end %>
 
-<% if @object.active != nil %>
+<% if !@object.state.in? ['New', 'Ready', 'Paused'] %>
 <table class="table pipeline-components-table">
   <colgroup>
     <col style="width: 15%" />
@@ -70,7 +70,7 @@
   </tfoot>
 </table>
 
-<% if @object.active %>
+<% if @object.state == 'RunningOnServer' || @object.state == 'RunningOnClient' %>
 <% content_for :js do %>
 setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
@@ -78,7 +78,7 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 <% content_for :tab_line_buttons do %>
   <%= form_tag @object, :method => :put do |f| %>
 
-    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => false %>
+    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'Paused' %>
 
     <%= button_tag "Stop pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
   <% end %>
@@ -87,18 +87,22 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
 
 <% else %>
-
-  <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
+  <% if @object.state == 'New' %>
+    <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
+  <% end %>
 
   <% content_for :tab_line_buttons do %>
     <%= form_tag @object, :method => :put do |f| %>
 
-      <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :active, :value => true %>
+      <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'RunningOnServer' %>
 
       <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
     <% end %>
   <% end %>
 
-  <%= render partial: 'show_components_editable', locals: {editable: true} %>
-
+  <% if @object.state.in? ['New', 'Ready'] %>
+    <%= render partial: 'show_components_editable', locals: {editable: true} %>
+  <% else %>
+    <%= render partial: 'show_components_editable', locals: {editable: false} %>
+  <% end %>
 <% end %>

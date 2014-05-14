@@ -301,14 +301,14 @@ if global_opts[:dry_run]
   exit
 end
 
-request_parameters = {}.merge(method_opts)
+request_parameters = {_profile:true}.merge(method_opts)
 resource_body = request_parameters.delete(resource_schema.to_sym)
 if resource_body
   request_body = {
     resource_schema => resource_body
   }
 else
-  request_body = {}
+  request_body = nil
 end
 
 case api_method
@@ -335,12 +335,13 @@ when
   end
   exit 0
 else
-  request_body[:api_token] = ENV['ARVADOS_API_TOKEN']
-  request_body[:_profile] = true
   result = client.execute(:api_method => eval(api_method),
                           :parameters => request_parameters,
                           :body => request_body,
-                          :authenticated => false)
+                          :authenticated => false,
+                          :headers => {
+                            authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                          })
 end
 
 begin
