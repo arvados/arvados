@@ -8,6 +8,12 @@
 var event_log_disp;
 
 function subscribeToEventLog (url, uuid, elementId) {
+  // if websockets are not supported by browser, do not attempt to subscribe for events
+  websocketsSupported = ('WebSocket' in window);
+  if (websocketsSupported == false) {
+    return;  
+  }
+
   // create the event log dispatcher
   event_log_disp = new WebSocket(url);
 
