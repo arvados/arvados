@@ -15,8 +15,10 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // ======================
@@ -26,6 +28,7 @@ import (
 // and/or configuration file settings.
 
 // Default TCP address on which to listen for requests.
+// Initialized by the --listen flag.
 const DEFAULT_ADDR = ":25107"
 
 // A Keep "block" is 64MB.
@@ -38,7 +41,23 @@ const MIN_FREE_KILOBYTES = BLOCKSIZE / 1024
 var PROC_MOUNTS = "/proc/mounts"
 
 // The Keep VolumeManager maintains a list of available volumes.
+// Initialized by the --volumes flag (or by FindKeepVolumes).
 var KeepVM VolumeManager
+
+// enforce_permissions controls whether permission signatures
+// should be enforced (affecting GET and DELETE requests).
+// Initialized by the --enforce-permissions flag.
+var enforce_permissions bool
+
+// permission_ttl is the time duration for which new permission
+// signatures (returned by PUT requests) will be valid.
+// Initialized by the --permission-ttl flag.
+var permission_ttl time.Duration
+
+// data_manager_token represents the API token used by the
+// Data Manager, and is required on certain privileged operations.
+// Initialized by the --data-manager-token-file flag.
+var data_manager_token string
 
 // ==========
 // Error types.
@@ -49,13 +68,15 @@ type KeepError struct {
 }
 
 var (
-	CollisionError = &KeepError{400, "Collision"}
-	MD5Error       = &KeepError{401, "MD5 Failure"}
-	CorruptError   = &KeepError{402, "Corruption"}
-	NotFoundError  = &KeepError{404, "Not Found"}
-	GenericError   = &KeepError{500, "Fail"}
-	FullError      = &KeepError{503, "Full"}
-	TooLongError   = &KeepError{504, "Too Long"}
+	CollisionError  = &KeepError{400, "Collision"}
+	MD5Error        = &KeepError{401, "MD5 Failure"}
+	PermissionError = &KeepError{401, "Permission denied"}
+	CorruptError    = &KeepError{402, "Corruption"}
+	ExpiredError    = &KeepError{403, "Expired permission signature"}
+	NotFoundError   = &KeepError{404, "Not Found"}
+	GenericError    = &KeepError{500, "Fail"}
+	FullError       = &KeepError{503, "Full"}
+	TooLongError    = &KeepError{504, "Too Long"}
 )
 
 func (e *KeepError) Error() string {
@@ -65,6 +86,11 @@ func (e *KeepError) Error() string {
 // This error is returned by ReadAtMost if the available
 // data exceeds BLOCKSIZE bytes.
 var ReadErrorTooLong = errors.New("Too long")
+
+// TODO(twp): continue moving as much code as possible out of main
+// so it can be effectively tested. Esp. handling and postprocessing
+// of command line flags (identifying Keep volumes and initializing
+// permission arguments).
 
 func main() {
 	// Parse command-line flags:
@@ -86,14 +112,58 @@ func main() {
 	//    by looking at currently mounted filesystems for /keep top-level
 	//    directories.
 
-	var listen, volumearg string
-	var serialize_io bool
-	flag.StringVar(&listen, "listen", DEFAULT_ADDR,
-		"interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.")
-	flag.StringVar(&volumearg, "volumes", "",
-		"Comma-separated list of directories to use for Keep volumes, e.g. -volumes=/var/keep1,/var/keep2. If empty or not supplied, Keep will scan mounted filesystems for volumes with a /keep top-level directory.")
-	flag.BoolVar(&serialize_io, "serialize", false,
-		"If set, all read and write operations on local Keep volumes will be serialized.")
+	var (
+		data_manager_token_file string
+		listen                  string
+		permission_key_file     string
+		permission_ttl_sec      int
+		serialize_io            bool
+		volumearg               string
+	)
+	flag.StringVar(
+		&data_manager_token_file,
+		"data-manager-token-file",
+		"",
+		"File with the API token used by the Data Manager. All DELETE "+
+			"requests or GET /index requests must carry this token.")
+	flag.BoolVar(
+		&enforce_permissions,
+		"enforce-permissions",
+		false,
+		"Enforce permission signatures on requests.")
+	flag.StringVar(
+		&listen,
+		"listen",
+		DEFAULT_ADDR,
+		"Interface on which to listen for requests, in the format "+
+			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
+			"to listen on all network interfaces.")
+	flag.StringVar(
+		&permission_key_file,
+		"permission-key-file",
+		"",
+		"File containing the secret key for generating and verifying "+
+			"permission signatures.")
+	flag.IntVar(
+		&permission_ttl_sec,
+		"permission-ttl",
+		300,
+		"Expiration time (in seconds) for newly generated permission "+
+			"signatures.")
+	flag.BoolVar(
+		&serialize_io,
+		"serialize",
+		false,
+		"If set, all read and write operations on local Keep volumes will "+
+			"be serialized.")
+	flag.StringVar(
+		&volumearg,
+		"volumes",
+		"",
+		"Comma-separated list of directories to use for Keep volumes, "+
+			"e.g. -volumes=/var/keep1,/var/keep2. If empty or not "+
+			"supplied, Keep will scan mounted filesystems for volumes "+
+			"with a /keep top-level directory.")
 	flag.Parse()
 
 	// Look for local keep volumes.
@@ -123,27 +193,82 @@ func main() {
 		log.Fatal("could not find any keep volumes")
 	}
 
+	// Initialize data manager token and permission key.
+	// If these tokens are specified but cannot be read,
+	// raise a fatal error.
+	if data_manager_token_file != "" {
+		if buf, err := ioutil.ReadFile(data_manager_token_file); err == nil {
+			data_manager_token = strings.TrimSpace(string(buf))
+		} else {
+			log.Fatalf("reading data manager token: %s\n", err)
+		}
+	}
+	if permission_key_file != "" {
+		if buf, err := ioutil.ReadFile(permission_key_file); err == nil {
+			PermissionSecret = bytes.TrimSpace(buf)
+		} else {
+			log.Fatalf("reading permission key: %s\n", err)
+		}
+	}
+
+	// Initialize permission TTL
+	permission_ttl = time.Duration(permission_ttl_sec) * time.Second
+
+	// If --enforce-permissions is true, we must have a permission key
+	// to continue.
+	if PermissionSecret == nil {
+		if enforce_permissions {
+			log.Fatal("--enforce-permissions requires a permission key")
+		} else {
+			log.Println("Running without a PermissionSecret. Block locators " +
+				"returned by this server will not be signed, and will be rejected " +
+				"by a server that enforces permissions.")
+			log.Println("To fix this, run Keep with --permission-key-file=<path> " +
+				"to define the location of a file containing the permission key.")
+		}
+	}
+
 	// Start a round-robin VolumeManager with the volumes we have found.
 	KeepVM = MakeRRVolumeManager(goodvols)
 
-	// Set up REST handlers.
-	//
-	// Start with a router that will route each URL path to an
-	// appropriate handler.
-	//
-	rest := mux.NewRouter()
-	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
-	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
-
 	// Tell the built-in HTTP server to direct all requests to the REST
 	// router.
-	http.Handle("/", rest)
+	http.Handle("/", MakeRESTRouter())
 
 	// Start listening for requests.
 	http.ListenAndServe(listen, nil)
+}
+
+// MakeRESTRouter
+//     Returns a mux.Router that passes GET and PUT requests to the
+//     appropriate handlers.
+//
+func MakeRESTRouter() *mux.Router {
+	rest := mux.NewRouter()
+	rest.HandleFunc(
+		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(
+		`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
+		GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+
+	// For IndexHandler we support:
+	//   /index           - returns all locators
+	//   /index/{prefix}  - returns all locators that begin with {prefix}
+	//      {prefix} is a string of hexadecimal digits between 0 and 32 digits.
+	//      If {prefix} is the empty string, return an index of all locators
+	//      (so /index and /index/ behave identically)
+	//      A client may supply a full 32-digit locator string, in which
+	//      case the server will return an index with either zero or one
+	//      entries. This usage allows a client to check whether a block is
+	//      present, and its size and upload time, without retrieving the
+	//      entire block.
+	//
+	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(
+		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
+	return rest
 }
 
 // FindKeepVolumes
@@ -162,7 +287,8 @@ func FindKeepVolumes() []string {
 		for scanner.Scan() {
 			args := strings.Fields(scanner.Text())
 			dev, mount := args[0], args[1]
-			if (dev == "tmpfs" || strings.HasPrefix(dev, "/dev/")) && mount != "/" {
+			if mount != "/" &&
+				(dev == "tmpfs" || strings.HasPrefix(dev, "/dev/")) {
 				keep := mount + "/keep"
 				if st, err := os.Stat(keep); err == nil && st.IsDir() {
 					vols = append(vols, keep)
@@ -176,16 +302,38 @@ func FindKeepVolumes() []string {
 	return vols
 }
 
-func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
+func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+	signature := mux.Vars(req)["signature"]
+	timestamp := mux.Vars(req)["timestamp"]
+
+	// If permission checking is in effect, verify this
+	// request's permission signature.
+	if enforce_permissions {
+		if signature == "" || timestamp == "" {
+			http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+			return
+		} else if IsExpired(timestamp) {
+			http.Error(resp, ExpiredError.Error(), ExpiredError.HTTPCode)
+			return
+		} else {
+			validsig := MakePermSignature(hash, GetApiToken(req), timestamp)
+			if signature != validsig {
+				http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+				return
+			}
+		}
+	}
 
 	block, err := GetBlock(hash)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		// This type assertion is safe because the only errors
+		// GetBlock can return are CorruptError or NotFoundError.
+		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 		return
 	}
 
-	_, err = w.Write(block)
+	_, err = resp.Write(block)
 	if err != nil {
 		log.Printf("GetBlockHandler: writing response: %s", err)
 	}
@@ -193,7 +341,7 @@ func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	return
 }
 
-func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
+func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
 	// Read the block data to be stored.
@@ -208,10 +356,14 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 	//
 	if buf, err := ReadAtMost(req.Body, BLOCKSIZE); err == nil {
 		if err := PutBlock(buf, hash); err == nil {
-			w.WriteHeader(http.StatusOK)
+			// Success; sign the locator and return it to the client.
+			api_token := GetApiToken(req)
+			expiry := time.Now().Add(permission_ttl)
+			signed_loc := SignLocator(hash, api_token, expiry)
+			resp.Write([]byte(signed_loc))
 		} else {
 			ke := err.(*KeepError)
-			http.Error(w, ke.Error(), ke.HTTPCode)
+			http.Error(resp, ke.Error(), ke.HTTPCode)
 		}
 	} else {
 		log.Println("error reading request: ", err)
@@ -221,21 +373,31 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 			// the maximum request size.
 			errmsg = fmt.Sprintf("Max request size %d bytes", BLOCKSIZE)
 		}
-		http.Error(w, errmsg, 500)
+		http.Error(resp, errmsg, 500)
 	}
 }
 
 // IndexHandler
 //     A HandleFunc to address /index and /index/{prefix} requests.
 //
-func IndexHandler(w http.ResponseWriter, req *http.Request) {
+func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
+	// Only the data manager may issue /index requests,
+	// and only if enforce_permissions is enabled.
+	// All other requests return 403 Permission denied.
+	api_token := GetApiToken(req)
+	if !enforce_permissions ||
+		api_token == "" ||
+		data_manager_token != api_token {
+		http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+		return
+	}
 	var index string
 	for _, vol := range KeepVM.Volumes() {
 		index = index + vol.Index(prefix)
 	}
-	w.Write([]byte(index))
+	resp.Write([]byte(index))
 }
 
 // StatusHandler
@@ -261,14 +423,14 @@ type NodeStatus struct {
 	Volumes []*VolumeStatus `json:"volumes"`
 }
 
-func StatusHandler(w http.ResponseWriter, req *http.Request) {
+func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	st := GetNodeStatus()
 	if jstat, err := json.Marshal(st); err == nil {
-		w.Write(jstat)
+		resp.Write(jstat)
 	} else {
 		log.Printf("json.Marshal: %s\n", err)
 		log.Printf("NodeStatus = %v\n", st)
-		http.Error(w, err.Error(), 500)
+		http.Error(resp, err.Error(), 500)
 	}
 }
 
@@ -338,7 +500,7 @@ func GetBlock(hash string) ([]byte, error) {
 				// they should be sent directly to an event manager at high
 				// priority or logged as urgent problems.
 				//
-				log.Printf("%s: checksum mismatch for request %s (actual hash %s)\n",
+				log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
 					vol, hash, filehash)
 				return buf, CorruptError
 			}
@@ -388,8 +550,8 @@ func PutBlock(block []byte, hash string) error {
 	// If we already have a block on disk under this identifier, return
 	// success (but check for MD5 collisions).
 	// The only errors that GetBlock can return are ErrCorrupt and ErrNotFound.
-	// In either case, we want to write our new (good) block to disk, so there is
-	// nothing special to do if err != nil.
+	// In either case, we want to write our new (good) block to disk,
+	// so there is nothing special to do if err != nil.
 	if oldblock, err := GetBlock(hash); err == nil {
 		if bytes.Compare(block, oldblock) == 0 {
 			return nil
@@ -458,4 +620,28 @@ func IsValidLocator(loc string) bool {
 	}
 	log.Printf("IsValidLocator: %s\n", err)
 	return false
+}
+
+// GetApiToken returns the OAuth token from the Authorization
+// header of a HTTP request, or an empty string if no matching
+// token is found.
+func GetApiToken(req *http.Request) string {
+	if auth, ok := req.Header["Authorization"]; ok {
+		if strings.HasPrefix(auth[0], "OAuth ") {
+			return auth[0][6:]
+		}
+	}
+	return ""
+}
+
+// IsExpired returns true if the given Unix timestamp (expressed as a
+// hexadecimal string) is in the past, or if timestamp_hex cannot be
+// parsed as a hexadecimal string.
+func IsExpired(timestamp_hex string) bool {
+	ts, err := strconv.ParseInt(timestamp_hex, 16, 0)
+	if err != nil {
+		log.Printf("IsExpired: %s\n", err)
+		return true
+	}
+	return time.Unix(ts, 0).Before(time.Now())
 }

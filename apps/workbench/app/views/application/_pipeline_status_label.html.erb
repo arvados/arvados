@@ -1,8 +1,8 @@
-<% if p.success %>
+<% if p.state == 'Complete' %>
   <span class="label label-success">finished</span>
-<% elsif p.success == false %>
+<% elsif p.state == 'Failed' %>
   <span class="label label-danger">failed</span>
-<% elsif p.active %>
+<% elsif p.state == 'RunningOnServer' || p.state == 'RunningOnClient' %>
   <span class="label label-info">running</span>
 <% else %>
   <% if (p.components.select do |k,v| v[:job] end).length == 0 %>

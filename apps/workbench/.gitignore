@@ -31,3 +31,7 @@
 
 # SimpleCov reports
 /coverage
+
+# Dev/test SSL certificates
+/self-signed.key
+/self-signed.pem

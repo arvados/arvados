@@ -16,7 +16,8 @@
     <col width="25%" />
     <col width="20%" />
     <col width="15%" />
-    <col width="20%" />
+    <col width="15%" />
+    <col width="5%" />
   </colgroup>
   <thead>
     <tr class="contain-align-left">
@@ -31,6 +32,7 @@
 	Owner
       </th><th>
 	Age
+      </th><th>
       </th>
     </tr>
   </thead>
@@ -51,12 +53,14 @@
         <%= link_to_if_arvados_object ob.owner_uuid, friendly_name: true %>
       </td><td>
         <%= distance_of_time_in_words(ob.created_at, Time.now) %>
+      </td><td>
+        <%= render partial: 'delete_object_button', locals: {object:ob} %>
       </td>
     </tr>
     <tr>
       <td style="border-top: 0;" colspan="2">
       </td>
-      <td style="border-top: 0; opacity: 0.5;" colspan="5">
+      <td style="border-top: 0; opacity: 0.5;" colspan="6">
         <% ob.components.each do |cname, c| %>
           <% if c[:job] %>
             <%= render partial: "job_status_label", locals: {:j => c[:job], :title => cname.to_s } %>

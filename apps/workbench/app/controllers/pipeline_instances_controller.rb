@@ -150,7 +150,7 @@ class PipelineInstancesController < ApplicationController
   end 
 
   def index
-    @objects ||= model_class.limit(20).all
+    @limit = 20
     super
   end
 
