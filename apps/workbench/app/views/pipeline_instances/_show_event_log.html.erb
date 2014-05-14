@@ -1,24 +1,5 @@
 <span>
   <h3>Log for pipeline</h3>
-  <img hidden=true id="pipeline_event_log_img" src="/favicon.ico" onload="subscribeToEventLogs()";></image>
+  <image hidden=true id="pipeline_event_log_img" src="/favicon.ico" onclick="sendToDispatcher();" onload="subscribeToEventLog('<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>', '<%=@object.uuid%>', 'pipeline_event_log_area')";></image>
   <textarea row="10" cols="80" id="pipeline_event_log_area"></textarea>
 </span>
-
-<script>
-  $(function() {
-    displayEventLog = function (content) {
-      $("#pipeline_event_log_area").append(content + "<br>");
-    };
-
-    var dispatcher = new WebSocket('<%= $arvados_api_client.discovery[:websocketUrl] %>?api_token=<%= Thread.current[:arvados_api_token] %>');
-    dispatcher.onmessage = function(event) {
-      //displayEventLog(JSON.parse(event.data));
-      displayEventLog(event.data);
-    };
-
-    subscribeToEventLogs = function () {
-    alert ("got it");
-      dispatcher.send('{"method":"subscribe"}');
-    };
-  });
-</script>
