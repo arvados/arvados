@@ -48,7 +48,7 @@ func TestGetHandler(t *testing.T) {
 	}
 
 	// Set up a REST router for testing the handlers.
-	rest := NewRESTRouter()
+	rest := MakeRESTRouter()
 
 	// Create locators for testing.
 	// Turn on permission settings so we can generate signed locators.
@@ -142,7 +142,7 @@ func TestPutHandler(t *testing.T) {
 	defer func() { KeepVM.Quit() }()
 
 	// Set up a REST router for testing the handlers.
-	rest := NewRESTRouter()
+	rest := MakeRESTRouter()
 
 	// --------------
 	// No server key.
@@ -239,7 +239,7 @@ func TestIndexHandler(t *testing.T) {
 	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
 
 	// Set up a REST router for testing the handlers.
-	rest := NewRESTRouter()
+	rest := MakeRESTRouter()
 
 	data_manager_token = "DATA MANAGER TOKEN"
 

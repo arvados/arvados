@@ -87,6 +87,11 @@ func (e *KeepError) Error() string {
 // data exceeds BLOCKSIZE bytes.
 var ReadErrorTooLong = errors.New("Too long")
 
+// TODO(twp): continue moving as much code as possible out of main
+// so it can be effectively tested. Esp. handling and postprocessing
+// of command line flags (identifying Keep volumes and initializing
+// permission arguments).
+
 func main() {
 	// Parse command-line flags:
 	//
@@ -211,8 +216,16 @@ func main() {
 
 	// If --enforce-permissions is true, we must have a permission key
 	// to continue.
-	if enforce_permissions && PermissionSecret == nil {
-		log.Fatal("--enforce-permissions requires a permission key")
+	if PermissionSecret == nil {
+		if enforce_permissions {
+			log.Fatal("--enforce-permissions requires a permission key")
+		} else {
+			log.Warning("Running without a PermissionSecret. Block locators " +
+				"returned by this server will not be signed, and will be rejected " +
+				"by a server that enforces permissions.")
+			log.Warning("To fix this, run Keep with --permission-key-file=<path> " +
+				"to define the location of a file containing the permission key.")
+		}
 	}
 
 	// Start a round-robin VolumeManager with the volumes we have found.
@@ -220,17 +233,17 @@ func main() {
 
 	// Tell the built-in HTTP server to direct all requests to the REST
 	// router.
-	http.Handle("/", NewRESTRouter())
+	http.Handle("/", MakeRESTRouter())
 
 	// Start listening for requests.
 	http.ListenAndServe(listen, nil)
 }
 
-// NewRESTRouter
+// MakeRESTRouter
 //     Returns a mux.Router that passes GET and PUT requests to the
 //     appropriate handlers.
 //
-func NewRESTRouter() *mux.Router {
+func MakeRESTRouter() *mux.Router {
 	rest := mux.NewRouter()
 	rest.HandleFunc(
 		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
@@ -238,6 +251,19 @@ func NewRESTRouter() *mux.Router {
 		`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
 		GetBlockHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+
+	// For IndexHandler we support:
+	//   /index           - returns all locators
+	//   /index/{prefix}  - returns all locators that begin with {prefix}
+	//      {prefix} is a string of hexadecimal digits between 0 and 32 digits.
+	//      If {prefix} is the empty string, return an index of all locators
+	//      (so /index and /index/ behave identically)
+	//      A client may supply a full 32-digit locator string, in which
+	//      case the server will return an index with either zero or one
+	//      entries. This usage allows a client to check whether a block is
+	//      present, and its size and upload time, without retrieving the
+	//      entire block.
+	//
 	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(
 		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
@@ -276,7 +302,7 @@ func FindKeepVolumes() []string {
 	return vols
 }
 
-func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
+func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 	signature := mux.Vars(req)["signature"]
 	timestamp := mux.Vars(req)["timestamp"]
@@ -285,15 +311,15 @@ func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	// request's permission signature.
 	if enforce_permissions {
 		if signature == "" || timestamp == "" {
-			http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
+			http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 			return
 		} else if IsExpired(timestamp) {
-			http.Error(w, ExpiredError.Error(), ExpiredError.HTTPCode)
+			http.Error(resp, ExpiredError.Error(), ExpiredError.HTTPCode)
 			return
 		} else {
 			validsig := MakePermSignature(hash, GetApiToken(req), timestamp)
 			if signature != validsig {
-				http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
+				http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 				return
 			}
 		}
@@ -301,11 +327,13 @@ func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 
 	block, err := GetBlock(hash)
 	if err != nil {
-		http.Error(w, err.Error(), err.(*KeepError).HTTPCode)
+		// This type assertion is safe because the only errors
+		// GetBlock can return are CorruptError or NotFoundError.
+		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 		return
 	}
 
-	_, err = w.Write(block)
+	_, err = resp.Write(block)
 	if err != nil {
 		log.Printf("GetBlockHandler: writing response: %s", err)
 	}
@@ -313,7 +341,7 @@ func GetBlockHandler(w http.ResponseWriter, req *http.Request) {
 	return
 }
 
-func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
+func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
 	// Read the block data to be stored.
@@ -332,10 +360,10 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 			api_token := GetApiToken(req)
 			expiry := time.Now().Add(permission_ttl)
 			signed_loc := SignLocator(hash, api_token, expiry)
-			w.Write([]byte(signed_loc))
+			resp.Write([]byte(signed_loc))
 		} else {
 			ke := err.(*KeepError)
-			http.Error(w, ke.Error(), ke.HTTPCode)
+			http.Error(resp, ke.Error(), ke.HTTPCode)
 		}
 	} else {
 		log.Println("error reading request: ", err)
@@ -345,14 +373,14 @@ func PutBlockHandler(w http.ResponseWriter, req *http.Request) {
 			// the maximum request size.
 			errmsg = fmt.Sprintf("Max request size %d bytes", BLOCKSIZE)
 		}
-		http.Error(w, errmsg, 500)
+		http.Error(resp, errmsg, 500)
 	}
 }
 
 // IndexHandler
 //     A HandleFunc to address /index and /index/{prefix} requests.
 //
-func IndexHandler(w http.ResponseWriter, req *http.Request) {
+func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	prefix := mux.Vars(req)["prefix"]
 
 	// Only the data manager may issue /index requests,
@@ -361,15 +389,15 @@ func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	api_token := GetApiToken(req)
 	if !enforce_permissions ||
 		api_token == "" ||
-		data_manager_token != GetApiToken(req) {
-		http.Error(w, PermissionError.Error(), PermissionError.HTTPCode)
+		data_manager_token != api_token {
+		http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 		return
 	}
 	var index string
 	for _, vol := range KeepVM.Volumes() {
 		index = index + vol.Index(prefix)
 	}
-	w.Write([]byte(index))
+	resp.Write([]byte(index))
 }
 
 // StatusHandler
@@ -395,14 +423,14 @@ type NodeStatus struct {
 	Volumes []*VolumeStatus `json:"volumes"`
 }
 
-func StatusHandler(w http.ResponseWriter, req *http.Request) {
+func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	st := GetNodeStatus()
 	if jstat, err := json.Marshal(st); err == nil {
-		w.Write(jstat)
+		resp.Write(jstat)
 	} else {
 		log.Printf("json.Marshal: %s\n", err)
 		log.Printf("NodeStatus = %v\n", st)
-		http.Error(w, err.Error(), 500)
+		http.Error(resp, err.Error(), 500)
 	}
 }
 
@@ -607,7 +635,8 @@ func GetApiToken(req *http.Request) string {
 }
 
 // IsExpired returns true if the given Unix timestamp (expressed as a
-// hexadecimal string) is in the past.
+// hexadecimal string) is in the past, or if timestamp_hex cannot be
+// parsed as a hexadecimal string.
 func IsExpired(timestamp_hex string) bool {
 	ts, err := strconv.ParseInt(timestamp_hex, 16, 0)
 	if err != nil {
