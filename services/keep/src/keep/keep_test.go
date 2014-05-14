@@ -348,7 +348,7 @@ func TestIndex(t *testing.T) {
 	match, err := regexp.MatchString(expected, index)
 	if err == nil {
 		if !match {
-			t.Errorf("IndexLocators returned:\n-----\n%s-----\n", index)
+			t.Errorf("IndexLocators returned:\n%s", index)
 		}
 	} else {
 		t.Errorf("regexp.MatchString: %s", err)
@@ -412,5 +412,8 @@ func MakeTestVolumeManager(num_volumes int) VolumeManager {
 //     Cleanup to perform after each test.
 //
 func teardown() {
+	data_manager_token = ""
+	enforce_permissions = false
+	PermissionSecret = nil
 	KeepVM = nil
 }
