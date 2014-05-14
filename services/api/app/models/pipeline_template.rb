@@ -1,5 +1,5 @@
 class PipelineTemplate < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   serialize :components, Hash

@@ -1,5 +1,5 @@
 class Job < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   serialize :script_parameters, Hash
