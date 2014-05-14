@@ -432,14 +432,15 @@ def outputGarbageCollectionReport(filename):
     for line in garbage_collection_report:
       gcwriter.writerow(line)
 
-
 def computeGarbageCollectionHistogram():
+  # TODO(misha): Modify this to allow users to specify the number of
+  # histogram buckets through a flag.
   histogram = []
   last_percentage = -1
   for _,mtime,_,_,disk_free in garbage_collection_report:
     curr_percentage = percentageFloor(disk_free)
     if curr_percentage > last_percentage:
-      histogram.append( (curr_percentage, mtime) )
+      histogram.append( (mtime, curr_percentage) )
     last_percentage = curr_percentage
 
   log.info('Garbage collection histogram is: %s', histogram)
@@ -608,9 +609,9 @@ cumulative disk size) / total disk capacity
 garbage_collection_histogram = []
 """ Shows the tradeoff of keep block age vs keep disk free space.
 
-Each entry is of the form (Disk Proportion, mtime).
+Each entry is of the form (mtime, Disk Proportion).
 
-An entry of the form (0.52, 1388747781) means that if we deleted the
+An entry of the form (1388747781, 0.52) means that if we deleted the
 oldest non-presisted blocks until we had 52% of the disk free, then
 all blocks with an mtime greater than 1388747781 would be preserved.
 """
