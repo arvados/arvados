@@ -35,15 +35,27 @@ function onEventLogDispatcherOpen(event) {
   event_log_disp.send('{"method":"subscribe"}');
 }
 
+// Check each of the entries in the listener map. If any are waiting for
+// an event of this event's object, append to their registered element
 function onEventLogDispatcherMessage(event) {
   event_log_listener_map = JSON.parse(sessionStorage.getItem("event_log_listener_map"));
 
   for (var key in event_log_listener_map) {
     value = event_log_listener_map[key];
 
+    new_properties = "";
     eventData = JSON.parse(event.data);
     if (value === eventData.object_uuid) {
-      $('#'+key).append(eventData.summary + "&#13;&#10;");
+      properties = eventData.properties;
+      if (properties !== null) {
+        new_attributes = properties.new_attributes;
+        if (new_attributes !== null) {
+          new_properties = JSON.stringify(properties.new_attributes);
+        }
+      }
+
+      // append to the registered element
+      $('#'+key).append(eventData.summary + " " + new_properties + "&#13;&#10;");
     }
   }
 }
