@@ -123,7 +123,6 @@ class UsersTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
 
-    sleep(1)
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Metadata'
@@ -143,7 +142,6 @@ class UsersTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
 
-    sleep(0.1)
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Metadata'
@@ -209,7 +207,6 @@ class UsersTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
 
-    sleep(0.1)
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Metadata'
