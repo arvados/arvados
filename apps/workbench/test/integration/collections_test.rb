@@ -3,7 +3,6 @@ require 'selenium-webdriver'
 require 'headless'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
-
   def change_persist oldstate, newstate
     find "div[data-persistent-state='#{oldstate}']"
     page.assert_no_selector "div[data-persistent-state='#{newstate}']"
@@ -47,5 +46,31 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # Now check that the page is otherwise normal, and the collection name
     # isn't only showing up in an error message.
     assert(page.has_link?('foo'), "Collection page did not include file link")
+  end
+
+  test "can download an entire collection with a reader token" do
+    uuid = api_fixture('collections')['foo_file']['uuid']
+    token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
+    url_head = "/collections/download/#{uuid}/#{token}/"
+    visit url_head
+    # It seems that Capybara can't inspect tags outside the body, so this is
+    # a very blunt approach.
+    assert_no_match(/<\s*meta[^>]+\bnofollow\b/i, page.html,
+                    "wget prohibited from recursing the collection page")
+    # TODO: When we can test against a Keep server, actually follow links
+    # and check their contents, rather than testing the href directly
+    # (this is too closely tied to implementation details).
+    hrefs = page.all('a').map do |anchor|
+      link = anchor[:href] || ''
+      if link.start_with? url_head
+        link[url_head.size .. -1]
+      elsif link.start_with? '/'
+        nil
+      else
+        link
+      end
+    end
+    assert_equal(['foo'], hrefs.compact.sort,
+                 "download page did provide strictly file links")
   end
 end
