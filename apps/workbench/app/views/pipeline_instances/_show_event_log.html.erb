@@ -1,5 +1,8 @@
-<span>
-  <h3>Log for pipeline</h3>
-  <image hidden=true id="pipeline_event_log_img" src="/favicon.ico" onclick="sendToDispatcher();" onload="subscribeToEventLog('<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>', '<%=@object.uuid%>', 'pipeline_event_log_area')";></image>
-  <textarea row="10" cols="80" id="pipeline_event_log_area"></textarea>
-</span>
+<% if !@object.state.in? ['Complete', 'Failed'] %>
+  <span>
+    <h3>Log for pipeline</h3>
+    <image hidden=true id="pipeline_event_log_img" src="/favicon.ico" onclick="sendToDispatcher();" onload="subscribeToEventLog('<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>', '<%=@object.uuid%>', 'pipeline_event_log_area')";></image>
+
+    <textarea row="10" cols="80" id="pipeline_event_log_area"></textarea>
+  </span>
+<% end %>
