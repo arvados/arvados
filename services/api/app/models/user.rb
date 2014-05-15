@@ -1,7 +1,11 @@
+require 'can_be_an_owner'
+
 class User < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  include CanBeAnOwner
+
   serialize :prefs, Hash
   has_many :api_client_authorizations
   before_update :prevent_privilege_escalation

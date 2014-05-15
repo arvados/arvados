@@ -1,5 +1,5 @@
 class Collection < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
 

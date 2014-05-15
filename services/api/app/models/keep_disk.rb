@@ -1,5 +1,5 @@
 class KeepDisk < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   before_validation :ensure_ping_secret
