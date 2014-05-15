@@ -49,30 +49,15 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
   end
 
-  test "viewing a collection with a reader token" do
+  test "viewing collection files with a reader token" do
+    skip  # Need a new route+view for this.
     params = collection_params(:foo_file)
-    params[:reader_tokens] =
-      [api_fixture('api_client_authorizations')['active']['api_token']]
+    params[:reader_token] =
+      api_fixture('api_client_authorizations')['active']['api_token']
     get(:show, params)
     assert_response :success
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
     assert_no_session
-  end
-
-  test "viewing the index with a reader token" do
-    params = {reader_tokens:
-      [api_fixture('api_client_authorizations')['spectator']['api_token']]
-    }
-    get(:index, params)
-    assert_response :success
-    assert_no_session
-    listed_collections = assigns(:collections).map { |c| c.uuid }
-    assert_includes(listed_collections,
-                    api_fixture('collections')['bar_file']['uuid'],
-                    "spectator reader token didn't list bar file")
-    refute_includes(listed_collections,
-                    api_fixture('collections')['foo_file']['uuid'],
-                    "spectator reader token listed foo file")
   end
 
   test "getting a file from Keep" do
@@ -101,7 +86,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "getting a file from Keep with a good reader token" do
     params = collection_params(:foo_file, 'foo')
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
-    params[:reader_tokens] = [read_token]
+    params[:reader_token] = read_token
     get(:show_file, params)
     assert_response :success
     assert_equal(expected_contents(params, read_token), @response.body,
@@ -112,9 +97,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test "trying to get from Keep with an unscoped reader token prompts login" do
     params = collection_params(:foo_file, 'foo')
-    read_token =
+    params[:reader_token] =
       api_fixture('api_client_authorizations')['active_noscope']['api_token']
-    params[:reader_tokens] = [read_token]
     get(:show_file, params)
     assert_response :redirect
   end
@@ -123,7 +107,7 @@ class CollectionsControllerTest < ActionController::TestCase
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:expired)
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
-    params[:reader_tokens] = [read_token]
+    params[:reader_token] = read_token
     get(:show_file, params, sess)
     assert_response :success
     assert_equal(expected_contents(params, read_token), @response.body,

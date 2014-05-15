@@ -7,12 +7,10 @@ class ApplicationController < ActionController::Base
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
   around_filter :thread_clear
-  around_filter(:thread_with_mandatory_api_token,
-                except: [:index, :show] + ERROR_ACTIONS)
+  around_filter :thread_with_mandatory_api_token, except: ERROR_ACTIONS
   around_filter :thread_with_optional_api_token
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
-  around_filter :using_reader_tokens, only: [:index, :show]
   before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
   before_filter :check_my_folders, :except => ERROR_ACTIONS
   theme :select_theme
@@ -212,23 +210,6 @@ class ApplicationController < ActionController::Base
       }
     end
     false  # For convenience to return from callbacks
-  end
-
-  def using_reader_tokens(login_optional=false)
-    if params[:reader_tokens].is_a?(Array) and params[:reader_tokens].any?
-      Thread.current[:reader_tokens] = params[:reader_tokens]
-    end
-    begin
-      yield
-    rescue ArvadosApiClient::NotLoggedInException
-      if login_optional
-        raise
-      else
-        return redirect_to_login
-      end
-    ensure
-      Thread.current[:reader_tokens] = nil
-    end
   end
 
   def using_specific_api_token(api_token)
