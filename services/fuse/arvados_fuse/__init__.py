@@ -182,18 +182,21 @@ class CollectionDirectory(Directory):
         return i['uuid'] == self.collection_locator
 
     def update(self):
-        collection = arvados.CollectionReader(arvados.Keep.get(self.collection_locator))
-        for s in collection.all_streams():
-            cwd = self
-            for part in s.name().split('/'):
-                if part != '' and part != '.':
-                    if part not in cwd._entries:
-                        cwd._entries[part] = self.inodes.add_entry(Directory(cwd.inode))
-                    cwd = cwd._entries[part]
-            for k, v in s.files().items():
-                cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v))
-        self.fresh()
-
+        try:
+            collection = arvados.CollectionReader(arvados.Keep.get(self.collection_locator))
+            for s in collection.all_streams():
+                cwd = self
+                for part in s.name().split('/'):
+                    if part != '' and part != '.':
+                        if part not in cwd._entries:
+                            cwd._entries[part] = self.inodes.add_entry(Directory(cwd.inode))
+                        cwd = cwd._entries[part]
+                for k, v in s.files().items():
+                    cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v))
+            print "found"
+            self.fresh()
+        except Exception as detail:
+            print("%s: error: %s" % (self.collection_locator,detail) )
 
 class MagicDirectory(Directory):
     '''A special directory that logically contains the set of all extant keep
