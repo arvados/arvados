@@ -89,11 +89,10 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "viewing collection files with a reader token" do
-    skip  # Need a new route+view for this.
     params = collection_params(:foo_file)
     params[:reader_token] =
       api_fixture('api_client_authorizations')['active']['api_token']
-    get(:show, params)
+    get(:show_file_links, params)
     assert_response :success
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
     assert_no_session

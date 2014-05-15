@@ -1,7 +1,8 @@
 class CollectionsController < ApplicationController
-  skip_around_filter :thread_with_mandatory_api_token, only: [:show_file]
-  skip_before_filter :find_object_by_uuid, only: [:provenance, :show_file]
-  skip_before_filter :check_user_agreements, only: [:show_file]
+  skip_around_filter(:thread_with_mandatory_api_token,
+                     only: [:show_file, :show_file_links])
+  skip_before_filter(:find_object_by_uuid,
+                     only: [:provenance, :show_file, :show_file_links])
 
   RELATION_LIMIT = 5
 
@@ -87,6 +88,13 @@ class CollectionsController < ApplicationController
       info[:links] << link
     end
     @request_url = request.url
+  end
+
+  def show_file_links
+    Thread.current[:reader_tokens] = [params[:reader_token]]
+    find_object_by_uuid
+    show
+    render 'show'
   end
 
   def show_file

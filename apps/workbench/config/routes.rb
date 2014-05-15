@@ -44,9 +44,10 @@ ArvadosWorkbench::Application.routes.draw do
   resources :collections do
     post 'set_persistent', on: :member
   end
-  get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)
+  get '/collections/download/:uuid/:reader_token' => 'collections#show_file_links'
+  get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   resources :folders do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
   end
