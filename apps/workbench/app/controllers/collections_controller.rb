@@ -93,8 +93,7 @@ class CollectionsController < ApplicationController
   def show_file_links
     Thread.current[:reader_tokens] = [params[:reader_token]]
     find_object_by_uuid
-    show
-    render 'show'
+    render layout: false
   end
 
   def show_file

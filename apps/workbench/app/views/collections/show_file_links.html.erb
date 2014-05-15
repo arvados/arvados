@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>
+    <% if content_for? :page_title %>
+    <%= yield :page_title %> / <%= Rails.configuration.site_name %>
+    <% else %>
+    <%= Rails.configuration.site_name %>
+    <% end %>
+  </title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <meta name="robots" content="NOINDEX">
+</head>
+<body>
+<% content_for :page_title do %>
+  <%= (@object.respond_to?(:properties) ? @object.properties[:page_title] : nil) ||
+        @object.friendly_link_name %>
+<% end %>
+
+<% if @object.andand.files.andand.any? %>
+  <% link_opts = {controller: 'collections', action: 'show_file',
+                  uuid: @object.uuid, reader_token: params[:reader_token]} %>
+  <ul>
+  <% @object.files.map { |spec|
+       CollectionsHelper::file_path(spec)
+     }.each do |path| %>
+    <li><%= link_to(path, link_opts.merge(file: path)) %></li>
+  <% end %>
+  </ul>
+<% else %>
+  <p>No files in this collection.</p>
+<% end %>
+</body>
+</html>

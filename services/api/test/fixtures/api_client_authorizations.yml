@@ -58,6 +58,13 @@ admin_noscope:
   expires_at: 2038-01-01 00:00:00
   scopes: []
 
+active_all_collections:
+  api_client: untrusted
+  user: active
+  api_token: activecollectionsabcdefghijklmnopqrstuvwxyz1234567
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /arvados/v1/collections/"]
+
 active_userlist:
   api_client: untrusted
   user: active
