@@ -18,8 +18,8 @@ ArvadosWorkbench::Application.routes.draw do
   resources :authorized_keys
   resources :job_tasks
   resources :jobs
-  match '/logout' => 'sessions#destroy'
-  match '/logged_out' => 'sessions#index'
+  match '/logout' => 'sessions#destroy', via: [:get, :post]
+  get '/logged_out' => 'sessions#index'
   resources :users do
     get 'home', :on => :member
     get 'welcome', :on => :collection
@@ -39,7 +39,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'compare', on: :collection
   end
   resources :links
-  match '/collections/graph' => 'collections#graph'
+  get '/collections/graph' => 'collections#graph'
   resources :collections do
     post 'set_persistent', on: :member
   end
@@ -55,5 +55,5 @@ ArvadosWorkbench::Application.routes.draw do
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
-  match '*a', :to => 'links#render_not_found'
+  match '*a', to: 'links#render_not_found', via: [:get, :post]
 end
