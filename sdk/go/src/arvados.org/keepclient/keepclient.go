@@ -15,13 +15,19 @@ import (
 	"strconv"
 )
 
+// A Keep "block" is 64MB.
+const BLOCKSIZE = 64 * 1024 * 1024
+
+var BlockNotFound = errors.New("Block not found")
+var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
+
 type KeepClient struct {
 	ApiServer     string
 	ApiToken      string
 	ApiInsecure   bool
 	Service_roots []string
 	Want_replicas int
-	client        *http.Client
+	Client        *http.Client
 }
 
 type KeepDisk struct {
@@ -30,25 +36,24 @@ type KeepDisk struct {
 	SSL      bool   `json:"service_ssl_flag"`
 }
 
-func MakeKeepClient() (kc *KeepClient, err error) {
-	kc = &KeepClient{
-		ApiServer:     os.Getenv("ARVADOS_API_HOST"),
-		ApiToken:      os.Getenv("ARVADOS_API_TOKEN"),
-		ApiInsecure:   (os.Getenv("ARVADOS_API_HOST_INSECURE") != ""),
-		Want_replicas: 2}
-
+func MakeKeepClient() (kc KeepClient, err error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: kc.ApiInsecure},
 	}
 
-	kc.client = &http.Client{Transport: tr}
+	kc = KeepClient{
+		ApiServer:     os.Getenv("ARVADOS_API_HOST"),
+		ApiToken:      os.Getenv("ARVADOS_API_TOKEN"),
+		ApiInsecure:   (os.Getenv("ARVADOS_API_HOST_INSECURE") != ""),
+		Want_replicas: 2,
+		Client:        &http.Client{Transport: tr}}
 
-	err = kc.DiscoverKeepDisks()
+	err = (&kc).DiscoverKeepServers()
 
 	return kc, err
 }
 
-func (this *KeepClient) DiscoverKeepDisks() error {
+func (this *KeepClient) DiscoverKeepServers() error {
 	// Construct request of keep disk list
 	var req *http.Request
 	var err error
@@ -61,7 +66,7 @@ func (this *KeepClient) DiscoverKeepDisks() error {
 
 	// Make the request
 	var resp *http.Response
-	if resp, err = this.client.Do(req); err != nil {
+	if resp, err = this.Client.Do(req); err != nil {
 		return err
 	}
 
@@ -415,7 +420,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	req.Body = body
 
 	var resp *http.Response
-	if resp, err = this.client.Do(req); err != nil {
+	if resp, err = this.Client.Do(req); err != nil {
 		upload_status <- UploadStatus{err, url, 0}
 		return
 	}
@@ -426,8 +431,6 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 		upload_status <- UploadStatus{errors.New(resp.Status), url, resp.StatusCode}
 	}
 }
-
-var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
 
 func (this KeepClient) putReplicas(
 	hash string,
@@ -496,12 +499,12 @@ func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (re
 	// Buffer for reads from 'r'
 	var buffer []byte
 	if expectedLength > 0 {
-		if expectedLength > 64*1024*1024 {
+		if expectedLength > BLOCKSIZE {
 			return 0, OversizeBlockError
 		}
 		buffer = make([]byte, expectedLength)
 	} else {
-		buffer = make([]byte, 64*1024*1024)
+		buffer = make([]byte, BLOCKSIZE)
 	}
 
 	// Read requests on Transfer() buffer
@@ -543,18 +546,29 @@ func (this KeepClient) PutR(r io.Reader) (hash string, replicas int, err error) 
 	}
 }
 
-var BlockNotFound = errors.New("Block not found")
-
 func (this KeepClient) Get(hash string) (reader io.ReadCloser,
 	contentLength int64, url string, err error) {
+	return this.AuthorizedGet(hash, "", "")
+}
 
-	// Calculate the ordering for uploading to servers
+func (this KeepClient) AuthorizedGet(hash string,
+	signature string,
+	timestamp string) (reader io.ReadCloser,
+	contentLength int64, url string, err error) {
+
+	// Calculate the ordering for asking servers
 	sv := this.ShuffledServiceRoots(hash)
 
 	for _, host := range sv {
 		var req *http.Request
 		var err error
-		var url = fmt.Sprintf("%s/%s", host, hash)
+		var url string
+		if signature != "" {
+			url = fmt.Sprintf("%s/%s+A%s@%s", host, hash,
+				signature, timestamp)
+		} else {
+			url = fmt.Sprintf("%s/%s", host, hash)
+		}
 		if req, err = http.NewRequest("GET", url, nil); err != nil {
 			continue
 		}
@@ -562,7 +576,7 @@ func (this KeepClient) Get(hash string) (reader io.ReadCloser,
 		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
 
 		var resp *http.Response
-		if resp, err = this.client.Do(req); err != nil {
+		if resp, err = this.Client.Do(req); err != nil {
 			continue
 		}
 
@@ -572,4 +586,43 @@ func (this KeepClient) Get(hash string) (reader io.ReadCloser,
 	}
 
 	return nil, 0, "", BlockNotFound
+}
+
+func (this KeepClient) Ask(hash string) (contentLength int64, url string, err error) {
+	return this.AuthorizedAsk(hash, "", "")
+}
+
+func (this KeepClient) AuthorizedAsk(hash string, signature string,
+	timestamp string) (contentLength int64, url string, err error) {
+	// Calculate the ordering for asking servers
+	sv := this.ShuffledServiceRoots(hash)
+
+	for _, host := range sv {
+		var req *http.Request
+		var err error
+		if signature != "" {
+			url = fmt.Sprintf("%s/%s+A%s@%s", host, hash,
+				signature, timestamp)
+		} else {
+			url = fmt.Sprintf("%s/%s", host, hash)
+		}
+
+		if req, err = http.NewRequest("HEAD", url, nil); err != nil {
+			continue
+		}
+
+		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+
+		var resp *http.Response
+		if resp, err = this.Client.Do(req); err != nil {
+			continue
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			return resp.ContentLength, url, nil
+		}
+	}
+
+	return 0, "", BlockNotFound
+
 }

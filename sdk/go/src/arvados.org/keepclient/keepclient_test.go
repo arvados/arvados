@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -32,18 +33,23 @@ type ServerRequiredSuite struct{}
 // Standalone tests
 type StandaloneSuite struct{}
 
+func pythonDir() string {
+	gopath := os.Getenv("GOPATH")
+	return fmt.Sprintf("%s/../python", strings.Split(gopath, ":")[0])
+}
+
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	if *no_server {
 		c.Skip("Skipping tests that require server")
 	} else {
-		os.Chdir(os.ExpandEnv("$GOPATH../python"))
+		os.Chdir(pythonDir())
 		exec.Command("python", "run_test_server.py", "start").Run()
 		exec.Command("python", "run_test_server.py", "start_keep").Run()
 	}
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	os.Chdir(os.ExpandEnv("$GOPATH../python"))
+	os.Chdir(pythonDir())
 	exec.Command("python", "run_test_server.py", "stop_keep").Run()
 	exec.Command("python", "run_test_server.py", "stop").Run()
 }
@@ -464,7 +470,7 @@ func RunBogusKeepServer(st http.Handler, port int) (listener net.Listener, url s
 	return listener, url
 }
 
-func UploadToStubHelper(c *C, st http.Handler, f func(*KeepClient, string,
+func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
 	io.ReadCloser, io.WriteCloser, chan UploadStatus)) {
 
 	listener, url := RunBogusKeepServer(st, 2990)
@@ -488,7 +494,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
+		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan UploadStatus) {
 
 			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")))
@@ -511,7 +517,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
+		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan UploadStatus) {
 
 			// Buffer for reads from 'r'
@@ -559,7 +565,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 	hash := "acbd18db4cc2f85cedef654fccc4a4d8"
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
+		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan UploadStatus) {
 
 			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3)
@@ -869,7 +875,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	c.Check(content, DeepEquals, []byte("foo"))
 }
 
-func (s *ServerRequiredSuite) TestPutAndGet(c *C) {
+func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
@@ -882,12 +888,21 @@ func (s *ServerRequiredSuite) TestPutAndGet(c *C) {
 	c.Check(replicas, Equals, 2)
 	c.Check(err, Equals, nil)
 
-	r, n, url2, err := kc.Get(hash)
-	c.Check(err, Equals, nil)
-	c.Check(n, Equals, int64(3))
-	c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
+	{
+		r, n, url2, err := kc.Get(hash)
+		c.Check(err, Equals, nil)
+		c.Check(n, Equals, int64(3))
+		c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
 
-	content, err2 := ioutil.ReadAll(r)
-	c.Check(err2, Equals, nil)
-	c.Check(content, DeepEquals, []byte("foo"))
+		content, err2 := ioutil.ReadAll(r)
+		c.Check(err2, Equals, nil)
+		c.Check(content, DeepEquals, []byte("foo"))
+	}
+
+	{
+		n, url2, err := kc.Ask(hash)
+		c.Check(err, Equals, nil)
+		c.Check(n, Equals, int64(3))
+		c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
+	}
 }
