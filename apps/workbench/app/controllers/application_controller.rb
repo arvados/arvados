@@ -67,28 +67,27 @@ class ApplicationController < ActionController::Base
   end
 
   def index
+    @limit ||= 200
     if params[:limit]
-      limit = params[:limit].to_i
-    else
-      limit = 200
+      @limit = params[:limit].to_i
     end
 
+    @offset ||= 0
     if params[:offset]
-      offset = params[:offset].to_i
-    else
-      offset = 0
+      @offset = params[:offset].to_i
     end
 
+    @filters ||= []
     if params[:filters]
       filters = params[:filters]
       if filters.is_a? String
         filters = Oj.load filters
       end
-    else
-      filters = []
+      @filters += filters
     end
 
-    @objects ||= model_class.filter(filters).limit(limit).offset(offset).all
+    @objects ||= model_class
+    @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }

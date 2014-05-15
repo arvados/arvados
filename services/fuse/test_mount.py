@@ -1,6 +1,6 @@
 import unittest
 import arvados
-import arvados.fuse as fuse
+import arvados_fuse as fuse
 import threading
 import time
 import os

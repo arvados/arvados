@@ -4,7 +4,7 @@ class LinkTest < ActiveSupport::TestCase
   fixtures :all
 
   setup do
-    Thread.current[:user] = users(:active)
+    set_user_from_auth :admin_trustedclient
   end
 
   test 'name links with the same tail_uuid must be unique' do
@@ -43,6 +43,18 @@ class LinkTest < ActiveSupport::TestCase
                       link_class: 'name',
                       name: name)
       assert a.invalid?, "invalid name was accepted as valid?"
+    end
+  end
+
+  test "cannot delete an object referenced by links" do
+    ob = Specimen.create
+    link = Link.create(tail_uuid: users(:active).uuid,
+                       head_uuid: ob.uuid,
+                       link_class: 'test',
+                       name: 'test')
+    assert_raises(ActiveRecord::DeleteRestrictionError,
+                  "should not delete #{ob.uuid} with link #{link.uuid}") do
+      ob.destroy
     end
   end
 end

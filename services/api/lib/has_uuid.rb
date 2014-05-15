@@ -1,8 +1,11 @@
-module AssignUuid
+module HasUuid
 
   def self.included(base)
     base.extend(ClassMethods)
     base.before_create :assign_uuid
+    base.before_destroy :destroy_permission_links
+    base.has_many :links_via_head, class_name: 'Link', foreign_key: :head_uuid, primary_key: :uuid, conditions: "not (link_class = 'permission')", dependent: :restrict
+    base.has_many :links_via_tail, class_name: 'Link', foreign_key: :tail_uuid, primary_key: :uuid, conditions: "not (link_class = 'permission')", dependent: :restrict
   end
 
   module ClassMethods
@@ -27,5 +30,10 @@ module AssignUuid
     return true if !self.respond_to_uuid?
     return true if uuid and current_user and current_user.is_admin
     self.uuid = self.class.generate_uuid
+  end
+
+  def destroy_permission_links
+    Link.destroy_all(['link_class=? and (head_uuid=? or tail_uuid=?)',
+                      'permission', uuid, uuid])
   end
 end
