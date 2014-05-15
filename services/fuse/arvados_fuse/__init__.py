@@ -183,7 +183,7 @@ class CollectionDirectory(Directory):
 
     def update(self):
         try:
-            collection = arvados.CollectionReader(arvados.Keep.get(self.collection_locator))
+            collection = arvados.CollectionReader(self.collection_locator)
             for s in collection.all_streams():
                 cwd = self
                 for part in s.name().split('/'):
