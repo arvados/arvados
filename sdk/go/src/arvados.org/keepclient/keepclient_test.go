@@ -470,7 +470,7 @@ func RunBogusKeepServer(st http.Handler, port int) (listener net.Listener, url s
 	return listener, url
 }
 
-func UploadToStubHelper(c *C, st http.Handler, f func(*KeepClient, string,
+func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
 	io.ReadCloser, io.WriteCloser, chan UploadStatus)) {
 
 	listener, url := RunBogusKeepServer(st, 2990)
@@ -494,7 +494,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
+		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan UploadStatus) {
 
 			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")))
@@ -517,7 +517,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
+		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan UploadStatus) {
 
 			// Buffer for reads from 'r'
@@ -565,7 +565,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 	hash := "acbd18db4cc2f85cedef654fccc4a4d8"
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
+		func(kc KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan UploadStatus) {
 
 			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3)

@@ -18,6 +18,9 @@ import (
 // A Keep "block" is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
 
+var BlockNotFound = errors.New("Block not found")
+var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
+
 type KeepClient struct {
 	ApiServer     string
 	ApiToken      string
@@ -45,12 +48,12 @@ func MakeKeepClient() (kc KeepClient, err error) {
 		Want_replicas: 2,
 		Client:        &http.Client{Transport: tr}}
 
-	err = (&kc).DiscoverKeepDisks()
+	err = (&kc).DiscoverKeepServers()
 
 	return kc, err
 }
 
-func (this *KeepClient) DiscoverKeepDisks() error {
+func (this *KeepClient) DiscoverKeepServers() error {
 	// Construct request of keep disk list
 	var req *http.Request
 	var err error
@@ -429,8 +432,6 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	}
 }
 
-var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
-
 func (this KeepClient) putReplicas(
 	hash string,
 	requests chan ReadRequest,
@@ -544,8 +545,6 @@ func (this KeepClient) PutR(r io.Reader) (hash string, replicas int, err error) 
 		return this.PutB(buffer)
 	}
 }
-
-var BlockNotFound = errors.New("Block not found")
 
 func (this KeepClient) Get(hash string) (reader io.ReadCloser,
 	contentLength int64, url string, err error) {
