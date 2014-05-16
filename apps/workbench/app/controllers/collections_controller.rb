@@ -112,63 +112,21 @@ class CollectionsController < ApplicationController
 
   def show
     return super if !@object
-    @provenance = []
-    @output2job = {}
-    @output2colorindex = {}
-    @sourcedata = {params[:uuid] => {uuid: params[:uuid]}}
-    @protected = {}
-
-    colorindex = -1
-    any_hope_left = true
-    while any_hope_left
-      any_hope_left = false
-      Job.where(output: @sourcedata.keys).sort_by { |a| a.finished_at || a.created_at }.reverse.each do |job|
-        if !@output2colorindex[job.output]
-          any_hope_left = true
-          @output2colorindex[job.output] = (colorindex += 1) % 10
-          @provenance << {job: job, output: job.output}
-          @sourcedata.delete job.output
-          @output2job[job.output] = job
-          job.dependencies.each do |new_source_data|
-            unless @output2colorindex[new_source_data]
-              @sourcedata[new_source_data] = {uuid: new_source_data}
-            end
-          end
-        end
-      end
+    if current_user
+      @is_persistent = Link.limit(1)
+        .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
+               link_class: 'resources', name: 'wants')
+        .results.any?
     end
-
-    Link.where(head_uuid: @sourcedata.keys | @output2job.keys).each do |link|
-      if link.link_class == 'resources' and link.name == 'wants'
-        @protected[link.head_uuid] = true
-        if link.tail_uuid == current_user.uuid
-          @is_persistent = true
-        end
-      end
-    end
-    Link.where(tail_uuid: @sourcedata.keys).each do |link|
-      if link.link_class == 'data_origin'
-        @sourcedata[link.tail_uuid][:data_origins] ||= []
-        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_uuid]
-      end
-    end
-    Collection.where(uuid: @sourcedata.keys).each do |collection|
-      if @sourcedata[collection.uuid]
-        @sourcedata[collection.uuid][:collection] = collection
-      end
-    end
-
-    Collection.where(uuid: @object.uuid).each do |u|
-      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg",
-                                                            {:request => request,
-                                                              :direction => :bottom_up,
-                                                              :combine_jobs => :script_only}) rescue nil
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg",
-                                                               {:request => request,
-                                                                 :direction => :top_down,
-                                                                 :combine_jobs => :script_only,
-                                                                 :pdata_only => true}) rescue nil
-    end
+    @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                          {:request => request,
+                                                            :direction => :bottom_up,
+                                                            :combine_jobs => :script_only}) rescue nil
+    @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                             {:request => request,
+                                                               :direction => :top_down,
+                                                               :combine_jobs => :script_only,
+                                                               :pdata_only => true}) rescue nil
   end
 
   protected
