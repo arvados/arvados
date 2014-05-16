@@ -13,6 +13,11 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     pi_uuid = assigns(:object).uuid
     assert_not_nil assigns(:object)
     yield pi_uuid, pt_fixture
+    use_token :active do
+      Link.where(head_uuid: pi_uuid).each do |link|
+        link.destroy
+      end
+    end
     post :destroy, {
       id: pi_uuid,
       format: :json

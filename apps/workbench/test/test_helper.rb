@@ -31,7 +31,12 @@ class ActiveSupport::TestCase
   fixtures :all
   def use_token token_name
     auth = api_fixture('api_client_authorizations')[token_name.to_s]
+    token_was = Thread.current[:arvados_api_token]
     Thread.current[:arvados_api_token] = auth['api_token']
+    if block_given?
+      yield
+      Thread.current[:arvados_api_token] = token_was
+    end
   end
 
   def teardown
