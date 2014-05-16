@@ -127,6 +127,9 @@ class ApplicationController < ActionController::Base
       f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
         if request.method == 'GET'
+          @name_link ||= Link.new(link_class: 'name',
+                                  tail_uuid: current_user.uuid,
+                                  head_uuid: @object.uuid)
           render
         elsif params[:return_to]
           redirect_to params[:return_to]
