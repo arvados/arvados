@@ -116,8 +116,6 @@ setInterval(function(){$('a.refresh').click()}, 15000);
     $(window).data("listening-uuid", "<%=@object.uuid%>");
   </script>
 
-  <span>
-    <h3>Log for pipeline</h3>
-    <textarea class="event-listener" row="10" cols="80" id="pipeline_event_log_area"></textarea>
-  </span>
+  <h3>Log for pipeline</h3>
+  <div class="event-listener event-handler-append-logs" data-object-uuid="<%=@object.uuid%>"/>
 <% end %>

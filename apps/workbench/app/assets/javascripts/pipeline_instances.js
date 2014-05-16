@@ -51,4 +51,23 @@
       }
     });
 
+    $(document).on('arv-event', '.event-handler-append-logs', function(event, eventData){
+      parsedData = JSON.parse(eventData);
+      summary = parsedData.summary;
+      properties = parsedData.properties;
+      updatedProperties = null;
+      if (properties !== null) {
+        new_attributes = properties.new_attributes;
+        if (new_attributes !== null) {
+          updatedProperties = JSON.stringify(properties.new_attributes);
+        }
+      }
+
+      if (updatedProperties !== null) {
+        $(this).append(updatedProperties + "<br/><br/>");
+      } else {
+        $(this).append(summary + "<br/><br/>");
+      }
+    });
+
 })();
