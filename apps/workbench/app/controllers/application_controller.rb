@@ -66,6 +66,30 @@ class ApplicationController < ActionController::Base
     self.render_error status: 404
   end
 
+  def name_links_for object=nil
+    if !@name_links_cache or !@name_links_cache[object.uuid]
+      @name_links_cache ||= {}
+      uuids = @objects.collect(&:uuid) + [object.uuid] - @name_links_cache.keys
+      uuids.each do |uuid|
+        @name_links_cache[uuid] = []
+      end
+      offset = 0
+      while true
+        name_links = Link.
+          filter([['link_class', '=', 'name'],
+                  ['head_uuid', 'in', uuids]]).
+          offset(offset).
+          order(['uuid'])
+        name_links.each do |link|
+          @name_links_cache[link.head_uuid] << link
+        end
+        offset += name_links.result_limit
+        break if offset >= name_links.items_available
+      end
+    end
+    @name_links_cache[object.uuid] || []
+  end
+
   def index
     @limit ||= 200
     if params[:limit]
@@ -104,8 +128,12 @@ class ApplicationController < ActionController::Base
       f.html {
         if request.method == 'GET'
           render
+        elsif params[:return_to]
+          redirect_to params[:return_to]
+        elsif @name_link
+          redirect_to action: :show, id: @name_link.uuid
         else
-          redirect_to params[:return_to] || @object
+          redirect_to @object
         end
       }
       f.js { render }
@@ -150,6 +178,14 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs
     @object.save!
+    if model_class != Link
+      name = params[:name] || "New #{model_class.to_s.underscore.downcase.humanize} created #{Time.now}"
+      @name_link = Link.new(tail_uuid: current_user.uuid,
+                            head_uuid: @object.uuid,
+                            link_class: 'name',
+                            name: name)
+      @name_link.save!
+    end
     show
   end
 
@@ -254,6 +290,13 @@ class ApplicationController < ActionController::Base
     elsif params[:uuid].is_a? String
       if params[:uuid].empty?
         @object = nil
+      elsif model_class.to_s != 'Link' and
+          ArvadosBase::resource_class_for_uuid(params[:uuid]).to_s == 'Link'
+        @object = nil
+        if (@name_link = Link.where(uuid: params[:uuid],
+                                    link_class: 'name').first)
+          @object = model_class.where(uuid: @name_link.head_uuid).first
+        end
       else
         @object = model_class.find(params[:uuid])
       end
