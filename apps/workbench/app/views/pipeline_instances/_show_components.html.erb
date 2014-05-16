@@ -110,4 +110,14 @@ setInterval(function(){$('a.refresh').click()}, 15000);
   <% end %>
 <% end %>
 
-<%= render partial: 'show_event_log', locals: {object: @object} %>
+<% if !@object.state.in? ['Complete', 'Failed'] %>
+  <script>
+    $(window).data("websocket-url", "<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>");
+    $(window).data("listening-uuid", "<%=@object.uuid%>");
+  </script>
+
+  <span>
+    <h3>Log for pipeline</h3>
+    <textarea class="event-listener" row="10" cols="80" id="pipeline_event_log_area"></textarea>
+  </span>
+<% end %>

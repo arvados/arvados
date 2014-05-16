@@ -42,4 +42,13 @@
         run_pipeline_button_state();
     } );
 
+    $(document).on('ajax:complete ready', function() {
+      var a = $('.event-listener');
+      if (a.length > 0) {
+        $('.event-listener').each(function() {
+          subscribeToEventLog(this.id);
+        });
+      }
+    });
+
 })();
