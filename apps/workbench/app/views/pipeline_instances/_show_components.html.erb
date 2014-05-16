@@ -87,6 +87,10 @@ setInterval(function(){$('a.refresh').click()}, 15000);
   <% end %>
 <% end %>
 
+  <% if !@object.state.in? ['Complete', 'Failed'] %>
+    <h3>Log for pipeline</h3>
+    <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuid="<%=@object.uuid%>"/>
+  <% end %>
 <% end %>
 
 <% else %>
@@ -108,9 +112,4 @@ setInterval(function(){$('a.refresh').click()}, 15000);
   <% else %>
     <%= render partial: 'show_components_editable', locals: {editable: false} %>
   <% end %>
-<% end %>
-
-<% if !@object.state.in? ['Complete', 'Failed'] %>
-  <h3>Log for pipeline</h3>
-  <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuid="<%=@object.uuid%>"/>
 <% end %>
