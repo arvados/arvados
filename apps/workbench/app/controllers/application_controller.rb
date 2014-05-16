@@ -179,11 +179,10 @@ class ApplicationController < ActionController::Base
     @object ||= model_class.new @new_resource_attrs
     @object.save!
     if model_class != Link
-      name = params[:name] || "New #{model_class.to_s.underscore.downcase.humanize} created #{Time.now}"
       @name_link = Link.new(tail_uuid: current_user.uuid,
                             head_uuid: @object.uuid,
                             link_class: 'name',
-                            name: name)
+                            name: params[:name])
       @name_link.save!
     end
     show
