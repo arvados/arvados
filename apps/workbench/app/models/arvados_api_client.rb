@@ -13,7 +13,14 @@ class ArvadosApiClient
   # An API client object suitable for handling API requests on behalf
   # of the current thread.
   def self.new_or_current
-    Thread.current[:arvados_api_client] ||= new
+    # If this thread doesn't have an API client yet, *or* this model
+    # has been reloaded since the existing client was created, create
+    # a new client. Otherwise, keep using the latest client created in
+    # the current thread.
+    unless Thread.current[:arvados_api_client].andand.class == self
+      Thread.current[:arvados_api_client] = new
+    end
+    Thread.current[:arvados_api_client]
   end
 
   def initialize *args
