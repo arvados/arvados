@@ -115,6 +115,15 @@ class ActionsController < ApplicationController
       l.save!
     end
 
+    begin
+      Link.create!(link_class: 'name',
+                   tail_uuid: current_user.uuid,
+                   head_uuid: newuuid)
+    rescue
+      # Remove this rescue block when API servers are all upgraded.
+      logger.warn "API server did not assign a generic name."
+    end
+
     redirect_to controller: 'collections', action: :show, id: newc.uuid
   end
 

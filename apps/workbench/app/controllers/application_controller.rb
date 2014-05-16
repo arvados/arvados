@@ -179,11 +179,16 @@ class ApplicationController < ActionController::Base
     @object ||= model_class.new @new_resource_attrs
     @object.save!
     if model_class != Link
-      @name_link = Link.new(tail_uuid: current_user.uuid,
-                            head_uuid: @object.uuid,
-                            link_class: 'name',
-                            name: params[:name])
-      @name_link.save!
+      begin
+        @name_link = Link.create!(tail_uuid: current_user.uuid,
+                                  head_uuid: @object.uuid,
+                                  link_class: 'name',
+                                  name: params[:name])
+      rescue Exception => e
+        # Remove this rescue block when API servers are all upgraded.
+        raise e if params[:name]
+        logger.warn "API server did not assign a generic name."
+      end
     end
     show
   end
