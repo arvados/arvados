@@ -43,15 +43,15 @@
     } );
 
     $(document).on('ajax:complete ready', function() {
-      var a = $('.event-listener');
+      var a = $('.arv-log-event-listener');
       if (a.length > 0) {
-        $('.event-listener').each(function() {
-          subscribeToEventLog(this.id);
+        $('.arv-log-event-listener').each(function() {
+          subscribeToEventLog(this.id, this.getAttribute('data-object-uuid'));
         });
       }
     });
 
-    $(document).on('arv-event', '.event-handler-append-logs', function(event, eventData){
+    $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
       parsedData = JSON.parse(eventData);
       summary = parsedData.summary;
       properties = parsedData.properties;

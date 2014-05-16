@@ -7,7 +7,7 @@
 
 var event_log_disp;
 
-function subscribeToEventLog (elementId) {
+function subscribeToEventLog (elementId, listeningOn) {
   // if websockets are not supported by browser, do not attempt to subscribe for events
   websocketsSupported = ('WebSocket' in window);
   if (websocketsSupported == false) {
@@ -18,7 +18,7 @@ function subscribeToEventLog (elementId) {
   event_log_disp = $(window).data("arv-websocket");
   if (event_log_disp == null) {
     // create the event log dispatcher
-    event_log_disp = new WebSocket($(window).data("websocket-url"));
+    event_log_disp = new WebSocket(sessionStorage.getItem("arv-websocket-url"));
 
     event_log_disp.onopen = function(event) { onEventLogDispatcherOpen(event) };
     event_log_disp.onmessage = function(event) { onEventLogDispatcherMessage(event) };
@@ -31,7 +31,7 @@ function subscribeToEventLog (elementId) {
   event_log_listener_map = $(window).data("event_log_listener_map");
   if (event_log_listener_map == null)
     event_log_listener_map = {};
-  event_log_listener_map[elementId] = $(window).data("listening-uuid");
+  event_log_listener_map[elementId] = listeningOn;
   $(window).data("event_log_listener_map", event_log_listener_map);
 }
 
@@ -46,14 +46,13 @@ function onEventLogDispatcherMessage(event) {
 
   parsedData = JSON.parse(event.data);
   event_uuid = parsedData.object_uuid;
-  
   for (var key in event_log_listener_map) {
     value = event_log_listener_map[key];
     if (event_uuid === value) {
-      matches = ".event-listener[data-object-uuid=\"" + value + "\"]";
-      $(matches).trigger('arv-event', event.data);
+      matches = ".arv-log-event-listener[data-object-uuid=\"" + value + "\"]";
+      $(matches).trigger('arv-log-event', event.data);
     }
   }
   // also trigger event for any listening for "all"
-  $('.event-listener[data-object-uuid="all"]').trigger('arv-event', event.data);
+  $('.arv-log-event-listener[data-object-uuid="all"]').trigger('arv-log-event', event.data);
 }

@@ -111,11 +111,6 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
 
 <% if !@object.state.in? ['Complete', 'Failed'] %>
-  <script>
-    $(window).data("websocket-url", "<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>");
-    $(window).data("listening-uuid", "<%=@object.uuid%>");
-  </script>
-
   <h3>Log for pipeline</h3>
-  <div class="event-listener event-handler-append-logs" data-object-uuid="<%=@object.uuid%>"/>
+  <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuid="<%=@object.uuid%>"/>
 <% end %>
