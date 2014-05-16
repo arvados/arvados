@@ -225,6 +225,7 @@ class CollectionsController < ApplicationController
   end
 
   class FileStreamer
+    include ArvadosApiClientHelper
     def initialize(opts={})
       @opts = opts
     end
