@@ -15,7 +15,11 @@ function subscribeToEventLog (elementId, listeningOn) {
   event_log_disp = $(window).data("arv-websocket");
   if (event_log_disp == null) {
     // create the event log dispatcher
-    event_log_disp = new WebSocket(sessionStorage.getItem("arv-websocket-url"));
+    websocket_url = $('meta[name=arv-websocket-url]').attr("content");
+    if (websocket_url == null)
+      return;
+
+    event_log_disp = new WebSocket(websocket_url);
 
     event_log_disp.onopen = onEventLogDispatcherOpen;
     event_log_disp.onmessage = onEventLogDispatcherMessage;

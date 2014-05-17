@@ -22,7 +22,3 @@
 <% end %>
 
 <%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.index_pane_list }%>
-
-<script>
-  sessionStorage.setItem("arv-websocket-url", "<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>");
-</script>
