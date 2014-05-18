@@ -1,3 +1,12 @@
+<% if @object %>
+  <% content_for :content_top do %>
+    <h3>
+      <%= render_editable_attribute @name_link, 'name', nil, { 'data-emptytext' => "Unnamed #{@object.andand.class_for_display}" } %>
+    </h3>
+    <%= render partial: 'tags_for_object', locals: {object: @object} %>
+  <% end %>
+<% end %>
+
 <% content_for :tab_panes do %>
 
 <% comparable = controller.respond_to? :compare %>

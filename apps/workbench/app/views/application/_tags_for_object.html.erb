@@ -1,0 +1,10 @@
+<% tags = Link.where(head_uuid: object.uuid, link_class: ["tag", "identifier"]) %>
+<% if tags.any? %>
+  <div style="margin-bottom:.5em;">
+    <% tags.each do |tag| %>
+      <span class="label label-info">
+        <%= tag.name %>
+      </span>
+    <% end %>
+  </div>
+<% end %>

@@ -1,0 +1,20 @@
+<table class="table table-condensed table-justforlayout">
+  <colgroup>
+    <col style="width: 30%" />
+    <col style="width: 40%" />
+    <col style="width: 30%" />
+  </colgroup>
+  <thead></thead>
+  <tbody>
+    <tr>
+      <td>
+        <%= object.script %>
+      </td><td>
+        <%= render(partial: 'job_progress', locals: { j: object }) %>
+      </td><td>
+        <%= render(partial: 'job_status_label', locals: { j: object }) %>
+      </td>
+    </tr>
+  </tbody>
+  <tfoot></tfoot>
+</table>

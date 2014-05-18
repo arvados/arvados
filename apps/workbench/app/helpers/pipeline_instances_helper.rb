@@ -9,8 +9,8 @@ module PipelineInstancesHelper
     end
   end
 
-  def render_pipeline_jobs
-    pipeline_jobs.collect do |pj|
+  def render_pipeline_jobs object=nil
+    pipeline_jobs(object).collect do |pj|
       render_pipeline_job pj
     end
   end

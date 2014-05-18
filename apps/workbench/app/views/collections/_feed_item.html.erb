@@ -1,0 +1,36 @@
+<table class="table table-condensed table-justforlayout">
+  <colgroup>
+    <col style="width: 70%" />
+    <col style="width: 30%" />
+  </colgroup>
+  <thead>
+  </thead>
+  <tbody>
+    <% maxfiles = 5 %>
+    <% object.files[0..(maxfiles-1)].each do |dirname, basename, filesize| %>
+    <tr>
+      <td>
+        <%= dirname == '.' ? '' : '.../' %><%= basename %>
+      </td><td>
+        <%= human_readable_bytes_html filesize %>
+      </td>
+    </tr>
+    <% end %>
+    <% if object.files.count > maxfiles %>
+    <tr>
+      <td>&vellip;</td><td>&vellip;</td>
+    </tr>
+    <% end %>
+  </tbody>
+  <tfoot>
+    <% if object.files.count > 1 %>
+    <tr>
+      <td>
+        <%= object.files.count %> files
+      </td><td>
+        <%= human_readable_bytes_html object.total_bytes %>
+      </td>
+    </tr>
+    <% end %>
+  </tfoot>
+</table>

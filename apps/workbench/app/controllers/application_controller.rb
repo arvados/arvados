@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include ArvadosApiClientHelper
+  helper PipelineInstancesHelper
 
   respond_to :html, :json, :js
   protect_from_forgery
@@ -66,28 +67,69 @@ class ApplicationController < ActionController::Base
     self.render_error status: 404
   end
 
+  def load_name_links_for uuids
+    @name_links_cache ||= {}
+    uuids.each do |uuid|
+      @name_links_cache[uuid] = []
+    end
+    offset = 0
+    while true
+      name_links = Link.
+        filter([['link_class', '=', 'name'],
+                ['head_uuid', 'in', uuids]]).
+        offset(offset).
+        order(['uuid'])
+      name_links.each do |link|
+        @name_links_cache[link.head_uuid] << link
+      end
+      offset += name_links.result_limit
+      break if offset >= name_links.items_available
+    end
+  end
+
+  helper_method :name_links_for
   def name_links_for object=nil
     if !@name_links_cache or !@name_links_cache[object.uuid]
       @name_links_cache ||= {}
       uuids = @objects.collect(&:uuid) + [object.uuid] - @name_links_cache.keys
-      uuids.each do |uuid|
-        @name_links_cache[uuid] = []
-      end
-      offset = 0
-      while true
-        name_links = Link.
-          filter([['link_class', '=', 'name'],
-                  ['head_uuid', 'in', uuids]]).
-          offset(offset).
-          order(['uuid'])
-        name_links.each do |link|
-          @name_links_cache[link.head_uuid] << link
-        end
-        offset += name_links.result_limit
-        break if offset >= name_links.items_available
-      end
+      load_name_links_for uuids
     end
     @name_links_cache[object.uuid] || []
+  end
+
+  helper_method :feed_items
+  def feed_items
+    return @feed_items if @feed_items
+    @feed_items = []
+    named_uuids = Link.filter([['link_class','=','name']]).
+      order(['modified_at', 'desc']).
+      collect(&:head_uuid)
+    named_uuids.
+      collect { |x| ArvadosBase::resource_class_for_uuid(x) }.
+      uniq.
+      each do |klass|
+      @feed_items += klass.
+        order(['modified_at','desc']).
+        filter([['uuid','in',named_uuids]])
+    end
+    # Don't show jobs separately if they already appear in pipelines
+    jobs_in_pipelines = {}
+    @feed_items.each do |item|
+      if item.class == PipelineInstance
+        item.components.each do |cname, component|
+          if component[:job]
+            jobs_in_pipelines[component[:job][:uuid]] = true
+          end
+        end
+      end
+    end
+    @feed_items.reject! do |item|
+      jobs_in_pipelines[item.uuid]
+    end
+    @feed_items.sort_by!(&:created_at)
+    @feed_items = @feed_items[0..9]
+    load_name_links_for @feed_items.collect(&:uuid)
+    @feed_items
   end
 
   def index

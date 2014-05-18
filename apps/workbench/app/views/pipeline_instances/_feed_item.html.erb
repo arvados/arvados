@@ -1,0 +1,22 @@
+<table class="table table-condensed table-justforlayout">
+  <colgroup>
+    <col style="width: 30%" />
+    <col style="width: 40%" />
+    <col style="width: 30%" />
+  </colgroup>
+  <thead></thead>
+  <tbody>
+    <% render_pipeline_jobs(object).each do |pj| %>
+    <tr>
+      <td>
+        <%= pj[:name] %>
+      </td><td>
+        <%= pj[:progress_bar] %>
+      </td><td>
+        <%= render(partial: 'job_status_label', locals: { :j => pj[:job] }) %>
+      </td>
+    </tr>
+    <% end %>
+  </tbody>
+  <tfoot></tfoot>
+</table>

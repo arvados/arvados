@@ -1,0 +1,25 @@
+<% name_link = name_links_for(object).first %>
+<div class="panel panel-default arv-feed-item" data-object-uuid="<%= object.uuid %>">
+  <div class="panel-heading">
+    <div class="pull-right">
+      <%= human_readable_time_html (name_link || object).modified_at %>
+      <%= render partial: 'show_object_button', locals: {object: (name_link || object), size: 'xs'} %>
+    </div>
+    <%= name_link ? name_link.name : object.class.to_s.underscore.humanize %>
+    <div class="deemphasize">
+      <% if object.owner_uuid != current_user.uuid %>
+        <%= link_to_if_arvados_object object.owner_uuid, friendly_name: true %>
+        &rarr;
+      <% end %>
+      <%= object.class_for_display.underscore.humanize.downcase %>
+    </div>
+  </div>
+  <div class="panel-body">
+    <%= begin
+        render(partial: "#{object.class.to_s.tableize}/feed_item",
+        locals: {object: object})
+        rescue ActionView::MissingTemplate
+        render partial: "application/feed_item", locals: {object: object}
+        end %>
+  </div>
+</div>

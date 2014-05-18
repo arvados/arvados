@@ -15,6 +15,24 @@ module ApplicationHelper
     raw RedCloth.new(markup).to_html
   end
 
+  def human_readable_time_html t
+    begin
+      t = Time.parse(t) unless t.is_a? Time
+    rescue
+      return ''
+    end
+    now = Time.now
+    delta = (now - t).abs
+    if delta < 12.hours
+      t.strftime('%I:%M%P').downcase.sub(/^0/,'')
+    elsif (delta < 2.months and now>t) or t.strftime('%Y')==now.strftime('%Y')
+      # recent, or this year (hopefully unambiguous in context)
+      t.strftime('%b %d').sub(/ 0/,' ')
+    else
+      t.strftime('%b %d, %Y').sub(/ 0/,' ')
+    end
+  end
+
   def human_readable_bytes_html(n)
     return h(n) unless n.is_a? Fixnum
 
@@ -83,7 +101,9 @@ module ApplicationHelper
       if !link_name
         link_name = link_uuid
 
-        if opts[:friendly_name]
+        if opts[:name_link]
+          link_name = opts[:name_link].name
+        elsif opts[:friendly_name]
           if attrvalue.respond_to? :friendly_link_name
             link_name = attrvalue.friendly_link_name
           else
@@ -98,7 +118,9 @@ module ApplicationHelper
         if opts[:with_class_name]
           link_name = "#{resource_class.to_s}: #{link_name}"
         end
-        if !opts[:no_tags] and resource_class == Collection
+        if !opts[:name_link] and
+            !opts[:no_tags] and
+            resource_class == Collection
           Link.where(head_uuid: link_uuid, link_class: ["tag", "identifier"]).each do |tag|
             link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
           end
