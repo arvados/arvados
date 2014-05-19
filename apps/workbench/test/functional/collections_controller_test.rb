@@ -33,6 +33,13 @@ class CollectionsControllerTest < ActionController::TestCase
                          "session token does not belong to #{client_auth}")
   end
 
+  def show_collection(params, session={}, response=:success)
+    params = collection_params(params) if not params.is_a? Hash
+    session = session_for(session) if not session.is_a? Hash
+    get(:show, params, session)
+    assert_response response
+  end
+
   # Mock the collection file reader to avoid external calls and return
   # a predictable string.
   CollectionsController.class_eval do
@@ -42,19 +49,50 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "viewing a collection" do
-    params = collection_params(:foo_file)
-    sess = session_for(:active)
-    get(:show, params, sess)
-    assert_response :success
+    show_collection(:foo_file, :active)
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
+  end
+
+  test "viewing a collection fetches related folders" do
+    show_collection(:foo_file, :active)
+    assert_includes(assigns(:folders).map(&:uuid),
+                    api_fixture('groups')['afolder']['uuid'],
+                    "controller did not find linked folder")
+  end
+
+  test "viewing a collection fetches related permissions" do
+    show_collection(:bar_file, :active)
+    assert_includes(assigns(:permissions).map(&:uuid),
+                    api_fixture('links')['bar_file_readable_by_active']['uuid'],
+                    "controller did not find permission link")
+  end
+
+  test "viewing a collection fetches jobs that output it" do
+    show_collection(:bar_file, :active)
+    assert_includes(assigns(:output_of).map(&:uuid),
+                    api_fixture('jobs')['foobar']['uuid'],
+                    "controller did not find output job")
+  end
+
+  test "viewing a collection fetches jobs that logged it" do
+    show_collection(:baz_file, :active)
+    assert_includes(assigns(:log_of).map(&:uuid),
+                    api_fixture('jobs')['foobar']['uuid'],
+                    "controller did not find logger job")
+  end
+
+  test "viewing a collection fetches logs about it" do
+    show_collection(:foo_file, :active)
+    assert_includes(assigns(:logs).map(&:uuid),
+                    api_fixture('logs')['log4']['uuid'],
+                    "controller did not find related log")
   end
 
   test "viewing a collection with a reader token" do
     params = collection_params(:foo_file)
     params[:reader_tokens] =
       [api_fixture('api_client_authorizations')['active']['api_token']]
-    get(:show, params)
-    assert_response :success
+    show_collection(params)
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
     assert_no_session
   end
