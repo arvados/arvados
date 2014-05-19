@@ -4,6 +4,7 @@
 # --md5sum - display md5 of each file as read from disk
 
 import argparse
+import arvados
 import os
 import sys
 
@@ -117,11 +118,6 @@ if (not (args.batch_progress or args.no_progress)
     and os.isatty(sys.stderr.fileno())):
     args.progress = True
 
-
-import arvados
-import re
-import string
-
 class CollectionWriterWithProgress(arvados.CollectionWriter):
     def flush_data(self, *args, **kwargs):
         if not getattr(self, 'display_type', None):
@@ -201,7 +197,7 @@ if args.stream:
     print writer.manifest_text(),
 elif args.raw:
     writer.finish_current_stream()
-    print string.join(writer.data_locators(), ',')
+    print ','.join(writer.data_locators())
 else:
     # Register the resulting collection in Arvados.
     arvados.api().collections().create(
