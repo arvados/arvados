@@ -3,6 +3,8 @@ class CollectionsController < ApplicationController
   skip_before_filter :find_object_by_uuid, only: [:provenance, :show_file]
   skip_before_filter :check_user_agreements, only: [:show_file]
 
+  RELATION_LIMIT = 5
+
   def show_pane_list
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
@@ -113,6 +115,21 @@ class CollectionsController < ApplicationController
   def show
     return super if !@object
     if current_user
+      jobs_with = lambda do |conds|
+        Job.limit(RELATION_LIMIT).where(conds)
+          .results.sort_by { |j| j.finished_at || j.created_at }
+      end
+      @output_of = jobs_with.call(output: @object.uuid)
+      @log_of = jobs_with.call(log: @object.uuid)
+      folder_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        .where(head_uuid: @object.uuid, link_class: 'name').results
+      folder_hash = Group.where(uuid: folder_links.map(&:tail_uuid)).to_hash
+      @folders = folder_links.map { |link| folder_hash[link.tail_uuid] }
+      @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        .where(head_uuid: @object.uuid, link_class: 'permission',
+               name: 'can_read').results
+      @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+        .where(object_uuid: @object.uuid).results
       @is_persistent = Link.limit(1)
         .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
                link_class: 'resources', name: 'wants')
