@@ -29,25 +29,23 @@
 	<input type="text" class="form-control" placeholder="Search"/>
         -->
 	<div style="height:0.5em;"></div>
-        <% @logs[0..2].each do |log| %>
-	<p>
-	  <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
-          <% if log.object_uuid %>
-          <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
-          <% end %>
-	</p>
-        <% end %>
         <% if @logs.any? %>
-	<%= link_to raw('Show all activity &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
-            logs_path(filters: [['object_uuid','=',@object.uuid]].to_json),
-            class: 'btn btn-xs btn-default' %>
+          <%= render_arvados_object_list_start(@logs, 'Show all activity',
+                logs_path(filters: [['object_uuid','=',@object.uuid]].to_json)) do |log| %>
+          <p>
+  	  <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
+            <% if log.object_uuid %>
+            <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
+            <% end %>
+          </p>
+          <% end %>
         <% else %>
-        <p>
-          Created: <%= @object.created_at.to_s(:long) %>
-        </p>
-        <p>
-          Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
-        </p>
+          <p>
+            Created: <%= @object.created_at.to_s(:long) %>
+          </p>
+          <p>
+            Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
+          </p>
         <% end %>
       </div>
     </div>
