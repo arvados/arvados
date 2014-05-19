@@ -47,8 +47,11 @@ production:
 test:
   uuid_prefix: zzzzz
   secret_token: <%= rand(2**512).to_s(36) %>
-  permission_key: <%= rand(2**512).to_s(36) %>
 
 common:
   #git_repositories_dir: /var/cache/git
   #git_internal_dir: /var/cache/arvados/internal.git
+
+  # Amount of time (in seconds) for which a blob permission signature
+  # remains valid.  Default: 2 weeks (1209600 seconds)
+  #blob_signing_ttl: 1209600
