@@ -1,9 +1,23 @@
-/* Implements a buffer that is filled incrementally from a io.Reader and
-supports multiple readers on the buffer.
+/* Implements a buffer that supports concurrent incremental read and append.
+New readers start reading from the beginning of the buffer, block when reaching
+the end of the buffer, and are unblocked as new data is added.
 
 Usage:
 
-To
+Begin reading into a buffer with maximum size 'buffersize' from 'source':
+  tr := StartTransferFromReader(buffersize, source)
+
+To create a new reader (this can be called multiple times):
+  r := tr.MakeBufferReader()
+
+When you're done with the buffer:
+  tr.Close()
+
+
+Alternately, if you already have a filled buffer and just want to read out from it:
+  tr := StartTransferFromSlice(buf)
+  r := tr.MakeBufferReader()
+  tr.Close()
 
 */
 
