@@ -19,7 +19,9 @@ import (
 )
 
 // Gocheck boilerplate
-func Test(t *testing.T) { TestingT(t) }
+func Test(t *testing.T) {
+	TestingT(t)
+}
 
 // Gocheck boilerplate
 var _ = Suite(&ServerRequiredSuite{})
@@ -60,21 +62,22 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
 
 	kc, err := MakeKeepClient()
-	c.Assert(kc.ApiServer, Equals, "localhost:3001")
-	c.Assert(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	c.Assert(kc.ApiInsecure, Equals, false)
+	c.Check(kc.ApiServer, Equals, "localhost:3001")
+	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+	c.Check(kc.ApiInsecure, Equals, false)
 
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
 	kc, err = MakeKeepClient()
-	c.Assert(kc.ApiServer, Equals, "localhost:3001")
-	c.Assert(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	c.Assert(kc.ApiInsecure, Equals, true)
+	c.Check(kc.ApiServer, Equals, "localhost:3001")
+	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+	c.Check(kc.ApiInsecure, Equals, true)
+	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
 
 	c.Assert(err, Equals, nil)
-	c.Assert(len(kc.Service_roots), Equals, 2)
-	c.Assert(kc.Service_roots[0], Equals, "http://localhost:25107")
-	c.Assert(kc.Service_roots[1], Equals, "http://localhost:25108")
+	c.Check(len(kc.Service_roots), Equals, 2)
+	c.Check(kc.Service_roots[0], Equals, "http://localhost:25107")
+	c.Check(kc.Service_roots[1], Equals, "http://localhost:25108")
 }
 
 func (s *StandaloneSuite) TestShuffleServiceRoots(c *C) {
@@ -82,11 +85,11 @@ func (s *StandaloneSuite) TestShuffleServiceRoots(c *C) {
 
 	// "foo" acbd18db4cc2f85cedef654fccc4a4d8
 	foo_shuffle := []string{"http://localhost:25116", "http://localhost:25120", "http://localhost:25119", "http://localhost:25122", "http://localhost:25108", "http://localhost:25114", "http://localhost:25112", "http://localhost:25107", "http://localhost:25118", "http://localhost:25111", "http://localhost:25113", "http://localhost:25121", "http://localhost:25110", "http://localhost:25117", "http://localhost:25109", "http://localhost:25115", "http://localhost:25123"}
-	c.Check(kc.ShuffledServiceRoots("acbd18db4cc2f85cedef654fccc4a4d8"), DeepEquals, foo_shuffle)
+	c.Check(kc.shuffledServiceRoots("acbd18db4cc2f85cedef654fccc4a4d8"), DeepEquals, foo_shuffle)
 
 	// "bar" 37b51d194a7513e45b56f6524f2d51f2
 	bar_shuffle := []string{"http://localhost:25108", "http://localhost:25112", "http://localhost:25119", "http://localhost:25107", "http://localhost:25110", "http://localhost:25116", "http://localhost:25122", "http://localhost:25120", "http://localhost:25121", "http://localhost:25117", "http://localhost:25111", "http://localhost:25123", "http://localhost:25118", "http://localhost:25113", "http://localhost:25114", "http://localhost:25115", "http://localhost:25109"}
-	c.Check(kc.ShuffledServiceRoots("37b51d194a7513e45b56f6524f2d51f2"), DeepEquals, bar_shuffle)
+	c.Check(kc.shuffledServiceRoots("37b51d194a7513e45b56f6524f2d51f2"), DeepEquals, bar_shuffle)
 }
 
 type StubPutHandler struct {
@@ -123,7 +126,7 @@ func RunBogusKeepServer(st http.Handler, port int) (listener net.Listener, url s
 }
 
 func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
-	io.ReadCloser, io.WriteCloser, chan UploadStatus)) {
+	io.ReadCloser, io.WriteCloser, chan uploadStatus)) {
 
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
@@ -132,7 +135,7 @@ func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
 	kc.ApiToken = "abc123"
 
 	reader, writer := io.Pipe()
-	upload_status := make(chan UploadStatus)
+	upload_status := make(chan uploadStatus)
 
 	f(kc, url, reader, writer, upload_status)
 }
@@ -147,7 +150,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 
 	UploadToStubHelper(c, st,
 		func(kc KeepClient, url string, reader io.ReadCloser,
-			writer io.WriteCloser, upload_status chan UploadStatus) {
+			writer io.WriteCloser, upload_status chan uploadStatus) {
 
 			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")))
 
@@ -156,7 +159,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 
 			<-st.handled
 			status := <-upload_status
-			c.Check(status, DeepEquals, UploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200})
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200})
 		})
 }
 
@@ -170,34 +173,23 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 
 	UploadToStubHelper(c, st,
 		func(kc KeepClient, url string, reader io.ReadCloser,
-			writer io.WriteCloser, upload_status chan UploadStatus) {
+			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			// Buffer for reads from 'r'
-			buf := make([]byte, 512)
+			tr := buffer.StartTransferFromReader(512, reader)
+			defer tr.Close()
 
-			// Read requests on Transfer() buffer
-			requests := make(chan buffer.ReadRequest)
-			defer close(requests)
-
-			// Reporting reader error states
-			reader_status := make(chan error)
-
-			go buffer.Transfer(buf, reader, requests, reader_status)
-
-			br1 := buffer.MakeBufferReader(requests)
+			br1 := tr.MakeBufferReader()
 
 			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3)
 
 			writer.Write([]byte("foo"))
 			writer.Close()
 
-			<-reader_status
+			<-tr.Reader_status
 			<-st.handled
 
 			status := <-upload_status
-			c.Check(status, DeepEquals, UploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200})
-
-			//c.Check(true, Equals, false)
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200})
 		})
 }
 
@@ -206,7 +198,7 @@ type FailHandler struct {
 }
 
 func (this FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	resp.WriteHeader(400)
+	resp.WriteHeader(500)
 	this.handled <- fmt.Sprintf("http://%s", req.Host)
 }
 
@@ -218,7 +210,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 
 	UploadToStubHelper(c, st,
 		func(kc KeepClient, url string, reader io.ReadCloser,
-			writer io.WriteCloser, upload_status chan UploadStatus) {
+			writer io.WriteCloser, upload_status chan uploadStatus) {
 
 			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3)
 
@@ -229,7 +221,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 
 			status := <-upload_status
 			c.Check(status.Url, Equals, fmt.Sprintf("%s/%s", url, hash))
-			c.Check(status.StatusCode, Equals, 400)
+			c.Check(status.StatusCode, Equals, 500)
 		})
 
 }
@@ -279,10 +271,14 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 
 	kc.PutB([]byte("foo"))
 
-	shuff := kc.ShuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
 
-	c.Check(<-st.handled, Equals, shuff[0])
-	c.Check(<-st.handled, Equals, shuff[1])
+	s1 := <-st.handled
+	s2 := <-st.handled
+	c.Check((s1 == shuff[0] && s2 == shuff[1]) ||
+		(s1 == shuff[1] && s2 == shuff[0]),
+		Equals,
+		true)
 }
 
 func (s *StandaloneSuite) TestPutHR(c *C) {
@@ -321,7 +317,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	kc.PutHR(hash, reader, 3)
 
-	shuff := kc.ShuffledServiceRoots(hash)
+	shuff := kc.shuffledServiceRoots(hash)
 	log.Print(shuff)
 
 	s1 := <-st.handled
@@ -368,7 +364,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	sort.Strings(kc.Service_roots)
 
-	shuff := kc.ShuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
 
 	phash, replicas, err := kc.PutB([]byte("foo"))
 
@@ -416,7 +412,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	sort.Strings(kc.Service_roots)
 
-	shuff := kc.ShuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
+	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
@@ -483,6 +479,43 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)
+}
+
+type BarHandler struct {
+	handled chan string
+}
+
+func (this BarHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.Write([]byte("bar"))
+	this.handled <- fmt.Sprintf("http://%s", req.Host)
+}
+
+func (s *StandaloneSuite) TestChecksum(c *C) {
+	foohash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	barhash := fmt.Sprintf("%x", md5.Sum([]byte("bar")))
+
+	st := BarHandler{make(chan string, 1)}
+
+	listener, url := RunBogusKeepServer(st, 2990)
+	defer listener.Close()
+
+	kc, _ := MakeKeepClient()
+	kc.ApiToken = "abc123"
+	kc.Service_roots = []string{url}
+
+	r, n, _, err := kc.Get(barhash)
+	_, err = ioutil.ReadAll(r)
+	c.Check(n, Equals, int64(3))
+	c.Check(err, Equals, nil)
+
+	<-st.handled
+
+	r, n, _, err = kc.Get(foohash)
+	_, err = ioutil.ReadAll(r)
+	c.Check(n, Equals, int64(3))
+	c.Check(err, Equals, BadChecksum)
+
+	<-st.handled
 }
 
 func (s *StandaloneSuite) TestGetWithFailures(c *C) {

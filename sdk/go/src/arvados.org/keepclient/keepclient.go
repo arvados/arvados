@@ -1,19 +1,16 @@
+/* Provides low-level Get/Put primitives for accessing Arvados Keep blocks. */
 package keepclient
 
 import (
 	"arvados.org/buffer"
 	"crypto/md5"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
-	"sort"
-	"strconv"
 )
 
 // A Keep "block" is 64MB.
@@ -21,7 +18,9 @@ const BLOCKSIZE = 64 * 1024 * 1024
 
 var BlockNotFound = errors.New("Block not found")
 var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
+var OversizeBlockError = errors.New("Block too big")
 
+// Information about Arvados and Keep servers.
 type KeepClient struct {
 	ApiServer     string
 	ApiToken      string
@@ -31,277 +30,78 @@ type KeepClient struct {
 	Client        *http.Client
 }
 
-type KeepDisk struct {
-	Hostname string `json:"service_host"`
-	Port     int    `json:"service_port"`
-	SSL      bool   `json:"service_ssl_flag"`
-}
-
+// Create a new KeepClient, initialized with standard Arvados environment
+// variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
+// ARVADOS_API_HOST_INSECURE.  This will contact the API server to discover
+// Keep servers.
 func MakeKeepClient() (kc KeepClient, err error) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: kc.ApiInsecure},
-	}
+	insecure := (os.Getenv("ARVADOS_API_HOST_INSECURE") != "")
 
 	kc = KeepClient{
 		ApiServer:     os.Getenv("ARVADOS_API_HOST"),
 		ApiToken:      os.Getenv("ARVADOS_API_TOKEN"),
-		ApiInsecure:   (os.Getenv("ARVADOS_API_HOST_INSECURE") != ""),
+		ApiInsecure:   insecure,
 		Want_replicas: 2,
-		Client:        &http.Client{Transport: tr}}
+		Client: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure},
+		}}}
 
-	err = (&kc).DiscoverKeepServers()
+	err = (&kc).discoverKeepServers()
 
 	return kc, err
 }
 
-func (this *KeepClient) DiscoverKeepServers() error {
-	// Construct request of keep disk list
-	var req *http.Request
-	var err error
-	if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_disks", this.ApiServer), nil); err != nil {
-		return err
-	}
-
-	// Add api token header
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
-
-	// Make the request
-	var resp *http.Response
-	if resp, err = this.Client.Do(req); err != nil {
-		return err
-	}
-
-	type SvcList struct {
-		Items []KeepDisk `json:"items"`
-	}
-
-	// Decode json reply
-	dec := json.NewDecoder(resp.Body)
-	var m SvcList
-	if err := dec.Decode(&m); err != nil {
-		return err
-	}
-
-	listed := make(map[string]bool)
-	this.Service_roots = make([]string, 0, len(m.Items))
-
-	for _, element := range m.Items {
-		n := ""
-		if element.SSL {
-			n = "s"
-		}
-
-		// Construct server URL
-		url := fmt.Sprintf("http%s://%s:%d", n, element.Hostname, element.Port)
-
-		// Skip duplicates
-		if !listed[url] {
-			listed[url] = true
-			this.Service_roots = append(this.Service_roots, url)
-		}
-	}
-
-	// Must be sorted for ShuffledServiceRoots() to produce consistent
-	// results.
-	sort.Strings(this.Service_roots)
-
-	return nil
-}
-
-func (this KeepClient) ShuffledServiceRoots(hash string) (pseq []string) {
-	// Build an ordering with which to query the Keep servers based on the
-	// contents of the hash.  "hash" is a hex-encoded number at least 8
-	// digits (32 bits) long
-
-	// seed used to calculate the next keep server from 'pool' to be added
-	// to 'pseq'
-	seed := hash
-
-	// Keep servers still to be added to the ordering
-	pool := make([]string, len(this.Service_roots))
-	copy(pool, this.Service_roots)
-
-	// output probe sequence
-	pseq = make([]string, 0, len(this.Service_roots))
-
-	// iterate while there are servers left to be assigned
-	for len(pool) > 0 {
-
-		if len(seed) < 8 {
-			// ran out of digits in the seed
-			if len(pseq) < (len(hash) / 4) {
-				// the number of servers added to the probe
-				// sequence is less than the number of 4-digit
-				// slices in 'hash' so refill the seed with the
-				// last 4 digits.
-				seed = hash[len(hash)-4:]
-			}
-			seed += hash
-		}
-
-		// Take the next 8 digits (32 bytes) and interpret as an integer,
-		// then modulus with the size of the remaining pool to get the next
-		// selected server.
-		probe, _ := strconv.ParseUint(seed[0:8], 16, 32)
-		probe %= uint64(len(pool))
-
-		// Append the selected server to the probe sequence and remove it
-		// from the pool.
-		pseq = append(pseq, pool[probe])
-		pool = append(pool[:probe], pool[probe+1:]...)
-
-		// Remove the digits just used from the seed
-		seed = seed[8:]
-	}
-	return pseq
-}
-
-type UploadStatus struct {
-	Err        error
-	Url        string
-	StatusCode int
-}
-
-func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
-	upload_status chan<- UploadStatus, expectedLength int64) {
-
-	log.Printf("Uploading to %s", host)
-
-	var req *http.Request
-	var err error
-	var url = fmt.Sprintf("%s/%s", host, hash)
-	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		upload_status <- UploadStatus{err, url, 0}
-		return
-	}
-
-	if expectedLength > 0 {
-		req.ContentLength = expectedLength
-	}
-
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
-	req.Header.Add("Content-Type", "application/octet-stream")
-	req.Body = body
-
-	var resp *http.Response
-	if resp, err = this.Client.Do(req); err != nil {
-		upload_status <- UploadStatus{err, url, 0}
-		return
-	}
-
-	if resp.StatusCode == http.StatusOK {
-		upload_status <- UploadStatus{nil, url, resp.StatusCode}
-	} else {
-		upload_status <- UploadStatus{errors.New(resp.Status), url, resp.StatusCode}
-	}
-}
-
-func (this KeepClient) putReplicas(
-	hash string,
-	requests chan buffer.ReadRequest,
-	reader_status chan error,
-	expectedLength int64) (replicas int, err error) {
-
-	// Calculate the ordering for uploading to servers
-	sv := this.ShuffledServiceRoots(hash)
-
-	// The next server to try contacting
-	next_server := 0
-
-	// The number of active writers
-	active := 0
-
-	// Used to communicate status from the upload goroutines
-	upload_status := make(chan UploadStatus)
-	defer close(upload_status)
-
-	// Desired number of replicas
-	remaining_replicas := this.Want_replicas
-
-	for remaining_replicas > 0 {
-		for active < remaining_replicas {
-			// Start some upload requests
-			if next_server < len(sv) {
-				go this.uploadToKeepServer(sv[next_server], hash, buffer.MakeBufferReader(requests), upload_status, expectedLength)
-				next_server += 1
-				active += 1
-			} else {
-				return (this.Want_replicas - remaining_replicas), InsufficientReplicasError
-			}
-		}
-
-		// Now wait for something to happen.
-		select {
-		case status := <-reader_status:
-			if status == io.EOF {
-				// good news!
-			} else {
-				// bad news
-				return (this.Want_replicas - remaining_replicas), status
-			}
-		case status := <-upload_status:
-			if status.StatusCode == 200 {
-				// good news!
-				remaining_replicas -= 1
-			} else {
-				// writing to keep server failed for some reason
-				log.Printf("Keep server put to %v failed with '%v'",
-					status.Url, status.Err)
-			}
-			active -= 1
-			log.Printf("Upload status %v %v %v", status.StatusCode, remaining_replicas, active)
-		}
-	}
-
-	return (this.Want_replicas - remaining_replicas), nil
-}
-
-var OversizeBlockError = errors.New("Block too big")
-
+// Put a block given the block hash, a reader with the block data, and the
+// expected length of that data.  The desired number of replicas is given in
+// KeepClient.Want_replicas.  Returns the number of replicas that were written
+// and if there was an error.  Note this will return InsufficientReplias
+// whenever 0 <= replicas < this.Wants_replicas.
 func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (replicas int, err error) {
 
 	// Buffer for reads from 'r'
-	var buf []byte
+	var bufsize int
 	if expectedLength > 0 {
 		if expectedLength > BLOCKSIZE {
 			return 0, OversizeBlockError
 		}
-		buf = make([]byte, expectedLength)
+		bufsize = int(expectedLength)
 	} else {
-		buf = make([]byte, BLOCKSIZE)
+		bufsize = BLOCKSIZE
 	}
 
-	// Read requests on Transfer() buffer
-	requests := make(chan buffer.ReadRequest)
-	defer close(requests)
+	t := buffer.StartTransferFromReader(bufsize, HashCheckingReader{r, md5.New(), hash})
+	defer t.Close()
 
-	// Reporting reader error states
-	reader_status := make(chan error)
-	defer close(reader_status)
-
-	// Start the transfer goroutine
-	go buffer.Transfer(buf, r, requests, reader_status)
-
-	return this.putReplicas(hash, requests, reader_status, expectedLength)
+	return this.putReplicas(hash, t, expectedLength)
 }
 
+// Put a block given the block hash and a byte buffer.  The desired number of
+// replicas is given in KeepClient.Want_replicas.  Returns the number of
+// replicas that were written and if there was an error.  Note this will return
+// InsufficientReplias whenever 0 <= replicas < this.Wants_replicas.
 func (this KeepClient) PutHB(hash string, buf []byte) (replicas int, err error) {
-	// Read requests on Transfer() buffer
-	requests := make(chan buffer.ReadRequest)
-	defer close(requests)
+	t := buffer.StartTransferFromSlice(buf)
+	defer t.Close()
 
-	// Start the transfer goroutine
-	go buffer.Transfer(buf, nil, requests, nil)
-
-	return this.putReplicas(hash, requests, nil, int64(len(buf)))
+	return this.putReplicas(hash, t, int64(len(buf)))
 }
 
+// Put a block given a buffer.  The hash will be computed.  The desired number
+// of replicas is given in KeepClient.Want_replicas.  Returns the number of
+// replicas that were written and if there was an error.  Note this will return
+// InsufficientReplias whenever 0 <= replicas < this.Wants_replicas.
 func (this KeepClient) PutB(buffer []byte) (hash string, replicas int, err error) {
 	hash = fmt.Sprintf("%x", md5.Sum(buffer))
 	replicas, err = this.PutHB(hash, buffer)
 	return hash, replicas, err
 }
 
+// Put a block, given a Reader.  This will read the entire reader into a buffer
+// to computed the hash.  The desired number of replicas is given in
+// KeepClient.Want_replicas.  Returns the number of replicas that were written
+// and if there was an error.  Note this will return InsufficientReplias
+// whenever 0 <= replicas < this.Wants_replicas.  Also nhote that if the block
+// hash and data size are available, PutHR() is more efficient.
 func (this KeepClient) PutR(r io.Reader) (hash string, replicas int, err error) {
 	if buffer, err := ioutil.ReadAll(r); err != nil {
 		return "", 0, err
@@ -310,18 +110,27 @@ func (this KeepClient) PutR(r io.Reader) (hash string, replicas int, err error) 
 	}
 }
 
+// Get a block given a hash.  Return a reader, the expected data length, the
+// URL the block was fetched from, and if there was an error.  If the block
+// checksum does not match, the final Read() on the reader returned by this
+// method will return a BadChecksum error instead of EOF.
 func (this KeepClient) Get(hash string) (reader io.ReadCloser,
 	contentLength int64, url string, err error) {
 	return this.AuthorizedGet(hash, "", "")
 }
 
+// Get a block given a hash, with additional authorization provided by
+// signature and timestamp.  Return a reader, the expected data length, the URL
+// the block was fetched from, and if there was an error.  If the block
+// checksum does not match, the final Read() on the reader returned by this
+// method will return a BadChecksum error instead of EOF.
 func (this KeepClient) AuthorizedGet(hash string,
 	signature string,
 	timestamp string) (reader io.ReadCloser,
 	contentLength int64, url string, err error) {
 
 	// Calculate the ordering for asking servers
-	sv := this.ShuffledServiceRoots(hash)
+	sv := this.shuffledServiceRoots(hash)
 
 	for _, host := range sv {
 		var req *http.Request
@@ -345,21 +154,25 @@ func (this KeepClient) AuthorizedGet(hash string,
 		}
 
 		if resp.StatusCode == http.StatusOK {
-			return resp.Body, resp.ContentLength, url, nil
+			return HashCheckingReader{resp.Body, md5.New(), hash}, resp.ContentLength, url, nil
 		}
 	}
 
 	return nil, 0, "", BlockNotFound
 }
 
+// Determine if a block with the given hash is available and readable, but does
+// not return the block contents.
 func (this KeepClient) Ask(hash string) (contentLength int64, url string, err error) {
 	return this.AuthorizedAsk(hash, "", "")
 }
 
+// Determine if a block with the given hash is available and readable with the
+// given signature and timestamp, but does not return the block contents.
 func (this KeepClient) AuthorizedAsk(hash string, signature string,
 	timestamp string) (contentLength int64, url string, err error) {
 	// Calculate the ordering for asking servers
-	sv := this.ShuffledServiceRoots(hash)
+	sv := this.shuffledServiceRoots(hash)
 
 	for _, host := range sv {
 		var req *http.Request

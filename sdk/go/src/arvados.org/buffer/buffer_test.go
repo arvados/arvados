@@ -19,9 +19,9 @@ func ReadIntoBufferHelper(c *C, bufsize int) {
 	buffer := make([]byte, bufsize)
 
 	reader, writer := io.Pipe()
-	slices := make(chan ReaderSlice)
+	slices := make(chan readerSlice)
 
-	go ReadIntoBuffer(buffer, reader, slices)
+	go readIntoBuffer(buffer, reader, slices)
 
 	{
 		out := make([]byte, 128)
@@ -82,9 +82,9 @@ func (s *StandaloneSuite) TestReadIntoBuffer(c *C) {
 func (s *StandaloneSuite) TestReadIntoShortBuffer(c *C) {
 	buffer := make([]byte, 223)
 	reader, writer := io.Pipe()
-	slices := make(chan ReaderSlice)
+	slices := make(chan readerSlice)
 
-	go ReadIntoBuffer(buffer, reader, slices)
+	go readIntoBuffer(buffer, reader, slices)
 
 	{
 		out := make([]byte, 128)
@@ -144,19 +144,9 @@ func (s *StandaloneSuite) TestReadIntoShortBuffer(c *C) {
 func (s *StandaloneSuite) TestTransfer(c *C) {
 	reader, writer := io.Pipe()
 
-	// Buffer for reads from 'r'
-	buffer := make([]byte, 512)
+	tr := StartTransferFromReader(512, reader)
 
-	// Read requests on Transfer() buffer
-	requests := make(chan ReadRequest)
-	defer close(requests)
-
-	// Reporting reader error states
-	reader_status := make(chan error)
-
-	go Transfer(buffer, reader, requests, reader_status)
-
-	br1 := MakeBufferReader(requests)
+	br1 := tr.MakeBufferReader()
 	out := make([]byte, 128)
 
 	{
@@ -220,7 +210,7 @@ func (s *StandaloneSuite) TestTransfer(c *C) {
 		}
 	}
 
-	br2 := MakeBufferReader(requests)
+	br2 := tr.MakeBufferReader()
 	{
 		// Test 'catch up' reader
 		in := make([]byte, 256)
@@ -237,7 +227,7 @@ func (s *StandaloneSuite) TestTransfer(c *C) {
 	{
 		// Test closing the reader
 		writer.Close()
-		status := <-reader_status
+		status := <-tr.Reader_status
 		c.Check(status, Equals, io.EOF)
 
 		in := make([]byte, 256)
@@ -251,7 +241,7 @@ func (s *StandaloneSuite) TestTransfer(c *C) {
 
 	{
 		// Test 'catch up' reader after closing
-		br3 := MakeBufferReader(requests)
+		br3 := tr.MakeBufferReader()
 		in := make([]byte, 256)
 		n, err := br3.Read(in)
 
@@ -276,13 +266,13 @@ func (s *StandaloneSuite) TestTransferShortBuffer(c *C) {
 	buffer := make([]byte, 100)
 
 	// Read requests on Transfer() buffer
-	requests := make(chan ReadRequest)
+	requests := make(chan readRequest)
 	defer close(requests)
 
 	// Reporting reader error states
 	reader_status := make(chan error)
 
-	go Transfer(buffer, reader, requests, reader_status)
+	go transfer(buffer, reader, requests, reader_status)
 
 	out := make([]byte, 101)
 	go writer.Write(out)
@@ -298,13 +288,9 @@ func (s *StandaloneSuite) TestTransferFromBuffer(c *C) {
 		buffer[i] = byte(i)
 	}
 
-	// Read requests on Transfer() buffer
-	requests := make(chan ReadRequest)
-	defer close(requests)
+	tr := StartTransferFromSlice(buffer)
 
-	go Transfer(buffer, nil, requests, nil)
-
-	br1 := MakeBufferReader(requests)
+	br1 := tr.MakeBufferReader()
 
 	in := make([]byte, 64)
 	{
@@ -342,13 +328,9 @@ func (s *StandaloneSuite) TestTransferIoCopy(c *C) {
 		buffer[i] = byte(i)
 	}
 
-	// Read requests on Transfer() buffer
-	requests := make(chan ReadRequest)
-	defer close(requests)
+	tr := StartTransferFromSlice(buffer)
 
-	go Transfer(buffer, nil, requests, nil)
-
-	br1 := MakeBufferReader(requests)
+	br1 := tr.MakeBufferReader()
 
 	reader, writer := io.Pipe()
 
