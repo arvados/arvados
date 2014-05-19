@@ -28,7 +28,10 @@ module HasUuid
 
   def assign_uuid
     return true if !self.respond_to_uuid?
-    return true if uuid and current_user and current_user.is_admin
+    if (uuid.is_a?(String) and uuid.length>0 and
+        current_user and current_user.is_admin)
+      return true
+    end
     self.uuid = self.class.generate_uuid
   end
 
