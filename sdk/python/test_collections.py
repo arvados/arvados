@@ -4,6 +4,7 @@
 
 import arvados
 import bz2
+import errno
 import os
 import shutil
 import subprocess
@@ -12,12 +13,18 @@ import tempfile
 import unittest
 
 class ArvadosCollectionsTest(unittest.TestCase):
+    def _make_tmpdir(self):
+        self._tempdirs.append(tempfile.mkdtemp())
+        return self._tempdirs[-1]
+
     def setUp(self):
         self._orig_keep_local_store = os.environ.get('KEEP_LOCAL_STORE')
-        os.environ['KEEP_LOCAL_STORE'] = tempfile.mkdtemp()
+        self._tempdirs = []
+        os.environ['KEEP_LOCAL_STORE'] = self._make_tmpdir()
 
     def tearDown(self):
-        shutil.rmtree(os.environ['KEEP_LOCAL_STORE'], ignore_errors=True)
+        for workdir in self._tempdirs:
+            shutil.rmtree(workdir, ignore_errors=True)
         if self._orig_keep_local_store is None:
             del os.environ['KEEP_LOCAL_STORE']
         else:
@@ -458,6 +465,52 @@ class ArvadosCollectionsTest(unittest.TestCase):
                          ". 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md7sum.txt\n")
         self.assertEqual(arvados.CollectionReader(m1).all_streams()[0].files()['md9sum.txt'].as_manifest(),
                          ". 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt\n")
+
+    def build_directory_tree(self, tree=['basefile', 'subdir/subfile']):
+        tree_root = self._make_tmpdir()
+        for leaf in tree:
+            path = os.path.join(tree_root, leaf)
+            try:
+                os.makedirs(os.path.dirname(path))
+            except OSError as error:
+                if error.errno != errno.EEXIST:
+                    raise
+            with open(path, 'w') as tmpfile:
+                tmpfile.write(leaf)
+        return tree_root
+
+    def test_write_directory_tree(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(self.build_directory_tree())
+        self.assertEqual(cwriter.manifest_text(),
+                         """. c5110c5ac93202d8e0f9e381f22bac0f+8 0:8:basefile
+./subdir 1ca4dec89403084bf282ad31e6cf7972+14 0:14:subfile\n""")
+
+    def test_write_named_directory_tree(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(self.build_directory_tree(), 'root')
+        self.assertEqual(
+            cwriter.manifest_text(),
+            """./root c5110c5ac93202d8e0f9e381f22bac0f+8 0:8:basefile
+./root/subdir 1ca4dec89403084bf282ad31e6cf7972+14 0:14:subfile\n""")
+
+    def test_write_directory_tree_in_one_stream(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(self.build_directory_tree(),
+                                     max_manifest_depth=0)
+        self.assertEqual(cwriter.manifest_text(),
+                         """. 4ace875ffdc6824a04950f06858f4465+22 0:8:basefile
+./subdir 4ace875ffdc6824a04950f06858f4465+22 8:14:subfile\n""")
+
+    def test_write_directory_tree_with_limited_recursion(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(
+            self.build_directory_tree(['f1', 'd1/f2', 'd1/d2/f3']),
+            max_manifest_depth=1)
+        self.assertEqual(cwriter.manifest_text(),
+                         """. bd19836ddb62c11c55ab251ccaca5645+2 0:2:f1
+./d1 50170217e5b04312024aa5cd42934494+13 8:5:f2
+./d1/d2 50170217e5b04312024aa5cd42934494+13 0:8:f3\n""")
 
 
 if __name__ == '__main__':
