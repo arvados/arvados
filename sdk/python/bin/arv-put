@@ -185,13 +185,7 @@ for path in args.paths:
                                     max_manifest_depth=args.max_manifest_depth)
     else:
         writer.start_new_stream()
-        writer.start_new_file(args.filename or os.path.split(path)[1])
-        with open(path, 'rb') as f:
-            while True:
-                buf = f.read(2**26)
-                if len(buf) == 0:
-                    break
-                writer.write(buf)
+        writer.write_file(path, args.filename or os.path.basename(path))
 
 if args.stream:
     print writer.manifest_text(),
