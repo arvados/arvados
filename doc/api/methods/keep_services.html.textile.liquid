@@ -12,6 +12,15 @@ API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/keep_services
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
+h2. accessable
+
+Get a list of keep services that are accessable to the requesting client.  This
+is context-sensitive, for example providing the list of actual Keep servers
+when inside the cluster, but providing a proxy service if client contacts
+Arvados from outside the cluster.
+
+Takes no arguments.
+
 h2. create
 
 Create a new KeepService.
