@@ -29,6 +29,7 @@ class CreateKeepServices < ActiveRecord::Migration
           service_host: k[:service_host],
           service_port: k[:service_port],
           service_ssl_flag: k[:service_ssl_flag],
+          service_type: 'disk',
           owner_uuid: k[:owner_uuid]
         }
       end

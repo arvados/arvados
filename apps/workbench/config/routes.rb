@@ -2,6 +2,7 @@ ArvadosWorkbench::Application.routes.draw do
   themes_for_rails
 
   resources :keep_disks
+  resources :keep_services
   resources :user_agreements do
     put 'sign', on: :collection
     get 'signatures', on: :collection

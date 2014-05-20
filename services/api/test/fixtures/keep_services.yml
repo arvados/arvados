@@ -4,6 +4,7 @@ keep0:
   service_host: keep0.qr1hi.arvadosapi.com
   service_port: 25107
   service_ssl_flag: false
+  service_type: disk
 
 keep1:
   uuid: zzzzz-bi6l4-rsnj3c76ndxb7o0
@@ -11,3 +12,4 @@ keep1:
   service_host: keep1.qr1hi.arvadosapi.com
   service_port: 25107
   service_ssl_flag: false
+  service_type: disk

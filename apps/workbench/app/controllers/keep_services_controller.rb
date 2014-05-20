@@ -1,0 +1,2 @@
+class KeepServicesController < ApplicationController
+end
