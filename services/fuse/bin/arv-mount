@@ -82,7 +82,7 @@ collections on the server.""")
             llfuse.init(operations, args.mountpoint, opts)
             llfuse.main()
         else:
+            # Initialize the fuse connection
+            llfuse.init(operations, args.mountpoint, opts)
             with daemon.DaemonContext():
-                # Initialize the fuse connection
-                llfuse.init(operations, args.mountpoint, opts)
                 llfuse.main()

@@ -3,7 +3,6 @@ jQuery(function($){
         var toggle_group = $(this).parents('[data-remote-href]').first();
         var want_persist = !toggle_group.find('button').hasClass('active');
         var want_state = want_persist ? 'persistent' : 'cache';
-        console.log(want_persist);
         toggle_group.find('button').
             toggleClass('active', want_persist).
             html(want_persist ? 'Persistent' : 'Cache');

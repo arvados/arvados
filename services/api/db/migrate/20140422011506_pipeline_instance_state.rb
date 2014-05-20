@@ -10,6 +10,8 @@ class PipelineInstanceState < ActiveRecord::Migration
       add_column :pipeline_instances, :components_summary, :text
     end
 
+    PipelineInstance.reset_column_information
+
     act_as_system_user do
       PipelineInstance.all.each do |pi|
         pi.state = PipelineInstance::New
