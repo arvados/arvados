@@ -1,7 +1,13 @@
 class KeepService < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
 
+  api_accessible :user, extend: :common do |t|
+    t.add  :service_host
+    t.add  :service_port
+    t.add  :service_ssl_flag
+    t.add  :service_type
+  end
 
 end

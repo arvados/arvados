@@ -17,6 +17,7 @@ class KeepDisk < ArvadosModel
     t.add :service_host
     t.add :service_port
     t.add :service_ssl_flag
+    t.add :keep_service_uuid
   end
   api_accessible :superuser, :extend => :user do |t|
     t.add :ping_secret
@@ -47,6 +48,24 @@ class KeepDisk < ArvadosModel
                               :last_write_at
                              ].collect(&:to_s).index k
                            }.merge(last_ping_at: Time.now))
+  end
+
+  def service_host
+    KeepService.where(uuid: self.keep_service_uuid) do |k|
+      return k.service_host
+    end
+  end
+
+  def service_port
+    KeepService.where(uuid: self.keep_service_uuid) do |k|
+      return k.service_port
+    end
+  end
+
+  def service_ssl_flag
+    KeepService.where(uuid: self.keep_service_uuid) do |k|
+      return k.service_ssl_flag
+    end
   end
 
   protected
