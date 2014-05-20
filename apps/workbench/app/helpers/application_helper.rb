@@ -283,4 +283,16 @@ module ApplicationHelper
 
     lt
   end
+
+  def render_arvados_object_list_start(list, button_text, button_href,
+                                       params={}, *rest, &block)
+    show_max = params.delete(:show_max) || 3
+    params[:class] ||= 'btn btn-xs btn-default'
+    list[0...show_max].each { |item| yield item }
+    unless list[show_max].nil?
+      link_to(h(button_text) +
+              raw(' &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
+              button_href, params, *rest)
+    end
+  end
 end
