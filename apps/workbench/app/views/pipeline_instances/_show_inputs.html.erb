@@ -1,0 +1,43 @@
+<% n_inputs = 0 %>
+
+<% content_for :pi_input_form do %>
+<form role="form">
+  <div class="form-group">
+    <% @object.components.each do |cname, component| %>
+      <% next if !component %>
+      <% component[:script_parameters].andand.each do |pname, pvalue_spec| %>
+        <% if pvalue_spec.is_a? Hash %>
+          <% if (pvalue_spec[:description] or
+                 (pvalue_spec[:required] and not pvalue_spec[:value])) %>
+            <% n_inputs += 1 %>
+            <label for="<% "#{cname}-#{pname}" %>"><%= pname.to_s.humanize %> for <%= cname %> component:</label>
+            <div>
+              <p class="form-control-static">
+                <%= render_pipeline_component_attribute @object, :components, [cname, :script_parameters, pname.to_sym], pvalue_spec %>
+              </p>
+            </div>
+            <p class="help-block">
+              <%= pvalue_spec[:description] %>
+            </p>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+</form>
+<% end %>
+
+<% if n_inputs == 0 %>
+  <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button.</p>
+<% else %>
+  <p>Please choose values for the following <%= n_inputs > 1 ? 'inputs' : 'input' %> before starting the pipeline.</p>
+  <%= content_for :pi_input_form %>
+
+  <%= form_tag @object, :method => :put do |f| %>
+    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'RunningOnServer' %>
+    <%= button_tag({class: 'btn btn-primary run-pipeline-button'}) do %>
+     Run <i class="fa fa-fw fa-play"></i>
+    <% end %>
+  <% end %>
+
+<% end %>

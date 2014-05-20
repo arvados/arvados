@@ -267,7 +267,7 @@ module ApplicationHelper
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       "data-showbuttons" => "false",
       "data-value" => attrvalue,
-      :class => "editable #{'required' if required}",
+      :class => "editable #{'required' if required} form-control",
       :id => id
     }.merge(htmloptions)
 

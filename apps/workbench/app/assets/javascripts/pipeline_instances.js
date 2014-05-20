@@ -2,10 +2,10 @@
     var run_pipeline_button_state = function() {
         var a = $('a.editable.required.editable-empty');
         if (a.length > 0) {
-            $("#run-pipeline-button").addClass("disabled");
+            $(".run-pipeline-button").addClass("disabled");
         }
         else {
-            $("#run-pipeline-button").removeClass("disabled");
+            $(".run-pipeline-button").removeClass("disabled");
         }
     }
 
