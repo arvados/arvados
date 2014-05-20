@@ -290,7 +290,7 @@ module ApplicationHelper
     params[:class] ||= 'btn btn-xs btn-default'
     list[0...show_max].each { |item| yield item }
     unless list[show_max].nil?
-      link_to(button_text +
+      link_to(h(button_text) +
               raw(' &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
               button_href, params, *rest)
     end
