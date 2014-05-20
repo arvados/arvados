@@ -2,16 +2,26 @@
 #
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
 
-import unittest
 import arvados
-import os
 import bz2
-import sys
+import os
+import shutil
 import subprocess
+import sys
+import tempfile
+import unittest
 
 class ArvadosCollectionsTest(unittest.TestCase):
     def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
+        self._orig_keep_local_store = os.environ.get('KEEP_LOCAL_STORE')
+        os.environ['KEEP_LOCAL_STORE'] = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(os.environ['KEEP_LOCAL_STORE'], ignore_errors=True)
+        if self._orig_keep_local_store is None:
+            del os.environ['KEEP_LOCAL_STORE']
+        else:
+            os.environ['KEEP_LOCAL_STORE'] = self._orig_keep_local_store
 
     def write_foo_bar_baz(self):
         cw = arvados.CollectionWriter()
