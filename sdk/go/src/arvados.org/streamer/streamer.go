@@ -39,7 +39,7 @@ type StreamReader struct {
 	responses chan readResult
 }
 
-func AsyncReaderStream(buffersize int, source io.Reader) *AsyncStream {
+func AsyncStreamFromReader(buffersize int, source io.Reader) *AsyncStream {
 	buf := make([]byte, buffersize)
 
 	t := &AsyncStream{make(chan readRequest), make(chan error)}
@@ -49,7 +49,7 @@ func AsyncReaderStream(buffersize int, source io.Reader) *AsyncStream {
 	return t
 }
 
-func AsyncSliceStream(buf []byte) *AsyncStream {
+func AsyncStreamFromSlice(buf []byte) *AsyncStream {
 	t := &AsyncStream{make(chan readRequest), nil}
 
 	go transfer(buf, nil, t.requests, nil)

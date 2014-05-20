@@ -144,7 +144,7 @@ func (s *StandaloneSuite) TestReadIntoShortBuffer(c *C) {
 func (s *StandaloneSuite) TestTransfer(c *C) {
 	reader, writer := io.Pipe()
 
-	tr := StartTransferFromReader(512, reader)
+	tr := AsyncStreamFromReader(512, reader)
 
 	br1 := tr.MakeStreamReader()
 	out := make([]byte, 128)
@@ -288,7 +288,7 @@ func (s *StandaloneSuite) TestTransferFromBuffer(c *C) {
 		buffer[i] = byte(i)
 	}
 
-	tr := StartTransferFromSlice(buffer)
+	tr := AsyncStreamFromSlice(buffer)
 
 	br1 := tr.MakeStreamReader()
 
@@ -328,7 +328,7 @@ func (s *StandaloneSuite) TestTransferIoCopy(c *C) {
 		buffer[i] = byte(i)
 	}
 
-	tr := StartTransferFromSlice(buffer)
+	tr := AsyncStreamFromSlice(buffer)
 
 	br1 := tr.MakeStreamReader()
 
