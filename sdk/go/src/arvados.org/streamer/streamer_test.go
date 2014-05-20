@@ -146,7 +146,7 @@ func (s *StandaloneSuite) TestTransfer(c *C) {
 
 	tr := StartTransferFromReader(512, reader)
 
-	br1 := tr.MakeBufferReader()
+	br1 := tr.MakeStreamReader()
 	out := make([]byte, 128)
 
 	{
@@ -210,7 +210,7 @@ func (s *StandaloneSuite) TestTransfer(c *C) {
 		}
 	}
 
-	br2 := tr.MakeBufferReader()
+	br2 := tr.MakeStreamReader()
 	{
 		// Test 'catch up' reader
 		in := make([]byte, 256)
@@ -241,7 +241,7 @@ func (s *StandaloneSuite) TestTransfer(c *C) {
 
 	{
 		// Test 'catch up' reader after closing
-		br3 := tr.MakeBufferReader()
+		br3 := tr.MakeStreamReader()
 		in := make([]byte, 256)
 		n, err := br3.Read(in)
 
@@ -290,7 +290,7 @@ func (s *StandaloneSuite) TestTransferFromBuffer(c *C) {
 
 	tr := StartTransferFromSlice(buffer)
 
-	br1 := tr.MakeBufferReader()
+	br1 := tr.MakeStreamReader()
 
 	in := make([]byte, 64)
 	{
@@ -330,7 +330,7 @@ func (s *StandaloneSuite) TestTransferIoCopy(c *C) {
 
 	tr := StartTransferFromSlice(buffer)
 
-	br1 := tr.MakeBufferReader()
+	br1 := tr.MakeStreamReader()
 
 	reader, writer := io.Pipe()
 

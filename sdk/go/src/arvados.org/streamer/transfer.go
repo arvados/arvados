@@ -27,13 +27,13 @@ type readResult struct {
 // Supports writing into a buffer
 type bufferWriter struct {
 	buf []byte
-	ptr *int
+	ptr int
 }
 
 // Copy p into this.buf, increment pointer and return number of bytes read.
-func (this bufferWriter) Write(p []byte) (n int, err error) {
-	n = copy(this.buf[*this.ptr:], p)
-	*this.ptr += n
+func (this *bufferWriter) Write(p []byte) (n int, err error) {
+	n = copy(this.buf[this.ptr:], p)
+	this.ptr += n
 	return n, nil
 }
 
@@ -44,7 +44,7 @@ func readIntoBuffer(buffer []byte, r io.Reader, slices chan<- readerSlice) {
 	defer close(slices)
 
 	if writeto, ok := r.(io.WriterTo); ok {
-		n, err := writeto.WriteTo(bufferWriter{buffer, new(int)})
+		n, err := writeto.WriteTo(&bufferWriter{buffer, 0})
 		if err != nil {
 			slices <- readerSlice{nil, err}
 		} else {
