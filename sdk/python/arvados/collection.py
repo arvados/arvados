@@ -189,6 +189,20 @@ class CollectionWriter(object):
         self.finish_current_stream()
         map(lambda x: self.write_directory_tree(*x), todo)
 
+    def write_file(self, source, filename=None):
+        if not hasattr(source, 'read'):
+            with open(source, 'rb') as srcfile:
+                return self.write_file(srcfile, filename)
+        elif filename is None:
+            filename = os.path.basename(source.name)
+        self.start_new_file(filename)
+        while True:
+            buf = source.read(self.KEEP_BLOCK_SIZE)
+            if not buf:
+                break
+            self.write(buf)
+        self.finish_current_file()
+
     def write(self, newdata):
         if hasattr(newdata, '__iter__'):
             for s in newdata:

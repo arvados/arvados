@@ -512,6 +512,37 @@ class ArvadosCollectionsTest(unittest.TestCase):
 ./d1 50170217e5b04312024aa5cd42934494+13 8:5:f2
 ./d1/d2 50170217e5b04312024aa5cd42934494+13 0:8:f3\n""")
 
+    def make_test_file(self, text="test"):
+        testfile = tempfile.NamedTemporaryFile()
+        testfile.write(text)
+        testfile.flush()
+        return testfile
+
+    def test_write_one_file(self):
+        cwriter = arvados.CollectionWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name)
+            self.assertEqual(
+                cwriter.manifest_text(),
+                ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:{}\n".format(
+                    os.path.basename(testfile.name)))
+
+    def test_write_named_file(self):
+        cwriter = arvados.CollectionWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'foo')
+            self.assertEqual(cwriter.manifest_text(),
+                             ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:foo\n")
+
+    def test_write_multiple_files(self):
+        cwriter = arvados.CollectionWriter()
+        for letter in 'ABC':
+            with self.make_test_file(letter) as testfile:
+                cwriter.write_file(testfile.name, letter)
+        self.assertEqual(
+            cwriter.manifest_text(),
+            ". 902fbdd2b1df0c4f70b4a5d23525e932+3 0:1:A 1:1:B 2:1:C\n")
+
 
 if __name__ == '__main__':
     unittest.main()
