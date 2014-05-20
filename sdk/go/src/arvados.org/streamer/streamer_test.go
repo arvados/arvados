@@ -1,4 +1,4 @@
-package buffer
+package streamer
 
 import (
 	. "gopkg.in/check.v1"

@@ -21,7 +21,7 @@ Alternately, if you already have a filled buffer and just want to read out from 
 
 */
 
-package buffer
+package streamer
 
 import (
 	"io"
