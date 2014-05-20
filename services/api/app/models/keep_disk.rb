@@ -37,10 +37,7 @@ class KeepDisk < ArvadosModel
 
     @bypass_arvados_authorization = true
     self.update_attributes!(o.select { |k,v|
-                             [:service_host,
-                              :service_port,
-                              :service_ssl_flag,
-                              :bytes_total,
+                             [:bytes_total,
                               :bytes_free,
                               :is_readable,
                               :is_writable,

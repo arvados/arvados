@@ -6,9 +6,6 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     authorize_with :admin
     post :ping, {
       ping_secret: '',          # required by discovery doc, but ignored
-      service_host: '::1',
-      service_port: 55555,
-      service_ssl_flag: false,
       filesystem_uuid: 'eb1e77a1-db84-4193-b6e6-ca2894f67d5f'
     }
     assert_response :success
@@ -23,9 +20,6 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     authorize_with :admin
     opts = {
       ping_secret: '',
-      service_host: '::1',
-      service_port: 55555,
-      service_ssl_flag: false
     }
     post :ping, opts
     assert_response :success
@@ -39,9 +33,6 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
   test "refuse to add keep disk without admin token" do
     post :ping, {
       ping_secret: '',
-      service_host: '::1',
-      service_port: 55555,
-      service_ssl_flag: false
     }
     assert_response 404
   end
@@ -94,25 +85,7 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     end
   end
 
-  test "search keep_disks by service_port with >= query" do
-    authorize_with :active
-    get :index, {
-      filters: [['service_port', '>=', 25107]]
-    }
-    assert_response :success
-    assert_equal true, assigns(:objects).any?
-  end
-
-  test "search keep_disks by service_port with < query" do
-    authorize_with :active
-    get :index, {
-      filters: [['service_port', '<', 25107]]
-    }
-    assert_response :success
-    assert_equal false, assigns(:objects).any?
-  end
-
-  test "search keep_disks with 'any' operator" do
+  test "search keep_services with 'any' operator" do
     authorize_with :active
     get :index, {
       where: { any: ['contains', 'o2t1q5w'] }
@@ -121,5 +94,6 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     found = assigns(:objects).collect(&:uuid)
     assert_equal true, !!found.index('zzzzz-penuu-5w2o2t1q5wy7fhn')
   end
+
 
 end
