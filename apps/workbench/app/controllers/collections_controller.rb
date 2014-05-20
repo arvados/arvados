@@ -207,20 +207,18 @@ class CollectionsController < ApplicationController
     end
     def each
       return unless @opts[:uuid] && @opts[:file]
-      env = Hash[ENV].
-        merge({
-                'ARVADOS_API_HOST' =>
-                arvados_api_client.arvados_v1_base.
-                sub(/\/arvados\/v1/, '').
-                sub(/^https?:\/\//, ''),
-                'ARVADOS_API_TOKEN' =>
-                @opts[:arvados_api_token],
-                'ARVADOS_API_HOST_INSECURE' =>
-                Rails.configuration.arvados_insecure_https ? 'true' : 'false'
-              })
+
+      env = Hash[ENV].dup
+
+      require 'uri'
+      u = URI.parse(arvados_api_client.arvados_v1_base)
+      env['ARVADOS_API_HOST'] = "#{u.host}:#{u.port}"
+      env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
+      env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
+
       IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
                'rb') do |io|
-        while buf = io.read(2**20)
+        while buf = io.read(2**16)
           yield buf
         end
       end
