@@ -189,28 +189,49 @@ public class Arvados {
    * @return Set
    * @throws Exception
    */
-  public Set<String> getAvailableParametersForMethod(String resourceName, String methodName)
+  public Map<String,List<String>> getAvailableParametersForMethod(String resourceName, String methodName)
       throws Exception {
     RestMethod method = getMatchingMethod(resourceName, methodName);
-    Set<String> parameters = method.getParameters().keySet();
-    Request request = method.getRequest();
-    if (request != null) {
-      Object requestProperties = request.get("properties");
-      if (requestProperties != null) {
-        if (requestProperties instanceof Map) {
-          Map properties = (Map)requestProperties;
-          Set<String> propertyKeys = properties.keySet();
-          if (propertyKeys.size()>0) {
-            try {
-              propertyKeys.addAll(parameters);
-              return propertyKeys;
-            } catch (Exception e){
-              logger.error(e);
+    Map<String, List<String>> parameters = new HashMap<String, List<String>>();
+    List<String> requiredParameters = new ArrayList<String>();
+    List<String> optionalParameters = new ArrayList<String>();
+    parameters.put ("required", requiredParameters);
+    parameters.put("optional", optionalParameters);
+
+    try {
+      // get any request parameters
+      Request request = method.getRequest();
+      if (request != null) {
+        Object required = request.get("required");
+        Object requestProperties = request.get("properties");
+        if (requestProperties != null) {
+          if (requestProperties instanceof Map) {
+            Map properties = (Map)requestProperties;
+            Set<String> propertyKeys = properties.keySet();
+            for (String property : propertyKeys) {
+              if (Boolean.TRUE.equals(required)) {
+                requiredParameters.add(property);
+              } else {
+                optionalParameters.add(property);                
+              }
             }
           }
         }
       }
+
+      // get other listed parameters
+      Map<String,JsonSchema> methodParameters = method.getParameters();
+      for (Map.Entry<String, JsonSchema> entry : methodParameters.entrySet()) {
+        if (Boolean.TRUE.equals(entry.getValue().getRequired())) {
+          requiredParameters.add(entry.getKey());
+        } else {
+          optionalParameters.add(entry.getKey());
+        }
+      }
+    } catch (Exception e){
+      logger.error(e);
     }
+
     return parameters;
   }
 
@@ -329,6 +350,8 @@ public class Arvados {
         value = new BigInteger(parameterValue.toString());
       } else if ("float".equals(parameter.getType())) {
         value = new BigDecimal(parameterValue.toString());
+      } else if ("Java.util.Calendar".equals(parameter.getType())) {
+        value = new BigDecimal(parameterValue.toString());
       } else if (("array".equals(parameter.getType())) ||
           ("Array".equals(parameter.getType()))) {
         if (parameterValue.getClass().isArray()){
@@ -355,32 +378,35 @@ public class Arvados {
 
   private String getJsonValueFromArrayType (Object parameterValue) {
     String arrayStr = Arrays.deepToString((Object[])parameterValue);
-    arrayStr = arrayStr.substring(1, arrayStr.length()-1);
+
+    // we can expect either an array of array objects or an array of objects
+    if (arrayStr.startsWith("[[")) {
+      Object[][] array = new Object[1][];
+      arrayStr = arrayStr.substring(2, arrayStr.length()-2);
+      String jsonStr = getJsonStringForArray(arrayStr);
+      String value = "[" + jsonStr + "]";
+      return value;
+    } else {
+      arrayStr = arrayStr.substring(1, arrayStr.length()-1);
+      return (getJsonStringForArray(arrayStr));
+    }
+  }
+
+  private String getJsonStringForArray(String arrayStr) {
     Object[] array = arrayStr.split(",");
     Object[] trimmedArray = new Object[array.length];
     for (int i=0; i<array.length; i++){
       trimmedArray[i] = array[i].toString().trim();
     }
-    String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
-    String value = "["+ jsonString +"]";
-
+    String value = JSONArray.toJSONString(Arrays.asList(trimmedArray));
     return value;
   }
 
   private String getJsonValueFromListType (Object parameterValue) {
     List paramList = (List)parameterValue;
     Object[] array = new Object[paramList.size()];
-    String arrayStr = Arrays.deepToString(paramList.toArray(array));
-    arrayStr = arrayStr.substring(1, arrayStr.length()-1);
-    array = arrayStr.split(",");
-    Object[] trimmedArray = new Object[array.length];
-    for (int i=0; i<array.length; i++){
-      trimmedArray[i] = array[i].toString().trim();
-    }
-    String jsonString = JSONArray.toJSONString(Arrays.asList(trimmedArray));
-    String value = "["+ jsonString +"]";
-
-    return value;
+    Arrays.deepToString(paramList.toArray(array));
+    return (getJsonValueFromArrayType(array));
   }
 
   private String getJsonValueFromMapType (Object parameterValue) {
