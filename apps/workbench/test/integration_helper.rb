@@ -25,6 +25,11 @@ class ActionDispatch::IntegrationTest
 
   @@API_AUTHS = self.api_fixture('api_client_authorizations')
 
+  def setup
+    reset_session!
+    super
+  end
+
   def page_with_token(token, path='/')
     # Generate a page path with an embedded API token.
     # Typical usage: visit page_with_token('token_name', page)
