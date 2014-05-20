@@ -48,19 +48,19 @@ class KeepDisk < ArvadosModel
   end
 
   def service_host
-    KeepService.where(uuid: self.keep_service_uuid) do |k|
+    KeepService.where(uuid: self.keep_service_uuid).each do |k|
       return k.service_host
     end
   end
 
   def service_port
-    KeepService.where(uuid: self.keep_service_uuid) do |k|
+    KeepService.where(uuid: self.keep_service_uuid).each do |k|
       return k.service_port
     end
   end
 
   def service_ssl_flag
-    KeepService.where(uuid: self.keep_service_uuid) do |k|
+    KeepService.where(uuid: self.keep_service_uuid).each do |k|
       return k.service_ssl_flag
     end
   end
