@@ -56,9 +56,9 @@ def normalize_stream(s, stream):
             stream_tokens.append("{0}:{1}:{2}".format(current_span[0], current_span[1] - current_span[0], fout))
 
         if len(stream[f]) == 0:
-            stream_tokens.append("0:0:{0}".format(fout))            
+            stream_tokens.append("0:0:{0}".format(fout))
 
-    return stream_tokens    
+    return stream_tokens
 
 def normalize(collection):
     streams = {}
@@ -285,7 +285,7 @@ class CollectionWriter(object):
             manifest += ' ' + ' '.join(stream[1])
             manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
-        
+
         #print 'writer',manifest
         #print 'after reader',CollectionReader(manifest).manifest_text()
 
