@@ -29,6 +29,10 @@ require 'open3'
 $redis ||= Redis.new
 LOG_BUFFER_SIZE = 2**20
 
+$tmp_log_buffer = ''
+$previous_tmp_log_at = Time.now
+TMP_LOG_BUFFER_SIZE = 4096
+
 class Dispatcher
   include ApplicationHelper
 
@@ -259,6 +263,13 @@ class Dispatcher
                            .getrange(job_uuid, (LOG_BUFFER_SIZE >> 1), -1)
                            .sub(/^.*?\n/, ''))
             end
+
+            if (TMP_LOG_BUFFER_SIZE < $tmp_log_buffer.size) || ($previous_tmp_log_at+1 < Time.now)
+              $tmp_log_buffer += (pub_msg + "\n")
+              write_log job_uuid
+            else 
+              $tmp_log_buffer += (pub_msg + "\n")
+            end
           end
         end
       end
@@ -306,6 +317,8 @@ class Dispatcher
 
     # Ensure every last drop of stdout and stderr is consumed
     read_pipes
+    write_log job_done.uuid  # write any remaining logs
+
     if j_done[:stderr_buf] and j_done[:stderr_buf] != ''
       $stderr.puts j_done[:stderr_buf] + "\n"
     end
@@ -399,6 +412,19 @@ class Dispatcher
     else
       true
     end
+  end
+
+  # send message to log table. we want these records to be transient
+  def write_log job_uuid
+    if $tmp_log_buffer == ''
+      return
+    end
+    log = Log.new(object_uuid: job_uuid,
+                  event_type:'transient-log-entry',
+                  summary: $tmp_log_buffer)
+    log.save!
+    $tmp_log_buffer = ''
+    $previous_tmp_log_at = Time.now
   end
 end
 
