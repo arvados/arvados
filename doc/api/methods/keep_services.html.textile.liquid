@@ -1,0 +1,66 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "keep_services"
+
+...
+
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/keep_services@
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
+h2. create
+
+Create a new KeepService.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|keep_disk|object||query||
+
+h2. delete
+
+Delete an existing KeepService.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the KeepService in question.|path||
+
+h2. get
+
+Gets a KeepService's metadata by UUID.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the KeepService in question.|path||
+
+h2. list
+
+List keep_services.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|limit|integer (default 100)|Maximum number of keep_services to return.|query||
+|order|string|Order in which to return matching keep_services.|query||
+|filters|array|Conditions for filtering keep_services.|query||
+
+h2. update
+
+Update attributes of an existing KeepService.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the KeepService in question.|path||
+|keep_service|object||query||
