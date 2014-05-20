@@ -179,13 +179,7 @@ class CollectionWriter(object):
                           os.path.join(stream_name, dirent),
                           max_manifest_depth-1]]
             else:
-                self.start_new_file(dirent)
-                with open(target, 'rb') as f:
-                    while True:
-                        buf = f.read(2**26)
-                        if len(buf) == 0:
-                            break
-                        self.write(buf)
+                self.write_file(target, dirent)
         self.finish_current_stream()
         map(lambda x: self.write_directory_tree(*x), todo)
 
