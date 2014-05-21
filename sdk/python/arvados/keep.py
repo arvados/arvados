@@ -169,7 +169,7 @@ class KeepClient(object):
 
             # Override normal keep disk lookup with an explict proxy
             # configuration.
-            keep_proxy_env = self.config.get("ARVADOS_KEEP_PROXY")
+            keep_proxy_env = config.get("ARVADOS_KEEP_PROXY")
             if keep_proxy_env != None:
                 if keep_proxy_env[-1:] != '/':
                     keep_proxy_env += "/"
@@ -177,16 +177,23 @@ class KeepClient(object):
                 self.using_proxy = True
             else:
                 try:
-                    keep_disks = arvados.api().keep_disks().list().execute()['items']
+                    try:
+                        keep_services = arvados.api().keep_services().accessible().execute()['items']
+                    except:
+                        keep_services = arvados.api().keep_disks().list().execute()['items']
+
+                    if len(keep_services) == 0:
+                        raise arvados.errors.NoKeepServersError()
+
+                    if 'service_type' in keep_services[0] and keep_services[0]['service_type'] == 'proxy':
+                        self.using_proxy = True
+
                     roots = (("http%s://%s:%d/" %
                               ('s' if f['service_ssl_flag'] else '',
                                f['service_host'],
                                f['service_port']))
-                             for f in keep_disks)
+                             for f in keep_services)
                     self.service_roots = sorted(set(roots))
-                    if len(keep_disks) == 1 and re.match(r'[a-z0-9]{5}-penuu-keepproxy......', keep_disks[0]['uuid']):
-                        # Proxies have a special UUID pattern.
-                        self.using_proxy = True
                     logging.debug(str(self.service_roots))
                 finally:
                     self.lock.release()
