@@ -117,6 +117,7 @@ func (this *StreamReader) WriteTo(dest io.Writer) (written int64, err error) {
 func (this *StreamReader) Close() error {
 	this.stream.subtract_reader <- true
 	close(this.responses)
+	this.stream = nil
 	return nil
 }
 

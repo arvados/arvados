@@ -2,7 +2,7 @@
 package keepclient
 
 import (
-	"arvados.org/buffer"
+	"arvados.org/streamer"
 	"crypto/md5"
 	"crypto/tls"
 	"errors"
@@ -69,7 +69,7 @@ func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (re
 		bufsize = BLOCKSIZE
 	}
 
-	t := buffer.StartTransferFromReader(bufsize, HashCheckingReader{r, md5.New(), hash})
+	t := streamer.AsyncStreamFromReader(bufsize, HashCheckingReader{r, md5.New(), hash})
 	defer t.Close()
 
 	return this.putReplicas(hash, t, expectedLength)
@@ -80,7 +80,7 @@ func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (re
 // replicas that were written and if there was an error.  Note this will return
 // InsufficientReplias whenever 0 <= replicas < this.Wants_replicas.
 func (this KeepClient) PutHB(hash string, buf []byte) (replicas int, err error) {
-	t := buffer.StartTransferFromSlice(buf)
+	t := streamer.AsyncStreamFromSlice(buf)
 	defer t.Close()
 
 	return this.putReplicas(hash, t, int64(len(buf)))

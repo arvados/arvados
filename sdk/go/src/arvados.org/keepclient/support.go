@@ -2,7 +2,7 @@
 package keepclient
 
 import (
-	"arvados.org/buffer"
+	"arvados.org/streamer"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -137,6 +137,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
 		upload_status <- uploadStatus{err, url, 0}
+		body.Close()
 		return
 	}
 
@@ -163,7 +164,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 
 func (this KeepClient) putReplicas(
 	hash string,
-	tr buffer.TransferBuffer,
+	tr *streamer.AsyncStream,
 	expectedLength int64) (replicas int, err error) {
 
 	// Calculate the ordering for uploading to servers
@@ -186,7 +187,7 @@ func (this KeepClient) putReplicas(
 		for active < remaining_replicas {
 			// Start some upload requests
 			if next_server < len(sv) {
-				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeBufferReader(), upload_status, expectedLength)
+				go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength)
 				next_server += 1
 				active += 1
 			} else {
@@ -195,26 +196,17 @@ func (this KeepClient) putReplicas(
 		}
 
 		// Now wait for something to happen.
-		select {
-		case status := <-tr.Reader_status:
-			if status == io.EOF {
-				// good news!
-			} else {
-				// bad news
-				return (this.Want_replicas - remaining_replicas), status
-			}
-		case status := <-upload_status:
-			if status.StatusCode == 200 {
-				// good news!
-				remaining_replicas -= 1
-			} else {
-				// writing to keep server failed for some reason
-				log.Printf("Keep server put to %v failed with '%v'",
-					status.Url, status.Err)
-			}
-			active -= 1
-			log.Printf("Upload status %v %v %v", status.StatusCode, remaining_replicas, active)
+		status := <-upload_status
+		if status.StatusCode == 200 {
+			// good news!
+			remaining_replicas -= 1
+		} else {
+			// writing to keep server failed for some reason
+			log.Printf("Keep server put to %v failed with '%v'",
+				status.Url, status.Err)
 		}
+		active -= 1
+		log.Printf("Upload status %v %v %v", status.StatusCode, remaining_replicas, active)
 	}
 
 	return (this.Want_replicas - remaining_replicas), nil
