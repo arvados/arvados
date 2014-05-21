@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140501165548) do
+ActiveRecord::Schema.define(:version => 20140519205916) do
 
 
 
@@ -225,16 +225,29 @@ ActiveRecord::Schema.define(:version => 20140501165548) do
     t.datetime "last_ping_at"
     t.datetime "created_at",                                :null => false
     t.datetime "updated_at",                                :null => false
-    t.string   "service_host"
-    t.integer  "service_port"
-    t.boolean  "service_ssl_flag"
+    t.string   "keep_service_uuid"
   end
 
   add_index "keep_disks", ["filesystem_uuid"], :name => "index_keep_disks_on_filesystem_uuid"
   add_index "keep_disks", ["last_ping_at"], :name => "index_keep_disks_on_last_ping_at"
   add_index "keep_disks", ["node_uuid"], :name => "index_keep_disks_on_node_uuid"
-  add_index "keep_disks", ["service_host", "service_port", "last_ping_at"], :name => "keep_disks_service_host_port_ping_at_index"
   add_index "keep_disks", ["uuid"], :name => "index_keep_disks_on_uuid", :unique => true
+
+  create_table "keep_services", :force => true do |t|
+    t.string   "uuid",                    :null => false
+    t.string   "owner_uuid",              :null => false
+    t.string   "modified_by_client_uuid"
+    t.string   "modified_by_user_uuid"
+    t.datetime "modified_at"
+    t.string   "service_host"
+    t.integer  "service_port"
+    t.boolean  "service_ssl_flag"
+    t.string   "service_type"
+    t.datetime "created_at",              :null => false
+    t.datetime "updated_at",              :null => false
+  end
+
+  add_index "keep_services", ["uuid"], :name => "index_keep_services_on_uuid", :unique => true
 
   create_table "links", :force => true do |t|
     t.string   "uuid"
