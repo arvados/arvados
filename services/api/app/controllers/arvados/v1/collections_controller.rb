@@ -43,11 +43,12 @@ class Arvados::V1::CollectionsController < ApplicationController
     # Remove any permission signatures from the manifest.
     resource_attrs[:manifest_text]
       .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
+      word.strip!
       loc = Locator.parse(word)
       if loc
         " " + loc.without_signature.to_s
       else
-        word
+        " " + word
       end
     }
 
@@ -94,11 +95,12 @@ class Arvados::V1::CollectionsController < ApplicationController
       }
       @object[:manifest_text]
         .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
+        word.strip!
         loc = Locator.parse(word)
         if loc
           " " + Blob.sign_locator(word, signing_opts)
         else
-          word
+          " " + word
         end
       }
     end
