@@ -37,14 +37,29 @@ the entire collection with wget, try:</p>
 
 <h2>File Listing</h2>
 
-<% if @object.andand.files.andand.any? %>
-  <ul>
-  <% @object.files.map { |spec|
-       CollectionsHelper::file_path(spec)
-     }.each do |path| %>
-    <li><%= link_to(path, link_opts.merge(file: path)) %></li>
+<% if @object.andand.files_tree.andand.any? %>
+  <ul id="collection_files" class="collection_files">
+  <% dirstack = [@object.files_tree.first.first] %>
+  <% @object.files_tree.each_with_index do |(dirname, filename, size), index| %>
+    <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
+    <% while dirstack.any? and (dirstack.last != dirname) %>
+      <% dirstack.pop %></ul></li>
+    <% end %>
+    <li>
+    <% if size.nil?  # This is a subdirectory. %>
+      <% dirstack.push(File.join(dirname, filename)) %>
+      <%= filename %>
+      <ul class="collection_files">
+    <% else %>
+      <%= link_to(filename,
+                  {controller: 'collections', action: 'show_file',
+                   uuid: @object.uuid, file: file_path,
+                   reader_token: params[:reader_token]},
+                  {title: "Download #{file_path}"}) %>
+      </li>
+    <% end %>
   <% end %>
-  </ul>
+  <%= raw(dirstack.map { |_| "</ul>" }.join("</li>")) %>
 <% else %>
   <p>No files in this collection.</p>
 <% end %>
