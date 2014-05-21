@@ -8,7 +8,7 @@ class FoldersTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = Capybara.javascript_driver
     visit page_with_token 'active', '/'
     find('nav a', text: 'Folders').click
-    find('.side-nav a,button', text: 'A Folder').
+    find('.arv-folder-list a,button', text: 'A Folder').
       click
     within('.panel', text: api_fixture('groups')['afolder']['name']) do
       find('span', text: api_fixture('groups')['afolder']['name']).click

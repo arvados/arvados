@@ -1,0 +1,19 @@
+<div class="container-fluid arv-folder-list">
+  <% [[@my_folder_tree, 'My folders'],
+     [@shared_folder_tree, 'Shared with me']].each do |tree, label| %>
+    <div class="row">
+      <i class="fa fa-fw fa-folder-open-o"></i> <%= label %>
+    </div>
+    <% tree.each do |foldernode| %>
+      <div class="folder row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
+        <i class="fa fa-fw fa-folder-o"></i>
+        <%= link_to foldernode[:object] do %>
+          <%= foldernode[:object].name || 'New folder' %>
+        <% end %>
+        <div class="pull-right">
+          <%= render partial: 'delete_object_button', locals: {object: foldernode[:object]} %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

@@ -4,7 +4,7 @@ class FoldersController < ApplicationController
   end
 
   def index_pane_list
-    %w(My_folders Shared_with_me)
+    %w(Folders)
   end
 
   def remove_item
@@ -38,33 +38,37 @@ class FoldersController < ApplicationController
   end
 
   def index
-    @my_folders = []
-    @shared_with_me = []
     @objects = Group.where(group_class: 'folder').order('name')
-    owner_of = {}
-    moretodo = true
-    while moretodo
-      moretodo = false
-      @objects.each do |folder|
-        if !owner_of[folder.uuid]
-          moretodo = true
-          owner_of[folder.uuid] = folder.owner_uuid
-        end
-        if owner_of[folder.owner_uuid]
-          if owner_of[folder.uuid] != owner_of[folder.owner_uuid]
-            owner_of[folder.uuid] = owner_of[folder.owner_uuid]
-            moretodo = true
-          end
-        end
-      end
+    parent_of = {}
+    @objects.each do |ob|
+      parent_of[ob.uuid] = ob.owner_uuid
     end
-    @objects.each do |folder|
-      if owner_of[folder.uuid] == current_user.uuid
-        @my_folders << folder
-      else
-        @shared_with_me << folder
+    children_of = {false => [], current_user.uuid => []}
+    @objects.each do |ob|
+      if ob.owner_uuid != current_user.uuid and
+          not parent_of.has_key? ob.owner_uuid
+        parent_of[ob.uuid] = false
       end
+      children_of[parent_of[ob.uuid]] ||= []
+      children_of[parent_of[ob.uuid]] << ob
     end
+    def buildtree children_of, root_uuid=false
+      tree = {}
+      children_of[root_uuid].andand.each do |ob|
+        tree[ob] = buildtree(children_of, ob.uuid)
+      end
+      tree
+    end
+    def sorted_paths tree, depth=0
+      paths = []
+      tree.keys.sort_by { |ob| ob.name || 'New folder' }.each do |ob|
+        paths << {object: ob, depth: depth}
+        paths += sorted_paths tree[ob], depth+1
+      end
+      paths
+    end
+    @my_folder_tree = sorted_paths buildtree(children_of, current_user.uuid)
+    @shared_folder_tree = sorted_paths buildtree(children_of, false)
   end
 
   def show

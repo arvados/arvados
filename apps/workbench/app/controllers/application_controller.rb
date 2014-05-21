@@ -14,7 +14,6 @@ class ApplicationController < ActionController::Base
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   around_filter :using_reader_tokens, only: [:index, :show]
   before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
-  before_filter :check_my_folders, :except => ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -422,15 +421,6 @@ class ApplicationController < ActionController::Base
       view.render partial: 'notifications/pipelines_notification'
     }
   }
-
-  def check_my_folders
-    @my_top_level_folders = lambda do
-      @top_level_folders ||= Group.
-        filter([['group_class','=','folder'],
-                ['owner_uuid','=',current_user.uuid]]).
-        sort_by { |x| x.name || '' }
-    end
-  end
 
   def check_user_notifications
     @notification_count = 0
