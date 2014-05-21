@@ -1,5 +1,5 @@
 class AuthorizedKey < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   before_create :permission_to_set_authorized_user_uuid
