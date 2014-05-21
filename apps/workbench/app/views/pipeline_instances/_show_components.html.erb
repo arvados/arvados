@@ -16,6 +16,8 @@
   <% end %>
 <% end %>
 
+<% pipeline_job_uuids = [] %>
+
 <% if !@object.state.in? ['New', 'Ready', 'Paused'] %>
 <table class="table pipeline-components-table">
   <colgroup>
@@ -51,6 +53,7 @@
                                locals: { :j => pj[:job], :title => pj[:name] }) %>
         <% if pj[:job].andand[:uuid] %>
           <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
+          <% pipeline_job_uuids << pj[:job][:uuid] %>
         <% else %>
           <%= job_status %>
         <% end %>
@@ -89,7 +92,7 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 
   <% if !@object.state.in? ['Complete', 'Failed'] %>
     <h4>Log for pipeline</h4>
-    <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="job-id1 job-id2"/>
+    <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
   <% end %>
 <% end %>
 
