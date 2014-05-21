@@ -17,6 +17,7 @@ module ApplicationHelper
 
   def human_readable_bytes_html(n)
     return h(n) unless n.is_a? Fixnum
+    return "0 bytes" if (n == 0)
 
     orders = {
       1 => "bytes",
