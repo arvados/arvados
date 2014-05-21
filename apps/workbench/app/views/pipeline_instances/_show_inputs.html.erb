@@ -28,16 +28,24 @@
 <% end %>
 
 <% if n_inputs == 0 %>
-  <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button.</p>
+  <div class="alert alert-info">
+    <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button.</p>
+  </div>
 <% else %>
-  <p>Please choose values for the following <%= n_inputs > 1 ? 'inputs' : 'input' %> before starting the pipeline.</p>
+  <div class="alert alert-info">
+    <p>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</p>
+  </div>
   <%= content_for :pi_input_form %>
 
   <%= form_tag @object, :method => :put do |f| %>
     <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'RunningOnServer' %>
     <%= button_tag({class: 'btn btn-primary run-pipeline-button'}) do %>
-     Run <i class="fa fa-fw fa-play"></i>
+      Run <i class="fa fa-fw fa-play"></i>
     <% end %>
   <% end %>
 
 <% end %>
+
+<div style="margin-top: 1em;">
+  <p>For a full list of pipeline components and parameters, click the "Components" tab above.</p>
+</div>
