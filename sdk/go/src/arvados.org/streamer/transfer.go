@@ -2,8 +2,9 @@ package streamer
 
 import (
 	"io"
-	"log"
 )
+
+const MAX_READERS = 100
 
 // A slice passed from readIntoBuffer() to transfer()
 type readerSlice struct {
@@ -102,7 +103,6 @@ func readIntoBuffer(buffer []byte, r io.Reader, slices chan<- readerSlice) {
 // Handle a read request.  Returns true if a response was sent, and false if
 // the request should be queued.
 func handleReadRequest(req readRequest, body []byte, complete bool) bool {
-	log.Printf("HandlereadRequest %d %d %d", req.offset, req.maxsize, len(body))
 	if req.offset < len(body) {
 		var end int
 		if req.offset+req.maxsize < len(body) {
@@ -214,6 +214,52 @@ func transfer(source_buffer []byte, source_reader io.Reader, requests <-chan rea
 					reader_error <- io.ErrUnexpectedEOF
 					return
 				}
+			}
+		}
+	}
+}
+
+func (this *AsyncStream) readersMonitor() {
+	var readers int = 0
+
+	for {
+		if readers == 0 {
+			select {
+			case _, ok := <-this.wait_zero_readers:
+				if ok {
+					// nothing, just implicitly unblock the sender
+				} else {
+					return
+				}
+			case _, ok := <-this.add_reader:
+				if ok {
+					readers += 1
+				} else {
+					return
+				}
+			}
+		} else if readers > 0 && readers < MAX_READERS {
+			select {
+			case _, ok := <-this.add_reader:
+				if ok {
+					readers += 1
+				} else {
+					return
+				}
+
+			case _, ok := <-this.subtract_reader:
+				if ok {
+					readers -= 1
+				} else {
+					return
+				}
+			}
+		} else if readers == MAX_READERS {
+			_, ok := <-this.subtract_reader
+			if ok {
+				readers -= 1
+			} else {
+				return
 			}
 		}
 	}

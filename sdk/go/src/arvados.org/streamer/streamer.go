@@ -28,42 +28,48 @@ import (
 )
 
 type AsyncStream struct {
-	requests      chan readRequest
-	Reader_status chan error
+	requests          chan readRequest
+	add_reader        chan bool
+	subtract_reader   chan bool
+	wait_zero_readers chan bool
+	Reader_status     chan error
 }
 
 // Reads from the buffer managed by the Transfer()
 type StreamReader struct {
 	offset    int
-	requests  chan<- readRequest
+	stream    *AsyncStream
 	responses chan readResult
 }
 
 func AsyncStreamFromReader(buffersize int, source io.Reader) *AsyncStream {
 	buf := make([]byte, buffersize)
 
-	t := &AsyncStream{make(chan readRequest), make(chan error)}
+	t := &AsyncStream{make(chan readRequest), make(chan bool), make(chan bool), make(chan bool), make(chan error)}
 
 	go transfer(buf, source, t.requests, t.Reader_status)
+	go t.readersMonitor()
 
 	return t
 }
 
 func AsyncStreamFromSlice(buf []byte) *AsyncStream {
-	t := &AsyncStream{make(chan readRequest), nil}
+	t := &AsyncStream{make(chan readRequest), make(chan bool), make(chan bool), make(chan bool), nil}
 
 	go transfer(buf, nil, t.requests, nil)
+	go t.readersMonitor()
 
 	return t
 }
 
 func (this *AsyncStream) MakeStreamReader() *StreamReader {
-	return &StreamReader{0, this.requests, make(chan readResult)}
+	this.add_reader <- true
+	return &StreamReader{0, this, make(chan readResult)}
 }
 
 // Reads from the buffer managed by the Transfer()
 func (this *StreamReader) Read(p []byte) (n int, err error) {
-	this.requests <- readRequest{this.offset, len(p), this.responses}
+	this.stream.requests <- readRequest{this.offset, len(p), this.responses}
 	rr, valid := <-this.responses
 	if valid {
 		this.offset += len(rr.slice)
@@ -77,7 +83,7 @@ func (this *StreamReader) WriteTo(dest io.Writer) (written int64, err error) {
 	// Record starting offset in order to correctly report the number of bytes sent
 	starting_offset := this.offset
 	for {
-		this.requests <- readRequest{this.offset, 32 * 1024, this.responses}
+		this.stream.requests <- readRequest{this.offset, 32 * 1024, this.responses}
 		rr, valid := <-this.responses
 		if valid {
 			this.offset += len(rr.slice)
@@ -99,12 +105,17 @@ func (this *StreamReader) WriteTo(dest io.Writer) (written int64, err error) {
 
 // Close the responses channel
 func (this *StreamReader) Close() error {
+	this.stream.subtract_reader <- true
 	close(this.responses)
 	return nil
 }
 
 func (this *AsyncStream) Close() {
+	this.wait_zero_readers <- true
 	close(this.requests)
+	close(this.add_reader)
+	close(this.subtract_reader)
+	close(this.wait_zero_readers)
 	if this.Reader_status != nil {
 		close(this.Reader_status)
 	}

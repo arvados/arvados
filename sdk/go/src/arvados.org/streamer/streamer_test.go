@@ -329,8 +329,10 @@ func (s *StandaloneSuite) TestTransferIoCopy(c *C) {
 	}
 
 	tr := AsyncStreamFromSlice(buffer)
+	defer tr.Close()
 
 	br1 := tr.MakeStreamReader()
+	defer br1.Close()
 
 	reader, writer := io.Pipe()
 
