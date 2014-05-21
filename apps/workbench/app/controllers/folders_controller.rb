@@ -39,11 +39,11 @@ class FoldersController < ApplicationController
 
   def index
     @objects = Group.where(group_class: 'folder').order('name')
-    parent_of = {}
+    parent_of = {current_user.uuid => 'me'}
     @objects.each do |ob|
       parent_of[ob.uuid] = ob.owner_uuid
     end
-    children_of = {false => [], current_user.uuid => []}
+    children_of = {false => [], 'me' => [current_user]}
     @objects.each do |ob|
       if ob.owner_uuid != current_user.uuid and
           not parent_of.has_key? ob.owner_uuid
@@ -61,14 +61,19 @@ class FoldersController < ApplicationController
     end
     def sorted_paths tree, depth=0
       paths = []
-      tree.keys.sort_by { |ob| ob.name || 'New folder' }.each do |ob|
+      tree.keys.sort_by { |ob| ob.friendly_link_name }.each do |ob|
         paths << {object: ob, depth: depth}
         paths += sorted_paths tree[ob], depth+1
       end
       paths
     end
-    @my_folder_tree = sorted_paths buildtree(children_of, current_user.uuid)
+    @my_folder_tree = sorted_paths buildtree(children_of, 'me')
     @shared_folder_tree = sorted_paths buildtree(children_of, false)
+  end
+
+  def choose
+    index
+    render partial: 'choose'
   end
 
   def show
@@ -98,6 +103,11 @@ class FoldersController < ApplicationController
   def create
     @new_resource_attrs = (params['folder'] || {}).merge(group_class: 'folder')
     @new_resource_attrs[:name] ||= 'New folder'
+    super
+  end
+
+  def update
+    @updates = params['folder']
     super
   end
 end

@@ -7,12 +7,16 @@
     <% tree.each do |foldernode| %>
       <div class="folder row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
         <i class="fa fa-fw fa-folder-o"></i>
-        <%= link_to foldernode[:object] do %>
-          <%= foldernode[:object].name || 'New folder' %>
+        <% if foldernode[:object].class == User %>
+          <%= foldernode[:object].friendly_link_name %>
+        <% else %>
+          <%= link_to foldernode[:object] do %>
+            <%= foldernode[:object].friendly_link_name %>
+          <% end %>
+          <div class="pull-right">
+            <%= render partial: 'delete_object_button', locals: {object: foldernode[:object]} %>
+          </div>
         <% end %>
-        <div class="pull-right">
-          <%= render partial: 'delete_object_button', locals: {object: foldernode[:object]} %>
-        </div>
       </div>
     <% end %>
   <% end %>

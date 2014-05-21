@@ -351,6 +351,10 @@ class ArvadosBase < ActiveRecord::Base
     friendly_link_name
   end
 
+  def owner
+    ArvadosBase.find(owner_uuid) rescue nil
+  end
+
   protected
 
   def forget_uuid!

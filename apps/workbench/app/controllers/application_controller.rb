@@ -122,21 +122,21 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    updates = params[@object.class.to_s.underscore.singularize.to_sym]
-    updates.keys.each do |attr|
+    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    @updates.keys.each do |attr|
       if @object.send(attr).is_a? Hash
-        if updates[attr].is_a? String
-          updates[attr] = Oj.load updates[attr]
+        if @updates[attr].is_a? String
+          @updates[attr] = Oj.load @updates[attr]
         end
         if params[:merge] || params["merge_#{attr}".to_sym]
           # Merge provided Hash with current Hash, instead of
           # replacing.
-          updates[attr] = @object.send(attr).with_indifferent_access.
-            deep_merge(updates[attr].with_indifferent_access)
+          @updates[attr] = @object.send(attr).with_indifferent_access.
+            deep_merge(@updates[attr].with_indifferent_access)
         end
       end
     end
-    if @object.update_attributes updates
+    if @object.update_attributes @updates
       show
     else
       self.render_error status: 422
