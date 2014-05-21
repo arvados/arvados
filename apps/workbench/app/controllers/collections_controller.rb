@@ -3,6 +3,8 @@ class CollectionsController < ApplicationController
   skip_before_filter :find_object_by_uuid, only: [:provenance, :show_file]
   skip_before_filter :check_user_agreements, only: [:show_file]
 
+  RELATION_LIMIT = 5
+
   def show_pane_list
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
   end
@@ -112,63 +114,36 @@ class CollectionsController < ApplicationController
 
   def show
     return super if !@object
-    @provenance = []
-    @output2job = {}
-    @output2colorindex = {}
-    @sourcedata = {params[:uuid] => {uuid: params[:uuid]}}
-    @protected = {}
-
-    colorindex = -1
-    any_hope_left = true
-    while any_hope_left
-      any_hope_left = false
-      Job.where(output: @sourcedata.keys).sort_by { |a| a.finished_at || a.created_at }.reverse.each do |job|
-        if !@output2colorindex[job.output]
-          any_hope_left = true
-          @output2colorindex[job.output] = (colorindex += 1) % 10
-          @provenance << {job: job, output: job.output}
-          @sourcedata.delete job.output
-          @output2job[job.output] = job
-          job.dependencies.each do |new_source_data|
-            unless @output2colorindex[new_source_data]
-              @sourcedata[new_source_data] = {uuid: new_source_data}
-            end
-          end
-        end
+    if current_user
+      jobs_with = lambda do |conds|
+        Job.limit(RELATION_LIMIT).where(conds)
+          .results.sort_by { |j| j.finished_at || j.created_at }
       end
+      @output_of = jobs_with.call(output: @object.uuid)
+      @log_of = jobs_with.call(log: @object.uuid)
+      folder_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        .where(head_uuid: @object.uuid, link_class: 'name').results
+      folder_hash = Group.where(uuid: folder_links.map(&:tail_uuid)).to_hash
+      @folders = folder_links.map { |link| folder_hash[link.tail_uuid] }
+      @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        .where(head_uuid: @object.uuid, link_class: 'permission',
+               name: 'can_read').results
+      @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+        .where(object_uuid: @object.uuid).results
+      @is_persistent = Link.limit(1)
+        .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
+               link_class: 'resources', name: 'wants')
+        .results.any?
     end
-
-    Link.where(head_uuid: @sourcedata.keys | @output2job.keys).each do |link|
-      if link.link_class == 'resources' and link.name == 'wants'
-        @protected[link.head_uuid] = true
-        if link.tail_uuid == current_user.uuid
-          @is_persistent = true
-        end
-      end
-    end
-    Link.where(tail_uuid: @sourcedata.keys).each do |link|
-      if link.link_class == 'data_origin'
-        @sourcedata[link.tail_uuid][:data_origins] ||= []
-        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_uuid]
-      end
-    end
-    Collection.where(uuid: @sourcedata.keys).each do |collection|
-      if @sourcedata[collection.uuid]
-        @sourcedata[collection.uuid][:collection] = collection
-      end
-    end
-
-    Collection.where(uuid: @object.uuid).each do |u|
-      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg",
-                                                            {:request => request,
-                                                              :direction => :bottom_up,
-                                                              :combine_jobs => :script_only}) rescue nil
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg",
-                                                               {:request => request,
-                                                                 :direction => :top_down,
-                                                                 :combine_jobs => :script_only,
-                                                                 :pdata_only => true}) rescue nil
-    end
+    @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                          {:request => request,
+                                                            :direction => :bottom_up,
+                                                            :combine_jobs => :script_only}) rescue nil
+    @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                             {:request => request,
+                                                               :direction => :top_down,
+                                                               :combine_jobs => :script_only,
+                                                               :pdata_only => true}) rescue nil
   end
 
   protected
@@ -210,12 +185,9 @@ class CollectionsController < ApplicationController
   end
 
   def file_in_collection?(collection, filename)
-    def normalized_path(part_list)
-      File.join(part_list).sub(%r{^\./}, '')
-    end
-    target = normalized_path([filename])
+    target = CollectionsHelper.file_path(File.split(filename))
     collection.files.each do |file_spec|
-      return true if (normalized_path(file_spec[0, 2]) == target)
+      return true if (CollectionsHelper.file_path(file_spec) == target)
     end
     false
   end
@@ -225,6 +197,7 @@ class CollectionsController < ApplicationController
   end
 
   class FileStreamer
+    include ArvadosApiClientHelper
     def initialize(opts={})
       @opts = opts
     end
@@ -233,7 +206,7 @@ class CollectionsController < ApplicationController
       env = Hash[ENV].
         merge({
                 'ARVADOS_API_HOST' =>
-                $arvados_api_client.arvados_v1_base.
+                arvados_api_client.arvados_v1_base.
                 sub(/\/arvados\/v1/, '').
                 sub(/^https?:\/\//, ''),
                 'ARVADOS_API_TOKEN' =>

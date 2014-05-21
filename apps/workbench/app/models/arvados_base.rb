@@ -2,11 +2,19 @@ class ArvadosBase < ActiveRecord::Base
   self.abstract_class = true
   attr_accessor :attribute_sortkey
 
+  def self.arvados_api_client
+    ArvadosApiClient.new_or_current
+  end
+
+  def arvados_api_client
+    ArvadosApiClient.new_or_current
+  end
+
   def self.uuid_infix_object_kind
     @@uuid_infix_object_kind ||=
       begin
         infix_kind = {}
-        $arvados_api_client.discovery[:schemas].each do |name, schema|
+        arvados_api_client.discovery[:schemas].each do |name, schema|
           if schema[:uuidPrefix]
             infix_kind[schema[:uuidPrefix]] =
               'arvados#' + name.to_s.camelcase(:lower)
@@ -21,8 +29,8 @@ class ArvadosBase < ActiveRecord::Base
       end
   end
 
-  def initialize(*args)
-    super(*args)
+  def initialize raw_params={}
+    super self.class.permit_attribute_params(raw_params)
     @attribute_sortkey ||= {
       'id' => nil,
       'name' => '000',
@@ -49,7 +57,7 @@ class ArvadosBase < ActiveRecord::Base
     return @columns unless @columns.nil?
     @columns = []
     @attribute_info ||= {}
-    schema = $arvados_api_client.discovery[:schemas][self.to_s.to_sym]
+    schema = arvados_api_client.discovery[:schemas][self.to_s.to_sym]
     return @columns if schema.nil?
     schema[:properties].each do |k, coldef|
       case k
@@ -64,7 +72,6 @@ class ArvadosBase < ActiveRecord::Base
           @columns << column(k, :text)
           serialize k, coldef[:type].constantize
         end
-        attr_accessible k
         @attribute_info[k] = coldef
       end
     end
@@ -94,10 +101,10 @@ class ArvadosBase < ActiveRecord::Base
     # request} unless {cache: false} is given via opts.
     cache_key = "request_#{Thread.current.object_id}_#{self.to_s}_#{uuid}"
     if opts[:cache] == false
-      Rails.cache.write cache_key, $arvados_api_client.api(self, '/' + uuid)
+      Rails.cache.write cache_key, arvados_api_client.api(self, '/' + uuid)
     end
     hash = Rails.cache.fetch cache_key do
-      $arvados_api_client.api(self, '/' + uuid)
+      arvados_api_client.api(self, '/' + uuid)
     end
     new.private_reload(hash)
   end
@@ -126,6 +133,25 @@ class ArvadosBase < ActiveRecord::Base
     ArvadosResourceList.new(self).all(*args)
   end
 
+  def self.permit_attribute_params raw_params
+    # strong_parameters does not provide security in Workbench: anyone
+    # who can get this far can just as well do a call directly to our
+    # database (Arvados) with the same credentials we use.
+    #
+    # The following permit! is necessary even with
+    # "ActionController::Parameters.permit_all_parameters = true",
+    # because permit_all does not permit nested attributes.
+    ActionController::Parameters.new(raw_params).permit!
+  end
+
+  def self.create raw_params={}
+    super(permit_attribute_params(raw_params))
+  end
+
+  def update_attributes raw_params={}
+    super(self.class.permit_attribute_params(raw_params))
+  end
+
   def save
     obdata = {}
     self.class.columns.each do |col|
@@ -136,9 +162,9 @@ class ArvadosBase < ActiveRecord::Base
     if etag
       postdata['_method'] = 'PUT'
       obdata.delete :uuid
-      resp = $arvados_api_client.api(self.class, '/' + uuid, postdata)
+      resp = arvados_api_client.api(self.class, '/' + uuid, postdata)
     else
-      resp = $arvados_api_client.api(self.class, '', postdata)
+      resp = arvados_api_client.api(self.class, '', postdata)
     end
     return false if !resp[:etag] || !resp[:uuid]
 
@@ -165,7 +191,7 @@ class ArvadosBase < ActiveRecord::Base
   def destroy
     if etag || uuid
       postdata = { '_method' => 'DELETE' }
-      resp = $arvados_api_client.api(self.class, '/' + uuid, postdata)
+      resp = arvados_api_client.api(self.class, '/' + uuid, postdata)
       resp[:etag] && resp[:uuid] && resp
     else
       true
@@ -192,13 +218,13 @@ class ArvadosBase < ActiveRecord::Base
         ok
       end
     end
-    @links = $arvados_api_client.api Link, '', { _method: 'GET', where: o, eager: true }
-    @links = $arvados_api_client.unpack_api_response(@links)
+    @links = arvados_api_client.api Link, '', { _method: 'GET', where: o, eager: true }
+    @links = arvados_api_client.unpack_api_response(@links)
   end
 
   def all_links
     return @all_links if @all_links
-    res = $arvados_api_client.api Link, '', {
+    res = arvados_api_client.api Link, '', {
       _method: 'GET',
       where: {
         tail_kind: self.kind,
@@ -206,7 +232,7 @@ class ArvadosBase < ActiveRecord::Base
       },
       eager: true
     }
-    @all_links = $arvados_api_client.unpack_api_response(res)
+    @all_links = arvados_api_client.unpack_api_response(res)
   end
 
   def reload
@@ -218,7 +244,7 @@ class ArvadosBase < ActiveRecord::Base
     if uuid_or_hash.is_a? Hash
       hash = uuid_or_hash
     else
-      hash = $arvados_api_client.api(self.class, '/' + uuid_or_hash)
+      hash = arvados_api_client.api(self.class, '/' + uuid_or_hash)
     end
     hash.each do |k,v|
       if self.respond_to?(k.to_s + '=')
@@ -299,13 +325,13 @@ class ArvadosBase < ActiveRecord::Base
     end
     resource_class = nil
     uuid.match /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/ do |re|
-      resource_class ||= $arvados_api_client.
+      resource_class ||= arvados_api_client.
         kind_class(self.uuid_infix_object_kind[re[1]])
     end
     if opts[:referring_object] and
         opts[:referring_attr] and
         opts[:referring_attr].match /_uuid$/
-      resource_class ||= $arvados_api_client.
+      resource_class ||= arvados_api_client.
         kind_class(opts[:referring_object].
                    attributes[opts[:referring_attr].
                               sub(/_uuid$/, '_kind')])
