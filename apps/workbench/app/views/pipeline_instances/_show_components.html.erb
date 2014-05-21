@@ -91,8 +91,10 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
 
   <% if !@object.state.in? ['Complete', 'Failed'] %>
-    <h4>Log for pipeline</h4>
-    <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
+    <% if !pipeline_job_uuids.empty? %>
+      <h4>Log for pipeline</h4>
+      <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
+    <% end %>
   <% end %>
 <% end %>
 
