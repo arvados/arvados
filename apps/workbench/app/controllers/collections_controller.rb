@@ -95,7 +95,8 @@ class CollectionsController < ApplicationController
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
     coll = nil
-    usable_token = find_usable_token do
+    tokens = [Thread.current[:arvados_api_token], params[:reader_token]].compact
+    usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
     if usable_token.nil?
@@ -148,18 +149,14 @@ class CollectionsController < ApplicationController
 
   protected
 
-  def find_usable_token
-    # Iterate over every token available to make it the current token and
+  def find_usable_token(token_list)
+    # Iterate over every given token to make it the current token and
     # yield the given block.
     # If the block succeeds, return the token it used.
     # Otherwise, render an error response based on the most specific
     # error we encounter, and return nil.
-    read_tokens = [Thread.current[:arvados_api_token]].compact
-    if params[:reader_tokens].is_a? Array
-      read_tokens += params[:reader_tokens]
-    end
     most_specific_error = [401]
-    read_tokens.each do |api_token|
+    token_list.each do |api_token|
       using_specific_api_token(api_token) do
         begin
           yield
