@@ -28,7 +28,7 @@ Server::Application.routes.draw do
         post 'ping', on: :collection
       end
       resources :keep_services do
-        get 'accessable', on: :collection
+        get 'accessible', on: :collection
       end
       resources :links
       resources :logs

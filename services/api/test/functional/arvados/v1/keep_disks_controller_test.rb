@@ -67,6 +67,10 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     assert_response :success
     items = JSON.parse(@response.body)['items']
     assert_not_equal 0, items.size
+
+    # Check these are still included
+    assert items[0]['service_host']
+    assert items[0]['service_port']
   end
 
   # active user sees non-secret attributes of keep disks

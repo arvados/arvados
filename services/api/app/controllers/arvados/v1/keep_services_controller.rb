@@ -1,7 +1,7 @@
 class Arvados::V1::KeepServicesController < ApplicationController
 
-  skip_before_filter :find_object_by_uuid, only: :accessable
-  skip_before_filter :render_404_if_no_object, only: :accessable
+  skip_before_filter :find_object_by_uuid, only: :accessible
+  skip_before_filter :render_404_if_no_object, only: :accessible
 
   def find_objects_for_index
     # all users can list all keep services
@@ -9,16 +9,12 @@ class Arvados::V1::KeepServicesController < ApplicationController
     super
   end
 
-  def accessable
-    puts "Hello world"
+  def accessible
     if request.headers['X-Keep-Proxy-Required']
       @objects = model_class.where('service_type=?', 'proxy')
     else
       @objects = model_class.where('service_type=?', 'disk')
     end
-
-    puts "Rendering list now"
-
     render_list
   end
 
