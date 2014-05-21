@@ -1,3 +1,49 @@
+/* Style for _show_files tree view. */
+
+ul#collection_files {
+  padding-left: 0;
+}
+
+ul.collection_files {
+  line-height: 2.5em;
+  list-style-type: none;
+  padding-left: 2.3em;
+}
+
+ul.collection_files li {
+  clear: both;
+}
+
+.collection_files_row {
+  padding: 1px;  /* Replaced by border for :hover */
+}
+
+.collection_files_row:hover {
+  background-color: #D9EDF7;
+  padding: 0px;
+  border: 1px solid #BCE8F1;
+  border-radius: 3px;
+}
+
+.collection_files_inline {
+  clear: both;
+  width: 80%;
+  height: auto;
+  max-height: 6em;
+  margin: 0 1em;
+}
+
+.collection_files_name {
+  padding-left: .5em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.collection_files_name i.fa-fw:first-child {
+  width: 1.6em;
+}
+
 /*
   "active" and "inactive" colors are too similar for a toggle switch
   in the default bootstrap theme.
