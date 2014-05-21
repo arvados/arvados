@@ -64,5 +64,5 @@
       </li>
     <% end  # if file or directory %>
   <% end  # file_tree.each %>
-  </ul>
+  <%= raw(dirstack.map { |_| "</ul>" }.join("</li>")) %>
 <% end  # if file_tree %>
