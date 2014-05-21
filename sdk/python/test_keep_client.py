@@ -65,3 +65,105 @@ class KeepTestCase(unittest.TestCase):
         self.assertEqual(arvados.Keep.get(blob_locator),
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
+
+class KeepPermissionTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            del os.environ['KEEP_LOCAL_STORE']
+        except KeyError:
+            pass
+        run_test_server.run()
+        run_test_server.run_keep(blob_signing_key='abcdefghijk0123456789',
+                                 enforce_permissions=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        run_test_server.stop()
+        run_test_server.stop_keep()
+
+    def test_KeepBasicRWTest(self):
+        run_test_server.authorize_with('active')
+        foo_locator = arvados.Keep.put('foo')
+        self.assertRegexpMatches(
+            foo_locator,
+            r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
+            'invalid locator from Keep.put("foo"): ' + foo_locator)
+        self.assertEqual(arvados.Keep.get(foo_locator),
+                         'foo',
+                         'wrong content from Keep.get(md5("foo"))')
+
+        # With Keep permissions enabled, a GET request without a locator will fail.
+        bar_locator = arvados.Keep.put('bar')
+        self.assertRegexpMatches(
+            bar_locator,
+            r'^37b51d194a7513e45b56f6524f2d51f2\+3\+A[a-f0-9]+@[a-f0-9]+$',
+            'invalid locator from Keep.put("bar"): ' + bar_locator)
+        self.assertRaises(arvados.errors.NotFoundError,
+                          arvados.Keep.get,
+                          "37b51d194a7513e45b56f6524f2d51f2")
+
+        # A request without an API token will also fail.
+        del arvados.config.settings()["ARVADOS_API_TOKEN"]
+        self.assertRaises(arvados.errors.NotFoundError,
+                          arvados.Keep.get,
+                          bar_locator)
+
+# KeepOptionalPermission: starts Keep with --permission-key-file
+# but not --enforce-permissions (i.e. generate signatures on PUT
+# requests, but do not require them for GET requests)
+#
+class KeepOptionalPermission(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            del os.environ['KEEP_LOCAL_STORE']
+        except KeyError:
+            pass
+        run_test_server.run()
+        run_test_server.run_keep(blob_signing_key='abcdefghijk0123456789',
+                                 enforce_permissions=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        run_test_server.stop()
+        run_test_server.stop_keep()
+
+    def test_KeepBasicRWTest(self):
+        run_test_server.authorize_with('active')
+        foo_locator = arvados.Keep.put('foo')
+        self.assertRegexpMatches(
+            foo_locator,
+            r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
+            'invalid locator from Keep.put("foo"): ' + foo_locator)
+        self.assertEqual(arvados.Keep.get(foo_locator),
+                         'foo',
+                         'wrong content from Keep.get(md5("foo"))')
+
+    def test_KeepUnsignedLocatorTest(self):
+        # Since --enforce-permissions is not in effect, GET requests
+        # do not require signatures.
+        run_test_server.authorize_with('active')
+        foo_locator = arvados.Keep.put('foo')
+        self.assertRegexpMatches(
+            foo_locator,
+            r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
+            'invalid locator from Keep.put("foo"): ' + foo_locator)
+        self.assertEqual(arvados.Keep.get("acbd18db4cc2f85cedef654fccc4a4d8"),
+                         'foo',
+                         'wrong content from Keep.get(md5("foo"))')
+
+    def test_KeepUnauthenticatedTest(self):
+        # Since --enforce-permissions is not in effect, GET requests
+        # need not be authenticated.
+        run_test_server.authorize_with('active')
+        foo_locator = arvados.Keep.put('foo')
+        self.assertRegexpMatches(
+            foo_locator,
+            r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
+            'invalid locator from Keep.put("foo"): ' + foo_locator)
+
+        del arvados.config.settings()["ARVADOS_API_TOKEN"]
+        self.assertEqual(arvados.Keep.get("acbd18db4cc2f85cedef654fccc4a4d8"),
+                         'foo',
+                         'wrong content from Keep.get(md5("foo"))')

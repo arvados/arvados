@@ -271,7 +271,7 @@ func MakeRESTRouter() *mux.Router {
 	rest.HandleFunc(
 		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(
-		`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
+		`/{hash:[0-9a-f]{32}}+{hints}`,
 		GetBlockHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 
@@ -330,8 +330,28 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 	log.Printf("%s %s", req.Method, hash)
 
-	signature := mux.Vars(req)["signature"]
-	timestamp := mux.Vars(req)["timestamp"]
+	hints := mux.Vars(req)["hints"]
+
+	// Parse the locator string and hints from the request.
+	// TODO(twp): implement a Locator type.
+	var signature, timestamp string
+	if hints != "" {
+		signature_pat, _ := regexp.Compile("^A([[:xdigit:]]+)@([[:xdigit:]]{8})$")
+		for _, hint := range strings.Split(hints, "+") {
+			if match, _ := regexp.MatchString("^[[:digit:]]+$", hint); match {
+				// Server ignores size hints
+			} else if match, _ := regexp.MatchString("^K([[:alnum:]]+)$", hint); match {
+				// Server ignores location hints
+			} else if m := signature_pat.FindStringSubmatch(hint); m != nil {
+				signature = m[1]
+				timestamp = m[2]
+			} else {
+				// Not a valid locator: return 404
+				http.Error(resp, NotFoundError.Error(), NotFoundError.HTTPCode)
+				return
+			}
+		}
+	}
 
 	// If permission checking is in effect, verify this
 	// request's permission signature.
@@ -343,8 +363,8 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 			http.Error(resp, ExpiredError.Error(), ExpiredError.HTTPCode)
 			return
 		} else {
-			validsig := MakePermSignature(hash, GetApiToken(req), timestamp)
-			if signature != validsig {
+			req_locator := req.URL.Path[1:] // strip leading slash
+			if !VerifySignature(req_locator, GetApiToken(req)) {
 				http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 				return
 			}
@@ -384,11 +404,15 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	//
 	if buf, err := ReadAtMost(req.Body, BLOCKSIZE); err == nil {
 		if err := PutBlock(buf, hash); err == nil {
-			// Success; sign the locator and return it to the client.
+			// Success; add a size hint, sign the locator if
+			// possible, and return it to the client.
+			return_hash := fmt.Sprintf("%s+%d", hash, len(buf))
 			api_token := GetApiToken(req)
-			expiry := time.Now().Add(permission_ttl)
-			signed_loc := SignLocator(hash, api_token, expiry)
-			resp.Write([]byte(signed_loc))
+			if PermissionSecret != nil && api_token != "" {
+				expiry := time.Now().Add(permission_ttl)
+				return_hash = SignLocator(return_hash, api_token, expiry)
+			}
+			resp.Write([]byte(return_hash + "\n"))
 		} else {
 			ke := err.(*KeepError)
 			http.Error(resp, ke.Error(), ke.HTTPCode)
@@ -650,13 +674,15 @@ func IsValidLocator(loc string) bool {
 	return false
 }
 
-// GetApiToken returns the OAuth token from the Authorization
+// GetApiToken returns the OAuth2 token from the Authorization
 // header of a HTTP request, or an empty string if no matching
 // token is found.
 func GetApiToken(req *http.Request) string {
 	if auth, ok := req.Header["Authorization"]; ok {
-		if strings.HasPrefix(auth[0], "OAuth ") {
-			return auth[0][6:]
+		if pat, err := regexp.Compile(`^OAuth2\s+(.*)`); err != nil {
+			log.Println(err)
+		} else if match := pat.FindStringSubmatch(auth[0]); match != nil {
+			return match[1]
 		}
 	}
 	return ""

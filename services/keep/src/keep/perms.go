@@ -83,10 +83,10 @@ func SignLocator(blob_locator string, api_token string, expiry time.Time) string
 // VerifySignature returns true if the signature on the signed_locator
 // can be verified using the given api_token.
 func VerifySignature(signed_locator string, api_token string) bool {
-	if re, err := regexp.Compile(`^(.*)\+A(.*)@(.*)$`); err == nil {
+	if re, err := regexp.Compile(`^([a-f0-9]+(\+[0-9]+)?)\+A(.*)@(.*)$`); err == nil {
 		if matches := re.FindStringSubmatch(signed_locator); matches != nil {
 			blob_locator := matches[1]
-			timestamp_hex := matches[3]
+			timestamp_hex := matches[4]
 			if expire_ts, err := ParseHexTimestamp(timestamp_hex); err == nil {
 				// Fail signatures with expired timestamps.
 				if expire_ts.Before(time.Now()) {
