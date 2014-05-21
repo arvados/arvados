@@ -161,7 +161,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 
 			<-st.handled
 			status := <-upload_status
-			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200})
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1})
 		})
 
 	log.Printf("TestUploadToStubKeepServer done")
@@ -194,7 +194,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 			<-st.handled
 
 			status := <-upload_status
-			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200})
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1})
 		})
 
 	log.Printf("TestUploadToStubKeepServerBufferReader done")
@@ -229,8 +229,8 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 			<-st.handled
 
 			status := <-upload_status
-			c.Check(status.Url, Equals, fmt.Sprintf("%s/%s", url, hash))
-			c.Check(status.StatusCode, Equals, 500)
+			c.Check(status.url, Equals, fmt.Sprintf("%s/%s", url, hash))
+			c.Check(status.statusCode, Equals, 500)
 		})
 	log.Printf("TestFailedUploadToStubKeepServer done")
 }
@@ -609,4 +609,69 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		c.Check(n, Equals, int64(3))
 		c.Check(url2, Equals, fmt.Sprintf("http://localhost:25108/%s", hash))
 	}
+}
+
+type StubProxyHandler struct {
+	handled chan string
+}
+
+func (this StubProxyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.Header().Set("X-Keep-Replicas-Stored", "2")
+	this.handled <- fmt.Sprintf("http://%s", req.Host)
+}
+
+func (s *StandaloneSuite) TestPutProxy(c *C) {
+	log.Printf("TestPutProxy")
+
+	st := StubProxyHandler{make(chan string, 1)}
+
+	kc, _ := MakeKeepClient()
+
+	kc.Want_replicas = 2
+	kc.Using_proxy = true
+	kc.ApiToken = "abc123"
+	kc.Service_roots = make([]string, 1)
+
+	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
+
+	for i, k := range ks1 {
+		kc.Service_roots[i] = k.url
+		defer k.listener.Close()
+	}
+
+	_, replicas, err := kc.PutB([]byte("foo"))
+	<-st.handled
+
+	c.Check(err, Equals, nil)
+	c.Check(replicas, Equals, 2)
+
+	log.Printf("TestPutProxy done")
+}
+
+func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
+	log.Printf("TestPutProxy")
+
+	st := StubProxyHandler{make(chan string, 1)}
+
+	kc, _ := MakeKeepClient()
+
+	kc.Want_replicas = 3
+	kc.Using_proxy = true
+	kc.ApiToken = "abc123"
+	kc.Service_roots = make([]string, 1)
+
+	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
+
+	for i, k := range ks1 {
+		kc.Service_roots[i] = k.url
+		defer k.listener.Close()
+	}
+
+	_, replicas, err := kc.PutB([]byte("foo"))
+	<-st.handled
+
+	c.Check(err, Equals, InsufficientReplicasError)
+	c.Check(replicas, Equals, 2)
+
+	log.Printf("TestPutProxy done")
 }
