@@ -2,9 +2,7 @@ nonfull:
   uuid: zzzzz-penuu-5w2o2t1q5wy7fhn
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   node_uuid: zzzzz-7ekkf-53y36l1lu5ijveb
-  service_host: keep0.qr1hi.arvadosapi.com
-  service_port: 25107
-  service_ssl_flag: false
+  keep_service_uuid: zzzzz-bi6l4-6zhilxar6r8ey90
   last_read_at: <%= 1.minute.ago.to_s(:db) %>
   last_write_at: <%= 2.minute.ago.to_s(:db) %>
   last_ping_at: <%= 3.minute.ago.to_s(:db) %>
@@ -14,9 +12,7 @@ full:
   uuid: zzzzz-penuu-4kmq58ui07xuftx
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   node_uuid: zzzzz-7ekkf-53y36l1lu5ijveb
-  service_host: keep0.qr1hi.arvadosapi.com
-  service_port: 25107
-  service_ssl_flag: false
+  keep_service_uuid: zzzzz-bi6l4-6zhilxar6r8ey90
   last_read_at: <%= 1.minute.ago.to_s(:db) %>
   last_write_at: <%= 2.day.ago.to_s(:db) %>
   last_ping_at: <%= 3.minute.ago.to_s(:db) %>
@@ -26,9 +22,7 @@ nonfull2:
   uuid: zzzzz-penuu-1ydrih9k2er5j11
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
   node_uuid: zzzzz-7ekkf-2z3mc76g2q73aio
-  service_host: keep1.qr1hi.arvadosapi.com
-  service_port: 25107
-  service_ssl_flag: false
+  keep_service_uuid: zzzzz-bi6l4-rsnj3c76ndxb7o0
   last_read_at: <%= 1.minute.ago.to_s(:db) %>
   last_write_at: <%= 2.minute.ago.to_s(:db) %>
   last_ping_at: <%= 3.minute.ago.to_s(:db) %>

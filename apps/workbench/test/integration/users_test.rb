@@ -63,6 +63,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       fill_in "email", :with => "foo@example.com"
       fill_in "repo_name", :with => "test_repo"
       click_button "Submit"
+      wait_for_ajax
     end
 
     visit '/users'
@@ -119,9 +120,9 @@ class UsersTest < ActionDispatch::IntegrationTest
       assert has_text? 'Virtual Machine'
       fill_in "repo_name", :with => "test_repo"
       click_button "Submit"
+      wait_for_ajax
     end
 
-    sleep(1)
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Metadata'
@@ -138,9 +139,9 @@ class UsersTest < ActionDispatch::IntegrationTest
       fill_in "repo_name", :with => "second_test_repo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
+      wait_for_ajax
     end
 
-    sleep(0.1)
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Metadata'
@@ -203,9 +204,9 @@ class UsersTest < ActionDispatch::IntegrationTest
       fill_in "repo_name", :with => "second_test_repo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
+      wait_for_ajax
     end
 
-    sleep(0.1)
     assert page.has_text? 'modified_by_client_uuid'
 
     click_link 'Metadata'

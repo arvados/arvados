@@ -155,12 +155,15 @@ def run_keep():
 
     authorize_with("admin")
     api = arvados.api('v1', cache=False)
-    a = api.keep_disks().list().execute()
+    for d in api.keep_services().list().execute()['items']:
+        api.keep_services().delete(uuid=d['uuid']).execute()
     for d in api.keep_disks().list().execute()['items']:
         api.keep_disks().delete(uuid=d['uuid']).execute()
 
-    api.keep_disks().create(body={"keep_disk": {"service_host": "localhost",  "service_port": 25107} }).execute()
-    api.keep_disks().create(body={"keep_disk": {"service_host": "localhost",  "service_port": 25108} }).execute()
+    s1 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25107, "service_type": "disk"} }).execute()
+    s2 = api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25108, "service_type": "disk"} }).execute()
+    api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s1["uuid"] } }).execute()
+    api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s2["uuid"] } }).execute()
 
     os.chdir(cwd)
 
