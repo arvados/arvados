@@ -14,11 +14,10 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <meta name="description" content="">
   <meta name="author" content="">
-
   <% if current_user %>
   <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
   <% end %>
-
+  <meta name="robots" content="NOINDEX, NOFOLLOW">
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
@@ -133,7 +132,10 @@
                 <i class="fa fa-lg fa-users fa-fw"></i> Groups
             </a></li>
             <li><a href="/nodes">
-                <i class="fa fa-lg fa-cogs fa-fw"></i> Compute nodes
+                <i class="fa fa-lg fa-cloud fa-fw"></i> Compute nodes
+            </a></li>
+            <li><a href="/keep_services">
+                <i class="fa fa-lg fa-exchange fa-fw"></i> Keep services
             </a></li>
             <li><a href="/keep_disks">
                 <i class="fa fa-lg fa-hdd-o fa-fw"></i> Keep disks

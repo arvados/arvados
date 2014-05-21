@@ -36,6 +36,7 @@ class ActiveSupport::TestCase
 
   def teardown
     Thread.current[:arvados_api_token] = nil
+    Thread.current[:reader_tokens] = nil
     super
   end
 end
