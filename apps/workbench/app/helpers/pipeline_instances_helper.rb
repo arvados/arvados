@@ -22,6 +22,17 @@ module PipelineInstancesHelper
     pj
   end
 
+  def pipieline_log_history(job_uuids)
+    results = []
+
+    log_history = Log.where(event_type: 'transient-log-entry',
+                            object_uuid: job_uuids).order('id DESC').limit(5).all
+    if !log_history.results.empty?
+      results = log_history.results.reverse
+    end
+
+    return results
+  end
 
   protected
 

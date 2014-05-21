@@ -93,6 +93,10 @@ setInterval(function(){$('a.refresh').click()}, 15000);
   <% if !@object.state.in? ['Complete', 'Failed'] %>
     <% if !pipeline_job_uuids.empty? %>
       <h4>Log for pipeline</h4>
+      <% log_history = pipieline_log_history(pipeline_job_uuids) %>
+        <% log_history.each do |entry| %>
+          <%=entry.summary%><br/>
+        <% end %>
       <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
     <% end %>
   <% end %>

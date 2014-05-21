@@ -54,7 +54,7 @@
     $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
       parsedData = JSON.parse(eventData);
       summary = parsedData.summary;
-      $(this).append(summary + "<br/><br/>");
+      $(this).append(summary + "<br/>");
     });
 
 })();
