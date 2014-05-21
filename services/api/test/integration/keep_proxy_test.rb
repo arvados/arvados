@@ -10,7 +10,7 @@ class KeepProxyTest < ActionDispatch::IntegrationTest
     assert_equal 'disk', services[0]['service_type']
     assert_equal 'disk', services[1]['service_type']
 
-    get "/arvados/v1/keep_services/accessible", {:format => :json}, auth(:active).merge({'HTTP_X_KEEP_PROXY_REQUIRED' => true})
+    get "/arvados/v1/keep_services/accessible", {:format => :json}, auth(:active).merge({'HTTP_X_EXTERNAL_CLIENT' => '1'})
     assert_response :success
     services = json_response['items']
 
