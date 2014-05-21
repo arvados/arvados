@@ -1,20 +1,27 @@
 <% content_for :css do %>
+ul#collection_files {
+  padding-left: 0;
+}
+
 ul.collection_files {
   line-height: 2.5em;
   list-style-type: none;
-  background: #FFF;
+  padding-left: 2.3em;
 }
 
 ul.collection_files li {
   clear: both;
 }
 
-li.collection_files_row_even {
-  background: #FFF;
+.collection_files_row {
+  padding: 1px;  /* Replaced by border for :hover */
 }
 
-li.collection_files_row_odd {
-  background: #EEE;
+.collection_files_row:hover {
+  background-color: #D9EDF7;
+  padding: 0px;
+  border: 1px solid #BCE8F1;
+  border-radius: 3px;
 }
 
 .collection_files_inline {
@@ -66,14 +73,17 @@ li.collection_files_row_odd {
     <% while dirstack.any? and (dirstack.last != dirname) %>
       <% dirstack.pop %></ul></li>
     <% end %>
-    <li class="collection_files_row_<%= (index.odd?) ? 'odd' : 'even' %>">
+    <li>
     <% if size.nil?  # This is a subdirectory. %>
       <% dirstack.push(File.join(dirname, filename)) %>
-      <div class="collection_files_name"><i class="fa fa-folder-open"></i> <%= filename %></div>
-        <ul class="collection_files">
+      <div class="collection_files_row">
+       <div class="collection_files_name"><i class="fa fa-folder-open"></i> <%= filename %></div>
+      </div>
+      <ul class="collection_files">
     <% else %>
       <% link_params = {controller: 'collections', action: 'show_file',
                         uuid: @object.uuid, file: file_path, size: size} %>
+       <div class="collection_files_row">
         <div class="collection_files_buttons">
           <%= raw(human_readable_bytes_html(size)) %>
           <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
@@ -93,6 +103,7 @@ li.collection_files_row_odd {
         </div>
       <% if CollectionsHelper::is_image(filename) %>
         <div class="collection_files_name"><i class="fa fa-bar-chart-o"></i> <%= filename %></div>
+       </div>
         <div class="collection_files_inline">
           <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
                       link_params.merge(disposition: 'inline'),
@@ -100,6 +111,7 @@ li.collection_files_row_odd {
         </div>
       <% else %>
         <div class="collection_files_name"><i class="fa fa-file"></i> <%= filename %></div>
+       </div>
       <% end %>
       </li>
     <% end  # if file or directory %>
