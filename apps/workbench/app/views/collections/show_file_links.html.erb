@@ -31,7 +31,7 @@ pre {
 Arvados.  You can download individual files listed below.  To download
 the entire collection with wget, try:</p>
 
-<pre>$ wget -m -np -nH --cut-dirs=3 <%=
+<pre>$ wget --mirror --no-parent --no-host --cut-dirs=3 <%=
          url_for(link_opts.merge(action: 'show_file_links', only_path: false))
        %></pre>
 
