@@ -304,6 +304,9 @@ func FindKeepVolumes() []string {
 
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+
+	log.Printf("%s %s", req.Method, hash)
+
 	signature := mux.Vars(req)["signature"]
 	timestamp := mux.Vars(req)["timestamp"]
 
@@ -343,6 +346,8 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+
+	log.Printf("%s %s", req.Method, hash)
 
 	// Read the block data to be stored.
 	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.

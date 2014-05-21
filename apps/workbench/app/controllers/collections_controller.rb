@@ -185,12 +185,9 @@ class CollectionsController < ApplicationController
   end
 
   def file_in_collection?(collection, filename)
-    def normalized_path(part_list)
-      File.join(part_list).sub(%r{^\./}, '')
-    end
-    target = normalized_path([filename])
+    target = CollectionsHelper.file_path(File.split(filename))
     collection.files.each do |file_spec|
-      return true if (normalized_path(file_spec[0, 2]) == target)
+      return true if (CollectionsHelper.file_path(file_spec) == target)
     end
     false
   end
