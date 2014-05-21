@@ -39,14 +39,8 @@ ul.collection_files li {
   text-overflow: ellipsis;
 }
 
-.collection_files_name i.fa {
-  display: block-inline;
-  width: 1.75em;
-  text-align: center;
-}
-
-.collection_files_buttons {
-  float: right;
+.collection_files_name i.fa-fw:first-child {
+  width: 1.6em;
 }
 <% end %>
 
@@ -77,14 +71,14 @@ ul.collection_files li {
     <% if size.nil?  # This is a subdirectory. %>
       <% dirstack.push(File.join(dirname, filename)) %>
       <div class="collection_files_row">
-       <div class="collection_files_name"><i class="fa fa-folder-open"></i> <%= filename %></div>
+       <div class="collection_files_name"><i class="fa fa-fw fa-folder-open"></i> <%= filename %></div>
       </div>
       <ul class="collection_files">
     <% else %>
       <% link_params = {controller: 'collections', action: 'show_file',
                         uuid: @object.uuid, file: file_path, size: size} %>
        <div class="collection_files_row">
-        <div class="collection_files_buttons">
+        <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
           <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
                 :class => 'persistent-selection',
@@ -102,7 +96,7 @@ ul.collection_files li {
                       {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
         </div>
       <% if CollectionsHelper::is_image(filename) %>
-        <div class="collection_files_name"><i class="fa fa-bar-chart-o"></i> <%= filename %></div>
+        <div class="collection_files_name"><i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
        </div>
         <div class="collection_files_inline">
           <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
@@ -110,7 +104,7 @@ ul.collection_files li {
                       {title: file_path}) %>
         </div>
       <% else %>
-        <div class="collection_files_name"><i class="fa fa-file"></i> <%= filename %></div>
+        <div class="collection_files_name"><i class="fa fa-fw fa-file"></i> <%= filename %></div>
        </div>
       <% end %>
       </li>
