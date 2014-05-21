@@ -1,5 +1,3 @@
-require 'locator'
-
 class Arvados::V1::CollectionsController < ApplicationController
   def create
     # Collections are owned by system_user. Creating a collection has
@@ -24,8 +22,8 @@ class Arvados::V1::CollectionsController < ApplicationController
     }
     resource_attrs[:manifest_text].lines.each do |entry|
       entry.split[1..-1].each do |tok|
-        # TODO(twp): fail the request if this match fails.
-        # Add in Phase 4 (see #2755)
+        # TODO(twp): in Phase 4, fail the request if the locator
+        # lacks a permission signature. (see #2755)
         loc = Locator.parse(tok)
         if loc and loc.signature
           if !api_token
@@ -44,10 +42,10 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     # Remove any permission signatures from the manifest.
     resource_attrs[:manifest_text]
-      .gsub!(/[[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
+      .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
       loc = Locator.parse(word)
       if loc
-        loc.without_signature.to_s
+        " " + loc.without_signature.to_s
       else
         word
       end
@@ -95,10 +93,10 @@ class Arvados::V1::CollectionsController < ApplicationController
         ttl: Rails.configuration.blob_signing_ttl,
       }
       @object[:manifest_text]
-        .gsub!(/[[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
+        .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
         loc = Locator.parse(word)
         if loc
-          Blob.sign_locator(word, signing_opts)
+          " " + Blob.sign_locator(word, signing_opts)
         else
           word
         end
