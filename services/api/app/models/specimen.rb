@@ -1,5 +1,5 @@
 class Specimen < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   serialize :properties, Hash

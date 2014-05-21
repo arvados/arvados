@@ -1,4 +1,5 @@
-require 'assign_uuid'
+require 'has_uuid'
+
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
@@ -14,7 +15,6 @@ class ArvadosModel < ActiveRecord::Base
   before_save :ensure_ownership_path_leads_to_user
   before_destroy :ensure_owner_uuid_is_permitted
   before_destroy :ensure_permission_to_destroy
-
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
   after_create :log_create
@@ -27,7 +27,7 @@ class ArvadosModel < ActiveRecord::Base
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
   # user.uuid==object.owner_uuid.
-  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
+  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'", dependent: :destroy
 
   class PermissionDeniedError < StandardError
     def http_status
@@ -187,7 +187,9 @@ class ArvadosModel < ActiveRecord::Base
 
   def ensure_owner_uuid_is_permitted
     raise PermissionDeniedError if !current_user
-    self.owner_uuid ||= current_user.uuid
+    if respond_to? :owner_uuid=
+      self.owner_uuid ||= current_user.uuid
+    end
     if self.owner_uuid_changed?
       if current_user.uuid == self.owner_uuid or
           current_user.can? write: self.owner_uuid

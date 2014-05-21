@@ -2,13 +2,13 @@
   <div class="col-md-6">
     <div class="panel panel-info">
       <div class="panel-heading">
-	<h3 class="panel-title">
-	  <%= render_editable_attribute @object, 'name', nil, {data: {emptytext: "New folder"}} %>
-	</h3>
+        <h3 class="panel-title">
+          <%= render_editable_attribute @object, 'name', nil, {data: {emptytext: "New folder"}} %>
+        </h3>
       </div>
       <div class="panel-body">
         <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
-	<%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "Created: #{@object.created_at.to_s(:long)}", 'data-toggle' => 'manual', 'id' => "#{@object.uuid}-description" } %>
+        <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "Created: #{@object.created_at.to_s(:long)}", 'data-toggle' => 'manual', 'id' => "#{@object.uuid}-description" } %>
         <% if @object.attribute_editable? 'description' %>
         <div style="margin-top: 1em;">
           <a href="#" class="btn btn-xs btn-default" data-toggle="x-editable" data-toggle-selector="#<%= @object.uuid %>-description"><i class="fa fa-fw fa-pencil"></i> Edit description</a>
@@ -20,34 +20,32 @@
   <div class="col-md-3">
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">
-	  Activity
-	</h3>
+        <h3 class="panel-title">
+          Activity
+        </h3>
       </div>
       <div class="panel-body smaller-text">
         <!--
-	<input type="text" class="form-control" placeholder="Search"/>
+        <input type="text" class="form-control" placeholder="Search"/>
         -->
-	<div style="height:0.5em;"></div>
-        <% @logs[0..2].each do |log| %>
-	<p>
-	  <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
-          <% if log.object_uuid %>
-          <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
-          <% end %>
-	</p>
-        <% end %>
+        <div style="height:0.5em;"></div>
         <% if @logs.any? %>
-	<%= link_to raw('Show all activity &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
-            logs_path(filters: [['object_uuid','=',@object.uuid]].to_json),
-            class: 'btn btn-xs btn-default' %>
+          <%= render_arvados_object_list_start(@logs, 'Show all activity',
+                logs_path(filters: [['object_uuid','=',@object.uuid]].to_json)) do |log| %>
+          <p>
+          <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
+            <% if log.object_uuid %>
+            <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
+            <% end %>
+          </p>
+          <% end %>
         <% else %>
-        <p>
-          Created: <%= @object.created_at.to_s(:long) %>
-        </p>
-        <p>
-          Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
-        </p>
+          <p>
+            Created: <%= @object.created_at.to_s(:long) %>
+          </p>
+          <p>
+            Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
+          </p>
         <% end %>
       </div>
     </div>
@@ -55,15 +53,15 @@
   <div class="col-md-3">
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">
-	  Sharing and permissions
-	</h3>
+        <h3 class="panel-title">
+          Sharing and permissions
+        </h3>
       </div>
       <div class="panel-body">
         <!--
-	<input type="text" class="form-control" placeholder="Search"/>
+        <input type="text" class="form-control" placeholder="Search"/>
         -->
-	<div style="height:0.5em;"></div>
+        <div style="height:0.5em;"></div>
         <p>Owner: <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></p>
         <% if @share_links.any? %>
         <p>Shared with:

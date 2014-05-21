@@ -1,0 +1,105 @@
+<div class="row row-fill-height">
+  <div class="col-md-6">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+	<h3 class="panel-title">
+          <% default_name = "Collection #{@object.uuid}" %>
+	  <% name_html = render_editable_attribute @object, 'name', nil, {data: {emptytext: default_name}} %>
+          <%= (/\S/.match(name_html)) ? name_html : default_name %>
+	</h3>
+      </div>
+      <div class="panel-body">
+        <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
+        <% if not (@output_of.andand.any? or @log_of.andand.any?) %>
+          <p><i>No source information available.</i></p>
+        <% end %>
+
+        <% if @output_of.andand.any? %>
+          <p>Output of jobs:<br />
+          <%= render_arvados_object_list_start(@output_of, 'Show all jobs',
+                jobs_path(filter: [['output', '=', @object.uuid]].to_json)) do |job| %>
+          <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
+          <% end %>
+          </p>
+        <% end %>
+
+        <% if @log_of.andand.any? %>
+          <p>Log of jobs:<br />
+          <%= render_arvados_object_list_start(@log_of, 'Show all jobs',
+                jobs_path(filter: [['log', '=', @object.uuid]].to_json)) do |job| %>
+          <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
+          <% end %>
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">
+	  Activity
+	</h3>
+      </div>
+      <div class="panel-body smaller-text">
+        <!--
+	<input type="text" class="form-control" placeholder="Search"/>
+        -->
+	<div style="height:0.5em;"></div>
+        <% if not @logs.andand.any? %>
+          <p>
+            Created: <%= @object.created_at.to_s(:long) %>
+          </p>
+          <p>
+            Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
+          </p>
+        <% else %>
+          <%= render_arvados_object_list_start(@logs, 'Show all activity',
+                logs_path(filters: [['object_uuid','=',@object.uuid]].to_json)) do |log| %>
+          <p>
+          <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
+            <% if log.object_uuid %>
+            <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
+            <% end %>
+          </p>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">
+	  Sharing and permissions
+	</h3>
+      </div>
+      <div class="panel-body">
+        <!--
+	<input type="text" class="form-control" placeholder="Search"/>
+        -->
+	<div style="height:0.5em;"></div>
+        <% if @folders.andand.any? %>
+          <p>Included in folders:<br />
+          <%= render_arvados_object_list_start(@folders, 'Show all folders',
+                links_path(filter: [['head_uuid', '=', @object.uuid],
+                                    ['link_class', '=', 'name']].to_json)) do |folder| %>
+          <%= link_to_if_arvados_object(folder, friendly_name: true) %><br />
+          <% end %>
+          </p>
+        <% end %>
+        <% if @permissions.andand.any? %>
+          <p>Readable by:<br />
+          <%= render_arvados_object_list_start(@permissions, 'Show all permissions',
+                links_path(filter: [['head_uuid', '=', @object.uuid],
+                                    ['link_class', '=', 'permission']].to_json)) do |link| %>
+          <%= link_to_if_arvados_object(link.tail_uuid, friendly_name: true) %><br />
+          <% end %>
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%= render file: 'application/show.html.erb' %>

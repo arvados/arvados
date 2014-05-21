@@ -12,8 +12,10 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
@@ -93,6 +95,8 @@ var ReadErrorTooLong = errors.New("Too long")
 // permission arguments).
 
 func main() {
+	log.Println("Keep started: pid", os.Getpid())
+
 	// Parse command-line flags:
 	//
 	// -listen=ipaddr:port
@@ -235,8 +239,27 @@ func main() {
 	// router.
 	http.Handle("/", MakeRESTRouter())
 
+	// Set up a TCP listener.
+	listener, err := net.Listen("tcp", listen)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Shut down the server gracefully (by closing the listener)
+	// if SIGTERM is received.
+	term := make(chan os.Signal, 1)
+	go func(sig <-chan os.Signal) {
+		s := <-sig
+		log.Println("caught signal:", s)
+		listener.Close()
+	}(term)
+	signal.Notify(term, syscall.SIGTERM)
+
 	// Start listening for requests.
-	http.ListenAndServe(listen, nil)
+	srv := &http.Server{Addr: listen}
+	srv.Serve(listener)
+
+	log.Println("shutting down")
 }
 
 // MakeRESTRouter
@@ -304,6 +327,9 @@ func FindKeepVolumes() []string {
 
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+
+	log.Printf("%s %s", req.Method, hash)
+
 	signature := mux.Vars(req)["signature"]
 	timestamp := mux.Vars(req)["timestamp"]
 
@@ -343,6 +369,8 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+
+	log.Printf("%s %s", req.Method, hash)
 
 	// Read the block data to be stored.
 	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.
