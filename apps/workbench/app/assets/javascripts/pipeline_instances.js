@@ -1,4 +1,3 @@
-
 (function() {
     var run_pipeline_button_state = function() {
         var a = $('a.editable.required.editable-empty');

@@ -1,7 +1,3 @@
-# Place all the behaviors and hooks related to the matching controller here.
-# All this logic will automatically be available in application.js.
-# You can use CoffeeScript in this file: http://jashkenas.github.com/coffee-script/
-
 cache_age_in_days = (milliseconds_age) ->
   ONE_DAY = 1000 * 60 * 60 * 24
   milliseconds_age / ONE_DAY

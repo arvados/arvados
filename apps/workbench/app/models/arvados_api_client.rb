@@ -7,21 +7,38 @@ class ArvadosApiClient
   class InvalidApiResponseException < StandardError
   end
 
-  @@client_mtx = Mutex.new
-  @@api_client = nil
   @@profiling_enabled = Rails.configuration.profiling_enabled
+  @@discovery = nil
+
+  # An API client object suitable for handling API requests on behalf
+  # of the current thread.
+  def self.new_or_current
+    # If this thread doesn't have an API client yet, *or* this model
+    # has been reloaded since the existing client was created, create
+    # a new client. Otherwise, keep using the latest client created in
+    # the current thread.
+    unless Thread.current[:arvados_api_client].andand.class == self
+      Thread.current[:arvados_api_client] = new
+    end
+    Thread.current[:arvados_api_client]
+  end
+
+  def initialize *args
+    @api_client = nil
+    @client_mtx = Mutex.new
+  end
 
   def api(resources_kind, action, data=nil)
     profile_checkpoint
 
-    @@client_mtx.synchronize do
-      if not @@api_client
-        @@api_client = HTTPClient.new
+    if not @api_client
+      @client_mtx.synchronize do
+        @api_client = HTTPClient.new
         if Rails.configuration.arvados_insecure_https
-          @@api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          @api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         else
           # Use system CA certificates
-          @@api_client.ssl_config.add_trust_ca('/etc/ssl/certs')
+          @api_client.ssl_config.add_trust_ca('/etc/ssl/certs')
         end
       end
     end
@@ -58,9 +75,11 @@ class ArvadosApiClient
     header = {"Accept" => "application/json"}
 
     profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]}" }
-    msg = @@api_client.post(url,
-                            query,
-                            header: header)
+    msg = @client_mtx.synchronize do
+      @api_client.post(url,
+                       query,
+                       header: header)
+    end
     profile_checkpoint 'API transaction'
 
     if msg.status_code == 401
@@ -158,7 +177,7 @@ class ArvadosApiClient
   end
 
   def discovery
-    @discovery ||= api '../../discovery/v1/apis/arvados/v1/rest', ''
+    @@discovery ||= api '../../discovery/v1/apis/arvados/v1/rest', ''
   end
 
   def kind_class(kind)

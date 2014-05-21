@@ -107,11 +107,11 @@ class UsersController < ApplicationController
   end
 
   def sudo
-    resp = $arvados_api_client.api(ApiClientAuthorization, '', {
-                                     api_client_authorization: {
-                                       owner_uuid: @object.uuid
-                                     }
-                                   })
+    resp = arvados_api_client.api(ApiClientAuthorization, '', {
+                                    api_client_authorization: {
+                                      owner_uuid: @object.uuid
+                                    }
+                                  })
     redirect_to root_url(api_token: resp[:api_token])
   end
 

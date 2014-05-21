@@ -13,7 +13,7 @@
   beyond that.
   </p>
       <p>
-	<a  class="pull-right btn btn-primary" href="<%= $arvados_api_client.arvados_login_url(return_to: request.url) %>">
+	<a  class="pull-right btn btn-primary" href="<%= arvados_api_client.arvados_login_url(return_to: request.url) %>">
 	  Click here to log in to <%= Rails.configuration.site_name %> with a Google account</a>
       </p>
     </div>
