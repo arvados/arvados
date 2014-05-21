@@ -46,7 +46,7 @@
       var a = $('.arv-log-event-listener');
       if (a.length > 0) {
         $('.arv-log-event-listener').each(function() {
-          subscribeToEventLog(this.id, this.getAttribute('data-object-uuid'));
+          subscribeToEventLog(this.id);
         });
       }
     });
