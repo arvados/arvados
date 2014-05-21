@@ -14,7 +14,8 @@ two_part:
       script_parameters:
         input:
           required: true
-          dataclass: collection
+          dataclass: Collection
+          description: "Provide a collection containing at least two files."
     part-two:
       script: bar
       script_version: master
