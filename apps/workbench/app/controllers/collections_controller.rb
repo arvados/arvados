@@ -1,7 +1,10 @@
 class CollectionsController < ApplicationController
-  skip_around_filter :thread_with_mandatory_api_token, only: [:show_file]
-  skip_before_filter :find_object_by_uuid, only: [:provenance, :show_file]
-  skip_before_filter :check_user_agreements, only: [:show_file]
+  skip_around_filter(:thread_with_mandatory_api_token,
+                     only: [:show_file, :show_file_links])
+  skip_before_filter(:find_object_by_uuid,
+                     only: [:provenance, :show_file, :show_file_links])
+
+  RELATION_LIMIT = 5
 
   def show_pane_list
     %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
@@ -87,13 +90,20 @@ class CollectionsController < ApplicationController
     @request_url = request.url
   end
 
+  def show_file_links
+    Thread.current[:reader_tokens] = [params[:reader_token]]
+    find_object_by_uuid
+    render layout: false
+  end
+
   def show_file
     # We pipe from arv-get to send the file to the user.  Before we start it,
     # we ask the API server if the file actually exists.  This serves two
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
     coll = nil
-    usable_token = find_usable_token do
+    tokens = [Thread.current[:arvados_api_token], params[:reader_token]].compact
+    usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
     if usable_token.nil?
@@ -110,70 +120,47 @@ class CollectionsController < ApplicationController
     self.response_body = file_enumerator opts
   end
 
+  def sharing_scopes
+    ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/keep_services"]
+  end
+
   def search_scopes
-    ApiClientAuthorization.where(filters: [['scopes', '=', ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/collections/#{@object.uuid}/"]]])
+    ApiClientAuthorization.where(filters: [['scopes', '=', sharing_scopes]])
   end
 
   def show
     return super if !@object
-    @provenance = []
-    @output2job = {}
-    @output2colorindex = {}
-    @sourcedata = {params[:uuid] => {uuid: params[:uuid]}}
-    @protected = {}
-    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
-
-    colorindex = -1
-    any_hope_left = true
-    while any_hope_left
-      any_hope_left = false
-      Job.where(output: @sourcedata.keys).sort_by { |a| a.finished_at || a.created_at }.reverse.each do |job|
-        if !@output2colorindex[job.output]
-          any_hope_left = true
-          @output2colorindex[job.output] = (colorindex += 1) % 10
-          @provenance << {job: job, output: job.output}
-          @sourcedata.delete job.output
-          @output2job[job.output] = job
-          job.dependencies.each do |new_source_data|
-            unless @output2colorindex[new_source_data]
-              @sourcedata[new_source_data] = {uuid: new_source_data}
-            end
-          end
-        end
+    if current_user
+      jobs_with = lambda do |conds|
+        Job.limit(RELATION_LIMIT).where(conds)
+          .results.sort_by { |j| j.finished_at || j.created_at }
       end
+      @output_of = jobs_with.call(output: @object.uuid)
+      @log_of = jobs_with.call(log: @object.uuid)
+      folder_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        .where(head_uuid: @object.uuid, link_class: 'name').results
+      folder_hash = Group.where(uuid: folder_links.map(&:tail_uuid)).to_hash
+      @folders = folder_links.map { |link| folder_hash[link.tail_uuid] }
+      @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+        .where(head_uuid: @object.uuid, link_class: 'permission',
+               name: 'can_read').results
+      @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
+        .where(object_uuid: @object.uuid).results
+      @is_persistent = Link.limit(1)
+        .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
+               link_class: 'resources', name: 'wants')
+        .results.any?
+      @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
     end
-
-    Link.where(head_uuid: @sourcedata.keys | @output2job.keys).each do |link|
-      if link.link_class == 'resources' and link.name == 'wants'
-        @protected[link.head_uuid] = true
-        if link.tail_uuid == current_user.uuid
-          @is_persistent = true
-        end
-      end
-    end
-    Link.where(tail_uuid: @sourcedata.keys).each do |link|
-      if link.link_class == 'data_origin'
-        @sourcedata[link.tail_uuid][:data_origins] ||= []
-        @sourcedata[link.tail_uuid][:data_origins] << [link.name, link.head_uuid]
-      end
-    end
-    Collection.where(uuid: @sourcedata.keys).each do |collection|
-      if @sourcedata[collection.uuid]
-        @sourcedata[collection.uuid][:collection] = collection
-      end
-    end
-
-    Collection.where(uuid: @object.uuid).each do |u|
-      @prov_svg = ProvenanceHelper::create_provenance_graph(u.provenance, "provenance_svg",
-                                                            {:request => request,
-                                                              :direction => :bottom_up,
-                                                              :combine_jobs => :script_only}) rescue nil
-      @used_by_svg = ProvenanceHelper::create_provenance_graph(u.used_by, "used_by_svg",
-                                                               {:request => request,
-                                                                 :direction => :top_down,
-                                                                 :combine_jobs => :script_only,
-                                                                 :pdata_only => true}) rescue nil
-    end
+    @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                          {:request => request,
+                                                            :direction => :bottom_up,
+                                                            :combine_jobs => :script_only}) rescue nil
+    @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                             {:request => request,
+                                                               :direction => :top_down,
+                                                               :combine_jobs => :script_only,
+                                                               :pdata_only => true}) rescue nil
   end
 
   def sharing_popup
@@ -185,7 +172,7 @@ class CollectionsController < ApplicationController
   end
 
   def share
-    a = ApiClientAuthorization.create(scopes: ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/collections/#{@object.uuid}/"])
+    a = ApiClientAuthorization.create(scopes: sharing_scopes)
     @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
     render 'sharing_popup'
   end
@@ -201,18 +188,14 @@ class CollectionsController < ApplicationController
 
   protected
 
-  def find_usable_token
-    # Iterate over every token available to make it the current token and
+  def find_usable_token(token_list)
+    # Iterate over every given token to make it the current token and
     # yield the given block.
     # If the block succeeds, return the token it used.
     # Otherwise, render an error response based on the most specific
     # error we encounter, and return nil.
-    read_tokens = [Thread.current[:arvados_api_token]].compact
-    if params[:reader_tokens].is_a? Array
-      read_tokens += params[:reader_tokens]
-    end
     most_specific_error = [401]
-    read_tokens.each do |api_token|
+    token_list.each do |api_token|
       using_specific_api_token(api_token) do
         begin
           yield
@@ -238,12 +221,9 @@ class CollectionsController < ApplicationController
   end
 
   def file_in_collection?(collection, filename)
-    def normalized_path(part_list)
-      File.join(part_list).sub(%r{^\./}, '')
-    end
-    target = normalized_path([filename])
+    target = CollectionsHelper.file_path(File.split(filename))
     collection.files.each do |file_spec|
-      return true if (normalized_path(file_spec[0, 2]) == target)
+      return true if (CollectionsHelper.file_path(file_spec) == target)
     end
     false
   end
@@ -253,25 +233,24 @@ class CollectionsController < ApplicationController
   end
 
   class FileStreamer
+    include ArvadosApiClientHelper
     def initialize(opts={})
       @opts = opts
     end
     def each
       return unless @opts[:uuid] && @opts[:file]
-      env = Hash[ENV].
-        merge({
-                'ARVADOS_API_HOST' =>
-                $arvados_api_client.arvados_v1_base.
-                sub(/\/arvados\/v1/, '').
-                sub(/^https?:\/\//, ''),
-                'ARVADOS_API_TOKEN' =>
-                @opts[:arvados_api_token],
-                'ARVADOS_API_HOST_INSECURE' =>
-                Rails.configuration.arvados_insecure_https ? 'true' : 'false'
-              })
+
+      env = Hash[ENV].dup
+
+      require 'uri'
+      u = URI.parse(arvados_api_client.arvados_v1_base)
+      env['ARVADOS_API_HOST'] = "#{u.host}:#{u.port}"
+      env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
+      env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
+
       IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
                'rb') do |io|
-        while buf = io.read(2**20)
+        while buf = io.read(2**16)
           yield buf
         end
       end

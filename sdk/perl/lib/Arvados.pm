@@ -41,7 +41,7 @@ environment variable, or C<arvados>
 Protocol scheme. Default: C<ARVADOS_API_PROTOCOL_SCHEME> environment
 variable, or C<https>
 
-=item apiToken
+=item authToken
 
 Authorization token. Default: C<ARVADOS_API_TOKEN> environment variable
 

@@ -1,6 +1,7 @@
 source 'https://rubygems.org'
 
-gem 'rails', '~> 3.2.0'
+gem 'rails', '~> 4.1.0'
+gem 'minitest', '>= 5.0.0'
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
@@ -11,11 +12,17 @@ gem 'multi_json'
 gem 'oj'
 gem 'sass'
 
+# Note: keeping this out of the "group :assets" section "may" allow us
+# to use Coffescript for UJS responses. It also prevents a
+# warning/problem when running tests: "WARN: tilt autoloading
+# 'coffee_script' in a non thread-safe way; explicit require
+# 'coffee_script' suggested."
+gem 'coffee-rails'
+
 # Gems used only for assets and not required
 # in production environments by default.
 group :assets do
-  gem 'sass-rails',   '~> 3.2.0'
-  gem 'coffee-rails', '~> 3.2.0'
+  gem 'sass-rails'
 
   # See https://github.com/sstephenson/execjs#readme for more supported runtimes
   gem 'therubyracer', :platforms => :ruby
@@ -29,6 +36,11 @@ group :test do
   gem 'capybara'
   gem 'poltergeist'
   gem 'headless'
+  # Note: "require: false" here tells bunder not to automatically
+  # 'require' the packages during application startup. Installation is
+  # still mandatory.
+  gem 'simplecov', '~> 0.7.1', require: false
+  gem 'simplecov-rcov', require: false
 end
 
 gem 'jquery-rails'
@@ -59,5 +71,8 @@ gem 'RedCloth'
 
 gem 'piwik_analytics'
 gem 'httpclient'
-gem 'themes_for_rails'
+
+# This fork has Rails 4 compatible routes
+gem 'themes_for_rails', git: 'https://github.com/holtkampw/themes_for_rails', ref: '1fd2d7897d75ae0d6375f4c390df87b8e91ad417'
+
 gem "deep_merge", :require => 'deep_merge/rails_compat'

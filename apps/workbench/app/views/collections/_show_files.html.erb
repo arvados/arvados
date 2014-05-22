@@ -1,18 +1,8 @@
-<% content_for :css do %>
-.file-list-inline-image {
-  width: 50%;
-  height: auto;
-}
-<% end %>
-
 <% content_for :tab_line_buttons do %>
 <div class="row">
   <div class="col-md-6"></div>
   <div class="col-md-6">
     <div class="pull-right">
-      <span id="sharing-button">
-        <%= render partial: 'sharing_button' %>
-      </span>
       <span style="padding-left: 1em">Collection storage status:</span>
       <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
 
@@ -21,62 +11,62 @@
 </div>
 <% end %>
 
-<table class="table table-condensed table-fixedlayout">
-  <colgroup>
-    <col width="4%" />
-    <col width="35%" />
-    <col width="40%" />
-    <col width="15%" />
-    <col width="10%" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th></th>
-      <th>path</th>
-      <th>file</th>
-      <th style="text-align:right">size</th>
-      <th>d/l</th>
-    </tr>
-  </thead><tbody>
-    <% if @object then @object.files.sort_by{|f|[f[0],f[1]]}.each do |file| %>
-      <% file_path = CollectionsHelper::file_path file %>
-      <tr>
-        <td>
-          <%= check_box_tag 'uuids[]', @object.uuid+'/'+file_path, false, {
+<% file_tree = @object.andand.files_tree %>
+<% if file_tree.nil? or file_tree.empty? %>
+  <p>This collection is empty.</p>
+<% else %>
+  <ul id="collection_files" class="collection_files">
+  <% dirstack = [file_tree.first.first] %>
+  <% file_tree.each_with_index do |(dirname, filename, size), index| %>
+    <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
+    <% while dirstack.any? and (dirstack.last != dirname) %>
+      <% dirstack.pop %></ul></li>
+    <% end %>
+    <li>
+    <% if size.nil?  # This is a subdirectory. %>
+      <% dirstack.push(File.join(dirname, filename)) %>
+      <div class="collection_files_row">
+       <div class="collection_files_name"><i class="fa fa-fw fa-folder-open"></i> <%= filename %></div>
+      </div>
+      <ul class="collection_files">
+    <% else %>
+      <% link_params = {controller: 'collections', action: 'show_file',
+                        uuid: @object.uuid, file: file_path, size: size} %>
+       <div class="collection_files_row">
+        <div class="collection_files_buttons pull-right">
+          <%= raw(human_readable_bytes_html(size)) %>
+          <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
                 :class => 'persistent-selection',
                 :friendly_type => "File",
                 :friendly_name => "#{@object.uuid}/#{file_path}",
-                :href => "#{url_for controller: 'collections', action: 'show', id: @object.uuid }/#{file_path}",
-                :title => "Click to add this item to your selection list"
+                :href => url_for(controller: 'collections', action: 'show_file',
+                                 uuid: @object.uuid, file: file_path),
+                :title => "Include #{file_path} in your selections",
               } %>
-        </td>
-        <td>
-          <%= file[0] %>
-        </td>
-
-      <td>
-        <%= link_to (if CollectionsHelper::is_image file[1]
-                       image_tag "#{url_for @object}/#{file_path}", class: "file-list-inline-image"
-                     else
-                       file[1]
-                     end),
-            {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'inline'},
-            {title: file_path} %>
-      </td>
-
-        <td style="text-align:right">
-          <%= raw(human_readable_bytes_html(file[2])) %>
-        </td>
-
-        <td>
-          <div style="display:inline-block">
-            <%= link_to raw('<i class="glyphicon glyphicon-download-alt"></i>'), {controller: 'collections', action: 'show_file', uuid: @object.uuid, file: file_path, size: file[2], disposition: 'attachment'}, {class: 'btn btn-info btn-sm', title: 'Download'} %>
-          </div>
-        </td>
-      </tr>
-    <% end; end %>
-  </tbody>
-</table>
+          <%= link_to(raw('<i class="fa fa-search"></i>'),
+                      link_params.merge(disposition: 'inline'),
+                      {title: "View #{file_path}", class: "btn btn-info btn-sm"}) %>
+          <%= link_to(raw('<i class="fa fa-download"></i>'),
+                      link_params.merge(disposition: 'attachment'),
+                      {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
+        </div>
+      <% if CollectionsHelper::is_image(filename) %>
+        <div class="collection_files_name"><i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
+       </div>
+        <div class="collection_files_inline">
+          <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
+                      link_params.merge(disposition: 'inline'),
+                      {title: file_path}) %>
+        </div>
+      <% else %>
+        <div class="collection_files_name"><i class="fa fa-fw fa-file"></i> <%= filename %></div>
+       </div>
+      <% end %>
+      </li>
+    <% end  # if file or directory %>
+  <% end  # file_tree.each %>
+  <%= raw(dirstack.map { |_| "</ul>" }.join("</li>")) %>
+<% end  # if file_tree %>
 
 <% content_for :footer_html do %>
 <div id="collection-sharing-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>

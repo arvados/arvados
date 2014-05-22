@@ -10,7 +10,7 @@
         <% if @search_sharing.any? %>
           Use this link to share this collection:<br>
           <big>
-          <% link = collection_url + "?reader_tokens[]=#{@search_sharing.first.api_token}" %>
+          <% link = collections_url + "/download/#{@object.uuid}/#{@search_sharing.first.api_token}" %>
           <%= link_to link, link %>
           </big>
         <% else %>

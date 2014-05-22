@@ -1,4 +1,5 @@
-require 'assign_uuid'
+require 'has_uuid'
+
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
@@ -14,7 +15,6 @@ class ArvadosModel < ActiveRecord::Base
   before_save :ensure_ownership_path_leads_to_user
   before_destroy :ensure_owner_uuid_is_permitted
   before_destroy :ensure_permission_to_destroy
-
   before_create :update_modified_by_fields
   before_update :maybe_update_modified_by_fields
   after_create :log_create
@@ -27,7 +27,7 @@ class ArvadosModel < ActiveRecord::Base
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
   # user.uuid==object.owner_uuid.
-  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
+  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'", dependent: :destroy
 
   class PermissionDeniedError < StandardError
     def http_status
@@ -187,24 +187,15 @@ class ArvadosModel < ActiveRecord::Base
 
   def ensure_owner_uuid_is_permitted
     raise PermissionDeniedError if !current_user
-    if self.respond_to? :owner_uuid=
+    if respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
-      if self.owner_uuid_changed?
-        if current_user.uuid == self.owner_uuid or
-            current_user.can? write: self.owner_uuid
-          # current_user is, or has :write permission on, the new owner
-        else
-          logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
-          raise PermissionDeniedError
-        end
-      end
+    end
+    if self.owner_uuid_changed?
       if new_record?
         return true
-      elsif current_user.uuid == self.owner_uuid_was or
-          current_user.uuid == self.uuid or
-          current_user.can? write: self.owner_uuid_was
-        # current user is, or has :write permission on, the previous owner
-        return true
+      elsif current_user.uuid == self.owner_uuid or
+          current_user.can? write: self.owner_uuid
+        # current_user is, or has :write permission on, the new owner
       else
         logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
         raise PermissionDeniedError
@@ -249,6 +240,7 @@ class ArvadosModel < ActiveRecord::Base
 
   def maybe_update_modified_by_fields
     update_modified_by_fields if self.changed? or self.new_record?
+    true
   end
 
   def update_modified_by_fields
@@ -257,6 +249,7 @@ class ArvadosModel < ActiveRecord::Base
     self.modified_at = Time.now
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
+    true
   end
 
   def ensure_serialized_attribute_type

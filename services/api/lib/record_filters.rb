@@ -8,7 +8,7 @@
 module RecordFilters
 
   # Input:
-  # +filters+  Arvados filters as list of lists.
+  # +filters+        array of conditions, each being [column, operator, operand]
   # +ar_table_name+  name of SQL table
   #
   # Output:
@@ -29,8 +29,11 @@ module RecordFilters
         raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
       end
       case operator.downcase
-      when '=', '<', '<=', '>', '>=', 'like'
+      when '=', '<', '<=', '>', '>=', '!=', 'like'
         if operand.is_a? String
+          if operator == '!='
+            operator = '<>'
+          end
           cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
           if (# any operator that operates on value rather than
               # representation:
@@ -41,14 +44,20 @@ module RecordFilters
           param_out << operand
         elsif operand.nil? and operator == '='
           cond_out << "#{ar_table_name}.#{attr} is null"
+        elsif operand.nil? and operator == '!='
+          cond_out << "#{ar_table_name}.#{attr} is not null"
         else
           raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                   "for '#{operator}' operator in filters")
         end
-      when 'in'
+      when 'in', 'not in'
         if operand.is_a? Array
-          cond_out << "#{ar_table_name}.#{attr} IN (?)"
+          cond_out << "#{ar_table_name}.#{attr} #{operator} (?)"
           param_out << operand
+          if operator == 'not in' and not operand.include?(nil)
+            # explicitly allow NULL
+            cond_out[-1] = "(#{cond_out[-1]} OR #{ar_table_name}.#{attr} IS NULL)"
+          end
         else
           raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                   "for '#{operator}' operator in filters")

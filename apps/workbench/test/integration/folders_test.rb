@@ -16,8 +16,7 @@ class FoldersTest < ActionDispatch::IntegrationTest
       find('.btn', text: 'Edit description').click
       find('.editable-input textarea').set('I just edited this.')
       find('.editable-submit').click
-      # Wait for editable popup to go away
-      page.assert_no_selector '.editable-submit'
+      wait_for_ajax
     end
     visit current_path
     assert(find?('.panel', text: 'I just edited this.'),
@@ -36,6 +35,7 @@ class FoldersTest < ActionDispatch::IntegrationTest
       find('.editable', text: 'Now I have a name.').click
       find('.editable-input input').set('Now I have a new name.')
       find('.glyphicon-ok').click
+      wait_for_ajax
       find('.editable', text: 'Now I have a new name.')
     end
     visit current_path

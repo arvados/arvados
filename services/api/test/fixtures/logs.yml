@@ -2,6 +2,7 @@ log1:
   id: 1
   uuid: zzzzz-xxxxx-pshmckwoma9plh7
   object_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
+  event_at: <%= 1.minute.ago.to_s(:db) %>
 
 log2: # admin changes repository2, which is owned by active user
   id: 2
@@ -9,6 +10,7 @@ log2: # admin changes repository2, which is owned by active user
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
   object_uuid: zzzzz-2x53u-382brsig8rp3667 # repository foo
   object_owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
+  event_at: <%= 2.minute.ago.to_s(:db) %>
 
 log3: # admin changes specimen owned_by_spectator
   id: 3
@@ -16,6 +18,7 @@ log3: # admin changes specimen owned_by_spectator
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
   object_uuid: zzzzz-2x53u-3b0xxwzlbzxq5yr # specimen owned_by_spectator
   object_owner_uuid: zzzzz-tpzed-l1s2piq4t4mps8r # spectator user
+  event_at: <%= 3.minute.ago.to_s(:db) %>
 
 log4: # foo collection added, readable by active through link
   id: 4
@@ -23,6 +26,7 @@ log4: # foo collection added, readable by active through link
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
   object_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45 # foo file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
+  event_at: <%= 4.minute.ago.to_s(:db) %>
 
 log5: # baz collection added, readable by active and spectator through group 'all users' group membership
   id: 5
@@ -30,3 +34,4 @@ log5: # baz collection added, readable by active and spectator through group 'al
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
   object_uuid: ea10d51bcf88862dbcc36eb292017dfd+45 # baz file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
+  event_at: <%= 5.minute.ago.to_s(:db) %>

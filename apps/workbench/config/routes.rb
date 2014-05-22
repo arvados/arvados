@@ -2,6 +2,7 @@ ArvadosWorkbench::Application.routes.draw do
   themes_for_rails
 
   resources :keep_disks
+  resources :keep_services
   resources :user_agreements do
     put 'sign', on: :collection
     get 'signatures', on: :collection
@@ -18,8 +19,8 @@ ArvadosWorkbench::Application.routes.draw do
   resources :authorized_keys
   resources :job_tasks
   resources :jobs
-  match '/logout' => 'sessions#destroy'
-  match '/logged_out' => 'sessions#index'
+  match '/logout' => 'sessions#destroy', via: [:get, :post]
+  get '/logged_out' => 'sessions#index'
   resources :users do
     get 'home', :on => :member
     get 'welcome', :on => :collection
@@ -39,13 +40,16 @@ ArvadosWorkbench::Application.routes.draw do
     get 'compare', on: :collection
   end
   resources :links
-  match '/collections/graph' => 'collections#graph'
+  get '/collections/graph' => 'collections#graph'
   resources :collections do
     post 'set_persistent', on: :member
     get 'sharing_popup', :on => :member
     post 'share', :on => :member
     post 'unshare', :on => :member
   end
+  get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
+      format: false)
+  get '/collections/download/:uuid/:reader_token' => 'collections#show_file_links'
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   resources :folders do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
@@ -58,5 +62,5 @@ ArvadosWorkbench::Application.routes.draw do
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
-  match '*a', :to => 'links#render_not_found'
+  match '*a', to: 'links#render_not_found', via: [:get, :post]
 end

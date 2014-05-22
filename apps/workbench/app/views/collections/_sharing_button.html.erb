@@ -5,4 +5,4 @@
   <% linktext = "Share" %>
   <% btnstyle = "btn-info" %>
 <% end %>
-<%= link_to linktext, sharing_popup_collection_url(id: @object.uuid),  {class: "btn-xs #{btnstyle}", :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#collection-sharing-modal-window'}  %>
+<%= link_to linktext, sharing_popup_collection_url(id: @object.uuid),  {class: "btn #{btnstyle}", :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#collection-sharing-modal-window'}  %>

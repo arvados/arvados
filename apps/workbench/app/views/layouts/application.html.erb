@@ -14,6 +14,7 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <meta name="description" content="">
   <meta name="author" content="">
+  <meta name="robots" content="NOINDEX, NOFOLLOW">
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
@@ -77,7 +78,7 @@
             </li>
 
             <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-folder-o fa-fw"></i> Folders <b class="caret"></b></a>
+              <a href="/folders" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-folder-o fa-fw"></i> Folders <b class="caret"></b></a>
               <ul class="dropdown-menu">
                 <li><%= link_to raw('<i class="fa fa-plus fa-fw"></i> Create new folder'), folders_path, method: :post %></li>
                 <% @my_top_level_folders.call[0..7].each do |folder| %>
@@ -90,6 +91,9 @@
             </li>
             <li><a href="/collections">
                 <i class="fa fa-lg fa-briefcase fa-fw"></i> Collections (data files)
+            </a></li>
+            <li><a href="/jobs">
+                <i class="fa fa-lg fa-tasks fa-fw"></i> Jobs
             </a></li>
             <li><a href="/pipeline_instances">
                 <i class="fa fa-lg fa-tasks fa-fw"></i> Pipeline instances
@@ -125,7 +129,10 @@
                 <i class="fa fa-lg fa-users fa-fw"></i> Groups
             </a></li>
             <li><a href="/nodes">
-                <i class="fa fa-lg fa-cogs fa-fw"></i> Compute nodes
+                <i class="fa fa-lg fa-cloud fa-fw"></i> Compute nodes
+            </a></li>
+            <li><a href="/keep_services">
+                <i class="fa fa-lg fa-exchange fa-fw"></i> Keep services
             </a></li>
             <li><a href="/keep_disks">
                 <i class="fa fa-lg fa-hdd-o fa-fw"></i> Keep disks
@@ -229,7 +236,7 @@
             </ul>
           </li>
           <% else %>
-            <li><a href="<%= $arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
           <% end %>
         </ul>
       </div><!-- /.navbar-collapse -->

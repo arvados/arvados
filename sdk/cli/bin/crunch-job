@@ -139,7 +139,7 @@ $SIG{'USR2'} = sub
 
 
 my $arv = Arvados->new('apiVersion' => 'v1');
-my $metastream;
+my $local_logfile;
 
 my $User = $arv->{'users'}->{'current'}->execute;
 
@@ -185,7 +185,7 @@ else
 $job_id = $Job->{'uuid'};
 
 my $keep_logfile = $job_id . '.log.txt';
-my $local_logfile = File::Temp->new();
+$local_logfile = File::Temp->new();
 
 $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
@@ -498,7 +498,30 @@ if (!$have_slurm)
   must_lock_now("$ENV{CRUNCH_TMP}/.lock", "a job is already running here.");
 }
 
-
+# If this job requires a Docker image, install that.
+my $docker_bin = "/usr/bin/docker.io";
+my $docker_image = $Job->{runtime_constraints}->{docker_image} || "";
+if ($docker_image) {
+  my $docker_pid = fork();
+  if ($docker_pid == 0)
+  {
+    srun (["srun", "--nodelist=" . join(' ', @node)],
+          [$docker_bin, 'pull', $docker_image]);
+    exit ($?);
+  }
+  while (1)
+  {
+    last if $docker_pid == waitpid (-1, WNOHANG);
+    freeze_if_want_freeze ($docker_pid);
+    select (undef, undef, undef, 0.1);
+  }
+  # If the Docker image was specified as a hash, pull will fail.
+  # Ignore that error.  We'll see what happens when we try to run later.
+  if (($? != 0) && ($docker_image !~ /^[0-9a-fA-F]{5,64}$/))
+  {
+    croak("Installing Docker image $docker_image returned exit code $?");
+  }
+}
 
 foreach (qw (script script_version script_parameters runtime_constraints))
 {
@@ -603,7 +626,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       qw(-n1 -c1 -N1 -D), $ENV{'TMPDIR'},
       "--job-name=$job_id.$id.$$",
 	);
-    my @execargs = qw(sh);
     my $build_script_to_send = "";
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
@@ -615,8 +637,27 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .=
 	  "&& perl -";
     }
-    $command .=
-        "&& exec arv-mount $ENV{TASK_KEEPMOUNT} --exec $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+    $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
+    if ($docker_image)
+    {
+      $command .= "$docker_bin run -i -a stdin -a stdout -a stderr ";
+      # Dynamically configure the container to use the host system as its
+      # DNS server.  Get the host's global addresses from the ip command,
+      # and turn them into docker --dns options using gawk.
+      $command .=
+          q{$(ip -o address show scope global |
+              gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
+      foreach my $env_key (qw(CRUNCH_SRC CRUNCH_TMP TASK_KEEPMOUNT))
+      {
+        $command .= "-v \Q$ENV{$env_key}:$ENV{$env_key}:rw\E ";
+      }
+      while (my ($env_key, $env_val) = each %ENV)
+      {
+        $command .= "-e \Q$env_key=$env_val\E ";
+      }
+      $command .= "\Q$docker_image\E ";
+    }
+    $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
     exit (111);
@@ -905,13 +946,19 @@ sub reapchildren
   delete $proc{$pid};
 
   # Load new tasks
-  my $newtask_list = $arv->{'job_tasks'}->{'list'}->execute(
-    'where' => {
-      'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
-    },
-    'order' => 'qsequence'
-  );
-  foreach my $arvados_task (@{$newtask_list->{'items'}}) {
+  my $newtask_list = [];
+  my $newtask_results;
+  do {
+    $newtask_results = $arv->{'job_tasks'}->{'list'}->execute(
+      'where' => {
+        'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
+      },
+      'order' => 'qsequence',
+      'offset' => scalar(@$newtask_list),
+    );
+    push(@$newtask_list, @{$newtask_results->{items}});
+  } while (@{$newtask_results->{items}});
+  foreach my $arvados_task (@$newtask_list) {
     my $jobstep = {
       'level' => $arvados_task->{'sequence'},
       'failures' => 0,
@@ -1204,15 +1251,15 @@ sub Log				# ($jobstep_id, $logmessage)
   $message =~ s{([^ -\176])}{"\\" . sprintf ("%03o", ord($1))}ge;
   $message .= "\n";
   my $datetime;
-  if ($metastream || -t STDERR) {
+  if ($local_logfile || -t STDERR) {
     my @gmtime = gmtime;
     $datetime = sprintf ("%04d-%02d-%02d_%02d:%02d:%02d",
 			 $gmtime[5]+1900, $gmtime[4]+1, @gmtime[3,2,1,0]);
   }
   print STDERR ((-t STDERR) ? ($datetime." ".$message) : $message);
 
-  if ($metastream) {
-    print $metastream $datetime . " " . $message;
+  if ($local_logfile) {
+    print $local_logfile $datetime . " " . $message;
   }
 }
 
@@ -1225,7 +1272,7 @@ sub croak
   freeze() if @jobstep_todo;
   collate_output() if @jobstep_todo;
   cleanup();
-  save_meta() if $metastream;
+  save_meta() if $local_logfile;
   die;
 }
 
@@ -1249,6 +1296,7 @@ sub save_meta
       . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;
+  chomp($loglocator);
 
   $local_logfile = undef;   # the temp file is automatically deleted
   Log (undef, "log manifest is $loglocator");

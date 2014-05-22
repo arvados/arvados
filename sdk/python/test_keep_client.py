@@ -5,16 +5,24 @@
 import unittest
 import arvados
 import os
+import run_test_server
 
 class KeepTestCase(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         try:
             del os.environ['KEEP_LOCAL_STORE']
         except KeyError:
             pass
+        run_test_server.run()
+        run_test_server.run_keep()
 
-class KeepBasicRWTest(KeepTestCase):
-    def runTest(self):
+    @classmethod
+    def tearDownClass(cls):
+        run_test_server.stop()
+        run_test_server.stop_keep()
+
+    def test_KeepBasicRWTest(self):
         foo_locator = arvados.Keep.put('foo')
         self.assertEqual(foo_locator,
                          'acbd18db4cc2f85cedef654fccc4a4d8+3',
@@ -23,8 +31,7 @@ class KeepBasicRWTest(KeepTestCase):
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
-class KeepBinaryRWTest(KeepTestCase):
-    def runTest(self):
+    def test_KeepBinaryRWTest(self):
         blob_str = '\xff\xfe\xf7\x00\x01\x02'
         blob_locator = arvados.Keep.put(blob_str)
         self.assertEqual(blob_locator,
@@ -35,8 +42,7 @@ class KeepBinaryRWTest(KeepTestCase):
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
-class KeepLongBinaryRWTest(KeepTestCase):
-    def runTest(self):
+    def test_KeepLongBinaryRWTest(self):
         blob_str = '\xff\xfe\xfd\xfc\x00\x01\x02\x03'
         for i in range(0,23):
             blob_str = blob_str + blob_str
@@ -49,8 +55,7 @@ class KeepLongBinaryRWTest(KeepTestCase):
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
-class KeepSingleCopyRWTest(KeepTestCase):
-    def runTest(self):
+    def test_KeepSingleCopyRWTest(self):
         blob_str = '\xff\xfe\xfd\xfc\x00\x01\x02\x03'
         blob_locator = arvados.Keep.put(blob_str, copies=1)
         self.assertEqual(blob_locator,

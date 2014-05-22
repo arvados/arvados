@@ -1,7 +1,11 @@
+require 'can_be_an_owner'
+
 class User < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  include CanBeAnOwner
+
   serialize :prefs, Hash
   has_many :api_client_authorizations
   before_update :prevent_privilege_escalation
@@ -176,6 +180,10 @@ class User < ArvadosModel
   end
 
   protected
+
+  def ensure_ownership_path_leads_to_user
+    true
+  end
 
   def permission_to_update
     # users must be able to update themselves (even if they are

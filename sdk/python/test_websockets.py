@@ -1,0 +1,32 @@
+import run_test_server
+import unittest
+import arvados
+import arvados.events
+import time
+
+class WebsocketTest(unittest.TestCase):
+    def setUp(self):
+        run_test_server.run(websockets=True)
+
+    def on_event(self, ev):
+        if self.state == 1:
+            self.assertEqual(200, ev['status'])
+            self.state = 2
+        elif self.state == 2:
+            self.assertEqual(self.h[u'uuid'], ev[u'object_uuid'])
+            self.state = 3
+        elif self.state == 3:
+            self.fail()
+
+    def runTest(self):
+        self.state = 1
+
+        run_test_server.authorize_with("admin")
+        api = arvados.api('v1', cache=False)
+        arvados.events.subscribe(api, [['object_uuid', 'is_a', 'arvados#human']], lambda ev: self.on_event(ev))
+        time.sleep(1)
+        self.h = api.humans().create(body={}).execute()
+        time.sleep(1)
+
+    def tearDown(self):
+        run_test_server.stop()
