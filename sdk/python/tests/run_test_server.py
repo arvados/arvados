@@ -10,8 +10,8 @@ import arvados.api
 import shutil
 import tempfile
 
-ARV_API_SERVER_DIR = '../../services/api'
-KEEP_SERVER_DIR = '../../services/keep'
+ARV_API_SERVER_DIR = '../../../services/api'
+KEEP_SERVER_DIR = '../../../services/keep'
 SERVER_PID_PATH = 'tmp/pids/webrick-test.pid'
 WEBSOCKETS_SERVER_PID_PATH = 'tmp/pids/passenger-test.pid'
 

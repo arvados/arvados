@@ -1,1 +1,0 @@
-../../sdk/python/run_test_server.py

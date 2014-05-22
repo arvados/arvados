@@ -219,6 +219,13 @@ class ArvadosCollectionsTest(unittest.TestCase):
                          n_lines_in,
                          "decompression returned %d lines instead of %d" % (got, n_lines_in))
 
+    def data_file(self, filename):
+        try:
+            basedir = os.path.dirname(__file__)
+        except NameError:
+            basedir = '.'
+        return open(os.path.join(basedir, 'data', filename))
+
     def test_normalized_collection(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
@@ -254,11 +261,11 @@ class ArvadosCollectionsTest(unittest.TestCase):
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 """)
 
-        with open('testdata/1000G_ref_manifest') as f6:
+        with self.data_file('1000G_ref_manifest') as f6:
             m6 = f6.read()
             self.assertEqual(arvados.CollectionReader(m6).manifest_text(), m6)
 
-        with open('testdata/jlake_manifest') as f7:
+        with self.data_file('jlake_manifest') as f7:
             m7 = f7.read()
             self.assertEqual(arvados.CollectionReader(m7).manifest_text(), m7)
 
