@@ -3,9 +3,11 @@ require 'selenium-webdriver'
 require 'headless'
 
 class FoldersTest < ActionDispatch::IntegrationTest
+  setup do
+    Capybara.current_driver = Capybara.javascript_driver
+  end
 
   test 'Find a folder and edit its description' do
-    Capybara.current_driver = Capybara.javascript_driver
     visit page_with_token 'active', '/'
     find('nav a', text: 'Folders').click
     find('.arv-folder-list a,button', text: 'A Folder').
@@ -24,7 +26,6 @@ class FoldersTest < ActionDispatch::IntegrationTest
   end
 
   test 'Add a new name, then edit it, without creating a duplicate' do
-    Capybara.current_driver = Capybara.javascript_driver
     folder_uuid = api_fixture('groups')['afolder']['uuid']
     specimen_uuid = api_fixture('specimens')['owned_by_afolder_with_no_name_link']['uuid']
     visit page_with_token 'active', '/folders/' + folder_uuid
@@ -43,6 +44,40 @@ class FoldersTest < ActionDispatch::IntegrationTest
       find '.editable', text: 'Now I have a new name.'
       page.assert_no_selector '.editable', text: 'Now I have a name.'
     end
+  end
+
+  test 'Create a folder and move it into a different folder' do
+    visit page_with_token 'active', '/folders'
+    find('input[value="Add a new folder"]').click
+
+    within('.panel', text: 'New folder') do
+      find('.panel-title span', text: 'New folder').click
+      find('.editable-input input').set('Folder 1234')
+      find('.glyphicon-ok').click
+    end
+    wait_for_ajax
+
+    visit '/folders'
+    find('input[value="Add a new folder"]').click
+    within('.panel', text: 'New folder') do
+      find('.panel-title span', text: 'New folder').click
+      find('.editable-input input').set('Folder 5678')
+      find('.glyphicon-ok').click
+    end
+    wait_for_ajax
+
+    find('input[value="Move to..."]').click
+    find('.selectable', text: 'Folder 1234').click
+    find('a,button', text: 'Move').click
+    wait_for_ajax
+
+    # Wait for the page to refresh and show the new parent folder in
+    # the Permissions panel:
+    find('.panel', text: 'Folder 1234')
+
+    assert(find('.panel', text: 'Permissions inherited from').
+           all('*', text: 'Folder 1234').any?,
+           "Folder 5678 should now be inside folder 1234")
   end
 
 end
