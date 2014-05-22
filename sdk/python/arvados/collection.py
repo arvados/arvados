@@ -19,6 +19,7 @@ import time
 import threading
 
 from collections import deque
+from stat import *
 
 from keep import *
 from stream import *
@@ -193,6 +194,11 @@ class CollectionWriter(object):
                 self._work_trees()
             else:
                 break
+            self.checkpoint_state()
+
+    def checkpoint_state(self):
+        # Subclasses can implement this method to, e.g., report or record state.
+        pass
 
     def _work_file(self):
         while True:
@@ -208,6 +214,8 @@ class CollectionWriter(object):
 
     def _work_dirents(self):
         path, stream_name, max_manifest_depth = self._queued_trees[0]
+        if stream_name != self.current_stream_name():
+            self.start_new_stream(stream_name)
         while self._queued_dirents:
             dirent = self._queued_dirents.popleft()
             target = os.path.join(path, dirent)
@@ -242,7 +250,6 @@ class CollectionWriter(object):
     def _queue_dirents(self, stream_name, dirents):
         assert (not self._queued_dirents), "tried to queue more than one tree"
         self._queued_dirents = deque(sorted(dirents))
-        self.start_new_stream(stream_name)
 
     def _queue_tree(self, path, stream_name, max_manifest_depth):
         self._queued_trees.append((path, stream_name, max_manifest_depth))
@@ -273,6 +280,7 @@ class CollectionWriter(object):
             self._current_stream_locators += [Keep.put(data_buffer[0:self.KEEP_BLOCK_SIZE])]
             self._data_buffer = [data_buffer[self.KEEP_BLOCK_SIZE:]]
             self._data_buffer_len = len(self._data_buffer[0])
+            self.checkpoint_state()
 
     def start_new_file(self, newfilename=None):
         self.finish_current_file()
@@ -363,3 +371,86 @@ class CollectionWriter(object):
         for name, locators, files in self._finished_streams:
             ret += locators
         return ret
+
+
+class ResumableCollectionWriter(CollectionWriter):
+    STATE_PROPS = ['_current_stream_files', '_current_stream_length',
+                   '_current_stream_locators', '_current_stream_name',
+                   '_current_file_name', '_current_file_pos', '_close_file',
+                   '_data_buffer', '_dependencies', '_finished_streams',
+                   '_queued_dirents', '_queued_trees']
+
+    def __init__(self):
+        self._dependencies = {}
+        super(ResumableCollectionWriter, self).__init__()
+
+    @classmethod
+    def from_state(cls, state):
+        writer = cls()
+        for attr_name in cls.STATE_PROPS:
+            attr_value = state[attr_name]
+            attr_class = getattr(writer, attr_name).__class__
+            # Coerce the value into the same type as the initial value, if
+            # needed.
+            if attr_class not in (type(None), attr_value.__class__):
+                attr_value = attr_class(attr_value)
+            setattr(writer, attr_name, attr_value)
+        # Check dependencies before we try to resume anything.
+        writer.check_dependencies()
+        if state['_current_file'] is not None:
+            path, pos = state['_current_file']
+            try:
+                writer._queued_file = open(path, 'rb')
+                writer._queued_file.seek(pos)
+            except IOError as error:
+                raise errors.StaleWriterStateError(
+                    "failed to reopen active file {}: {}".format(path, error))
+        writer._do_queued_work()
+        return writer
+
+    def check_dependencies(self):
+        for path, orig_stat in self._dependencies.items():
+            if not S_ISREG(orig_stat[ST_MODE]):
+                raise errors.StaleWriterStateError("{} not file".format(path))
+            try:
+                now_stat = tuple(os.stat(path))
+            except OSError as error:
+                raise errors.StaleWriterStateError(
+                    "failed to stat {}: {}".format(path, error))
+            if ((not S_ISREG(now_stat[ST_MODE])) or
+                (orig_stat[ST_MTIME] != now_stat[ST_MTIME]) or
+                (orig_stat[ST_SIZE] != now_stat[ST_SIZE])):
+                raise errors.StaleWriterStateError("{} changed".format(path))
+
+    def dump_state(self, copy_func=lambda x: x):
+        state = {attr: copy_func(getattr(self, attr))
+                 for attr in self.STATE_PROPS}
+        if self._queued_file is None:
+            state['_current_file'] = None
+        else:
+            state['_current_file'] = (os.path.realpath(self._queued_file.name),
+                                      self._queued_file.tell())
+        return state
+
+    def _queue_file(self, source, filename=None):
+        try:
+            src_path = os.path.realpath(source)
+        except Exception:
+            raise errors.AssertionError("{} not a file path".format(source))
+        try:
+            path_stat = os.stat(src_path)
+        except OSError as error:
+            raise errors.AssertionError(
+                "could not stat {}: {}".format(source, error))
+        super(ResumableCollectionWriter, self)._queue_file(source, filename)
+        fd_stat = os.fstat(self._queued_file.fileno())
+        if path_stat.st_ino != fd_stat.st_ino:
+            raise errors.AssertionError(
+                "{} changed between open and stat calls".format(source))
+        self._dependencies[src_path] = tuple(fd_stat)
+
+    def write(self, data):
+        if self._queued_file is None:
+            raise errors.AssertionError(
+                "resumable writer can't accept unsourced data")
+        return super(ResumableCollectionWriter, self).write(data)
