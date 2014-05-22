@@ -1,5 +1,5 @@
 class PipelineInstance < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   serialize :components, Hash
@@ -166,6 +166,7 @@ class PipelineInstance < ArvadosModel
         return false
       end
     elsif 'success'.in? changed_attributes
+      logger.info "pipeline_instance changed_attributes has success for #{self.uuid}"
       if self.success
         self.active = false
         self.state = Complete
@@ -174,6 +175,7 @@ class PipelineInstance < ArvadosModel
         self.state = Failed
       end
     elsif 'active'.in? changed_attributes
+      logger.info "pipeline_instance changed_attributes has active for #{self.uuid}"
       if self.active
         if self.state.in? [New, Ready, Paused]
           self.state = RunningOnServer
@@ -194,8 +196,8 @@ class PipelineInstance < ArvadosModel
     end
 
     if new_record? or 'components'.in? changed_attributes
-      state ||= New
-      if state == New and self.components_look_ready?
+      self.state ||= New
+      if self.state == New and self.components_look_ready?
         self.state = Ready
       end
     end

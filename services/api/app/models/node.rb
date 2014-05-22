@@ -1,5 +1,5 @@
 class Node < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   serialize :info, Hash
