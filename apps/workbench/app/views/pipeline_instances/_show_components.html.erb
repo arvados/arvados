@@ -16,6 +16,7 @@
   <% end %>
 <% end %>
 
+<% pipeline_jobs = [] %>
 <% pipeline_job_uuids = [] %>
 
 <% if !@object.state.in? ['New', 'Ready', 'Paused'] %>
@@ -53,6 +54,7 @@
                                locals: { :j => pj[:job], :title => pj[:name] }) %>
         <% if pj[:job].andand[:uuid] %>
           <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
+          <% pipeline_jobs << pj[:job] %>
           <% pipeline_job_uuids << pj[:job][:uuid] %>
         <% else %>
           <%= job_status %>
@@ -90,19 +92,33 @@ setInterval(function(){$('a.refresh').click()}, 15000);
   <% end %>
 <% end %>
 
-  <% if !@object.state.in? ['Complete', 'Failed'] %>
     <% if !pipeline_job_uuids.empty? %>
       <h4>Log for pipeline</h4>
       <% log_history = pipieline_log_history(pipeline_job_uuids) %>
+      <div id="pipeline_event_log_history_div">
         <% log_history.each do |entry| %>
           <%=entry.summary%><br/>
         <% end %>
+      </div>
       <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
     <% end %>
+  <% else %>      <%# Not running. Must be done. %>
+    <h4>Log for pipeline</h4>
+    <div id="pipeline_event_log_history_div">
+    <% pipeline_jobs.each do |j| %>
+      <% if j[:log] %>
+        <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(j[:log])%>
+        <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
+          <% c.files.each do |file| %>
+            <a href="<%= collection_path(j[:log]) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>"><%=j[:uuid]%> Log</a>
+          <% end %>
+        <% end %>
+      <% end %>
+    <% end %>
+    </div>
   <% end %>
-<% end %>
 
-<% else %>
+<% else %>    <%# State new or ready or paused %>
   <% if @object.state == 'New' %>
     <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
   <% end %>
