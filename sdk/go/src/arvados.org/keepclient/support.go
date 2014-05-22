@@ -33,12 +33,15 @@ func (this *KeepClient) discoverKeepServers() error {
 	var req *http.Request
 	var err error
 
-	if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_services/accessible", this.ApiServer), nil); err != nil {
+	if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_services/accessible?format=json", this.ApiServer), nil); err != nil {
 		return err
 	}
 
 	// Add api token header
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+	if this.External {
+		req.Header.Add("X-External-Client", "1")
+	}
 
 	// Make the request
 	var resp *http.Response
