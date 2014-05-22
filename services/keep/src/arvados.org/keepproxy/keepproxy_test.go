@@ -31,7 +31,7 @@ type ServerRequiredSuite struct{}
 
 func pythonDir() string {
 	gopath := os.Getenv("GOPATH")
-	return fmt.Sprintf("%s/../../sdk/python", strings.Split(gopath, ":")[0])
+	return fmt.Sprintf("%s/../../sdk/python/tests", strings.Split(gopath, ":")[0])
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
