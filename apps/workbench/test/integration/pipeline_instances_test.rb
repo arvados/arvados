@@ -31,9 +31,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     visit instance_page
 
     page.assert_selector 'a.disabled,button.disabled', text: 'Run'
-    assert find('div.alert', text: 'Provide a value')
+    assert find('p', text: 'Provide a value')
 
-    find('div.form-group', text: 'Input for part-one component').
+    find('div.form-group', text: 'Foo/bar pair').
       find('a,input').
       click
     find('.editable-input select').click
