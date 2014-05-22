@@ -47,9 +47,15 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
 	SetupProxyService()
+
+	os.Args = []string{"keepproxy", "-listen=:29950"}
+	go main()
+	time.Sleep(100 * time.Millisecond)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
+	listener.Close()
+
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 
@@ -110,21 +116,13 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 
 	log.Print("keepclient created")
 
-	os.Args = []string{"keepproxy", "-listen=:29950"}
-	go main()
-
-	time.Sleep(100 * time.Millisecond)
-
-	log.Print("keepproxy main started")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	// Uncomment this when actual keep server supports HEAD
-	/*{
+	{
 		_, _, err := kc.Ask(hash)
 		c.Check(err, Equals, keepclient.BlockNotFound)
 		log.Print("Ask 1")
-	}*/
+	}
 
 	{
 		hash2, rep, err := kc.PutB([]byte("foo"))
@@ -134,25 +132,69 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		log.Print("PutB")
 	}
 
-	// Uncomment this when actual keep server supports HEAD
-	/*{
+	{
 		blocklen, _, err := kc.Ask(hash)
+		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(3))
-		c.Check(err, Equals, nil)
 		log.Print("Ask 2")
-	}*/
+	}
 
 	{
 		reader, blocklen, _, err := kc.Get(hash)
+		c.Assert(err, Equals, nil)
 		all, err := ioutil.ReadAll(reader)
 		c.Check(all, DeepEquals, []byte("foo"))
 		c.Check(blocklen, Equals, int64(3))
-		c.Check(err, Equals, nil)
 		log.Print("Get")
 	}
 
-	// Close internal listener socket.
-	listener.Close()
-
 	log.Print("TestPutAndGet done")
+}
+
+func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
+	log.Print("TestPutAndGet start")
+
+	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
+	kc, err := keepclient.MakeKeepClient()
+	kc.ApiToken = "123xyz"
+	c.Check(kc.External, Equals, true)
+	c.Check(kc.Using_proxy, Equals, true)
+	c.Check(len(kc.Service_roots), Equals, 1)
+	c.Check(kc.Service_roots[0], Equals, "http://localhost:29950")
+	c.Check(err, Equals, nil)
+	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
+
+	log.Print("keepclient created")
+
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	{
+		_, _, err := kc.Ask(hash)
+		c.Check(err, Equals, keepclient.BlockNotFound)
+		log.Print("Ask 1")
+	}
+
+	{
+		hash2, rep, err := kc.PutB([]byte("foo"))
+		c.Check(hash2, Equals, hash)
+		c.Check(rep, Equals, 0)
+		c.Check(err, Equals, keepclient.InsufficientReplicasError)
+		log.Print("PutB")
+	}
+
+	{
+		blocklen, _, err := kc.Ask(hash)
+		c.Assert(err, Equals, keepclient.BlockNotFound)
+		c.Check(blocklen, Equals, int64(0))
+		log.Print("Ask 2")
+	}
+
+	{
+		_, blocklen, _, err := kc.Get(hash)
+		c.Assert(err, Equals, keepclient.BlockNotFound)
+		c.Check(blocklen, Equals, int64(0))
+		log.Print("Get")
+	}
+
+	log.Print("TestPutAndGetForbidden done")
 }

@@ -585,11 +585,19 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	kc, err := MakeKeepClient()
 	c.Assert(err, Equals, nil)
 
-	hash, replicas, err := kc.PutB([]byte("foo"))
-	c.Check(hash, Equals, fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
-	c.Check(replicas, Equals, 2)
-	c.Check(err, Equals, nil)
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
+	{
+		n, _, err := kc.Ask(hash)
+		c.Check(err, Equals, BlockNotFound)
+		c.Check(n, Equals, int64(0))
+	}
+	{
+		hash2, replicas, err := kc.PutB([]byte("foo"))
+		c.Check(hash2, Equals, hash)
+		c.Check(replicas, Equals, 2)
+		c.Check(err, Equals, nil)
+	}
 	{
 		r, n, url2, err := kc.Get(hash)
 		c.Check(err, Equals, nil)
@@ -600,7 +608,6 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 		c.Check(err2, Equals, nil)
 		c.Check(content, DeepEquals, []byte("foo"))
 	}
-
 	{
 		n, url2, err := kc.Ask(hash)
 		c.Check(err, Equals, nil)

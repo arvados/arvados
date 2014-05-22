@@ -25,7 +25,6 @@ func main() {
 		listen           string
 		no_get           bool
 		no_put           bool
-		no_head          bool
 		default_replicas int
 		pidfile          string
 	)
@@ -41,7 +40,7 @@ func main() {
 	flag.BoolVar(
 		&no_get,
 		"no-get",
-		true,
+		false,
 		"If set, disable GET operations")
 
 	flag.BoolVar(
@@ -49,12 +48,6 @@ func main() {
 		"no-put",
 		false,
 		"If set, disable PUT operations")
-
-	flag.BoolVar(
-		&no_head,
-		"no-head",
-		true,
-		"If set, disable HEAD operations")
 
 	flag.IntVar(
 		&default_replicas,
@@ -70,8 +63,8 @@ func main() {
 
 	flag.Parse()
 
-	/*if no_get == false || no_head == false {
-		log.Print("Must specify -no-get and -no-head")
+	/*if no_get == false {
+		log.Print("Must specify -no-get")
 		return
 	}*/
 
@@ -100,7 +93,7 @@ func main() {
 	}
 
 	// Start listening for requests.
-	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, !no_head, kc))
+	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, kc))
 }
 
 type ApiTokenCache struct {
@@ -204,7 +197,6 @@ type PutBlockHandler struct {
 func MakeRESTRouter(
 	enable_get bool,
 	enable_put bool,
-	enable_head bool,
 	kc keepclient.KeepClient) *mux.Router {
 
 	t := &ApiTokenCache{tokens: make(map[string]int64), expireTime: 300}
@@ -217,23 +209,23 @@ func MakeRESTRouter(
 	ph := rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t})
 
 	if enable_get {
-		gh.Methods("GET")
-		ghsig.Methods("GET")
+		gh.Methods("GET", "HEAD")
+		ghsig.Methods("GET", "HEAD")
 	}
 
 	if enable_put {
 		ph.Methods("PUT")
 	}
 
-	if enable_head {
-		gh.Methods("HEAD")
-		ghsig.Methods("HEAD")
-	}
-
 	return rest
 }
 
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+
+	if !CheckAuthorizationHeader(this.KeepClient, this.ApiTokenCache, req) {
+		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
+	}
+
 	hash := mux.Vars(req)["hash"]
 	signature := mux.Vars(req)["signature"]
 	timestamp := mux.Vars(req)["timestamp"]
@@ -264,6 +256,9 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 }
 
 func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+
+	log.Print("PutBlockHandler start")
+
 	if !CheckAuthorizationHeader(this.KeepClient, this.ApiTokenCache, req) {
 		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
 	}
