@@ -52,23 +52,23 @@ class FoldersController < ApplicationController
       children_of[parent_of[ob.uuid]] ||= []
       children_of[parent_of[ob.uuid]] << ob
     end
-    def buildtree children_of, root_uuid=false
+    buildtree = lambda do |children_of, root_uuid=false|
       tree = {}
       children_of[root_uuid].andand.each do |ob|
-        tree[ob] = buildtree(children_of, ob.uuid)
+        tree[ob] = buildtree.call(children_of, ob.uuid)
       end
       tree
     end
-    def sorted_paths tree, depth=0
+    sorted_paths = lambda do |tree, depth=0|
       paths = []
       tree.keys.sort_by { |ob| ob.friendly_link_name }.each do |ob|
         paths << {object: ob, depth: depth}
-        paths += sorted_paths tree[ob], depth+1
+        paths += sorted_paths.call tree[ob], depth+1
       end
       paths
     end
-    @my_folder_tree = sorted_paths buildtree(children_of, 'me')
-    @shared_folder_tree = sorted_paths buildtree(children_of, false)
+    @my_folder_tree = sorted_paths.call buildtree.call(children_of, 'me')
+    @shared_folder_tree = sorted_paths.call buildtree.call(children_of, false)
   end
 
   def choose
