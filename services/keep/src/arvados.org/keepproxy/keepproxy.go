@@ -92,14 +92,24 @@ func main() {
 		return
 	}
 
+	go RefreshServicesList(&kc)
+
 	// Start listening for requests.
-	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, kc))
+	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, &kc))
 }
 
 type ApiTokenCache struct {
 	tokens     map[string]int64
 	lock       sync.Mutex
 	expireTime int64
+}
+
+// Refresh the keep service list every five minutes.
+func RefreshServicesList(kc *keepclient.KeepClient) {
+	for {
+		time.Sleep(300 * time.Second)
+		kc.DiscoverKeepServers()
+	}
 }
 
 // Cache the token and set an expire time.  If we already have an expire time
@@ -181,12 +191,12 @@ func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, re
 }
 
 type GetBlockHandler struct {
-	keepclient.KeepClient
+	*keepclient.KeepClient
 	*ApiTokenCache
 }
 
 type PutBlockHandler struct {
-	keepclient.KeepClient
+	*keepclient.KeepClient
 	*ApiTokenCache
 }
 
@@ -197,7 +207,7 @@ type PutBlockHandler struct {
 func MakeRESTRouter(
 	enable_get bool,
 	enable_put bool,
-	kc keepclient.KeepClient) *mux.Router {
+	kc *keepclient.KeepClient) *mux.Router {
 
 	t := &ApiTokenCache{tokens: make(map[string]int64), expireTime: 300}
 
@@ -222,7 +232,9 @@ func MakeRESTRouter(
 
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
-	if !CheckAuthorizationHeader(this.KeepClient, this.ApiTokenCache, req) {
+	kc := *this.KeepClient
+
+	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
 		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
 	}
 
@@ -235,10 +247,10 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	var blocklen int64
 
 	if req.Method == "GET" {
-		reader, blocklen, _, err = this.KeepClient.AuthorizedGet(hash, signature, timestamp)
+		reader, blocklen, _, err = kc.AuthorizedGet(hash, signature, timestamp)
 		defer reader.Close()
 	} else if req.Method == "HEAD" {
-		blocklen, _, err = this.KeepClient.AuthorizedAsk(hash, signature, timestamp)
+		blocklen, _, err = kc.AuthorizedAsk(hash, signature, timestamp)
 	}
 
 	resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
@@ -259,7 +271,9 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	log.Print("PutBlockHandler start")
 
-	if !CheckAuthorizationHeader(this.KeepClient, this.ApiTokenCache, req) {
+	kc := *this.KeepClient
+
+	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
 		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
 	}
 
@@ -284,12 +298,12 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		var r int
 		_, err := fmt.Sscanf(req.Header.Get("X-Keep-Desired-Replicas"), "%d", &r)
 		if err != nil {
-			this.KeepClient.Want_replicas = r
+			kc.Want_replicas = r
 		}
 	}
 
 	// Now try to put the block through
-	replicas, err := this.KeepClient.PutHR(hash, req.Body, contentLength)
+	replicas, err := kc.PutHR(hash, req.Body, contentLength)
 
 	log.Printf("Replicas stored: %v err: %v", replicas, err)
 

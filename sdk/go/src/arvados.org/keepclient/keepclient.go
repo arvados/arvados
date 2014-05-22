@@ -11,6 +11,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sort"
+	"sync"
+	"sync/atomic"
+	"unsafe"
 )
 
 // A Keep "block" is 64MB.
@@ -25,11 +29,12 @@ type KeepClient struct {
 	ApiServer     string
 	ApiToken      string
 	ApiInsecure   bool
-	Service_roots []string
 	Want_replicas int
 	Client        *http.Client
 	Using_proxy   bool
 	External      bool
+	service_roots *[]string
+	lock          sync.Mutex
 }
 
 // Create a new KeepClient, initialized with standard Arvados environment
@@ -50,7 +55,7 @@ func MakeKeepClient() (kc KeepClient, err error) {
 		Using_proxy: false,
 		External:    external}
 
-	err = (&kc).discoverKeepServers()
+	err = (&kc).DiscoverKeepServers()
 
 	return kc, err
 }
@@ -206,4 +211,23 @@ func (this KeepClient) AuthorizedAsk(hash string, signature string,
 
 	return 0, "", BlockNotFound
 
+}
+
+// Atomically read the service_roots field.
+func (this *KeepClient) ServiceRoots() []string {
+	r := (*[]string)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots))))
+	return *r
+}
+
+// Atomically update the service_roots field.  Enables you to update
+// service_roots without disrupting any GET or PUT operations that might
+// already be in progress.
+func (this *KeepClient) SetServiceRoots(svc []string) {
+	// Must be sorted for ShuffledServiceRoots() to produce consistent
+	// results.
+	roots := make([]string, len(svc))
+	copy(roots, svc)
+	sort.Strings(roots)
+	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots)),
+		unsafe.Pointer(&roots))
 }
