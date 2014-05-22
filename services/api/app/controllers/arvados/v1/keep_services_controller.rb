@@ -10,7 +10,7 @@ class Arvados::V1::KeepServicesController < ApplicationController
   end
 
   def accessible
-    if request.headers['X-Keep-Proxy-Required']
+    if request.headers['X-External-Client'] == '1'
       @objects = model_class.where('service_type=?', 'proxy')
     else
       @objects = model_class.where('service_type=?', 'disk')
