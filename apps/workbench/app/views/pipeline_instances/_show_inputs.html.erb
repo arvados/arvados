@@ -1,7 +1,7 @@
 <% n_inputs = 0 %>
 
 <% content_for :pi_input_form do %>
-<form role="form">
+<form role="form" style="width:60%">
   <div class="form-group">
     <% @object.components.each do |cname, component| %>
       <% next if !component %>
@@ -10,7 +10,10 @@
           <% if (pvalue_spec[:description] or
                  (pvalue_spec[:required] and not pvalue_spec[:value])) %>
             <% n_inputs += 1 %>
-            <label for="<% "#{cname}-#{pname}" %>"><%= pname.to_s.humanize %> for <%= cname %> component:</label>
+            <label for="<% "#{cname}-#{pname}" %>">
+              <%= pvalue_spec[:title] ||
+                  "#{pname.to_s.humanize} for #{cname} component" %>
+            </label>
             <div>
               <p class="form-control-static">
                 <%= render_pipeline_component_attribute @object, :components, [cname, :script_parameters, pname.to_sym], pvalue_spec %>
@@ -28,13 +31,9 @@
 <% end %>
 
 <% if n_inputs == 0 %>
-  <div class="alert alert-info">
-    <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button.</p>
-  </div>
+  <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button.</p>
 <% else %>
-  <div class="alert alert-info">
-    <p>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</p>
-  </div>
+  <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</i></p>
   <%= content_for :pi_input_form %>
 
   <%= form_tag @object, :method => :put do |f| %>
@@ -47,5 +46,5 @@
 <% end %>
 
 <div style="margin-top: 1em;">
-  <p>For a full list of pipeline components and parameters, click the "Components" tab above.</p>
+  <p>Click the "Components" tab above to see a full list of pipeline components and parameters.</p>
 </div>
