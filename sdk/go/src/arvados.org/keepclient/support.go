@@ -186,6 +186,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
 		upload_status <- uploadStatus{err, url, 0, 0}
+		body.Close()
 		return
 	}
 
@@ -231,7 +232,6 @@ func (this KeepClient) putReplicas(
 				next_server += 1
 				active += 1
 			} else {
-				fmt.Print(active)
 				if active == 0 {
 					return (this.Want_replicas - remaining_replicas), InsufficientReplicasError
 				} else {
@@ -251,7 +251,7 @@ func (this KeepClient) putReplicas(
 				status.url, status.err)
 		}
 		active -= 1
-		log.Printf("Upload status %v %v %v", status.statusCode, remaining_replicas, active)
+		log.Printf("Upload status code: %v remaining replicas: %v active: %v", status.statusCode, remaining_replicas, active)
 	}
 
 	return this.Want_replicas, nil

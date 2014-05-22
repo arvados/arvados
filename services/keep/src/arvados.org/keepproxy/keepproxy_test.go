@@ -2,6 +2,7 @@ package main
 
 import (
 	"arvados.org/keepclient"
+	"crypto/md5"
 	"crypto/tls"
 	"fmt"
 	. "gopkg.in/check.v1"
@@ -14,6 +15,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Gocheck boilerplate
@@ -94,7 +96,7 @@ func SetupProxyService() {
 	}
 }
 
-func (s *ServerRequiredSuite) TestPutAndGet(c *C) {
+func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	log.Print("TestPutAndGet start")
 
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
@@ -111,22 +113,43 @@ func (s *ServerRequiredSuite) TestPutAndGet(c *C) {
 	os.Args = []string{"keepproxy", "-listen=:29950"}
 	go main()
 
+	time.Sleep(100 * time.Millisecond)
+
 	log.Print("keepproxy main started")
 
-	hash, rep, err2 := kc.PutB([]byte("foo"))
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
-	log.Print("PutB")
+	// Uncomment this when actual keep server supports HEAD
+	/*{
+		_, _, err := kc.Ask(hash)
+		c.Check(err, Equals, keepclient.BlockNotFound)
+		log.Print("Ask 1")
+	}*/
 
-	c.Check(rep, Equals, 2)
-	c.Check(err2, Equals, nil)
+	{
+		hash2, rep, err := kc.PutB([]byte("foo"))
+		c.Check(hash2, Equals, hash)
+		c.Check(rep, Equals, 2)
+		c.Check(err, Equals, nil)
+		log.Print("PutB")
+	}
 
-	reader, blocklen, _, err3 := kc.Get(hash)
-	all, err := ioutil.ReadAll(reader)
-	c.Check(all, DeepEquals, []byte("foo"))
-	c.Check(blocklen, Equals, int64(3))
-	c.Check(err3, Equals, nil)
+	// Uncomment this when actual keep server supports HEAD
+	/*{
+		blocklen, _, err := kc.Ask(hash)
+		c.Check(blocklen, Equals, int64(3))
+		c.Check(err, Equals, nil)
+		log.Print("Ask 2")
+	}*/
 
-	log.Print("Get")
+	{
+		reader, blocklen, _, err := kc.Get(hash)
+		all, err := ioutil.ReadAll(reader)
+		c.Check(all, DeepEquals, []byte("foo"))
+		c.Check(blocklen, Equals, int64(3))
+		c.Check(err, Equals, nil)
+		log.Print("Get")
+	}
 
 	// Close internal listener socket.
 	listener.Close()

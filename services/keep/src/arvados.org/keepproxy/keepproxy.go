@@ -240,24 +240,26 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	var reader io.ReadCloser
 	var err error
+	var blocklen int64
 
 	if req.Method == "GET" {
-		reader, _, _, err = this.KeepClient.AuthorizedGet(hash, signature, timestamp)
+		reader, blocklen, _, err = this.KeepClient.AuthorizedGet(hash, signature, timestamp)
+		defer reader.Close()
 	} else if req.Method == "HEAD" {
-		_, _, err = this.KeepClient.AuthorizedAsk(hash, signature, timestamp)
+		blocklen, _, err = this.KeepClient.AuthorizedAsk(hash, signature, timestamp)
 	}
+
+	resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
 
 	switch err {
 	case nil:
-		io.Copy(resp, reader)
+		if reader != nil {
+			io.Copy(resp, reader)
+		}
 	case keepclient.BlockNotFound:
 		http.Error(resp, "Not found", http.StatusNotFound)
 	default:
 		http.Error(resp, err.Error(), http.StatusBadGateway)
-	}
-
-	if reader != nil {
-		reader.Close()
 	}
 }
 
@@ -293,6 +295,8 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	// Now try to put the block through
 	replicas, err := this.KeepClient.PutHR(hash, req.Body, contentLength)
+
+	log.Printf("Replicas stored: %v err: %v", replicas, err)
 
 	// Tell the client how many successful PUTs we accomplished
 	resp.Header().Set("X-Keep-Replicas-Stored", fmt.Sprintf("%d", replicas))
