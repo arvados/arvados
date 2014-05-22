@@ -420,7 +420,7 @@ class Dispatcher
       return
     end
     log = Log.new(object_uuid: job_uuid,
-                  event_type:'transient-log-entry',
+                  event_type:'stderr',
                   summary: $tmp_log_buffer)
     log.save!
     $tmp_log_buffer = ''
