@@ -109,8 +109,8 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	kc, err := keepclient.MakeKeepClient()
 	c.Check(kc.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)
-	c.Check(len(kc.Service_roots), Equals, 1)
-	c.Check(kc.Service_roots[0], Equals, "http://localhost:29950")
+	c.Check(len(kc.ServiceRoots()), Equals, 1)
+	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:29950")
 	c.Check(err, Equals, nil)
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 
@@ -159,8 +159,8 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	kc.ApiToken = "123xyz"
 	c.Check(kc.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)
-	c.Check(len(kc.Service_roots), Equals, 1)
-	c.Check(kc.Service_roots[0], Equals, "http://localhost:29950")
+	c.Check(len(kc.ServiceRoots()), Equals, 1)
+	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:29950")
 	c.Check(err, Equals, nil)
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 

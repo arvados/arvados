@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -21,10 +20,9 @@ type keepDisk struct {
 	SvcType  string `json:"service_type"`
 }
 
-func (this *KeepClient) discoverKeepServers() error {
+func (this *KeepClient) DiscoverKeepServers() error {
 	if prx := os.Getenv("ARVADOS_KEEP_PROXY"); prx != "" {
-		this.Service_roots = make([]string, 1)
-		this.Service_roots[0] = prx
+		this.SetServiceRoots([]string{prx})
 		this.Using_proxy = true
 		return nil
 	}
@@ -72,7 +70,7 @@ func (this *KeepClient) discoverKeepServers() error {
 	}
 
 	listed := make(map[string]bool)
-	this.Service_roots = make([]string, 0, len(m.Items))
+	service_roots := make([]string, 0, len(m.Items))
 
 	for _, element := range m.Items {
 		n := ""
@@ -87,16 +85,14 @@ func (this *KeepClient) discoverKeepServers() error {
 		// Skip duplicates
 		if !listed[url] {
 			listed[url] = true
-			this.Service_roots = append(this.Service_roots, url)
+			service_roots = append(service_roots, url)
 		}
 		if element.SvcType == "proxy" {
 			this.Using_proxy = true
 		}
 	}
 
-	// Must be sorted for ShuffledServiceRoots() to produce consistent
-	// results.
-	sort.Strings(this.Service_roots)
+	this.SetServiceRoots(service_roots)
 
 	return nil
 }
@@ -111,11 +107,12 @@ func (this KeepClient) shuffledServiceRoots(hash string) (pseq []string) {
 	seed := hash
 
 	// Keep servers still to be added to the ordering
-	pool := make([]string, len(this.Service_roots))
-	copy(pool, this.Service_roots)
+	service_roots := this.ServiceRoots()
+	pool := make([]string, len(service_roots))
+	copy(pool, service_roots)
 
 	// output probe sequence
-	pseq = make([]string, 0, len(this.Service_roots))
+	pseq = make([]string, 0, len(service_roots))
 
 	// iterate while there are servers left to be assigned
 	for len(pool) > 0 {

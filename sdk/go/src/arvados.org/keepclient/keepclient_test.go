@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"sort"
 	"strings"
 	"testing"
 )
@@ -75,13 +74,14 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
 
 	c.Assert(err, Equals, nil)
-	c.Check(len(kc.Service_roots), Equals, 2)
-	c.Check(kc.Service_roots[0], Equals, "http://localhost:25107")
-	c.Check(kc.Service_roots[1], Equals, "http://localhost:25108")
+	c.Check(len(kc.ServiceRoots()), Equals, 2)
+	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:25107")
+	c.Check(kc.ServiceRoots()[1], Equals, "http://localhost:25108")
 }
 
 func (s *StandaloneSuite) TestShuffleServiceRoots(c *C) {
-	kc := KeepClient{Service_roots: []string{"http://localhost:25107", "http://localhost:25108", "http://localhost:25109", "http://localhost:25110", "http://localhost:25111", "http://localhost:25112", "http://localhost:25113", "http://localhost:25114", "http://localhost:25115", "http://localhost:25116", "http://localhost:25117", "http://localhost:25118", "http://localhost:25119", "http://localhost:25120", "http://localhost:25121", "http://localhost:25122", "http://localhost:25123"}}
+	kc := KeepClient{}
+	kc.SetServiceRoots([]string{"http://localhost:25107", "http://localhost:25108", "http://localhost:25109", "http://localhost:25110", "http://localhost:25111", "http://localhost:25112", "http://localhost:25113", "http://localhost:25114", "http://localhost:25115", "http://localhost:25116", "http://localhost:25117", "http://localhost:25118", "http://localhost:25119", "http://localhost:25120", "http://localhost:25121", "http://localhost:25122", "http://localhost:25123"})
 
 	// "foo" acbd18db4cc2f85cedef654fccc4a4d8
 	foo_shuffle := []string{"http://localhost:25116", "http://localhost:25120", "http://localhost:25119", "http://localhost:25122", "http://localhost:25108", "http://localhost:25114", "http://localhost:25112", "http://localhost:25107", "http://localhost:25118", "http://localhost:25111", "http://localhost:25113", "http://localhost:25121", "http://localhost:25110", "http://localhost:25117", "http://localhost:25109", "http://localhost:25115", "http://localhost:25123"}
@@ -265,16 +265,16 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 
 	kc.Want_replicas = 2
 	kc.ApiToken = "abc123"
-	kc.Service_roots = make([]string, 5)
+	service_roots := make([]string, 5)
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
 
 	for i := 0; i < len(ks); i += 1 {
-		kc.Service_roots[i] = ks[i].url
+		service_roots[i] = ks[i].url
 		defer ks[i].listener.Close()
 	}
 
-	sort.Strings(kc.Service_roots)
+	kc.SetServiceRoots(service_roots)
 
 	kc.PutB([]byte("foo"))
 
@@ -306,16 +306,16 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 
 	kc.Want_replicas = 2
 	kc.ApiToken = "abc123"
-	kc.Service_roots = make([]string, 5)
+	service_roots := make([]string, 5)
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
 
 	for i := 0; i < len(ks); i += 1 {
-		kc.Service_roots[i] = ks[i].url
+		service_roots[i] = ks[i].url
 		defer ks[i].listener.Close()
 	}
 
-	sort.Strings(kc.Service_roots)
+	kc.SetServiceRoots(service_roots)
 
 	reader, writer := io.Pipe()
 
@@ -359,21 +359,21 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	kc.Want_replicas = 2
 	kc.ApiToken = "abc123"
-	kc.Service_roots = make([]string, 5)
+	service_roots := make([]string, 5)
 
 	ks1 := RunSomeFakeKeepServers(st, 4, 2990)
 	ks2 := RunSomeFakeKeepServers(fh, 1, 2995)
 
 	for i, k := range ks1 {
-		kc.Service_roots[i] = k.url
+		service_roots[i] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
-		kc.Service_roots[len(ks1)+i] = k.url
+		service_roots[len(ks1)+i] = k.url
 		defer k.listener.Close()
 	}
 
-	sort.Strings(kc.Service_roots)
+	kc.SetServiceRoots(service_roots)
 
 	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
 
@@ -407,21 +407,21 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	kc.Want_replicas = 2
 	kc.ApiToken = "abc123"
-	kc.Service_roots = make([]string, 5)
+	service_roots := make([]string, 5)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 	ks2 := RunSomeFakeKeepServers(fh, 4, 2991)
 
 	for i, k := range ks1 {
-		kc.Service_roots[i] = k.url
+		service_roots[i] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
-		kc.Service_roots[len(ks1)+i] = k.url
+		service_roots[len(ks1)+i] = k.url
 		defer k.listener.Close()
 	}
 
-	sort.Strings(kc.Service_roots)
+	kc.SetServiceRoots(service_roots)
 
 	shuff := kc.shuffledServiceRoots(fmt.Sprintf("%x", md5.Sum([]byte("foo"))))
 
@@ -464,7 +464,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 
 	kc, _ := MakeKeepClient()
 	kc.ApiToken = "abc123"
-	kc.Service_roots = []string{url}
+	kc.SetServiceRoots([]string{url})
 
 	r, n, url2, err := kc.Get(hash)
 	defer r.Close()
@@ -489,7 +489,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 
 	kc, _ := MakeKeepClient()
 	kc.ApiToken = "abc123"
-	kc.Service_roots = []string{url}
+	kc.SetServiceRoots([]string{url})
 
 	r, n, url2, err := kc.Get(hash)
 	c.Check(err, Equals, BlockNotFound)
@@ -518,7 +518,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 
 	kc, _ := MakeKeepClient()
 	kc.ApiToken = "abc123"
-	kc.Service_roots = []string{url}
+	kc.SetServiceRoots([]string{url})
 
 	r, n, _, err := kc.Get(barhash)
 	_, err = ioutil.ReadAll(r)
@@ -550,21 +550,21 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 
 	kc, _ := MakeKeepClient()
 	kc.ApiToken = "abc123"
-	kc.Service_roots = make([]string, 5)
+	service_roots := make([]string, 5)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 	ks2 := RunSomeFakeKeepServers(fh, 4, 2991)
 
 	for i, k := range ks1 {
-		kc.Service_roots[i] = k.url
+		service_roots[i] = k.url
 		defer k.listener.Close()
 	}
 	for i, k := range ks2 {
-		kc.Service_roots[len(ks1)+i] = k.url
+		service_roots[len(ks1)+i] = k.url
 		defer k.listener.Close()
 	}
 
-	sort.Strings(kc.Service_roots)
+	kc.SetServiceRoots(service_roots)
 
 	r, n, url2, err := kc.Get(hash)
 	<-fh.handled
@@ -635,14 +635,16 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	kc.Want_replicas = 2
 	kc.Using_proxy = true
 	kc.ApiToken = "abc123"
-	kc.Service_roots = make([]string, 1)
+	service_roots := make([]string, 1)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 
 	for i, k := range ks1 {
-		kc.Service_roots[i] = k.url
+		service_roots[i] = k.url
 		defer k.listener.Close()
 	}
+
+	kc.SetServiceRoots(service_roots)
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
@@ -663,14 +665,15 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	kc.Want_replicas = 3
 	kc.Using_proxy = true
 	kc.ApiToken = "abc123"
-	kc.Service_roots = make([]string, 1)
+	service_roots := make([]string, 1)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
 
 	for i, k := range ks1 {
-		kc.Service_roots[i] = k.url
+		service_roots[i] = k.url
 		defer k.listener.Close()
 	}
+	kc.SetServiceRoots(service_roots)
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
