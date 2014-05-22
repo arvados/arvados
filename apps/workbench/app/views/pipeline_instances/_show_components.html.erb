@@ -110,7 +110,7 @@ setInterval(function(){$('a.refresh').click()}, 15000);
         <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(j[:log])%>
         <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
           <% c.files.each do |file| %>
-            <a href="<%= collection_path(j[:log]) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>"><%=j[:uuid]%> Log</a>
+            <a href="<%= collection_path(j[:log]) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>"><%=j[:uuid]%> Log</a><br/>
           <% end %>
         <% end %>
       <% end %>
