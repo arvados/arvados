@@ -48,17 +48,13 @@
   </thead>
   <tbody>
     <% render_pipeline_jobs.each do |pj| %>
+      <% if pj[:job].andand[:uuid]
+           pipeline_jobs << pj[:job]
+           pipeline_job_uuids << pj[:job][:uuid]
+         end %>
     <tr>
       <td>
-        <% job_status = render(partial: 'job_status_label',
-                               locals: { :j => pj[:job], :title => pj[:name] }) %>
-        <% if pj[:job].andand[:uuid] %>
-          <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
-          <% pipeline_jobs << pj[:job] %>
-          <% pipeline_job_uuids << pj[:job][:uuid] %>
-        <% else %>
-          <%= job_status %>
-        <% end %>
+        <%= pj[:name] %>
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
