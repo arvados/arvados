@@ -29,6 +29,7 @@ type KeepClient struct {
 	Want_replicas int
 	Client        *http.Client
 	Using_proxy   bool
+	External      bool
 }
 
 // Create a new KeepClient, initialized with standard Arvados environment
@@ -37,6 +38,7 @@ type KeepClient struct {
 // Keep servers.
 func MakeKeepClient() (kc KeepClient, err error) {
 	insecure := (os.Getenv("ARVADOS_API_HOST_INSECURE") == "true")
+	external := (os.Getenv("ARVADOS_EXTERNAL_CLIENT") == "true")
 
 	kc = KeepClient{
 		ApiServer:     os.Getenv("ARVADOS_API_HOST"),
@@ -45,7 +47,8 @@ func MakeKeepClient() (kc KeepClient, err error) {
 		Want_replicas: 2,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
-		Using_proxy: false}
+		Using_proxy: false,
+		External:    external}
 
 	err = (&kc).discoverKeepServers()
 

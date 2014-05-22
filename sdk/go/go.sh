@@ -1,11 +1,11 @@
 #! /bin/sh
 
 rootdir=$(dirname $0)
-GOPATH=$rootdir:$rootdir/../../sdk/go:$GOPATH
+GOPATH=$rootdir:$GOPATH
 export GOPATH
 
-mkdir -p pkg
-mkdir -p bin
+mkdir -p $rootdir/pkg
+mkdir -p $rootdir/bin
 
 go get gopkg.in/check.v1
 

@@ -111,17 +111,15 @@ func (this StubPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request
 }
 
 func RunBogusKeepServer(st http.Handler, port int) (listener net.Listener, url string) {
-	server := http.Server{Handler: st}
-
 	var err error
 	listener, err = net.ListenTCP("tcp", &net.TCPAddr{Port: port})
 	if err != nil {
 		panic(fmt.Sprintf("Could not listen on tcp port %v", port))
 	}
 
-	url = fmt.Sprintf("http://localhost:%d", listener.Addr().(*net.TCPAddr).Port)
+	url = fmt.Sprintf("http://localhost:%d", port)
 
-	go server.Serve(listener)
+	go http.Serve(listener, st)
 	return listener, url
 }
 

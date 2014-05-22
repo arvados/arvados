@@ -7,14 +7,18 @@ import (
 	"github.com/gorilla/mux"
 	"io"
 	"log"
+	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
 
 // Default TCP address on which to listen for requests.
-// Initialized by the --listen flag.
+// Initialized by the -listen flag.
 const DEFAULT_ADDR = ":25107"
+
+var listener net.Listener
 
 func main() {
 	var (
@@ -23,6 +27,7 @@ func main() {
 		no_put           bool
 		no_head          bool
 		default_replicas int
+		pidfile          string
 	)
 
 	flag.StringVar(
@@ -32,23 +37,24 @@ func main() {
 		"Interface on which to listen for requests, in the format "+
 			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
 			"to listen on all network interfaces.")
+
 	flag.BoolVar(
 		&no_get,
 		"no-get",
 		true,
-		"If true, disable GET operations")
+		"If set, disable GET operations")
 
 	flag.BoolVar(
 		&no_get,
 		"no-put",
 		false,
-		"If true, disable PUT operations")
+		"If set, disable PUT operations")
 
 	flag.BoolVar(
 		&no_head,
 		"no-head",
-		false,
-		"If true, disable HEAD operations")
+		true,
+		"If set, disable HEAD operations")
 
 	flag.IntVar(
 		&default_replicas,
@@ -56,12 +62,18 @@ func main() {
 		2,
 		"Default number of replicas to write if not specified by the client.")
 
+	flag.StringVar(
+		&pidfile,
+		"pid",
+		"",
+		"Path to write pid file")
+
 	flag.Parse()
 
-	if no_get == false {
-		log.Print("Must specify --no-get")
+	/*if no_get == false || no_head == false {
+		log.Print("Must specify -no-get and -no-head")
 		return
-	}
+	}*/
 
 	kc, err := keepclient.MakeKeepClient()
 	if err != nil {
@@ -69,14 +81,26 @@ func main() {
 		return
 	}
 
+	if pidfile != "" {
+		f, err := os.Create(pidfile)
+		if err == nil {
+			fmt.Fprint(f, os.Getpid())
+			f.Close()
+		} else {
+			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
+		}
+	}
+
 	kc.Want_replicas = default_replicas
 
-	// Tell the built-in HTTP server to direct all requests to the REST
-	// router.
-	http.Handle("/", MakeRESTRouter(!no_get, !no_put, !no_head, kc))
+	listener, err = net.Listen("tcp", listen)
+	if err != nil {
+		log.Printf("Could not listen on %v", listen)
+		return
+	}
 
 	// Start listening for requests.
-	http.ListenAndServe(listen, nil)
+	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, !no_head, kc))
 }
 
 type ApiTokenCache struct {
