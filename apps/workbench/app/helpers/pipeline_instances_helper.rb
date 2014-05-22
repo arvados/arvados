@@ -26,9 +26,13 @@ module PipelineInstancesHelper
     results = []
 
     log_history = Log.where(event_type: 'transient-log-entry',
-                            object_uuid: job_uuids).order('id DESC').limit(5).all
+                            object_uuid: job_uuids).order('id DESC').limit(20).all
     if !log_history.results.empty?
-      results = log_history.results.reverse
+      reversed_results = log_history.results.reverse
+      reversed_results.each do |entry|
+        summary = entry.summary
+        results = results.concat summary.split("\n")
+      end
     end
 
     return results
