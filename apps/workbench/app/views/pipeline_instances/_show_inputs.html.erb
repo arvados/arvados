@@ -12,7 +12,7 @@
             <% n_inputs += 1 %>
             <label for="<% "#{cname}-#{pname}" %>">
               <%= pvalue_spec[:title] ||
-                  "#{pname.to_s.humanize} for #{cname} component" %>
+                  "\"#{pname.to_s}\" parameter for #{component[:script]} script in #{cname} component" %>
             </label>
             <div>
               <p class="form-control-static">
