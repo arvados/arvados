@@ -53,8 +53,19 @@
 
     $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
       parsedData = JSON.parse(eventData);
-      summary = parsedData.summary;
-      $(this).append(summary + "<br/>");
+
+      propertyText = undefined
+
+      properties = parsedData.properties;
+      if (properties !== null) {
+        propertyText = properties.text;
+      }
+
+      if (propertyText !== undefined) {
+        $(this).append(propertyText + "<br/>");
+      } else {
+        $(this).append(parsedData.summary + "<br/>");
+      }
     });
 
 })();
