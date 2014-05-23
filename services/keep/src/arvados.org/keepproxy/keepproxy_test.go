@@ -39,8 +39,13 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	defer os.Chdir(cwd)
 
 	os.Chdir(pythonDir())
-	exec.Command("python", "run_test_server.py", "start").Run()
-	exec.Command("python", "run_test_server.py", "start_keep").Run()
+
+	if err := exec.Command("python", "run_test_server.py", "start").Run(); err != nil {
+		panic("'python run_test_server.py start' returned error")
+	}
+	if err := exec.Command("python", "run_test_server.py", "start_keep").Run(); err != nil {
+		panic("'python run_test_server.py start_keep' returned error")
+	}
 
 	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")

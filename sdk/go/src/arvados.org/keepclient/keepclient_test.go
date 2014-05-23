@@ -44,8 +44,12 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 		c.Skip("Skipping tests that require server")
 	} else {
 		os.Chdir(pythonDir())
-		exec.Command("python", "run_test_server.py", "start").Run()
-		exec.Command("python", "run_test_server.py", "start_keep").Run()
+		if err := exec.Command("python", "run_test_server.py", "start").Run(); err != nil {
+			panic("'python run_test_server.py start' returned error")
+		}
+		if err := exec.Command("python", "run_test_server.py", "start_keep").Run(); err != nil {
+			panic("'python run_test_server.py start_keep' returned error")
+		}
 	}
 }
 
