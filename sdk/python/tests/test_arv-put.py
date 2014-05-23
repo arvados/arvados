@@ -249,6 +249,27 @@ class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
         self.assertIsNone(arv_put.expected_bytes_for([__file__, '/dev/null']))
 
 
+class ArvadosPutReportTest(ArvadosBaseTestCase):
+    def test_machine_progress(self):
+        for count, total in [(0, 1), (0, None), (1, None), (235, 9283)]:
+            expect = ": {} written {} total\n".format(
+                count, -1 if (total is None) else total)
+            self.assertTrue(
+                arv_put.machine_progress(count, total).endswith(expect))
+
+    def test_known_human_progress(self):
+        for count, total in [(0, 1), (2, 4), (45, 60)]:
+            expect = '{:.1f}%'.format(count / total)
+            actual = arv_put.human_progress(count, total)
+            self.assertTrue(actual.startswith('\r'))
+            self.assertIn(expect, actual)
+
+    def test_unknown_human_progress(self):
+        for count in [1, 20, 300, 4000, 50000]:
+            self.assertTrue(re.search(r'\b{}\b'.format(count),
+                                      arv_put.human_progress(count, None)))
+
+
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
     def test_simple_file_put(self):
         with self.make_test_file() as testfile:
