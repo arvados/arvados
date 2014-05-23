@@ -165,3 +165,23 @@ nearly_finished_job:
     running: 1
     done: 0
   runtime_constraints: {}
+
+queued:
+  uuid: zzzzz-8i9sb-grx15v5mjnsyxk7
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  started_at: ~
+  finished_at: ~
+  script: foo
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters: {}
+  running: ~
+  success: ~
+  output: ~
+  priority: ~
+  log: ~
+  is_locked_by_uuid: ~
+  tasks_summary: {}
+  runtime_constraints: {}
