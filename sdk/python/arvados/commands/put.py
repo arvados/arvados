@@ -275,6 +275,20 @@ def expected_bytes_for(pathlist):
             bytesum += os.path.getsize(path)
     return bytesum
 
+_machine_format = "{} {}: {{}} written {{}} total\n".format(sys.argv[0],
+                                                            os.getpid())
+def machine_progress(bytes_written, bytes_expected):
+    return _machine_format.format(
+        bytes_written, -1 if (bytes_expected is None) else bytes_expected)
+
+def human_progress(bytes_written, bytes_expected):
+    if bytes_expected:
+        return "\r{}M / {}M {:.1f}% ".format(
+            bytes_written >> 20, bytes_expected >> 20,
+            bytes_written / bytes_expected)
+    else:
+        return "\r{} ".format(bytes_written)
+
 def main(arguments=None):
     args = parse_arguments(arguments)
 
