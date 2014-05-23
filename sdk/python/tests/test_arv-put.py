@@ -3,6 +3,7 @@
 
 import os
 import re
+import shutil
 import tempfile
 import unittest
 
@@ -225,6 +226,27 @@ class ArvadosPutResumeCacheCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             new_writer = arv_put.ResumeCacheCollectionWriter.from_cache(
                 self.cache)
         self.assertEquals(cwriter.manifest_text(), new_writer.manifest_text())
+
+
+class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
+    TEST_SIZE = os.path.getsize(__file__)
+
+    def test_expected_bytes_for_file(self):
+        self.assertEquals(self.TEST_SIZE,
+                          arv_put.expected_bytes_for([__file__]))
+
+    def test_expected_bytes_for_tree(self):
+        tree = self.make_tmpdir()
+        shutil.copyfile(__file__, os.path.join(tree, 'one'))
+        shutil.copyfile(__file__, os.path.join(tree, 'two'))
+        self.assertEquals(self.TEST_SIZE * 2,
+                          arv_put.expected_bytes_for([tree]))
+        self.assertEquals(self.TEST_SIZE * 3,
+                          arv_put.expected_bytes_for([tree, __file__]))
+
+    def test_expected_bytes_for_device(self):
+        self.assertIsNone(arv_put.expected_bytes_for(['/dev/null']))
+        self.assertIsNone(arv_put.expected_bytes_for([__file__, '/dev/null']))
 
 
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
