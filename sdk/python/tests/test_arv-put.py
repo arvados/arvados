@@ -171,61 +171,72 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                 os.unlink(cachefile.name)
 
 
-class ArvadosPutResumeCacheCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
+class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
     def setUp(self):
-        super(ArvadosPutResumeCacheCollectionWriterTest, self).setUp()
+        super(ArvadosPutCollectionWriterTest, self).setUp()
         with tempfile.NamedTemporaryFile(delete=False) as cachefile:
             self.cache = arv_put.ResumeCache(cachefile.name)
             self.cache_filename = cachefile.name
 
     def tearDown(self):
-        super(ArvadosPutResumeCacheCollectionWriterTest, self).tearDown()
+        super(ArvadosPutCollectionWriterTest, self).tearDown()
         if os.path.exists(self.cache_filename):
             self.cache.destroy()
         self.cache.close()
 
     def test_writer_caches(self):
-        cwriter = arv_put.ResumeCacheCollectionWriter(self.cache)
+        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
         cwriter.write_file('/dev/null')
         self.assertTrue(self.cache.load())
         self.assertEquals(". 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_works_without_cache(self):
-        cwriter = arv_put.ResumeCacheCollectionWriter()
+        cwriter = arv_put.ArvPutCollectionWriter()
         cwriter.write_file('/dev/null')
         self.assertEquals(". 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumes_from_cache(self):
-        cwriter = arv_put.ResumeCacheCollectionWriter(self.cache)
+        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
         with self.make_test_file() as testfile:
             cwriter.write_file(testfile.name, 'test')
-            new_writer = arv_put.ResumeCacheCollectionWriter.from_cache(
+            new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
             self.assertEquals(
                 ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:test\n",
                 new_writer.manifest_text())
 
     def test_new_writer_from_stale_cache(self):
-        cwriter = arv_put.ResumeCacheCollectionWriter(self.cache)
+        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
         with self.make_test_file() as testfile:
             cwriter.write_file(testfile.name, 'test')
-        new_writer = arv_put.ResumeCacheCollectionWriter.from_cache(self.cache)
+        new_writer = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         new_writer.write_file('/dev/null')
         self.assertEquals(". 0:0:null\n", new_writer.manifest_text())
 
     def test_new_writer_from_empty_cache(self):
-        cwriter = arv_put.ResumeCacheCollectionWriter.from_cache(self.cache)
+        cwriter = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         cwriter.write_file('/dev/null')
         self.assertEquals(". 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumable_after_arbitrary_bytes(self):
-        cwriter = arv_put.ResumeCacheCollectionWriter(self.cache)
+        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
         # These bytes are intentionally not valid UTF-8.
         with self.make_test_file('\x00\x07\xe2') as testfile:
             cwriter.write_file(testfile.name, 'test')
-            new_writer = arv_put.ResumeCacheCollectionWriter.from_cache(
+            new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
         self.assertEquals(cwriter.manifest_text(), new_writer.manifest_text())
+
+    def test_progress_reporting(self):
+        for expect_count in (None, 8):
+            progression = []
+            cwriter = arv_put.ArvPutCollectionWriter(
+                reporter=lambda *args: progression.append(args),
+                bytes_expected=expect_count)
+            with self.make_test_file() as testfile:
+                cwriter.write_file(testfile.name, 'test')
+            cwriter.finish_current_stream()
+            self.assertIn((4, expect_count), progression)
 
 
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
