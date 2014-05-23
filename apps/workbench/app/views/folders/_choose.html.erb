@@ -12,12 +12,12 @@
           <% [@my_folder_tree, @shared_folder_tree].each do |tree| %>
             <% tree.each do |foldernode| %>
               <% if foldernode[:object].is_a? String %>
-                <div class="folder row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
+                <div class="row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
                   <i class="fa fa-fw fa-folder-open-o"></i>
                   <%= foldernode[:object] %>
                 </div>
               <% else %>
-                <div class="<%= 'selectable' if !params[:editable] || foldernode[:object].editable? %> folder row" style="padding-left: <%= 1 + foldernode[:depth] %>em;" data-object-uuid="<%= foldernode[:object].uuid %>">
+                <div class="<%= 'selectable folder' if !params[:editable] || foldernode[:object].editable? %> row" style="padding-left: <%= 1 + foldernode[:depth] %>em;" data-object-uuid="<%= foldernode[:object].uuid %>">
                   <i class="fa fa-fw fa-folder-o"></i>
                   <% if foldernode[:object].uuid == current_user.uuid %>
                     My Folders

@@ -2,7 +2,7 @@
   <% [@my_folder_tree, @shared_folder_tree].each do |tree| %>
     <% tree.each do |foldernode| %>
       <% rowtype = foldernode[:object].class %>
-      <div class="<%= 'folder' if rowtype != String %> row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
+      <div class="<%= 'folder' if rowtype == Group %> row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
         <% if rowtype == String %>
           <i class="fa fa-fw fa-folder-open-o"></i>
           <%= foldernode[:object] %>
