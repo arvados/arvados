@@ -263,6 +263,18 @@ class CollectionWriterWithProgress(arvados.CollectionWriter):
         return manifest_text
 
 
+def expected_bytes_for(pathlist):
+    bytesum = 0
+    for path in pathlist:
+        if os.path.isdir(path):
+            for filename in arvados.util.listdir_recursive(path):
+                bytesum += os.path.getsize(os.path.join(path, filename))
+        elif not os.path.isfile(path):
+            return None
+        else:
+            bytesum += os.path.getsize(path)
+    return bytesum
+
 def main(arguments=None):
     args = parse_arguments(arguments)
 
@@ -277,17 +289,9 @@ def main(arguments=None):
 
     # Walk the given directory trees and stat files, adding up file sizes,
     # so we can display progress as percent
-    writer.bytes_expected = 0
-    for path in args.paths:
-        if os.path.isdir(path):
-            for filename in arvados.util.listdir_recursive(path):
-                writer.bytes_expected += os.path.getsize(
-                    os.path.join(path, filename))
-        elif not os.path.isfile(path):
-            del writer.bytes_expected
-            break
-        else:
-            writer.bytes_expected += os.path.getsize(path)
+    writer.bytes_expected = expected_bytes_for(args.paths)
+    if writer.bytes_expected is None:
+        del writer.bytes_expected
 
     # Copy file data to Keep.
     for path in args.paths:
