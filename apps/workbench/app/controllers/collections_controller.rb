@@ -1,7 +1,8 @@
 class CollectionsController < ApplicationController
-  skip_around_filter :thread_with_mandatory_api_token, only: [:show_file]
-  skip_before_filter :find_object_by_uuid, only: [:provenance, :show_file]
-  skip_before_filter :check_user_agreements, only: [:show_file]
+  skip_around_filter(:thread_with_mandatory_api_token,
+                     only: [:show_file, :show_file_links])
+  skip_before_filter(:find_object_by_uuid,
+                     only: [:provenance, :show_file, :show_file_links])
 
   RELATION_LIMIT = 5
 
@@ -89,13 +90,20 @@ class CollectionsController < ApplicationController
     @request_url = request.url
   end
 
+  def show_file_links
+    Thread.current[:reader_tokens] = [params[:reader_token]]
+    find_object_by_uuid
+    render layout: false
+  end
+
   def show_file
     # We pipe from arv-get to send the file to the user.  Before we start it,
     # we ask the API server if the file actually exists.  This serves two
     # purposes: it lets us return a useful status code for common errors, and
     # helps us figure out which token to provide to arv-get.
     coll = nil
-    usable_token = find_usable_token do
+    tokens = [Thread.current[:arvados_api_token], params[:reader_token]].compact
+    usable_token = find_usable_token(tokens) do
       coll = Collection.find(params[:uuid])
     end
     if usable_token.nil?
@@ -148,18 +156,14 @@ class CollectionsController < ApplicationController
 
   protected
 
-  def find_usable_token
-    # Iterate over every token available to make it the current token and
+  def find_usable_token(token_list)
+    # Iterate over every given token to make it the current token and
     # yield the given block.
     # If the block succeeds, return the token it used.
     # Otherwise, render an error response based on the most specific
     # error we encounter, and return nil.
-    read_tokens = [Thread.current[:arvados_api_token]].compact
-    if params[:reader_tokens].is_a? Array
-      read_tokens += params[:reader_tokens]
-    end
     most_specific_error = [401]
-    read_tokens.each do |api_token|
+    token_list.each do |api_token|
       using_specific_api_token(api_token) do
         begin
           yield
@@ -203,20 +207,18 @@ class CollectionsController < ApplicationController
     end
     def each
       return unless @opts[:uuid] && @opts[:file]
-      env = Hash[ENV].
-        merge({
-                'ARVADOS_API_HOST' =>
-                arvados_api_client.arvados_v1_base.
-                sub(/\/arvados\/v1/, '').
-                sub(/^https?:\/\//, ''),
-                'ARVADOS_API_TOKEN' =>
-                @opts[:arvados_api_token],
-                'ARVADOS_API_HOST_INSECURE' =>
-                Rails.configuration.arvados_insecure_https ? 'true' : 'false'
-              })
+
+      env = Hash[ENV].dup
+
+      require 'uri'
+      u = URI.parse(arvados_api_client.arvados_v1_base)
+      env['ARVADOS_API_HOST'] = "#{u.host}:#{u.port}"
+      env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
+      env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
+
       IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
                'rb') do |io|
-        while buf = io.read(2**20)
+        while buf = io.read(2**16)
           yield buf
         end
       end
