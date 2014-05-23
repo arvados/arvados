@@ -198,6 +198,10 @@ class ResumeCache(object):
                 raise
         self.close()
 
+    def restart(self):
+        self.destroy()
+        self.__init__(self.filename)
+
 
 class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
     def __init__(self, cache=None, reporter=None, bytes_expected=None):
