@@ -268,7 +268,7 @@ module ApplicationHelper
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       "data-showbuttons" => "false",
       "data-value" => attrvalue,
-      :class => "editable #{'required' if required}",
+      :class => "editable #{'required' if required} form-control",
       :id => id
     }.merge(htmloptions)
 
@@ -278,7 +278,7 @@ module ApplicationHelper
       lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
     end
 
-    lt += raw("$('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
+    lt += raw("$('[data-name=\"#{dn}\"]').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
 
     lt += raw("</script>")
 
