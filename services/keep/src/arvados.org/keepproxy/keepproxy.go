@@ -65,7 +65,7 @@ func main() {
 
 	kc, err := keepclient.MakeKeepClient()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error setting up keep client %s", err.Error())
 	}
 
 	if pidfile != "" {
@@ -87,6 +87,8 @@ func main() {
 
 	go RefreshServicesList(&kc)
 
+	log.Printf("Arvados Keep proxy started listening on %v with server list %v", listener.Addr(), kc.ServiceRoots())
+
 	// Start listening for requests.
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, &kc))
 }
@@ -101,7 +103,14 @@ type ApiTokenCache struct {
 func RefreshServicesList(kc *keepclient.KeepClient) {
 	for {
 		time.Sleep(300 * time.Second)
+		oldservices := kc.ServiceRoots()
 		kc.DiscoverKeepServers()
+		newservices := kc.ServiceRoots()
+		s1 := fmt.Sprint(oldservices)
+		s2 := fmt.Sprint(newservices)
+		if s1 != s2 {
+			log.Printf("Updated server list to %v", s2)
+		}
 	}
 }
 
@@ -167,7 +176,7 @@ func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, re
 
 	var usersreq *http.Request
 
-	if usersreq, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/users/current", kc.ApiServer), nil); err != nil {
+	if usersreq, err = http.NewRequest("HEAD", fmt.Sprintf("https://%s/arvados/v1/users/current", kc.ApiServer), nil); err != nil {
 		// Can't construct the request
 		log.Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
 		return false
@@ -206,6 +215,8 @@ type PutBlockHandler struct {
 	*ApiTokenCache
 }
 
+type InvalidPathHandler struct{}
+
 // MakeRESTRouter
 //     Returns a mux.Router that passes GET and PUT requests to the
 //     appropriate handlers.
@@ -233,7 +244,14 @@ func MakeRESTRouter(
 		ph.Methods("PUT")
 	}
 
+	rest.NotFoundHandler = InvalidPathHandler{}
+
 	return rest
+}
+
+func (this InvalidPathHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	log.Printf("%s: %s %s unroutable", GetRemoteAddress(req), req.Method, req.URL.Path)
+	http.Error(resp, "Bad request", http.StatusBadRequest)
 }
 
 func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {

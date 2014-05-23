@@ -47,7 +47,7 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		return err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		// fall back on keep disks
 		if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_disks", this.ApiServer), nil); err != nil {
 			return err
@@ -55,6 +55,9 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
 		if resp, err = this.Client.Do(req); err != nil {
 			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return errors.New(resp.Status)
 		}
 	}
 
