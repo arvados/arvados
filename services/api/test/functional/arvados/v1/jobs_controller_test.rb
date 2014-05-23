@@ -285,4 +285,19 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_response :success
   end
 
+  [:active, :admin].each do |which_token|
+    test "get job queue as #{which_token} user" do
+      authorize_with which_token
+      get :queue
+      assert_response :success
+      assert_operator 1, :<=, assigns(:objects).count
+    end
+    test "get job queue as #{which_token} user, with a filter" do
+      authorize_with which_token
+      get :queue, { filters: [['script','=','foo']] }
+      assert_response :success
+      assert_equal ['foo'], assigns(:objects).collect(&:script).uniq
+    end
+  end
+
 end
