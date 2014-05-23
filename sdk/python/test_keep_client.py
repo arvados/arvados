@@ -10,6 +10,7 @@ import run_test_server
 class KeepTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        super(KeepTestCase, cls).setUpClass()
         try:
             del os.environ['KEEP_LOCAL_STORE']
         except KeyError:
@@ -19,6 +20,7 @@ class KeepTestCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        super(KeepTestCase, cls).tearDownClass()
         run_test_server.stop()
         run_test_server.stop_keep()
 
@@ -65,3 +67,19 @@ class KeepTestCase(unittest.TestCase):
         self.assertEqual(arvados.Keep.get(blob_locator),
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
+
+    def test_KeepProxyTest(self):
+        try:
+            run_test_server.run_keep_proxy("admin")
+
+            baz_locator = arvados.Keep.put('baz')
+            self.assertEqual(baz_locator,
+                             '73feffa4b7f6bb68e44cf984c85f6e88+3',
+                             'wrong md5 hash from Keep.put("foo"): ' + baz_locator)
+            self.assertEqual(arvados.Keep.get(baz_locator),
+                             'baz',
+                             'wrong content from Keep.get(md5("baz"))')
+
+            self.assertEqual(True, arvados.Keep.global_client_object().using_proxy)
+        finally:
+            run_test_server.stop_keep_proxy()

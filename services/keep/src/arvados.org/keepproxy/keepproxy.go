@@ -10,7 +10,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -68,6 +70,25 @@ func main() {
 		log.Fatalf("Error setting up keep client %s", err.Error())
 	}
 
+	kc.Want_replicas = default_replicas
+
+	listener, err = net.Listen("tcp", listen)
+	if err != nil {
+		log.Fatalf("Could not listen on %v", listen)
+	}
+
+	go RefreshServicesList(&kc)
+
+	// Shut down the server gracefully (by closing the listener)
+	// if SIGTERM is received.
+	term := make(chan os.Signal, 1)
+	go func(sig <-chan os.Signal) {
+		s := <-sig
+		log.Println("caught signal:", s)
+		listener.Close()
+	}(term)
+	signal.Notify(term, syscall.SIGTERM)
+
 	if pidfile != "" {
 		f, err := os.Create(pidfile)
 		if err == nil {
@@ -78,19 +99,16 @@ func main() {
 		}
 	}
 
-	kc.Want_replicas = default_replicas
-
-	listener, err = net.Listen("tcp", listen)
-	if err != nil {
-		log.Fatalf("Could not listen on %v", listen)
-	}
-
-	go RefreshServicesList(&kc)
-
 	log.Printf("Arvados Keep proxy started listening on %v with server list %v", listener.Addr(), kc.ServiceRoots())
 
 	// Start listening for requests.
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, &kc))
+
+	log.Println("shutting down")
+
+	if pidfile != "" {
+		os.Remove(pidfile)
+	}
 }
 
 type ApiTokenCache struct {

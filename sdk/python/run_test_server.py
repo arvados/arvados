@@ -125,9 +125,7 @@ def stop():
 
 def _start_keep(n):
     keep0 = tempfile.mkdtemp()
-    kp0 = subprocess.Popen(["bin/keep", "-volumes={}".format(keep0), "-listen=:{}".format(25107+n)])
-    with open("tmp/keep{}.pid".format(n), 'w') as f:
-        f.write(str(kp0.pid))
+    kp0 = subprocess.Popen(["bin/keep", "-volumes={}".format(keep0), "-listen=:{}".format(25107+n), "-pid={}".format("tmp/keep{}.pid".format(n))])
     with open("tmp/keep{}.volume".format(n), 'w') as f:
         f.write(keep0)
 
@@ -141,14 +139,13 @@ def run_keep():
     else:
         os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
 
-    subprocess.call(["go", "install", "keep"])
+    subprocess.call(["./go.sh", "install", "keep"])
 
     if not os.path.exists("tmp"):
         os.mkdir("tmp")
 
     _start_keep(0)
     _start_keep(1)
-
 
     os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
     os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
@@ -172,6 +169,7 @@ def _stop_keep(n):
     if os.path.exists("tmp/keep{}.volume".format(n)):
         with open("tmp/keep{}.volume".format(n), 'r') as r:
             shutil.rmtree(r.read(), True)
+        os.unlink("tmp/keep{}.volume".format(n))
 
 def stop_keep():
     cwd = os.getcwd()
@@ -180,8 +178,41 @@ def stop_keep():
     _stop_keep(0)
     _stop_keep(1)
 
-    shutil.rmtree("tmp", True)
+    os.chdir(cwd)
 
+def run_keep_proxy(auth):
+    stop_keep_proxy()
+
+    cwd = os.getcwd()
+    os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
+    if os.environ.get('GOPATH') == None:
+        os.environ["GOPATH"] = os.getcwd()
+    else:
+        os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
+
+    subprocess.call(["./go.sh", "install", "arvados.org/keepproxy"])
+
+    if not os.path.exists("tmp"):
+        os.mkdir("tmp")
+
+    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+    os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
+    os.environ["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[auth]["api_token"]
+
+    kp0 = subprocess.Popen(["bin/keepproxy", "-pid=tmp/keepproxy.pid", "-listen=:{}".format(25101)])
+
+    authorize_with("admin")
+    api = arvados.api('v1', cache=False)
+    api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25101, "service_type": "proxy"} }).execute()
+
+    arvados.config.settings()["ARVADOS_KEEP_PROXY"] = "http://localhost:25101"
+
+    os.chdir(cwd)
+
+def stop_keep_proxy():
+    cwd = os.getcwd()
+    os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
+    kill_server_pid("tmp/keepproxy.pid", 0)
     os.chdir(cwd)
 
 def fixture(fix):
@@ -217,5 +248,9 @@ if __name__ == "__main__":
         run_keep()
     elif args.action == 'stop_keep':
         stop_keep()
+    elif args.action == 'start_keep_proxy':
+        run_keep_proxy("admin")
+    elif args.action == 'stop_keep_proxy':
+        stop_keep_proxy()
     else:
         print('Unrecognized action "{}", actions are "start", "stop", "start_keep", "stop_keep"'.format(args.action))
