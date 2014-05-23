@@ -170,6 +170,15 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
             if os.path.exists(cachefile.name):
                 os.unlink(cachefile.name)
 
+    def test_restart_cache(self):
+        path = os.path.join(self.make_tmpdir(), 'cache')
+        cache = arv_put.ResumeCache(path)
+        cache.save('test')
+        cache.restart()
+        self.assertRaises(ValueError, cache.load)
+        self.assertRaises(arv_put.ResumeCacheConflict,
+                          arv_put.ResumeCache, path)
+
 
 class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
     def setUp(self):
