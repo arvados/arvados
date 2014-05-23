@@ -23,6 +23,8 @@ const BLOCKSIZE = 64 * 1024 * 1024
 var BlockNotFound = errors.New("Block not found")
 var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
 var OversizeBlockError = errors.New("Block too big")
+var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
+var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 
 const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
 const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
@@ -57,6 +59,13 @@ func MakeKeepClient() (kc KeepClient, err error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
 		Using_proxy: false,
 		External:    external}
+
+	if os.Getenv("ARVADOS_API_HOST") == "" {
+		return kc, MissingArvadosApiHost
+	}
+	if os.Getenv("ARVADOS_API_TOKEN") == "" {
+		return kc, MissingArvadosApiToken
+	}
 
 	err = (&kc).DiscoverKeepServers()
 
