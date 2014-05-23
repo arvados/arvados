@@ -61,14 +61,19 @@ class FoldersController < ApplicationController
     end
     sorted_paths = lambda do |tree, depth=0|
       paths = []
-      tree.keys.sort_by { |ob| ob.friendly_link_name }.each do |ob|
+      tree.keys.sort_by { |ob|
+        ob.is_a?(String) ? ob : ob.friendly_link_name
+      }.each do |ob|
         paths << {object: ob, depth: depth}
         paths += sorted_paths.call tree[ob], depth+1
       end
       paths
     end
-    @my_folder_tree = sorted_paths.call buildtree.call(children_of, 'me')
-    @shared_folder_tree = sorted_paths.call buildtree.call(children_of, false)
+    @my_folder_tree =
+      sorted_paths.call buildtree.call(children_of, 'me')
+    @shared_folder_tree =
+      sorted_paths.call({'Shared with me' =>
+                          buildtree.call(children_of, false)})
   end
 
   def choose
