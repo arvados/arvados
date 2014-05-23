@@ -166,6 +166,8 @@ class Arvados::V1::JobsController < ApplicationController
   end
 
   def queue
+    params[:order] ||= ['priority desc', 'created_at']
+    load_limit_offset_order_params
     load_where_param
     @where.merge!({
                     started_at: nil,
@@ -173,7 +175,7 @@ class Arvados::V1::JobsController < ApplicationController
                     cancelled_at: nil,
                     success: nil
                   })
-    params[:order] ||= ['priority desc', 'created_at']
+    load_filters_param
     find_objects_for_index
     index
   end
