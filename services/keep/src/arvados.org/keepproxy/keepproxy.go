@@ -70,6 +70,16 @@ func main() {
 		log.Fatalf("Error setting up keep client %s", err.Error())
 	}
 
+	if pidfile != "" {
+		f, err := os.Create(pidfile)
+		if err == nil {
+			fmt.Fprint(f, os.Getpid())
+			f.Close()
+		} else {
+			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
+		}
+	}
+
 	kc.Want_replicas = default_replicas
 
 	listener, err = net.Listen("tcp", listen)

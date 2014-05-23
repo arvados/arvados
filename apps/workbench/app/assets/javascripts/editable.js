@@ -9,6 +9,10 @@ $.fn.editable.defaults.send = 'always';
 // too narrow, when the popup box will just move to do the right thing.
 //$.fn.editable.defaults.mode = 'inline';
 
+$.fn.editable.defaults.success = function (response, newValue) {
+    $(document).trigger('editable:success', [this, response, newValue]);
+};
+
 $.fn.editable.defaults.params = function (params) {
     var a = {};
     var key = params.pk.key;

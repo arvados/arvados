@@ -118,6 +118,7 @@ class KeepClient(object):
                     headers['X-Keep-Desired-Replication'] = str(self.args['want_copies'])
 
                 try:
+                    logging.debug("Uploading to {}".format(url))
                     resp, content = h.request(url.encode('utf-8'), 'PUT',
                                               headers=headers,
                                               body=self.args['data'])
@@ -170,7 +171,7 @@ class KeepClient(object):
             # Override normal keep disk lookup with an explict proxy
             # configuration.
             keep_proxy_env = config.get("ARVADOS_KEEP_PROXY")
-            if keep_proxy_env != None:
+            if keep_proxy_env != None and len(keep_proxy_env) > 0:
                 if keep_proxy_env[-1:] != '/':
                     keep_proxy_env += "/"
                 self.service_roots = [keep_proxy_env]

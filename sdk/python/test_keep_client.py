@@ -15,8 +15,12 @@ class KeepTestCase(unittest.TestCase):
             del os.environ['KEEP_LOCAL_STORE']
         except KeyError:
             pass
+
         run_test_server.run()
         run_test_server.run_keep()
+        arvados.keep.global_client_object = None
+        arvados.config._settings = None
+        run_test_server.authorize_with("admin")
 
     @classmethod
     def tearDownClass(cls):
@@ -68,18 +72,58 @@ class KeepTestCase(unittest.TestCase):
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
-    def test_KeepProxyTest(self):
+
+class KeepProxyTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(KeepProxyTestCase, cls).setUpClass()
         try:
-            run_test_server.run_keep_proxy("admin")
+            del os.environ['KEEP_LOCAL_STORE']
+        except KeyError:
+            pass
+        run_test_server.run()
+        run_test_server.run_keep()
+        arvados.keep.global_client_object = None
+        arvados.config._settings = None
+        run_test_server.run_keep_proxy("admin")
 
-            baz_locator = arvados.Keep.put('baz')
-            self.assertEqual(baz_locator,
-                             '73feffa4b7f6bb68e44cf984c85f6e88+3',
-                             'wrong md5 hash from Keep.put("foo"): ' + baz_locator)
-            self.assertEqual(arvados.Keep.get(baz_locator),
-                             'baz',
-                             'wrong content from Keep.get(md5("baz"))')
+    @classmethod
+    def tearDownClass(cls):
+        super(KeepProxyTestCase, cls).tearDownClass()
+        run_test_server.stop()
+        run_test_server.stop_keep()
+        run_test_server.stop_keep_proxy()
+        os.environ["ARVADOS_KEEP_PROXY"] = ""
+        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
 
-            self.assertEqual(True, arvados.Keep.global_client_object().using_proxy)
-        finally:
-            run_test_server.stop_keep_proxy()
+    def test_KeepProxyTest1(self):
+        # Will use ARVADOS_KEEP_PROXY environment variable that is set by
+        # run_keep_proxy()
+
+        baz_locator = arvados.Keep.put('baz')
+        self.assertEqual(baz_locator,
+                         '73feffa4b7f6bb68e44cf984c85f6e88+3',
+                         'wrong md5 hash from Keep.put("baz"): ' + baz_locator)
+        self.assertEqual(arvados.Keep.get(baz_locator),
+                         'baz',
+                         'wrong content from Keep.get(md5("baz"))')
+
+        self.assertEqual(True, arvados.Keep.global_client_object().using_proxy)
+
+    def test_KeepProxyTest2(self):
+        os.environ["ARVADOS_KEEP_PROXY"] = ""
+        os.environ["ARVADOS_EXTERNAL_CLIENT"] = "true"
+        arvados.config._settings = None
+
+        # Will send X-External-Client to server and get back the proxy from
+        # keep_services/accessible
+
+        baz_locator = arvados.Keep.put('baz2')
+        self.assertEqual(baz_locator,
+                         '91f372a266fe2bf2823cb8ec7fda31ce+4',
+                         'wrong md5 hash from Keep.put("baz2"): ' + baz_locator)
+        self.assertEqual(arvados.Keep.get(baz_locator),
+                         'baz2',
+                         'wrong content from Keep.get(md5("baz2"))')
+
+        self.assertEqual(True, arvados.Keep.global_client_object().using_proxy)
