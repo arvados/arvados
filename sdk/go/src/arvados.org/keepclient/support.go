@@ -156,7 +156,7 @@ type uploadStatus struct {
 func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
 	upload_status chan<- uploadStatus, expectedLength int64) {
 
-	log.Printf("Uploading to %s", host)
+	log.Printf("Uploading %s to %s", hash, host)
 
 	var req *http.Request
 	var err error
@@ -175,7 +175,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	req.Header.Add("Content-Type", "application/octet-stream")
 
 	if this.Using_proxy {
-		req.Header.Add("X-Keep-Desired-Replicas", fmt.Sprint(this.Want_replicas))
+		req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 	}
 
 	req.Body = body
@@ -188,7 +188,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	}
 
 	rep := 1
-	if xr := resp.Header.Get("X-Keep-Replicas-Stored"); xr != "" {
+	if xr := resp.Header.Get(X_Keep_Replicas_Stored); xr != "" {
 		fmt.Sscanf(xr, "%d", &rep)
 	}
 
@@ -248,7 +248,7 @@ func (this KeepClient) putReplicas(
 				status.url, status.err)
 		}
 		active -= 1
-		log.Printf("Upload status code: %v remaining replicas: %v active: %v", status.statusCode, remaining_replicas, active)
+		log.Printf("Upload to %v status code: %v remaining replicas: %v active: %v", status.url, status.statusCode, remaining_replicas, active)
 	}
 
 	return this.Want_replicas, nil

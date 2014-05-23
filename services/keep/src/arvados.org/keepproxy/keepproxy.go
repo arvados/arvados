@@ -63,15 +63,9 @@ func main() {
 
 	flag.Parse()
 
-	/*if no_get == false {
-		log.Print("Must specify -no-get")
-		return
-	}*/
-
 	kc, err := keepclient.MakeKeepClient()
 	if err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
 
 	if pidfile != "" {
@@ -88,8 +82,7 @@ func main() {
 
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
-		log.Printf("Could not listen on %v", listen)
-		return
+		log.Fatalf("Could not listen on %v", listen)
 	}
 
 	go RefreshServicesList(&kc)
@@ -143,13 +136,25 @@ func (this *ApiTokenCache) RecallToken(token string) bool {
 	}
 }
 
+func GetRemoteAddress(req *http.Request) string {
+	if realip := req.Header.Get("X-Real-IP"); realip != "" {
+		if forwarded := req.Header.Get("X-Forwarded-For"); forwarded != realip {
+			return fmt.Sprintf("%s (X-Forwarded-For %s)", realip, forwarded)
+		} else {
+			return realip
+		}
+	}
+	return req.RemoteAddr
+}
+
 func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) bool {
-	if req.Header.Get("Authorization") == "" {
+	var auth string
+	if auth = req.Header.Get("Authorization"); auth == "" {
 		return false
 	}
 
 	var tok string
-	_, err := fmt.Sscanf(req.Header.Get("Authorization"), "OAuth2 %s", &tok)
+	_, err := fmt.Sscanf(auth, "OAuth2 %s", &tok)
 	if err != nil {
 		// Scanning error
 		return false
@@ -164,7 +169,7 @@ func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, re
 
 	if usersreq, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/users/current", kc.ApiServer), nil); err != nil {
 		// Can't construct the request
-		log.Print("CheckAuthorizationHeader error: %v", err)
+		log.Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
 		return false
 	}
 
@@ -175,12 +180,13 @@ func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, re
 	var resp *http.Response
 	if resp, err = kc.Client.Do(usersreq); err != nil {
 		// Something else failed
-		log.Print("CheckAuthorizationHeader error: %v", err)
+		log.Printf("%s: CheckAuthorizationHeader error connecting to API server: %v", GetRemoteAddress(req), err.Error())
 		return false
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		// Bad status
+		log.Printf("%s: CheckAuthorizationHeader API server responded: %v", GetRemoteAddress(req), resp.Status)
 		return false
 	}
 
@@ -234,13 +240,16 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	kc := *this.KeepClient
 
-	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
-		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
-	}
-
 	hash := mux.Vars(req)["hash"]
 	signature := mux.Vars(req)["signature"]
 	timestamp := mux.Vars(req)["timestamp"]
+
+	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, hash)
+
+	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
+		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
+		return
+	}
 
 	var reader io.ReadCloser
 	var err error
@@ -258,24 +267,31 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	switch err {
 	case nil:
 		if reader != nil {
-			io.Copy(resp, reader)
+			n, err2 := io.Copy(resp, reader)
+			if n != blocklen {
+				log.Printf("%s: %s %s mismatched return %v with Content-Length %v error", GetRemoteAddress(req), req.Method, hash, n, blocklen, err.Error())
+			} else if err2 == nil {
+				log.Printf("%s: %s %s success returned %v bytes", GetRemoteAddress(req), req.Method, hash, n)
+			} else {
+				log.Printf("%s: %s %s returned %v bytes error %v", GetRemoteAddress(req), req.Method, hash, n, err.Error())
+			}
+		} else {
+			log.Printf("%s: %s %s success", GetRemoteAddress(req), req.Method, hash)
 		}
 	case keepclient.BlockNotFound:
 		http.Error(resp, "Not found", http.StatusNotFound)
 	default:
 		http.Error(resp, err.Error(), http.StatusBadGateway)
 	}
+
+	if err != nil {
+		log.Printf("%s: %s %s error %s", GetRemoteAddress(req), req.Method, hash, err.Error())
+	}
 }
 
 func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
-	log.Print("PutBlockHandler start")
-
 	kc := *this.KeepClient
-
-	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
-		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
-	}
 
 	hash := mux.Vars(req)["hash"]
 
@@ -288,15 +304,22 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	}
 
+	log.Printf("%s: %s %s Content-Length %v", GetRemoteAddress(req), req.Method, hash, contentLength)
+
 	if contentLength < 1 {
 		http.Error(resp, "Must include Content-Length header", http.StatusLengthRequired)
+		return
+	}
+
+	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
+		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
 		return
 	}
 
 	// Check if the client specified the number of replicas
 	if req.Header.Get("X-Keep-Desired-Replicas") != "" {
 		var r int
-		_, err := fmt.Sscanf(req.Header.Get("X-Keep-Desired-Replicas"), "%d", &r)
+		_, err := fmt.Sscanf(req.Header.Get(keepclient.X_Keep_Desired_Replicas), "%d", &r)
 		if err != nil {
 			kc.Want_replicas = r
 		}
@@ -305,14 +328,13 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	// Now try to put the block through
 	replicas, err := kc.PutHR(hash, req.Body, contentLength)
 
-	log.Printf("Replicas stored: %v err: %v", replicas, err)
-
 	// Tell the client how many successful PUTs we accomplished
-	resp.Header().Set("X-Keep-Replicas-Stored", fmt.Sprintf("%d", replicas))
+	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", replicas))
 
 	switch err {
 	case nil:
 		// Default will return http.StatusOK
+		log.Printf("%s: %s %s finished, stored %v replicas (desired %v)", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas)
 
 	case keepclient.OversizeBlockError:
 		// Too much data
@@ -330,6 +352,10 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	default:
 		http.Error(resp, err.Error(), http.StatusBadGateway)
+	}
+
+	if err != nil {
+		log.Printf("%s: %s %s stored %v replicas (desired %v) got error %v", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas, err.Error())
 	}
 
 }

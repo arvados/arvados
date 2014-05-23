@@ -24,6 +24,9 @@ var BlockNotFound = errors.New("Block not found")
 var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
 var OversizeBlockError = errors.New("Block too big")
 
+const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
+const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
+
 // Information about Arvados and Keep servers.
 type KeepClient struct {
 	ApiServer     string
