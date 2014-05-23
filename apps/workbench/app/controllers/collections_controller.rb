@@ -171,6 +171,12 @@ class CollectionsController < ApplicationController
     end
   end
 
+  helper_method :download_link
+
+  def download_link
+    collections_url + "/download/#{@object.uuid}/#{@search_sharing.first.api_token}"
+  end
+
   def share
     a = ApiClientAuthorization.create(scopes: sharing_scopes)
     @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
