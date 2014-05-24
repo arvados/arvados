@@ -125,7 +125,7 @@ jQuery(function($){
 });
 
 add_form_selection_sources = null;
-select_form_sources  = null;
+select_form_sources = null;
 
 (function() {
     var form_selection_sources = {};

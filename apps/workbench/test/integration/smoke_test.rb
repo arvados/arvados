@@ -2,6 +2,10 @@ require 'integration_helper'
 require 'uri'
 
 class SmokeTest < ActionDispatch::IntegrationTest
+  setup do
+    Capybara.current_driver = Capybara.javascript_driver
+  end
+
   def assert_visit_success(allowed=[200])
     assert_includes(allowed, status_code,
                     "#{current_url} returned #{status_code}, not one of " +
