@@ -235,8 +235,7 @@ class Dispatcher
       end
 
       if stderr_buf
-        j[:stderr_buf] << stderr_buf
-        if stderr_buf.index "\n" || j[:stderr_flushed_at] != Time.now.to_i
+        if stderr_buf.index "\n"
         lines = stderr_buf.lines("\n").to_a
           lines.each do |line|
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
@@ -402,7 +401,7 @@ class Dispatcher
         running_job[:stderr_flushed_at] = Time.now.to_i
       end
     rescue
-      running_job[:stderr_buf] = 'Failed to write logs \n'
+      running_job[:stderr_buf] = "Failed to write logs \n"
       running_job[:stderr_flushed_at] = Time.now.to_i
     end
   end

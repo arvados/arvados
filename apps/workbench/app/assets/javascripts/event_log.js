@@ -8,7 +8,7 @@ function subscribeToEventLog (elementId) {
   // if websockets are not supported by browser, do not subscribe for events
   websocketsSupported = ('WebSocket' in window);
   if (websocketsSupported == false) {
-    return;  
+    return;
   }
 
   // grab websocket connection from window, if one exists
@@ -39,7 +39,7 @@ function onEventLogDispatcherMessage(event) {
   parsedData = JSON.parse(event.data);
   object_uuid = parsedData.object_uuid;
 
-  // if there are any listeners for this object uuid or "all", trigger the event 
+  // if there are any listeners for this object uuid or "all", trigger the event
   matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuid=\"all\"]";
   $(matches).trigger('arv-log-event', event.data);
 }
