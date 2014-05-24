@@ -38,37 +38,37 @@ $(document).on('ready ajax:complete', function() {
         if ($tag.hasClass("editable-empty")) {
             $tag.parent().css("background-color", "#ffdddd");
             $tag.parent().prev().css("background-color", "#ffdddd");
+        }
         else {
             $tag.parent().css("background-color", "");
             $tag.parent().prev().css("background-color", "");
         }
-        run_pipeline_button_state();
-    } );
-
-    $(document).on('ajax:complete ready', function() {
-      var a = $('.arv-log-event-listener');
-      if (a.length > 0) {
-        $('.arv-log-event-listener').each(function() {
-          subscribeToEventLog(this.id);
-        });
-      }
     });
+    run_pipeline_button_state();
+});
 
-    $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
-      parsedData = JSON.parse(eventData);
-
-      propertyText = undefined
-
-      properties = parsedData.properties;
-      if (properties !== null) {
-        propertyText = properties.text;
-      }
-
-      if (propertyText !== undefined) {
-        $(this).append(propertyText + "<br/>");
-      } else {
-        $(this).append(parsedData.summary + "<br/>");
-      }
+$(document).on('ajax:complete ready', function() {
+  var a = $('.arv-log-event-listener');
+  if (a.length > 0) {
+    $('.arv-log-event-listener').each(function() {
+      subscribeToEventLog(this.id);
     });
+  }
+});
 
-})();
+$(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
+  parsedData = JSON.parse(eventData);
+
+  propertyText = undefined
+
+  properties = parsedData.properties;
+    if (properties !== null) {
+      propertyText = properties.text;
+    }
+
+    if (propertyText !== undefined) {
+      $(this).append(propertyText + "<br/>");
+    } else {
+      $(this).append(parsedData.summary + "<br/>");
+    }
+});
