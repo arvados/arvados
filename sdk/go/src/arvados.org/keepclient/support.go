@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
 )
 
@@ -21,10 +20,9 @@ type keepDisk struct {
 	SvcType  string `json:"service_type"`
 }
 
-func (this *KeepClient) discoverKeepServers() error {
+func (this *KeepClient) DiscoverKeepServers() error {
 	if prx := os.Getenv("ARVADOS_KEEP_PROXY"); prx != "" {
-		this.Service_roots = make([]string, 1)
-		this.Service_roots[0] = prx
+		this.SetServiceRoots([]string{prx})
 		this.Using_proxy = true
 		return nil
 	}
@@ -33,12 +31,15 @@ func (this *KeepClient) discoverKeepServers() error {
 	var req *http.Request
 	var err error
 
-	if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_services/accessible", this.ApiServer), nil); err != nil {
+	if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_services/accessible?format=json", this.ApiServer), nil); err != nil {
 		return err
 	}
 
 	// Add api token header
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+	if this.External {
+		req.Header.Add("X-External-Client", "1")
+	}
 
 	// Make the request
 	var resp *http.Response
@@ -46,7 +47,7 @@ func (this *KeepClient) discoverKeepServers() error {
 		return err
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		// fall back on keep disks
 		if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_disks", this.ApiServer), nil); err != nil {
 			return err
@@ -54,6 +55,9 @@ func (this *KeepClient) discoverKeepServers() error {
 		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
 		if resp, err = this.Client.Do(req); err != nil {
 			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return errors.New(resp.Status)
 		}
 	}
 
@@ -69,7 +73,7 @@ func (this *KeepClient) discoverKeepServers() error {
 	}
 
 	listed := make(map[string]bool)
-	this.Service_roots = make([]string, 0, len(m.Items))
+	service_roots := make([]string, 0, len(m.Items))
 
 	for _, element := range m.Items {
 		n := ""
@@ -84,16 +88,14 @@ func (this *KeepClient) discoverKeepServers() error {
 		// Skip duplicates
 		if !listed[url] {
 			listed[url] = true
-			this.Service_roots = append(this.Service_roots, url)
+			service_roots = append(service_roots, url)
 		}
 		if element.SvcType == "proxy" {
 			this.Using_proxy = true
 		}
 	}
 
-	// Must be sorted for ShuffledServiceRoots() to produce consistent
-	// results.
-	sort.Strings(this.Service_roots)
+	this.SetServiceRoots(service_roots)
 
 	return nil
 }
@@ -108,11 +110,12 @@ func (this KeepClient) shuffledServiceRoots(hash string) (pseq []string) {
 	seed := hash
 
 	// Keep servers still to be added to the ordering
-	pool := make([]string, len(this.Service_roots))
-	copy(pool, this.Service_roots)
+	service_roots := this.ServiceRoots()
+	pool := make([]string, len(service_roots))
+	copy(pool, service_roots)
 
 	// output probe sequence
-	pseq = make([]string, 0, len(this.Service_roots))
+	pseq = make([]string, 0, len(service_roots))
 
 	// iterate while there are servers left to be assigned
 	for len(pool) > 0 {
@@ -156,7 +159,7 @@ type uploadStatus struct {
 func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
 	upload_status chan<- uploadStatus, expectedLength int64) {
 
-	log.Printf("Uploading to %s", host)
+	log.Printf("Uploading %s to %s", hash, host)
 
 	var req *http.Request
 	var err error
@@ -175,7 +178,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	req.Header.Add("Content-Type", "application/octet-stream")
 
 	if this.Using_proxy {
-		req.Header.Add("X-Keep-Desired-Replicas", fmt.Sprint(this.Want_replicas))
+		req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 	}
 
 	req.Body = body
@@ -183,11 +186,12 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
 		upload_status <- uploadStatus{err, url, 0, 0}
+		body.Close()
 		return
 	}
 
 	rep := 1
-	if xr := resp.Header.Get("X-Keep-Replicas-Stored"); xr != "" {
+	if xr := resp.Header.Get(X_Keep_Replicas_Stored); xr != "" {
 		fmt.Sscanf(xr, "%d", &rep)
 	}
 
@@ -228,7 +232,6 @@ func (this KeepClient) putReplicas(
 				next_server += 1
 				active += 1
 			} else {
-				fmt.Print(active)
 				if active == 0 {
 					return (this.Want_replicas - remaining_replicas), InsufficientReplicasError
 				} else {
@@ -248,7 +251,7 @@ func (this KeepClient) putReplicas(
 				status.url, status.err)
 		}
 		active -= 1
-		log.Printf("Upload status %v %v %v", status.statusCode, remaining_replicas, active)
+		log.Printf("Upload to %v status code: %v remaining replicas: %v active: %v", status.url, status.statusCode, remaining_replicas, active)
 	}
 
 	return this.Want_replicas, nil

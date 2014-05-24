@@ -84,7 +84,9 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 
     <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'Paused' %>
 
-    <%= button_tag "Stop pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+    <%= button_tag({class: 'btn btn-primary pull-right run-pipeline-button'}) do %>
+      Stop <i class="fa fa-fw fa-stop"></i>
+    <% end %>
   <% end %>
 <% end %>
 
@@ -124,7 +126,9 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 
       <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'RunningOnServer' %>
 
-      <%= button_tag "Run pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+      <%= button_tag({class: 'btn btn-primary pull-right run-pipeline-button'}) do %>
+        Run <i class="fa fa-fw fa-play"></i>
+      <% end %>
     <% end %>
   <% end %>
 

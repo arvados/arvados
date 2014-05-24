@@ -11,6 +11,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sort"
+	"sync"
+	"sync/atomic"
+	"unsafe"
 )
 
 // A Keep "block" is 64MB.
@@ -19,16 +23,23 @@ const BLOCKSIZE = 64 * 1024 * 1024
 var BlockNotFound = errors.New("Block not found")
 var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
 var OversizeBlockError = errors.New("Block too big")
+var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
+var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
+
+const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
+const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 
 // Information about Arvados and Keep servers.
 type KeepClient struct {
 	ApiServer     string
 	ApiToken      string
 	ApiInsecure   bool
-	Service_roots []string
 	Want_replicas int
 	Client        *http.Client
 	Using_proxy   bool
+	External      bool
+	service_roots *[]string
+	lock          sync.Mutex
 }
 
 // Create a new KeepClient, initialized with standard Arvados environment
@@ -37,6 +48,7 @@ type KeepClient struct {
 // Keep servers.
 func MakeKeepClient() (kc KeepClient, err error) {
 	insecure := (os.Getenv("ARVADOS_API_HOST_INSECURE") == "true")
+	external := (os.Getenv("ARVADOS_EXTERNAL_CLIENT") == "true")
 
 	kc = KeepClient{
 		ApiServer:     os.Getenv("ARVADOS_API_HOST"),
@@ -45,9 +57,17 @@ func MakeKeepClient() (kc KeepClient, err error) {
 		Want_replicas: 2,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
-		Using_proxy: false}
+		Using_proxy: false,
+		External:    external}
 
-	err = (&kc).discoverKeepServers()
+	if os.Getenv("ARVADOS_API_HOST") == "" {
+		return kc, MissingArvadosApiHost
+	}
+	if os.Getenv("ARVADOS_API_TOKEN") == "" {
+		return kc, MissingArvadosApiToken
+	}
+
+	err = (&kc).DiscoverKeepServers()
 
 	return kc, err
 }
@@ -203,4 +223,23 @@ func (this KeepClient) AuthorizedAsk(hash string, signature string,
 
 	return 0, "", BlockNotFound
 
+}
+
+// Atomically read the service_roots field.
+func (this *KeepClient) ServiceRoots() []string {
+	r := (*[]string)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots))))
+	return *r
+}
+
+// Atomically update the service_roots field.  Enables you to update
+// service_roots without disrupting any GET or PUT operations that might
+// already be in progress.
+func (this *KeepClient) SetServiceRoots(svc []string) {
+	// Must be sorted for ShuffledServiceRoots() to produce consistent
+	// results.
+	roots := make([]string, len(svc))
+	copy(roots, svc)
+	sort.Strings(roots)
+	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots)),
+		unsafe.Pointer(&roots))
 }
