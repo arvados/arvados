@@ -70,6 +70,7 @@ type KeepError struct {
 }
 
 var (
+	BadRequestError = &KeepError{400, "Bad Request"}
 	CollisionError  = &KeepError{400, "Collision"}
 	MD5Error        = &KeepError{401, "MD5 Failure"}
 	PermissionError = &KeepError{401, "Permission denied"}
@@ -268,11 +269,13 @@ func main() {
 //
 func MakeRESTRouter() *mux.Router {
 	rest := mux.NewRouter()
+
 	rest.HandleFunc(
 		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(
 		`/{hash:[0-9a-f]{32}}+{hints}`,
 		GetBlockHandler).Methods("GET", "HEAD")
+
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 
 	// For IndexHandler we support:
@@ -291,7 +294,16 @@ func MakeRESTRouter() *mux.Router {
 	rest.HandleFunc(
 		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
+
+	// Any request which does not match any of these routes gets
+	// 400 Bad Request.
+	rest.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
+
 	return rest
+}
+
+func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, BadRequestError.Error(), BadRequestError.HTTPCode)
 }
 
 // FindKeepVolumes
@@ -340,14 +352,15 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		for _, hint := range strings.Split(hints, "+") {
 			if match, _ := regexp.MatchString("^[[:digit:]]+$", hint); match {
 				// Server ignores size hints
-			} else if match, _ := regexp.MatchString("^K([[:alnum:]]+)$", hint); match {
-				// Server ignores location hints
 			} else if m := signature_pat.FindStringSubmatch(hint); m != nil {
 				signature = m[1]
 				timestamp = m[2]
+			} else if match, _ := regexp.MatchString("^[[:upper:]]", hint); match {
+				// Any unknown hint that starts with an uppercase letter is
+				// presumed to be valid and ignored, to permit forward compatibility.
 			} else {
-				// Not a valid locator: return 404
-				http.Error(resp, NotFoundError.Error(), NotFoundError.HTTPCode)
+				// Unknown format; not a valid locator.
+				http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
 				return
 			}
 		}

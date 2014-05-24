@@ -93,7 +93,7 @@ class KeepPermissionTestCase(unittest.TestCase):
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
-        # With Keep permissions enabled, a GET request without a locator will fail.
+        # With Keep permissions enabled, a GET request without a signature will fail.
         bar_locator = arvados.Keep.put('bar')
         self.assertRegexpMatches(
             bar_locator,
@@ -113,6 +113,12 @@ class KeepPermissionTestCase(unittest.TestCase):
 # but not --enforce-permissions (i.e. generate signatures on PUT
 # requests, but do not require them for GET requests)
 #
+# All of these requests should succeed when permissions are optional:
+# * authenticated request, signed locator
+# * authenticated request, unsigned locator
+# * unauthenticated request, signed locator
+# * unauthenticated request, unsigned locator
+
 class KeepOptionalPermission(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -129,39 +135,52 @@ class KeepOptionalPermission(unittest.TestCase):
         run_test_server.stop()
         run_test_server.stop_keep()
 
-    def test_KeepBasicRWTest(self):
+    def test_KeepAuthenticatedSignedTest(self):
         run_test_server.authorize_with('active')
-        foo_locator = arvados.Keep.put('foo')
+        signed_locator = arvados.Keep.put('foo')
         self.assertRegexpMatches(
-            foo_locator,
+            signed_locator,
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
-            'invalid locator from Keep.put("foo"): ' + foo_locator)
-        self.assertEqual(arvados.Keep.get(foo_locator),
+            'invalid locator from Keep.put("foo"): ' + signed_locator)
+        self.assertEqual(arvados.Keep.get(signed_locator),
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
-    def test_KeepUnsignedLocatorTest(self):
-        # Since --enforce-permissions is not in effect, GET requests
-        # do not require signatures.
+    def test_KeepAuthenticatedUnsignedTest(self):
         run_test_server.authorize_with('active')
-        foo_locator = arvados.Keep.put('foo')
+        signed_locator = arvados.Keep.put('foo')
         self.assertRegexpMatches(
-            foo_locator,
+            signed_locator,
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
-            'invalid locator from Keep.put("foo"): ' + foo_locator)
+            'invalid locator from Keep.put("foo"): ' + signed_locator)
         self.assertEqual(arvados.Keep.get("acbd18db4cc2f85cedef654fccc4a4d8"),
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
-    def test_KeepUnauthenticatedTest(self):
+    def test_KeepUnauthenticatedSignedTest(self):
         # Since --enforce-permissions is not in effect, GET requests
         # need not be authenticated.
         run_test_server.authorize_with('active')
-        foo_locator = arvados.Keep.put('foo')
+        signed_locator = arvados.Keep.put('foo')
         self.assertRegexpMatches(
-            foo_locator,
+            signed_locator,
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
-            'invalid locator from Keep.put("foo"): ' + foo_locator)
+            'invalid locator from Keep.put("foo"): ' + signed_locator)
+
+        del arvados.config.settings()["ARVADOS_API_TOKEN"]
+        self.assertEqual(arvados.Keep.get(signed_locator),
+                         'foo',
+                         'wrong content from Keep.get(md5("foo"))')
+
+    def test_KeepUnauthenticatedUnsignedTest(self):
+        # Since --enforce-permissions is not in effect, GET requests
+        # need not be authenticated.
+        run_test_server.authorize_with('active')
+        signed_locator = arvados.Keep.put('foo')
+        self.assertRegexpMatches(
+            signed_locator,
+            r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
+            'invalid locator from Keep.put("foo"): ' + signed_locator)
 
         del arvados.config.settings()["ARVADOS_API_TOKEN"]
         self.assertEqual(arvados.Keep.get("acbd18db4cc2f85cedef654fccc4a4d8"),
