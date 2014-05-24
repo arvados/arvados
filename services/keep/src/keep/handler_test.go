@@ -11,6 +11,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
@@ -81,6 +82,11 @@ func TestGetHandler(t *testing.T) {
 		"Unauthenticated request, unsigned locator",
 		string(TEST_BLOCK),
 		response)
+	received_xbs := response.Header().Get("X-Block-Size")
+	expected_xbs := fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_xbs != expected_xbs {
+		t.Errorf("expected X-Block-Size %s, got %s", expected_xbs, received_xbs)
+	}
 
 	// ----------------
 	// Permissions: on.
@@ -97,6 +103,11 @@ func TestGetHandler(t *testing.T) {
 		"Authenticated request, signed locator", http.StatusOK, response)
 	ExpectBody(t,
 		"Authenticated request, signed locator", string(TEST_BLOCK), response)
+	received_xbs = response.Header().Get("X-Block-Size")
+	expected_xbs = fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_xbs != expected_xbs {
+		t.Errorf("expected X-Block-Size %s, got %s", expected_xbs, received_xbs)
+	}
 
 	// Authenticated request, unsigned locator
 	// => PermissionError
