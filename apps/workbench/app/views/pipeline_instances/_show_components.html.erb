@@ -24,9 +24,10 @@
   <colgroup>
     <col style="width: 15%" />
     <col style="width: 20%" />
+    <col style="width: 15%" />
     <col style="width: 12%" />
     <col style="width: 12%" />
-    <col style="width: 45%" />
+    <col style="width: 26%" />
   </colgroup>
   <thead>
     <tr>
@@ -34,6 +35,8 @@
         component
       </th><th>
         script, version
+      </th><th>
+        Job
       </th><th>
         progress
         <%# format:'js' here helps browsers avoid using the cached js
@@ -58,6 +61,10 @@
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
+      </td><td>
+        <% if pj[:job].andand[:uuid] %>
+          <%= link_to("..."+pj[:job][:uuid].last(15), job_url(id: pj[:job][:uuid])) %>
+        <% end %>
       </td><td>
         <%= pj[:progress_bar] %>
       </td><td>
