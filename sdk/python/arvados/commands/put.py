@@ -108,6 +108,16 @@ def parse_arguments(arguments):
     total data size).
     """)
 
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--resume', action='store_true', default=True,
+                       help="""
+    Continue interrupted uploads from cached state (default).
+    """)
+    group.add_argument('--no-resume', action='store_false', dest='resume',
+                       help="""
+    Do not continue interrupted uploads from cached state.
+    """)
+
     args = parser.parse_args(arguments)
 
     if len(args.paths) == 0:
@@ -138,6 +148,16 @@ class ResumeCacheConflict(Exception):
 
 class ResumeCache(object):
     CACHE_DIR = os.path.expanduser('~/.cache/arvados/arv-put')
+
+    @classmethod
+    def setup_user_cache(cls):
+        try:
+            os.makedirs(cls.CACHE_DIR)
+        except OSError as error:
+            if error.errno != errno.EEXIST:
+                raise
+        else:
+            os.chmod(cls.CACHE_DIR, 0o700)
 
     def __init__(self, file_spec):
         try:
@@ -281,6 +301,7 @@ def progress_writer(progress_func, outfile=sys.stderr):
     return write_progress
 
 def main(arguments=None):
+    ResumeCache.setup_user_cache()
     args = parse_arguments(arguments)
 
     if args.progress:
@@ -290,8 +311,16 @@ def main(arguments=None):
     else:
         reporter = None
 
-    writer = ArvPutCollectionWriter(
-        reporter=reporter, bytes_expected=expected_bytes_for(args.paths))
+    try:
+        resume_cache = ResumeCache(args)
+        if not args.resume:
+            resume_cache.restart()
+    except ResumeCacheConflict:
+        print "arv-put: Another process is already uploading this data."
+        sys.exit(1)
+
+    writer = ArvPutCollectionWriter.from_cache(
+        resume_cache, reporter, expected_bytes_for(args.paths))
 
     # Copy file data to Keep.
     for path in args.paths:
@@ -318,6 +347,7 @@ def main(arguments=None):
 
         # Print the locator (uuid) of the new collection.
         print writer.finish()
+    resume_cache.destroy()
 
 if __name__ == '__main__':
     main()
