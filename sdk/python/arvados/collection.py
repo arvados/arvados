@@ -396,6 +396,10 @@ class ResumableCollectionWriter(CollectionWriter):
                 attr_value = attr_class(attr_value)
             setattr(writer, attr_name, attr_value)
         # Check dependencies before we try to resume anything.
+        if any(KeepLocator(ls).permission_expired()
+               for ls in writer._current_stream_locators):
+            raise errors.StaleWriterStateError(
+                "locators include expired permission hint")
         writer.check_dependencies()
         if state['_current_file'] is not None:
             path, pos = state['_current_file']
