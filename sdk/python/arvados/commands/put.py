@@ -108,7 +108,7 @@ def parse_arguments(arguments):
     total data size).
     """)
 
-    group = arg_parser.add_mutually_exclusive_group()
+    group = parser.add_mutually_exclusive_group()
     group.add_argument('--resume', action='store_true', default=True,
                        help="""
     Continue interrupted uploads from cached state (default).
