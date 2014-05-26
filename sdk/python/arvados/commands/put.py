@@ -5,6 +5,7 @@
 
 import argparse
 import arvados
+import hashlib
 import os
 import sys
 
@@ -125,6 +126,22 @@ def parse_arguments(arguments):
             args.filename = '-'
 
     return args
+
+class ResumeCache(object):
+    CACHE_DIR = os.path.expanduser('~/.cache/arvados/arv-put')
+
+    @classmethod
+    def make_path(cls, args):
+        md5 = hashlib.md5()
+        md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
+        realpaths = sorted(os.path.realpath(path) for path in args.paths)
+        md5.update(''.join(realpaths))
+        if any(os.path.isdir(path) for path in realpaths):
+            md5.update(str(max(args.max_manifest_depth, -1)))
+        elif args.filename:
+            md5.update(args.filename)
+        return os.path.join(cls.CACHE_DIR, md5.hexdigest())
+
 
 class CollectionWriterWithProgress(arvados.CollectionWriter):
     def flush_data(self, *args, **kwargs):
