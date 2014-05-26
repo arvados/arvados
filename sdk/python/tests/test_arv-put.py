@@ -19,6 +19,13 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
         ['/tmp', '--max-manifest-depth', '1']
         ]
 
+    def tearDown(self):
+        super(ArvadosPutResumeCacheTest, self).tearDown()
+        try:
+            self.last_cache.destroy()
+        except AttributeError:
+            pass
+
     def cache_path_from_arglist(self, arglist):
         return arv_put.ResumeCache.make_path(arv_put.parse_arguments(arglist))
 
@@ -100,6 +107,66 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                 del config['ARVADOS_API_HOST']
             else:
                 config['ARVADOS_API_HOST'] = orig_host
+
+    def test_basic_cache_storage(self):
+        thing = ['test', 'list']
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        self.last_cache.save(thing)
+        self.assertEquals(thing, self.last_cache.load())
+
+    def test_empty_cache(self):
+        with tempfile.NamedTemporaryFile() as cachefile:
+            cache = arv_put.ResumeCache(cachefile.name)
+        self.assertRaises(ValueError, cache.load)
+
+    def test_cache_persistent(self):
+        thing = ['test', 'list']
+        path = os.path.join(self.make_tmpdir(), 'cache')
+        cache = arv_put.ResumeCache(path)
+        cache.save(thing)
+        cache.close()
+        self.last_cache = arv_put.ResumeCache(path)
+        self.assertEquals(thing, self.last_cache.load())
+
+    def test_multiple_cache_writes(self):
+        thing = ['short', 'list']
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        # Start writing an object longer than the one we test, to make
+        # sure the cache file gets truncated.
+        self.last_cache.save(['long', 'long', 'list'])
+        self.last_cache.save(thing)
+        self.assertEquals(thing, self.last_cache.load())
+
+    def test_cache_is_locked(self):
+        with tempfile.NamedTemporaryFile() as cachefile:
+            cache = arv_put.ResumeCache(cachefile.name)
+            self.assertRaises(arv_put.ResumeCacheConflict,
+                              arv_put.ResumeCache, cachefile.name)
+
+    def test_cache_stays_locked(self):
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+            path = cachefile.name
+        self.last_cache.save('test')
+        self.assertRaises(arv_put.ResumeCacheConflict,
+                          arv_put.ResumeCache, path)
+
+    def test_destroy_cache(self):
+        cachefile = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            cache = arv_put.ResumeCache(cachefile.name)
+            cache.save('test')
+            cache.destroy()
+            try:
+                arv_put.ResumeCache(cachefile.name)
+            except arv_put.ResumeCacheConflict:
+                self.fail("could not load cache after destroying it")
+            self.assertRaises(ValueError, cache.load)
+        finally:
+            if os.path.exists(cachefile.name):
+                os.unlink(cachefile.name)
 
 
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
