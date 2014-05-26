@@ -193,8 +193,6 @@ class KeepClient(object):
             # selected server.
             probe = int(seed[0:8], 16) % len(pool)
 
-            print seed[0:8], int(seed[0:8], 16), len(pool), probe
-
             # Append the selected server to the probe sequence and remove it
             # from the pool.
             pseq += [pool[probe]]
