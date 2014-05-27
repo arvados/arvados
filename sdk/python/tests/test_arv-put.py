@@ -4,7 +4,10 @@
 import os
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
+import time
 import unittest
 
 import arvados
@@ -318,6 +321,25 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
             "did not find file stream in Keep store")
+
+    def test_short_put_from_stdin(self):
+        # Have to run this separately since arv-put can't read from the
+        # tests' stdin.
+        # arv-put usually can't stat(os.path.realpath('/dev/stdin')) in this
+        # case, because the /proc entry is already gone by the time it tries.
+        pipe = subprocess.Popen(
+            [sys.executable, arv_put.__file__, '--stream'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        pipe.stdin.write('stdin test\n')
+        pipe.stdin.close()
+        deadline = time.time() + 5
+        while (pipe.poll() is None) and (time.time() < deadline):
+            time.sleep(.1)
+        if pipe.returncode is None:
+            pipe.terminate()
+            self.fail("arv-put did not PUT from stdin within 5 seconds")
+        self.assertEquals(pipe.returncode, 0)
+        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
 
 
 if __name__ == '__main__':

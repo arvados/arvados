@@ -443,15 +443,22 @@ class ResumableCollectionWriter(CollectionWriter):
             raise errors.AssertionError("{} not a file path".format(source))
         try:
             path_stat = os.stat(src_path)
-        except OSError as error:
-            raise errors.AssertionError(
-                "could not stat {}: {}".format(source, error))
+        except OSError as stat_error:
+            path_stat = None
         super(ResumableCollectionWriter, self)._queue_file(source, filename)
         fd_stat = os.fstat(self._queued_file.fileno())
-        if path_stat.st_ino != fd_stat.st_ino:
+        if not S_ISREG(fd_stat.st_mode):
+            # We won't be able to resume from this cache anyway, so don't
+            # worry about further checks.
+            self._dependencies[source] = tuple(fd_stat)
+        elif path_stat is None:
+            raise errors.AssertionError(
+                "could not stat {}: {}".format(source, stat_error))
+        elif path_stat.st_ino != fd_stat.st_ino:
             raise errors.AssertionError(
                 "{} changed between open and stat calls".format(source))
-        self._dependencies[src_path] = tuple(fd_stat)
+        else:
+            self._dependencies[src_path] = tuple(fd_stat)
 
     def write(self, data):
         if self._queued_file is None:
