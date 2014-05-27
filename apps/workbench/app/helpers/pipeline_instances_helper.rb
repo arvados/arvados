@@ -22,7 +22,7 @@ module PipelineInstancesHelper
     pj
   end
 
-  def pipieline_log_history(job_uuids)
+  def pipeline_log_history(job_uuids)
     results = []
 
     log_history = Log.where(event_type: 'stderr',

@@ -201,6 +201,7 @@ class Dispatcher
         started: false,
         sent_int: 0,
         job_auth: job_auth,
+        stderr_buf_to_flush: '',
         stderr_flushed_at: 0
       }
       i.close
@@ -235,18 +236,23 @@ class Dispatcher
       end
 
       if stderr_buf
-        if stderr_buf.index "\n"
-        lines = stderr_buf.lines("\n").to_a
+        j[:stderr_buf] << stderr_buf
+        if j[:stderr_buf].index "\n"
+          lines = j[:stderr_buf].lines("\n").to_a
+          if j[:stderr_buf][-1] == "\n"
+            j[:stderr_buf] = ''
+          else
+            j[:stderr_buf] = lines.pop
+          end
           lines.each do |line|
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
-            log_msg = "#{Time.now.ctime.to_s} #{line.strip}"
-            j[:stderr_buf] << (log_msg + " \n")
+            pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
+            j[:stderr_buf_to_flush] << pub_msg
           end
 
-          if (LOG_BUFFER_SIZE < j[:stderr_buf].size) || ((j[:stderr_flushed_at]+1) < Time.now.to_i)
+          if (LOG_BUFFER_SIZE < j[:stderr_buf_to_flush].size) || ((j[:stderr_flushed_at]+1) < Time.now.to_i)
             write_log j
-            j[:stderr_flushed_at] = Time.now.to_i
           end
         end
       end
@@ -391,17 +397,19 @@ class Dispatcher
 
   # send message to log table. we want these records to be transient
   def write_log running_job
-      if (running_job && running_job[:stderr_buf] != '')
+    begin
+      if (running_job && running_job[:stderr_buf_to_flush] != '')
         log = Log.new(object_uuid: running_job[:job].uuid,
                       event_type: 'stderr',
                       owner_uuid: running_job[:job].owner_uuid,
-                      properties: {"text" => running_job[:stderr_buf]})
+                      properties: {"text" => running_job[:stderr_buf_to_flush]})
         log.save!
-        running_job[:stderr_buf] = ''
+        running_job[:stderr_buf_to_flush] = ''
         running_job[:stderr_flushed_at] = Time.now.to_i
       end
     rescue
       running_job[:stderr_buf] = "Failed to write logs \n"
+      running_job[:stderr_buf_to_flush] = ''
       running_job[:stderr_flushed_at] = Time.now.to_i
     end
   end
