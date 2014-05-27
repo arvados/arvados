@@ -16,6 +16,11 @@ class KeepTestCase(unittest.TestCase):
         except KeyError:
             pass
 
+        # Make sure these are clear, we want to talk to the Keep servers
+        # directly.
+        os.environ["ARVADOS_KEEP_PROXY"] = ""
+        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
+
         run_test_server.run()
         run_test_server.run_keep()
         arvados.keep.global_client_object = None
@@ -81,11 +86,16 @@ class KeepProxyTestCase(unittest.TestCase):
             del os.environ['KEEP_LOCAL_STORE']
         except KeyError:
             pass
+
+        os.environ["ARVADOS_KEEP_PROXY"] = ""
+        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
+
         run_test_server.run()
         run_test_server.run_keep()
         arvados.keep.global_client_object = None
         arvados.config._settings = None
         run_test_server.run_keep_proxy("admin")
+        cls.arvados_keep_proxy = os.environ["ARVADOS_KEEP_PROXY"]
 
     @classmethod
     def tearDownClass(cls):
@@ -93,12 +103,12 @@ class KeepProxyTestCase(unittest.TestCase):
         run_test_server.stop()
         run_test_server.stop_keep()
         run_test_server.stop_keep_proxy()
-        os.environ["ARVADOS_KEEP_PROXY"] = ""
-        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
 
     def test_KeepProxyTest1(self):
         # Will use ARVADOS_KEEP_PROXY environment variable that is set by
-        # run_keep_proxy()
+        # run_keep_proxy() in setUpClass()
+        os.environ["ARVADOS_KEEP_PROXY"] = KeepProxyTestCase.arvados_keep_proxy
+        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
 
         baz_locator = arvados.Keep.put('baz')
         self.assertEqual(baz_locator,
@@ -111,6 +121,9 @@ class KeepProxyTestCase(unittest.TestCase):
         self.assertEqual(True, arvados.Keep.global_client_object().using_proxy)
 
     def test_KeepProxyTest2(self):
+        # We don't want to use ARVADOS_KEEP_PROXY from run_keep_proxy() in
+        # setUpClass(), so clear it and set ARVADOS_EXTERNAL_CLIENT which will
+        # contact the API server.
         os.environ["ARVADOS_KEEP_PROXY"] = ""
         os.environ["ARVADOS_EXTERNAL_CLIENT"] = "true"
         arvados.config._settings = None

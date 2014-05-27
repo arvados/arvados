@@ -180,7 +180,7 @@ class KeepClient(object):
                 try:
                     try:
                         keep_services = arvados.api().keep_services().accessible().execute()['items']
-                    except:
+                    except Exception:
                         keep_services = arvados.api().keep_disks().list().execute()['items']
 
                     if len(keep_services) == 0:
