@@ -229,25 +229,21 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
 
     def __init__(self, cache=None, reporter=None, bytes_expected=None):
         self.bytes_written = 0
-        self.__init_locals__(cache, reporter, bytes_expected)
-        super(ArvPutCollectionWriter, self).__init__()
-
-    def __init_locals__(self, cache, reporter, bytes_expected):
         self.cache = cache
         self.report_func = reporter
         self.bytes_expected = bytes_expected
+        super(ArvPutCollectionWriter, self).__init__()
 
     @classmethod
     def from_cache(cls, cache, reporter=None, bytes_expected=None):
         try:
             state = cache.load()
             state['_data_buffer'] = [base64.decodestring(state['_data_buffer'])]
-            writer = cls.from_state(state)
+            writer = cls.from_state(state, cache, reporter, bytes_expected)
         except (TypeError, ValueError,
                 arvados.errors.StaleWriterStateError) as error:
             return cls(cache, reporter, bytes_expected)
         else:
-            writer.__init_locals__(cache, reporter, bytes_expected)
             return writer
 
     def checkpoint_state(self):
