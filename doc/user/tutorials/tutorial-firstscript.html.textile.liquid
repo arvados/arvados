@@ -25,11 +25,13 @@ On the Arvados Workbench, navigate to "Compute %(rarr)&rarr;% Code repositories"
 Next, on the Arvados virtual machine, clone your Git repository:
 
 <notextile>
-<pre><code>~$ <span class="userinput">git clone git@git.{{ site.arvados_api_host }}:<b>you</b>.git</span>
+<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
+~$ <span class="userinput">git clone git@git.{{ site.arvados_api_host }}:<b>you</b>.git</span>
 Cloning into '<b>you</b>'...</code></pre>
 </notextile>
 
-This will create a Git repository in the directory called *@you@*.
+This will create a Git repository in the directory called *@you@* in your home directory. Say yes when prompted to continue with connection.
+Ignore any warning that you are cloning an empty repository.
 
 {% include 'notebox_begin' %}
 For more information about using Git, try
@@ -75,7 +77,7 @@ Next, commit your changes.  All staged changes are recorded into the local git r
 <notextile>
 <pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">git commit -m"my first script"</span>
 [master (root-commit) 27fd88b] my first script
- 1 file changed, 33 insertions(+)
+ 1 file changed, 45 insertions(+)
  create mode 100755 crunch_scripts/hash.py</code></pre>
 </notextile>
 
@@ -87,7 +89,7 @@ Counting objects: 4, done.
 Compressing objects: 100% (2/2), done.
 Writing objects: 100% (4/4), 682 bytes, done.
 Total 4 (delta 0), reused 0 (delta 0)
-To git@git.qr1hi.arvadosapi.com:you.git
+To git@git.qr1hi.arvadosapi.com:<b>you</b>.git
  * [new branch]      master -> master</code></pre>
 </notextile>
 
