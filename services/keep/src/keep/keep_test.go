@@ -12,6 +12,7 @@ import (
 
 var TEST_BLOCK = []byte("The quick brown fox jumps over the lazy dog.")
 var TEST_HASH = "e4d909c290d0fb1ca068ffaddf22cbd0"
+var TEST_HASH_PUT_RESPONSE = "e4d909c290d0fb1ca068ffaddf22cbd0+44\n"
 
 var TEST_BLOCK_2 = []byte("Pack my box with five dozen liquor jugs.")
 var TEST_HASH_2 = "f15ac516f788aec4f30932ffb6395c39"
