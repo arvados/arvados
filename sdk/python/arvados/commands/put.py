@@ -224,14 +224,17 @@ class ResumeCache(object):
 
 
 class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
+    STATE_PROPS = (arvados.ResumableCollectionWriter.STATE_PROPS +
+                   ['bytes_written'])
+
     def __init__(self, cache=None, reporter=None, bytes_expected=None):
+        self.bytes_written = 0
         self.__init_locals__(cache, reporter, bytes_expected)
         super(ArvPutCollectionWriter, self).__init__()
 
     def __init_locals__(self, cache, reporter, bytes_expected):
         self.cache = cache
         self.report_func = reporter
-        self.bytes_written = 0
         self.bytes_expected = bytes_expected
 
     @classmethod

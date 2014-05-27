@@ -236,16 +236,35 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
                 self.cache)
         self.assertEquals(cwriter.manifest_text(), new_writer.manifest_text())
 
+    def make_progress_tester(self):
+        progression = []
+        def record_func(written, expected):
+            progression.append((written, expected))
+        return progression, record_func
+
     def test_progress_reporting(self):
         for expect_count in (None, 8):
-            progression = []
+            progression, reporter = self.make_progress_tester()
             cwriter = arv_put.ArvPutCollectionWriter(
-                reporter=lambda *args: progression.append(args),
-                bytes_expected=expect_count)
+                reporter=reporter, bytes_expected=expect_count)
             with self.make_test_file() as testfile:
                 cwriter.write_file(testfile.name, 'test')
             cwriter.finish_current_stream()
             self.assertIn((4, expect_count), progression)
+
+    def test_resume_progress(self):
+        cwriter = arv_put.ArvPutCollectionWriter(self.cache, bytes_expected=4)
+        with self.make_test_file() as testfile:
+            # Set up a writer with some flushed bytes.
+            cwriter.write_file(testfile.name, 'test')
+            cwriter.finish_current_stream()
+            cwriter.checkpoint_state()
+            # Restore a writer from that state and check its progress report.
+            progression, reporter = self.make_progress_tester()
+            new_writer = arv_put.ArvPutCollectionWriter.from_cache(
+                self.cache, reporter, bytes_expected=4)
+            new_writer.flush_data()
+            self.assertIn((4, 4), progression)
 
 
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
