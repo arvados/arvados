@@ -401,6 +401,7 @@ class Dispatcher
       if (running_job && running_job[:stderr_buf_to_flush] != '')
         log = Log.new(object_uuid: running_job[:job].uuid,
                       event_type: 'stderr',
+                      owner_uuid: running_job[:job].owner_uuid,
                       properties: {"text" => running_job[:stderr_buf_to_flush]})
         log.save!
         running_job[:stderr_buf_to_flush] = ''
