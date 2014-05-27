@@ -123,15 +123,22 @@ def stop():
 
     os.chdir(cwd)
 
-def _start_keep(n):
+def _start_keep(n, keep_args):
     keep0 = tempfile.mkdtemp()
-    kp0 = subprocess.Popen(["bin/keep", "-volumes={}".format(keep0), "-listen=:{}".format(25107+n)])
+    keep_cmd = ["bin/keep",
+                "-volumes={}".format(keep0),
+                "-listen=:{}".format(25107+n)]
+
+    for arg, val in keep_args.iteritems():
+        keep_cmd.append("{}={}".format(arg, val))
+
+    kp0 = subprocess.Popen(keep_cmd)
     with open("tmp/keep{}.pid".format(n), 'w') as f:
         f.write(str(kp0.pid))
     with open("tmp/keep{}.volume".format(n), 'w') as f:
         f.write(keep0)
 
-def run_keep():
+def run_keep(blob_signing_key=None, enforce_permissions=False):
     stop_keep()
 
     cwd = os.getcwd()
@@ -146,8 +153,16 @@ def run_keep():
     if not os.path.exists("tmp"):
         os.mkdir("tmp")
 
-    _start_keep(0)
-    _start_keep(1)
+    keep_args = {}
+    if blob_signing_key:
+        with open("tmp/keep.blob_signing_key", "w") as f:
+            f.write(blob_signing_key)
+        keep_args['--permission-key-file'] = 'tmp/keep.blob_signing_key'
+    if enforce_permissions:
+        keep_args['--enforce-permissions'] = 'true'
+
+    _start_keep(0, keep_args)
+    _start_keep(1, keep_args)
 
 
     os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
@@ -172,6 +187,8 @@ def _stop_keep(n):
     if os.path.exists("tmp/keep{}.volume".format(n)):
         with open("tmp/keep{}.volume".format(n), 'r') as r:
             shutil.rmtree(r.read(), True)
+    if os.path.exists("tmp/keep.blob_signing_key"):
+        os.remove("tmp/keep.blob_signing_key")
 
 def stop_keep():
     cwd = os.getcwd()

@@ -78,17 +78,9 @@
             </li>
 
             <li class="dropdown">
-              <a href="/folders" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-folder-o fa-fw"></i> Folders <b class="caret"></b></a>
-              <ul class="dropdown-menu">
-                <li><%= link_to raw('<i class="fa fa-plus fa-fw"></i> Create new folder'), folders_path, method: :post %></li>
-                <% @my_top_level_folders.call[0..7].each do |folder| %>
-                <li><%= link_to raw('<i class="fa fa-folder-open fa-fw"></i> ') + folder.name, folder_path(folder) %></li>
-                <% end %>
-                <li><a href="/folders">
-                    <i class="fa fa-ellipsis-h fa-fw"></i> Show all folders
-                </a></li>
-              </ul>
-            </li>
+              <a href="/folders">
+                <i class="fa fa-lg fa-folder-o fa-fw"></i> Folders
+            </a></li>
             <li><a href="/collections">
                 <i class="fa fa-lg fa-briefcase fa-fw"></i> Collections (data files)
             </a></li>
@@ -255,5 +247,6 @@
   <%= yield :footer_js %>
   <% end %>
 
+<div class="modal-container"></div>
 </body>
 </html>

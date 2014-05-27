@@ -4,7 +4,7 @@ class FoldersController < ApplicationController
   end
 
   def index_pane_list
-    %w(My_folders Shared_with_me)
+    %w(Folders)
   end
 
   def remove_item
@@ -38,33 +38,47 @@ class FoldersController < ApplicationController
   end
 
   def index
-    @my_folders = []
-    @shared_with_me = []
     @objects = Group.where(group_class: 'folder').order('name')
-    owner_of = {}
-    moretodo = true
-    while moretodo
-      moretodo = false
-      @objects.each do |folder|
-        if !owner_of[folder.uuid]
-          moretodo = true
-          owner_of[folder.uuid] = folder.owner_uuid
-        end
-        if owner_of[folder.owner_uuid]
-          if owner_of[folder.uuid] != owner_of[folder.owner_uuid]
-            owner_of[folder.uuid] = owner_of[folder.owner_uuid]
-            moretodo = true
-          end
-        end
-      end
+    parent_of = {current_user.uuid => 'me'}
+    @objects.each do |ob|
+      parent_of[ob.uuid] = ob.owner_uuid
     end
-    @objects.each do |folder|
-      if owner_of[folder.uuid] == current_user.uuid
-        @my_folders << folder
-      else
-        @shared_with_me << folder
+    children_of = {false => [], 'me' => [current_user]}
+    @objects.each do |ob|
+      if ob.owner_uuid != current_user.uuid and
+          not parent_of.has_key? ob.owner_uuid
+        parent_of[ob.uuid] = false
       end
+      children_of[parent_of[ob.uuid]] ||= []
+      children_of[parent_of[ob.uuid]] << ob
     end
+    buildtree = lambda do |children_of, root_uuid=false|
+      tree = {}
+      children_of[root_uuid].andand.each do |ob|
+        tree[ob] = buildtree.call(children_of, ob.uuid)
+      end
+      tree
+    end
+    sorted_paths = lambda do |tree, depth=0|
+      paths = []
+      tree.keys.sort_by { |ob|
+        ob.is_a?(String) ? ob : ob.friendly_link_name
+      }.each do |ob|
+        paths << {object: ob, depth: depth}
+        paths += sorted_paths.call tree[ob], depth+1
+      end
+      paths
+    end
+    @my_folder_tree =
+      sorted_paths.call buildtree.call(children_of, 'me')
+    @shared_folder_tree =
+      sorted_paths.call({'Shared with me' =>
+                          buildtree.call(children_of, false)})
+  end
+
+  def choose
+    index
+    render partial: 'choose'
   end
 
   def show
@@ -94,6 +108,11 @@ class FoldersController < ApplicationController
   def create
     @new_resource_attrs = (params['folder'] || {}).merge(group_class: 'folder')
     @new_resource_attrs[:name] ||= 'New folder'
+    super
+  end
+
+  def update
+    @updates = params['folder']
     super
   end
 end

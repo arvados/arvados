@@ -55,6 +55,7 @@ class KeepClient(object):
         def __init__(self, todo):
             self._todo = todo
             self._done = 0
+            self._response = None
             self._todo_lock = threading.Semaphore(todo)
             self._done_lock = threading.Lock()
 
@@ -73,12 +74,23 @@ class KeepClient(object):
             with self._done_lock:
                 return (self._done < self._todo)
 
-        def increment_done(self):
+        def save_response(self, response_body):
             """
-            Report that the current thread was successful.
+            Records a response body (a locator, possibly signed) returned by
+            the Keep server.  It is not necessary to save more than
+            one response, since we presume that any locator returned
+            in response to a successful request is valid.
             """
             with self._done_lock:
                 self._done += 1
+                self._response = response_body
+
+        def response(self):
+            """
+            Returns the body from the response to a PUT request.
+            """
+            with self._done_lock:
+                return self._response
 
         def done(self):
             """
@@ -89,9 +101,9 @@ class KeepClient(object):
 
     class KeepWriterThread(threading.Thread):
         """
-        Write a blob of data to the given Keep server. Call
-        increment_done() of the given ThreadLimiter if the write
-        succeeds.
+        Write a blob of data to the given Keep server. On success, call
+        save_response() of the given ThreadLimiter to save the returned
+        locator.
         """
         def __init__(self, **kwargs):
             super(KeepClient.KeepWriterThread, self).__init__()
@@ -129,7 +141,7 @@ class KeepClient(object):
                                       (str(threading.current_thread()),
                                        self.args['data_hash'],
                                        self.args['service_root']))
-                        return limiter.increment_done()
+                        return limiter.save_response(content.strip())
                     logging.warning("Request fail: PUT %s => %s %s" %
                                     (url, resp['status'], content))
                 except (httplib2.HttpLib2Error, httplib.HTTPException) as e:
@@ -275,7 +287,7 @@ class KeepClient(object):
 
         try:
             for service_root in self.shuffled_service_roots(expect_hash):
-                url = service_root + expect_hash
+                url = service_root + locator
                 api_token = config.get('ARVADOS_API_TOKEN')
                 headers = {'Authorization': "OAuth2 %s" % api_token,
                            'Accept': 'application/octet-stream'}
@@ -287,7 +299,7 @@ class KeepClient(object):
 
             for location_hint in re.finditer(r'\+K@([a-z0-9]+)', locator):
                 instance = location_hint.group(1)
-                url = 'http://keep.' + instance + '.arvadosapi.com/' + expect_hash
+                url = 'http://keep.' + instance + '.arvadosapi.com/' + locator
                 blob = self.get_url(url, {}, expect_hash)
                 if blob:
                     slot.set(blob)
@@ -346,8 +358,9 @@ class KeepClient(object):
         for t in threads:
             t.join()
         have_copies = thread_limiter.done()
+        # If we're done, return the response from Keep
         if have_copies == want_copies:
-            return (data_hash + '+' + str(len(data)))
+            return thread_limiter.response()
         raise arvados.errors.KeepWriteError(
             "Write fail for %s: wanted %d but wrote %d" %
             (data_hash, want_copies, have_copies))

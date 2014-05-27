@@ -1,0 +1,42 @@
+<div class="modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title"><%= params[:title] || 'Choose folder' %></h4>
+      </div>
+
+      <div class="modal-body">
+        <div class="container-fluid arv-folder-list selectable-container" style="height: 15em; overflow-y: scroll">
+          <% [@my_folder_tree, @shared_folder_tree].each do |tree| %>
+            <% tree.each do |foldernode| %>
+              <% if foldernode[:object].is_a? String %>
+                <div class="row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
+                  <i class="fa fa-fw fa-folder-open-o"></i>
+                  <%= foldernode[:object] %>
+                </div>
+              <% else %>
+                <div class="<%= 'selectable folder' if !params[:editable] || foldernode[:object].editable? %> row" style="padding-left: <%= 1 + foldernode[:depth] %>em;" data-object-uuid="<%= foldernode[:object].uuid %>">
+                  <i class="fa fa-fw fa-folder-o"></i>
+                  <% if foldernode[:object].uuid == current_user.uuid %>
+                    My Folders
+                  <% else %>
+                    <%= foldernode[:object].friendly_link_name || 'New folder' %>
+                  <% end %>
+                </div>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
+        <button class="btn btn-primary" aria-hidden="true"><%= params[:action_name] || 'Select' %></button>
+        <div class="modal-error hide" style="text-align: left; margin-top: 1em;">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
