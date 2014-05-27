@@ -385,8 +385,8 @@ class ResumableCollectionWriter(CollectionWriter):
         super(ResumableCollectionWriter, self).__init__()
 
     @classmethod
-    def from_state(cls, state):
-        writer = cls()
+    def from_state(cls, state, *init_args, **init_kwargs):
+        writer = cls(*init_args, **init_kwargs)
         for attr_name in cls.STATE_PROPS:
             attr_value = state[attr_name]
             attr_class = getattr(writer, attr_name).__class__
