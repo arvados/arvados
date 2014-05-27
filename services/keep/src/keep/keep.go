@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -352,6 +353,13 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	block, err := GetBlock(hash)
+
+	// Garbage collect after each GET. Fixes #2865.
+	// TODO(twp): review Keep memory usage and see if there's
+	// a better way to do this than blindly garbage collecting
+	// after every block.
+	defer runtime.GC()
+
 	if err != nil {
 		// This type assertion is safe because the only errors
 		// GetBlock can return are CorruptError or NotFoundError.
@@ -370,6 +378,10 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 }
 
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
+	// Garbage collect after each PUT. Fixes #2865.
+	// See also GetBlockHandler.
+	defer runtime.GC()
+
 	hash := mux.Vars(req)["hash"]
 
 	log.Printf("%s %s", req.Method, hash)
