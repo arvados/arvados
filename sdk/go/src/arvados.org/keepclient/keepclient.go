@@ -9,9 +9,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -77,13 +80,13 @@ func MakeKeepClient() (kc KeepClient, err error) {
 // KeepClient.Want_replicas.  Returns the number of replicas that were written
 // and if there was an error.  Note this will return InsufficientReplias
 // whenever 0 <= replicas < this.Wants_replicas.
-func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (replicas int, err error) {
+func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (locator string, replicas int, err error) {
 
 	// Buffer for reads from 'r'
 	var bufsize int
 	if expectedLength > 0 {
 		if expectedLength > BLOCKSIZE {
-			return 0, OversizeBlockError
+			return "", 0, OversizeBlockError
 		}
 		bufsize = int(expectedLength)
 	} else {
@@ -100,7 +103,7 @@ func (this KeepClient) PutHR(hash string, r io.Reader, expectedLength int64) (re
 // replicas is given in KeepClient.Want_replicas.  Returns the number of
 // replicas that were written and if there was an error.  Note this will return
 // InsufficientReplias whenever 0 <= replicas < this.Wants_replicas.
-func (this KeepClient) PutHB(hash string, buf []byte) (replicas int, err error) {
+func (this KeepClient) PutHB(hash string, buf []byte) (locator string, replicas int, err error) {
 	t := streamer.AsyncStreamFromSlice(buf)
 	defer t.Close()
 
@@ -111,19 +114,18 @@ func (this KeepClient) PutHB(hash string, buf []byte) (replicas int, err error) 
 // of replicas is given in KeepClient.Want_replicas.  Returns the number of
 // replicas that were written and if there was an error.  Note this will return
 // InsufficientReplias whenever 0 <= replicas < this.Wants_replicas.
-func (this KeepClient) PutB(buffer []byte) (hash string, replicas int, err error) {
-	hash = fmt.Sprintf("%x", md5.Sum(buffer))
-	replicas, err = this.PutHB(hash, buffer)
-	return hash, replicas, err
+func (this KeepClient) PutB(buffer []byte) (locator string, replicas int, err error) {
+	hash := fmt.Sprintf("%x", md5.Sum(buffer))
+	return this.PutHB(hash, buffer)
 }
 
 // Put a block, given a Reader.  This will read the entire reader into a buffer
-// to computed the hash.  The desired number of replicas is given in
+// to compute the hash.  The desired number of replicas is given in
 // KeepClient.Want_replicas.  Returns the number of replicas that were written
 // and if there was an error.  Note this will return InsufficientReplias
 // whenever 0 <= replicas < this.Wants_replicas.  Also nhote that if the block
 // hash and data size are available, PutHR() is more efficient.
-func (this KeepClient) PutR(r io.Reader) (hash string, replicas int, err error) {
+func (this KeepClient) PutR(r io.Reader) (locator string, replicas int, err error) {
 	if buffer, err := ioutil.ReadAll(r); err != nil {
 		return "", 0, err
 	} else {
@@ -242,4 +244,50 @@ func (this *KeepClient) SetServiceRoots(svc []string) {
 	sort.Strings(roots)
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&this.service_roots)),
 		unsafe.Pointer(&roots))
+}
+
+type Locator struct {
+	Hash      string
+	Size      int
+	Signature string
+	Timestamp string
+}
+
+func MakeLocator2(hash string, hints string) (locator Locator) {
+	locator.Hash = hash
+	if hints != "" {
+		signature_pat, _ := regexp.Compile("^A([[:xdigit:]]+)@([[:xdigit:]]{8})$")
+		for _, hint := range strings.Split(hints, "+") {
+			if hint != "" {
+				if match, _ := regexp.MatchString("^[[:digit:]]+$", hint); match {
+					fmt.Sscanf(hint, "%d", &locator.Size)
+				} else if m := signature_pat.FindStringSubmatch(hint); m != nil {
+					locator.Signature = m[1]
+					locator.Timestamp = m[2]
+				} else if match, _ := regexp.MatchString("^[:upper:]", hint); match {
+					// Any unknown hint that starts with an uppercase letter is
+					// presumed to be valid and ignored, to permit forward compatibility.
+				} else {
+					// Unknown format; not a valid locator.
+					return Locator{"", 0, "", ""}
+				}
+			}
+		}
+	}
+	return locator
+}
+
+func MakeLocator(path string) Locator {
+	pathpattern, err := regexp.Compile("^([0-9a-f]{32})([+].*)?$")
+	if err != nil {
+		log.Print("Don't like regexp", err)
+	}
+
+	sm := pathpattern.FindStringSubmatch(path)
+	if sm == nil {
+		log.Print("Failed match ", path)
+		return Locator{"", 0, "", ""}
+	}
+
+	return MakeLocator2(sm[1], sm[2])
 }
