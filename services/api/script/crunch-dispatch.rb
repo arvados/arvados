@@ -392,9 +392,17 @@ class Dispatcher
   # send message to log table. we want these records to be transient
   def write_log running_job
     begin
+      owner_uuid = nil
+      begin
+        Group.find_by_uuid(running_job[:job].owner_uuid)
+        owner_uuid = running_job[:job].owner_uuid
+      rescue
+      end
+
       if (running_job && running_job[:stderr_buf] != '')
         log = Log.new(object_uuid: running_job[:job].uuid,
                       event_type: 'stderr',
+                      owner_uuid: owner_uuid,
                       properties: {"text" => running_job[:stderr_buf]})
         log.save!
         running_job[:stderr_buf] = ''
