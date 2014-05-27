@@ -23,7 +23,7 @@
     <% @object.components.each do |k, component| %>
       <% next if !component %>
       <tr>
-        <td><span class="label label-default"><%= k %></span></td>
+        <td><%= k %></td>
 
         <td><%= component[:script] %></td>
 

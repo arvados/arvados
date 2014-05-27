@@ -14,6 +14,9 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <meta name="description" content="">
   <meta name="author" content="">
+  <% if current_user %>
+  <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
+  <% end %>
   <meta name="robots" content="NOINDEX, NOFOLLOW">
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>

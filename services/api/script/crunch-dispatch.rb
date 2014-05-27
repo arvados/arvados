@@ -26,8 +26,7 @@ require File.dirname(__FILE__) + '/../config/boot'
 require File.dirname(__FILE__) + '/../config/environment'
 require 'open3'
 
-$redis ||= Redis.new
-LOG_BUFFER_SIZE = 2**20
+LOG_BUFFER_SIZE = 4096
 
 class Dispatcher
   include ApplicationHelper
@@ -191,9 +190,6 @@ class Dispatcher
       $stderr.puts "dispatch: job #{job.uuid}"
       start_banner = "dispatch: child #{t.pid} start #{Time.now.ctime.to_s}"
       $stderr.puts start_banner
-      $redis.set job.uuid, start_banner + "\n"
-      $redis.publish job.uuid, start_banner
-      $redis.publish job.owner_uuid, start_banner
 
       @running[job.uuid] = {
         stdin: i,
@@ -204,7 +200,9 @@ class Dispatcher
         stderr_buf: '',
         started: false,
         sent_int: 0,
-        job_auth: job_auth
+        job_auth: job_auth,
+        stderr_buf_to_flush: '',
+        stderr_flushed_at: 0
       }
       i.close
     end
@@ -249,16 +247,12 @@ class Dispatcher
           lines.each do |line|
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
-            pub_msg = "#{Time.now.ctime.to_s} #{line.strip}"
-            $redis.publish job.owner_uuid, pub_msg
-            $redis.publish job_uuid, pub_msg
-            $redis.append job_uuid, pub_msg + "\n"
-            if LOG_BUFFER_SIZE < $redis.strlen(job_uuid)
-              $redis.set(job_uuid,
-                         $redis
-                           .getrange(job_uuid, (LOG_BUFFER_SIZE >> 1), -1)
-                           .sub(/^.*?\n/, ''))
-            end
+            pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
+            j[:stderr_buf_to_flush] << pub_msg
+          end
+
+          if (LOG_BUFFER_SIZE < j[:stderr_buf_to_flush].size) || ((j[:stderr_flushed_at]+1) < Time.now.to_i)
+            write_log j
           end
         end
       end
@@ -306,6 +300,8 @@ class Dispatcher
 
     # Ensure every last drop of stdout and stderr is consumed
     read_pipes
+    write_log j_done # write any remaining logs
+
     if j_done[:stderr_buf] and j_done[:stderr_buf] != ''
       $stderr.puts j_done[:stderr_buf] + "\n"
     end
@@ -332,8 +328,6 @@ class Dispatcher
 
     # Invalidate the per-job auth token
     j_done[:job_auth].update_attributes expires_at: Time.now
-
-    $redis.publish job_done.uuid, "end"
 
     @running.delete job_done.uuid
   end
@@ -400,6 +394,25 @@ class Dispatcher
       true
     end
   end
+
+  # send message to log table. we want these records to be transient
+  def write_log running_job
+    begin
+      if (running_job && running_job[:stderr_buf_to_flush] != '')
+        log = Log.new(object_uuid: running_job[:job].uuid,
+                      event_type: 'stderr',
+                      properties: {"text" => running_job[:stderr_buf_to_flush]})
+        log.save!
+        running_job[:stderr_buf_to_flush] = ''
+        running_job[:stderr_flushed_at] = Time.now.to_i
+      end
+    rescue
+      running_job[:stderr_buf] = "Failed to write logs \n"
+      running_job[:stderr_buf_to_flush] = ''
+      running_job[:stderr_flushed_at] = Time.now.to_i
+    end
+  end
+
 end
 
 # This is how crunch-job child procs know where the "refresh" trigger file is
