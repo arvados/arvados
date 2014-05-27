@@ -50,17 +50,9 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
-
-	SetupProxyService()
-
-	os.Args = []string{"keepproxy", "-listen=:29950"}
-	go main()
-	time.Sleep(100 * time.Millisecond)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	listener.Close()
-
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
 
@@ -69,7 +61,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	exec.Command("python", "run_test_server.py", "stop").Run()
 }
 
-func SetupProxyService() {
+func setupProxyService() {
 
 	client := &http.Client{Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
@@ -107,8 +99,34 @@ func SetupProxyService() {
 	}
 }
 
+func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient {
+	os.Args = append(args, fmt.Sprintf("-listen=:%v", port))
+	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+
+	go main()
+	time.Sleep(100 * time.Millisecond)
+
+	os.Setenv("ARVADOS_KEEP_PROXY", fmt.Sprintf("http://localhost:%v", port))
+	os.Setenv("ARVADOS_API_TOKEN", token)
+	kc, err := keepclient.MakeKeepClient()
+	c.Check(kc.Using_proxy, Equals, true)
+	c.Check(len(kc.ServiceRoots()), Equals, 1)
+	c.Check(kc.ServiceRoots()[0], Equals, fmt.Sprintf("http://localhost:%v", port))
+	c.Check(err, Equals, nil)
+	os.Setenv("ARVADOS_KEEP_PROXY", "")
+	log.Print("keepclient created")
+	return kc
+}
+
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	log.Print("TestPutAndGet start")
+
+	os.Args = []string{"keepproxy", "-listen=:29950"}
+	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+	go main()
+	time.Sleep(100 * time.Millisecond)
+
+	setupProxyService()
 
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
 	kc, err := keepclient.MakeKeepClient()
@@ -118,8 +136,9 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:29950")
 	c.Check(err, Equals, nil)
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
-
 	log.Print("keepclient created")
+
+	defer listener.Close()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
@@ -159,19 +178,12 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	log.Print("TestPutAndGet start")
 
-	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
-	kc, err := keepclient.MakeKeepClient()
-	kc.ApiToken = "123xyz"
-	c.Check(kc.External, Equals, true)
-	c.Check(kc.Using_proxy, Equals, true)
-	c.Check(len(kc.ServiceRoots()), Equals, 1)
-	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:29950")
-	c.Check(err, Equals, nil)
-	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
+	kc := runProxy(c, []string{"keepproxy"}, "123abc", 29951)
+	defer listener.Close()
 
 	log.Print("keepclient created")
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("bar")))
 
 	{
 		_, _, err := kc.Ask(hash)
@@ -180,7 +192,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	}
 
 	{
-		hash2, rep, err := kc.PutB([]byte("foo"))
+		hash2, rep, err := kc.PutB([]byte("bar"))
 		c.Check(hash2, Equals, hash)
 		c.Check(rep, Equals, 0)
 		c.Check(err, Equals, keepclient.InsufficientReplicasError)
@@ -202,4 +214,62 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 	}
 
 	log.Print("TestPutAndGetForbidden done")
+}
+
+func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
+	log.Print("TestGetDisabled start")
+
+	kc := runProxy(c, []string{"keepproxy", "-no-get"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29952)
+	defer listener.Close()
+
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("baz")))
+
+	{
+		_, _, err := kc.Ask(hash)
+		c.Check(err, Equals, keepclient.BlockNotFound)
+		log.Print("Ask 1")
+	}
+
+	{
+		hash2, rep, err := kc.PutB([]byte("baz"))
+		c.Check(hash2, Equals, hash)
+		c.Check(rep, Equals, 2)
+		c.Check(err, Equals, nil)
+		log.Print("PutB")
+	}
+
+	{
+		blocklen, _, err := kc.Ask(hash)
+		c.Assert(err, Equals, keepclient.BlockNotFound)
+		c.Check(blocklen, Equals, int64(0))
+		log.Print("Ask 2")
+	}
+
+	{
+		_, blocklen, _, err := kc.Get(hash)
+		c.Assert(err, Equals, keepclient.BlockNotFound)
+		c.Check(blocklen, Equals, int64(0))
+		log.Print("Get")
+	}
+
+	log.Print("TestGetDisabled done")
+}
+
+func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
+	log.Print("TestPutDisabled start")
+
+	kc := runProxy(c, []string{"keepproxy", "-no-put"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29953)
+	defer listener.Close()
+
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("quux")))
+
+	{
+		hash2, rep, err := kc.PutB([]byte("quux"))
+		c.Check(hash2, Equals, hash)
+		c.Check(rep, Equals, 0)
+		c.Check(err, Equals, keepclient.InsufficientReplicasError)
+		log.Print("PutB")
+	}
+
+	log.Print("TestPutDisabled done")
 }
