@@ -20,33 +20,25 @@ class Arvados::V1::GroupsController < ApplicationController
     offset_all = @offset
     @orders = []
 
-    ArvadosModel.descendants.reject(&:abstract_class?).sort_by(&:to_s).
-      each do |klass|
-      case klass.to_s
-        # We might expect klass==Link etc. here, but we would be
-        # disappointed: when Rails reloads model classes, we get two
-        # distinct classes called Link which do not equal each
-        # other. But we can still rely on klass.to_s to be "Link".
-      when 'ApiClientAuthorization', 'UserAgreement', 'Link'
-        # Do not want.
-      else
-        @objects = klass.readable_by(*@read_users)
-        cond_sql = "#{klass.table_name}.owner_uuid = ?"
-        cond_params = [@object.uuid]
-        if params[:include_linked]
-          cond_sql += " OR #{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
-        end
-        @objects = @objects.where(cond_sql, *cond_params).order("#{klass.table_name}.uuid")
-        @limit = limit_all - all_objects.count
-        apply_where_limit_order_params
-        items_available = @objects.
-          except(:limit).except(:offset).
-          count(:id, distinct: true)
-        all_available += items_available
-        @offset = [@offset - items_available, 0].max
-
-        all_objects += @objects.to_a
+    [Group, Job, PipelineInstance, PipelineTemplate,
+     Human, Specimen, Trait,
+     Collection].each do |klass|
+      @objects = klass.readable_by(*@read_users)
+      cond_sql = "#{klass.table_name}.owner_uuid = ?"
+      cond_params = [@object.uuid]
+      if params[:include_linked]
+        cond_sql += " OR #{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
       end
+      @objects = @objects.where(cond_sql, *cond_params).order("#{klass.table_name}.uuid")
+      @limit = limit_all - all_objects.count
+      apply_where_limit_order_params
+      items_available = @objects.
+        except(:limit).except(:offset).
+        count(:id, distinct: true)
+      all_available += items_available
+      @offset = [@offset - items_available, 0].max
+
+      all_objects += @objects.to_a
     end
     @objects = all_objects || []
     @links = Link.where('link_class=? and tail_uuid=?'\

@@ -289,6 +289,10 @@ class ArvadosBase < ActiveRecord::Base
     current_user
   end
 
+  def self.goes_in_folders?
+    false
+  end
+
   def editable?
     (current_user and current_user.is_active and
      (current_user.is_admin or
