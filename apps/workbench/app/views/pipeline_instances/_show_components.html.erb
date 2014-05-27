@@ -108,7 +108,7 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 <% end %>
 
     <% if !pipeline_job_uuids.empty? %>
-      <h4>Log for pipeline</h4>
+      <h4>Log messages from running jobs</h4>
       <% log_history = pipeline_log_history(pipeline_job_uuids) %>
       <div id="pipeline_event_log_history_div">
         <% log_history.each do |entry| %>
