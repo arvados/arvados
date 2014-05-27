@@ -337,6 +337,16 @@ public class Arvados {
     }
   }
 
+  /**
+   * Convert the input parameter into its equivalent json string.
+   * Add this json string value to the parameters map to be sent to server.
+   * @param argName
+   * @param parameters
+   * @param parameterName
+   * @param parameter
+   * @param parameterValue
+   * @throws Exception
+   */
   private void putParameter(String argName, Map<String, Object> parameters,
       String parameterName, JsonSchema parameter, Object parameterValue)
           throws Exception {
@@ -376,23 +386,28 @@ public class Arvados {
     parameters.put(parameterName, value);
   }
 
+  /**
+   * Convert the given input array into json string before sending to server.
+   * @param parameterValue
+   * @return
+   */
   private String getJsonValueFromArrayType (Object parameterValue) {
     String arrayStr = Arrays.deepToString((Object[])parameterValue);
 
     // we can expect either an array of array objects or an array of objects
-    if (arrayStr.startsWith("[[")) {
+    if (arrayStr.startsWith("[[") && arrayStr.endsWith("]]")) {
       Object[][] array = new Object[1][];
       arrayStr = arrayStr.substring(2, arrayStr.length()-2);
-      String jsonStr = getJsonStringForArray(arrayStr);
+      String jsonStr = getJsonStringForArrayStr(arrayStr);
       String value = "[" + jsonStr + "]";
       return value;
     } else {
       arrayStr = arrayStr.substring(1, arrayStr.length()-1);
-      return (getJsonStringForArray(arrayStr));
+      return (getJsonStringForArrayStr(arrayStr));
     }
   }
 
-  private String getJsonStringForArray(String arrayStr) {
+  private String getJsonStringForArrayStr(String arrayStr) {
     Object[] array = arrayStr.split(",");
     Object[] trimmedArray = new Object[array.length];
     for (int i=0; i<array.length; i++){
@@ -402,6 +417,11 @@ public class Arvados {
     return value;
   }
 
+  /**
+   * Convert the given input List into json string before sending to server.
+   * @param parameterValue
+   * @return
+   */
   private String getJsonValueFromListType (Object parameterValue) {
     List paramList = (List)parameterValue;
     Object[] array = new Object[paramList.size()];
@@ -409,6 +429,11 @@ public class Arvados {
     return (getJsonValueFromArrayType(array));
   }
 
+  /**
+   * Convert the given input map into json string before sending to server.
+   * @param parameterValue
+   * @return
+   */
   private String getJsonValueFromMapType (Object parameterValue) {
     JSONObject json = new JSONObject((Map)parameterValue);
     return json.toString();
