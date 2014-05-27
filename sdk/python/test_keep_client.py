@@ -109,6 +109,7 @@ class KeepProxyTestCase(unittest.TestCase):
         # run_keep_proxy() in setUpClass()
         os.environ["ARVADOS_KEEP_PROXY"] = KeepProxyTestCase.arvados_keep_proxy
         os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
+        arvados.config._settings = None
 
         baz_locator = arvados.Keep.put('baz')
         self.assertEqual(baz_locator,
