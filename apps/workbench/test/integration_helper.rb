@@ -25,6 +25,11 @@ class ActionDispatch::IntegrationTest
 
   @@API_AUTHS = self.api_fixture('api_client_authorizations')
 
+  def setup
+    reset_session!
+    super
+  end
+
   def page_with_token(token, path='/')
     # Generate a page path with an embedded API token.
     # Typical usage: visit page_with_token('token_name', page)
@@ -46,6 +51,22 @@ class ActionDispatch::IntegrationTest
       find *args
     rescue Capybara::ElementNotFound
       false
+    end
+  end
+
+  @@screenshot_count = 0
+  def screenshot
+    image_file = "./tmp/workbench-fail-#{@@screenshot_count += 1}.png"
+    page.save_screenshot image_file
+    puts "Saved #{image_file}"
+  end
+
+  teardown do
+    if not passed?
+      screenshot
+    end
+    if Capybara.current_driver == :selenium
+      page.execute_script("window.localStorage.clear()")
     end
   end
 end

@@ -71,7 +71,7 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def scopes_allow_request?(request)
-    scopes_allow? [request.method, request.path].join(' ')
+    scopes_allow? [request.request_method, request.path].join(' ')
   end
 
   def logged_attributes
