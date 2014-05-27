@@ -1,6 +1,10 @@
 class PipelineInstance < ArvadosBase
   attr_accessor :pipeline_template
 
+  def self.goes_in_folders?
+    true
+  end
+
   def update_job_parameters(new_params)
     self.components[:steps].each_with_index do |step, i|
       step[:params].each do |param|

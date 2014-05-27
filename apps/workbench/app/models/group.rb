@@ -1,4 +1,8 @@
 class Group < ArvadosBase
+  def self.goes_in_folders?
+    true
+  end
+
   def contents params={}
     res = arvados_api_client.api self.class, "/#{self.uuid}/contents", {
       _method: 'GET'
