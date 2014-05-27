@@ -443,25 +443,11 @@ class WhRunPipelineInstance
     moretodo = true
     interrupted = false
 
-    # check if the pipeline os owned by a group
-    owner_uuid = nil
-    group_result = $client.execute(:api_method => $arvados.groups.get,
-                               :parameters => {
-                                 :uuid => @instance[:owner_uuid]
-                               },
-                               :authenticated => false,
-                               :headers => {
-                                 authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                               })
-    group = JSON.parse group_result.body, :symbolize_names => true
-    if group[:uuid]
-      owner_uuid = group[:uuid]
-    end
-
     while moretodo
       moretodo = false
       @components.each do |cname, c|
         job = nil
+        owner_uuid = @instance[:owner_uuid]
         # Is the job satisfying this component already known to be
         # finished? (Already meaning "before we query API server about
         # the job's current state")
