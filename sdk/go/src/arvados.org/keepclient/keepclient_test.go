@@ -163,7 +163,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 
 			<-st.handled
 			status := <-upload_status
-			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1})
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
 
 	log.Printf("TestUploadToStubKeepServer done")
@@ -196,7 +196,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 			<-st.handled
 
 			status := <-upload_status
-			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1})
+			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
 
 	log.Printf("TestUploadToStubKeepServerBufferReader done")
@@ -386,7 +386,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	<-fh.handled
 
 	c.Check(err, Equals, nil)
-	c.Check(phash, Equals, hash)
+	c.Check(phash, Equals, "")
 	c.Check(replicas, Equals, 2)
 	c.Check(<-st.handled, Equals, shuff[1])
 	c.Check(<-st.handled, Equals, shuff[2])
@@ -598,7 +598,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	}
 	{
 		hash2, replicas, err := kc.PutB([]byte("foo"))
-		c.Check(hash2, Equals, hash)
+		c.Check(hash2, Equals, fmt.Sprintf("%s+%v", hash, 3))
 		c.Check(replicas, Equals, 2)
 		c.Check(err, Equals, nil)
 	}
@@ -686,4 +686,13 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	c.Check(replicas, Equals, 2)
 
 	log.Printf("TestPutProxy done")
+}
+
+func (s *StandaloneSuite) TestMakeLocator(c *C) {
+	l := MakeLocator("91f372a266fe2bf2823cb8ec7fda31ce+3+Aabcde@12345678")
+
+	c.Check(l.Hash, Equals, "91f372a266fe2bf2823cb8ec7fda31ce")
+	c.Check(l.Size, Equals, 3)
+	c.Check(l.Signature, Equals, "abcde")
+	c.Check(l.Timestamp, Equals, "12345678")
 }

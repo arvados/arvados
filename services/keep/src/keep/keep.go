@@ -125,6 +125,7 @@ func main() {
 		permission_ttl_sec      int
 		serialize_io            bool
 		volumearg               string
+		pidfile                 string
 	)
 	flag.StringVar(
 		&data_manager_token_file,
@@ -170,6 +171,13 @@ func main() {
 			"e.g. -volumes=/var/keep1,/var/keep2. If empty or not "+
 			"supplied, Keep will scan mounted filesystems for volumes "+
 			"with a /keep top-level directory.")
+
+	flag.StringVar(
+		&pidfile,
+		"pid",
+		"",
+		"Path to write pid file")
+
 	flag.Parse()
 
 	// Look for local keep volumes.
@@ -257,11 +265,25 @@ func main() {
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
 
+	if pidfile != "" {
+		f, err := os.Create(pidfile)
+		if err == nil {
+			fmt.Fprint(f, os.Getpid())
+			f.Close()
+		} else {
+			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
+		}
+	}
+
 	// Start listening for requests.
 	srv := &http.Server{Addr: listen}
 	srv.Serve(listener)
 
 	log.Println("shutting down")
+
+	if pidfile != "" {
+		os.Remove(pidfile)
+	}
 }
 
 // MakeRESTRouter

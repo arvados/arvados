@@ -141,6 +141,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	defer listener.Close()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+	var hash2 string
 
 	{
 		_, _, err := kc.Ask(hash)
@@ -149,22 +150,24 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	}
 
 	{
-		hash2, rep, err := kc.PutB([]byte("foo"))
-		c.Check(hash2, Equals, hash)
+		var rep int
+		var err error
+		hash2, rep, err = kc.PutB([]byte("foo"))
+		c.Check(hash2, Equals, fmt.Sprintf("%s+3", hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 		log.Print("PutB")
 	}
 
 	{
-		blocklen, _, err := kc.Ask(hash)
+		blocklen, _, err := kc.Ask(hash2)
 		c.Assert(err, Equals, nil)
 		c.Check(blocklen, Equals, int64(3))
 		log.Print("Ask 2")
 	}
 
 	{
-		reader, blocklen, _, err := kc.Get(hash)
+		reader, blocklen, _, err := kc.Get(hash2)
 		c.Assert(err, Equals, nil)
 		all, err := ioutil.ReadAll(reader)
 		c.Check(all, DeepEquals, []byte("foo"))
@@ -193,7 +196,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 
 	{
 		hash2, rep, err := kc.PutB([]byte("bar"))
-		c.Check(hash2, Equals, hash)
+		c.Check(hash2, Equals, "")
 		c.Check(rep, Equals, 0)
 		c.Check(err, Equals, keepclient.InsufficientReplicasError)
 		log.Print("PutB")
@@ -232,7 +235,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 
 	{
 		hash2, rep, err := kc.PutB([]byte("baz"))
-		c.Check(hash2, Equals, hash)
+		c.Check(hash2, Equals, fmt.Sprintf("%s+3", hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 		log.Print("PutB")
@@ -261,11 +264,9 @@ func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
 	kc := runProxy(c, []string{"keepproxy", "-no-put"}, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h", 29953)
 	defer listener.Close()
 
-	hash := fmt.Sprintf("%x", md5.Sum([]byte("quux")))
-
 	{
 		hash2, rep, err := kc.PutB([]byte("quux"))
-		c.Check(hash2, Equals, hash)
+		c.Check(hash2, Equals, "")
 		c.Check(rep, Equals, 0)
 		c.Check(err, Equals, keepclient.InsufficientReplicasError)
 		log.Print("PutB")

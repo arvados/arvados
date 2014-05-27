@@ -10,7 +10,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -89,10 +91,36 @@ func main() {
 
 	go RefreshServicesList(&kc)
 
+	// Shut down the server gracefully (by closing the listener)
+	// if SIGTERM is received.
+	term := make(chan os.Signal, 1)
+	go func(sig <-chan os.Signal) {
+		s := <-sig
+		log.Println("caught signal:", s)
+		listener.Close()
+	}(term)
+	signal.Notify(term, syscall.SIGTERM)
+
+	if pidfile != "" {
+		f, err := os.Create(pidfile)
+		if err == nil {
+			fmt.Fprint(f, os.Getpid())
+			f.Close()
+		} else {
+			log.Printf("Error writing pid file (%s): %s", pidfile, err.Error())
+		}
+	}
+
 	log.Printf("Arvados Keep proxy started listening on %v with server list %v", listener.Addr(), kc.ServiceRoots())
 
 	// Start listening for requests.
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, &kc))
+
+	log.Println("shutting down")
+
+	if pidfile != "" {
+		os.Remove(pidfile)
+	}
 }
 
 type ApiTokenCache struct {
@@ -233,16 +261,13 @@ func MakeRESTRouter(
 	rest := mux.NewRouter()
 
 	if enable_get {
-		gh := rest.Handle(`/{hash:[0-9a-f]{32}}`, GetBlockHandler{kc, t})
-		ghsig := rest.Handle(
-			`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
-			GetBlockHandler{kc, t})
-
-		gh.Methods("GET", "HEAD")
-		ghsig.Methods("GET", "HEAD")
+		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`,
+			GetBlockHandler{kc, t}).Methods("GET", "HEAD")
+		rest.Handle(`/{hash:[0-9a-f]{32}}`, GetBlockHandler{kc, t}).Methods("GET", "HEAD")
 	}
 
 	if enable_put {
+		rest.Handle(`/{hash:[0-9a-f]{32}}+{hints}`, PutBlockHandler{kc, t}).Methods("PUT")
 		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
 	}
 
@@ -261,8 +286,9 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	kc := *this.KeepClient
 
 	hash := mux.Vars(req)["hash"]
-	signature := mux.Vars(req)["signature"]
-	timestamp := mux.Vars(req)["timestamp"]
+	hints := mux.Vars(req)["hints"]
+
+	locator := keepclient.MakeLocator2(hash, hints)
 
 	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, hash)
 
@@ -276,10 +302,10 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	var blocklen int64
 
 	if req.Method == "GET" {
-		reader, blocklen, _, err = kc.AuthorizedGet(hash, signature, timestamp)
+		reader, blocklen, _, err = kc.AuthorizedGet(hash, locator.Signature, locator.Timestamp)
 		defer reader.Close()
 	} else if req.Method == "HEAD" {
-		blocklen, _, err = kc.AuthorizedAsk(hash, signature, timestamp)
+		blocklen, _, err = kc.AuthorizedAsk(hash, locator.Signature, locator.Timestamp)
 	}
 
 	resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
@@ -314,6 +340,9 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	kc := *this.KeepClient
 
 	hash := mux.Vars(req)["hash"]
+	hints := mux.Vars(req)["hints"]
+
+	locator := keepclient.MakeLocator2(hash, hints)
 
 	var contentLength int64 = -1
 	if req.Header.Get("Content-Length") != "" {
@@ -328,6 +357,11 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	if contentLength < 1 {
 		http.Error(resp, "Must include Content-Length header", http.StatusLengthRequired)
+		return
+	}
+
+	if locator.Size > 0 && int64(locator.Size) != contentLength {
+		http.Error(resp, "Locator size hint does not match Content-Length header", http.StatusBadRequest)
 		return
 	}
 
@@ -346,7 +380,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 
 	// Now try to put the block through
-	replicas, err := kc.PutHR(hash, req.Body, contentLength)
+	hash, replicas, err := kc.PutHR(hash, req.Body, contentLength)
 
 	// Tell the client how many successful PUTs we accomplished
 	resp.Header().Set(keepclient.X_Keep_Replicas_Stored, fmt.Sprintf("%d", replicas))
@@ -355,6 +389,10 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	case nil:
 		// Default will return http.StatusOK
 		log.Printf("%s: %s %s finished, stored %v replicas (desired %v)", GetRemoteAddress(req), req.Method, hash, replicas, kc.Want_replicas)
+		n, err2 := io.WriteString(resp, hash)
+		if err2 != nil {
+			log.Printf("%s: wrote %v bytes to response body and got error %v", n, err2.Error())
+		}
 
 	case keepclient.OversizeBlockError:
 		// Too much data
@@ -366,6 +404,10 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 			// client can decide if getting less than the number of
 			// replications it asked for is a fatal error.
 			// Default will return http.StatusOK
+			n, err2 := io.WriteString(resp, hash)
+			if err2 != nil {
+				log.Printf("%s: wrote %v bytes to response body and got error %v", n, err2.Error())
+			}
 		} else {
 			http.Error(resp, "", http.StatusServiceUnavailable)
 		}
