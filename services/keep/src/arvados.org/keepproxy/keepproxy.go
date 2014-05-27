@@ -29,7 +29,9 @@ func main() {
 		pidfile          string
 	)
 
-	flag.StringVar(
+	flagset := flag.NewFlagSet("default", flag.ExitOnError)
+
+	flagset.StringVar(
 		&listen,
 		"listen",
 		DEFAULT_ADDR,
@@ -37,31 +39,31 @@ func main() {
 			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
 			"to listen on all network interfaces.")
 
-	flag.BoolVar(
+	flagset.BoolVar(
 		&no_get,
 		"no-get",
 		false,
 		"If set, disable GET operations")
 
-	flag.BoolVar(
-		&no_get,
+	flagset.BoolVar(
+		&no_put,
 		"no-put",
 		false,
 		"If set, disable PUT operations")
 
-	flag.IntVar(
+	flagset.IntVar(
 		&default_replicas,
 		"default-replicas",
 		2,
 		"Default number of replicas to write if not specified by the client.")
 
-	flag.StringVar(
+	flagset.StringVar(
 		&pidfile,
 		"pid",
 		"",
 		"Path to write pid file")
 
-	flag.Parse()
+	flagset.Parse(os.Args[1:])
 
 	kc, err := keepclient.MakeKeepClient()
 	if err != nil {
@@ -229,19 +231,19 @@ func MakeRESTRouter(
 	t := &ApiTokenCache{tokens: make(map[string]int64), expireTime: 300}
 
 	rest := mux.NewRouter()
-	gh := rest.Handle(`/{hash:[0-9a-f]{32}}`, GetBlockHandler{kc, t})
-	ghsig := rest.Handle(
-		`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
-		GetBlockHandler{kc, t})
-	ph := rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t})
 
 	if enable_get {
+		gh := rest.Handle(`/{hash:[0-9a-f]{32}}`, GetBlockHandler{kc, t})
+		ghsig := rest.Handle(
+			`/{hash:[0-9a-f]{32}}+A{signature:[0-9a-f]+}@{timestamp:[0-9a-f]+}`,
+			GetBlockHandler{kc, t})
+
 		gh.Methods("GET", "HEAD")
 		ghsig.Methods("GET", "HEAD")
 	}
 
 	if enable_put {
-		ph.Methods("PUT")
+		rest.Handle(`/{hash:[0-9a-f]{32}}`, PutBlockHandler{kc, t}).Methods("PUT")
 	}
 
 	rest.NotFoundHandler = InvalidPathHandler{}

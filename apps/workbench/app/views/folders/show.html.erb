@@ -62,14 +62,37 @@
         <input type="text" class="form-control" placeholder="Search"/>
         -->
         <div style="height:0.5em;"></div>
-        <p>Owner: <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %></p>
-        <% if @share_links.any? %>
-        <p>Shared with:
-          <% @share_links.andand.each do |link| %>
-          <br /><%= link_to_if_arvados_object link.tail_uuid, friendly_name: true %>
+        <% if @object.owner %>
+          <p>Permissions inherited from:
+            <br />
+            <% if User == resource_class_for_uuid(@object.owner_uuid) %>
+              <i class="fa fa-fw fa-user"></i>
+            <% else %>
+              <i class="fa fa-fw fa-folder"></i>
+            <% end %>
+            <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
+            <%= button_to('Move to...',
+                choose_folders_path(
+                 title: 'Move to...',
+                 editable: true,
+                 action_name: 'Move',
+                 action_href: folder_path(@object.uuid),
+                 action_method: 'put',
+                 action_data: {selection_param: 'folder[owner_uuid]'}.to_json),
+                { class: "btn btn-default btn-xs arv-move-to-folder", remote: true, method: 'get' }) %>
+          </p>
+          <hr />
+        <% end %>
+        <p>
+          <% if not @share_links.any? %>
+            <span class="deemphasize">(No additional permissions)</span>
+          <% else %>
+            Also shared with:
+            <% @share_links.andand.each do |link| %>
+              <br /><%= link_to_if_arvados_object link.tail_uuid, friendly_name: true %>
+            <% end %>
           <% end %>
         </p>
-        <% end %>
       </div>
     </div>
   </div>
