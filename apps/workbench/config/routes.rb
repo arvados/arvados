@@ -4,7 +4,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :keep_disks
   resources :keep_services
   resources :user_agreements do
-    put 'sign', on: :collection
+    post 'sign', on: :collection
     get 'signatures', on: :collection
   end
   get '/user_agreements/signatures' => 'user_agreements#signatures'
