@@ -301,7 +301,7 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
     def test_known_human_progress(self):
         for count, total in [(0, 1), (2, 4), (45, 60)]:
-            expect = '{:.1f}%'.format(count / total)
+            expect = '{:.1%}'.format(float(count) / total)
             actual = arv_put.human_progress(count, total)
             self.assertTrue(actual.startswith('\r'))
             self.assertIn(expect, actual)
