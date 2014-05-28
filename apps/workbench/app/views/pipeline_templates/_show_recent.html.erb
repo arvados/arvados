@@ -15,7 +15,7 @@
       </th><th>
         name
       </th><th>
-        components
+        description/components
       </th><th>
         owner
       </th>
@@ -39,7 +39,13 @@
       </td><td>
         <%= render_editable_attribute ob, 'name' %>
       </td><td>
-        <%= ob.components.collect { |k,v| k.to_s }.join(", ") %>
+        <% if ob.respond_to?(:description) and ob.description %>
+          <%= ob.description %>
+          <br />
+        <% end %>
+        <% ob.components.collect { |k,v| k.to_s }.each do |k| %>
+          <span class="label label-default"><%= k %></span>
+        <% end %>
       </td><td>
         <%= link_to_if_arvados_object ob.owner_uuid, friendly_name: true %>
       </td>
