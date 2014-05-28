@@ -49,4 +49,13 @@ class ArvadosModelTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "Stringify symbols coming from serialized attribute in database" do
+    fixed = Link.find_by_uuid(links(:has_symbol_keys_in_database_somehow).uuid)
+    assert_equal(["baz", "foo"], fixed.properties.keys.sort,
+                 "Hash symbol keys from DB did not get stringified.")
+    assert_equal(['waz', 'waz', 'waz', 1, nil, false, true],
+                 fixed.properties['baz'],
+                 "Array symbol values from DB did not get stringified.")
+  end
 end
