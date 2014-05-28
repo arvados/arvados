@@ -25,7 +25,7 @@
     <td>
       <%= status %>
     </td><td>
-      <%= (o.state == 'RunningOnServer' || o.state == 'RunningOnClient') ? 'yes' : '-' %>
+      <%= (o.state == 'RunningOnServer') ? 'yes' : '-' %>
     </td><td>
       <%= (o.progress_ratio * 1000).floor / 10 %>
     </td><td>
