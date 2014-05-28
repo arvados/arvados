@@ -13,9 +13,8 @@ $oldrev  = ARGV[1]
 $newrev  = ARGV[2]
 $user    = ENV['USER']
 
-# Only enforce policy on the master branch -- on second thought, do it on all
-# branches so that people don't get surprised at merge-to-master time.  
-#exit 0 if $refname != 'refs/heads/master'
+# Only enforce policy on the master branch
+exit 0 if $refname != 'refs/heads/master'
 
 puts "Enforcing Policies... \n(#{$refname}) (#{$oldrev[0,6]}) (#{$newrev[0,6]})"
 
