@@ -31,4 +31,22 @@ class ArvadosModelTest < ActiveSupport::TestCase
     assert a.uuid.length==27, "Auto assigned uuid length is wrong."
   end
 
+  [ {:a => 'foo'},
+    {'a' => {'foo' => {:bar => 'baz'}}},
+    {'a' => {'foo' => {'bar' => :baz}}},
+    {'a' => {'foo' => ['bar', :baz]}},
+    {'a' => {['foo', :foo] => ['bar', 'baz']}},
+  ].each do |x|
+    test "refuse symbol keys in serialized attribute: #{x.inspect}" do
+      set_user_from_auth :admin_trustedclient
+      assert_nothing_raised do
+        Link.create!(link_class: 'test',
+                     properties: {})
+      end
+      assert_raises ActiveRecord::RecordInvalid do
+        Link.create!(link_class: 'test',
+                     properties: x)
+      end
+    end
+  end
 end

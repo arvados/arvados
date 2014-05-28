@@ -20,6 +20,7 @@ class ArvadosModel < ActiveRecord::Base
   after_create :log_create
   after_update :log_update
   after_destroy :log_destroy
+  after_find :convert_serialized_symbols_to_strings
   validate :ensure_serialized_attribute_type
   validate :normalize_collection_uuids
   validate :ensure_valid_uuids
@@ -261,6 +262,37 @@ class ArvadosModel < ActiveRecord::Base
     true
   end
 
+  def self.has_any_symbols? x
+    if x.is_a? Hash
+      x.each do |k,v|
+        return true if has_any_symbols?(k) or has_any_symbols?(v)
+      end
+    elsif x.is_a? Array
+      x.each do |k|
+        return true if has_any_symbols?(k)
+      end
+    else
+      return (x.class == Symbol)
+    end
+    false
+  end
+
+  def self.recursive_stringify x
+    if x.is_a? Hash
+      Hash[x.collect do |k,v|
+             [recursive_stringify(k), recursive_stringify(v)]
+           end]
+    elsif x.is_a? Array
+      x.collect do |k|
+        recursive_stringify k
+      end
+    elsif x.is_a? Symbol
+      x.to_s
+    else
+      x
+    end
+  end
+
   def ensure_serialized_attribute_type
     # Specifying a type in the "serialize" declaration causes rails to
     # raise an exception if a different data type is retrieved from
@@ -270,8 +302,22 @@ class ArvadosModel < ActiveRecord::Base
     # developer.
     self.class.serialized_attributes.each do |colname, attr|
       if attr.object_class
-        unless self.attributes[colname].is_a? attr.object_class
-          self.errors.add colname.to_sym, "must be a #{attr.object_class.to_s}"
+        if self.attributes[colname].class != attr.object_class
+          self.errors.add colname.to_sym, "must be a #{attr.object_class.to_s}, not a #{self.attributes[colname].class.to_s}"
+        elsif self.class.has_any_symbols? attributes[colname]
+          self.errors.add colname.to_sym, "must not contain symbols: #{attributes[colname].inspect}"
+        end
+      end
+    end
+  end
+
+  def convert_serialized_symbols_to_strings
+    self.class.serialized_attributes.each do |colname, attr|
+      if attr.object_class == Hash
+        if self.class.has_any_symbols? attributes[colname]
+          attributes[colname] = self.class.recursive_stringify attributes[colname]
+          self.send(colname + '=',
+                    self.class.recursive_stringify(attributes[colname]))
         end
       end
     end
