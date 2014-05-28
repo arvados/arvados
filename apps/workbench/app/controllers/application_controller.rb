@@ -12,7 +12,6 @@ class ApplicationController < ActionController::Base
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
-  before_filter :check_my_folders, :except => ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -121,21 +120,21 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    updates = params[@object.class.to_s.underscore.singularize.to_sym]
-    updates.keys.each do |attr|
+    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    @updates.keys.each do |attr|
       if @object.send(attr).is_a? Hash
-        if updates[attr].is_a? String
-          updates[attr] = Oj.load updates[attr]
+        if @updates[attr].is_a? String
+          @updates[attr] = Oj.load @updates[attr]
         end
         if params[:merge] || params["merge_#{attr}".to_sym]
           # Merge provided Hash with current Hash, instead of
           # replacing.
-          updates[attr] = @object.send(attr).with_indifferent_access.
-            deep_merge(updates[attr].with_indifferent_access)
+          @updates[attr] = @object.send(attr).with_indifferent_access.
+            deep_merge(@updates[attr].with_indifferent_access)
         end
       end
     end
-    if @object.update_attributes updates
+    if @object.update_attributes @updates
       show
     else
       self.render_error status: 422
@@ -403,15 +402,6 @@ class ApplicationController < ActionController::Base
       view.render partial: 'notifications/pipelines_notification'
     }
   }
-
-  def check_my_folders
-    @my_top_level_folders = lambda do
-      @top_level_folders ||= Group.
-        filter([['group_class','=','folder'],
-                ['owner_uuid','=',current_user.uuid]]).
-        sort_by { |x| x.name || '' }
-    end
-  end
 
   def check_user_notifications
     @notification_count = 0

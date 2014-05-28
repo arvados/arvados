@@ -11,10 +11,12 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -81,6 +83,11 @@ func TestGetHandler(t *testing.T) {
 		"Unauthenticated request, unsigned locator",
 		string(TEST_BLOCK),
 		response)
+	received_xbs := response.Header().Get("X-Block-Size")
+	expected_xbs := fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_xbs != expected_xbs {
+		t.Errorf("expected X-Block-Size %s, got %s", expected_xbs, received_xbs)
+	}
 
 	// ----------------
 	// Permissions: on.
@@ -97,6 +104,11 @@ func TestGetHandler(t *testing.T) {
 		"Authenticated request, signed locator", http.StatusOK, response)
 	ExpectBody(t,
 		"Authenticated request, signed locator", string(TEST_BLOCK), response)
+	received_xbs = response.Header().Get("X-Block-Size")
+	expected_xbs = fmt.Sprintf("%d", len(TEST_BLOCK))
+	if received_xbs != expected_xbs {
+		t.Errorf("expected X-Block-Size %s, got %s", expected_xbs, received_xbs)
+	}
 
 	// Authenticated request, unsigned locator
 	// => PermissionError
@@ -159,7 +171,9 @@ func TestPutHandler(t *testing.T) {
 
 	ExpectStatusCode(t,
 		"Unauthenticated request, no server key", http.StatusOK, response)
-	ExpectBody(t, "Unauthenticated request, no server key", TEST_HASH, response)
+	ExpectBody(t,
+		"Unauthenticated request, no server key",
+		TEST_HASH_PUT_RESPONSE, response)
 
 	// ------------------
 	// With a server key.
@@ -183,10 +197,11 @@ func TestPutHandler(t *testing.T) {
 	ExpectStatusCode(t,
 		"Authenticated PUT, signed locator, with server key",
 		http.StatusOK, response)
-	if !VerifySignature(response.Body.String(), known_token) {
+	response_locator := strings.TrimSpace(response.Body.String())
+	if !VerifySignature(response_locator, known_token) {
 		t.Errorf("Authenticated PUT, signed locator, with server key:\n"+
 			"response '%s' does not contain a valid signature",
-			response.Body.String())
+			response_locator)
 	}
 
 	// Unauthenticated PUT, unsigned locator
@@ -203,7 +218,7 @@ func TestPutHandler(t *testing.T) {
 		http.StatusOK, response)
 	ExpectBody(t,
 		"Unauthenticated PUT, unsigned locator, with server key",
-		TEST_HASH, response)
+		TEST_HASH_PUT_RESPONSE, response)
 }
 
 // Test /index requests:
@@ -407,7 +422,7 @@ func IssueRequest(router *mux.Router, rt *RequestTester) *httptest.ResponseRecor
 	body := bytes.NewReader(rt.request_body)
 	req, _ := http.NewRequest(rt.method, rt.uri, body)
 	if rt.api_token != "" {
-		req.Header.Set("Authorization", "OAuth "+rt.api_token)
+		req.Header.Set("Authorization", "OAuth2 "+rt.api_token)
 	}
 	router.ServeHTTP(response, req)
 	return response

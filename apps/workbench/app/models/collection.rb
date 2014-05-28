@@ -8,6 +8,10 @@ class Collection < ArvadosBase
     !!locator.to_s.match("^#{MD5_EMPTY}(\\+.*)?\$")
   end
 
+  def self.goes_in_folders?
+    true
+  end
+
   def content_summary
     human_readable_bytes_html(total_bytes) + " " + super
   end

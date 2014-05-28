@@ -4,7 +4,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :keep_disks
   resources :keep_services
   resources :user_agreements do
-    put 'sign', on: :collection
+    post 'sign', on: :collection
     get 'signatures', on: :collection
   end
   get '/user_agreements/signatures' => 'user_agreements#signatures'
@@ -50,6 +50,7 @@ ArvadosWorkbench::Application.routes.draw do
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   resources :folders do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
+    get 'choose', on: :collection
   end
 
   post 'actions' => 'actions#post'

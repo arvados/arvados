@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type keepDisk struct {
@@ -154,6 +156,7 @@ type uploadStatus struct {
 	url             string
 	statusCode      int
 	replicas_stored int
+	response        string
 }
 
 func (this KeepClient) uploadToKeepServer(host string, hash string, body io.ReadCloser,
@@ -165,7 +168,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		upload_status <- uploadStatus{err, url, 0, 0}
+		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		body.Close()
 		return
 	}
@@ -185,7 +188,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
-		upload_status <- uploadStatus{err, url, 0, 0}
+		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		body.Close()
 		return
 	}
@@ -195,17 +198,25 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 		fmt.Sscanf(xr, "%d", &rep)
 	}
 
+	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
+	if err2 != nil && err2 != io.EOF {
+		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, string(respbody)}
+		return
+	}
+
+	locator := strings.TrimSpace(string(respbody))
+
 	if resp.StatusCode == http.StatusOK {
-		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep}
+		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, locator}
 	} else {
-		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep}
+		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, locator}
 	}
 }
 
 func (this KeepClient) putReplicas(
 	hash string,
 	tr *streamer.AsyncStream,
-	expectedLength int64) (replicas int, err error) {
+	expectedLength int64) (locator string, replicas int, err error) {
 
 	// Calculate the ordering for uploading to servers
 	sv := this.shuffledServiceRoots(hash)
@@ -233,7 +244,7 @@ func (this KeepClient) putReplicas(
 				active += 1
 			} else {
 				if active == 0 {
-					return (this.Want_replicas - remaining_replicas), InsufficientReplicasError
+					return locator, (this.Want_replicas - remaining_replicas), InsufficientReplicasError
 				} else {
 					break
 				}
@@ -245,6 +256,7 @@ func (this KeepClient) putReplicas(
 		if status.statusCode == 200 {
 			// good news!
 			remaining_replicas -= status.replicas_stored
+			locator = status.response
 		} else {
 			// writing to keep server failed for some reason
 			log.Printf("Keep server put to %v failed with '%v'",
@@ -254,5 +266,5 @@ func (this KeepClient) putReplicas(
 		log.Printf("Upload to %v status code: %v remaining replicas: %v active: %v", status.url, status.statusCode, remaining_replicas, active)
 	}
 
-	return this.Want_replicas, nil
+	return locator, this.Want_replicas, nil
 }

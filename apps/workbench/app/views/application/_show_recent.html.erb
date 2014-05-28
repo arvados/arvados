@@ -15,7 +15,9 @@
 <table class="table table-condensed arv-index">
   <thead>
     <tr>
-      <th></th>
+      <% if objects.first and objects.first.class.goes_in_folders? %>
+        <th></th>
+      <% end %>
       <th></th>
       <% objects.first.attributes_for_display.each do |attr, attrvalue| %>
       <% next if attr_blacklist.index(" "+attr) %>
@@ -32,9 +34,11 @@
   <tbody>
     <% objects.each do |object| %>
     <tr data-object-uuid="<%= object.uuid %>">
-      <td>
-        <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
-      </td>
+      <% if objects.first.class.goes_in_folders? %>
+        <td>
+          <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
+        </td>
+      <% end %>
       <td>
         <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
       </td>

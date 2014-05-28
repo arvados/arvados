@@ -2,7 +2,11 @@ package org.arvados.sdk.java;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -334,11 +338,12 @@ public class ArvadosTest {
     Map response = arv.call("links", "list", params);
     assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
 
-    String[] filters = new String[3];
-    filters[0] = "name";
-    filters[1] = "=";
-    filters[2] = "can_manage";
-    
+    String[][] filters = new String[1][];
+    String[] condition = new String[3];
+    condition[0] = "name";
+    condition[1] = "=";
+    condition[2] = "can_manage";
+    filters[0] = condition;
     params.put("filters", filters);
     
     response = arv.call("links", "list", params);
@@ -356,17 +361,47 @@ public class ArvadosTest {
     Map response = arv.call("links", "list", params);
     assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
 
-    List<String> filters = new ArrayList<String>();
-    filters.add("name");
-    filters.add("is_a");
-    filters.add("can_manage");
-    
+    List<List> filters = new ArrayList<List>();
+    List<String> condition = new ArrayList<String>();
+    condition.add("name");
+    condition.add("is_a");
+    condition.add("can_manage");
+    filters.add(condition);
     params.put("filters", filters);
     
     response = arv.call("links", "list", params);
     
     assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
     assertFalse("Expected no can_manage in response", response.toString().contains("\"name\":\"can_manage\""));
+  }
+
+  @Test
+  public void testGetLinksWithTimestampFilters() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+
+    Map response = arv.call("links", "list", params);
+    assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
+
+    // get links created "tomorrow". Expect none in response
+    Calendar calendar = new GregorianCalendar();
+    calendar.setTime(new Date());
+    calendar.add(Calendar.DAY_OF_MONTH, 1);
+    
+    Object[][] filters = new Object[1][];
+    Object[] condition = new Object[3];
+    condition[0] = "created_at";
+    condition[1] = ">";
+    condition[2] = calendar.get(Calendar.YEAR) + "-" + (calendar.get(Calendar.MONTH)+1) + "-" + calendar.get(Calendar.DAY_OF_MONTH);
+    filters[0] = condition;
+    params.put("filters", filters);
+    
+    response = arv.call("links", "list", params);
+    
+    assertEquals("Expected links.list in response", "arvados#linkList", response.get("kind"));
+    int items_avail = ((BigDecimal)response.get("items_available")).intValue();
+    assertEquals("Expected zero links", items_avail, 0);
   }
 
   @Test
@@ -404,17 +439,26 @@ public class ArvadosTest {
   @Test
   public void testGetAvailableParametersForUsersGetMethod() throws Exception {
     Arvados arv = new Arvados("arvados", "v1");
-    Set<String> parameters = arv.getAvailableParametersForMethod("users", "get");
+    Map<String,List<String>> parameters = arv.getAvailableParametersForMethod("users", "get");
     assertNotNull("Expected parameters", parameters);
-    assertTrue("Excected uuid parameter for get method for users", parameters.contains("uuid"));
+    assertTrue("Excected uuid parameter for get method for users", parameters.get("required").contains("uuid"));
   }
 
   @Test
   public void testGetAvailableParametersForUsersCreateMethod() throws Exception {
     Arvados arv = new Arvados("arvados", "v1");
-    Set<String> parameters = arv.getAvailableParametersForMethod("users", "create");
+    Map<String,List<String>> parameters = arv.getAvailableParametersForMethod("users", "create");
     assertNotNull("Expected parameters", parameters);
-    assertTrue("Excected user parameter for create method for users", parameters.contains("user"));
+    assertTrue("Excected user parameter for get method for users", parameters.get("required").contains("user"));
+  }
+
+  @Test
+  public void testGetAvailableParametersForUsersListMethod() throws Exception {
+    Arvados arv = new Arvados("arvados", "v1");
+    Map<String,List<String>> parameters = arv.getAvailableParametersForMethod("users", "list");
+    assertNotNull("Expected parameters", parameters);
+    assertTrue("Excected no required parameter for list method for users", parameters.get("required").size() == 0);
+    assertTrue("Excected some optional parameters for list method for users", parameters.get("optional").contains("filters"));
   }
 
 }

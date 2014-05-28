@@ -19,6 +19,10 @@ class CredentialsFromEnv(object):
         from httplib import BadStatusLine
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
+
+        if config.get("ARVADOS_EXTERNAL_CLIENT", "") == "true":
+            kwargs['headers']['X-External-Client'] = '1'
+
         kwargs['headers']['Authorization'] = 'OAuth2 %s' % config.get('ARVADOS_API_TOKEN', 'ARVADOS_API_TOKEN_not_set')
         try:
             return self.orig_http_request(uri, **kwargs)
@@ -89,4 +93,3 @@ def api(version=None, cache=True):
             'arvados', apiVersion, http=http, discoveryServiceUrl=url)
         http.cache = None
     return services[version]
-
