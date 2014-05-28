@@ -51,11 +51,21 @@ class ArvadosModelTest < ActiveSupport::TestCase
   end
 
   test "Stringify symbols coming from serialized attribute in database" do
+    set_user_from_auth :admin_trustedclient
     fixed = Link.find_by_uuid(links(:has_symbol_keys_in_database_somehow).uuid)
     assert_equal(["baz", "foo"], fixed.properties.keys.sort,
                  "Hash symbol keys from DB did not get stringified.")
     assert_equal(['waz', 'waz', 'waz', 1, nil, false, true],
                  fixed.properties['baz'],
                  "Array symbol values from DB did not get stringified.")
+    assert_equal true, fixed.save, "Failed to save fixed model back to db."
+  end
+
+  test "No HashWithIndifferentAccess in database" do
+    set_user_from_auth :admin_trustedclient
+    assert_raises ActiveRecord::RecordInvalid do
+      Link.create!(link_class: 'test',
+                   properties: {'foo' => 'bar'}.with_indifferent_access)
+    end
   end
 end
