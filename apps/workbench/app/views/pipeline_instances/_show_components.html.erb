@@ -16,6 +16,8 @@
   <% end %>
 <% end %>
 
+<% pipeline_job_uuids = [] %>
+
 <% if !@object.state.in? ['New', 'Ready', 'Paused'] %>
 <table class="table pipeline-components-table">
   <colgroup>
@@ -32,7 +34,7 @@
       </th><th>
         script, version
       </th><th>
-        progress
+        job
         <%# format:'js' here helps browsers avoid using the cached js
         content in html context (e.g., duplicate tab -> see
         javascript) %>
@@ -45,20 +47,36 @@
   </thead>
   <tbody>
     <% render_pipeline_jobs.each do |pj| %>
+      <% if pj[:job].andand[:uuid]
+           pipeline_job_uuids << pj[:job][:uuid]
+         end %>
     <tr>
       <td>
-        <% job_status = render(partial: 'job_status_label',
-                               locals: { :j => pj[:job], :title => pj[:name] }) %>
-        <% if pj[:job].andand[:uuid] %>
-          <%= link_to(job_status, job_url(id: pj[:job][:uuid])) %>
-        <% else %>
-          <%= job_status %>
-        <% end %>
+        <%= pj[:name] %>
       </td><td>
         <%= pj[:script] %>
         <br /><span class="deemphasize"><%= pj[:script_version] %></span>
       </td><td>
         <%= pj[:progress_bar] %>
+        <% if @object.state == 'Complete' || @object.state == 'Failed' %>
+          <% if pj[:job].andand[:uuid] %>
+            <span class="deemphasize">
+            <%= link_to("..."+pj[:job][:uuid].last(15), job_url(id: pj[:job][:uuid])) %>
+            </span>
+
+            <% current_job = Job.find(pj[:job][:uuid]) rescue nil %>
+            <% if current_job.andand[:log] %>
+              <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
+              <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
+                <% c.files.each do |file| %>
+                  <br/><span class="deemphasize">
+                  <a href="<%= collection_path(current_job[:log]) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">log</a>
+                  </span>
+                <% end %>
+              <% end %>
+            <% end %>
+          <% end %>
+        <% end %>
       </td><td>
         <%= render(partial: 'job_status_label',
                                locals: { :j => pj[:job] }) %>
@@ -89,9 +107,19 @@ setInterval(function(){$('a.refresh').click()}, 15000);
   <% end %>
 <% end %>
 
-<% end %>
+    <% if !pipeline_job_uuids.empty? %>
+      <h4>Log messages from running jobs</h4>
+      <% log_history = pipeline_log_history(pipeline_job_uuids) %>
+      <div id="pipeline_event_log_history_div">
+        <% log_history.each do |entry| %>
+          <%=entry%><br/>
+        <% end %>
+      </div>
+      <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
+    <% end %>
+  <% end %>
 
-<% else %>
+<% else %>    <%# State new or ready or paused %>
   <% if @object.state == 'New' %>
     <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
   <% end %>

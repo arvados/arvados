@@ -447,6 +447,7 @@ class WhRunPipelineInstance
       moretodo = false
       @components.each do |cname, c|
         job = nil
+        owner_uuid = @instance[:owner_uuid]
         # Is the job satisfying this component already known to be
         # finished? (Already meaning "before we query API server about
         # the job's current state")
@@ -465,6 +466,7 @@ class WhRunPipelineInstance
             :repository => c[:repository],
             :nondeterministic => c[:nondeterministic],
             :output_is_persistent => c[:output_is_persistent] || false,
+            :owner_uuid => owner_uuid,
             # TODO: Delete the following three attributes when
             # supporting pre-20140418 API servers is no longer
             # important. New API servers take these as flags that
@@ -537,7 +539,8 @@ class WhRunPipelineInstance
                     tail_kind: 'arvados#user',
                     tail_uuid: @my_user_uuid,
                     head_kind: 'arvados#collection',
-                    head_uuid: wanted
+                    head_uuid: wanted,
+                    owner_uuid: owner_uuid
                   }
                   debuglog "added link, uuid #{newlink[:uuid]}"
                 end

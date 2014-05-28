@@ -1,0 +1,29 @@
+<div class="container-fluid arv-folder-list">
+  <% [@my_folder_tree, @shared_folder_tree].each do |tree| %>
+    <% tree.each do |foldernode| %>
+      <% rowtype = foldernode[:object].class %>
+      <div class="<%= 'folder' if rowtype == Group %> row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
+        <% if rowtype == String %>
+          <i class="fa fa-fw fa-folder-open-o"></i>
+          <%= foldernode[:object] %>
+        <% elsif rowtype == User %>
+          <% if foldernode[:object].uuid == current_user.andand.uuid %>
+            <i class="fa fa-fw fa-folder-open-o"></i>
+            My Folders
+          <% else %>
+            <i class="fa fa-fw fa-folder-o"></i>
+            <%= foldernode[:object].friendly_link_name %>
+          <% end %>
+        <% else %>
+          <i class="fa fa-fw fa-folder-o"></i>
+          <%= link_to foldernode[:object] do %>
+            <%= foldernode[:object].friendly_link_name %>
+          <% end %>
+          <div class="pull-right">
+            <%= render partial: 'delete_object_button', locals: {object: foldernode[:object]} %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

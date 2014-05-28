@@ -14,3 +14,5 @@ class KeepWriteError(Exception):
     pass
 class NotImplementedError(Exception):
     pass
+class NoKeepServersError(Exception):
+    pass
