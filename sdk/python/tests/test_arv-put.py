@@ -329,7 +329,8 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
         # case, because the /proc entry is already gone by the time it tries.
         pipe = subprocess.Popen(
             [sys.executable, arv_put.__file__, '--stream'],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=open('/dev/null', 'w'))
         pipe.stdin.write('stdin test\n')
         pipe.stdin.close()
         deadline = time.time() + 5
