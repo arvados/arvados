@@ -7,5 +7,6 @@ class PipelineTemplate < ArvadosModel
   api_accessible :user, extend: :common do |t|
     t.add :name
     t.add :components
+    t.add :description
   end
 end
