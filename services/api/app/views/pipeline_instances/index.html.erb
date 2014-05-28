@@ -19,13 +19,13 @@
 
   <% @objects.each do |o| %>
 
-  <% status = o.success ? 'success' : (o.success == false ? 'failure' : 'pending') %>
+  <% status = (o.state == 'Complete') ? 'success' : ((o.state == 'Failed') ? 'failure' : 'pending') %>
 
   <tr class="pipeline-instance-status pipeline-instance-status-<%= status %>" data-showhide-selector="tr#extra-info-<%= o.uuid %>" style="cursor:pointer">
     <td>
       <%= status %>
     </td><td>
-      <%= o.active ? 'yes' : '-' %>
+      <%= (o.state == 'RunningOnServer' || o.state == 'RunningOnClient') ? 'yes' : '-' %>
     </td><td>
       <%= (o.progress_ratio * 1000).floor / 10 %>
     </td><td>
