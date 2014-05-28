@@ -197,9 +197,20 @@ class ArvadosModel < ActiveRecord::Base
           current_user.can? write: self.owner_uuid
         # current_user is, or has :write permission on, the new owner
       else
-        logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
+        logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
         raise PermissionDeniedError
       end
+    end
+    if new_record?
+      return true
+    elsif current_user.uuid == self.owner_uuid_was or
+        current_user.uuid == self.uuid or
+        current_user.can? write: self.owner_uuid_was
+      # current user is, or has :write permission on, the previous owner
+      return true
+    else
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
+      raise PermissionDeniedError
     end
   end
 

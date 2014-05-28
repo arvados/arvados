@@ -125,7 +125,7 @@ class CollectionsController < ApplicationController
   end
 
   def search_scopes
-    ApiClientAuthorization.where(filters: [['scopes', '=', sharing_scopes]])
+    ApiClientAuthorization.filter([['scopes', '=', sharing_scopes]]).results
   end
 
   def show
@@ -150,7 +150,7 @@ class CollectionsController < ApplicationController
         .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
                link_class: 'resources', name: 'wants')
         .results.any?
-      @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+      @search_sharing = search_scopes
     end
     @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
                                                           {:request => request,
@@ -164,7 +164,7 @@ class CollectionsController < ApplicationController
   end
 
   def sharing_popup
-    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+    @search_sharing = search_scopes
     respond_to do |format|
       format.html
       format.js
@@ -179,16 +179,16 @@ class CollectionsController < ApplicationController
 
   def share
     a = ApiClientAuthorization.create(scopes: sharing_scopes)
-    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+    @search_sharing = search_scopes
     render 'sharing_popup'
   end
 
   def unshare
-    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+    @search_sharing = search_scopes
     @search_sharing.each do |s|
       s.destroy
     end
-    @search_sharing = search_scopes.select { |s| s.scopes != ['all'] }
+    @search_sharing = search_scopes
     render 'sharing_popup'
   end
 
