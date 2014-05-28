@@ -160,11 +160,7 @@ class ResumeCache(object):
             os.chmod(cls.CACHE_DIR, 0o700)
 
     def __init__(self, file_spec):
-        try:
-            self.cache_file = open(file_spec, 'a+')
-        except TypeError:
-            file_spec = self.make_path(file_spec)
-            self.cache_file = open(file_spec, 'a+')
+        self.cache_file = open(file_spec, 'a+')
         self._lock_file(self.cache_file)
         self.filename = self.cache_file.name
 
@@ -311,7 +307,7 @@ def main(arguments=None):
         reporter = None
 
     try:
-        resume_cache = ResumeCache(args)
+        resume_cache = ResumeCache(ResumeCache.make_path(args))
         if not args.resume:
             resume_cache.restart()
     except ResumeCacheConflict:

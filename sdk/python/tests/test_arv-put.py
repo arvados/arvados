@@ -67,12 +67,12 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
 
     def test_cache_names_ignore_irrelevant_arguments(self):
         # Workaround: parse_arguments bails on --filename with a directory.
-        args1 = arv_put.parse_arguments(['/tmp'])
-        args2 = arv_put.parse_arguments(['/tmp'])
-        args2.filename = 'tmp'
-        self.assertEquals(arv_put.ResumeCache.make_path(args1),
-                          arv_put.ResumeCache.make_path(args2),
-                          "cache path considered --filename for directory")
+        path1 = self.cache_path_from_arglist(['/tmp'])
+        args = arv_put.parse_arguments(['/tmp'])
+        args.filename = 'tmp'
+        path2 = arv_put.ResumeCache.make_path(args)
+        self.assertEquals(path1, path2,
+                         "cache path considered --filename for directory")
         self.assertEquals(
             self.cache_path_from_arglist(['-']),
             self.cache_path_from_arglist(['-', '--max-manifest-depth', '1']),
