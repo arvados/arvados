@@ -100,6 +100,7 @@ func main() {
 		listener.Close()
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
+	signal.Notify(term, syscall.SIGINT)
 
 	if pidfile != "" {
 		f, err := os.Create(pidfile)

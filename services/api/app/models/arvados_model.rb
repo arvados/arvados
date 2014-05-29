@@ -191,7 +191,9 @@ class ArvadosModel < ActiveRecord::Base
       self.owner_uuid ||= current_user.uuid
     end
     if self.owner_uuid_changed?
-      if current_user.uuid == self.owner_uuid or
+      if new_record?
+        return true
+      elsif current_user.uuid == self.owner_uuid or
           current_user.can? write: self.owner_uuid
         # current_user is, or has :write permission on, the new owner
       else

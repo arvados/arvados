@@ -6,6 +6,8 @@ class ArvadosApiClient
   end
   class InvalidApiResponseException < StandardError
   end
+  class AccessForbiddenException < StandardError
+  end
 
   @@profiling_enabled = Rails.configuration.profiling_enabled
   @@discovery = nil
@@ -99,7 +101,11 @@ class ArvadosApiClient
     if msg.status_code != 200
       errors = resp[:errors]
       errors = errors.join("\n\n") if errors.is_a? Array
-      raise "#{errors} [API: #{msg.status_code}]"
+      if msg.status_code == 403
+        raise AccessForbiddenException.new "#{errors} [API: #{msg.status_code}]"
+      else
+        raise "#{errors} [API: #{msg.status_code}]"
+      end
     end
     if resp[:_profile]
       Rails.logger.info "API client: " \

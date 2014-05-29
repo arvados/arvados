@@ -57,7 +57,7 @@
           <%= render_arvados_object_list_start(@logs, 'Show all activity',
                 logs_path(filters: [['object_uuid','=',@object.uuid]].to_json)) do |log| %>
           <p>
-          <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
+          <%= time_ago_in_words(log.event_at) rescue 'unknown time' %> ago: <%= log.summary %>
             <% if log.object_uuid %>
             <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
             <% end %>
@@ -78,6 +78,11 @@
         <!--
 	<input type="text" class="form-control" placeholder="Search"/>
         -->
+
+        <div id="sharing-button">
+          <%= render partial: 'sharing_button' %>
+        </div>
+
 	<div style="height:0.5em;"></div>
         <% if @folders.andand.any? %>
           <p>Included in folders:<br />
@@ -97,6 +102,7 @@
           <% end %>
           </p>
         <% end %>
+
       </div>
     </div>
   </div>
