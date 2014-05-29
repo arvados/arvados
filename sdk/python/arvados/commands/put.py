@@ -227,10 +227,7 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
         self.bytes_written = 0
         self._seen_inputs = []
         self.cache = cache
-        if reporter is None:
-            self.report_progress = lambda bytes_w, bytes_e: None
-        else:
-            self.report_progress = reporter
+        self.reporter = reporter
         self.bytes_expected = bytes_expected
         super(ArvPutCollectionWriter, self).__init__()
 
@@ -246,10 +243,6 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
         else:
             return writer
 
-    def preresume_hook(self):
-        print >>sys.stderr, "arv-put: Resuming previous upload.  Bypass with the --no-resume option."
-        self.report_progress(self.bytes_written, self.bytes_expected)
-
     def cache_state(self):
         state = self.dump_state()
         # Transform attributes for serialization.
@@ -260,11 +253,17 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
                 state[attr] = list(value)
         self.cache.save(state)
 
+    def report_progress(self):
+        if self.reporter is not None:
+            self.reporter(self.bytes_written, self.bytes_expected)
+
     def flush_data(self):
         bytes_buffered = self._data_buffer_len
         super(ArvPutCollectionWriter, self).flush_data()
-        self.bytes_written += (bytes_buffered - self._data_buffer_len)
-        self.report_progress(self.bytes_written, self.bytes_expected)
+        # Checkpoint and report progress if data was PUT to Keep.
+        if self._data_buffer_len < start_buffer_len:
+            self.bytes_written += (start_buffer_len - self._data_buffer_len)
+            self.report_progress()
 
     def _record_new_input(self, input_type, source_name, dest_name):
         # The key needs to be a list because that's what we'll get back
@@ -338,10 +337,14 @@ def main(arguments=None):
         print "arv-put: Another process is already uploading this data."
         sys.exit(1)
 
-    try:
-        writer = ArvPutCollectionWriter.from_cache(
-            resume_cache, reporter, expected_bytes_for(args.paths))
+    writer = ArvPutCollectionWriter.from_cache(
+        resume_cache, reporter, expected_bytes_for(args.paths))
+    if writer.bytes_written > 0:  # We're resuming a previous upload.
+        print >>sys.stderr, "arv-put: Resuming previous upload.  Bypass with the --no-resume option."
+        writer.report_progress()
 
+    try:
+        writer.do_queued_work()  # Do work resumed from cache.
         # Copy file data to Keep.
         for path in args.paths:
             if os.path.isdir(path):

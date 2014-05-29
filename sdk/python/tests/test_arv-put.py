@@ -265,13 +265,8 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             cwriter.write_file(testfile.name, 'test')
             cwriter.finish_current_stream()
             cwriter.cache_state()
-            # Restore a writer from that state and check its progress report.
-            # We're also checking that progress is reported immediately after
-            # resuming.
-            progression, reporter = self.make_progress_tester()
-            new_writer = arv_put.ArvPutCollectionWriter.from_cache(
-                self.cache, reporter, bytes_expected=4)
-            self.assertIn((4, 4), progression)
+            new_writer = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
+            self.assertEqual(new_writer.bytes_written, 4)
 
 
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
