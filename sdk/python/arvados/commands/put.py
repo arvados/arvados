@@ -247,6 +247,8 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
             return writer
 
     def cache_state(self):
+        if self.cache is None:
+            return
         state = self.dump_state()
         # Transform attributes for serialization.
         for attr, value in state.items():
@@ -261,12 +263,14 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
             self.reporter(self.bytes_written, self.bytes_expected)
 
     def flush_data(self):
-        bytes_buffered = self._data_buffer_len
+        start_buffer_len = self._data_buffer_len
+        start_block_count = self.bytes_written / self.KEEP_BLOCK_SIZE
         super(ArvPutCollectionWriter, self).flush_data()
-        # Checkpoint and report progress if data was PUT to Keep.
-        if self._data_buffer_len < start_buffer_len:
+        if self._data_buffer_len < start_buffer_len:  # We actually PUT data.
             self.bytes_written += (start_buffer_len - self._data_buffer_len)
             self.report_progress()
+            if (self.bytes_written / self.KEEP_BLOCK_SIZE) > start_block_count:
+                self.cache_state()
 
     def _record_new_input(self, input_type, source_name, dest_name):
         # The key needs to be a list because that's what we'll get back
