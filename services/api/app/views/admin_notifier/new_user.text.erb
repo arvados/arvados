@@ -5,6 +5,12 @@ A new user has been created:
 
 This user is <%= @user.is_active ? '' : 'NOT ' %>active.
 
+<% if not @wb_address.empty? -%>
+Please see workbench for more information:
+
+  <%= @wb_address %>
+
+<% end -%>
 Thanks,
 Your friendly Arvados robot.
 
