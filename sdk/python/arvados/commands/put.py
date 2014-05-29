@@ -11,8 +11,11 @@ import fcntl
 import hashlib
 import json
 import os
+import signal
 import sys
 import tempfile
+
+CAUGHT_SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]
 
 def parse_arguments(arguments):
     parser = argparse.ArgumentParser(
@@ -339,21 +342,29 @@ def main(arguments=None):
 
     writer = ArvPutCollectionWriter.from_cache(
         resume_cache, reporter, expected_bytes_for(args.paths))
+
+    def signal_handler(sigcode, frame):
+        writer.cache_state()
+        sys.exit(-sigcode)
+    # Install our signal handler for each code in CAUGHT_SIGNALS, and save
+    # the originals.
+    orig_signal_handlers = {sigcode: signal.signal(sigcode, signal_handler)
+                            for sigcode in CAUGHT_SIGNALS}
+
     if writer.bytes_written > 0:  # We're resuming a previous upload.
         print >>sys.stderr, "arv-put: Resuming previous upload.  Bypass with the --no-resume option."
         writer.report_progress()
 
     try:
         writer.do_queued_work()  # Do work resumed from cache.
-        # Copy file data to Keep.
-        for path in args.paths:
+        for path in args.paths:  # Copy file data to Keep.
             if os.path.isdir(path):
                 writer.write_directory_tree(
                     path, max_manifest_depth=args.max_manifest_depth)
             else:
                 writer.start_new_stream()
                 writer.write_file(path, args.filename or os.path.basename(path))
-    except (Exception, KeyboardInterrupt):
+    except Exception:
         writer.cache_state()
         raise
 
@@ -373,6 +384,10 @@ def main(arguments=None):
 
         # Print the locator (uuid) of the new collection.
         print writer.finish()
+
+    for sigcode, orig_handler in orig_signal_handlers.items():
+        signal.signal(sigcode, orig_handler)
+
     resume_cache.destroy()
 
 if __name__ == '__main__':
