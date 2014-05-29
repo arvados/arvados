@@ -226,7 +226,10 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
     def __init__(self, cache=None, reporter=None, bytes_expected=None):
         self.bytes_written = 0
         self.cache = cache
-        self.report_func = reporter
+        if reporter is None:
+            self.report_progress = lambda bytes_w, bytes_e: None
+        else:
+            self.report_progress = reporter
         self.bytes_expected = bytes_expected
         super(ArvPutCollectionWriter, self).__init__()
 
@@ -244,6 +247,7 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
 
     def preresume_hook(self):
         print >>sys.stderr, "arv-put: Resuming previous upload.  Bypass with the --no-resume option."
+        self.report_progress(self.bytes_written, self.bytes_expected)
 
     def checkpoint_state(self):
         if self.cache is None:
@@ -261,8 +265,7 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
         bytes_buffered = self._data_buffer_len
         super(ArvPutCollectionWriter, self).flush_data()
         self.bytes_written += (bytes_buffered - self._data_buffer_len)
-        if self.report_func is not None:
-            self.report_func(self.bytes_written, self.bytes_expected)
+        self.report_progress(self.bytes_written, self.bytes_expected)
 
 
 def expected_bytes_for(pathlist):
