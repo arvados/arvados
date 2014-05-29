@@ -125,7 +125,11 @@ class CollectionsController < ApplicationController
   end
 
   def search_scopes
-    ApiClientAuthorization.filter([['scopes', '=', sharing_scopes]]).results
+    begin
+      ApiClientAuthorization.filter([['scopes', '=', sharing_scopes]]).results
+    rescue ArvadosApiClient::AccessForbiddenException
+      nil
+    end
   end
 
   def show
