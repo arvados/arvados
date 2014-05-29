@@ -203,13 +203,25 @@ elif args.raw:
     writer.finish_current_stream()
     print string.join(writer.data_locators(), ',')
 else:
+    manifest_locator = writer.finish()
+
+    # The manifest locator is also used as its UUID.  Remove any
+    # signature Keep may have added to the locator; it should not be
+    # considered part of the UUID and will confuse apiserver if the
+    # signature is passed to arvados.api().collections().get().
+    # apiserver will resolve permissions by checking permission links
+    # anyway.
+    # TODO(twp,tomclegg): re-evaluate the value of storing manifests
+    # in Keep at all.
+    manifest_uuid = re.sub(r'\+A[a-z0-9@_-]+', '', manifest_locator)
+
     # Register the resulting collection in Arvados.
     arvados.api().collections().create(
         body={
-            'uuid': writer.finish(),
+            'uuid': manifest_uuid,
             'manifest_text': writer.manifest_text(),
             },
         ).execute()
 
     # Print the locator (uuid) of the new collection.
-    print writer.finish()
+    print manifest_uuid

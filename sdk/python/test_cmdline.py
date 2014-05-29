@@ -1,12 +1,25 @@
 import os
-import re
 import subprocess
 import unittest
 import tempfile
 import yaml
 
+import apiclient
 import arvados
 import run_test_server
+
+# ArvPutTest exercises arv-put behavior on the command line.
+#
+# Existing tests:
+#
+# ArvPutSignedManifest runs "arv-put foo" and then attempts to get
+#   the newly created manifest from the API server, testing to confirm
+#   that the block locators in the returned manifest are signed.
+#
+# TODO(twp): decide whether this belongs better in test_collections,
+# since it chiefly exercises behavior in arvados.collection.CollectionWriter.
+# Leaving it here for the time being because we may want to add more
+# tests for arv-put command line behavior.
 
 class ArvPutTest(unittest.TestCase):
     @classmethod
@@ -40,26 +53,29 @@ class ArvPutTest(unittest.TestCase):
                   "ARVADOS_API_TOKEN"]:
             os.environ[v] = arvados.config.settings()[v]
 
+        # Before doing anything, demonstrate that the collection
+        # we're about to create is not present in our test fixture.
+        api = arvados.api('v1', cache=False)
+        manifest_uuid = "00b4e9f40ac4dd432ef89749f1c01e74+47"
+        with self.assertRaises(apiclient.errors.HttpError):
+            notfound = api.collections().get(uuid=manifest_uuid).execute()
+        
         datadir = tempfile.mkdtemp()
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
-        p = subprocess.Popen(["arv-put", datadir],
+        p = subprocess.Popen(["./bin/arv-put", datadir],
                              stdout=subprocess.PIPE)
         (arvout, arverr) = p.communicate()
+        self.assertEqual(p.returncode, 0)
         self.assertEqual(arverr, None)
-
-        # The manifest UUID returned by arv-put must be signed.
-        manifest_uuid = arvout.strip()
-        self.assertRegexpMatches(manifest_uuid, r'\+A[0-9a-f]+@[0-9a-f]{8}')
-
-        # The manifest text stored in Keep must contain unsigned locators.
-        m = arvados.Keep.get(manifest_uuid)
-        self.assertEqual(m, ". 08a008a01d498c404b0c30852b39d3b8+44 0:44:foo\n")
+        self.assertEqual(arvout.strip(), manifest_uuid)
 
         # The manifest text stored in the API server under the same
         # manifest UUID must use signed locators.
-        api = arvados.api('v1', cache=False)
         c = api.collections().get(uuid=manifest_uuid).execute()
         self.assertRegexpMatches(
             c['manifest_text'],
             r'^\. 08a008a01d498c404b0c30852b39d3b8\+44\+A[0-9a-f]+@[0-9a-f]+ 0:44:foo\n')
+
+        os.remove(os.path.join(datadir, "foo"))
+        os.rmdir(datadir)
