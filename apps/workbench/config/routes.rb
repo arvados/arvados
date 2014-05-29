@@ -43,6 +43,9 @@ ArvadosWorkbench::Application.routes.draw do
   get '/collections/graph' => 'collections#graph'
   resources :collections do
     post 'set_persistent', on: :member
+    get 'sharing_popup', :on => :member
+    post 'share', :on => :member
+    post 'unshare', :on => :member
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)
