@@ -121,11 +121,15 @@ class CollectionsController < ApplicationController
   end
 
   def sharing_scopes
-    ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/keep_services"]
+    ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/collections/#{@object.uuid}/", "GET /arvados/v1/keep_services/accessible"]
   end
 
   def search_scopes
-    ApiClientAuthorization.filter([['scopes', '=', sharing_scopes]]).results
+    begin
+      ApiClientAuthorization.filter([['scopes', '=', sharing_scopes]]).results
+    rescue ArvadosApiClient::AccessForbiddenException
+      nil
+    end
   end
 
   def show
