@@ -28,9 +28,11 @@ ul.collection_files li {
 .collection_files_inline {
   clear: both;
   width: 80%;
-  height: auto;
-  max-height: 6em;
-  margin: 0 1em;
+  margin: 0 3em;
+}
+
+.collection_files_inline img {
+  max-height: 15em;
 }
 
 .collection_files_name {
