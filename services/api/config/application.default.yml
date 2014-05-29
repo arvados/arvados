@@ -87,8 +87,8 @@ common:
   admin_notifier_email_from: arvados@example.com
   email_subject_prefix: "[ARVADOS] "
   user_notifier_email_from: arvados@example.com
-  new_user_notification_recipients: ''
-  new_inactive_user_notification_recipients: ''
+  new_user_notification_recipients: [ ]
+  new_inactive_user_notification_recipients: [ ]
 
   # Visitors to the API server will be redirected to the workbench
   workbench_address: https://workbench.local:3001/
