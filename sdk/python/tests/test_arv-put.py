@@ -199,6 +199,7 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
     def test_writer_caches(self):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
         cwriter.write_file('/dev/null')
+        cwriter.cache_state()
         self.assertTrue(self.cache.load())
         self.assertEquals(". 0:0:null\n", cwriter.manifest_text())
 
@@ -211,6 +212,7 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
         with self.make_test_file() as testfile:
             cwriter.write_file(testfile.name, 'test')
+            cwriter.cache_state()
             new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
             self.assertEquals(
@@ -235,6 +237,7 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
         # These bytes are intentionally not valid UTF-8.
         with self.make_test_file('\x00\x07\xe2') as testfile:
             cwriter.write_file(testfile.name, 'test')
+            cwriter.cache_state()
             new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache)
         self.assertEquals(cwriter.manifest_text(), new_writer.manifest_text())
@@ -261,7 +264,7 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             # Set up a writer with some flushed bytes.
             cwriter.write_file(testfile.name, 'test')
             cwriter.finish_current_stream()
-            cwriter.checkpoint_state()
+            cwriter.cache_state()
             # Restore a writer from that state and check its progress report.
             # We're also checking that progress is reported immediately after
             # resuming.
