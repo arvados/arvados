@@ -1,7 +1,7 @@
 <% if current_user.andand.is_active %>
   <div>
     <strong>Recent jobs</strong>
-    <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
+    <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true, method: 'get'} %>
     <%= link_to raw("Show all jobs &rarr;"), jobs_path, class: 'pull-right' %>
     <% if not current_user.andand.is_active or @my_jobs.empty? %>
       <p>(None)</p>
@@ -58,7 +58,7 @@
           <a href="<%= collection_path(j.log) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">Log</a>
         <% end %>
       <% end %>
-    <% elsif j.respond_to? :log_buffer and j.log_buffer %>
+    <% elsif j.respond_to? :log_buffer and j.log_buffer.is_a? String %>
       <% buf = j.log_buffer.strip.split("\n").last %>
       <span title="<%= buf %>"><%= buf %></span>
     <% end %>
@@ -88,7 +88,7 @@
 
 <div>
   <strong>Recent pipeline instances</strong>
-  <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
+  <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true, method: 'get'} %>
   <%= link_to raw("Show all pipeline instances &rarr;"), pipeline_instances_path, class: 'pull-right' %>
   <% if not current_user.andand.is_active or @my_pipelines.empty? %>
     <p>(None)</p>
@@ -147,7 +147,7 @@
 
 <div>
   <strong>Recent collections</strong>
-  <%= link_to '(refresh)', request.fullpath, class: 'refresh', remote: true, method: 'get' %>
+  <%= link_to '(refresh)', {format: :js}, {class: 'refresh', remote: true, method: 'get'} %>
   <%= link_to raw("Show all collections &rarr;"), collections_path, class: 'pull-right' %>
   <div class="pull-right" style="padding-right: 1em; width: 30%;">
     <%= form_tag collections_path,

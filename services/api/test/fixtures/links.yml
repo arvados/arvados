@@ -346,6 +346,22 @@ job_name_in_afolder:
   name: "I'm a job in a folder"
   properties: {}
 
+foo_collection_name_in_afolder:
+  uuid: zzzzz-o0j2j-foofoldername12
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-04-21 15:37:48 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-04-21 15:37:48 -0400
+  updated_at: 2014-04-21 15:37:48 -0400
+  tail_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  link_class: name
+  # This should resemble the default name assigned when a
+  # Collection is added to a Folder.
+  name: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45 added sometime"
+  properties: {}
+
 foo_collection_tag:
   uuid: zzzzz-o0j2j-eedahfaho8aphiv
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
@@ -372,4 +388,18 @@ active_user_can_manage_bad_group_cx2al9cqkmsf1hs:
   link_class: permission
   name: can_manage
   head_uuid: zzzzz-j7d0g-cx2al9cqkmsf1hs
+  properties: {}
+
+multilevel_collection_1_readable_by_active:
+  uuid: zzzzz-o0j2j-dp1d8395ldqw22j
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_read
+  head_uuid: 1fd08fc162a5c6413070a8bd0bffc818+150
   properties: {}

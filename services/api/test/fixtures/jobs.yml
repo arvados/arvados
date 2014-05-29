@@ -79,7 +79,7 @@ foobar:
   success: true
   output: fa7aeb5140e2848d39b416daeef4ffc5+45
   priority: ~
-  log: d41d8cd98f00b204e9800998ecf8427e+0
+  log: ea10d51bcf88862dbcc36eb292017dfd+45
   is_locked_by_uuid: ~
   tasks_summary:
     failed: 0
@@ -164,4 +164,24 @@ nearly_finished_job:
     todo: 0
     running: 1
     done: 0
+  runtime_constraints: {}
+
+queued:
+  uuid: zzzzz-8i9sb-grx15v5mjnsyxk7
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  started_at: ~
+  finished_at: ~
+  script: foo
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters: {}
+  running: ~
+  success: ~
+  output: ~
+  priority: ~
+  log: ~
+  is_locked_by_uuid: ~
+  tasks_summary: {}
   runtime_constraints: {}

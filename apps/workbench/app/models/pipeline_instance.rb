@@ -1,6 +1,10 @@
 class PipelineInstance < ArvadosBase
   attr_accessor :pipeline_template
 
+  def self.goes_in_folders?
+    true
+  end
+
   def update_job_parameters(new_params)
     self.components[:steps].each_with_index do |step, i|
       step[:params].each do |param|
@@ -18,7 +22,8 @@ class PipelineInstance < ArvadosBase
   end
   
   def attribute_editable?(attr)
-    attr.to_sym == :name || (attr.to_sym == :components and self.active == nil)
+    attr && (attr.to_sym == :name ||
+            (attr.to_sym == :components and (self.state == 'New' || self.state == 'Ready')))
   end
 
   def attributes_for_display

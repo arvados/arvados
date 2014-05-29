@@ -1,5 +1,5 @@
 <% content_for :page_title do %>
-<%= controller.model_class.to_s.pluralize.underscore.capitalize.gsub('_', ' ') %>
+<%= controller.controller_name.humanize.capitalize %>
 <% end %>
 
 <% content_for :tab_line_buttons do %>
@@ -12,8 +12,8 @@
           'data-target' => '#user-setup-modal-window', return_to: request.url}  %>
       <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
     <% else %>
-      <%= button_to "Add a new #{controller.model_class.to_s.underscore.gsub '_', ' '}",
-        { action: 'create', return_to: request.url },
+      <%= button_to "Add a new #{controller.controller_name.singularize.humanize.downcase}",
+        { action: 'create' },
         { class: 'btn btn-primary pull-right' } %>
     <% end %>
 

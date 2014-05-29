@@ -56,6 +56,8 @@ navbar:
       - sdk/perl/index.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
+    - Java:
+      - sdk/java/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
   api:
@@ -76,6 +78,7 @@ navbar:
       - api/methods/jobs.html.textile.liquid
       - api/methods/job_tasks.html.textile.liquid
       - api/methods/keep_disks.html.textile.liquid
+      - api/methods/keep_services.html.textile.liquid
       - api/methods/links.html.textile.liquid
       - api/methods/logs.html.textile.liquid
       - api/methods/nodes.html.textile.liquid
@@ -96,6 +99,7 @@ navbar:
       - api/schema/Job.html.textile.liquid
       - api/schema/JobTask.html.textile.liquid
       - api/schema/KeepDisk.html.textile.liquid
+      - api/schema/KeepService.html.textile.liquid
       - api/schema/Link.html.textile.liquid
       - api/schema/Log.html.textile.liquid
       - api/schema/Node.html.textile.liquid
@@ -112,10 +116,9 @@ navbar:
       - admin/cheat_sheet.html.textile.liquid
   installguide:
     - Install:
-      - install/index.html.md.liquid
+      - install/index.html.textile.liquid
       - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
-      - install/client.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid

@@ -40,9 +40,16 @@ table.table-justforlayout>tbody>tr>th{
 table.table-justforlayout {
     margin-bottom: 0;
 }
+.smaller-text {
+    font-size: .8em;
+}
 .deemphasize {
     font-size: .8em;
     color: #888;
+}
+.arvados-uuid {
+    font-size: .8em;
+    font-family: monospace;
 }
 table .data-size, .table .data-size {
     text-align: right;
@@ -87,25 +94,6 @@ form.small-form-margin {
     text-decoration: none;
     text-shadow: 0 1px 0 #ffffff;
 }
-/*.navbar .nav .dropdown .dropdown-menu li a {
-    padding: 2px 20px;
-}*/
-
-ul.arvados-nav {
-    list-style: none;
-    padding-left: 0em;
-    margin-left: 0em;
-}
-
-ul.arvados-nav li ul {
-    list-style: none;
-    padding-left: 0;
-}
-
-ul.arvados-nav li ul li {
-    list-style: none;
-    padding-left: 1em;
-}
 
 .dax {
     max-width: 10%;
@@ -147,20 +135,6 @@ span.removable-tag-container {
 li.notification {
     padding: 10px;
 }
-.arvados-nav-container {
-    top: 70px; 
-    height: calc(100% - 70px); 
-    overflow: auto; 
-    z-index: 2;
-}
-
-.arvados-nav-active {
-    background: rgb(66, 139, 202);
-}
-
-.arvados-nav-active a, .arvados-nav-active a:hover {
-    color: white;
-}
 
 // See HeaderRowFixer in application.js
 table.table-fixed-header-row {
@@ -185,3 +159,35 @@ table.table-fixed-header-row tbody {
     overflow-y: auto;
 }
 
+.row-fill-height, .row-fill-height>div[class*='col-'] {
+    display: flex;
+}
+.row-fill-height>div[class*='col-']>div {
+    width: 100%;
+}
+
+/* Show editable popover above side-nav */
+.editable-popup.popover {
+    z-index:1055;
+}
+
+.navbar-nav.side-nav {
+    box-shadow: inset -1px 0 #e7e7e7;
+}
+.navbar-nav.side-nav > li:first-child {
+    margin-top: 5px; /* keep "hover" bg below top nav bottom border */
+}
+.navbar-nav.side-nav > li > a {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+.navbar-nav.side-nav > li.dropdown > ul.dropdown-menu > li > a {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+.navbar-nav.side-nav a.active,
+.navbar-nav.side-nav a:hover,
+.navbar-nav.side-nav a:focus {
+    border-right: 1px solid #ffffff;
+    background: #ffffff;
+}

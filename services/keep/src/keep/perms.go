@@ -50,9 +50,9 @@ import (
 // key.
 var PermissionSecret []byte
 
-// makePermSignature returns a string representing the signed permission
+// MakePermSignature returns a string representing the signed permission
 // hint for the blob identified by blob_hash, api_token and expiration timestamp.
-func makePermSignature(blob_hash string, api_token string, expiry string) string {
+func MakePermSignature(blob_hash string, api_token string, expiry string) string {
 	hmac := hmac.New(sha1.New, PermissionSecret)
 	hmac.Write([]byte(blob_hash))
 	hmac.Write([]byte("@"))
@@ -66,19 +66,24 @@ func makePermSignature(blob_hash string, api_token string, expiry string) string
 // SignLocator takes a blob_locator, an api_token and an expiry time, and
 // returns a signed locator string.
 func SignLocator(blob_locator string, api_token string, expiry time.Time) string {
+	// If no permission secret or API token is available,
+	// return an unsigned locator.
+	if PermissionSecret == nil || api_token == "" {
+		return blob_locator
+	}
 	// Extract the hash from the blob locator, omitting any size hint that may be present.
 	blob_hash := strings.Split(blob_locator, "+")[0]
 	// Return the signed locator string.
 	timestamp_hex := fmt.Sprintf("%08x", expiry.Unix())
 	return blob_locator +
-		"+A" + makePermSignature(blob_hash, api_token, timestamp_hex) +
+		"+A" + MakePermSignature(blob_hash, api_token, timestamp_hex) +
 		"@" + timestamp_hex
 }
 
 // VerifySignature returns true if the signature on the signed_locator
 // can be verified using the given api_token.
 func VerifySignature(signed_locator string, api_token string) bool {
-	if re, err := regexp.Compile(`^(.*)\+A(.*)@(.*)$`); err == nil {
+	if re, err := regexp.Compile(`^([a-f0-9]{32}(\+[0-9]+)?).*\+A[[:xdigit:]]+@([[:xdigit:]]{8})`); err == nil {
 		if matches := re.FindStringSubmatch(signed_locator); matches != nil {
 			blob_locator := matches[1]
 			timestamp_hex := matches[3]

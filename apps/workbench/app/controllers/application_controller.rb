@@ -1,16 +1,16 @@
 class ApplicationController < ActionController::Base
+  include ArvadosApiClientHelper
+
   respond_to :html, :json, :js
   protect_from_forgery
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
   around_filter :thread_clear
-  around_filter(:thread_with_mandatory_api_token,
-                except: [:index, :show] + ERROR_ACTIONS)
+  around_filter :thread_with_mandatory_api_token, except: ERROR_ACTIONS
   around_filter :thread_with_optional_api_token
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
-  around_filter :using_reader_tokens, only: [:index, :show]
   before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
   theme :select_theme
 
@@ -64,19 +64,27 @@ class ApplicationController < ActionController::Base
   end
 
   def index
+    @limit ||= 200
     if params[:limit]
-      limit = params[:limit].to_i
-    else
-      limit = 200
+      @limit = params[:limit].to_i
     end
 
+    @offset ||= 0
     if params[:offset]
-      offset = params[:offset].to_i
-    else
-      offset = 0
+      @offset = params[:offset].to_i
     end
 
-    @objects ||= model_class.limit(limit).offset(offset).all
+    @filters ||= []
+    if params[:filters]
+      filters = params[:filters]
+      if filters.is_a? String
+        filters = Oj.load filters
+      end
+      @filters += filters
+    end
+
+    @objects ||= model_class
+    @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -89,7 +97,7 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object }
+      f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
         if request.method == 'GET'
           render
@@ -112,21 +120,21 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    updates = params[@object.class.to_s.underscore.singularize.to_sym]
-    updates.keys.each do |attr|
+    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    @updates.keys.each do |attr|
       if @object.send(attr).is_a? Hash
-        if updates[attr].is_a? String
-          updates[attr] = Oj.load updates[attr]
+        if @updates[attr].is_a? String
+          @updates[attr] = Oj.load @updates[attr]
         end
         if params[:merge] || params["merge_#{attr}".to_sym]
           # Merge provided Hash with current Hash, instead of
           # replacing.
-          updates[attr] = @object.send(attr).with_indifferent_access.
-            deep_merge(updates[attr].with_indifferent_access)
+          @updates[attr] = @object.send(attr).with_indifferent_access.
+            deep_merge(@updates[attr].with_indifferent_access)
         end
       end
     end
-    if @object.update_attributes updates
+    if @object.update_attributes @updates
       show
     else
       self.render_error status: 422
@@ -134,16 +142,12 @@ class ApplicationController < ActionController::Base
   end
 
   def create
-    @object ||= model_class.new params[model_class.to_s.underscore.singularize]
+    @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
+    @new_resource_attrs ||= {}
+    @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
+    @object ||= model_class.new @new_resource_attrs
     @object.save!
-
-    respond_to do |f|
-      f.json { render json: @object }
-      f.html {
-        redirect_to(params[:return_to] || @object)
-      }
-      f.js { render }
-    end
+    show
   end
 
   def destroy
@@ -193,7 +197,7 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.html {
         if request.method == 'GET'
-          redirect_to $arvados_api_client.arvados_login_url(return_to: request.url)
+          redirect_to arvados_api_client.arvados_login_url(return_to: request.url)
         else
           flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
           redirect_to :back
@@ -205,23 +209,6 @@ class ApplicationController < ActionController::Base
       }
     end
     false  # For convenience to return from callbacks
-  end
-
-  def using_reader_tokens(login_optional=false)
-    if params[:reader_tokens].is_a?(Array) and params[:reader_tokens].any?
-      Thread.current[:reader_tokens] = params[:reader_tokens]
-    end
-    begin
-      yield
-    rescue ArvadosApiClient::NotLoggedInException
-      if login_optional
-        raise
-      else
-        return redirect_to_login
-      end
-    ensure
-      Thread.current[:reader_tokens] = nil
-    end
   end
 
   def using_specific_api_token(api_token)
@@ -242,8 +229,14 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    if params[:uuid].is_a? String
-      @object = model_class.find(params[:uuid])
+    if not model_class
+      @object = nil
+    elsif params[:uuid].is_a? String
+      if params[:uuid].empty?
+        @object = nil
+      else
+        @object = model_class.find(params[:uuid])
+      end
     else
       @object = model_class.where(uuid: params[:uuid]).first
     end

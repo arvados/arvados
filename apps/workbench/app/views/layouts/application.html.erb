@@ -14,6 +14,10 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <meta name="description" content="">
   <meta name="author" content="">
+  <% if current_user %>
+  <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
+  <% end %>
+  <meta name="robots" content="NOINDEX, NOFOLLOW">
   <%= stylesheet_link_tag    "application", :media => "all" %>
   <%= javascript_include_tag "application" %>
   <%= csrf_meta_tags %>
@@ -32,34 +36,25 @@
     padding-top: 70px; /* 70px to make the container go all the way to the bottom of the navbar */
     }
 
-    body > div.container-fluid > div.col-sm-9.col-sm-offset-3 {
-    overflow: auto;
-    }
-
     @media (max-width: 979px) { body { padding-top: 0; } }
 
     .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
     padding-top: 1.25em;
     }
 
-    @media (min-width: 768px) {
-    .left-nav {
-    position: fixed;
-    }
-    }
     @media (max-width: 767px) {
     .breadcrumbs {
     display: none;
     }
     }
   </style>
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
 </head>
 <body>
-
-  <div class="navbar navbar-default navbar-fixed-top">
-    <div class="container-fluid">
+  <div id="wrapper">
+    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
       <div class="navbar-header">
-        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#workbench-navbar.navbar-collapse">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
           <span class="sr-only">Toggle navigation</span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
@@ -68,166 +63,186 @@
         <a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
       </div>
 
-      <div class="collapse navbar-collapse" id="workbench-navbar">
-      <ul class="nav navbar-nav navbar-left breadcrumbs">
-        <% if current_user %>
-        <% if content_for?(:breadcrumbs) %>
-          <%= yield(:breadcrumbs) %>
-        <% else %>
-          <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
-          <li>
-            <%= link_to(
-                        controller.model_class.to_s.pluralize.underscore.gsub('_', ' '),
-                        url_for({controller: params[:controller]})) %>
-          </li>
-          <% if params[:action] != 'index' %>
-            <li class="nav-separator">
-              <span class="glyphicon glyphicon-arrow-right"></span>
-            </li>
-            <li>
-              <%= link_to_if_arvados_object @object %>
-            </li>
-            <li style="padding: 14px 0 14px">
-              <%= form_tag do |f| %>
-                <%= render :partial => "selection_checkbox", :locals => {:object => @object} %>
-              <% end %>
-            </li>
-          <% end %>
-        <% end %>
-        <% end %>
-      </ul>
-
-      <ul class="nav navbar-nav navbar-right">
-
-        <li>
-          <a><i class="rotating loading glyphicon glyphicon-refresh"></i></a>
-        </li>
-
-        <% if current_user %>
-        <!-- XXX placeholder for this when search is implemented
-        <li>
-          <form class="navbar-form" role="search">
-            <div class="input-group" style="width: 220px">
-              <input type="text" class="form-control" placeholder="search">
-              <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
-            </div>
-          </form>
-        </li>
-        -->
-
-        <li class="dropdown notification-menu">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="collections-menu">
-            <span class="glyphicon glyphicon-paperclip"></span>
-            <span class="badge" id="persistent-selection-count"></span>
-            <span class="caret"></span>
-          </a>
-            <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
-              <%= form_tag '/actions' do %>
-              <div id="selection-form-content"></div>
-              <% end %>
-          </ul>
-        </li>
-
-        <% if current_user.is_active %>
-        <li class="dropdown notification-menu">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
-            <span class="glyphicon glyphicon-envelope"></span>
-            <span class="badge badge-alert notification-count"><%= @notification_count %></span>
-            <span class="caret"></span>
-          </a>
-          <ul class="dropdown-menu" role="menu">
-            <% if (@notifications || []).length > 0 %>
-              <% @notifications.each_with_index do |n, i| %>
-                <% if i > 0 %><li class="divider"></li><% end %>
-                <li class="notification"><%= n.call(self) %></li>
-              <% end %>
-            <% else %>
-              <li class="notification empty">No notifications.</li>
-            <% end %>
-          </ul>
-        </li>
-        <% end %>
-
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="user-menu">
-            <span class="glyphicon glyphicon-user"></span><span class="caret"></span>
-          </a>
-          <ul class="dropdown-menu" role="menu">
-            <li role="presentation" class="dropdown-header"><%= current_user.email %></li>
-            <% if current_user.is_active %>
-            <li role="presentation" class="divider"></li>
-            <li role="presentation"><a href="/authorized_keys" role="menuitem">Manage ssh keys</a></li>
-            <li role="presentation"><a href="/api_client_authorizations" role="menuitem">Manage API tokens</a></li>
-            <li role="presentation" class="divider"></li>
-            <% end %>
-            <li role="presentation"><a href="<%= logout_path %>" role="menuitem">Log out</a></li>
-          </ul>
-        </li>
-	<% else -%>
-          <li><a href="<%= $arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
-	<% end -%>
-      </ul>
-      </div><!-- /.navbar-collapse -->
-    </div><!-- /.container-fluid -->
-  </div>
-
-  <div class="container-fluid">
-      <div class="col-sm-9 col-sm-offset-3">
-        <div id="content" class="body-content">
-          <%= yield %>
-        </div>
-      </div>
-      <div class="col-sm-3 left-nav">
-        <div class="arvados-nav-container">
+      <div class="collapse navbar-collapse">
         <% if current_user.andand.is_active %>
-        <div class="well">
-        <ul class="arvados-nav">
-          <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
-            <a href="/">Dashboard</a>
-          </li>
+          <ul class="nav navbar-nav side-nav">
 
-          <% [['Data', [['collections', 'Collections (data files)'],
-                        ['humans'],
-                        ['traits'],
-                        ['specimens'],
-                        ['links']]],
-              ['Activity', [['pipeline_instances', 'Recent pipeline instances'],
-                            ['jobs', 'Recent jobs']]],
-              ['Compute', [['pipeline_templates'],
-                           ['repositories', 'Code repositories'],
-                           ['virtual_machines']]],
-              ['System', [['users'],
-                         ['groups'],
-                         ['nodes', 'Compute nodes'],
-                         ['keep_disks']]]].each do |j| %>
-            <li><%= j[0] %>
-              <ul>
-              <% j[1].each do |k| %>
-                <% unless k[0] == 'users' and !current_user.andand.is_admin %>
-                  <li class="<%= 'arvados-nav-active' if (params[:controller] == k[0] && params[:action] != 'home') %>">
-                    <a href="/<%= k[0] %>">
-                      <%= if k[1] then k[1] else k[0].capitalize.gsub('_', ' ') end %>
-                    </a>
-                  </li>
-                <% end %>
-              <% end %>
+            <li class="<%= 'arvados-nav-active' if params[:action] == 'home' %>">
+              <a href="/"><i class="fa fa-lg fa-dashboard fa-fw"></i> Dashboard</a>
+            </li>
+
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-hand-o-up fa-fw"></i> Help <b class="caret"></b></a>
+              <ul class="dropdown-menu">
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+                <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
               </ul>
             </li>
-          <% end %>
 
-          <li>Help
-            <ul>
-              <li><%= link_to 'Tutorials and User guide', "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
-              <li><%= link_to 'API Reference', "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
-              <li><%= link_to 'SDK Reference', "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+            <li class="dropdown">
+              <a href="/folders">
+                <i class="fa fa-lg fa-folder-o fa-fw"></i> Folders
+            </a></li>
+            <li><a href="/collections">
+                <i class="fa fa-lg fa-briefcase fa-fw"></i> Collections (data files)
+            </a></li>
+            <li><a href="/jobs">
+                <i class="fa fa-lg fa-tasks fa-fw"></i> Jobs
+            </a></li>
+            <li><a href="/pipeline_instances">
+                <i class="fa fa-lg fa-tasks fa-fw"></i> Pipeline instances
+            </a></li>
+            <li><a href="/pipeline_templates">
+                <i class="fa fa-lg fa-gears fa-fw"></i> Pipeline templates
+            </a></li>
+            <li>&nbsp;</li>
+            <li><a href="/repositories">
+                <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
+            </a></li>
+            <li><a href="/virtual_machines">
+                <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
+            </a></li>
+            <li><a href="/humans">
+                <i class="fa fa-lg fa-male fa-fw"></i> Humans
+            </a></li>
+            <li><a href="/specimens">
+                <i class="fa fa-lg fa-flask fa-fw"></i> Specimens
+            </a></li>
+            <li><a href="/traits">
+                <i class="fa fa-lg fa-clipboard fa-fw"></i> Traits
+            </a></li>
+            <li><a href="/links">
+                <i class="fa fa-lg fa-arrows-h fa-fw"></i> Links
+            </a></li>
+            <% if current_user.andand.is_admin %>
+              <li><a href="/users">
+                  <i class="fa fa-lg fa-user fa-fw"></i> Users
+              </a></li>
+            <% end %>
+            <li><a href="/groups">
+                <i class="fa fa-lg fa-users fa-fw"></i> Groups
+            </a></li>
+            <li><a href="/nodes">
+                <i class="fa fa-lg fa-cloud fa-fw"></i> Compute nodes
+            </a></li>
+            <li><a href="/keep_services">
+                <i class="fa fa-lg fa-exchange fa-fw"></i> Keep services
+            </a></li>
+            <li><a href="/keep_disks">
+                <i class="fa fa-lg fa-hdd-o fa-fw"></i> Keep disks
+            </a></li>
+          </ul>
+        <% end %>
+
+        <ul class="nav navbar-nav navbar-left breadcrumbs">
+          <% if current_user %>
+            <% if content_for?(:breadcrumbs) %>
+              <%= yield(:breadcrumbs) %>
+            <% else %>
+              <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
+              <li>
+                <%= link_to(
+                            controller.controller_name.humanize.downcase,
+                            url_for({controller: params[:controller]})) %>
+              </li>
+              <% if params[:action] != 'index' %>
+                <li class="nav-separator">
+                  <span class="glyphicon glyphicon-arrow-right"></span>
+                </li>
+                <li>
+                  <%= link_to_if_arvados_object @object, {friendly_name: true}, {data: {object_uuid: @object.andand.uuid, name: 'name'}} %>
+                </li>
+                <li style="padding: 14px 0 14px">
+                  <%= form_tag do |f| %>
+                    <%= render :partial => "selection_checkbox", :locals => {:object => @object} %>
+                  <% end %>
+                </li>
+              <% end %>
+            <% end %>
+          <% end %>
+        </ul>
+
+        <ul class="nav navbar-nav navbar-right">
+
+          <li>
+            <a><i class="rotating loading glyphicon glyphicon-refresh"></i></a>
+          </li>
+
+          <% if current_user %>
+          <!-- XXX placeholder for this when search is implemented
+          <li>
+            <form class="navbar-form" role="search">
+              <div class="input-group" style="width: 220px">
+                <input type="text" class="form-control" placeholder="search">
+                <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+              </div>
+            </form>
+          </li>
+          -->
+
+          <li class="dropdown notification-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="collections-menu">
+              <span class="glyphicon glyphicon-paperclip"></span>
+              <span class="badge" id="persistent-selection-count"></span>
+              <span class="caret"></span>
+            </a>
+              <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
+                <%= form_tag '/actions' do %>
+                <%= hidden_field_tag 'uuid', @object.andand.uuid %>
+                <div id="selection-form-content"></div>
+                <% end %>
             </ul>
           </li>
+
+          <% if current_user.is_active %>
+          <li class="dropdown notification-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
+              <span class="glyphicon glyphicon-envelope"></span>
+              <span class="badge badge-alert notification-count"><%= @notification_count %></span>
+              <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <% if (@notifications || []).length > 0 %>
+                <% @notifications.each_with_index do |n, i| %>
+                  <% if i > 0 %><li class="divider"></li><% end %>
+                  <li class="notification"><%= n.call(self) %></li>
+                <% end %>
+              <% else %>
+                <li class="notification empty">No notifications.</li>
+              <% end %>
+            </ul>
+          </li>
+          <% end %>
+
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="user-menu">
+              <span class="glyphicon glyphicon-user"></span><span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li role="presentation" class="dropdown-header"><%= current_user.email %></li>
+              <% if current_user.is_active %>
+              <li role="presentation" class="divider"></li>
+              <li role="presentation"><a href="/authorized_keys" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage ssh keys</a></li>
+              <li role="presentation"><a href="/api_client_authorizations" role="menuitem"><i class="fa fa-ticket fa-fw"></i> Manage API tokens</a></li>
+              <li role="presentation" class="divider"></li>
+              <% end %>
+              <li role="presentation"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+            </ul>
+          </li>
+          <% else %>
+            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+          <% end %>
         </ul>
-        </div>
-        <% end %>
-      </div>
-        </div>
+      </div><!-- /.navbar-collapse -->
+    </nav>
+
+    <div id="page-wrapper">
+      <%= yield %>
+    </div>
   </div>
+
+</div>
 
   <%= yield :footer_html %>
   <%= piwik_tracking_tag %>
@@ -235,5 +250,6 @@
   <%= yield :footer_js %>
   <% end %>
 
+<div class="modal-container"></div>
 </body>
 </html>

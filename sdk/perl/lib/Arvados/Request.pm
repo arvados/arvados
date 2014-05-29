@@ -32,11 +32,16 @@ sub process_request
 {
     my $self = shift;
     my %req;
-    $req{$self->{'method'}} = $self->{'uri'};
+    my %content;
+    my $method = $self->{'method'};
+    if ($method eq 'GET' || $method eq 'HEAD') {
+        $content{'_method'} = $method;
+        $method = 'POST';
+    }
+    $req{$method} = $self->{'uri'};
     $self->{'req'} = new HTTP::Request (%req);
     $self->{'req'}->header('Authorization' => ('OAuth2 ' . $self->{'authToken'})) if $self->{'authToken'};
     $self->{'req'}->header('Accept' => 'application/json');
-    my %content;
     my ($p, $v);
     while (($p, $v) = each %{$self->{'queryParams'}}) {
         $content{$p} = (ref($v) eq "") ? $v : JSON::encode_json($v);

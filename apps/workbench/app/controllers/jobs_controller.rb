@@ -23,10 +23,11 @@ class JobsController < ApplicationController
   def index
     @svg = ""
     if params[:uuid]
-      @jobs = Job.where(uuid: params[:uuid])
-      generate_provenance(@jobs)
+      @objects = Job.where(uuid: params[:uuid])
+      generate_provenance(@objects)
     else
-      @jobs = Job.all
+      @limit = 20
+      super
     end
   end
 

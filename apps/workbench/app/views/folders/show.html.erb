@@ -1,0 +1,214 @@
+<div class="row row-fill-height">
+  <div class="col-md-6">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          <%= render_editable_attribute @object, 'name', nil, {data: {emptytext: "New folder"}} %>
+        </h3>
+      </div>
+      <div class="panel-body">
+        <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
+        <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "Created: #{@object.created_at.to_s(:long)}", 'data-toggle' => 'manual', 'id' => "#{@object.uuid}-description" } %>
+        <% if @object.attribute_editable? 'description' %>
+        <div style="margin-top: 1em;">
+          <a href="#" class="btn btn-xs btn-default" data-toggle="x-editable" data-toggle-selector="#<%= @object.uuid %>-description"><i class="fa fa-fw fa-pencil"></i> Edit description</a>
+        </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          Activity
+        </h3>
+      </div>
+      <div class="panel-body smaller-text">
+        <!--
+        <input type="text" class="form-control" placeholder="Search"/>
+        -->
+        <div style="height:0.5em;"></div>
+        <% if @logs.any? %>
+          <%= render_arvados_object_list_start(@logs, 'Show all activity',
+                logs_path(filters: [['object_uuid','=',@object.uuid]].to_json)) do |log| %>
+          <p>
+          <%= time_ago_in_words(log.event_at) %> ago: <%= log.summary %>
+            <% if log.object_uuid %>
+            <%= link_to_if_arvados_object log.object_uuid, link_text: raw('<i class="fa fa-hand-o-right"></i>') %>
+            <% end %>
+          </p>
+          <% end %>
+        <% else %>
+          <p>
+            Created: <%= @object.created_at.to_s(:long) %>
+          </p>
+          <p>
+            Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
+          </p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          Sharing and permissions
+        </h3>
+      </div>
+      <div class="panel-body">
+        <!--
+        <input type="text" class="form-control" placeholder="Search"/>
+        -->
+        <div style="height:0.5em;"></div>
+        <% if @object.owner %>
+          <p>Permissions inherited from:
+            <br />
+            <% if User == resource_class_for_uuid(@object.owner_uuid) %>
+              <i class="fa fa-fw fa-user"></i>
+            <% else %>
+              <i class="fa fa-fw fa-folder"></i>
+            <% end %>
+            <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
+            <%= button_to('Move to...',
+                choose_folders_path(
+                 title: 'Move to...',
+                 editable: true,
+                 action_name: 'Move',
+                 action_href: folder_path(@object.uuid),
+                 action_method: 'put',
+                 action_data: {selection_param: 'folder[owner_uuid]'}.to_json),
+                { class: "btn btn-default btn-xs arv-move-to-folder", remote: true, method: 'get' }) %>
+          </p>
+          <hr />
+        <% end %>
+        <p>
+          <% if not @share_links.any? %>
+            <span class="deemphasize">(No additional permissions)</span>
+          <% else %>
+            Also shared with:
+            <% @share_links.andand.each do |link| %>
+              <br /><%= link_to_if_arvados_object link.tail_uuid, friendly_name: true %>
+            <% end %>
+          <% end %>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if @show_cards %>
+<!-- disable cards section until we have bookmarks -->
+<div class="row">
+  <% @objects[0..3].each do |object| %>
+  <div class="card arvados-object">
+    <div class="card-top blue">
+      <a href="#">
+        <img src="/favicon.ico" alt=""/>
+      </a>
+    </div>
+    <div class="card-info">
+      <span class="title"><%= @objects.name_for(object) || object.class_for_display %></span>
+      <div class="desc"><%= object.respond_to?(:description) ? object.description : object.uuid %></div>
+    </div>
+    <div class="card-bottom">
+      <%= render :partial => "show_object_button", :locals => {object: object, htmloptions: {class: 'btn-default btn-block'}} %>
+    </div>
+  </div>
+  <% end %>
+</div>
+<!-- end disabled cards section -->
+<% end %>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="panel panel-info">
+      <div class="panel-heading">
+        <div class="row">
+          <div class="col-md-6">
+            <h3 class="panel-title" style="vertical-align:middle;">
+              Contents
+            </h3>
+          </div>
+          <div class="col-md-6">
+            <div class="input-group input-group-sm pull-right">
+              <input type="text" class="form-control search-folder-contents" placeholder="Search folder contents"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <p>
+        </p>
+        <table class="table table-condensed arv-index">
+          <tbody>
+            <colgroup>
+              <col width="3%" />
+              <col width="8%" />
+              <col width="30%" />
+              <col width="15%" />
+              <col width="15%" />
+              <col width="20%" />
+              <col width="8%" />
+            </colgroup>
+            <% @objects_and_names.each do |object, name_link| %>
+              <tr data-object-uuid="<%= (name_link && name_link.uuid) || object.uuid %>">
+                <td>
+                  <%= render :partial => "selection_checkbox", :locals => {object: object} %>
+                </td>
+                <td>
+                  <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
+                </td>
+                <td>
+                  <%= render_editable_attribute name_link, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
+                </td>
+                <td>
+                  <%= object.content_summary %>
+                </td>
+                <td title="<%= object.modified_at %>">
+                  <span>
+                    <%= raw distance_of_time_in_words(object.modified_at, Time.now).sub('about ','~').sub(' ','&nbsp;') + '&nbsp;ago' rescue object.modified_at %>
+                  </span>
+                </td>
+                <td class="arvados-uuid">
+                  <%= object.uuid %>
+                </td>
+                <td>
+                  <% if @object.editable? %>
+                    <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "You are about to remove #{object.class_for_display} #{object.uuid} from this folder.\n\nAre you sure?"}, class: 'btn btn-xs btn-default') do %>
+                      Remove <i class="fa fa-fw fa-ban"></i>
+                    <% end %>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+          <thead>
+            <tr>
+              <th>
+              </th>
+              <th>
+              </th>
+              <th>
+                name
+              </th>
+              <th>
+                type
+              </th>
+              <th>
+                modified
+              </th>
+              <th>
+                uuid
+              </th>
+              <th>
+              </th>
+            </tr>
+          </thead>
+        </table>
+        <p></p>
+      </div>
+    </div>
+  </div>
+</div>

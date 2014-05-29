@@ -28,3 +28,10 @@
 
 # This can be a symlink to ../../../doc/.site in dev setups
 /public/doc
+
+# SimpleCov reports
+/coverage
+
+# Dev/test SSL certificates
+/self-signed.key
+/self-signed.pem

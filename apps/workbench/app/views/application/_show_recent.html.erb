@@ -1,22 +1,25 @@
-<% if @objects.empty? %>
+<% if objects.empty? %>
 <br/>
 <p style="text-align: center">
-  No <%= controller.model_class.to_s.pluralize.underscore.gsub '_', ' ' %> to display.
+  No <%= controller.controller_name.humanize.downcase %> to display.
 </p>
 
 <% else %>
 
-<% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at' %>
+<% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at owner_uuid group_class' %>
 
-<%= render partial: "paging", locals: {results: @objects, object: @object} %>
+<%= render partial: "paging", locals: {results: objects, object: @object} %>
 
 <%= form_tag do |f| %>
 
 <table class="table table-condensed arv-index">
   <thead>
     <tr>
+      <% if objects.first and objects.first.class.goes_in_folders? %>
+        <th></th>
+      <% end %>
       <th></th>
-      <% @objects.first.attributes_for_display.each do |attr, attrvalue| %>
+      <% objects.first.attributes_for_display.each do |attr, attrvalue| %>
       <% next if attr_blacklist.index(" "+attr) %>
       <th class="arv-attr-<%= attr %>">
         <%= controller.model_class.attribute_info[attr.to_sym].andand[:column_heading] or attr.sub /_uuid/, '' %>
@@ -29,18 +32,22 @@
   </thead>
       
   <tbody>
-    <% @objects.each do |object| %>
+    <% objects.each do |object| %>
     <tr data-object-uuid="<%= object.uuid %>">
+      <% if objects.first.class.goes_in_folders? %>
+        <td>
+          <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
+        </td>
+      <% end %>
       <td>
-        <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
+        <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
       </td>
 
       <% object.attributes_for_display.each do |attr, attrvalue| %>
       <% next if attr_blacklist.index(" "+attr) %>
       <td class="arv-object-<%= object.class.to_s %> arv-attr-<%= attr %>">
         <% if attr == 'uuid' %>
-        <%= link_to_if_arvados_object object %>
-        <%= link_to_if_arvados_object(object, { link_text: raw('<i class="icon-hand-right"></i>') }) %>
+        <span class="arvados-uuid"><%= attrvalue %></span>
         <% else %>
         <% if object.attribute_editable? attr %>
         <%= render_editable_attribute object, attr %>
@@ -65,6 +72,6 @@
 
 <% end %>
 
-<%= render partial: "paging", locals: {results: @objects, object: @object} %>
+<%= render partial: "paging", locals: {results: objects, object: @object} %>
 
 <% end %>

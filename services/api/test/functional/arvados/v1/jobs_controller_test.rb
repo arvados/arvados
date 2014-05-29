@@ -177,6 +177,40 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                               'zzzzz-8i9sb-pshmckwoma9plh7']
   end
 
+  test "search jobs by uuid with 'not in' query" do
+    exclude_uuids = [jobs(:running).uuid,
+                     jobs(:running_cancelled).uuid]
+    authorize_with :active
+    get :index, {
+      filters: [['uuid', 'not in', exclude_uuids]]
+    }
+    assert_response :success
+    found = assigns(:objects).collect(&:uuid)
+    assert_not_empty found, "'not in' query returned nothing"
+    assert_empty(found & exclude_uuids,
+                 "'not in' query returned uuids I asked not to get")
+  end
+
+  ['=', '!='].each do |operator|
+    [['uuid', 'zzzzz-8i9sb-pshmckwoma9plh7'],
+     ['output', nil]].each do |attr, operand|
+      test "search jobs with #{attr} #{operator} #{operand.inspect} query" do
+        authorize_with :active
+        get :index, {
+          filters: [[attr, operator, operand]]
+        }
+        assert_response :success
+        values = assigns(:objects).collect { |x| x.send(attr) }
+        assert_not_empty values, "query should return non-empty result"
+        if operator == '='
+          assert_empty values - [operand], "query results do not satisfy query"
+        else
+          assert_empty values & [operand], "query results do not satisfy query"
+        end
+      end
+    end
+  end
+
   test "search jobs by started_at with < query" do
     authorize_with :active
     get :index, {
@@ -249,6 +283,21 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
       }
     }
     assert_response :success
+  end
+
+  [:active, :admin].each do |which_token|
+    test "get job queue as #{which_token} user" do
+      authorize_with which_token
+      get :queue
+      assert_response :success
+      assert_operator 1, :<=, assigns(:objects).count
+    end
+    test "get job queue as #{which_token} user, with a filter" do
+      authorize_with which_token
+      get :queue, { filters: [['script','=','foo']] }
+      assert_response :success
+      assert_equal ['foo'], assigns(:objects).collect(&:script).uniq
+    end
   end
 
 end

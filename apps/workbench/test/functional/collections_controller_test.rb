@@ -33,6 +33,13 @@ class CollectionsControllerTest < ActionController::TestCase
                          "session token does not belong to #{client_auth}")
   end
 
+  def show_collection(params, session={}, response=:success)
+    params = collection_params(params) if not params.is_a? Hash
+    session = session_for(session) if not session.is_a? Hash
+    get(:show, params, session)
+    assert_response response
+  end
+
   # Mock the collection file reader to avoid external calls and return
   # a predictable string.
   CollectionsController.class_eval do
@@ -42,37 +49,53 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "viewing a collection" do
-    params = collection_params(:foo_file)
-    sess = session_for(:active)
-    get(:show, params, sess)
-    assert_response :success
+    show_collection(:foo_file, :active)
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
   end
 
-  test "viewing a collection with a reader token" do
+  test "viewing a collection fetches related folders" do
+    show_collection(:foo_file, :active)
+    assert_includes(assigns(:folders).map(&:uuid),
+                    api_fixture('groups')['afolder']['uuid'],
+                    "controller did not find linked folder")
+  end
+
+  test "viewing a collection fetches related permissions" do
+    show_collection(:bar_file, :active)
+    assert_includes(assigns(:permissions).map(&:uuid),
+                    api_fixture('links')['bar_file_readable_by_active']['uuid'],
+                    "controller did not find permission link")
+  end
+
+  test "viewing a collection fetches jobs that output it" do
+    show_collection(:bar_file, :active)
+    assert_includes(assigns(:output_of).map(&:uuid),
+                    api_fixture('jobs')['foobar']['uuid'],
+                    "controller did not find output job")
+  end
+
+  test "viewing a collection fetches jobs that logged it" do
+    show_collection(:baz_file, :active)
+    assert_includes(assigns(:log_of).map(&:uuid),
+                    api_fixture('jobs')['foobar']['uuid'],
+                    "controller did not find logger job")
+  end
+
+  test "viewing a collection fetches logs about it" do
+    show_collection(:foo_file, :active)
+    assert_includes(assigns(:logs).map(&:uuid),
+                    api_fixture('logs')['log4']['uuid'],
+                    "controller did not find related log")
+  end
+
+  test "viewing collection files with a reader token" do
     params = collection_params(:foo_file)
-    params[:reader_tokens] =
-      [api_fixture('api_client_authorizations')['active']['api_token']]
-    get(:show, params)
+    params[:reader_token] =
+      api_fixture('api_client_authorizations')['active']['api_token']
+    get(:show_file_links, params)
     assert_response :success
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
     assert_no_session
-  end
-
-  test "viewing the index with a reader token" do
-    params = {reader_tokens:
-      [api_fixture('api_client_authorizations')['spectator']['api_token']]
-    }
-    get(:index, params)
-    assert_response :success
-    assert_no_session
-    listed_collections = assigns(:collections).map { |c| c.uuid }
-    assert_includes(listed_collections,
-                    api_fixture('collections')['bar_file']['uuid'],
-                    "spectator reader token didn't list bar file")
-    refute_includes(listed_collections,
-                    api_fixture('collections')['foo_file']['uuid'],
-                    "spectator reader token listed foo file")
   end
 
   test "getting a file from Keep" do
@@ -88,7 +111,7 @@ class CollectionsControllerTest < ActionController::TestCase
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:spectator)
     get(:show_file, params, sess)
-    assert_includes([403, 404], @response.code.to_i)
+    assert_response 404
   end
 
   test "trying to get a nonexistent file from Keep returns a 404" do
@@ -101,7 +124,7 @@ class CollectionsControllerTest < ActionController::TestCase
   test "getting a file from Keep with a good reader token" do
     params = collection_params(:foo_file, 'foo')
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
-    params[:reader_tokens] = [read_token]
+    params[:reader_token] = read_token
     get(:show_file, params)
     assert_response :success
     assert_equal(expected_contents(params, read_token), @response.body,
@@ -112,9 +135,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test "trying to get from Keep with an unscoped reader token prompts login" do
     params = collection_params(:foo_file, 'foo')
-    read_token =
+    params[:reader_token] =
       api_fixture('api_client_authorizations')['active_noscope']['api_token']
-    params[:reader_tokens] = [read_token]
     get(:show_file, params)
     assert_response :redirect
   end
@@ -123,7 +145,7 @@ class CollectionsControllerTest < ActionController::TestCase
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:expired)
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
-    params[:reader_tokens] = [read_token]
+    params[:reader_token] = read_token
     get(:show_file, params, sess)
     assert_response :success
     assert_equal(expected_contents(params, read_token), @response.body,

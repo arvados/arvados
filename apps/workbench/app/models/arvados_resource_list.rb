@@ -1,4 +1,5 @@
 class ArvadosResourceList
+  include ArvadosApiClientHelper
   include Enumerable
 
   def initialize resource_class=nil
@@ -53,7 +54,7 @@ class ArvadosResourceList
     end
     cond.keys.select { |x| x.match /_kind$/ }.each do |kind_key|
       if cond[kind_key].is_a? Class
-        cond = cond.merge({ kind_key => 'arvados#' + $arvados_api_client.class_kind(cond[kind_key]) })
+        cond = cond.merge({ kind_key => 'arvados#' + arvados_api_client.class_kind(cond[kind_key]) })
       end
     end
     api_params = {
@@ -65,8 +66,8 @@ class ArvadosResourceList
     api_params[:offset] = @offset if @offset
     api_params[:order] = @orderby_spec if @orderby_spec
     api_params[:filters] = @filters if @filters
-    res = $arvados_api_client.api @resource_class, '', api_params
-    @results = $arvados_api_client.unpack_api_response res
+    res = arvados_api_client.api @resource_class, '', api_params
+    @results = arvados_api_client.unpack_api_response res
     self
   end
 
@@ -88,6 +89,12 @@ class ArvadosResourceList
       block.call m
     end
     self
+  end
+
+  def collect
+    results.collect do |m|
+      yield m
+    end
   end
 
   def first

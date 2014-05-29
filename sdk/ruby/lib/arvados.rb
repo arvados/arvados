@@ -210,8 +210,6 @@ class Arvados
     end
     def self.api_exec(method, parameters={})
       api_method = arvados_api.send(api_models_sym).send(method.name.to_sym)
-      parameters = parameters.
-        merge(:api_token => arvados.config['ARVADOS_API_TOKEN'])
       parameters.each do |k,v|
         parameters[k] = v.to_json if v.is_a? Array or v.is_a? Hash
       end
@@ -230,7 +228,10 @@ class Arvados
         execute(:api_method => api_method,
                 :authenticated => false,
                 :parameters => parameters,
-                :body => body)
+                :body => body,
+                :headers => {
+                  authorization: 'OAuth2 '+arvados.config['ARVADOS_API_TOKEN']
+                })
       resp = JSON.parse result.body, :symbolize_names => true
       if resp[:errors]
         raise Arvados::TransactionFailedError.new(resp[:errors])

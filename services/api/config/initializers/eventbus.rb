@@ -1,5 +1,7 @@
 require 'eventbus'
 
+# See application.yml for details about configuring the websocket service.
+
 Server::Application.configure do
   # Enables websockets if ARVADOS_WEBSOCKETS is defined with any value.  If
   # ARVADOS_WEBSOCKETS=ws-only, server will only accept websocket connections
@@ -11,8 +13,4 @@ Server::Application.configure do
       :websocket_only => (ENV['ARVADOS_WEBSOCKETS'] == "ws-only")
     }
   end
-
-  # Define websocket_address configuration option, can be overridden in config files.
-  # See application.yml.example for details.
-  config.websocket_address = nil
 end

@@ -142,7 +142,11 @@ class PipelineInstancesController < ApplicationController
   end
 
   def show_pane_list
-    %w(Components Graph Attributes Metadata JSON API)
+    panes = %w(Components Graph Attributes Metadata JSON API)
+    if @object and @object.state.in? ['New', 'Ready']
+      panes = %w(Inputs) + panes
+    end
+    panes
   end
 
   def compare_pane_list 
@@ -150,7 +154,7 @@ class PipelineInstancesController < ApplicationController
   end 
 
   def index
-    @objects ||= model_class.limit(20).all
+    @limit = 20
     super
   end
 

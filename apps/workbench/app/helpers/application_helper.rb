@@ -17,6 +17,7 @@ module ApplicationHelper
 
   def human_readable_bytes_html(n)
     return h(n) unless n.is_a? Fixnum
+    return "0 bytes" if (n == 0)
 
     orders = {
       1 => "bytes",
@@ -141,16 +142,29 @@ module ApplicationHelper
 
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
 
-    link_to attrvalue.to_s, '#', {
+    ajax_options = {
+      "data-pk" => {
+        id: object.uuid,
+        key: object.class.to_s.underscore
+      }
+    }
+    if object.uuid
+      ajax_options['data-url'] = url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore)
+    else
+      ajax_options['data-url'] = url_for(action: "create", controller: object.class.to_s.pluralize.underscore)
+      ajax_options['data-pk'][:defaults] = object.attributes
+    end
+    ajax_options['data-pk'] = ajax_options['data-pk'].to_json
+
+    content_tag 'span', attrvalue.to_s, {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore),
       "data-title" => "Update #{attr.gsub '_', ' '}",
       "data-name" => attr,
-      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+      "data-object-uuid" => object.uuid,
       :class => "editable"
-    }.merge(htmloptions)
+    }.merge(htmloptions).merge(ajax_options)
   end
 
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
@@ -254,7 +268,7 @@ module ApplicationHelper
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
       "data-showbuttons" => "false",
       "data-value" => attrvalue,
-      :class => "editable #{'required' if required}",
+      :class => "editable #{'required' if required} form-control",
       :id => id
     }.merge(htmloptions)
 
@@ -264,10 +278,22 @@ module ApplicationHelper
       lt += raw("add_form_selection_sources(#{selectables.to_json});\n")
     end
 
-    lt += raw("$('##{id}').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
+    lt += raw("$('[data-name=\"#{dn}\"]').editable({source: function() { return select_form_sources('#{dataclass}'); } });\n")
 
     lt += raw("</script>")
 
     lt
+  end
+
+  def render_arvados_object_list_start(list, button_text, button_href,
+                                       params={}, *rest, &block)
+    show_max = params.delete(:show_max) || 3
+    params[:class] ||= 'btn btn-xs btn-default'
+    list[0...show_max].each { |item| yield item }
+    unless list[show_max].nil?
+      link_to(h(button_text) +
+              raw(' &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
+              button_href, params, *rest)
+    end
   end
 end

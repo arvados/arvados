@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+
+from arvados_fuse import *
+import arvados
+import subprocess
+import argparse
+import daemon
+
+if __name__ == '__main__':
+    # Handle command line parameters
+    parser = argparse.ArgumentParser(
+        description='''Mount Keep data under the local filesystem.  By default, if neither
+        --collection or --tags is specified, this mounts as a virtual directory
+        under which all Keep collections are available as subdirectories named
+        with the Keep locator; however directories will not be visible to 'ls'
+        until a program tries to access them.''',
+        epilog="""
+Note: When using the --exec feature, you must either specify the
+mountpoint before --exec, or mark the end of your --exec arguments
+with "--".
+""")
+    parser.add_argument('mountpoint', type=str, help="""Mount point.""")
+    parser.add_argument('--allow-other', action='store_true',
+                        help="""Let other users read the mount""")
+    parser.add_argument('--collection', type=str, help="""Mount only the specified collection at the mount point.""")
+    parser.add_argument('--tags', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing tagged
+collections on the server.""")
+    parser.add_argument('--groups', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing groups on the server.""")
+    parser.add_argument('--debug', action='store_true', help="""Debug mode""")
+    parser.add_argument('--foreground', action='store_true', help="""Run in foreground (default is to daemonize unless --exec specified)""", default=False)
+    parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
+                        dest="exec_args", metavar=('command', 'args', '...', '--'),
+                        help="""Mount, run a command, then unmount and exit""")
+
+    args = parser.parse_args()
+
+    # Create the request handler
+    operations = Operations(os.getuid(), os.getgid())
+
+    if args.groups:
+        api = arvados.api('v1')
+        e = operations.inodes.add_entry(GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+    elif args.tags:
+        api = arvados.api('v1')
+        e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+    elif args.collection != None:
+        # Set up the request handler with the collection at the root
+        e = operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
+    else:
+        # Set up the request handler with the 'magic directory' at the root
+        operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+
+    # FUSE options, see mount.fuse(8)
+    opts = [optname for optname in ['allow_other', 'debug']
+            if getattr(args, optname)]
+
+    if args.exec_args:
+        # Initialize the fuse connection
+        llfuse.init(operations, args.mountpoint, opts)
+
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
+
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        rc = 255
+        try:
+            rc = subprocess.call(args.exec_args, shell=False)
+        except OSError as e:
+            sys.stderr.write('arv-mount: %s -- exec %s\n' % (str(e), args.exec_args))
+            rc = e.errno
+        except Exception as e:
+            sys.stderr.write('arv-mount: %s\n' % str(e))
+        finally:
+            subprocess.call(["fusermount", "-u", "-z", args.mountpoint])
+
+        exit(rc)
+    else:
+        if args.foreground:
+            # Initialize the fuse connection
+            llfuse.init(operations, args.mountpoint, opts)
+            llfuse.main()
+        else:
+            # Initialize the fuse connection
+            llfuse.init(operations, args.mountpoint, opts)
+            with daemon.DaemonContext():
+                llfuse.main()

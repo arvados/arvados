@@ -25,7 +25,12 @@ Install graphviz.
 
 h2. Download the source tree
 
-Please follow the instructions on the "Download page":https://arvados.org/projects/arvados/wiki/Download in the wiki.
+<notextile>
+<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
+~$ <span class="userinput">git clone https://github.com/curoverse/arvados.git</span>
+</code></pre></notextile>
+
+See also: "Downloading the source code":https://arvados.org/projects/arvados/wiki/Download on the Arvados wiki.
 
 The Workbench application is in @apps/workbench@ in the source tree.
 
@@ -44,6 +49,17 @@ Alternatively, if you don't have sudo/root privileges on the host, install the g
 ~/arvados/apps/workbench$ <span class="userinput">bundle install --path=vendor/bundle</span>
 </code></pre></notextile>
 
+The @bundle install@ command might produce a warning about the themes_for_rails gem. This is OK:
+
+<notextile>
+<pre><code>themes_for_rails at /home/<b>you</b>/.rvm/gems/ruby-2.1.1/bundler/gems/themes_for_rails-1fd2d7897d75 did not have a valid gemspec.
+This prevents bundler from installing bins or native extensions, but that may not affect its functionality.
+The validation message from Rubygems was:
+  duplicate dependency on rails (= 3.0.11, development), (>= 3.0.0) use:
+    add_runtime_dependency 'rails', '= 3.0.11', '>= 3.0.0'
+Using themes_for_rails (0.5.1) from https://github.com/holtkampw/themes_for_rails (at 1fd2d78)
+</code></pre></notextile>
+
 h2. Configure the Workbench application
 
 This application needs a secret token. Generate a new secret:
@@ -59,21 +75,28 @@ Copy @config/application.yml.example@ to @config/application.yml@ and edit it ap
 * Set @secret_token@ to the string you generated with @rake secret@.
 * Point @arvados_login_base@ and @arvados_v1_base@ at your "API server":install-api-server.html
 * @site_name@ can be any string to identify this Workbench.
-* Assuming that the SSL certificate you use for development isn't signed by a CA, make sure @arvados_insecure_https@ is @true@.
+* If the SSL certificate you use for development isn't signed by a CA, make sure @arvados_insecure_https@ is @true@.
 
 Copy @config/piwik.yml.example@ to @config/piwik.yml@ and edit to suit.
 
-h3. Apache/Passenger (optional)
+h2. Start a standalone server
 
-Set up Apache and Passenger. Point them to the apps/workbench directory in the source tree.
+For testing and development, the easiest way to get started is to run the web server that comes with Rails.
+
+<notextile>
+<pre><code>~/arvados/apps/workbench$ <span class="userinput">bundle exec rails server --port=3031</span>
+</code></pre>
+</notextile>
+
+Point your browser to <notextile><code>http://<b>your.host</b>:3031/</code></notextile>.
 
 h2. Trusted client setting
 
-Log in to Workbench once (this ensures that the Arvados API server has a record of the Workbench client).
+Log in to Workbench once to ensure that the Arvados API server has a record of the Workbench client. (It's OK if Workbench says your account hasn't been activated yet. We'll deal with that next.)
 
 In the API server project root, start the rails console.  Locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
 
-<notextile><pre><code>~/arvados/services/api$ <span class="userinput">RAILS_ENV=development bundle exec rails console</span>
+<notextile><pre><code>~/arvados/services/api$ <span class="userinput">bundle exec rails console</span>
 irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
 =&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
 irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
@@ -82,3 +105,9 @@ irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attr
 =&gt; true
 </code></pre>
 </notextile>
+
+h2. Activate your own account
+
+Unless you already activated your account when installing the API server, the first time you log in to Workbench you will see a message that your account is awaiting activation.
+
+Activate your own account and give yourself administrator privileges by following the instructions in the "'Add an admin user' section of the API server install page":install-api-server.html#admin-user.

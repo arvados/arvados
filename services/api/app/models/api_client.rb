@@ -1,5 +1,5 @@
 class ApiClient < ArvadosModel
-  include AssignUuid
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   has_many :api_client_authorizations
