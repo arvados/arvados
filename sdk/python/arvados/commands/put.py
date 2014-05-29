@@ -250,9 +250,7 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
         print >>sys.stderr, "arv-put: Resuming previous upload.  Bypass with the --no-resume option."
         self.report_progress(self.bytes_written, self.bytes_expected)
 
-    def checkpoint_state(self):
-        if self.cache is None:
-            return
+    def cache_state(self):
         state = self.dump_state()
         # Transform attributes for serialization.
         for attr, value in state.items():
@@ -340,17 +338,21 @@ def main(arguments=None):
         print "arv-put: Another process is already uploading this data."
         sys.exit(1)
 
-    writer = ArvPutCollectionWriter.from_cache(
-        resume_cache, reporter, expected_bytes_for(args.paths))
+    try:
+        writer = ArvPutCollectionWriter.from_cache(
+            resume_cache, reporter, expected_bytes_for(args.paths))
 
-    # Copy file data to Keep.
-    for path in args.paths:
-        if os.path.isdir(path):
-            writer.write_directory_tree(
-                path, max_manifest_depth=args.max_manifest_depth)
-        else:
-            writer.start_new_stream()
-            writer.write_file(path, args.filename or os.path.basename(path))
+        # Copy file data to Keep.
+        for path in args.paths:
+            if os.path.isdir(path):
+                writer.write_directory_tree(
+                    path, max_manifest_depth=args.max_manifest_depth)
+            else:
+                writer.start_new_stream()
+                writer.write_file(path, args.filename or os.path.basename(path))
+    except (Exception, KeyboardInterrupt):
+        writer.cache_state()
+        raise
 
     if args.stream:
         print writer.manifest_text(),
