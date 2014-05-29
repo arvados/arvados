@@ -263,10 +263,11 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             cwriter.finish_current_stream()
             cwriter.checkpoint_state()
             # Restore a writer from that state and check its progress report.
+            # We're also checking that progress is reported immediately after
+            # resuming.
             progression, reporter = self.make_progress_tester()
             new_writer = arv_put.ArvPutCollectionWriter.from_cache(
                 self.cache, reporter, bytes_expected=4)
-            new_writer.flush_data()
             self.assertIn((4, 4), progression)
 
 
