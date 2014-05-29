@@ -8,7 +8,7 @@ class PipelineInstance < ArvadosModel
   belongs_to :pipeline_template, :foreign_key => :pipeline_template_uuid, :primary_key => :uuid
 
   before_validation :bootstrap_components
-  before_validation :update_success
+  before_validation :update_status
   before_validation :verify_status
   before_create :set_state_before_save
   before_save :set_state_before_save
@@ -78,7 +78,7 @@ class PipelineInstance < ArvadosModel
         else
           row << 0.0
           if step['failed']
-            self.success = false
+            self.state = Failed
           end
         end
         row << (step['warehousejob']['id'] rescue nil)
@@ -109,9 +109,9 @@ class PipelineInstance < ArvadosModel
     end
   end
 
-  def update_success
+  def update_status
     if components and progress_ratio == 1.0
-      self.success = true
+      self.state = Complete
     end
   end
 
