@@ -156,7 +156,6 @@ class CollectionWriter(object):
         self._current_stream_name = '.'
         self._current_file_name = None
         self._current_file_pos = 0
-        self._manifest_text = ''
         self._finished_streams = []
 
     def __enter__(self):
@@ -279,25 +278,20 @@ class CollectionWriter(object):
 
     def stripped_manifest(self):
         """
-        Return the manifest for the current collection with all hints
-        (other than size) removed from the locators in the manifest.
+        Return the manifest for the current collection with all permission
+        hints removed from the locators in the manifest.
         """
         raw = self.manifest_text()
         clean = ''
         for line in raw.split("\n"):
             fields = line.split()
             if len(fields) > 0:
-                locators = [ re.sub(r'\+[A-Z][a-z0-9@_-]+', '', x)
+                locators = [ re.sub(r'\+A[a-z0-9@_-]+', '', x)
                              for x in fields[1:-1] ]
                 clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
         return clean
         
     def manifest_text(self):
-        if self._manifest_text == '':
-            self._manifest_text = self.generate_manifest()
-        return self._manifest_text
-
-    def generate_manifest(self):
         self.finish_current_stream()
         manifest = ''
 
