@@ -3,27 +3,8 @@ require 'test_helper'
 class UserTest < ActiveSupport::TestCase
   include CurrentApiClient
 
-  # The fixture services/api/test/fixtures/users.yml serves as the input for this test case
-  setup do
-    # Make sure system_user exists before making "pre-test users" list
-    system_user
-
-    @all_users = User.find(:all)
-
-    @all_users.each do |user|
-      if user.uuid == system_user_uuid
-        @system_user = user
-      elsif user.is_admin && user.is_active
-        @admin_user = user
-      elsif user.is_active && !user.is_admin
-        @active_user = user
-      elsif !user.is_active && !user.is_invited
-        @uninvited_user = user
-      end
-    end
-  end
-
   test "check non-admin active user properties" do
+    @active_user = users(:active)     # get the active user
     assert !@active_user.is_admin, 'is_admin should not be set for a non-admin user'
     assert @active_user.is_active, 'user should be active'
     assert @active_user.is_invited, 'is_invited should be set'
@@ -35,12 +16,14 @@ class UserTest < ActiveSupport::TestCase
     assert @active_user.groups_i_can(:read).size > 0, "active user should be able read at least one group"
 
     # non-admin user cannot manage or write other user objects
+    @uninvited_user = users(:inactive_uninvited)     # get the uninvited user
     assert !(@active_user.can? :read=>"#{@uninvited_user.uuid}")
     assert !(@active_user.can? :write=>"#{@uninvited_user.uuid}")
     assert !(@active_user.can? :manage=>"#{@uninvited_user.uuid}")
   end
 
   test "check admin user properties" do
+    @admin_user = users(:admin)     # get the admin user
     assert @admin_user.is_admin, 'is_admin should be set for admin user'
     assert @admin_user.is_active, 'admin user cannot be inactive'
     assert @admin_user.is_invited, 'is_invited should be set'
@@ -56,12 +39,14 @@ class UserTest < ActiveSupport::TestCase
     assert @admin_user.groups_i_can(:manage).size > 0, "admin active user should be able manage at least one group"
 
     # admin user can also write or manage other users
+    @uninvited_user = users(:inactive_uninvited)     # get the uninvited user
     assert @admin_user.can? :read=>"#{@uninvited_user.uuid}"
     assert @admin_user.can? :write=>"#{@uninvited_user.uuid}"
     assert @admin_user.can? :manage=>"#{@uninvited_user.uuid}"
   end
 
   test "check inactive and uninvited user properties" do
+    @uninvited_user = users(:inactive_uninvited)     # get the uninvited user
     assert !@uninvited_user.is_admin, 'is_admin should not be set for a non-admin user'
     assert !@uninvited_user.is_active, 'user should be inactive'
     assert !@uninvited_user.is_invited, 'is_invited should not be set'
@@ -88,7 +73,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "full name should not contain spurious whitespace" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
 
     user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: 'foo@example.com' })
 
@@ -101,7 +86,9 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new user" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
+
+    @all_users = User.find(:all)
 
     user = User.new
     user.first_name = "first_name_for_newly_created_user"
@@ -123,7 +110,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new inactive user with new_inactive_user_notification_recipients empty" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
 
     Rails.configuration.new_inactive_user_notification_recipients = ''
 
@@ -143,7 +130,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new inactive user with new_user_notification_recipients empty" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
 
     Rails.configuration.new_user_notification_recipients = ''
 
@@ -163,7 +150,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new inactive user with new_user_notification_recipients and new_inactive_user_notification_recipients set" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
 
     Rails.configuration.new_user_notification_recipients = 'foo_new@example.com'
     Rails.configuration.new_inactive_user_notification_recipients = 'foo_new_inactive@example.com'
@@ -202,7 +189,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new inactive user with new_user_notification_recipients set" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
 
     Rails.configuration.new_user_notification_recipients = 'foo@example.com'
 
@@ -230,7 +217,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new active user with new_inactive_user_notification_recipients set" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
 
     Rails.configuration.new_inactive_user_notification_recipients = 'foo@example.com'
 
@@ -251,7 +238,10 @@ class UserTest < ActiveSupport::TestCase
 
 
   test "update existing user" do
-    Thread.current[:user] = @active_user    # set active user as current user
+    set_user_from_auth :active    # set active user as current user
+
+    @active_user = users(:active)     # get the active user
+
     @active_user.first_name = "first_name_changed"
     @active_user.save
 
@@ -259,7 +249,7 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(@active_user.first_name, 'first_name_changed')
 
     # admin user also should be able to update the "active" user info
-    Thread.current[:user] = @admin_user # set admin user as current user
+    set_user_from_auth :admin # set admin user as current user
     @active_user.first_name = "first_name_changed_by_admin_for_active_user"
     @active_user.save
 
@@ -268,9 +258,10 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "delete a user and verify" do
+    @active_user = users(:active)     # get the active user
     active_user_uuid = @active_user.uuid
 
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
     @active_user.delete
 
     found_deleted_user = false
@@ -285,7 +276,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new user as non-admin user" do
-    Thread.current[:user] = @active_user
+    set_user_from_auth :active
 
     begin
       user = User.new
@@ -297,7 +288,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "setup new user" do
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
 
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
@@ -330,7 +321,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "setup new user with junk in database" do
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
 
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
@@ -374,7 +365,7 @@ class UserTest < ActiveSupport::TestCase
 
 
   test "setup new user in multiple steps" do
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
 
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
