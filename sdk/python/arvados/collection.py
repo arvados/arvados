@@ -409,8 +409,12 @@ class ResumableCollectionWriter(CollectionWriter):
             except IOError as error:
                 raise errors.StaleWriterStateError(
                     "failed to reopen active file {}: {}".format(path, error))
+        writer.preresume_hook()
         writer._do_queued_work()
         return writer
+
+    def preresume_hook(self):
+        pass  # Subclasses can override this as desired.
 
     def check_dependencies(self):
         for path, orig_stat in self._dependencies.items():

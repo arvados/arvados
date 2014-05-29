@@ -242,6 +242,9 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
         else:
             return writer
 
+    def preresume_hook(self):
+        print >>sys.stderr, "arv-put: Resuming previous upload.  Bypass with the --no-resume option."
+
     def checkpoint_state(self):
         if self.cache is None:
             return
