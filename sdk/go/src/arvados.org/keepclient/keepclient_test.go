@@ -36,7 +36,7 @@ type StandaloneSuite struct{}
 
 func pythonDir() string {
 	gopath := os.Getenv("GOPATH")
-	return fmt.Sprintf("%s/../python", strings.Split(gopath, ":")[0])
+	return fmt.Sprintf("%s/../python/tests", strings.Split(gopath, ":")[0])
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
