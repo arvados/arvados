@@ -380,7 +380,7 @@ def main(arguments=None):
         print ','.join(writer.data_locators())
     else:
         # Register the resulting collection in Arvados.
-        arvados.api().collections().create(
+        collection = arvados.api().collections().create(
             body={
                 'uuid': writer.finish(),
                 'manifest_text': writer.manifest_text(),
@@ -388,7 +388,7 @@ def main(arguments=None):
             ).execute()
 
         # Print the locator (uuid) of the new collection.
-        print writer.finish()
+        print collection['uuid']
 
     for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)

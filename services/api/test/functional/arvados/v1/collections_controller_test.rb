@@ -177,6 +177,20 @@ EOS
     assert_response 422
   end
 
+  test "collection UUID is normalized when created" do
+    authorize_with :active
+    post :create, {
+      collection: {
+        manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
+        uuid: "d30fe8ae534397864cb96c544f4cf102+47+Khint+Xhint+Zhint"
+      }
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    resp = JSON.parse(@response.body)
+    assert_equal "d30fe8ae534397864cb96c544f4cf102+47", resp['uuid']
+  end
+
   test "get full provenance for baz file" do
     authorize_with :active
     get :provenance, id: 'ea10d51bcf88862dbcc36eb292017dfd+45'
