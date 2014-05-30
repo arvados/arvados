@@ -2,24 +2,26 @@
 #
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
 
-import unittest
 import arvados
-import os
 import bz2
-import sys
+import copy
+import os
+import pprint
 import subprocess
+import tempfile
+import unittest
 
-class KeepLocalStoreTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-    def runTest(self):
-        self.assertEqual(arvados.Keep.put('foo'), 'acbd18db4cc2f85cedef654fccc4a4d8+3', 'wrong md5 hash from Keep.put')
-        self.assertEqual(arvados.Keep.get('acbd18db4cc2f85cedef654fccc4a4d8+3'), 'foo', 'wrong data from Keep.get')
+from arvados_testutil import ArvadosKeepLocalStoreTestCase
 
-class LocalCollectionWriterTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-    def runTest(self):
+class TestResumableWriter(arvados.ResumableCollectionWriter):
+    KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
+
+    def current_state(self):
+        return self.dump_state(copy.deepcopy)
+
+
+class ArvadosCollectionsTest(ArvadosKeepLocalStoreTestCase):
+    def write_foo_bar_baz(self):
         cw = arvados.CollectionWriter()
         self.assertEqual(cw.current_stream_name(), '.',
                          'current_stream_name() should be "." now')
@@ -32,16 +34,19 @@ class LocalCollectionWriterTest(unittest.TestCase):
         cw.start_new_stream('baz')
         cw.write('baz')
         cw.set_current_file_name('baz.txt')
-        hash = cw.finish()
-        self.assertEqual(hash,
-                         'd6c3b8e571f1b81ebb150a45ed06c884+114',
-                         "resulting manifest hash was {0}, expecting d6c3b8e571f1b81ebb150a45ed06c884+114".format(hash))
+        return cw.finish()
 
-class LocalCollectionReaderTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-        LocalCollectionWriterTest().runTest()
-    def runTest(self):
+    def test_keep_local_store(self):
+        self.assertEqual(arvados.Keep.put('foo'), 'acbd18db4cc2f85cedef654fccc4a4d8+3', 'wrong md5 hash from Keep.put')
+        self.assertEqual(arvados.Keep.get('acbd18db4cc2f85cedef654fccc4a4d8+3'), 'foo', 'wrong data from Keep.get')
+
+    def test_local_collection_writer(self):
+        self.assertEqual(self.write_foo_bar_baz(),
+                         'd6c3b8e571f1b81ebb150a45ed06c884+114',
+                         "wrong locator hash for files foo, bar, baz")
+
+    def test_local_collection_reader(self):
+        self.write_foo_bar_baz()
         cr = arvados.CollectionReader('d6c3b8e571f1b81ebb150a45ed06c884+114+Xzizzle')
         got = []
         for s in cr.all_streams():
@@ -63,34 +68,7 @@ class LocalCollectionReaderTest(unittest.TestCase):
                          '',
                          'reading zero bytes should have returned empty string')
 
-class LocalCollectionManifestSubsetTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-        LocalCollectionWriterTest().runTest()
-    def runTest(self):
-        self._runTest('d6c3b8e571f1b81ebb150a45ed06c884+114',
-                      [[3, '.',     'bar.txt', 'bar'],
-                       [3, '.',     'foo.txt', 'foo'],
-                       [3, './baz', 'baz.txt', 'baz']])
-        self._runTest((". %s %s 0:3:foo.txt 3:3:bar.txt\n" %
-                       (arvados.Keep.put("foo"),
-                        arvados.Keep.put("bar"))),
-                      [[3, '.', 'bar.txt', 'bar'],
-                       [3, '.', 'foo.txt', 'foo']])
-        self._runTest((". %s %s 0:2:fo.txt 2:4:obar.txt\n" %
-                       (arvados.Keep.put("foo"),
-                        arvados.Keep.put("bar"))),
-                      [[2, '.', 'fo.txt', 'fo'],
-                       [4, '.', 'obar.txt', 'obar']])
-        self._runTest((". %s %s 0:2:fo.txt 2:0:zero.txt 2:2:ob.txt 4:2:ar.txt\n" %
-                       (arvados.Keep.put("foo"),
-                        arvados.Keep.put("bar"))),
-                      [[2, '.', 'ar.txt', 'ar'],
-                       [2, '.', 'fo.txt', 'fo'],                       
-                       [2, '.', 'ob.txt', 'ob'],
-                       [0, '.', 'zero.txt', '']])
-
-    def _runTest(self, collection, expected):
+    def _test_subset(self, collection, expected):
         cr = arvados.CollectionReader(collection)
         for s in cr.all_streams():
             for ex in expected:
@@ -101,10 +79,31 @@ class LocalCollectionManifestSubsetTest(unittest.TestCase):
                                      ex,
                                      'all_files|as_manifest did not preserve manifest contents: got %s expected %s' % (got, ex))
 
-class LocalCollectionReadlineTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-    def _runTest(self, what_in, what_out):
+    def test_collection_manifest_subset(self):
+        self.write_foo_bar_baz()
+        self._test_subset('d6c3b8e571f1b81ebb150a45ed06c884+114',
+                          [[3, '.',     'bar.txt', 'bar'],
+                           [3, '.',     'foo.txt', 'foo'],
+                           [3, './baz', 'baz.txt', 'baz']])
+        self._test_subset((". %s %s 0:3:foo.txt 3:3:bar.txt\n" %
+                           (arvados.Keep.put("foo"),
+                            arvados.Keep.put("bar"))),
+                          [[3, '.', 'bar.txt', 'bar'],
+                           [3, '.', 'foo.txt', 'foo']])
+        self._test_subset((". %s %s 0:2:fo.txt 2:4:obar.txt\n" %
+                           (arvados.Keep.put("foo"),
+                            arvados.Keep.put("bar"))),
+                          [[2, '.', 'fo.txt', 'fo'],
+                           [4, '.', 'obar.txt', 'obar']])
+        self._test_subset((". %s %s 0:2:fo.txt 2:0:zero.txt 2:2:ob.txt 4:2:ar.txt\n" %
+                           (arvados.Keep.put("foo"),
+                            arvados.Keep.put("bar"))),
+                          [[2, '.', 'ar.txt', 'ar'],
+                           [2, '.', 'fo.txt', 'fo'],
+                           [2, '.', 'ob.txt', 'ob'],
+                           [0, '.', 'zero.txt', '']])
+
+    def _test_readline(self, what_in, what_out):
         cw = arvados.CollectionWriter()
         cw.start_new_file('test.txt')
         cw.write(what_in)
@@ -116,16 +115,14 @@ class LocalCollectionReadlineTest(unittest.TestCase):
         self.assertEqual(got,
                          what_out,
                          "readlines did not split lines correctly: %s" % got)
-    def runTest(self):
-        self._runTest("\na\nbcd\n\nefg\nz",
-                      ["\n", "a\n", "bcd\n", "\n", "efg\n", "z"])
-        self._runTest("ab\ncd\n",
-                      ["ab\n", "cd\n"])
 
-class LocalCollectionEmptyFileTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-    def runTest(self):
+    def test_collection_readline(self):
+        self._test_readline("\na\nbcd\n\nefg\nz",
+                            ["\n", "a\n", "bcd\n", "\n", "efg\n", "z"])
+        self._test_readline("ab\ncd\n",
+                            ["ab\n", "cd\n"])
+
+    def test_collection_empty_file(self):
         cw = arvados.CollectionWriter()
         cw.start_new_file('zero.txt')
         cw.write('')
@@ -149,10 +146,7 @@ class LocalCollectionEmptyFileTest(unittest.TestCase):
             got_sizes += [f.size()]
         self.assertEqual(got_sizes, expect_sizes, "got wrong file sizes %s, expected %s" % (got_sizes, expect_sizes))
 
-class LocalCollectionBZ2DecompressionTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-    def runTest(self):
+    def test_collection_bz2_decompression(self):
         n_lines_in = 2**18
         data_in = "abc\n"
         for x in xrange(0, 18):
@@ -173,10 +167,7 @@ class LocalCollectionBZ2DecompressionTest(unittest.TestCase):
                          n_lines_in,
                          "decompression returned %d lines instead of %d" % (got, n_lines_in))
 
-class LocalCollectionGzipDecompressionTest(unittest.TestCase):
-    def setUp(self):
-        os.environ['KEEP_LOCAL_STORE'] = '/tmp'
-    def runTest(self):
+    def test_collection_gzip_decompression(self):
         n_lines_in = 2**18
         data_in = "abc\n"
         for x in xrange(0, 18):
@@ -202,8 +193,7 @@ class LocalCollectionGzipDecompressionTest(unittest.TestCase):
                          n_lines_in,
                          "decompression returned %d lines instead of %d" % (got, n_lines_in))
 
-class NormalizedCollectionTest(unittest.TestCase):
-    def runTest(self):
+    def test_normalized_collection(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt"""
@@ -238,11 +228,11 @@ class NormalizedCollectionTest(unittest.TestCase):
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 """)
 
-        with open('testdata/1000G_ref_manifest') as f6:
+        with self.data_file('1000G_ref_manifest') as f6:
             m6 = f6.read()
             self.assertEqual(arvados.CollectionReader(m6).manifest_text(), m6)
 
-        with open('testdata/jlake_manifest') as f7:
+        with self.data_file('jlake_manifest') as f7:
             m7 = f7.read()
             self.assertEqual(arvados.CollectionReader(m7).manifest_text(), m7)
 
@@ -250,8 +240,7 @@ class NormalizedCollectionTest(unittest.TestCase):
 """
         self.assertEqual(arvados.CollectionReader(m8).manifest_text(), m8)
 
-class LocatorsAndRangesTest(unittest.TestCase):
-    def runTest(self):
+    def test_locators_and_ranges(self):
         blocks2 = [['a', 10, 0],
                   ['b', 10, 10],
                   ['c', 10, 20],
@@ -284,7 +273,7 @@ class LocatorsAndRangesTest(unittest.TestCase):
         self.assertEqual(arvados.locators_and_ranges(blocks2, 49, 2), [['e', 10, 9, 1], ['f', 10, 0, 1]])
         self.assertEqual(arvados.locators_and_ranges(blocks2, 59, 2), [['f', 10, 9, 1]])
 
-        
+
         blocks3 = [['a', 10, 0],
                   ['b', 10, 10],
                   ['c', 10, 20],
@@ -309,14 +298,14 @@ class LocatorsAndRangesTest(unittest.TestCase):
         self.assertEqual(arvados.locators_and_ranges(blocks, 0, 5), [['a', 10, 0, 5]])
         self.assertEqual(arvados.locators_and_ranges(blocks, 3, 5), [['a', 10, 3, 5]])
         self.assertEqual(arvados.locators_and_ranges(blocks, 0, 10), [['a', 10, 0, 10]])
-        
+
         self.assertEqual(arvados.locators_and_ranges(blocks, 0, 11), [['a', 10, 0, 10],
                                                                       ['b', 15, 0, 1]])
         self.assertEqual(arvados.locators_and_ranges(blocks, 1, 11), [['a', 10, 1, 9],
                                                                       ['b', 15, 0, 2]])
         self.assertEqual(arvados.locators_and_ranges(blocks, 0, 25), [['a', 10, 0, 10],
                                                                       ['b', 15, 0, 15]])
-        
+
         self.assertEqual(arvados.locators_and_ranges(blocks, 0, 30), [['a', 10, 0, 10],
                                                                       ['b', 15, 0, 15],
                                                                       ['c', 5, 0, 5]])
@@ -326,25 +315,24 @@ class LocatorsAndRangesTest(unittest.TestCase):
         self.assertEqual(arvados.locators_and_ranges(blocks, 0, 31), [['a', 10, 0, 10],
                                                                       ['b', 15, 0, 15],
                                                                       ['c', 5, 0, 5]])
-        
+
         self.assertEqual(arvados.locators_and_ranges(blocks, 15, 5), [['b', 15, 5, 5]])
-        
+
         self.assertEqual(arvados.locators_and_ranges(blocks, 8, 17), [['a', 10, 8, 2],
                                                                       ['b', 15, 0, 15]])
 
         self.assertEqual(arvados.locators_and_ranges(blocks, 8, 20), [['a', 10, 8, 2],
                                                                       ['b', 15, 0, 15],
                                                                       ['c', 5, 0, 3]])
-        
+
         self.assertEqual(arvados.locators_and_ranges(blocks, 26, 2), [['c', 5, 1, 2]])
-        
+
         self.assertEqual(arvados.locators_and_ranges(blocks, 9, 15), [['a', 10, 9, 1],
-                                                                      ['b', 15, 0, 14]])        
+                                                                      ['b', 15, 0, 14]])
         self.assertEqual(arvados.locators_and_ranges(blocks, 10, 15), [['b', 15, 0, 15]])
         self.assertEqual(arvados.locators_and_ranges(blocks, 11, 15), [['b', 15, 1, 14],
                                                                        ['c', 5, 0, 1]])
 
-class FileStreamTest(unittest.TestCase):
     class MockStreamReader(object):
         def __init__(self, content):
             self.content = content
@@ -352,13 +340,13 @@ class FileStreamTest(unittest.TestCase):
         def readfrom(self, start, size):
             return self.content[start:start+size]
 
-    def runTest(self):
+    def test_file_stream(self):
         content = 'abcdefghijklmnopqrstuvwxyz0123456789'
-        msr = FileStreamTest.MockStreamReader(content)
+        msr = self.MockStreamReader(content)
         segments = [[0, 10, 0],
                     [10, 15, 10],
                     [25, 5, 25]]
-        
+
         sfr = arvados.StreamFileReader(msr, segments, "test")
 
         self.assertEqual(sfr.name(), "test")
@@ -389,7 +377,7 @@ class FileStreamTest(unittest.TestCase):
         segments = [[26, 10, 0],
                     [0, 15, 10],
                     [15, 5, 25]]
-        
+
         sfr = arvados.StreamFileReader(msr, segments, "test")
 
         self.assertEqual(sfr.size(), 30)
@@ -417,8 +405,6 @@ class FileStreamTest(unittest.TestCase):
         self.assertEqual(sfr.tell(), 30)
 
 
-class StreamReaderTest(unittest.TestCase):
-
     class MockKeep(object):
         def __init__(self, content):
             self.content = content
@@ -426,11 +412,11 @@ class StreamReaderTest(unittest.TestCase):
         def get(self, locator):
             return self.content[locator]
 
-    def runTest(self):
-        keepblocks = {'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10': 'abcdefghij', 
-                      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15': 'klmnopqrstuvwxy', 
+    def test_stream_reader(self):
+        keepblocks = {'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10': 'abcdefghij',
+                      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15': 'klmnopqrstuvwxy',
                       'cccccccccccccccccccccccccccccccc+5': 'z0123'}
-        mk = StreamReaderTest.MockKeep(keepblocks)
+        mk = self.MockKeep(keepblocks)
 
         sr = arvados.StreamReader([".", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15", "cccccccccccccccccccccccccccccccc+5", "0:30:foo"], mk)
 
@@ -450,8 +436,7 @@ class StreamReaderTest(unittest.TestCase):
         self.assertEqual(sr.readfrom(25, 5), content[25:30])
         self.assertEqual(sr.readfrom(30, 5), '')
 
-class ExtractFileTest(unittest.TestCase):
-    def runTest(self):
+    def test_extract_file(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md6sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md7sum.txt
@@ -471,3 +456,131 @@ class ExtractFileTest(unittest.TestCase):
                          ". 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md7sum.txt\n")
         self.assertEqual(arvados.CollectionReader(m1).all_streams()[0].files()['md9sum.txt'].as_manifest(),
                          ". 085c37f02916da1cad16f93c54d899b7+41 5348b82a029fd9e971a811ce1f71360b+43 8b22da26f9f433dea0a10e5ec66d73ba+43 40:80:md9sum.txt\n")
+
+    def test_write_directory_tree(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(self.build_directory_tree(
+                ['basefile', 'subdir/subfile']))
+        self.assertEqual(cwriter.manifest_text(),
+                         """. c5110c5ac93202d8e0f9e381f22bac0f+8 0:8:basefile
+./subdir 1ca4dec89403084bf282ad31e6cf7972+14 0:14:subfile\n""")
+
+    def test_write_named_directory_tree(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(self.build_directory_tree(
+                ['basefile', 'subdir/subfile']), 'root')
+        self.assertEqual(
+            cwriter.manifest_text(),
+            """./root c5110c5ac93202d8e0f9e381f22bac0f+8 0:8:basefile
+./root/subdir 1ca4dec89403084bf282ad31e6cf7972+14 0:14:subfile\n""")
+
+    def test_write_directory_tree_in_one_stream(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(self.build_directory_tree(
+                ['basefile', 'subdir/subfile']), max_manifest_depth=0)
+        self.assertEqual(cwriter.manifest_text(),
+                         """. 4ace875ffdc6824a04950f06858f4465+22 0:8:basefile
+./subdir 4ace875ffdc6824a04950f06858f4465+22 8:14:subfile\n""")
+
+    def test_write_directory_tree_with_limited_recursion(self):
+        cwriter = arvados.CollectionWriter()
+        cwriter.write_directory_tree(
+            self.build_directory_tree(['f1', 'd1/f2', 'd1/d2/f3']),
+            max_manifest_depth=1)
+        self.assertEqual(cwriter.manifest_text(),
+                         """. bd19836ddb62c11c55ab251ccaca5645+2 0:2:f1
+./d1 50170217e5b04312024aa5cd42934494+13 8:5:f2
+./d1/d2 50170217e5b04312024aa5cd42934494+13 0:8:f3\n""")
+
+    def test_write_one_file(self):
+        cwriter = arvados.CollectionWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name)
+            self.assertEqual(
+                cwriter.manifest_text(),
+                ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:{}\n".format(
+                    os.path.basename(testfile.name)))
+
+    def test_write_named_file(self):
+        cwriter = arvados.CollectionWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'foo')
+            self.assertEqual(cwriter.manifest_text(),
+                             ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:foo\n")
+
+    def test_write_multiple_files(self):
+        cwriter = arvados.CollectionWriter()
+        for letter in 'ABC':
+            with self.make_test_file(letter) as testfile:
+                cwriter.write_file(testfile.name, letter)
+        self.assertEqual(
+            cwriter.manifest_text(),
+            ". 902fbdd2b1df0c4f70b4a5d23525e932+3 0:1:A 1:1:B 2:1:C\n")
+
+    def test_basic_resume(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+            resumed = TestResumableWriter.from_state(cwriter.current_state())
+        self.assertEquals(cwriter.manifest_text(), resumed.manifest_text(),
+                          "resumed CollectionWriter had different manifest")
+
+    def test_resume_fails_when_missing_dependency(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+        self.assertRaises(arvados.errors.StaleWriterStateError,
+                          TestResumableWriter.from_state,
+                          cwriter.current_state())
+
+    def test_resume_fails_when_dependency_mtime_changed(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+            os.utime(testfile.name, (0, 0))
+            self.assertRaises(arvados.errors.StaleWriterStateError,
+                              TestResumableWriter.from_state,
+                              cwriter.current_state())
+
+    def test_resume_fails_when_dependency_is_nonfile(self):
+        cwriter = TestResumableWriter()
+        cwriter.write_file('/dev/null', 'empty')
+        self.assertRaises(arvados.errors.StaleWriterStateError,
+                          TestResumableWriter.from_state,
+                          cwriter.current_state())
+
+    def test_resume_fails_when_dependency_size_changed(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+            orig_mtime = os.fstat(testfile.fileno()).st_mtime
+            testfile.write('extra')
+            testfile.flush()
+            os.utime(testfile.name, (orig_mtime, orig_mtime))
+            self.assertRaises(arvados.errors.StaleWriterStateError,
+                              TestResumableWriter.from_state,
+                              cwriter.current_state())
+
+    def test_resume_fails_with_expired_locator(self):
+        cwriter = TestResumableWriter()
+        state = cwriter.current_state()
+        # Add an expired locator to the state.
+        state['_current_stream_locators'].append(''.join([
+                    'a' * 32, '+A', 'b' * 40, '@', '10000000']))
+        self.assertRaises(arvados.errors.StaleWriterStateError,
+                          TestResumableWriter.from_state, state)
+
+    def test_arbitrary_objects_not_resumable(self):
+        cwriter = TestResumableWriter()
+        with open('/dev/null') as badfile:
+            self.assertRaises(arvados.errors.AssertionError,
+                              cwriter.write_file, badfile)
+
+    def test_arbitrary_writes_not_resumable(self):
+        cwriter = TestResumableWriter()
+        self.assertRaises(arvados.errors.AssertionError,
+                          cwriter.write, "badtext")
+
+
+if __name__ == '__main__':
+    unittest.main()
