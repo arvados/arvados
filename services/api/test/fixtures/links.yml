@@ -404,6 +404,29 @@ multilevel_collection_1_readable_by_active:
   head_uuid: 1fd08fc162a5c6413070a8bd0bffc818+150
   properties: {}
 
+has_symbol_keys_in_database_somehow:
+  uuid: zzzzz-o0j2j-enl1wg58310loc6
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-05-28 16:24:02.314722162 Z
+  modified_by_client_uuid: 
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-05-28 16:24:02.314484982 Z
+  tail_uuid: ~
+  link_class: test
+  name: ~
+  head_uuid: ~
+  properties:
+    :foo: "bar"
+    baz:
+      - waz
+      - :waz
+      - :waz
+      - 1
+      - ~
+      - false
+      - true
+  updated_at: 2014-05-28 16:24:02.314296411 Z
+
 bug2931_link_with_null_head_uuid:
   uuid: zzzzz-o0j2j-uru66qok2wruasb
   owner_uuid: zzzzz-tpzed-000000000000000
