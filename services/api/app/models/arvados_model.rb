@@ -27,7 +27,7 @@ class ArvadosModel < ActiveRecord::Base
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
   # user.uuid==object.owner_uuid.
-  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'", dependent: :destroy
+  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
 
   class PermissionDeniedError < StandardError
     def http_status
@@ -191,7 +191,9 @@ class ArvadosModel < ActiveRecord::Base
       self.owner_uuid ||= current_user.uuid
     end
     if self.owner_uuid_changed?
-      if current_user.uuid == self.owner_uuid or
+      if new_record?
+        return true
+      elsif current_user.uuid == self.owner_uuid or
           current_user.can? write: self.owner_uuid
         # current_user is, or has :write permission on, the new owner
       else
