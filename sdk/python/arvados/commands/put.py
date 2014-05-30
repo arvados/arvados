@@ -172,7 +172,7 @@ class ResumeCache(object):
         md5 = hashlib.md5()
         md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
         realpaths = sorted(os.path.realpath(path) for path in args.paths)
-        md5.update(''.join(realpaths))
+        md5.update('\0'.join(realpaths))
         if any(os.path.isdir(path) for path in realpaths):
             md5.update(str(max(args.max_manifest_depth, -1)))
         elif args.filename:

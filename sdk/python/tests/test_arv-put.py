@@ -65,6 +65,12 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
             self.cache_path_from_arglist(['-', '--filename', 'stdin']),
             self.cache_path_from_arglist(['--filename', 'stdin', '-']))
 
+    def test_cache_names_differ_for_similar_paths(self):
+        # This test needs names at / that don't exist on the real filesystem.
+        self.assertNotEqual(
+            self.cache_path_from_arglist(['/_arvputtest1', '/_arvputtest2']),
+            self.cache_path_from_arglist(['/_arvputtest1/_arvputtest2']))
+
     def test_cache_names_ignore_irrelevant_arguments(self):
         # Workaround: parse_arguments bails on --filename with a directory.
         path1 = self.cache_path_from_arglist(['/tmp'])
