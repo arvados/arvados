@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140519205916) do
+ActiveRecord::Schema.define(:version => 20140527152921) do
 
 
 
@@ -350,6 +350,7 @@ ActiveRecord::Schema.define(:version => 20140519205916) do
     t.string   "name"
     t.text     "components"
     t.datetime "updated_at",              :null => false
+    t.text     "description"
   end
 
   add_index "pipeline_templates", ["created_at"], :name => "index_pipeline_templates_on_created_at"

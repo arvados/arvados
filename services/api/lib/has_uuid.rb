@@ -36,7 +36,9 @@ module HasUuid
   end
 
   def destroy_permission_links
-    Link.destroy_all(['link_class=? and (head_uuid=? or tail_uuid=?)',
-                      'permission', uuid, uuid])
+    if uuid
+      Link.destroy_all(['link_class=? and (head_uuid=? or tail_uuid=?)',
+                        'permission', uuid, uuid])
+    end
   end
 end
