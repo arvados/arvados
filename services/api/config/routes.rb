@@ -21,7 +21,6 @@ Server::Application.routes.draw do
       resources :job_tasks
       resources :jobs do
         get 'queue', on: :collection
-        get 'log_tail_follow', on: :member
         post 'cancel', on: :member
       end
       resources :keep_disks do
