@@ -147,7 +147,7 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
     @object ||= model_class.new @new_resource_attrs
     @object.save!
-    show
+    redirect_to @object
   end
 
   def destroy

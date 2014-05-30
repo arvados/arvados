@@ -16,7 +16,7 @@ class JobsController < ApplicationController
 
     @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {
       :request => request,
-      :all_script_parameters => true, 
+      :all_script_parameters => true,
       :script_version_nodes => true}
   end
 
@@ -44,6 +44,6 @@ class JobsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Attributes Provenance Metadata JSON API)
+    %w(Status Attributes Provenance Metadata JSON API)
   end
 end

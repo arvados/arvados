@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20140527152921) do
+ActiveRecord::Schema.define(:version => 20140530200539) do
 
 
 
@@ -196,6 +196,7 @@ ActiveRecord::Schema.define(:version => 20140527152921) do
     t.boolean  "nondeterministic"
     t.string   "repository"
     t.boolean  "output_is_persistent",     :default => false, :null => false
+    t.string   "supplied_script_version"
   end
 
   add_index "jobs", ["created_at"], :name => "index_jobs_on_created_at"
