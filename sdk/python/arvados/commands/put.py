@@ -325,6 +325,9 @@ def progress_writer(progress_func, outfile=sys.stderr):
         outfile.write(progress_func(bytes_written, bytes_expected))
     return write_progress
 
+def exit_signal_handler(sigcode, frame):
+    sys.exit(-sigcode)
+
 def main(arguments=None):
     ResumeCache.setup_user_cache()
     args = parse_arguments(arguments)
@@ -347,12 +350,9 @@ def main(arguments=None):
     writer = ArvPutCollectionWriter.from_cache(
         resume_cache, reporter, expected_bytes_for(args.paths))
 
-    def signal_handler(sigcode, frame):
-        writer.cache_state()
-        sys.exit(-sigcode)
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
-    orig_signal_handlers = {sigcode: signal.signal(sigcode, signal_handler)
+    orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
                             for sigcode in CAUGHT_SIGNALS}
 
     if writer.bytes_written > 0:  # We're resuming a previous upload.
@@ -361,19 +361,15 @@ def main(arguments=None):
                 "         Use the --no-resume option to start over."])
         writer.report_progress()
 
-    try:
-        writer.do_queued_work()  # Do work resumed from cache.
-        for path in args.paths:  # Copy file data to Keep.
-            if os.path.isdir(path):
-                writer.write_directory_tree(
-                    path, max_manifest_depth=args.max_manifest_depth)
-            else:
-                writer.start_new_stream()
-                writer.write_file(path, args.filename or os.path.basename(path))
-        writer.finish_current_stream()
-    except Exception:
-        writer.cache_state()
-        raise
+    writer.do_queued_work()  # Do work resumed from cache.
+    for path in args.paths:  # Copy file data to Keep.
+        if os.path.isdir(path):
+            writer.write_directory_tree(
+                path, max_manifest_depth=args.max_manifest_depth)
+        else:
+            writer.start_new_stream()
+            writer.write_file(path, args.filename or os.path.basename(path))
+    writer.finish_current_stream()
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
         print >>sys.stderr
