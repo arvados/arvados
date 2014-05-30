@@ -16,3 +16,5 @@ class NotImplementedError(Exception):
     pass
 class NoKeepServersError(Exception):
     pass
+class StaleWriterStateError(Exception):
+    pass

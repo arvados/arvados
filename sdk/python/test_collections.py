@@ -4,13 +4,30 @@
 
 import arvados
 import bz2
+import copy
 import errno
 import os
+import pprint
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+
+class TestResumableWriter(arvados.ResumableCollectionWriter):
+    KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
+
+    def __init__(self):
+        self.saved_states = []
+        return super(TestResumableWriter, self).__init__()
+
+    def checkpoint_state(self):
+        self.saved_states.append(self.dump_state(copy.deepcopy))
+
+    def last_state(self):
+        assert self.saved_states, "resumable writer did not save any state"
+        return self.saved_states[-1]
+
 
 class ArvadosCollectionsTest(unittest.TestCase):
     def _make_tmpdir(self):
@@ -542,6 +559,97 @@ class ArvadosCollectionsTest(unittest.TestCase):
         self.assertEqual(
             cwriter.manifest_text(),
             ". 902fbdd2b1df0c4f70b4a5d23525e932+3 0:1:A 1:1:B 2:1:C\n")
+
+    def test_checkpoint_after_put(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file(
+              't' * (cwriter.KEEP_BLOCK_SIZE + 10)) as testfile:
+            testpath = os.path.realpath(testfile.name)
+            cwriter.write_file(testpath, 'test')
+        for state in cwriter.saved_states:
+            if state.get('_current_file') == (testpath,
+                                              cwriter.KEEP_BLOCK_SIZE):
+                break
+        else:
+            self.fail("can't find state immediately after PUT to Keep")
+        self.assertIn('d45107e93f9052fa88a82fc08bb1d316+1024',  # 't' * 1024
+                      state['_current_stream_locators'])
+
+    def test_basic_resume(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+            last_state = cwriter.last_state()
+            resumed = TestResumableWriter.from_state(last_state)
+        self.assertEquals(cwriter.manifest_text(), resumed.manifest_text(),
+                          "resumed CollectionWriter had different manifest")
+
+    def test_resume_fails_when_missing_dependency(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+        self.assertRaises(arvados.errors.StaleWriterStateError,
+                          TestResumableWriter.from_state,
+                          cwriter.last_state())
+
+    def test_resume_fails_when_dependency_mtime_changed(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+            os.utime(testfile.name, (0, 0))
+            self.assertRaises(arvados.errors.StaleWriterStateError,
+                              TestResumableWriter.from_state,
+                              cwriter.last_state())
+
+    def test_resume_fails_when_dependency_is_nonfile(self):
+        cwriter = TestResumableWriter()
+        cwriter.write_file('/dev/null', 'empty')
+        self.assertRaises(arvados.errors.StaleWriterStateError,
+                          TestResumableWriter.from_state,
+                          cwriter.last_state())
+
+    def test_resume_fails_when_dependency_size_changed(self):
+        cwriter = TestResumableWriter()
+        with self.make_test_file() as testfile:
+            cwriter.write_file(testfile.name, 'test')
+            orig_mtime = os.fstat(testfile.fileno()).st_mtime
+            testfile.write('extra')
+            testfile.flush()
+            os.utime(testfile.name, (orig_mtime, orig_mtime))
+            self.assertRaises(arvados.errors.StaleWriterStateError,
+                              TestResumableWriter.from_state,
+                              cwriter.last_state())
+
+    def test_successful_resumes(self):
+        # FIXME: This is more of an integration test than a unit test.
+        cwriter = TestResumableWriter()
+        source_tree = self.build_directory_tree()
+        with open(os.path.join(source_tree, 'long'), 'w') as longfile:
+            longfile.write('t' * (cwriter.KEEP_BLOCK_SIZE + 10))
+        cwriter.write_directory_tree(source_tree)
+        # A state for each file, plus a fourth for mid-longfile.
+        self.assertGreater(len(cwriter.saved_states), 3,
+                           "CollectionWriter didn't save enough states to test")
+
+        for state in cwriter.saved_states:
+            new_writer = TestResumableWriter.from_state(state)
+            manifests = [writer.manifest_text()
+                         for writer in (cwriter, new_writer)]
+            self.assertEquals(
+                manifests[0], manifests[1],
+                "\n".join(["manifest mismatch after resuming from state:",
+                           pprint.pformat(state), ""] + manifests))
+
+    def test_arbitrary_objects_not_resumable(self):
+        cwriter = TestResumableWriter()
+        with open('/dev/null') as badfile:
+            self.assertRaises(arvados.errors.AssertionError,
+                              cwriter.write_file, badfile)
+
+    def test_arbitrary_writes_not_resumable(self):
+        cwriter = TestResumableWriter()
+        self.assertRaises(arvados.errors.AssertionError,
+                          cwriter.write, "badtext")
 
 
 if __name__ == '__main__':
