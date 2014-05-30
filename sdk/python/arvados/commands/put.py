@@ -356,7 +356,9 @@ def main(arguments=None):
                             for sigcode in CAUGHT_SIGNALS}
 
     if writer.bytes_written > 0:  # We're resuming a previous upload.
-        print >>sys.stderr, "arv-put: Resuming previous upload.  Bypass with the --no-resume option."
+        print >>sys.stderr, "\n".join([
+                "arv-put: Resuming previous upload from last checkpoint.",
+                "         Use the --no-resume option to start over."])
         writer.report_progress()
 
     try:
