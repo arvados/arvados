@@ -368,6 +368,7 @@ def main(arguments=None):
             else:
                 writer.start_new_stream()
                 writer.write_file(path, args.filename or os.path.basename(path))
+        writer.finish_current_stream()
     except Exception:
         writer.cache_state()
         raise
@@ -375,7 +376,6 @@ def main(arguments=None):
     if args.stream:
         print writer.manifest_text(),
     elif args.raw:
-        writer.finish_current_stream()
         print ','.join(writer.data_locators())
     else:
         # Register the resulting collection in Arvados.
