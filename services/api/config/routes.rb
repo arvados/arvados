@@ -49,7 +49,6 @@ Server::Application.routes.draw do
       resources :users do
         get 'current', on: :collection
         get 'system', on: :collection
-        get 'event_stream', on: :member
         post 'activate', on: :member
         post 'setup', on: :collection
         post 'unsetup', on: :member

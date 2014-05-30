@@ -313,7 +313,6 @@ end
 
 case api_method
 when
-  'arvados.users.event_stream',
   'arvados.jobs.log_stream',
   'arvados.jobs.log_tail_follow'
 
