@@ -124,7 +124,7 @@ class KeepPermissionTestCase(unittest.TestCase):
                           bar_locator)
 
         # Unauthenticated GET for a signed locator => NotFound
-        # Unauthenticated GET for a signed locator => NotFound
+        # Unauthenticated GET for an unsigned locator => NotFound
         del arvados.config.settings()["ARVADOS_API_TOKEN"]
         self.assertRaises(arvados.errors.NotFoundError,
                           arvados.Keep.get,
