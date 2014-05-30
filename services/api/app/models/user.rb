@@ -339,20 +339,20 @@ class User < ArvadosModel
       perm_exists = false
       login_perms.each do |perm|
         if perm.properties['username'] == repo_name
-          perm_exists = true
+          perm_exists = perm
           break
         end
       end
 
-      if !perm_exists
+      if perm_exists
+        login_perm = perm_exists
+      else
         login_perm = Link.create(tail_uuid: self.uuid,
                                  head_uuid: vm[:uuid],
                                  link_class: 'permission',
                                  name: 'can_login',
                                  properties: {'username' => repo_name})
         logger.info { "login permission: " + login_perm[:uuid] }
-      else
-        login_perm = login_perms.first
       end
 
       return login_perm

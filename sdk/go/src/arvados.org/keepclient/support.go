@@ -63,6 +63,10 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		}
 	}
 
+	// 'defer' is a stack, so it will drain the Body before closing it.
+	defer resp.Body.Close()
+	defer io.Copy(ioutil.Discard, resp.Body)
+
 	type svcList struct {
 		Items []keepDisk `json:"items"`
 	}
@@ -197,6 +201,9 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 	if xr := resp.Header.Get(X_Keep_Replicas_Stored); xr != "" {
 		fmt.Sscanf(xr, "%d", &rep)
 	}
+
+	defer resp.Body.Close()
+	defer io.Copy(ioutil.Discard, resp.Body)
 
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{resp.Body, 4096})
 	if err2 != nil && err2 != io.EOF {

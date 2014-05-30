@@ -3,8 +3,9 @@
   <div class="col-md-6"></div>
   <div class="col-md-6">
     <div class="pull-right">
-      Collection storage status:
+      <span style="padding-left: 1em">Collection storage status:</span>
       <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
+
     </div>
   </div>
 </div>
@@ -66,3 +67,7 @@
   <% end  # file_tree.each %>
   <%= raw(dirstack.map { |_| "</ul>" }.join("</li>")) %>
 <% end  # if file_tree %>
+
+<% content_for :footer_html do %>
+<div id="collection-sharing-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+<% end %>

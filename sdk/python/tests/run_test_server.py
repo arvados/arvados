@@ -1,17 +1,27 @@
-import subprocess
-import time
-import os
-import signal
-import yaml
-import sys
-import argparse
-import arvados.config
-import arvados.api
-import shutil
-import tempfile
+#!/usr/bin/env python
 
-ARV_API_SERVER_DIR = '../../services/api'
-KEEP_SERVER_DIR = '../../services/keep'
+import argparse
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+import yaml
+
+MY_DIRNAME = os.path.dirname(os.path.realpath(__file__))
+if __name__ == '__main__' and os.path.exists(
+      os.path.join(MY_DIRNAME, '..', 'arvados', '__init__.py')):
+    # We're being launched to support another test suite.
+    # Add the Python SDK source to the library path.
+    sys.path.insert(1, os.path.dirname(MY_DIRNAME))
+
+import arvados.api
+import arvados.config
+
+ARV_API_SERVER_DIR = '../../../services/api'
+KEEP_SERVER_DIR = '../../../services/keep'
 SERVER_PID_PATH = 'tmp/pids/webrick-test.pid'
 WEBSOCKETS_SERVER_PID_PATH = 'tmp/pids/passenger-test.pid'
 
@@ -54,7 +64,7 @@ def kill_server_pid(PID_PATH, wait=10):
 
 def run(websockets=False, reuse_server=False):
     cwd = os.getcwd()
-    os.chdir(os.path.join(os.path.dirname(__file__), ARV_API_SERVER_DIR))
+    os.chdir(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR))
 
     if websockets:
         pid_file = WEBSOCKETS_SERVER_PID_PATH
@@ -106,7 +116,7 @@ def run(websockets=False, reuse_server=False):
 
 def stop():
     cwd = os.getcwd()
-    os.chdir(os.path.join(os.path.dirname(__file__), ARV_API_SERVER_DIR))
+    os.chdir(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR))
 
     kill_server_pid(WEBSOCKETS_SERVER_PID_PATH, 0)
     kill_server_pid(SERVER_PID_PATH, 0)
@@ -144,7 +154,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     stop_keep()
 
     cwd = os.getcwd()
-    os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
+    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
     if os.environ.get('GOPATH') == None:
         os.environ["GOPATH"] = os.getcwd()
     else:
@@ -194,7 +204,7 @@ def _stop_keep(n):
 
 def stop_keep():
     cwd = os.getcwd()
-    os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
+    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
 
     _stop_keep(0)
     _stop_keep(1)
@@ -205,7 +215,7 @@ def run_keep_proxy(auth):
     stop_keep_proxy()
 
     cwd = os.getcwd()
-    os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
+    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
     if os.environ.get('GOPATH') == None:
         os.environ["GOPATH"] = os.getcwd()
     else:
@@ -232,13 +242,13 @@ def run_keep_proxy(auth):
 
 def stop_keep_proxy():
     cwd = os.getcwd()
-    os.chdir(os.path.join(os.path.dirname(__file__), KEEP_SERVER_DIR))
+    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
     kill_server_pid("tmp/keepproxy.pid", 0)
     os.chdir(cwd)
 
 def fixture(fix):
     '''load a fixture yaml file'''
-    with open(os.path.join(os.path.dirname(__file__), ARV_API_SERVER_DIR, "test", "fixtures",
+    with open(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR, "test", "fixtures",
                            fix + ".yml")) as f:
         return yaml.load(f.read())
 

@@ -120,6 +120,18 @@ class CollectionsController < ApplicationController
     self.response_body = file_enumerator opts
   end
 
+  def sharing_scopes
+    ["GET /arvados/v1/collections/#{@object.uuid}", "GET /arvados/v1/collections/#{@object.uuid}/", "GET /arvados/v1/keep_services/accessible"]
+  end
+
+  def search_scopes
+    begin
+      ApiClientAuthorization.filter([['scopes', '=', sharing_scopes]]).results
+    rescue ArvadosApiClient::AccessForbiddenException
+      nil
+    end
+  end
+
   def show
     return super if !@object
     if current_user
@@ -142,6 +154,7 @@ class CollectionsController < ApplicationController
         .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
                link_class: 'resources', name: 'wants')
         .results.any?
+      @search_sharing = search_scopes
     end
     @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
                                                           {:request => request,
@@ -152,6 +165,35 @@ class CollectionsController < ApplicationController
                                                                :direction => :top_down,
                                                                :combine_jobs => :script_only,
                                                                :pdata_only => true}) rescue nil
+  end
+
+  def sharing_popup
+    @search_sharing = search_scopes
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
+  helper_method :download_link
+
+  def download_link
+    collections_url + "/download/#{@object.uuid}/#{@search_sharing.first.api_token}"
+  end
+
+  def share
+    a = ApiClientAuthorization.create(scopes: sharing_scopes)
+    @search_sharing = search_scopes
+    render 'sharing_popup'
+  end
+
+  def unshare
+    @search_sharing = search_scopes
+    @search_sharing.each do |s|
+      s.destroy
+    end
+    @search_sharing = search_scopes
+    render 'sharing_popup'
   end
 
   protected
