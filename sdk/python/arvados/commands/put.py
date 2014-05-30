@@ -373,6 +373,9 @@ def main(arguments=None):
         writer.cache_state()
         raise
 
+    if args.progress:  # Print newline to split stderr from stdout for humans.
+        print >>sys.stderr
+
     if args.stream:
         print writer.manifest_text(),
     elif args.raw:
