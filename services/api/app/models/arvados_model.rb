@@ -262,19 +262,20 @@ class ArvadosModel < ActiveRecord::Base
     true
   end
 
-  def self.has_any_symbols? x
+  def self.has_symbols? x
     if x.is_a? Hash
       x.each do |k,v|
-        return true if has_any_symbols?(k) or has_any_symbols?(v)
+        return true if has_symbols?(k) or has_symbols?(v)
       end
+      false
     elsif x.is_a? Array
       x.each do |k|
-        return true if has_any_symbols?(k)
+        return true if has_symbols?(k)
       end
+      false
     else
-      return (x.class == Symbol)
+      (x.class == Symbol)
     end
-    false
   end
 
   def self.recursive_stringify x
@@ -304,7 +305,7 @@ class ArvadosModel < ActiveRecord::Base
       if attr.object_class
         if self.attributes[colname].class != attr.object_class
           self.errors.add colname.to_sym, "must be a #{attr.object_class.to_s}, not a #{self.attributes[colname].class.to_s}"
-        elsif self.class.has_any_symbols? attributes[colname]
+        elsif self.class.has_symbols? attributes[colname]
           self.errors.add colname.to_sym, "must not contain symbols: #{attributes[colname].inspect}"
         end
       end
@@ -312,13 +313,17 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def convert_serialized_symbols_to_strings
+    # ensure_serialized_attribute_type should prevent symbols from
+    # getting into the database in the first place. If someone managed
+    # to get them into the database (perhaps using an older version)
+    # we'll convert symbols to strings when loading from the
+    # database. (Otherwise, loading and saving an object with existing
+    # symbols in a serialized field will crash.)
     self.class.serialized_attributes.each do |colname, attr|
-      if attr.object_class == Hash
-        if self.class.has_any_symbols? attributes[colname]
-          attributes[colname] = self.class.recursive_stringify attributes[colname]
-          self.send(colname + '=',
-                    self.class.recursive_stringify(attributes[colname]))
-        end
+      if self.class.has_symbols? attributes[colname]
+        attributes[colname] = self.class.recursive_stringify attributes[colname]
+        self.send(colname + '=',
+                  self.class.recursive_stringify(attributes[colname]))
       end
     end
   end

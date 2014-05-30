@@ -32,6 +32,13 @@ class ArvadosModelTest < ActiveSupport::TestCase
   end
 
   [ {:a => 'foo'},
+    {'a' => :foo},
+    {:a => ['foo', 'bar']},
+    {'a' => [:foo, 'bar']},
+    {'a' => ['foo', :bar]},
+    {:a => [:foo, :bar]},
+    {:a => {'foo' => {'bar' => 'baz'}}},
+    {'a' => {:foo => {'bar' => 'baz'}}},
     {'a' => {'foo' => {:bar => 'baz'}}},
     {'a' => {'foo' => {'bar' => :baz}}},
     {'a' => {'foo' => ['bar', :baz]}},
