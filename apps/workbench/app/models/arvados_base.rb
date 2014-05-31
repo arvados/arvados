@@ -30,8 +30,9 @@ class ArvadosBase < ActiveRecord::Base
       end
   end
 
-  def initialize raw_params={}
+  def initialize raw_params={}, create_params={}
     super self.class.permit_attribute_params(raw_params)
+    @create_params = create_params
     @attribute_sortkey ||= {
       'id' => nil,
       'name' => '000',

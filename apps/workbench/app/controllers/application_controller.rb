@@ -145,7 +145,7 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
     @new_resource_attrs ||= {}
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
-    @object ||= model_class.new @new_resource_attrs
+    @object ||= model_class.new @new_resource_attrs, params["options"]
     @object.save!
     redirect_to @object
   end
