@@ -1,0 +1,96 @@
+<% content_for :content_top do %>
+
+<h2>
+  <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New folder" } %>
+</h2>
+
+<div class="arv-description-as-subtitle">
+  <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "(No description provided)", 'data-toggle' => 'manual' } %>
+</div>
+
+<% end %>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-4">
+      <%= link_to(
+            choose_collections_path(
+              title: 'Add data to folder:',
+              multiple: true,
+              action_name: 'Add',
+              action_href: actions_path(id: @object.uuid),
+              action_method: 'post',
+              action_data: {selection_param: 'selection[]', copy_selections_into_folder: @object.uuid, success: 'page-refresh'}.to_json),
+            { class: "btn btn-primary btn-sm", remote: true, method: 'get', data: {'event-after-select' => 'page-refresh'} }) do %>
+        <i class="fa fa-fw fa-plus"></i> Add data
+      <% end %>
+      <%= link_to(
+            choose_pipeline_templates_path(
+              title: 'Run pipeline:',
+              action_name: 'Configure...',
+              action_href: pipeline_instances_path,
+              action_method: 'post',
+              action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
+            { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
+        <i class="fa fa-fw fa-gear"></i> Run a pipeline
+      <% end %>
+    </div>
+    <div class="col-lg-4">
+      <select class="form-control" data-filter-rows-by="kind">
+        <option value="">Show everything</option>
+        <option value="arvados#collection">Data</option>
+        <option value="arvados#pipeline_instance arvados#job">Compute jobs</option>
+        <option value="arvados#pipeline_template">Pipelines</option>
+      </select>
+    </div>
+    <div class="col-lg-4">
+      <input type="text" class="form-control search-folder-contents" placeholder="Search folder contents"/>
+    </div>
+  </div>
+</div>
+
+<table class="table table-condensed arv-index">
+  <tbody>
+    <colgroup>
+      <col width="40%" />
+      <col width="40%" />
+      <col width="10%" />
+      <col width="10%" />
+    </colgroup>
+    <% @objects_and_names.each do |object, name_link| %>
+      <tr data-object-uuid="<%= (name_link && name_link.uuid) || object.uuid %>">
+        <td>
+          <i class="fa fa-fw <%= fa_icon_class_for_object(object) %>"></i>
+          <%= render_editable_attribute name_link, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
+        </td>
+        <td>
+          <%= object.content_summary %>
+        </td>
+        <td>
+          <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
+        </td>
+        <td>
+          <% if @object.editable? %>
+            <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display} #{name_link.andand.uuid ? name_link.name : object.uuid} from this folder?"}, class: 'btn btn-xs btn-default') do %>
+              Remove <i class="fa fa-fw fa-ban"></i>
+            <% end %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+  <thead>
+    <tr>
+      <th>
+        name
+      </th>
+      <th>
+        description
+      </th>
+      <th>
+      </th>
+      <th>
+      </th>
+    </tr>
+  </thead>
+</table>

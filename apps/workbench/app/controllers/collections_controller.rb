@@ -40,6 +40,15 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def choose
+    @name_links = Link.
+      filter([['link_class','=','name'],
+              ['head_uuid','is_a','arvados#collection']])
+    @objects = Collection.
+      filter([['uuid','in',@name_links.collect(&:head_uuid)]])
+    super
+  end
+
   def index
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])

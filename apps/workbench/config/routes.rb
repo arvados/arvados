@@ -35,7 +35,9 @@ ArvadosWorkbench::Application.routes.draw do
   resources :uploaded_datasets
   resources :groups
   resources :specimens
-  resources :pipeline_templates
+  resources :pipeline_templates do
+    get 'choose', on: :collection
+  end
   resources :pipeline_instances do
     get 'compare', on: :collection
   end
@@ -46,6 +48,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'sharing_popup', :on => :member
     post 'share', :on => :member
     post 'unshare', :on => :member
+    get 'choose', on: :collection
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)

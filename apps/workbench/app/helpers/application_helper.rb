@@ -155,16 +155,21 @@ module ApplicationHelper
       ajax_options['data-pk'][:defaults] = object.attributes
     end
     ajax_options['data-pk'] = ajax_options['data-pk'].to_json
+    @unique_id ||= 0
+    span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
-    content_tag 'span', attrvalue.to_s, {
+    span_tag = content_tag 'span', attrvalue.to_s, {
       "data-emptytext" => "none",
       "data-placement" => "bottom",
       "data-type" => input_type,
       "data-title" => "Update #{attr.gsub '_', ' '}",
       "data-name" => attr,
       "data-object-uuid" => object.uuid,
+      "data-toggle" => "manual",
+      "id" => span_id,
       :class => "editable"
     }.merge(htmloptions).merge(ajax_options)
+    span_tag + raw(' <a href="#" class="btn btn-xs btn-default" data-toggle="x-editable" data-toggle-selector="#' + span_id + '"><i class="fa fa-fw fa-pencil"></i> Edit</a>')
   end
 
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
@@ -294,6 +299,19 @@ module ApplicationHelper
       link_to(h(button_text) +
               raw(' &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
               button_href, params, *rest)
+    end
+  end
+
+  def fa_icon_class_for_object object
+    case object.class.to_s
+    when 'User'
+      'fa-user'
+    when 'Group'
+      object.group_class ? 'fa-folder' : 'fa-users'
+    when 'Job', 'PipelineInstance', 'PipelineTemplate'
+      'fa-gears'
+    when 'Collection'
+      'fa-archive'
     end
   end
 end

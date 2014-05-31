@@ -64,6 +64,9 @@ table.arv-index tbody td.arv-object-AuthorizedKey.arv-attr-public_key {
     overflow-x: hidden;
     max-width: 120px;
 }
+table.arv-index > thead > tr > th {
+    border-top: none;
+}
 table.table-fixedlayout {
     white-space: nowrap;
     table-layout: fixed;
@@ -171,23 +174,18 @@ table.table-fixed-header-row tbody {
     z-index:1055;
 }
 
-.navbar-nav.side-nav {
-    box-shadow: inset -1px 0 #e7e7e7;
+/* Do not leave space for left-nav */
+div#wrapper {
+  padding-left: 0;
 }
-.navbar-nav.side-nav > li:first-child {
-    margin-top: 5px; /* keep "hover" bg below top nav bottom border */
+
+.arv-description-as-subtitle {
+  padding-bottom: 1em;
 }
-.navbar-nav.side-nav > li > a {
-    padding-top: 10px;
-    padding-bottom: 10px;
+.arv-description-in-table {
+  max-height: 3.5em;
+  overflow-y: hidden;
 }
-.navbar-nav.side-nav > li.dropdown > ul.dropdown-menu > li > a {
-    padding-top: 5px;
-    padding-bottom: 5px;
-}
-.navbar-nav.side-nav a.active,
-.navbar-nav.side-nav a:hover,
-.navbar-nav.side-nav a:focus {
-    border-right: 1px solid #ffffff;
-    background: #ffffff;
+.arv-description-in-table:hover {
+  overflow-y: scroll;
 }

@@ -1,0 +1,8 @@
+$('body > .modal-container').html("<%= escape_javascript(render partial: 'choose.html', locals: {multiple: multiple}) %>");
+$('body > .modal-container .modal').modal('show');
+$('body > .modal-container .modal .modal-footer .btn-primary').
+    addClass('<%= j params[:action_class] %>').
+    attr('data-action-href', '<%= j params[:action_href] %>').
+    attr('data-method', '<%= j params[:action_method] %>').
+    data('action-data', <%= raw params[:action_data] %>);
+$(document).trigger('ajax:complete');

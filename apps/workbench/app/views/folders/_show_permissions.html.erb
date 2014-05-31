@@ -1,0 +1,53 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          Additional permissions
+        </div>
+        <div class="panel-body">
+          <p>
+            <% if not @share_links.any? %>
+              <span class="deemphasize">(No additional permissions)</span>
+            <% else %>
+              Also shared with:
+              <% @share_links.andand.each do |link| %>
+                <br /><%= link_to_if_arvados_object link.tail_uuid, friendly_name: true %>
+              <% end %>
+            <% end %>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <% if @object.owner %>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            Inherited permissions
+          </div>
+          <div class="panel-body">
+            <p>Permissions for this folder are inherited by the owner or parent folder:
+            </p>
+            <p style="margin-left: 4em">
+              <% if User == resource_class_for_uuid(@object.owner_uuid) %>
+                <i class="fa fa-fw fa-user"></i>
+              <% else %>
+                <i class="fa fa-fw fa-folder"></i>
+              <% end %>
+              <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
+              <%= button_to('Move to...',
+                  choose_folders_path(
+                   title: 'Move to...',
+                   editable: true,
+                   action_name: 'Move',
+                   action_href: folder_path(@object.uuid),
+                   action_method: 'put',
+                   action_data: {selection_param: 'folder[owner_uuid]', success: 'page-refresh'}.to_json),
+                  { class: "btn btn-default btn-xs arv-move-to-folder", remote: true, method: 'get' }) %>
+            </p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

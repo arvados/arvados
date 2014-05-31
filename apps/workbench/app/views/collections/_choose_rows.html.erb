@@ -1,0 +1,11 @@
+<% @name_links.each do |name_link| %>
+  <div class="row selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= name_link.uuid %>">
+    <div class="col-sm-8" style="overflow-x:hidden">
+      <i class="fa fa-fw fa-archive"></i>
+      <%= name_link.name %>
+    </div>
+    <div class="col-sm-4" style="overflow-x:hidden">
+      <%= link_to_if_arvados_object name_link.tail_uuid, friendly_name: true %>
+    </div>
+  </div>
+<% end %>

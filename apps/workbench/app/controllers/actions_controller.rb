@@ -20,15 +20,44 @@ class ActionsController < ApplicationController
   end
 
   expose_action :copy_selections_into_folder do
+    link_selections = Link.filter([['uuid','in',params["selection"]]])
+    link_uuids = link_selections.collect(&:uuid)
+
+    # Given a link uuid, we'll add the link's head_uuid. Given another
+    # type, we'll add the object itself.
+    uuids_to_add = params["selection"] - link_uuids
+    uuids_to_add += link_selections.collect(&:head_uuid)
+
+    # Skip anything that's already here.
     already_named = Link.
       filter([['tail_uuid','=',@object.uuid],
-              ['head_uuid','in',params["selection"]]]).
+              ['head_uuid','in',uuids_to_add],
+              ['link_class','=','name']]).
       collect(&:head_uuid)
-    (params["selection"] - already_named).each do |s|
-      Link.create(tail_uuid: @object.uuid,
-                  head_uuid: s,
-                  link_class: 'name',
-                  name: "#{s} added #{Time.now}")
+    uuids_to_add -= already_named
+
+    # Given a name link, we'll try to add the linked object using the
+    # same name.
+    name_for = {}
+    link_selections.
+      select { |x| x.link_class == 'name' }.
+      each do |link|
+      name_for[link.head_uuid] = link.name
+    end
+
+    uuids_to_add.each do |s|
+      name = name_for[s] || s
+      begin
+        Link.create(tail_uuid: @object.uuid,
+                    head_uuid: s,
+                    link_class: 'name',
+                    name: name)
+      rescue
+        Link.create(tail_uuid: @object.uuid,
+                    head_uuid: s,
+                    link_class: 'name',
+                    name: name + " (#{Time.now.localtime})")
+      end
     end
     redirect_to @object
   end

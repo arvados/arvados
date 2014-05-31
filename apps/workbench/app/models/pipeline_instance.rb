@@ -5,6 +5,14 @@ class PipelineInstance < ArvadosBase
     true
   end
 
+  def content_summary
+    begin
+      PipelineTemplate.find(pipeline_template_uuid).name
+    rescue
+      super
+    end
+  end
+
   def update_job_parameters(new_params)
     self.components[:steps].each_with_index do |step, i|
       step[:params].each do |param|

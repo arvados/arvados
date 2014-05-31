@@ -8,18 +8,24 @@ $(document).on('click', '.selectable', function() {
     $this.toggleClass('active');
 }).on('click', '.modal button[data-action-href]', function() {
     var selection = [];
-    var data = {};
+    var data = [];
     var $modal = $(this).closest('.modal');
+    var action_data = $(this).data('action-data');
+    var selection_param = action_data.selection_param;
     $modal.find('.modal-error').removeClass('hide').hide();
     $modal.find('.selectable.active[data-object-uuid]').each(function() {
-        selection.push($(this).attr('data-object-uuid'));
+        var val = $(this).attr('data-object-uuid');
+        data.push({name: selection_param, value: val});
     });
-    data[$(this).data('action-data').selection_param] = selection[0];
+    $.each(action_data, function(key, value) {
+        data.push({name: key, value: value});
+    });
     $.ajax($(this).attr('data-action-href'),
            {dataType: 'json',
             type: $(this).attr('data-method'),
             data: data,
-            context: {modal: $modal}}).
+            traditional: true,
+            context: {modal: $modal, action_data: action_data}}).
         fail(function(jqxhr, status, error) {
             if (jqxhr.readyState == 0 || jqxhr.status == 0) {
                 message = "Cancelled."
@@ -32,8 +38,15 @@ $(document).on('click', '.selectable', function() {
                 html('<div class="alert alert-danger">' + message + '</div>').
                 show();
         }).
-        success(function() {
+        done(function(data, status, jqxhr) {
+            var event_name = this.action_data.success;
             this.modal.find('.modal-error').hide();
-            window.location.reload();
+            $(document).trigger(event_name!=null ? event_name : 'page-refresh',
+                                [data, status, jqxhr, this.action_data]);
         });
+});
+$(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
+    window.location.reload();
+}).on('redirect-to-created-object', function(event, data, status, jqxhr, action_data) {
+    window.location.href = data.href.replace(/^[^\/]*\/\/[^\/]*/, '');
 });

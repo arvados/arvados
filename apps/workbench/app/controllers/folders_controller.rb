@@ -7,6 +7,10 @@ class FoldersController < ApplicationController
     %w(Folders)
   end
 
+  def show_pane_list
+    %w(Contents Permissions)
+  end
+
   def remove_item
     @removed_uuids = []
     links = []
@@ -74,11 +78,6 @@ class FoldersController < ApplicationController
     @shared_folder_tree =
       sorted_paths.call({'Shared with me' =>
                           buildtree.call(children_of, false)})
-  end
-
-  def choose
-    index
-    render partial: 'choose'
   end
 
   def show

@@ -1,3 +1,10 @@
 .selectable.active, .selectable:hover {
     background: #d9edf7;
 }
+.selectable.active,
+.selectable.active a,
+.selectable.active:hover,
+.selectable.active:hover a {
+    background: #428bca;
+    color: #fff;
+}

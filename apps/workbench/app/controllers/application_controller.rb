@@ -63,7 +63,7 @@ class ApplicationController < ActionController::Base
     self.render_error status: 404
   end
 
-  def index
+  def find_objects_for_index
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
@@ -85,6 +85,10 @@ class ApplicationController < ActionController::Base
 
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
+  end
+
+  def index
+    find_objects_for_index
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -107,6 +111,11 @@ class ApplicationController < ActionController::Base
       }
       f.js { render }
     end
+  end
+
+  def choose
+    find_objects_for_index
+    render partial: 'choose', locals: {multiple: params[:multiple]}
   end
 
   def render_content
