@@ -23,7 +23,7 @@ class Arvados::V1::NodesController < ApplicationController
       @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
                      ping_secret: params[:ping_secret],
                      ec2_instance_id: params[:instance_id] })
-      if @object.info[:ping_secret] == params[:ping_secret]
+      if @object.info['ping_secret'] == params[:ping_secret]
         render json: @object.as_api_response(:superuser)
       else
         raise "Invalid ping_secret after ping"

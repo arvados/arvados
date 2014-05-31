@@ -1,6 +1,7 @@
 class ArvadosBase < ActiveRecord::Base
   self.abstract_class = true
   attr_accessor :attribute_sortkey
+  attr_accessor :create_params
 
   def self.arvados_api_client
     ArvadosApiClient.new_or_current
@@ -144,8 +145,10 @@ class ArvadosBase < ActiveRecord::Base
     ActionController::Parameters.new(raw_params).permit!
   end
 
-  def self.create raw_params={}
-    super(permit_attribute_params(raw_params))
+  def self.create raw_params={}, create_params={}
+    x = super(permit_attribute_params(raw_params))
+    x.create_params = create_params
+    x
   end
 
   def update_attributes raw_params={}
@@ -164,6 +167,7 @@ class ArvadosBase < ActiveRecord::Base
       obdata.delete :uuid
       resp = arvados_api_client.api(self.class, '/' + uuid, postdata)
     else
+      postdata.merge!(@create_params) if @create_params
       resp = arvados_api_client.api(self.class, '', postdata)
     end
     return false if !resp[:etag] || !resp[:uuid]
