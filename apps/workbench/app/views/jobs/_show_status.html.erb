@@ -2,23 +2,25 @@
 <div class="pull-right">
 Re-run job using version:
 <%= form_tag '/jobs', style: "display:inline; padding-left: 1em" do |f| %>
-<% [:script, :script_version, :repository, :output_is_persistent, :supplied_script_version].each do |d| %>
+<% [:script, :script_version, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
   <%= hidden_field :job, d, :value => @object[d] %>
 <% end %>
 <% [:script_parameters, :runtime_constraints].each do |d| %>
   <%= hidden_field :job, d, :value => Oj.dump(@object[d]) %>
 <% end %>
+<%= hidden_field :job, :no_reuse, :value => true %>
 <%= button_tag "Same (#{@object.script_version.slice 0,8}...)", {class: 'btn btn-primary', id: "run-pipeline-button"} %>
 <% end %>
 
 <%= form_tag '/jobs', style: "display:inline" do |f| %>
-<% [:script, :repository, :output_is_persistent, :supplied_script_version].each do |d| %>
+<% [:script, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
   <%= hidden_field :job, d, :value => @object[d] %>
 <% end %>
 <%= hidden_field :job, :script_version, :value => @object[:supplied_script_version] %>
 <% [:script_parameters, :runtime_constraints].each do |d| %>
   <%= hidden_field :job, d, :value => Oj.dump(@object[d]) %>
 <% end %>
+<%= hidden_field :job, :no_reuse, :value => true %>
 <%= button_tag "Latest (#{@object.supplied_script_version})", {class: 'btn btn-primary', id: "run-pipeline-button"} %>
 <% end %>
 </div>
