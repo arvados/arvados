@@ -41,11 +41,11 @@ class CollectionsController < ApplicationController
   end
 
   def choose
-    @name_links = Link.
+    @objects = Link.
       filter([['link_class','=','name'],
               ['head_uuid','is_a','arvados#collection']])
-    @name_links.collect { |x| x }
-    $stderr.puts @name_links.inspect
+    find_objects_for_index
+    @name_links = @objects
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
     super

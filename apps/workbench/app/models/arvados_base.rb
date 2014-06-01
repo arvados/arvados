@@ -305,13 +305,15 @@ class ArvadosBase < ActiveRecord::Base
       (writable_by.include? current_user.uuid rescue false)))
   end
 
-  def attribute_editable?(attr)
+  def attribute_editable?(attr, ever=nil)
     if "created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at".index(attr.to_s)
       false
     elsif not (current_user.andand.is_active)
       false
     elsif attr == 'uuid'
       current_user.is_admin
+    elsif ever
+      true
     else
       editable?
     end
