@@ -6,21 +6,23 @@
       >
     <td>
       <% if folder.editable? %>
-        <%= link_to({action: 'remove_item', id: folder.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this folder?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-xs btn-default btn-nodecorate', title: 'remove') do %>
+        <%= link_to({action: 'remove_item', id: folder.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this folder?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'remove') do %>
           <i class="fa fa-fw fa-ban"></i>
         <% end %>
       <% else %>
         <i class="fa fa-fw"></i><%# placeholder %>
       <% end %>
 
-      <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
-
-      <i class="fa fa-fw <%= fa_icon_class_for_object(object) %>"></i>
+      <%= render :partial => "show_object_button", :locals => {object: object, size: 'sm'} %>
 
       <%= render_editable_attribute name_object, 'name', nil %>
     </td>
-    <td>
-      <%= object.content_summary %>
+    <td class="arv-description-in-table">
+      <%= render_controller_partial(
+          'show_object_description_cell.html',
+          controller_name: object.controller_name,
+          locals: {object: object})
+          %>
     </td>
   </tr>
 <% end %>

@@ -144,7 +144,7 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    @updates ||= params[@object.resource_param_name.to_sym]
     @updates.keys.each do |attr|
       if @object.send(attr).is_a? Hash
         if @updates[attr].is_a? String

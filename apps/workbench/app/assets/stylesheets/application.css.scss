@@ -47,6 +47,7 @@ table.table-justforlayout {
     font-size: .8em;
     color: #888;
 }
+.arvados-filename,
 .arvados-uuid {
     font-size: .8em;
     font-family: monospace;
@@ -184,6 +185,7 @@ div#wrapper {
 }
 .arv-description-in-table {
   max-height: 3.5em;
+  overflow-x: hidden;
   overflow-y: hidden;
 }
 .arv-description-in-table:hover {

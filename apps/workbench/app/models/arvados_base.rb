@@ -348,6 +348,10 @@ class ArvadosBase < ActiveRecord::Base
     resource_class
   end
 
+  def resource_param_name
+    self.class.to_s.underscore
+  end
+
   def friendly_link_name
     (name if self.respond_to? :name) || default_name
   end
@@ -362,6 +366,14 @@ class ArvadosBase < ActiveRecord::Base
 
   def self.default_name
     self.to_s.underscore.humanize
+  end
+
+  def controller
+    (self.class.to_s.pluralize + 'Controller').constantize
+  end
+
+  def controller_name
+    self.class.to_s.tableize
   end
 
   # Placeholder for name when name is missing or empty

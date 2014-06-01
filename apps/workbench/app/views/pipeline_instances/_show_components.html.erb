@@ -9,10 +9,9 @@
     <%= render_editable_attribute @object, 'name', nil %>
   </h2>
   <% if template %>
-  <h4>
-    From template:
+  <blockquote><span class="deemphasize">From template:</span><br />
     <%= link_to_if_arvados_object template, friendly_name: true %>
-  </h4>
+  </blockquote>
   <% end %>
 <% end %>
 

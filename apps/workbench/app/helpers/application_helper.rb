@@ -212,7 +212,8 @@ module ApplicationHelper
       end
     end
 
-    if !object.attribute_editable?(attr, :ever) or
+    if !object or
+        !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
          !object.owner_uuid.in?(my_folders.collect(&:uuid)))
       return link_to_if_arvados_object attrvalue
@@ -349,6 +350,15 @@ module ApplicationHelper
     end
   end
 
+  def render_controller_partial partial, opts
+    cname = opts.delete :controller_name
+    begin
+      render opts.merge(partial: "#{cname}/#{partial}")
+    rescue ActionView::MissingTemplate
+      render opts.merge(partial: "application/#{partial}")
+    end
+  end
+    
   def fa_icon_class_for_object object
     case object.class.to_s.to_sym
     when :User
@@ -365,6 +375,22 @@ module ApplicationHelper
       'fa-clipboard'
     when :Human
       'fa-male'
+    when :VirtualMachine
+      'fa-terminal'
+    when :Repository
+      'fa-code-fork'
+    when :Link
+      'fa-arrows-h'
+    when :User
+      'fa-user'
+    when :Node
+      'fa-cloud'
+    when :KeepService
+      'fa-exchange'
+    when :KeepDisk
+      'fa-hdd-o'
+    else
+      'fa-cube'
     end
   end
 end
