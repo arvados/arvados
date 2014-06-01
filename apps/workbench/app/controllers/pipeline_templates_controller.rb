@@ -6,6 +6,6 @@ class PipelineTemplatesController < ApplicationController
   end
 
   def show_pane_list
-    %w(Components Pipelines Attributes Metadata JSON API)
+    %w(Components Pipelines Advanced)
   end
 end

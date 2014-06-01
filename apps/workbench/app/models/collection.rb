@@ -25,6 +25,7 @@ class Collection < ArvadosBase
   end
 
   def files_tree
+    return [] if files.empty?
     tree = files.group_by { |file_spec| File.split(file_spec.first) }
     # Fill in entries for empty directories.
     tree.keys.map { |basedir, _| File.split(basedir) }.each do |splitdir|

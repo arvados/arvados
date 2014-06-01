@@ -3,7 +3,7 @@
     <%= message %><br />
   <% end %>
 <% else %>
-      <% if obj.attribute_editable?(attr) %>
+      <% if obj.attribute_editable?(attr) and (!defined?(editable) || editable) %>
         <%= render_editable_attribute obj, attr %>
         <% if resource_class_for_uuid(attrvalue, {referring_object: obj, referring_attr: attr}) %>
 	<br />

@@ -8,7 +8,7 @@ class FoldersController < ApplicationController
   end
 
   def show_pane_list
-    %w(Contents Permissions)
+    %w(Contents Permissions Advanced)
   end
 
   def remove_item
@@ -82,7 +82,8 @@ class FoldersController < ApplicationController
   end
 
   def show
-    @objects = @object.contents include_linked: true
+    @objects = @object.contents(include_linked: true,
+                                offset: params[:offset] || 0)
     @share_links = Link.filter([['head_uuid', '=', @object.uuid],
                                 ['link_class', '=', 'permission']])
     @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
@@ -95,13 +96,31 @@ class FoldersController < ApplicationController
         end
       else
         @objects_and_names << [object,
-                               Link.new(tail_uuid: @object.uuid,
+                               Link.new(owner_uuid: @object.uuid,
+                                        tail_uuid: @object.uuid,
                                         head_uuid: object.uuid,
                                         link_class: "name",
                                         name: "")]
       end
     end
-    super
+    if params[:partial]
+      respond_to do |f|
+        f.json {
+          render json: {
+            content: render_to_string(partial: 'show_contents_rows.html',
+                                      formats: [:html],
+                                      locals: {
+                                        objects_and_names: @objects_and_names,
+                                        folder: @object
+                                      }),
+            next_page_href: (next_page_offset and
+                             url_for(offset: next_page_offset, partial: true))
+          }
+        }
+      end
+    else
+      super
+    end
   end
 
   def create

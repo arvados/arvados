@@ -13,19 +13,19 @@
         <% end %>
 
         <% if @output_of.andand.any? %>
-          <p>Output of jobs:<br />
+          <p>This collection was the output of:<br />
           <%= render_arvados_object_list_start(@output_of, 'Show all jobs',
                 jobs_path(filter: [['output', '=', @object.uuid]].to_json)) do |job| %>
-          <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
+            <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
           <% end %>
           </p>
         <% end %>
 
         <% if @log_of.andand.any? %>
-          <p>Log of jobs:<br />
+          <p>This collection contains log messages from:<br />
           <%= render_arvados_object_list_start(@log_of, 'Show all jobs',
                 jobs_path(filter: [['log', '=', @object.uuid]].to_json)) do |job| %>
-          <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
+            <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
           <% end %>
           </p>
         <% end %>

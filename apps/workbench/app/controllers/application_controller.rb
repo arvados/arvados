@@ -88,6 +88,20 @@ class ApplicationController < ActionController::Base
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
   end
 
+  helper_method :next_page_offset
+  def next_page_offset
+    if @objects.respond_to?(:result_offset) and
+        @objects.respond_to?(:result_limit) and
+        @objects.respond_to?(:items_available)
+      next_offset = @objects.result_offset + @objects.result_limit
+      if next_offset < @objects.items_available
+        next_offset
+      else
+        nil
+      end
+    end
+  end
+
   def index
     find_objects_for_index if !@objects
     respond_to do |f|
@@ -115,7 +129,7 @@ class ApplicationController < ActionController::Base
   end
 
   def choose
-    find_objects_for_index
+    find_objects_for_index if !@objects
     render partial: 'choose', locals: {multiple: params[:multiple]}
   end
 
@@ -198,7 +212,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show_pane_list
-    %w(Attributes Metadata Advanced)
+    %w(Attributes Advanced)
   end
 
   protected

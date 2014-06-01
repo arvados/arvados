@@ -13,32 +13,34 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-lg-4">
-      <%= link_to(
-            choose_collections_path(
-              title: 'Add data to folder:',
-              multiple: true,
-              action_name: 'Add',
-              action_href: actions_path(id: @object.uuid),
-              action_method: 'post',
-              action_data: {selection_param: 'selection[]', copy_selections_into_folder: @object.uuid, success: 'page-refresh'}.to_json),
-            { class: "btn btn-primary btn-sm", remote: true, method: 'get', data: {'event-after-select' => 'page-refresh'} }) do %>
-        <i class="fa fa-fw fa-plus"></i> Add data
-      <% end %>
-      <%= link_to(
-            choose_pipeline_templates_path(
-              title: 'Choose a pipeline to run:',
-              action_name: 'Configure...',
-              action_href: pipeline_instances_path,
-              action_method: 'post',
-              action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
-            { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
-        <i class="fa fa-fw fa-gear"></i> Run a pipeline
+      <% if @object.editable? %>
+        <%= link_to(
+              choose_collections_path(
+                title: 'Add data to folder:',
+                multiple: true,
+                action_name: 'Add',
+                action_href: actions_path(id: @object.uuid),
+                action_method: 'post',
+                action_data: {selection_param: 'selection[]', copy_selections_into_folder: @object.uuid, success: 'page-refresh'}.to_json),
+              { class: "btn btn-primary btn-sm", remote: true, method: 'get', data: {'event-after-select' => 'page-refresh'} }) do %>
+          <i class="fa fa-fw fa-plus"></i> Add data
+        <% end %>
+        <%= link_to(
+              choose_pipeline_templates_path(
+                title: 'Choose a pipeline to run:',
+                action_name: 'Configure...',
+                action_href: pipeline_instances_path,
+                action_method: 'post',
+                action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
+              { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
+          <i class="fa fa-fw fa-gear"></i> Run a pipeline
+        <% end %>
       <% end %>
     </div>
     <div class="col-lg-4">
       <form class="form-inline" role="form">
         Show:
-        <select class="form-control" data-filter-rows-by="data-kind" data-filter-in="table.arv-index.arv-folder-contents">
+        <select class="form-control" data-filter-rows-by="data-kind" data-filter-target="table.arv-index.arv-folder-contents tbody">
           <option value="">Everything</option>
           <option value="arvados#collection">Data</option>
           <option value="arvados#pipeline_instance arvados#job">Compute jobs</option>
@@ -52,43 +54,18 @@
       </form>
     </div>
     <div class="col-lg-4">
-      <input type="text" class="form-control search-folder-contents" placeholder="Search folder contents"/>
+      <input type="text" class="form-control search-folder-contents" placeholder="Search folder contents" data-search-target=".arv-index.arv-folder-contents"/>
     </div>
   </div>
 </div>
 
 <table class="table table-condensed arv-index arv-folder-contents">
-  <tbody>
-    <colgroup>
-      <col width="40%" />
-      <col width="60%" />
-    </colgroup>
-    <% @objects_and_names.each do |object, name_link| %>
-      <% name_object = (object.respond_to?(:name) || !name_link) ? object : name_link %>
-      <tr class="filterable"
-          data-object-uuid="<%= name_object.uuid %>"
-          data-kind="<%= object.kind %>"
-          >
-        <td>
-          <% if @object.editable? %>
-            <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this folder?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-xs btn-default btn-nodecorate', title: 'remove') do %>
-              <i class="fa fa-fw fa-ban"></i>
-            <% end %>
-          <% else %>
-            <i class="fa fa-fw"></i><%# placeholder %>
-          <% end %>
-
-          <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
-
-          <i class="fa fa-fw <%= fa_icon_class_for_object(object) %>"></i>
-
-          <%= render_editable_attribute name_object, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
-        </td>
-        <td>
-          <%= object.content_summary %>
-        </td>
-      </tr>
-    <% end %>
+  <colgroup>
+    <col width="40%" />
+    <col width="60%" />
+  </colgroup>
+  <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: next_page_offset) if next_page_offset %>">
+    <%= render partial: 'show_contents_rows', locals: {folder: @object, objects_and_names: @objects_and_names} %>
   </tbody>
   <thead>
     <tr>

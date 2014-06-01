@@ -7,7 +7,7 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
+    %w(Files Provenance_graph Used_by Advanced)
   end
 
   def set_persistent
@@ -44,6 +44,8 @@ class CollectionsController < ApplicationController
     @name_links = Link.
       filter([['link_class','=','name'],
               ['head_uuid','is_a','arvados#collection']])
+    @name_links.collect { |x| x }
+    $stderr.puts @name_links.inspect
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
     super

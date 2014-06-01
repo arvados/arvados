@@ -161,7 +161,7 @@ module ApplicationHelper
       ajax_options['data-pk'][:defaults] = object.attributes
     end
     ajax_options['data-pk'] = ajax_options['data-pk'].to_json
-    @unique_id ||= 0
+    @unique_id ||= (Time.now.to_f*1000000).to_i
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
     span_tag = content_tag 'span', attrvalue.to_s, {

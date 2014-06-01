@@ -364,7 +364,11 @@ class ArvadosBase < ActiveRecord::Base
 
   # Placeholder for name when name is missing or empty
   def default_name
-    "New #{class_for_display.downcase}"
+    if self.respond_to? :name
+      "New #{class_for_display.downcase}"
+    else
+      uuid
+    end
   end
 
   def owner
