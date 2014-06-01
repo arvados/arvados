@@ -41,8 +41,9 @@ class FoldersController < ApplicationController
     end
   end
 
-  def index
+  def find_objects_for_index
     @objects = Group.where(group_class: 'folder').order('name')
+    super
     parent_of = {current_user.uuid => 'me'}
     @objects.each do |ob|
       parent_of[ob.uuid] = ob.owner_uuid
@@ -100,7 +101,6 @@ class FoldersController < ApplicationController
                                         name: "")]
       end
     end
-
     super
   end
 

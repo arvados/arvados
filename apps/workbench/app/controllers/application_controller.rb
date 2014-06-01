@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include ArvadosApiClientHelper
+  include ApplicationHelper
 
   respond_to :html, :json, :js
   protect_from_forgery
@@ -84,11 +85,11 @@ class ApplicationController < ActionController::Base
     end
 
     @objects ||= model_class
-    @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
+    @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
   end
 
   def index
-    find_objects_for_index
+    find_objects_for_index if !@objects
     respond_to do |f|
       f.json { render json: @objects }
       f.html { render }
@@ -197,7 +198,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show_pane_list
-    %w(Attributes Metadata JSON API)
+    %w(Attributes Metadata Advanced)
   end
 
   protected
@@ -244,7 +245,13 @@ class ApplicationController < ActionController::Base
       if params[:uuid].empty?
         @object = nil
       else
-        @object = model_class.find(params[:uuid])
+        if (model_class != Link and
+            resource_class_for_uuid(params[:uuid]) == Link)
+          @name_link = Link.find(params[:uuid])
+          @object = model_class.find(@name_link.head_uuid)
+        else
+          @object = model_class.find(params[:uuid])
+        end
       end
     else
       @object = model_class.where(uuid: params[:uuid]).first

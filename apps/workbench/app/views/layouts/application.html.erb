@@ -71,9 +71,15 @@
             <% else %>
               <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
               <li>
-                <%= link_to(
-                            controller.controller_name.humanize.downcase,
-                            url_for({controller: params[:controller]})) %>
+                <% if @object and \
+                      ((@name_link and (o = Group.find?(@name_link.tail_uuid)))\
+                       or (o = Group.find?(@object.owner_uuid))) %>
+                  <%= link_to(o.name, folder_path(o.uuid)) %>
+                <% else %>
+                  <%= link_to(
+                      controller.controller_name.humanize.downcase,
+                      url_for({controller: params[:controller]})) %>
+                <% end %>
               </li>
               <% if params[:action] != 'index' %>
                 <li class="nav-separator">

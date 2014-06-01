@@ -109,6 +109,10 @@ class ArvadosBase < ActiveRecord::Base
     new.private_reload(hash)
   end
 
+  def self.find?(*args)
+    find(*args) rescue nil
+  end
+
   def self.order(*args)
     ArvadosResourceList.new(self).order(*args)
   end
@@ -282,7 +286,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def class_for_display
-    self.class.to_s
+    self.class.to_s.underscore.humanize
   end
 
   def self.creatable?
@@ -343,7 +347,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def friendly_link_name
-    (name if self.respond_to? :name) || uuid
+    (name if self.respond_to? :name) || default_name
   end
 
   def content_summary
@@ -352,6 +356,15 @@ class ArvadosBase < ActiveRecord::Base
 
   def selection_label
     friendly_link_name
+  end
+
+  def self.default_name
+    self.to_s.underscore.humanize
+  end
+
+  # Placeholder for name when name is missing or empty
+  def default_name
+    "New #{class_for_display.downcase}"
   end
 
   def owner

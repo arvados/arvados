@@ -26,7 +26,7 @@
       <% end %>
       <%= link_to(
             choose_pipeline_templates_path(
-              title: 'Run pipeline:',
+              title: 'Choose a pipeline to run:',
               action_name: 'Configure...',
               action_href: pipeline_instances_path,
               action_method: 'post',
@@ -36,12 +36,20 @@
       <% end %>
     </div>
     <div class="col-lg-4">
-      <select class="form-control" data-filter-rows-by="kind">
-        <option value="">Show everything</option>
-        <option value="arvados#collection">Data</option>
-        <option value="arvados#pipeline_instance arvados#job">Compute jobs</option>
-        <option value="arvados#pipeline_template">Pipelines</option>
-      </select>
+      <form class="form-inline" role="form">
+        Show:
+        <select class="form-control" data-filter-rows-by="data-kind" data-filter-in="table.arv-index.arv-folder-contents">
+          <option value="">Everything</option>
+          <option value="arvados#collection">Data</option>
+          <option value="arvados#pipeline_instance arvados#job">Compute jobs</option>
+          <option value="arvados#pipeline_template">Pipelines</option>
+          <!--
+          <option value="arvados#specimen">Specimens</option>
+          <option value="arvados#human">Humans</option>
+          <option value="arvados#trait">Traits</option>
+          -->
+        </select>
+      </form>
     </div>
     <div class="col-lg-4">
       <input type="text" class="form-control search-folder-contents" placeholder="Search folder contents"/>
@@ -49,32 +57,35 @@
   </div>
 </div>
 
-<table class="table table-condensed arv-index">
+<table class="table table-condensed arv-index arv-folder-contents">
   <tbody>
     <colgroup>
       <col width="40%" />
-      <col width="40%" />
-      <col width="10%" />
-      <col width="10%" />
+      <col width="60%" />
     </colgroup>
     <% @objects_and_names.each do |object, name_link| %>
-      <tr data-object-uuid="<%= (name_link && name_link.uuid) || object.uuid %>">
+      <% name_object = (object.respond_to?(:name) || !name_link) ? object : name_link %>
+      <tr class="filterable"
+          data-object-uuid="<%= name_object.uuid %>"
+          data-kind="<%= object.kind %>"
+          >
         <td>
+          <% if @object.editable? %>
+            <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this folder?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-xs btn-default btn-nodecorate', title: 'remove') do %>
+              <i class="fa fa-fw fa-ban"></i>
+            <% end %>
+          <% else %>
+            <i class="fa fa-fw"></i><%# placeholder %>
+          <% end %>
+
+          <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
+
           <i class="fa fa-fw <%= fa_icon_class_for_object(object) %>"></i>
-          <%= render_editable_attribute name_link, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
+
+          <%= render_editable_attribute name_object, 'name', nil, {data: {emptytext: "Unnamed #{object.class_for_display}"}} %>
         </td>
         <td>
           <%= object.content_summary %>
-        </td>
-        <td>
-          <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
-        </td>
-        <td>
-          <% if @object.editable? %>
-            <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display} #{name_link.andand.uuid ? name_link.name : object.uuid} from this folder?"}, class: 'btn btn-xs btn-default') do %>
-              Remove <i class="fa fa-fw fa-ban"></i>
-            <% end %>
-          <% end %>
         </td>
       </tr>
     <% end %>
@@ -82,14 +93,9 @@
   <thead>
     <tr>
       <th>
-        name
       </th>
       <th>
         description
-      </th>
-      <th>
-      </th>
-      <th>
       </th>
     </tr>
   </thead>

@@ -75,6 +75,12 @@ $(document).
                       });
                 }
             });
+    }).
+    on('ready ajax:complete', function() {
+        $("[data-toggle~='x-editable']").click(function(e) {
+            e.stopPropagation();
+            $($(this).attr('data-toggle-selector')).editable('toggle');
+        });
     });
 
 $.fn.editabletypes.text.defaults.tpl = '<input type="text" name="editable-text">'

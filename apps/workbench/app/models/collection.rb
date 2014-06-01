@@ -1,6 +1,4 @@
 class Collection < ArvadosBase
-  include ApplicationHelper
-
   MD5_EMPTY = 'd41d8cd98f00b204e9800998ecf8427e'
 
   # Return true if the given string is the locator of a zero-length blob
@@ -13,7 +11,7 @@ class Collection < ArvadosBase
   end
 
   def content_summary
-    human_readable_bytes_html(total_bytes) + " " + super
+    ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
   end
 
   def total_bytes

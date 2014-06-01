@@ -79,10 +79,16 @@ module ApplicationHelper
   #
   def link_to_if_arvados_object(attrvalue, opts={}, style_opts={})
     if (resource_class = resource_class_for_uuid(attrvalue, opts))
-      link_uuid = attrvalue.is_a?(ArvadosBase) ? attrvalue.uuid : attrvalue
+      if attrvalue.is_a? ArvadosBase
+        object = attrvalue
+        link_uuid = attrvalue.uuid
+      else
+        object = nil
+        link_uuid = attrvalue
+      end
       link_name = opts[:link_text]
       if !link_name
-        link_name = link_uuid
+        link_name = object.andand.default_name || resource_class.default_name
 
         if opts[:friendly_name]
           if attrvalue.respond_to? :friendly_link_name
@@ -159,17 +165,17 @@ module ApplicationHelper
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
     span_tag = content_tag 'span', attrvalue.to_s, {
-      "data-emptytext" => "none",
+      "data-emptytext" => (object.andand.default_name || 'none'),
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-title" => "Update #{attr.gsub '_', ' '}",
+      "data-title" => "Edit #{attr.gsub '_', ' '}",
       "data-name" => attr,
       "data-object-uuid" => object.uuid,
       "data-toggle" => "manual",
       "id" => span_id,
       :class => "editable"
     }.merge(htmloptions).merge(ajax_options)
-    span_tag + raw(' <a href="#" class="btn btn-xs btn-default" data-toggle="x-editable" data-toggle-selector="#' + span_id + '"><i class="fa fa-fw fa-pencil"></i> Edit</a>')
+    span_tag + raw(' <a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="edit"><i class="fa fa-fw fa-pencil"></i></a>')
   end
 
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
@@ -215,6 +221,49 @@ module ApplicationHelper
       dataclass = ArvadosBase.resource_class_for_uuid(attrvalue)
     end
 
+    id = "#{object.uuid}-#{subattr.join('-')}"
+    dn = "[#{attr}]"
+    subattr.each do |a|
+      dn += "[#{a}]"
+    end
+    if value_info.is_a? Hash
+      dn += '[value]'
+    end
+
+    if dataclass == Collection
+      selection_param = object.class.to_s.underscore + dn
+      display_value = attrvalue
+      if value_info.is_a?(Hash)
+        if (link = Link.find? value_info[:link_uuid])
+          display_value = link.name
+        elsif value_info[:link_name]
+          display_value = value_info[:link_name]
+        end
+      end
+      modal_path = choose_collections_path \
+      ({ title: 'Choose a dataset:',
+         action_name: 'OK',
+         action_href: pipeline_instance_path(id: object.uuid),
+         action_method: 'patch',
+         action_data: {
+           merge: true,
+           selection_param: selection_param,
+           success: 'page-refresh'
+         }.to_json,
+        })
+      return content_tag('div', :class => 'input-group') do
+        html = text_field_tag(dn, display_value, :class => 'form-control')
+        html + content_tag('span', :class => 'input-group-btn') do
+          link_to('Choose',
+                  modal_path,
+                  { :class => "btn btn-primary",
+                    :remote => true,
+                    :method => 'get',
+                  })
+        end
+      end
+    end
+
     if dataclass.andand.is_a?(Class)
       datatype = 'select'
     elsif dataclass == 'number'
@@ -226,15 +275,6 @@ module ApplicationHelper
       datatype = 'number'
     elsif attrvalue.is_a? String
       datatype = 'text'
-    end
-
-    id = "#{object.uuid}-#{subattr.join('-')}"
-    dn = "[#{attr}]"
-    subattr.each do |a|
-      dn += "[#{a}]"
-    end
-    if value_info.is_a? Hash
-      dn += '[value]'
     end
 
     selectables = []
@@ -303,15 +343,21 @@ module ApplicationHelper
   end
 
   def fa_icon_class_for_object object
-    case object.class.to_s
-    when 'User'
+    case object.class.to_s.to_sym
+    when :User
       'fa-user'
-    when 'Group'
+    when :Group
       object.group_class ? 'fa-folder' : 'fa-users'
-    when 'Job', 'PipelineInstance', 'PipelineTemplate'
+    when :Job, :PipelineInstance, :PipelineTemplate
       'fa-gears'
-    when 'Collection'
+    when :Collection
       'fa-archive'
+    when :Specimen
+      'fa-flask'
+    when :Trait
+      'fa-clipboard'
+    when :Human
+      'fa-male'
     end
   end
 end

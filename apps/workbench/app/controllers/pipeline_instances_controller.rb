@@ -3,6 +3,33 @@ class PipelineInstancesController < ApplicationController
   before_filter :find_objects_by_uuid, only: :compare
   include PipelineInstancesHelper
 
+  def update
+    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    if (components = @updates[:components])
+      components.each do |cname, component|
+        if component[:script_parameters]
+          component[:script_parameters].each do |param, value_info|
+            if value_info.is_a? Hash
+              if resource_class_for_uuid(value_info[:value]) == Link
+                # Use the link target, not the link itself, as script
+                # parameter; but keep the link info around as well.
+                link = Link.find value_info[:value]
+                value_info[:value] = link.head_uuid
+                value_info[:link_uuid] = link.uuid
+                value_info[:link_name] = link.name
+              else
+                # Delete stale link_uuid and link_name data.
+                value_info[:link_uuid] = nil
+                value_info[:link_name] = nil
+              end
+            end
+          end
+        end
+      end
+    end
+    super
+  end
+
   def graph(pipelines)
     count = {}    
     provenance = {}
@@ -142,9 +169,12 @@ class PipelineInstancesController < ApplicationController
   end
 
   def show_pane_list
-    panes = %w(Components Graph Attributes Metadata JSON API)
+    panes = %w(Components Graph Advanced)
     if @object and @object.state.in? ['New', 'Ready']
       panes = %w(Inputs) + panes
+    end
+    if not @object.components.values.collect { |x| x['job'] }.compact.any?
+      panes -= ['Graph']
     end
     panes
   end
