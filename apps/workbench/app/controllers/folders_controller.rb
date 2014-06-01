@@ -36,7 +36,7 @@ class FoldersController < ApplicationController
     if item.owner_uuid == @object.uuid
       # Object is owned by this folder. Remove it from the folder by
       # changing owner to the current user.
-      item.update_attributes owner_uuid: current_user
+      item.update_attributes owner_uuid: current_user.uuid
       @removed_uuids << item.uuid
     end
   end
