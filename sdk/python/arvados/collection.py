@@ -341,8 +341,25 @@ class CollectionWriter(object):
         self._current_file_name = None
 
     def finish(self):
-        return Keep.put(self.manifest_text())
+        # Send the stripped manifest to Keep, to ensure that we use the
+        # same UUID regardless of what hints are used on the collection.
+        return Keep.put(self.stripped_manifest())
 
+    def stripped_manifest(self):
+        """
+        Return the manifest for the current collection with all permission
+        hints removed from the locators in the manifest.
+        """
+        raw = self.manifest_text()
+        clean = ''
+        for line in raw.split("\n"):
+            fields = line.split()
+            if len(fields) > 0:
+                locators = [ re.sub(r'\+A[a-z0-9@_-]+', '', x)
+                             for x in fields[1:-1] ]
+                clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
+        return clean
+        
     def manifest_text(self):
         self.finish_current_stream()
         manifest = ''

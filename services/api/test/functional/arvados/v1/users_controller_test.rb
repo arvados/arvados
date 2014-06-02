@@ -144,6 +144,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         email: "foo@example.com"
       }
     }
+    assert_response :success
 
     response_items = JSON.parse(@response.body)['items']
 
@@ -795,6 +796,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   def find_obj_in_resp (response_items, object_type, head_kind=nil)
     return_obj = nil
+    response_items
     response_items.each { |x|
       if !x
         next

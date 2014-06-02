@@ -2,9 +2,10 @@
 #
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
 
-import unittest
-import arvados
 import os
+import unittest
+
+import arvados
 import run_test_server
 
 class KeepTestCase(unittest.TestCase):
@@ -105,21 +106,32 @@ class KeepPermissionTestCase(unittest.TestCase):
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
-        # With Keep permissions enabled, a GET request without a signature will fail.
+        # GET with an unsigned locator => NotFound
         bar_locator = arvados.Keep.put('bar')
+        unsigned_bar_locator = "37b51d194a7513e45b56f6524f2d51f2+3"
         self.assertRegexpMatches(
             bar_locator,
             r'^37b51d194a7513e45b56f6524f2d51f2\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("bar"): ' + bar_locator)
         self.assertRaises(arvados.errors.NotFoundError,
                           arvados.Keep.get,
-                          "37b51d194a7513e45b56f6524f2d51f2")
+                          unsigned_bar_locator)
 
-        # A request without an API token will also fail.
+        # GET from a different user => NotFound
+        run_test_server.authorize_with('spectator')
+        self.assertRaises(arvados.errors.NotFoundError,
+                          arvados.Keep.get,
+                          bar_locator)
+
+        # Unauthenticated GET for a signed locator => NotFound
+        # Unauthenticated GET for an unsigned locator => NotFound
         del arvados.config.settings()["ARVADOS_API_TOKEN"]
         self.assertRaises(arvados.errors.NotFoundError,
                           arvados.Keep.get,
                           bar_locator)
+        self.assertRaises(arvados.errors.NotFoundError,
+                          arvados.Keep.get,
+                          unsigned_bar_locator)
 
 # KeepOptionalPermission: starts Keep with --permission-key-file
 # but not --enforce-permissions (i.e. generate signatures on PUT
