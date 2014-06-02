@@ -322,7 +322,7 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
 
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
-    def test_simple_file_put(self):
+    def call_main_on_test_file(self):
         with self.make_test_file() as testfile:
             path = testfile.name
             arv_put.main(['--stream', '--no-progress', path])
@@ -330,6 +330,31 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
             "did not find file stream in Keep store")
+
+    def test_simple_file_put(self):
+        self.call_main_on_test_file()
+
+    def test_put_with_unwriteable_cache_dir(self):
+        orig_cachedir = arv_put.ResumeCache.CACHE_DIR
+        cachedir = self.make_tmpdir()
+        os.chmod(cachedir, 0o0)
+        arv_put.ResumeCache.CACHE_DIR = cachedir
+        try:
+            self.call_main_on_test_file()
+        finally:
+            arv_put.ResumeCache.CACHE_DIR = orig_cachedir
+            os.chmod(cachedir, 0o700)
+
+    def test_put_with_unwritable_cache_subdir(self):
+        orig_cachedir = arv_put.ResumeCache.CACHE_DIR
+        cachedir = self.make_tmpdir()
+        os.chmod(cachedir, 0o0)
+        arv_put.ResumeCache.CACHE_DIR = os.path.join(cachedir, 'cachedir')
+        try:
+            self.call_main_on_test_file()
+        finally:
+            arv_put.ResumeCache.CACHE_DIR = orig_cachedir
+            os.chmod(cachedir, 0o700)
 
     def test_short_put_from_stdin(self):
         # Have to run this separately since arv-put can't read from the
