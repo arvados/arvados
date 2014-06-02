@@ -31,6 +31,11 @@ class JobsController < ApplicationController
     end
   end
 
+  def cancel
+    @object.cancel
+    redirect_to @object
+  end
+
   def show
     generate_provenance([@object])
   end
