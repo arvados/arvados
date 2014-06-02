@@ -1,4 +1,5 @@
 $(document).on('click', '.selectable', function() {
+    var any;
     var $this = $(this);
     if (!$this.hasClass('multiple')) {
         $this.closest('.selectable-container').
@@ -6,6 +7,13 @@ $(document).on('click', '.selectable', function() {
             removeClass('active');
     }
     $this.toggleClass('active');
+    any = ($this.
+           closest('.selectable-container').
+           find('.selectable.active').length > 0)
+    $this.
+        closest('.modal').
+        find('[data-enable-if-selection]').
+        prop('disabled', !any);
 }).on('click', '.modal button[data-action-href]', function() {
     var selection = [];
     var data = [];

@@ -36,7 +36,7 @@
         <%= link_to(
               choose_pipeline_templates_path(
                 title: 'Choose a pipeline to run:',
-                action_name: 'Configure...',
+                action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
                 action_href: pipeline_instances_path,
                 action_method: 'post',
                 action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),

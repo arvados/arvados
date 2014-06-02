@@ -10,7 +10,8 @@
   </h2>
   <% if template %>
   <blockquote><span class="deemphasize">From template:</span><br />
-    <%= link_to_if_arvados_object template, friendly_name: true %>
+    <%= link_to_if_arvados_object template, friendly_name: true %><br />
+    <%= template.description %>
   </blockquote>
   <% end %>
 <% end %>
@@ -120,7 +121,7 @@ setInterval(function(){$('a.refresh').click()}, 15000);
 
 <% else %>    <%# State new or ready or paused %>
   <% if @object.state == 'New' %>
-    <p>Please set the desired input parameters for the components of this pipeline.  Parameters highlighted in red are required.</p>
+    <p><i>Here are all of the pipeline's components (jobs that will need to run in order to complete the pipeline). If you know what you're doing (or you're experimenting) you can modify these parameters before starting the pipeline. Usually, you only need to edit the settings presented on the "Inputs" tab above.</i></p>
   <% end %>
 
   <% content_for :tab_line_buttons do %>
