@@ -20,9 +20,10 @@ class Arvados::V1::GroupsController < ApplicationController
     offset_all = @offset
     @orders = []
 
-    [Group, Job, PipelineInstance, PipelineTemplate,
-     Human, Specimen, Trait,
-     Collection].each do |klass|
+    [Group,
+     Job, PipelineInstance, PipelineTemplate,
+     Collection,
+     Human, Specimen, Trait].each do |klass|
       @objects = klass.readable_by(*@read_users)
       cond_sql = "#{klass.table_name}.owner_uuid = ?"
       cond_params = [@object.uuid]
