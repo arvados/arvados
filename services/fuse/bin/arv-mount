@@ -5,6 +5,7 @@ import arvados
 import subprocess
 import argparse
 import daemon
+import signal
 
 if __name__ == '__main__':
     # Handle command line parameters
@@ -64,9 +65,14 @@ collections on the server.""")
         # wait until the driver is finished initializing
         operations.initlock.wait()
 
-        rc = 255
         try:
-            rc = subprocess.call(args.exec_args, shell=False)
+            sp = subprocess.Popen(args.exec_args, shell=False)
+            # forward signals to the process.
+            signal.signal(signal.SIGINT, lambda signum, frame: sp.send_signal(signum))
+            signal.signal(signal.SIGTERM, lambda signum, frame: sp.send_signal(signum))
+            signal.signal(signal.SIGQUIT, lambda signum, frame: sp.send_signal(signum))
+            rc = 255
+            rc = sp.wait()
         except OSError as e:
             sys.stderr.write('arv-mount: %s -- exec %s\n' % (str(e), args.exec_args))
             rc = e.errno
