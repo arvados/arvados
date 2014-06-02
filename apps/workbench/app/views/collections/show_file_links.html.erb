@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<% coll_name = (@object.name =~ /\S/) ? @object.name : "Collection #{@object.uuid}" %>
+<% coll_name = "Collection #{@object.uuid}" %>
 <% link_opts = {controller: 'collections', action: 'show_file',
                 uuid: @object.uuid, reader_token: params[:reader_token]} %>
 <head>
