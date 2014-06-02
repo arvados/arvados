@@ -21,7 +21,7 @@ Re-run job using version:
   <%= hidden_field :job, d, :value => Oj.dump(@object[d]) %>
 <% end %>
 <%= hidden_field :options, :no_reuse, :value => true %>
-<%= button_tag "Latest (#{@object.supplied_script_version})", {class: 'btn btn-primary', id: "run-pipeline-button"} %>
+<%= button_tag "Latest (#{@object.repository}/#{@object.supplied_script_version})", {class: 'btn btn-primary', id: "run-pipeline-button"} %>
 <% end %>
 </div>
 
