@@ -3,6 +3,10 @@ class Job < ArvadosBase
     true
   end
 
+  def content_summary
+    "#{script} job"
+  end
+
   def attribute_editable? attr, *args
     false
   end
