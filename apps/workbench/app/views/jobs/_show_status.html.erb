@@ -6,7 +6,7 @@ Re-run job using version:
   <%= hidden_field :job, d, :value => @object[d] %>
 <% end %>
 <% [:script_parameters, :runtime_constraints].each do |d| %>
-  <%= hidden_field :job, d, :value => Oj.dump(@object[d]) %>
+  <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
 <% end %>
 <%= hidden_field :options, :no_reuse, :value => true %>
 <%= button_tag "Same (#{@object.script_version.slice 0,8}...)", {class: 'btn btn-primary', id: "run-pipeline-button"} %>
@@ -18,7 +18,7 @@ Re-run job using version:
 <% end %>
 <%= hidden_field :job, :script_version, :value => @object[:supplied_script_version] %>
 <% [:script_parameters, :runtime_constraints].each do |d| %>
-  <%= hidden_field :job, d, :value => Oj.dump(@object[d]) %>
+  <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
 <% end %>
 <%= hidden_field :options, :no_reuse, :value => true %>
 <%= button_tag "Latest (#{@object.repository}/#{@object.supplied_script_version})", {class: 'btn btn-primary', id: "run-pipeline-button"} %>
