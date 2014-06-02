@@ -8,7 +8,7 @@
       </div>
 
       <div class="modal-body">
-        <div class="container-fluid arv-folder-list selectable-container" style="height: 15em; overflow-y: scroll">
+        <div class="container-fluid arv-folder-list selectable-container" style="height: 15em; overflow-y: scroll" data-infinite-scroller="#choose-scroll" id="choose-scroll" data-infinite-content-href="<%= @next_page_href %>">
           <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
         </div>
       </div>

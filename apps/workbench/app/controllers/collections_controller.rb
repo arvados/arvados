@@ -41,10 +41,13 @@ class CollectionsController < ApplicationController
   end
 
   def choose
+    params[:limit] ||= 20
     @objects = Link.
       filter([['link_class','=','name'],
               ['head_uuid','is_a','arvados#collection']])
     find_objects_for_index
+    @next_page_href = (next_page_offset and
+                       url_for(offset: next_page_offset, partial: true))
     @name_links = @objects
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])

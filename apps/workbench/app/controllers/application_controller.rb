@@ -129,8 +129,25 @@ class ApplicationController < ActionController::Base
   end
 
   def choose
+    params[:limit] ||= 20
     find_objects_for_index if !@objects
-    render partial: 'choose', locals: {multiple: params[:multiple]}
+    respond_to do |f|
+      if params[:partial]
+        f.json {
+          render json: {
+            content: render_to_string(partial: "choose_rows.html",
+                                      formats: [:html],
+                                      locals: {
+                                        multiple: params[:multiple]
+                                      }),
+            next_page_href: @next_page_href
+          }
+        }
+      end
+      f.js {
+        render partial: 'choose', locals: {multiple: params[:multiple]}
+      }
+    end
   end
 
   def render_content

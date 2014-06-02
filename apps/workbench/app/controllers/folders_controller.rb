@@ -82,7 +82,8 @@ class FoldersController < ApplicationController
   end
 
   def show
-    @objects = @object.contents(include_linked: true,
+    @objects = @object.contents(limit: 50,
+                                include_linked: true,
                                 offset: params[:offset] || 0)
     @share_links = Link.filter([['head_uuid', '=', @object.uuid],
                                 ['link_class', '=', 'permission']])
