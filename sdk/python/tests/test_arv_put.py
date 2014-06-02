@@ -364,16 +364,19 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
         pipe = subprocess.Popen(
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=open('/dev/null', 'w'))
+            stderr=subprocess.STDOUT)
         pipe.stdin.write('stdin test\n')
         pipe.stdin.close()
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
             time.sleep(.1)
-        if pipe.returncode is None:
+        returncode = pipe.poll()
+        if returncode is None:
             pipe.terminate()
             self.fail("arv-put did not PUT from stdin within 5 seconds")
-        self.assertEquals(pipe.returncode, 0)
+        elif returncode != 0:
+            sys.stdout.write(pipe.stdout.read())
+            self.fail("arv-put returned exit code {}".format(returncode))
         self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
 
 
