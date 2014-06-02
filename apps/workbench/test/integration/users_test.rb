@@ -16,6 +16,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     visit page_with_token('admin_trustedclient')
 
     # go to Users list page
+    find('#system-menu').click
     click_link 'Users'
 
     # check active user attributes in the list page
@@ -50,6 +51,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     visit page_with_token('admin_trustedclient')
 
+    find('#system-menu').click
     click_link 'Users'
 
     assert page.has_text? 'zzzzz-tpzed-d9tiejq69daie8f'
@@ -100,6 +102,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = :selenium
     visit page_with_token('admin_trustedclient')
 
+    find('#system-menu').click
     click_link 'Users'
 
     # click on active user
@@ -159,6 +162,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     visit page_with_token('admin_trustedclient')
 
+    find('#system-menu').click
     click_link 'Users'
 
     # click on active user

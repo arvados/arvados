@@ -29,7 +29,7 @@ class FoldersTest < ActionDispatch::IntegrationTest
     folder_uuid = api_fixture('groups')['afolder']['uuid']
     specimen_uuid = api_fixture('specimens')['owned_by_afolder_with_no_name_link']['uuid']
     visit page_with_token 'active', '/folders/' + folder_uuid
-    within('.panel tr', text: specimen_uuid) do
+    within(".panel tr[data-object-uuid='#{specimen_uuid}']") do
       find(".editable[data-name='name']").click
       find('.editable-input input').set('Now I have a name.')
       find('.glyphicon-ok').click

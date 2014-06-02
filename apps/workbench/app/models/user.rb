@@ -31,8 +31,8 @@ class User < ArvadosBase
     super.reject { |k,v| %w(owner_uuid default_owner_uuid identity_url prefs).index k }
   end
 
- def attribute_editable?(attr)
-    (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super(attr)
+ def attribute_editable? attr, *args
+    (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super(attr, *args)
   end
 
   def friendly_link_name

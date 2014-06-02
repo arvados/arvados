@@ -13,7 +13,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test 'Create and run a pipeline' do
     visit page_with_token('active_trustedclient')
 
-    click_link 'Pipeline templates'
+    visit '/pipeline_templates'
     within('tr', text: 'Two Part Pipeline Template') do
       find('a,button', text: 'Run').click
     end

@@ -4,7 +4,11 @@
     <div class="row">
       <div class="col-sm-4">
         <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
-        <%= render_editable_attribute object, 'name', nil %>
+        <% if object.respond_to?(:name) %>
+          <%= render_editable_attribute object, 'name', nil %>
+        <% else %>
+          <%= object.class_for_display %> <%= object.uuid %>
+        <% end %>
       </div>
       <div class="col-sm-8 arv-description-in-table">
         <%= render_controller_partial(
