@@ -422,7 +422,7 @@ class ArvPutIntegrationTest(unittest.TestCase):
         datadir = tempfile.mkdtemp()
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
-        p = subprocess.Popen(["./bin/arv-put", datadir],
+        p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
                              stdout=subprocess.PIPE)
         (arvout, arverr) = p.communicate()
         self.assertEqual(p.returncode, 0)
