@@ -495,4 +495,15 @@ class ApplicationController < ActionController::Base
       root_of[g.uuid] == current_user.uuid
     end
   end
+
+  helper_method :get_object
+  def get_object uuid
+    if @get_object.nil? and @objects
+      @get_object = @objects.each_with_object({}) do |object, h|
+        h[object.uuid] = object
+      end
+    end
+    @get_object ||= {}
+    @get_object[uuid]
+  end
 end

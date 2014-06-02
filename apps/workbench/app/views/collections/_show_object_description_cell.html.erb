@@ -1,9 +1,4 @@
 <div class="nowrap">
-  <div>
-    <% Link.filter([['link_class','=','tag'],['head_uuid','=',object.uuid]]).collect(&:name).each do |tagname| %>
-      <span class="label label-info"><%= tagname %></span>
-    <% end %>
-  </div>
   <span class="deemphasize">
     Files (<%= human_readable_bytes_html(object.total_bytes) %>):
   </span><span class="arvados-filename">
@@ -11,4 +6,9 @@
       <%= file %>
     <% end %>
   </span>
+  <div>
+    <% Link.filter([['link_class','=','tag'],['head_uuid','=',object.uuid]]).collect(&:name).each do |tagname| %>
+      <span class="label label-info"><%= tagname %></span>
+    <% end %>
+  </div>
 </div>
