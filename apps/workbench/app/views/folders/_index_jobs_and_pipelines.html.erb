@@ -1,4 +1,5 @@
 <div class="container-fluid">
+  <% any = false %>
   <% recent_jobs_and_pipelines[0..9].each do |object| %>
     <% any = true %>
     <div class="row">
@@ -19,7 +20,7 @@
       </div>
     </div>
   <% end %>
-  <% if not defined? any %>
+  <% if not any %>
     <span class="deemphasize">No jobs or pipelines to display.</span>
   <% end %>
 </div>
