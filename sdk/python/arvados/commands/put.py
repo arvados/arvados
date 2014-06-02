@@ -329,7 +329,6 @@ def exit_signal_handler(sigcode, frame):
     sys.exit(-sigcode)
 
 def main(arguments=None):
-    ResumeCache.setup_user_cache()
     args = parse_arguments(arguments)
 
     if args.progress:
@@ -338,17 +337,23 @@ def main(arguments=None):
         reporter = progress_writer(machine_progress)
     else:
         reporter = None
+    bytes_expected = expected_bytes_for(args.paths)
 
     try:
+        ResumeCache.setup_user_cache()
         resume_cache = ResumeCache(ResumeCache.make_path(args))
-        if not args.resume:
-            resume_cache.restart()
+    except (IOError, OSError):
+        # Couldn't open cache directory/file.  Continue without it.
+        resume_cache = None
+        writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
     except ResumeCacheConflict:
         print "arv-put: Another process is already uploading this data."
         sys.exit(1)
-
-    writer = ArvPutCollectionWriter.from_cache(
-        resume_cache, reporter, expected_bytes_for(args.paths))
+    else:
+        if not args.resume:
+            resume_cache.restart()
+        writer = ArvPutCollectionWriter.from_cache(
+            resume_cache, reporter, bytes_expected)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
@@ -393,7 +398,8 @@ def main(arguments=None):
     for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)
 
-    resume_cache.destroy()
+    if resume_cache is not None:
+        resume_cache.destroy()
 
 if __name__ == '__main__':
     main()
