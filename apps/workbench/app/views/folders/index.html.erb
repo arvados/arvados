@@ -54,4 +54,26 @@
       </div>
     </div>
   </div>
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="pull-right">
+            <%= link_to jobs_path, class: 'btn btn-default btn-xs' do %>
+              All jobs <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+            <%= link_to pipeline_instances_path, class: 'btn btn-default btn-xs' do %>
+              All pipelines <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+          </div>
+          <h3 class="panel-title">
+            Recent jobs and pipelines
+          </h3>
+        </div>
+        <div class="panel-body">
+          <%= render partial: 'index_jobs_and_pipelines' %>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

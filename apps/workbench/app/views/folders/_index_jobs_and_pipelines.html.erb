@@ -1,0 +1,21 @@
+<div class="container-fluid">
+  <% recent_jobs_and_pipelines[0..9].each do |object| %>
+    <% any = true %>
+    <div class="row">
+      <div class="col-sm-4">
+        <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
+        <%= render_editable_attribute object, 'name', nil %>
+      </div>
+      <div class="col-sm-8 arv-description-in-table">
+        <%= render_controller_partial(
+            'show_object_description_cell.html',
+            controller_name: object.controller_name,
+            locals: {object: object})
+            %>
+      </div>
+    </div>
+  <% end %>
+  <% if not defined? any %>
+    <span class="deemphasize">No jobs or pipelines to display.</span>
+  <% end %>
+</div>

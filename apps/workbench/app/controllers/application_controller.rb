@@ -496,6 +496,14 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  helper_method :recent_jobs_and_pipelines
+  def recent_jobs_and_pipelines
+    (Job.limit(10) | PipelineInstance.limit(10)).
+      sort_by do |x|
+      x.finished_at || x.started_at || x.created_at rescue x.created_at
+    end
+  end
+
   helper_method :get_object
   def get_object uuid
     if @get_object.nil? and @objects

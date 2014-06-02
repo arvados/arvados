@@ -62,7 +62,7 @@ ArvadosWorkbench::Application.routes.draw do
   post 'actions' => 'actions#post'
   get 'websockets' => 'websocket#index'
 
-  root :to => 'users#welcome'
+  root :to => 'folders#index'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
