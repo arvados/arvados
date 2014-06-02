@@ -3,6 +3,12 @@ require 'test_helper'
 class UserTest < ActiveSupport::TestCase
   include CurrentApiClient
 
+  # The fixture services/api/test/fixtures/users.yml serves as the input for this test case
+  setup do
+    # Make sure system_user exists before making "pre-test users" list
+    system_user
+  end
+
   test "check non-admin active user properties" do
     @active_user = users(:active)     # get the active user
     assert !@active_user.is_admin, 'is_admin should not be set for a non-admin user'
@@ -95,9 +101,7 @@ class UserTest < ActiveSupport::TestCase
     user.save
 
     # verify there is one extra user in the db now
-    # the API server also auto-creates the root system user after the first user
-    # is created, hence the test for the delta of 2.
-    assert_equal @all_users.size+2, User.find(:all).size
+    assert_equal @all_users.size+1, User.find(:all).size
 
     user = User.find(user.id)   # get the user back
     assert_equal(user.first_name, 'first_name_for_newly_created_user')
