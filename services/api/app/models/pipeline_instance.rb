@@ -8,7 +8,7 @@ class PipelineInstance < ArvadosModel
   belongs_to :pipeline_template, :foreign_key => :pipeline_template_uuid, :primary_key => :uuid
 
   before_validation :bootstrap_components
-  before_validation :update_status
+  before_validation :update_state
   before_validation :verify_status
   before_create :set_state_before_save
   before_save :set_state_before_save
@@ -109,7 +109,7 @@ class PipelineInstance < ArvadosModel
     end
   end
 
-  def update_status
+  def update_state
     if components and progress_ratio == 1.0
       self.state = Complete
     end
@@ -158,9 +158,9 @@ class PipelineInstance < ArvadosModel
   end
 
   def set_state_before_save
-      if self.components_look_ready? && (!self.state || self.state == New)
-        self.state = Ready
-      end
+    if self.components_look_ready? && (!self.state || self.state == New)
+      self.state = Ready
+    end
   end
 
 end

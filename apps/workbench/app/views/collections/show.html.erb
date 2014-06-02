@@ -3,9 +3,7 @@
     <div class="panel panel-info">
       <div class="panel-heading">
 	<h3 class="panel-title">
-          <% default_name = "Collection #{@object.uuid}" %>
-	  <% name_html = render_editable_attribute @object, 'name', nil, {data: {emptytext: default_name}} %>
-          <%= (/\S/.match(name_html)) ? name_html : default_name %>
+          <% "Collection #{@object.uuid}" %>
 	</h3>
       </div>
       <div class="panel-body">
