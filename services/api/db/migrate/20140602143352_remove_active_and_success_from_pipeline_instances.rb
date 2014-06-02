@@ -1,4 +1,4 @@
-class PipelineInstanceAttributes < ActiveRecord::Migration
+class RemoveActiveAndSuccessFromPipelineInstances < ActiveRecord::Migration
   include CurrentApiClient
 
   def up
