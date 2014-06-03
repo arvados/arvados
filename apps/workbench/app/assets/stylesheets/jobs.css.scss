@@ -1,3 +1,10 @@
-// Place all the styles related to the Jobs controller here.
-// They will automatically be included in application.css.
-// You can use Sass (SCSS) here: http://sass-lang.com/
+.arv-job-log-window {
+    height: 20em;
+    white-space: nowrap;
+    overflow: scroll;
+    background: black;
+    color: white;
+    font-family: monospace;
+    font-size: .8em;
+    border: 2px solid black;
+}

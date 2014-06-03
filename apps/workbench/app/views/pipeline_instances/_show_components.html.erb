@@ -121,12 +121,11 @@
     <% if !pipeline_job_uuids.empty? %>
       <h4>Log messages from running jobs</h4>
       <% log_history = pipeline_log_history(pipeline_job_uuids) %>
-      <div id="pipeline_event_log_history_div">
+      <div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>">
         <% log_history.each do |entry| %>
           <%=entry%><br/>
         <% end %>
       </div>
-      <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
     <% end %>
 
   <% end %>

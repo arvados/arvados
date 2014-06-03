@@ -57,20 +57,26 @@ $(document).on('ajax:complete ready', function() {
 });
 
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
-  parsedData = JSON.parse(eventData);
+    var wasatbottom = ($(this).scrollTop() + $(this).height() >=
+                       this.scrollHeight);
+    var parsedData = JSON.parse(eventData);
+    var propertyText = undefined;
+    var properties = parsedData.properties;
 
-  propertyText = undefined
-
-  properties = parsedData.properties;
     if (properties !== null) {
-      propertyText = properties.text;
+        propertyText = properties.text;
     }
-
     if (propertyText !== undefined) {
-      $(this).append(propertyText + "<br/>");
+        $(this).append(propertyText + "<br/>");
     } else {
-      $(this).append(parsedData.summary + "<br/>");
+        $(this).append(parsedData.summary + "<br/>");
     }
+    if (wasatbottom)
+        this.scrollTop = this.scrollHeight;
+}).on('ready ajax:complete', function(){
+    $('.arv-log-event-handler-append-logs').each(function() {
+        this.scrollTop = this.scrollHeight;
+    });
 });
 
 var showhide_compare = function() {
