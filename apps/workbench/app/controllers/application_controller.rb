@@ -447,4 +447,30 @@ class ApplicationController < ActionController::Base
       @notification_count = ''
     end
   end
+
+  helper_method :my_folders
+  def my_folders
+    return @my_folders if @my_folders
+    @my_folders = []
+    root_of = {}
+    Group.filter([['group_class','=','folder']]).each do |g|
+      root_of[g.uuid] = g.owner_uuid
+      @my_folders << g
+    end
+    done = false
+    while not done
+      done = true
+      root_of = root_of.each_with_object({}) do |(child, parent), h|
+        if root_of[parent]
+          h[child] = root_of[parent]
+          done = false
+        else
+          h[child] = parent
+        end
+      end
+    end
+    @my_folders = @my_folders.select do |g|
+      root_of[g.uuid] == current_user.uuid
+    end
+  end
 end

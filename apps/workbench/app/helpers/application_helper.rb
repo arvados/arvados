@@ -128,7 +128,11 @@ module ApplicationHelper
 
   def render_editable_attribute(object, attr, attrvalue=nil, htmloptions={})
     attrvalue = object.send(attr) if attrvalue.nil?
-    return attrvalue if !object.attribute_editable? attr
+    if !object.attribute_editable?(attr, :ever) or
+        (!object.editable? and
+         !object.owner_uuid.in?(my_folders.collect(&:uuid)))
+      return attrvalue 
+    end
 
     input_type = 'text'
     case object.class.attribute_info[attr.to_sym].andand[:type]
@@ -197,7 +201,10 @@ module ApplicationHelper
       end
     end
 
-    unless object.andand.attribute_editable? attr
+    if !object or
+        !object.attribute_editable?(attr, :ever) or
+        (!object.editable? and
+         !object.owner_uuid.in?(my_folders.collect(&:uuid)))
       return link_to_if_arvados_object attrvalue
     end
 

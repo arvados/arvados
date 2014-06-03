@@ -6,7 +6,7 @@ class VirtualMachine < ArvadosBase
   def attributes_for_display
     super.append ['current_user_logins', @current_user_logins]
   end
-  def attribute_editable?(attr)
+  def attribute_editable? attr, *args
     attr != 'current_user_logins' and super
   end
   def self.attribute_info
