@@ -118,7 +118,7 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
-        if request.method == 'GET'
+        if request.method.in? ['GET', 'HEAD']
           render
         else
           redirect_to params[:return_to] || @object
@@ -255,7 +255,7 @@ class ApplicationController < ActionController::Base
   def redirect_to_login
     respond_to do |f|
       f.html {
-        if request.method == 'GET'
+        if request.method.in? ['GET', 'HEAD']
           redirect_to arvados_api_client.arvados_login_url(return_to: request.url)
         else
           flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
@@ -325,7 +325,7 @@ class ApplicationController < ActionController::Base
         # call to verify its authenticity.
         if verify_api_token
           session[:arvados_api_token] = params[:api_token]
-          if !request.format.json? and request.method == 'GET'
+          if !request.format.json? and request.method.in? ['GET', 'HEAD']
             # Repeat this request with api_token in the (new) session
             # cookie instead of the query string.  This prevents API
             # tokens from appearing in (and being inadvisedly copied
