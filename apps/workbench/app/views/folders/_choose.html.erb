@@ -8,7 +8,7 @@
       </div>
 
       <div class="modal-body">
-        <div class="container-fluid selectable-container" style="height: 15em; overflow-y: scroll">
+        <div class="selectable-container" style="height: 15em; overflow-y: scroll">
           <% [@my_folder_tree, @shared_folder_tree].each do |tree| %>
             <% tree.each do |foldernode| %>
               <% if foldernode[:object].is_a? String %>

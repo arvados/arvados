@@ -57,6 +57,7 @@ ArvadosWorkbench::Application.routes.draw do
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
   resources :folders do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
+    match 'remove_items', on: :member, via: :delete, action: :remove_items
     get 'choose', on: :collection
   end
 

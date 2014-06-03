@@ -5,6 +5,8 @@
       data-kind="<%= object.kind %>"
       >
     <td>
+      <%= render partial: 'selection_checkbox', locals: {object: object, friendly_name: (name_object.name rescue nil)} %>
+
       <% if folder.editable? %>
         <%= link_to({action: 'remove_item', id: folder.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this folder?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'remove') do %>
           <i class="fa fa-fw fa-ban"></i>
@@ -15,7 +17,7 @@
 
       <%= render :partial => "show_object_button", :locals => {object: object, size: 'sm'} %>
 
-      <%= render_editable_attribute name_object, 'name', nil, {tipplacement: :left, tiptitle: 'rename'} %>
+      <%= render_editable_attribute name_object, 'name', nil, {btnplacement: :left, tiptitle: 'rename'} %>
     </td>
     <td class="arv-description-in-table">
       <%= render_controller_partial(

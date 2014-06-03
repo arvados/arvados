@@ -180,7 +180,7 @@ module ApplicationHelper
       :class => "editable"
     }.merge(htmloptions).merge(ajax_options)
     edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || 'edit') + '"><i class="fa fa-fw fa-pencil"></i></a>')
-    if htmloptions[:tipplacement] == :left
+    if htmloptions[:btnplacement] == :left
       edit_button + ' ' + span_tag
     else
       span_tag + ' ' + edit_button

@@ -78,22 +78,3 @@
 <% end %>
 
 <%= render partial: "paging", locals: {results: @objects, object: @object} %>
-
-<% content_for :footer_js do %>
-var showhide_compare = function() {
-    var form = $('form#compare')[0];
-    $('input[type=hidden][name="uuids[]"]', form).remove();
-    $('input[type=submit]', form).prop('disabled',true).show();
-    var checked_inputs = $('input[name="uuids[]"]:checked');
-    if (checked_inputs.length >= 2 && checked_inputs.length <= 3) {
-        checked_inputs.each(function(){
-            if(this.checked) {
-                $('input[type=submit]', form).prop('disabled',false).show();
-                $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
-            }
-        });
-    }
-};
-$('form input[name="uuids[]"]').on('click', showhide_compare);
-showhide_compare();
-<% end %>

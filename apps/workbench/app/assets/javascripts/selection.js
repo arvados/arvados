@@ -100,13 +100,11 @@ jQuery(function($){
 
         $('.remove-selection').on('click', remove_selection_click);
         $('#clear_selections_button').on('click', clear_selections);
+        $(document).trigger('selections-updated', [lst]);
     };
 
     $(document).
         on('change', '.persistent-selection:checkbox', function(e) {
-            //console.log($(this));
-            //console.log($(this).val());
-
             var inc = 0;
             if ($(this).is(":checked")) {
                 add_selection($(this).val(), $(this).attr('friendly_name'), $(this).attr('href'), $(this).attr('friendly_type'));
@@ -115,7 +113,6 @@ jQuery(function($){
                 remove_selection($(this).val());
             }
         });
-
 
     $(window).on('load storage', update_count);
 
@@ -178,3 +175,42 @@ select_form_sources = null;
         return ret;
     };
 })();
+
+function dispatch_selection_action() {
+    // Build a new "href" attribute for this link by starting with the
+    // "data-href" attribute and appending ?foo[]=bar&foo[]=baz (or
+    // &foo=... as appropriate) to reflect the current object
+    // selections.
+    var data = [];
+    var param_name = $(this).attr('data-selection-param-name');
+    var href = $(this).attr('data-href');
+    $('.persistent-selection:checkbox:checked').each(function() {
+        data.push({name: param_name, value: $(this).val()});
+    });
+    if (href.indexOf('?') >= 0)
+        href += '&';
+    else
+        href += '?';
+    href += $.param(data, true);
+    $(this).attr('href', href);
+    return true;
+}
+
+function enable_disable_selection_actions() {
+    var $checked = $('.persistent-selection:checkbox:checked');
+    $('[data-selection-action]').
+        closest('div.btn-group-sm').
+        find('*').
+        prop('disabled', ($checked.length == 0));
+    $('[data-selection-action=compare]').
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.filter('[value*=-d1hrv-]').length < 2) ||
+                    ($checked.not('[value*=-d1hrv-]').length > 0));
+}
+
+$(document).
+    on('selections-updated ready ajax:complete', function() {
+        $('[data-selection-action]').click(dispatch_selection_action);
+        enable_disable_selection_actions();
+    });

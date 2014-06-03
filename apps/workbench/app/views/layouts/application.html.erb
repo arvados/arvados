@@ -32,10 +32,6 @@
     height: 100%;
     }
 
-    body > div.container-fluid {
-    padding-top: 70px; /* 70px to make the container go all the way to the bottom of the navbar */
-    }
-
     @media (max-width: 979px) { body { padding-top: 0; } }
 
     .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
@@ -51,7 +47,7 @@
   <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.css" rel="stylesheet">
 </head>
 <body>
-  <div id="wrapper">
+  <div id="wrapper" class="container-fluid">
     <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
