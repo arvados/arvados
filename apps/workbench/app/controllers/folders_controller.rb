@@ -102,6 +102,8 @@ class FoldersController < ApplicationController
         name_links.each do |name_link|
           @objects_and_names << [object, name_link]
         end
+      elsif object.respond_to? :name
+        @objects_and_names << [object, object]
       else
         @objects_and_names << [object,
                                Link.new(owner_uuid: @object.uuid,
