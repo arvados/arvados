@@ -124,7 +124,7 @@ module ApplicationHelper
       if opts[:no_link]
         raw(link_name)
       else
-        link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: link_uuid }, style_opts
+        link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts
       end
     else
       # just return attrvalue if it is not recognizable as an Arvados object or uuid.
