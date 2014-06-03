@@ -8,7 +8,8 @@
       <% component[:script_parameters].andand.each do |pname, pvalue_spec| %>
         <% if pvalue_spec.is_a? Hash %>
           <% if (pvalue_spec[:description] or
-                 (pvalue_spec[:required] and not pvalue_spec[:value])) %>
+                 ((pvalue_spec[:required] or pvalue_spec[:optional] == false)
+                  and not pvalue_spec[:value])) %>
             <% n_inputs += 1 %>
             <label for="<% "#{cname}-#{pname}" %>">
               <%= pvalue_spec[:title] ||
