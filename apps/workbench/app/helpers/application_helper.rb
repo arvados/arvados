@@ -137,7 +137,7 @@ module ApplicationHelper
     if !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
          !object.owner_uuid.in?(my_folders.collect(&:uuid)))
-      return attrvalue 
+      return attrvalue
     end
 
     input_type = 'text'
@@ -358,7 +358,7 @@ module ApplicationHelper
       render opts.merge(partial: "application/#{partial}")
     end
   end
-    
+
   def fa_icon_class_for_object object
     case object.class.to_s.to_sym
     when :User
@@ -392,5 +392,10 @@ module ApplicationHelper
     else
       'fa-cube'
     end
+  end
+
+  def render_folder_tree folder
+    l = link_to raw('<i class="fa fa-folder-open fa-fw"></i> ') + folder.name, folder_path(folder)
+    l
   end
 end
