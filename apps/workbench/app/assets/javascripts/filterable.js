@@ -1,14 +1,14 @@
 $(document).
-    on('paste keyup change', 'input.search-folder-contents', function() {
+    on('paste keyup change', 'input[type=text].filterable-control', function() {
         var q = new RegExp($(this).val(), 'i');
-        $($(this).attr('data-search-target')).find('tbody').
+        $($(this).attr('data-filterable-target')).
+            addClass('filterable-container').
             data('q', q).
             trigger('refresh');
-    }).on('refresh', 'tbody', function() {
+    }).on('refresh', '.filterable-container', function() {
         var q = $(this).data('q');
         var filters = $(this).data('filters');
-        $('tr', this).hide();
-        $('tr', this).filter(function() {
+        $('.filterable', this).hide().filter(function() {
             var $row = $(this);
             var pass = true;
             if (q && !$row.text().match(q))
@@ -27,16 +27,16 @@ $(document).
             return pass;
         }).show();
         $('.infinite-scroller').trigger('scroll');
-    }).on('change', 'select[data-filter-rows-by]', function() {
+    }).on('change', 'select.filterable-control', function() {
         var val = $(this).val();
-        var filterby = $(this).attr('data-filter-rows-by');
-        var $target = $($(this).attr('data-filter-target'));
+        var filterby = $(this).attr('data-filterable-attribute');
+        var $target = $($(this).attr('data-filterable-target')).
+            addClass('filterable-container');
         var filters = $target.data('filters') || {};
         filters[filterby] = val;
         $target.
             data('filters', filters).
             trigger('refresh');
     }).on('ajax:complete', function() {
-        $('input.search-folder-contents').trigger('change');
-        $('select[data-filter-rows-by]').trigger('change');
+        $('.filterable-control').trigger('change');
     });

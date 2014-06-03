@@ -1,10 +1,10 @@
 <% @name_links.each do |name_link| %>
-  <div class="row selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= name_link.uuid %>">
-    <div class="col-lg-12" style="overflow-x:hidden">
+  <div class="row filterable selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= name_link.uuid %>">
+    <div class="col-sm-12" style="overflow-x:hidden">
       <i class="fa fa-fw fa-archive"></i>
       <%= name_link.name %>
     </div>
-    <div class="col-lg-12 arv-description-in-table">
+    <div class="col-sm-11 col-sm-push-1 arv-description-in-table">
       <%= render_controller_partial(
           'show_object_description_cell.html',
           controller_name: 'collections',

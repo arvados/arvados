@@ -48,7 +48,7 @@
     <div class="col-md-4">
       <form class="form-inline" role="form">
         Show:
-        <select class="form-control" data-filter-rows-by="data-kind" data-filter-target="table.arv-index.arv-folder-contents tbody">
+        <select class="form-control filterable-control" data-filterable-attribute="data-kind" data-filterable-target="table.arv-index.arv-folder-contents tbody">
           <option value="">Everything</option>
           <option value="arvados#collection">Data</option>
           <option value="arvados#pipelineInstance arvados#job">Compute jobs</option>
@@ -62,7 +62,7 @@
       </form>
     </div>
     <div class="col-md-4">
-      <input type="text" class="form-control search-folder-contents" placeholder="Search folder contents" data-search-target=".arv-index.arv-folder-contents"/>
+      <input type="text" class="form-control filterable-control" placeholder="Search folder contents" data-filterable-target="table.arv-index.arv-folder-contents tbody"/>
     </div>
   </div>
 </div>
