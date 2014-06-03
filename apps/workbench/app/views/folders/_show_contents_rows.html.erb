@@ -17,7 +17,7 @@
 
       <%= render :partial => "show_object_button", :locals => {object: object, size: 'sm'} %>
 
-      <%= render_editable_attribute name_object, 'name', nil, {btnplacement: :left, tiptitle: 'rename'} %>
+      <%= render_editable_attribute (name_link || object), 'name', nil, {btnplacement: :left, tiptitle: 'rename'} %>
     </td>
     <td class="arv-description-in-table">
       <%= render_controller_partial(

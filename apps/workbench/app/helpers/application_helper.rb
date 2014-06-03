@@ -137,7 +137,9 @@ module ApplicationHelper
     if !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
          !object.owner_uuid.in?(my_folders.collect(&:uuid)))
-      return attrvalue 
+      return ((attrvalue && attrvalue.length > 0 && attrvalue) ||
+              (attr == 'name' and object.andand.default_name) ||
+              '(none)')
     end
 
     input_type = 'text'
