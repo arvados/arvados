@@ -28,11 +28,6 @@
                    locals: { comparable: comparable, objects: @objects })]
    }.compact] %>
 
-<ul class="nav nav-tabs">
-  <% panes.each_with_index do |(pane, content), i| %>
-    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.gsub('_', ' ') %></a></li>
-  <% end %>
-</ul>
 <div class="tab-content">
 <% panes.each_with_index do |(pane, content), i| %>
   <div id="<%= pane %>" class="tab-pane fade <%= 'in active' if i==0 %>">

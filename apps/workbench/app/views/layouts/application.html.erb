@@ -32,7 +32,7 @@
     height: 100%;
     }
 
-    @media (max-width: 979px) { body { padding-top: 0; } }
+    media (max-width: 979px) { body { padding-top: 0; } }
 
     .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
     padding-top: 1.25em;
@@ -49,8 +49,6 @@
 <body>
   <div id="wrapper" class="container-fluid">
     <div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div id="wrapper" class="container-fluid">
-    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
           <span class="sr-only">Toggle navigation</span>
@@ -65,6 +63,7 @@
         <% if current_user.andand.is_active %>
           <ul class="nav navbar-nav side-nav">
 
+<% if @object %>
 <% comparable = controller.respond_to? :compare %>
 <% pane_list ||= controller.show_pane_list %>
 <% panes = Hash[pane_list.map { |pane|
@@ -72,13 +71,15 @@
                    locals: { comparable: comparable, objects: @objects })]
    }.compact] %>
 
-<li class="tabs-left">
-            <ul class="nav nav-tabs ">
+<li class="tabs-left" style="width: 100%; border-bottom: 1px solid">
+            <ul class="nav nav-tabs" style="width: 100%">
               <% panes.each_with_index do |(pane, content), i| %>
-              <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.gsub('_', ' ') %></a></li>
+               <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.gsub('_', ' ') %></a></li>
         <% end %>
         </ul>
 </li>
+<% end %>
+
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-lg fa-folder-o fa-fw"></i> My folders <b class="caret"></b></a>
               <ul class="dropdown-menu">
