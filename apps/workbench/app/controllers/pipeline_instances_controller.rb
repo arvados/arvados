@@ -175,6 +175,7 @@ class PipelineInstancesController < ApplicationController
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
       :pips => pips }
+    @object = @objects.first
   end
 
   def show_pane_list
