@@ -254,7 +254,7 @@ module ApplicationHelper
       end
       modal_path = choose_collections_path \
       ({ title: 'Choose a dataset:',
-         filters: [['owner_uuid', '=', object.owner_uuid]].to_json,
+         filters: [['tail_uuid', '=', object.owner_uuid]].to_json,
          action_name: 'OK',
          action_href: pipeline_instance_path(id: object.uuid),
          action_method: 'patch',
