@@ -47,7 +47,7 @@ class Collection < ArvadosBase
     dir_to_tree.call('.')
   end
 
-  def attribute_editable?(attr)
+  def attribute_editable? attr, *args
     false
   end
 

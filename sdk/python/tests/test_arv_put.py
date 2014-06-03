@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import apiclient
 import os
 import re
 import shutil
@@ -9,10 +10,13 @@ import sys
 import tempfile
 import time
 import unittest
+import yaml
 
 import arvados
 import arvados.commands.put as arv_put
+
 from arvados_testutil import ArvadosBaseTestCase, ArvadosKeepLocalStoreTestCase
+import run_test_server
 
 class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
     CACHE_ARGSET = [
@@ -318,7 +322,7 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
 
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
-    def test_simple_file_put(self):
+    def call_main_on_test_file(self):
         with self.make_test_file() as testfile:
             path = testfile.name
             arv_put.main(['--stream', '--no-progress', path])
@@ -326,6 +330,31 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
             "did not find file stream in Keep store")
+
+    def test_simple_file_put(self):
+        self.call_main_on_test_file()
+
+    def test_put_with_unwriteable_cache_dir(self):
+        orig_cachedir = arv_put.ResumeCache.CACHE_DIR
+        cachedir = self.make_tmpdir()
+        os.chmod(cachedir, 0o0)
+        arv_put.ResumeCache.CACHE_DIR = cachedir
+        try:
+            self.call_main_on_test_file()
+        finally:
+            arv_put.ResumeCache.CACHE_DIR = orig_cachedir
+            os.chmod(cachedir, 0o700)
+
+    def test_put_with_unwritable_cache_subdir(self):
+        orig_cachedir = arv_put.ResumeCache.CACHE_DIR
+        cachedir = self.make_tmpdir()
+        os.chmod(cachedir, 0o0)
+        arv_put.ResumeCache.CACHE_DIR = os.path.join(cachedir, 'cachedir')
+        try:
+            self.call_main_on_test_file()
+        finally:
+            arv_put.ResumeCache.CACHE_DIR = orig_cachedir
+            os.chmod(cachedir, 0o700)
 
     def test_short_put_from_stdin(self):
         # Have to run this separately since arv-put can't read from the
@@ -335,17 +364,83 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
         pipe = subprocess.Popen(
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=open('/dev/null', 'w'))
+            stderr=subprocess.STDOUT)
         pipe.stdin.write('stdin test\n')
         pipe.stdin.close()
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
             time.sleep(.1)
-        if pipe.returncode is None:
+        returncode = pipe.poll()
+        if returncode is None:
             pipe.terminate()
             self.fail("arv-put did not PUT from stdin within 5 seconds")
-        self.assertEquals(pipe.returncode, 0)
+        elif returncode != 0:
+            sys.stdout.write(pipe.stdout.read())
+            self.fail("arv-put returned exit code {}".format(returncode))
         self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
+
+
+class ArvPutIntegrationTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        try:
+            del os.environ['KEEP_LOCAL_STORE']
+        except KeyError:
+            pass
+
+        # Use the blob_signing_key from the Rails "test" configuration
+        # to provision the Keep server.
+        with open(os.path.join(os.path.dirname(__file__),
+                               run_test_server.ARV_API_SERVER_DIR,
+                               "config",
+                               "application.yml")) as f:
+            rails_config = yaml.load(f.read())
+        config_blob_signing_key = rails_config["test"]["blob_signing_key"]
+        run_test_server.run()
+        run_test_server.run_keep(blob_signing_key=config_blob_signing_key,
+                                 enforce_permissions=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        run_test_server.stop()
+        run_test_server.stop_keep()
+
+    def test_ArvPutSignedManifest(self):
+        # ArvPutSignedManifest runs "arv-put foo" and then attempts to get
+        # the newly created manifest from the API server, testing to confirm
+        # that the block locators in the returned manifest are signed.
+        run_test_server.authorize_with('active')
+        for v in ["ARVADOS_API_HOST",
+                  "ARVADOS_API_HOST_INSECURE",
+                  "ARVADOS_API_TOKEN"]:
+            os.environ[v] = arvados.config.settings()[v]
+
+        # Before doing anything, demonstrate that the collection
+        # we're about to create is not present in our test fixture.
+        api = arvados.api('v1', cache=False)
+        manifest_uuid = "00b4e9f40ac4dd432ef89749f1c01e74+47"
+        with self.assertRaises(apiclient.errors.HttpError):
+            notfound = api.collections().get(uuid=manifest_uuid).execute()
+
+        datadir = tempfile.mkdtemp()
+        with open(os.path.join(datadir, "foo"), "w") as f:
+            f.write("The quick brown fox jumped over the lazy dog")
+        p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
+                             stdout=subprocess.PIPE)
+        (arvout, arverr) = p.communicate()
+        self.assertEqual(p.returncode, 0)
+        self.assertEqual(arverr, None)
+        self.assertEqual(arvout.strip(), manifest_uuid)
+
+        # The manifest text stored in the API server under the same
+        # manifest UUID must use signed locators.
+        c = api.collections().get(uuid=manifest_uuid).execute()
+        self.assertRegexpMatches(
+            c['manifest_text'],
+            r'^\. 08a008a01d498c404b0c30852b39d3b8\+44\+A[0-9a-f]+@[0-9a-f]+ 0:44:foo\n')
+
+        os.remove(os.path.join(datadir, "foo"))
+        os.rmdir(datadir)
 
 
 if __name__ == '__main__':

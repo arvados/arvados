@@ -1,4 +1,6 @@
 class Arvados::V1::UsersController < ApplicationController
+  accept_attribute_as_json :prefs, Hash
+
   skip_before_filter :find_object_by_uuid, only:
     [:activate, :current, :system, :setup]
   skip_before_filter :render_404_if_no_object, only:
