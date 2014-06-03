@@ -640,7 +640,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_image)
     {
-      $command .= "$docker_bin run -i -a stdin -a stdout -a stderr ";
+      $command .= "crunchstat -cgroup-parent=/sys/fs/cgroup/lxc -cgroup-cid=$ENV{TASK_WORK}/docker.cid ";
+      $command .= "$docker_bin run -i -a stdin -a stdout -a stderr -cidfile=$ENV{TASK_WORK}/docker.cid ";
       # Dynamically configure the container to use the host system as its
       # DNS server.  Get the host's global addresses from the ip command,
       # and turn them into docker --dns options using gawk.
@@ -653,9 +654,13 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       }
       while (my ($env_key, $env_val) = each %ENV)
       {
-        $command .= "-e \Q$env_key=$env_val\E ";
+        if ($env_key =~ /^(JOB|TASK)_/) {
+          $command .= "-e \Q$env_key=$env_val\E ";
+        }
       }
       $command .= "\Q$docker_image\E ";
+    } else {
+      $command .= "crunchstat -cgroup-path=/sys/fs/cgroup "
     }
     $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
