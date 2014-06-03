@@ -232,12 +232,27 @@ module ApplicationHelper
       dn += '[value]'
     end
 
+    preload_uuids = [attrvalue]
+    items = []
     selectables = []
+
     attrtext = attrvalue
     if dataclass and dataclass.is_a? Class
+      dataclass.limit(10).each do |item|
+        items << item
+        preload_uuids << item.uuid
+      end
       if attrvalue and !attrvalue.empty?
-        Link.where(head_uuid: attrvalue, link_class: ["tag", "identifier"]).each do |tag|
-          attrtext += " [#{tag.name}]"
+        preload_uuids << attrvalue
+      end
+      preload_links_for_objects preload_uuids
+
+      if attrvalue and !attrvalue.empty?
+        #Link.where(head_uuid: attrvalue, link_class: ["tag", "identifier"]).each do |tag|
+        links_for_object(attrvalue).each do |link|
+          if link.link_class.in? ["tag", "identifier"]
+            attrtext += " [#{tag.name}]"
+          end
         end
         selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
       end
@@ -245,14 +260,20 @@ module ApplicationHelper
       #  selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       #end
       itemuuids = []
-      dataclass.limit(10).each do |item|
+      items.each do |item|
         itemuuids << item.uuid
         selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       end
-      Link.where(head_uuid: itemuuids, link_class: ["tag", "identifier"]).each do |tag|
-        selectables.each do |selectable|
-          if selectable['uuid'] == tag.head_uuid
-            selectable['name'] += ' [' + tag.name + ']'
+      
+      #Link.where(head_uuid: itemuuids, link_class: ["tag", "identifier"]).each do |tag|
+      itemuuids.each do |itemuuid|
+        links_for_object(itemuuid).each do |link|
+          if link.link_class.in? ["tag", "identifier"]
+            selectables.each do |selectable|
+              if selectable['uuid'] == tag.head_uuid
+                selectable['name'] += ' [' + tag.name + ']'
+              end
+            end
           end
         end
       end
