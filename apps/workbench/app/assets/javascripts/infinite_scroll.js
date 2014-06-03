@@ -2,9 +2,11 @@ function maybe_load_more_content() {
     var scroller = this;        // element with scroll bars
     var container;              // element that receives new content
     var src;                    // url for retrieving content
+    var scrollHeight;
+    scrollHeight = scroller.scrollHeight || $('body')[0].scrollHeight;
     if ($(scroller).scrollTop() + $(scroller).height()
         >
-        scroller.scrollHeight - 50) {
+        scrollHeight - 50) {
         container = $(this).data('infinite-container');
         src = $(container).attr('data-infinite-content-href');
         if (!src)
@@ -39,7 +41,10 @@ function maybe_load_more_content() {
 $(document).
     on('ready ajax:complete', function() {
         $('[data-infinite-scroller]').each(function() {
-            $($(this).attr('data-infinite-scroller')).
+            var $scroller = $($(this).attr('data-infinite-scroller'));
+            if (!$scroller.hasClass('smart-scroll'))
+                $scroller = $(window);
+            $scroller.
                 addClass('infinite-scroller').
                 data('infinite-container', this).
                 on('scroll', maybe_load_more_content);

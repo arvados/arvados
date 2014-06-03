@@ -26,7 +26,7 @@ $(document).
             }
             return pass;
         }).show();
-        $('.infinite-scroller').trigger('scroll');
+        $('.infinite-scroller').add(window).trigger('scroll');
     }).on('change', 'select.filterable-control', function() {
         var val = $(this).val();
         var filterby = $(this).attr('data-filterable-attribute');
