@@ -40,6 +40,7 @@ class Dispatcher
       if !@running[jobrecord.uuid]
         # job is marked running, but not actually running. so fail it
         jobrecord.running = false
+        jobrecord.finished_at ||= Time.now
         if jobrecord.success.nil?
           jobrecord.success = false
         end
@@ -381,7 +382,7 @@ class Dispatcher
           end
         end
       else
-        refresh_running unless did_recently(:refresh_running, 1.0)
+        refresh_running unless did_recently(:refresh_running, 30.0)
         refresh_todo unless did_recently(:refresh_todo, 1.0)
         update_node_status
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
