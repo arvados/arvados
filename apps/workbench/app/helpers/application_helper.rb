@@ -245,7 +245,8 @@ module ApplicationHelper
 
     attrtext = attrvalue
     if dataclass and dataclass.is_a? Class
-      dataclass.limit(10).each do |item|
+      objects = get_objects_of_type dataclass, 10
+      objects.each do |item|
         items << item
         preload_uuids << item.uuid
       end
@@ -255,7 +256,6 @@ module ApplicationHelper
       preload_links_for_objects preload_uuids
 
       if attrvalue and !attrvalue.empty?
-        #Link.where(head_uuid: attrvalue, link_class: ["tag", "identifier"]).each do |tag|
         links_for_object(attrvalue).each do |link|
           if link.link_class.in? ["tag", "identifier"]
             attrtext += " [#{tag.name}]"
@@ -263,16 +263,12 @@ module ApplicationHelper
         end
         selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
       end
-      #dataclass.where(uuid: attrvalue).each do |item|
-      #  selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
-      #end
       itemuuids = []
       items.each do |item|
         itemuuids << item.uuid
         selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       end
       
-      #Link.where(head_uuid: itemuuids, link_class: ["tag", "identifier"]).each do |tag|
       itemuuids.each do |itemuuid|
         links_for_object(itemuuid).each do |link|
           if link.link_class.in? ["tag", "identifier"]

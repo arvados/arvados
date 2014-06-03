@@ -191,31 +191,6 @@ class ApplicationController < ActionController::Base
     %w(Attributes Metadata JSON API)
   end
 
-  # helper method to get links for given objects or uuids
-  helper_method :links_for_object
-  def links_for_object object_or_uuid
-    uuid = object_or_uuid.is_a?(String) ? object_or_uuid : object_or_uuid.uuid
-    preload_links_for_objects([uuid])
-    @all_links_for[uuid]
-  end
-
-  helper_method :preload_links_for_objects
-  def preload_links_for_objects objects_and_uuids
-    uuids = objects_and_uuids.collect { |x| x.is_a?(String) ? x : x.uuid }
-    @all_links_for ||= {}
-    if not uuids.select { |x| @all_links_for[x].nil? }.any?
-      # already preloaded for all of these uuids
-      return
-    end
-    uuids.each do |x|
-      @all_links_for[x] = []
-    end
-    # TODO: make sure we get every page of results from API server
-    Link.filter([['head_uuid','in',uuids]]).each do |link|
-      @all_links_for[link.head_uuid] << link
-    end
-  end
-
   protected
 
   def redirect_to_login
@@ -473,4 +448,50 @@ class ApplicationController < ActionController::Base
       root_of[g.uuid] == current_user.uuid
     end
   end
+
+  # helper method to get links for given object or uuid
+  helper_method :links_for_object
+  def links_for_object object_or_uuid
+    uuid = object_or_uuid.is_a?(String) ? object_or_uuid : object_or_uuid.uuid
+    preload_links_for_objects([uuid])
+    @all_links_for[uuid]
+  end
+
+  # helper method to preload links for given objects and uuids
+  helper_method :preload_links_for_objects
+  def preload_links_for_objects objects_and_uuids
+    uuids = objects_and_uuids.collect { |x| x.is_a?(String) ? x : x.uuid }
+    @all_links_for ||= {}
+    if not uuids.select { |x| @all_links_for[x].nil? }.any?
+      # already preloaded for all of these uuids
+      return
+    end
+    uuids.each do |x|
+      @all_links_for[x] = []
+    end
+    # TODO: make sure we get every page of results from API server
+    Link.filter([['head_uuid','in',uuids]]).each do |link|
+      @all_links_for[link.head_uuid] << link
+    end
+  end
+
+  # helper method to get a certain number of objects of a specific type
+  # this can be used to replace any uses of: "dataclass.limit(n)"
+  helper_method :get_objects_of_type
+  def get_objects_of_type dataclass, size
+    # if the objects_map has a value for this dataclass, and the size used
+    # to retrieve those objects is greater than equal to size, return it
+    size_key = "#{dataclass}_size"
+    if @objects_map && @objects_map[dataclass] && @objects_map[size_key] &&
+        (@objects_map[size_key] >= size)
+      return @objects_map[dataclass] 
+    end
+
+    @objects_map = {}
+    @objects_map[dataclass] = dataclass.limit(size)
+    @objects_map[size_key] = size
+
+    return @objects_map[dataclass]
+  end
+
 end
