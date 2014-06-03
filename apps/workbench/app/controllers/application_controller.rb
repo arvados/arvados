@@ -191,6 +191,24 @@ class ApplicationController < ActionController::Base
     show
   end
 
+  # Clone the given object, merging any attribute values supplied as
+  # with a create action.
+  def copy
+    @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
+    @new_resource_attrs ||= {}
+    @object = @object.dup
+    @object.update_attributes @new_resource_attrs
+    if not @new_resource_attrs[:name] and @object.respond_to? :name
+      if @object.name and @object.name != ''
+        @object.name = "Copy of #{@object.name}"
+      else
+        @object.name = "Copy of unnamed #{@object.class_for_display.downcase}"
+      end
+    end
+    @object.save!
+    show
+  end
+
   def destroy
     if @object.destroy
       respond_to do |f|

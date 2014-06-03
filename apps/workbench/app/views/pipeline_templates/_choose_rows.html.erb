@@ -1,10 +1,10 @@
 <% @objects.each do |object| %>
   <div class="row filterable selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= object.uuid %>">
-    <div class="col-md-6" style="overflow-x:hidden">
+    <div class="col-sm-12" style="overflow-x:hidden">
       <i class="fa fa-fw fa-gear"></i>
       <%= object.name %>
     </div>
-    <div class="col-md-6 arv-description-in-table">
+    <div class="col-sm-11 col-sm-push-1 arv-description-in-table">
       <%= object.description %>
     </div>
   </div>

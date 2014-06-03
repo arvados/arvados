@@ -40,6 +40,7 @@ ArvadosWorkbench::Application.routes.draw do
   end
   resources :pipeline_instances do
     get 'compare', on: :collection
+    post 'copy', on: :member
   end
   resources :links
   get '/collections/graph' => 'collections#graph'

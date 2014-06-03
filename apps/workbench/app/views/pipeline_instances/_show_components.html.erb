@@ -1,9 +1,4 @@
-<% content_for :css do %>
-
-<% end %>
-
 <% template = PipelineTemplate.find(@object.pipeline_template_uuid) rescue nil %>
-
 <%= content_for :content_top do %>
   <h2>
     <%= render_editable_attribute @object, 'name', nil %>
@@ -16,96 +11,112 @@
   <% end %>
 <% end %>
 
-<% pipeline_job_uuids = [] %>
+<% content_for :tab_line_buttons do %>
+  <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'pipeline_instance[state]' => 'New'),
+      class: 'btn btn-primary',
+      #data: {toggle: :tooltip, placement: :top}, title: 'copy and modify',
+      method: :post,
+      ) do %>
+    Clone and edit <i class="fa fa-fw fa-copy"></i>
+  <% end %>
+<% end %>
 
-<% if !@object.state.in? ['New', 'Ready', 'Paused'] %>
-<table class="table pipeline-components-table">
-  <colgroup>
-    <col style="width: 15%" />
-    <col style="width: 20%" />
-    <col style="width: 12%" />
-    <col style="width: 12%" />
-    <col style="width: 45%" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th>
-        component
-      </th><th>
-        script, version
-      </th><th>
-        job
-        <%# format:'js' here helps browsers avoid using the cached js
-        content in html context (e.g., duplicate tab -> see
-        javascript) %>
-        <%= link_to '(refresh)', {format: :js}, {class: 'refresh hide', remote: true, method: 'get'} %>
-      </th><th>
-      </th><th>
-        output
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <% render_pipeline_jobs.each do |pj| %>
-      <% if pj[:job].andand[:uuid]
-           pipeline_job_uuids << pj[:job][:uuid]
-         end %>
-    <tr>
-      <td>
-        <%= pj[:name] %>
-      </td><td>
-        <%= pj[:script] %>
-        <br /><span class="deemphasize"><%= pj[:script_version] %></span>
-      </td><td>
-        <%= pj[:progress_bar] %>
-        <% if @object.state == 'Complete' || @object.state == 'Failed' %>
-          <% if pj[:job].andand[:uuid] %>
-            <span class="deemphasize">
-            <%= link_to("..."+pj[:job][:uuid].last(15), job_url(id: pj[:job][:uuid])) %>
-            </span>
+<% if !@object.state.in? ['New', 'Ready'] %>
 
-            <% current_job = Job.find(pj[:job][:uuid]) rescue nil %>
-            <% if current_job.andand[:log] %>
-              <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
-              <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
-                <% c.files.each do |file| %>
-                  <br/><span class="deemphasize">
-                  <a href="<%= collection_path(current_job[:log]) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">log</a>
-                  </span>
+  <% if @object.state.in? ['RunningOnClient', 'RunningOnServer'] %>
+    <% content_for :tab_line_buttons do %>
+      <%= link_to(url_for('pipeline_instance[state]' => 'Paused'),
+          class: 'btn btn-primary run-pipeline-button',
+          method: :patch
+          ) do %>
+        Stop <i class="fa fa-fw fa-stop"></i>
+      <% end %>
+    <% end %>
+  <% end %>
+
+  <% pipeline_job_uuids = [] %>
+
+  <div class="pull-right">
+    Current state: <span class="badge badge-info"><%= @object.state.sub('OnServer', '') %></span>&nbsp;
+  </div>
+
+  <table class="table pipeline-components-table">
+    <colgroup>
+      <col style="width: 15%" />
+      <col style="width: 20%" />
+      <col style="width: 12%" />
+      <col style="width: 12%" />
+      <col style="width: 45%" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th>
+          component
+        </th><th>
+          script, version
+        </th><th>
+          job
+          <%# format:'js' here helps browsers avoid using the cached js
+          content in html context (e.g., duplicate tab -> see
+          javascript) %>
+          <%= link_to '(refresh)', {format: :js}, {class: 'refresh hide', remote: true, method: 'get'} %>
+        </th><th>
+        </th><th>
+          output
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <% render_pipeline_jobs.each do |pj| %>
+        <% if pj[:job].andand[:uuid]
+             pipeline_job_uuids << pj[:job][:uuid]
+           end %>
+      <tr>
+        <td>
+          <%= pj[:name] %>
+        </td><td>
+          <%= pj[:script] %>
+          <br /><span class="deemphasize"><%= pj[:script_version] %></span>
+        </td><td>
+          <%= pj[:progress_bar] %>
+          <% if @object.state == 'Complete' || @object.state == 'Failed' %>
+            <% if pj[:job].andand[:uuid] %>
+              <span class="deemphasize">
+              <%= link_to("..."+pj[:job][:uuid].last(15), job_url(id: pj[:job][:uuid])) %>
+              </span>
+
+              <% current_job = Job.find(pj[:job][:uuid]) rescue nil %>
+              <% if current_job.andand[:log] %>
+                <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
+                <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
+                  <% c.files.each do |file| %>
+                    <br/><span class="deemphasize">
+                    <a href="<%= collection_path(current_job[:log]) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">log</a>
+                    </span>
+                  <% end %>
                 <% end %>
               <% end %>
             <% end %>
           <% end %>
-        <% end %>
-      </td><td>
-        <%= render(partial: 'job_status_label',
-                               locals: { :j => pj[:job] }) %>
-      </td><td>
-        <%= link_to_if_arvados_object pj[:output], {:thumbnail => true} %>
-      </td>
-    </tr>
+        </td><td>
+          <%= render(partial: 'job_status_label',
+                                 locals: { :j => pj[:job] }) %>
+        </td><td>
+          <%= link_to_if_arvados_object pj[:output], {:thumbnail => true} %>
+        </td>
+      </tr>
+      <% end %>
+    </tbody>
+    <tfoot>
+      <tr><td colspan="5"></td></tr>
+    </tfoot>
+  </table>
+
+  <% if @object.state.in? %w(RunningOnServer RunningOnClient) %>
+
+    <% content_for :js do %>
+      setInterval(function(){$('a.refresh').click()}, 15000);
     <% end %>
-  </tbody>
-  <tfoot>
-    <tr><td colspan="5"></td></tr>
-  </tfoot>
-</table>
-
-<% if @object.state == 'RunningOnServer' || @object.state == 'RunningOnClient' %>
-<% content_for :js do %>
-setInterval(function(){$('a.refresh').click()}, 15000);
-<% end %>
-
-<% content_for :tab_line_buttons do %>
-  <%= form_tag @object, :method => :put do |f| %>
-
-    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'Paused' %>
-
-    <%= button_tag({class: 'btn btn-primary pull-right run-pipeline-button'}) do %>
-      Stop <i class="fa fa-fw fa-stop"></i>
-    <% end %>
-  <% end %>
-<% end %>
 
     <% if !pipeline_job_uuids.empty? %>
       <h4>Log messages from running jobs</h4>
@@ -117,21 +128,22 @@ setInterval(function(){$('a.refresh').click()}, 15000);
       </div>
       <div class="arv-log-event-listener arv-log-event-handler-append-logs" id="pipeline_event_log_div" data-object-uuids="<%=pipeline_job_uuids.join(" ")%>"/>
     <% end %>
+
   <% end %>
 
-<% else %>    <%# State new or ready or paused %>
-  <% if @object.state == 'New' %>
+<% else %>
+  <%# state is either New or Ready %>
+
+  <% if @object.state.in? %w(New Ready) %>
     <p><i>Here are all of the pipeline's components (jobs that will need to run in order to complete the pipeline). If you know what you're doing (or you're experimenting) you can modify these parameters before starting the pipeline. Usually, you only need to edit the settings presented on the "Inputs" tab above.</i></p>
   <% end %>
 
   <% content_for :tab_line_buttons do %>
-    <%= form_tag @object, :method => :put do |f| %>
-
-      <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'RunningOnServer' %>
-
-      <%= button_tag({class: 'btn btn-primary pull-right run-pipeline-button'}) do %>
-        Run <i class="fa fa-fw fa-play"></i>
-      <% end %>
+    <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
+        class: 'btn btn-primary run-pipeline-button',
+        method: :patch
+        ) do %>
+      Run <i class="fa fa-fw fa-play"></i>
     <% end %>
   <% end %>
 

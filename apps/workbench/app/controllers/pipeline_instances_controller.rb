@@ -3,6 +3,15 @@ class PipelineInstancesController < ApplicationController
   before_filter :find_objects_by_uuid, only: :compare
   include PipelineInstancesHelper
 
+  def copy
+    @object = @object.dup
+    @object.components.each do |cname, component|
+      component.delete :job
+    end
+    @object.state = 'New'
+    super
+  end
+
   def update
     @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
     if (components = @updates[:components])

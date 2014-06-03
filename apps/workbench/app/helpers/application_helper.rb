@@ -179,7 +179,12 @@ module ApplicationHelper
       "id" => span_id,
       :class => "editable"
     }.merge(htmloptions).merge(ajax_options)
-    span_tag + raw(' <a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="edit"><i class="fa fa-fw fa-pencil"></i></a>')
+    edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || 'edit') + '"><i class="fa fa-fw fa-pencil"></i></a>')
+    if htmloptions[:tipplacement] == :left
+      edit_button + ' ' + span_tag
+    else
+      span_tag + ' ' + edit_button
+    end
   end
 
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
