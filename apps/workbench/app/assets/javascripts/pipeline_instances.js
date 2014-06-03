@@ -72,3 +72,20 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
       $(this).append(parsedData.summary + "<br/>");
     }
 });
+
+var showhide_compare = function() {
+    var form = $('form#compare')[0];
+    $('input[type=hidden][name="uuids[]"]', form).remove();
+    $('input[type=submit]', form).prop('disabled',true).show();
+    var checked_inputs = $('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]:checked');
+    if (checked_inputs.length >= 2 && checked_inputs.length <= 3) {
+        checked_inputs.each(function(){
+            if(this.checked) {
+                $('input[type=submit]', form).prop('disabled',false).show();
+                $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
+            }
+        });
+    }
+};
+$('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]').on('click', showhide_compare);
+showhide_compare();

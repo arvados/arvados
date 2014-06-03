@@ -12,32 +12,39 @@ class FoldersController < ApplicationController
   end
 
   def remove_item
+    params[:item_uuids] = [params[:item_uuid]]
+    remove_items
+    render template: 'folders/remove_items'
+  end
+
+  def remove_items
     @removed_uuids = []
     links = []
-    item = ArvadosBase.find params[:item_uuid]
-    if (item.class == Link and
-        item.link_class == 'name' and
-        item.tail_uuid = @object.uuid)
-      # Given uuid is a name link, linking an object to this
-      # folder. First follow the link to find the item we're removing,
-      # then delete the link.
-      links << item
-      item = ArvadosBase.find item.head_uuid
-    else
-      # Given uuid is an object. Delete all names.
-      links += Link.where(tail_uuid: @object.uuid,
-                          head_uuid: item.uuid,
-                          link_class: 'name')
-    end
-    links.each do |link|
-      @removed_uuids << link.uuid
-      link.destroy
-    end
-    if item.owner_uuid == @object.uuid
-      # Object is owned by this folder. Remove it from the folder by
-      # changing owner to the current user.
-      item.update_attributes owner_uuid: current_user.uuid
-      @removed_uuids << item.uuid
+    params[:item_uuids].collect { |uuid| ArvadosBase.find uuid }.each do |item|
+      if (item.class == Link and
+          item.link_class == 'name' and
+          item.tail_uuid == @object.uuid)
+        # Given uuid is a name link, linking an object to this
+        # folder. First follow the link to find the item we're removing,
+        # then delete the link.
+        links << item
+        item = ArvadosBase.find item.head_uuid
+      else
+        # Given uuid is an object. Delete all names.
+        links += Link.where(tail_uuid: @object.uuid,
+                            head_uuid: item.uuid,
+                            link_class: 'name')
+      end
+      links.each do |link|
+        @removed_uuids << link.uuid
+        link.destroy
+      end
+      if item.owner_uuid == @object.uuid
+        # Object is owned by this folder. Remove it from the folder by
+        # changing owner to the current user.
+        item.update_attributes owner_uuid: current_user.uuid
+        @removed_uuids << item.uuid
+      end
     end
   end
 

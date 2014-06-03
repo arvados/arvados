@@ -273,8 +273,9 @@ class ArvadosBase < ActiveRecord::Base
     uuid
   end
 
-  def dup
-    super.forget_uuid!
+  def initialize_copy orig
+    super
+    forget_uuid!
   end
 
   def attributes_for_display

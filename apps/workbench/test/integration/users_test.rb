@@ -25,7 +25,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
 
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
-      find('a,button', text: 'Show').
+      find('a[data-original-title=show]').
       click
     assert page.has_text? 'Attributes'
     assert page.has_text? 'Metadata'
@@ -80,7 +80,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # go to the new user's page
     find('tr', text: new_user_uuid).
-      find('a,button', text: 'Show').
+      find('a[data-original-title=show]').
       click
 
     assert page.has_text? 'modified_by_user_uuid'
@@ -107,7 +107,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # click on active user
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
-      find('a,button', text: 'Show').
+      find('a[data-original-title=show]').
       click
 
     # Setup user
@@ -167,7 +167,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # click on active user
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
-      find('a,button', text: 'Show').
+      find('a[data-original-title=show]').
       click
 
     # Verify that is_active is set
@@ -193,6 +193,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       assert_equal "false", text, "Expected user's is_active to be false after unsetup"
     end
 
+    click_link 'Advanced'
     click_link 'Metadata'
     assert !(page.has_text? '(Repository: test_repo)')
     assert !(page.has_text? '(Repository: second_test_repo)')
@@ -213,6 +214,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     assert page.has_text? 'modified_by_client_uuid'
 
+    click_link 'Advanced'
     click_link 'Metadata'
     assert page.has_text? '(Repository: second_test_repo)'
     assert page.has_text? '(VirtualMachine: testvm.shell)'

@@ -36,11 +36,11 @@
   <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</i></p>
   <%= content_for :pi_input_form %>
 
-  <%= form_tag @object, :method => :put do |f| %>
-    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'RunningOnServer' %>
-    <%= button_tag({class: 'btn btn-primary run-pipeline-button'}) do %>
-      Run <i class="fa fa-fw fa-play"></i>
-    <% end %>
+  <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
+      class: 'btn btn-primary run-pipeline-button',
+      method: :patch
+      ) do %>
+    Run <i class="fa fa-fw fa-play"></i>
   <% end %>
 
 <% end %>
