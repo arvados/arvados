@@ -21,6 +21,8 @@ class Collection < ArvadosBase
         tot += file[2]
       end
       tot
+    else
+      0
     end
   end
 
