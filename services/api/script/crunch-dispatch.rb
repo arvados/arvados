@@ -51,6 +51,7 @@ class Dispatcher
           # job is marked running, but not known to crunch-dispatcher, and
           # hasn't produced any log entries for 5 minutes, so mark it as failed.
           jobrecord.running = false
+          jobrecord.canceled_at ||= Time.now
           jobrecord.finished_at ||= Time.now
           if jobrecord.success.nil?
             jobrecord.success = false
