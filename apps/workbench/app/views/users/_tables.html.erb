@@ -33,8 +33,8 @@
             job_logs << j.log
           end
 
-          preload_collections job_outputs
-          preload_log_collections job_logs
+          preload_collections_for_objects job_outputs
+          preload_log_collections_for_objects job_logs
         %>
         <% @my_jobs[0..6].each do |j| %>
           <tr data-object-uuid="<%= j.uuid %>">
@@ -48,7 +48,7 @@
               <small>
                 <% if j.success and j.output %>
                   <a href="<%= collection_path(j.output) %>">
-                    <% collections = get_collections(j.output) %>
+                    <% collections = collections_for_object(j.output) %>
                       <% if collections && !collections.empty? %>
                       <% c = collections.first %>
                       <% c.files.each do |file| %>
@@ -63,7 +63,7 @@
 <td>
   <small>
     <% if j.log %>
-      <% log_collections = get_log_collections(j.log) %>
+      <% log_collections = log_collections_for_object(j.log) %>
       <% if log_collections && !log_collections.empty? %>
         <% c = log_collections.first %>
         <% c.files.each do |file| %>

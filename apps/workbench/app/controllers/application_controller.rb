@@ -495,15 +495,15 @@ class ApplicationController < ActionController::Base
   end
 
   # helper method to get collections for the given uuid
-  helper_method :get_collections
-  def get_collections uuid
-    preload_collections([uuid])
+  helper_method :collections_for_object
+  def collections_for_object uuid
+    preload_collections_for_objects([uuid])
     @all_collections_for[uuid]
   end
 
   # helper method to preload collections for the given uuids
-  helper_method :preload_collections
-  def preload_collections uuids
+  helper_method :preload_collections_for_objects
+  def preload_collections_for_objects uuids
     @all_collections_for ||= {}
     if not uuids.select { |x| @all_collections_for[x].nil? }.any?
       # already preloaded for all of these uuids
@@ -521,17 +521,17 @@ class ApplicationController < ActionController::Base
   end
 
   # helper method to get log collections for the given log
-  helper_method :get_log_collections
-  def get_log_collections log
+  helper_method :log_collections_for_object
+  def log_collections_for_object log
     fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
     uuid = fixup[1]
-    preload_log_collections([uuid])
+    preload_log_collections_for_objects([uuid])
     @all_log_collections_for[uuid]
   end
 
   # helper method to preload collections for the given uuids
-  helper_method :preload_log_collections
-  def preload_log_collections logs
+  helper_method :preload_log_collections_for_objects
+  def preload_log_collections_for_objects logs
     uuids = []
     logs.each do |log|
       fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
