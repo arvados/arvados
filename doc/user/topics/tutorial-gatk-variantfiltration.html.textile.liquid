@@ -154,48 +154,8 @@ Now start a job:
   "5ee633fe2569d2a42dd81b07490d5d13+82",
   "c905c8d8443a9c44274d98b7c6cfaa32+94",
   "d237a90bae3870b3b033aea1e99de4a9+10820"
- ],
- "log_stream_href":"https://qr1hi.arvadosapi.com/arvados/v1/jobs/qr1hi-8i9sb-n9k7qyp7bs5b9d4/log_tail_follow"
+ ]
 }
-~$ <span class="userinput">arv job log_tail_follow --uuid qr1hi-8i9sb-n9k7qyp7bs5b9d4</span>
-Tue Dec 17 19:02:16 2013 salloc: Granted job allocation 1251
-Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  check slurm allocation
-Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  node compute13 - 8 slots
-Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start
-Tue Dec 17 19:02:17 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Install revision 76588bfc57f33ea1b36b82ca7187f465b73b4ca4
-Tue Dec 17 19:02:18 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Clean-work-dir exited 0
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Install exited 0
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script GATK2-VariantFiltration
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script_version 76588bfc57f33ea1b36b82ca7187f465b73b4ca4
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  script_parameters {"input":"5ee633fe2569d2a42dd81b07490d5d13+82","gatk_bundle":"d237a90bae3870b3b033aea1e99de4a9+10820","gatk_binary_tarball":"c905c8d8443a9c44274d98b7c6cfaa32+94"}
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  runtime_constraints {"max_tasks_per_node":0}
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start level 0
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 0 done, 0 running, 1 todo
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 job_task qr1hi-ot0gb-d3sjxerucfbvyev
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 child 4946 started on compute13.1
-Tue Dec 17 19:02:19 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 0 done, 1 running, 0 todo
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 child 4946 on compute13.1 exit 0 signal 0 success=true
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 success in 1 seconds
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 0 output
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  wait for last 0 children to finish
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 0 running, 1 todo
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  start level 1
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 0 running, 1 todo
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 job_task qr1hi-ot0gb-w8ujbnulxjaamxf
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 started on compute13.1
-Tue Dec 17 19:02:20 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 1 done, 1 running, 0 todo
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 child 4984 on compute13.1 exit 0 signal 0 success=true
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 success in 110 seconds
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867 1 output bedd6ff56b3ae9f90d873b1fcb72f9a3+91
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  wait for last 0 children to finish
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  status: 2 done, 0 running, 0 todo
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  release job allocation
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  Freeze not implemented
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  collate
-Tue Dec 17 19:04:10 2013 salloc: Job allocation 1251 has been revoked.
-Tue Dec 17 19:04:10 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  output bedd6ff56b3ae9f90d873b1fcb72f9a3+91
-Tue Dec 17 19:04:11 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  finish
-Tue Dec 17 19:04:12 2013 qr1hi-8i9sb-n9k7qyp7bs5b9d4 4867  log manifest is 1e77aaceee2df499e14dc5dde5c3d328+91
 </code></pre>
 </notextile>
 
