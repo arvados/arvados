@@ -65,14 +65,22 @@ collections on the server.""")
         # wait until the driver is finished initializing
         operations.initlock.wait()
 
+        rc = 255
         try:
             sp = subprocess.Popen(args.exec_args, shell=False)
+
             # forward signals to the process.
             signal.signal(signal.SIGINT, lambda signum, frame: sp.send_signal(signum))
             signal.signal(signal.SIGTERM, lambda signum, frame: sp.send_signal(signum))
             signal.signal(signal.SIGQUIT, lambda signum, frame: sp.send_signal(signum))
-            rc = 255
+
+            # wait for process to complete.
             rc = sp.wait()
+
+            # restore default signal handlers.
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+            signal.signal(signal.SIGTERM, signal.SIG_DFL)
+            signal.signal(signal.SIGQUIT, signal.SIG_DFL)
         except OSError as e:
             sys.stderr.write('arv-mount: %s -- exec %s\n' % (str(e), args.exec_args))
             rc = e.errno

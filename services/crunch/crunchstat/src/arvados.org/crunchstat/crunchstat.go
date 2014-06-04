@@ -63,7 +63,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 	cpuset_cpus := fmt.Sprintf("%s/cpuset.cpus", cgroup_path)
 	memory_stat := fmt.Sprintf("%s/memory.stat", cgroup_path)
 
-	var ellapsed int64 = poll
+	var elapsed int64 = poll
 
 	for {
 		/*{
@@ -119,11 +119,11 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 				// time is in milliseconds, we need to boost
 				// that to 1000 jiffies per second, then boost
 				// it by another 100x to get a percentage, then
-				// finally divide by the actual ellapsed time
+				// finally divide by the actual elapsed time
 				// and the number of cpus to get average load
 				// over the polling period.
-				user_pct := (user_diff * 10 * 100) / (ellapsed * cpus)
-				sys_pct := (sys_diff * 10 * 100) / (ellapsed * cpus)
+				user_pct := (user_diff * 10 * 100) / (elapsed * cpus)
+				sys_pct := (sys_diff * 10 * 100) / (elapsed * cpus)
 
 				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat user %v", user_pct)
 				stderr <- fmt.Sprintf("crunchstat: cpuacct.stat sys %v", sys_pct)
@@ -182,7 +182,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 		bedtime := time.Now()
 		time.Sleep(time.Duration(poll) * time.Millisecond)
 		morning := time.Now()
-		ellapsed = morning.Sub(bedtime).Nanoseconds() / int64(time.Millisecond)
+		elapsed = morning.Sub(bedtime).Nanoseconds() / int64(time.Millisecond)
 	}
 }
 
