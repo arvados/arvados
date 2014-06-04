@@ -10,6 +10,7 @@ class Link < ArvadosModel
   after_destroy :maybe_invalidate_permissions_cache
   attr_accessor :head_kind, :tail_kind
   validate :name_link_has_valid_name
+  validate :name_link_owner_is_tail
 
   api_accessible :user, extend: :common do |t|
     t.add :tail_uuid
@@ -90,6 +91,13 @@ class Link < ArvadosModel
       end
     else
       true
+    end
+  end
+
+  def name_link_owner_is_tail
+    if link_class == 'name'
+      self.owner_uuid = tail_uuid
+      ensure_owner_uuid_is_permitted
     end
   end
 end

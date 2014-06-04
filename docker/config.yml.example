@@ -45,6 +45,10 @@ ARVADOS_PROD_PW:
 # will be chosen randomly at build time. This is the
 # recommended setting.
 
+# The signing key shared by Keep at the API server to verify
+# blob permission signatures.
+KEEP_SIGNING_SECRET:
+
 # The value for the Rails config.secret_token setting.
 API_SECRET:
 

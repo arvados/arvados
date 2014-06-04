@@ -7,23 +7,10 @@ class UserTest < ActiveSupport::TestCase
   setup do
     # Make sure system_user exists before making "pre-test users" list
     system_user
-
-    @all_users = User.find(:all)
-
-    @all_users.each do |user|
-      if user.uuid == system_user_uuid
-        @system_user = user
-      elsif user.is_admin && user.is_active
-        @admin_user = user
-      elsif user.is_active && !user.is_admin
-        @active_user = user
-      elsif !user.is_active && !user.is_invited
-        @uninvited_user = user
-      end
-    end
   end
 
   test "check non-admin active user properties" do
+    @active_user = users(:active)     # get the active user
     assert !@active_user.is_admin, 'is_admin should not be set for a non-admin user'
     assert @active_user.is_active, 'user should be active'
     assert @active_user.is_invited, 'is_invited should be set'
@@ -35,12 +22,14 @@ class UserTest < ActiveSupport::TestCase
     assert @active_user.groups_i_can(:read).size > 0, "active user should be able read at least one group"
 
     # non-admin user cannot manage or write other user objects
+    @uninvited_user = users(:inactive_uninvited)     # get the uninvited user
     assert !(@active_user.can? :read=>"#{@uninvited_user.uuid}")
     assert !(@active_user.can? :write=>"#{@uninvited_user.uuid}")
     assert !(@active_user.can? :manage=>"#{@uninvited_user.uuid}")
   end
 
   test "check admin user properties" do
+    @admin_user = users(:admin)     # get the admin user
     assert @admin_user.is_admin, 'is_admin should be set for admin user'
     assert @admin_user.is_active, 'admin user cannot be inactive'
     assert @admin_user.is_invited, 'is_invited should be set'
@@ -56,12 +45,14 @@ class UserTest < ActiveSupport::TestCase
     assert @admin_user.groups_i_can(:manage).size > 0, "admin active user should be able manage at least one group"
 
     # admin user can also write or manage other users
+    @uninvited_user = users(:inactive_uninvited)     # get the uninvited user
     assert @admin_user.can? :read=>"#{@uninvited_user.uuid}"
     assert @admin_user.can? :write=>"#{@uninvited_user.uuid}"
     assert @admin_user.can? :manage=>"#{@uninvited_user.uuid}"
   end
 
   test "check inactive and uninvited user properties" do
+    @uninvited_user = users(:inactive_uninvited)     # get the uninvited user
     assert !@uninvited_user.is_admin, 'is_admin should not be set for a non-admin user'
     assert !@uninvited_user.is_active, 'user should be inactive'
     assert !@uninvited_user.is_invited, 'is_invited should not be set'
@@ -88,7 +79,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "full name should not contain spurious whitespace" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
 
     user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: 'foo@example.com' })
 
@@ -101,7 +92,9 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new user" do
-    Thread.current[:user] = @admin_user   # set admin user as the current user
+    set_user_from_auth :admin
+
+    @all_users = User.find(:all)
 
     user = User.new
     user.first_name = "first_name_for_newly_created_user"
@@ -122,8 +115,22 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(user.first_name, 'first_name_for_newly_created_user_updated')
   end
 
+  test "create new user with notifications" do
+    set_user_from_auth :admin
+
+    user_notification_helper true, 'active-notify-address@example.com', 'inactive-notify-address@example.com'
+    user_notification_helper true, 'active-notify-address@example.com', []
+    user_notification_helper true, [], []
+    user_notification_helper false, 'active-notify-address@example.com', 'inactive-notify-address@example.com'
+    user_notification_helper false, [], 'inactive-notify-address@example.com'
+    user_notification_helper false, [], []
+  end
+
   test "update existing user" do
-    Thread.current[:user] = @active_user    # set active user as current user
+    set_user_from_auth :active    # set active user as current user
+
+    @active_user = users(:active)     # get the active user
+
     @active_user.first_name = "first_name_changed"
     @active_user.save
 
@@ -131,7 +138,7 @@ class UserTest < ActiveSupport::TestCase
     assert_equal(@active_user.first_name, 'first_name_changed')
 
     # admin user also should be able to update the "active" user info
-    Thread.current[:user] = @admin_user # set admin user as current user
+    set_user_from_auth :admin # set admin user as current user
     @active_user.first_name = "first_name_changed_by_admin_for_active_user"
     @active_user.save
 
@@ -140,9 +147,10 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "delete a user and verify" do
+    @active_user = users(:active)     # get the active user
     active_user_uuid = @active_user.uuid
 
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
     @active_user.delete
 
     found_deleted_user = false
@@ -157,7 +165,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "create new user as non-admin user" do
-    Thread.current[:user] = @active_user
+    set_user_from_auth :active
 
     begin
       user = User.new
@@ -169,7 +177,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "setup new user" do
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
 
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
@@ -202,7 +210,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "setup new user with junk in database" do
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
 
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
@@ -246,7 +254,7 @@ class UserTest < ActiveSupport::TestCase
 
 
   test "setup new user in multiple steps" do
-    Thread.current[:user] = @admin_user
+    set_user_from_auth :admin
 
     email = 'foo@example.com'
     openid_prefix = 'http://openid/prefix'
@@ -341,6 +349,57 @@ class UserTest < ActiveSupport::TestCase
       assert_equal head_uuid, link_object[:head_uuid],
           "expected head_uuid not found for #{link_class} #{link_name}"
     end
+  end
+
+  def user_notification_helper (active, active_recipients, inactive_recipients)
+    Rails.configuration.new_user_notification_recipients = active_recipients
+    Rails.configuration.new_inactive_user_notification_recipients = inactive_recipients
+
+    assert_equal active_recipients, Rails.configuration.new_user_notification_recipients
+    assert_equal inactive_recipients, Rails.configuration.new_inactive_user_notification_recipients
+
+    ActionMailer::Base.deliveries = []
+
+    user = User.new
+    user.first_name = "first_name_for_newly_created_user"
+    user.is_active = active
+    user.save
+
+    new_user_email = nil
+    new_inactive_user_email = nil
+
+    ActionMailer::Base.deliveries.each do |d|
+      if d.subject == "#{Rails.configuration.email_subject_prefix}New user notification" then
+        new_user_email = d
+      elsif d.subject == "#{Rails.configuration.email_subject_prefix}New inactive user notification" then
+        new_inactive_user_email = d
+      end
+    end
+
+    if not active
+      if not inactive_recipients.empty? then
+        assert_not_nil new_inactive_user_email, 'Expected new inactive user email after setup'
+        assert_equal Rails.configuration.user_notifier_email_from, new_inactive_user_email.from[0]
+        assert_equal inactive_recipients, new_inactive_user_email.to[0]
+        assert_equal "#{Rails.configuration.email_subject_prefix}New inactive user notification", new_inactive_user_email.subject
+      else
+        assert_nil new_inactive_user_email, 'Did not expect new inactive user email after setup'
+      end
+    end
+
+    if active
+      assert_nil new_inactive_user_email, 'Expected email after setup'
+      if not active_recipients.empty? then
+        assert_not_nil new_user_email, 'Expected new user email after setup'
+        assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
+        assert_equal active_recipients, new_user_email.to[0]
+        assert_equal "#{Rails.configuration.email_subject_prefix}New user notification", new_user_email.subject
+      else
+        assert_nil new_user_email, 'Did not expect new user email after setup'
+      end
+    end
+    ActionMailer::Base.deliveries = []
+
   end
 
 end
