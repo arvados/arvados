@@ -12,7 +12,7 @@
 # It's strongly recommended to check this file into your version control system.
 
 
-ActiveRecord::Schema.define(:version => 20140601022548) do
+ActiveRecord::Schema.define(:version => 20140602143352) do
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -320,16 +320,14 @@ ActiveRecord::Schema.define(:version => 20140601022548) do
   create_table "pipeline_instances", :force => true do |t|
     t.string   "uuid"
     t.string   "owner_uuid"
-    t.datetime "created_at",                                 :null => false
+    t.datetime "created_at",              :null => false
     t.string   "modified_by_client_uuid"
     t.string   "modified_by_user_uuid"
     t.datetime "modified_at"
     t.string   "pipeline_template_uuid"
     t.string   "name"
     t.text     "components"
-    t.boolean  "success"
-    t.boolean  "active",                  :default => false
-    t.datetime "updated_at",                                 :null => false
+    t.datetime "updated_at",              :null => false
     t.text     "properties"
     t.string   "state"
     t.text     "components_summary"

@@ -3,7 +3,7 @@ class Job < ArvadosBase
     true
   end
 
-  def attribute_editable?(attr)
+  def attribute_editable? attr, *args
     false
   end
 
