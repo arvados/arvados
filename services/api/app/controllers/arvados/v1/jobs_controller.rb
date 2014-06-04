@@ -117,51 +117,6 @@ class Arvados::V1::JobsController < ApplicationController
           @job.reload
         end
       end
-      @redis = Redis.new(:timeout => 0)
-      if @redis.exists @job.uuid
-        # A log buffer exists. Start by showing the last few KB.
-        @redis.
-          getrange(@job.uuid, 0 - [@opts[:buffer_size], 1].max, -1).
-          sub(/^[^\n]*\n?/, '').
-          split("\n").
-          each do |line|
-          yield "#{line}\n"
-        end
-      end
-      # TODO: avoid missing log entries between getrange() above and
-      # subscribe() below.
-      @redis.subscribe(@job.uuid) do |event|
-        event.message do |channel, msg|
-          if msg == "end"
-            @redis.unsubscribe @job.uuid
-          else
-            yield "#{msg}\n"
-          end
-        end
-      end
-    end
-  end
-
-  def self._log_tail_follow_requires_parameters
-    {
-      buffer_size: {type: 'integer', required: false, default: 2**13}
-    }
-  end
-  def log_tail_follow
-    if !@object.andand.uuid
-      return render_not_found
-    end
-    if client_accepts_plain_text_stream
-      self.response.headers['Last-Modified'] = Time.now.ctime.to_s
-      self.response_body = LogStreamer.new @object, {
-        buffer_size: (params[:buffer_size].to_i rescue 2**13)
-      }
-    else
-      render json: {
-        href: url_for(uuid: @object.uuid),
-        comment: ('To retrieve the log stream as plain text, ' +
-                  'use a request header like "Accept: text/plain"')
-      }
     end
   end
 

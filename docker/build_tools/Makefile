@@ -89,7 +89,8 @@ $(BUILD):
 	rsync -rlp --exclude=docker/ --exclude='**/log/*' --exclude='**/tmp/*' \
 		--chmod=Da+rx,Fa+rX ../ build/
 	find build/ -name \*.gem -delete
-	cd build/sdk/python/ && ./build.sh
+	cd build/services/fuse/ && python setup.py build
+	cd build/sdk/python/ && python setup.py build
 	cd build/sdk/cli && gem build arvados-cli.gemspec
 	cd build/sdk/ruby && gem build arvados.gemspec
 	touch build/.buildstamp
