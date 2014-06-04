@@ -135,6 +135,12 @@ cd $WORKSPACE/services/keep
 cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/services/keep/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
 
+# The crunchstat wrapper
+cd $WORKSPACE/services/crunch/crunchstat
+./go.sh install arvados.org/crunchstat
+cd $WORKSPACE/debs
+build_and_scp_deb $WORKSPACE/services/crunch/crunchstat/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+
 # The Python SDK
 cd $WORKSPACE/sdk/python
 sed -i'' -e "s:version='0.1':version='0.1.$GIT_HASH':" setup.py
