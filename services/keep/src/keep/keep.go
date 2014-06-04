@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -86,10 +85,6 @@ var (
 func (e *KeepError) Error() string {
 	return e.ErrMsg
 }
-
-// This error is returned by ReadAtMost if the available
-// data exceeds BLOCKSIZE bytes.
-var ReadErrorTooLong = errors.New("Too long")
 
 // TODO(twp): continue moving as much code as possible out of main
 // so it can be effectively tested. Esp. handling and postprocessing
@@ -444,14 +439,18 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// Read the block data to be stored.
 	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.
 	//
-	// Note: because req.Body is a buffered Reader, each Read() call will
-	// collect only the data in the network buffer (typically 16384 bytes),
-	// even if it is passed a much larger slice.
-	//
-	// Instead, call ReadAtMost to read data from the socket
-	// repeatedly until either EOF or BLOCKSIZE bytes have been read.
-	//
-	if buf, err := ReadAtMost(req.Body, BLOCKSIZE); err == nil {
+	if req.ContentLength > BLOCKSIZE {
+		http.Error(resp, TooLongError.Error(), TooLongError.HTTPCode)
+		return
+	}
+
+	buf := make([]byte, req.ContentLength)
+	nread, err := io.ReadFull(req.Body, buf)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+	} else if int64(nread) < req.ContentLength {
+		http.Error(resp, "request truncated", 500)
+	} else {
 		if err := PutBlock(buf, hash); err == nil {
 			// Success; add a size hint, sign the locator if
 			// possible, and return it to the client.
@@ -466,16 +465,8 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 			ke := err.(*KeepError)
 			http.Error(resp, ke.Error(), ke.HTTPCode)
 		}
-	} else {
-		log.Println("error reading request: ", err)
-		errmsg := err.Error()
-		if err == ReadErrorTooLong {
-			// Use a more descriptive error message that includes
-			// the maximum request size.
-			errmsg = fmt.Sprintf("Max request size %d bytes", BLOCKSIZE)
-		}
-		http.Error(resp, errmsg, 500)
 	}
+	return
 }
 
 // IndexHandler
@@ -689,24 +680,6 @@ func PutBlock(block []byte, hash string) error {
 			return GenericError
 		}
 	}
-}
-
-// ReadAtMost
-//     Reads bytes repeatedly from an io.Reader until either
-//     encountering EOF, or the maxbytes byte limit has been reached.
-//     Returns a byte slice of the bytes that were read.
-//
-//     If the reader contains more than maxbytes, returns a nil slice
-//     and an error.
-//
-func ReadAtMost(r io.Reader, maxbytes int) ([]byte, error) {
-	// Attempt to read one more byte than maxbytes.
-	lr := io.LimitReader(r, int64(maxbytes+1))
-	buf, err := ioutil.ReadAll(lr)
-	if len(buf) > maxbytes {
-		return nil, ReadErrorTooLong
-	}
-	return buf, err
 }
 
 // IsValidLocator
