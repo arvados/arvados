@@ -38,13 +38,17 @@ class Dispatcher
   def refresh_running
     Job.running.each do |jobrecord|
       if !@running[jobrecord.uuid]
-        # job is marked running, but not actually running. so fail it
-        jobrecord.running = false
-        jobrecord.finished_at ||= Time.now
-        if jobrecord.success.nil?
-          jobrecord.success = false
+        f = Log.filter(["object_uuid", "=", jobrecord.uuid]).limit(1).order("created_at desc").results.first
+        if (Time.now - f.created_at) > 300
+          # job is marked running, but not known to crunch-dispatcher, and
+          # hasn't produced any log entries for 5 minutes, so mark it as failed.
+          jobrecord.running = false
+          jobrecord.finished_at ||= Time.now
+          if jobrecord.success.nil?
+            jobrecord.success = false
+          end
+          jobrecord.save!
         end
-        jobrecord.save!
       end
     end
   end
@@ -382,7 +386,7 @@ class Dispatcher
           end
         end
       else
-        refresh_running unless did_recently(:refresh_running, 30.0)
+        refresh_running unless did_recently(:refresh_running, 60.0)
         refresh_todo unless did_recently(:refresh_todo, 1.0)
         update_node_status
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
