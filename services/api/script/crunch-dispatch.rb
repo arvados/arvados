@@ -44,8 +44,10 @@ class Dispatcher
   def refresh_running
     Job.running.each do |jobrecord|
       if !@running[jobrecord.uuid]
-        f = Log.filter(["object_uuid", "=", jobrecord.uuid]).limit(1).order("created_at desc").results.first
-        if (Time.now - f.created_at) > 300
+        f = Log.where("object_uuid=?", jobrecord.uuid).limit(1).order("created_at desc").first
+        age = (Time.now - f.created_at)
+        if age > 300
+          $stderr.puts "dispatch: failing orphan job #{jobrecord.uuid}, last log is #{age} seconds old"
           # job is marked running, but not known to crunch-dispatcher, and
           # hasn't produced any log entries for 5 minutes, so mark it as failed.
           jobrecord.running = false
