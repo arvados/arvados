@@ -2,32 +2,33 @@
 <div class="pull-right">
   <% if @object.running %>
     <%= form_tag "/jobs/#{@object.uuid}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
-    <%= button_tag "Cancel running job", {class: 'btn btn-danger', id: "cancel-job-button"} %>
+      <%= button_tag "Cancel running job", {class: 'btn btn-danger', id: "cancel-job-button"} %>
     <% end %>
   <% else %>
-    Re-run job using version:
+    Re-run job using script version:
     <%= form_tag '/jobs', style: "display:inline; padding-left: 1em" do |f| %>
-    <% [:script, :script_version, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
-      <%= hidden_field :job, d, :value => @object[d] %>
+      <% [:script, :script_version, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
+        <%= hidden_field :job, d, :value => @object[d] %>
+      <% end %>
+      <% [:script_parameters, :runtime_constraints].each do |d| %>
+        <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
+      <% end %>
+      <%= hidden_field :options, :no_reuse, :value => true %>
+      <%= button_tag "Same as this run", {class: 'btn btn-primary', id: "re-run-same-job-button"} %>
     <% end %>
-    <% [:script_parameters, :runtime_constraints].each do |d| %>
-      <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
-    <% end %>
-    <%= hidden_field :options, :no_reuse, :value => true %>
-    <%= button_tag "Same (#{@object.script_version.slice 0,8}...)", {class: 'btn btn-primary', id: "re-run-same-job-button"} %>
+  <% if !@object.supplied_script_version.nil? and !@object.supplied_script_version.empty? and @object.script_version != @object.supplied_script_version%>
+      <%= form_tag '/jobs', style: "display:inline" do |f| %>
+      <% [:script, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
+        <%= hidden_field :job, d, :value => @object[d] %>
+      <% end %>
+      <%= hidden_field :job, :script_version, :value => @object[:supplied_script_version] %>
+      <% [:script_parameters, :runtime_constraints].each do |d| %>
+        <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
+      <% end %>
+      <%= hidden_field :options, :no_reuse, :value => true %>
+        <%= button_tag "Latest (#{@object.repository}/#{@object.supplied_script_version})", {class: 'btn btn-primary', id: "re-run-latest-job-button"} %>
+      <% end %>
   <% end %>
-
-  <%= form_tag '/jobs', style: "display:inline" do |f| %>
-  <% [:script, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
-    <%= hidden_field :job, d, :value => @object[d] %>
-  <% end %>
-  <%= hidden_field :job, :script_version, :value => @object[:supplied_script_version] %>
-  <% [:script_parameters, :runtime_constraints].each do |d| %>
-    <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
-  <% end %>
-  <%= hidden_field :options, :no_reuse, :value => true %>
-  <%= button_tag "Latest (#{@object.repository}/#{@object.supplied_script_version})", {class: 'btn btn-primary', id: "re-run-latest-job-button"} %>
-<% end %>
 <% end %>
 </div>
 
