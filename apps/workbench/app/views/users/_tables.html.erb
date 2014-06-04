@@ -48,7 +48,9 @@
               <small>
                 <% if j.success and j.output %>
                   <a href="<%= collection_path(j.output) %>">
-                    <% get_collection(j.output).each do |c| %>
+                    <% collections = get_collections(j.output) %>
+                      <% if collections && !collections.empty? %>
+                      <% c = collections.first %>
                       <% c.files.each do |file| %>
                         <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
                       <% end %>
@@ -61,7 +63,9 @@
 <td>
   <small>
     <% if j.log %>
-      <% get_log_collection(j.log).each do |c| %>
+      <% log_collections = get_log_collections(j.log) %>
+      <% if log_collections && !log_collections.empty? %>
+        <% c = log_collections.first %>
         <% c.files.each do |file| %>
           <a href="<%= collection_path(j.log) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">Log</a>
         <% end %>

@@ -494,12 +494,11 @@ class ApplicationController < ActionController::Base
     return @objects_map_for[dataclass]
   end
 
-  # helper method to get collection for the given uuid
-  helper_method :get_collection
-  def get_collection uuid
+  # helper method to get collections for the given uuid
+  helper_method :get_collections
+  def get_collections uuid
     preload_collections([uuid])
-    (@all_collections_for[uuid] && @all_collections_for[uuid].first) ?
-          [@all_collections_for[uuid].first] : []
+    @all_collections_for[uuid]
   end
 
   # helper method to preload collections for the given uuids
@@ -521,14 +520,13 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # helper method to get log collection for the given log
-  helper_method :get_log_collection
-  def get_log_collection log
+  # helper method to get log collections for the given log
+  helper_method :get_log_collections
+  def get_log_collections log
     fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
     uuid = fixup[1]
     preload_log_collections([uuid])
-    (@all_log_collections_for[uuid] && @all_log_collections_for[uuid].first) ?
-          [@all_log_collections_for[uuid].first] : []
+    @all_log_collections_for[uuid]
   end
 
   # helper method to preload collections for the given uuids
@@ -551,7 +549,7 @@ class ApplicationController < ActionController::Base
     end
 
     # TODO: make sure we get every page of results from API server
-    Collection.limit(100).where(uuid: uuids).each do |collection|
+    Collection.where(uuid: uuids).each do |collection|
       @all_log_collections_for[collection.uuid] << collection
     end
   end
