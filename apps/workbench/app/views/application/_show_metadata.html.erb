@@ -6,9 +6,9 @@
   preload_head_uuids = []
   outgoing.results.each do |link|
     preload_uuids << link.uuid
+    preload_uuids << link.head_uuid
     preload_head_uuids << link.head_uuid
   end
-  preload_uuids << preload_head_uuids
   preload_collections_for_objects preload_uuids
   preload_links_for_objects preload_head_uuids
 %>
