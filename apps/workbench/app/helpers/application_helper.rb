@@ -100,13 +100,15 @@ module ApplicationHelper
           link_name = "#{resource_class.to_s}: #{link_name}"
         end
         if !opts[:no_tags] and resource_class == Collection
-          Link.where(head_uuid: link_uuid, link_class: ["tag", "identifier"]).each do |tag|
-            link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
+          links_for_object(link_uuid).each do |tag|
+            if tag.link_class.in? ["tag", "identifier"]
+              link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
+            end
           end
         end
         if opts[:thumbnail] and resource_class == Collection
           # add an image thumbnail if the collection consists of a single image file.
-          Collection.where(uuid: link_uuid).each do |c|
+          collections_for_object(link_uuid).each do |c|
             if c.files.length == 1 and CollectionsHelper::is_image c.files.first[1]
               link_name += " "
               link_name += image_tag "#{url_for c}/#{CollectionsHelper::file_path c.files.first}", style: "height: 4em; width: auto"

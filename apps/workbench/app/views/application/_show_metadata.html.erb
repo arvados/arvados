@@ -1,6 +1,18 @@
 <% outgoing = Link.where(tail_uuid: @object.uuid) %>
 <% incoming = Link.where(head_uuid: @object.uuid) %>
 
+<%
+  preload_uuids = []
+  preload_head_uuids = []
+  outgoing.results.each do |link|
+    preload_uuids << link.uuid
+    preload_head_uuids << link.head_uuid
+  end
+  preload_uuids << preload_head_uuids
+  preload_collections_for_objects preload_uuids
+  preload_links_for_objects preload_head_uuids
+%>
+
 <h3>Metadata about this object</h3>
 <% if outgoing.items_available > 0 %>
 <table class="table topalign">
