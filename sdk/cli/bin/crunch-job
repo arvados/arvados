@@ -76,6 +76,7 @@ use strict;
 use POSIX ':sys_wait_h';
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use Arvados;
+use Digest::MD5 qw(md5_hex);
 use Getopt::Long;
 use IPC::Open2;
 use IO::Select;
@@ -799,21 +800,37 @@ goto ONELEVEL if !defined $main::success;
 
 release_allocation();
 freeze();
+my $collated_output = &collate_output();
+
 if ($job_has_uuid) {
-  $Job->update_attributes('output' => &collate_output(),
-                          'running' => 0,
-                          'success' => $Job->{'output'} && $main::success,
+  $Job->update_attributes('running' => 0,
+                          'success' => $collated_output && $main::success,
                           'finished_at' => scalar gmtime)
 }
 
-if ($Job->{'output'})
+if ($collated_output)
 {
   eval {
-    my $manifest_text = `arv keep get ''\Q$Job->{'output'}\E`;
-    $arv->{'collections'}->{'create'}->execute('collection' => {
-      'uuid' => $Job->{'output'},
+    open(my $orig_manifest, '-|', 'arv', 'keep', 'get', $collated_output)
+        or die "failed to get collated manifest: $!";
+    # Read the original manifest, and strip permission hints from it,
+    # so we can put the result in a Collection.
+    my @manifest_lines = ();
+    while (my $manifest_line = <$orig_manifest>) {
+      my @words = split(/ /, $manifest_line, -1);
+      foreach my $ii (0..$#words) {
+        if ($words[$ii] =~ /^[0-9a-f]{32}\+/) {
+          $words[$ii] =~ s/\+A[0-9a-f]{40}@[0-9a-f]{8}\b//;
+        }
+      }
+      push(@manifest_lines, join(" ", @words));
+    }
+    my $manifest_text = join("", @manifest_lines);
+    my $output = $arv->{'collections'}->{'create'}->execute('collection' => {
+      'uuid' => md5_hex($manifest_text),
       'manifest_text' => $manifest_text,
     });
+    $Job->update_attributes('output' => $output->{uuid});
     if ($Job->{'output_is_persistent'}) {
       $arv->{'links'}->{'create'}->execute('link' => {
         'tail_kind' => 'arvados#user',
