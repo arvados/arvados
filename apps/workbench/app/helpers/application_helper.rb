@@ -89,11 +89,7 @@ module ApplicationHelper
             link_name = attrvalue.friendly_link_name
           else
             begin
-              link_name = ''
-              collections_for_object(link_uuid).each do |c|
-                link_name = c.friendly_link_name
-                break
-              end
+              link_name = collections_for_object(link_uuid).andand.first.andand.friendly_link_name
             rescue RuntimeError
               # If that lookup failed, the link will too. So don't make one.
               return attrvalue
