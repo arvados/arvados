@@ -25,6 +25,17 @@
           <th>Progress</th>
         </tr>
 
+        <% 
+          job_outputs = []
+          job_logs = []
+          @my_jobs[0..6].each do |j|
+            job_outputs << j.output
+            job_logs << j.log
+          end
+
+          preload_collections job_outputs
+          preload_log_collections job_logs
+        %>
         <% @my_jobs[0..6].each do |j| %>
           <tr data-object-uuid="<%= j.uuid %>">
             <td>
@@ -36,24 +47,21 @@
             <td>
               <small>
                 <% if j.success and j.output %>
-
                   <a href="<%= collection_path(j.output) %>">
-                    <% Collection.limit(1).where(uuid: j.output).each do |c| %>
-                         <% c.files.each do |file| %>
-                      <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
-                    <% end %>
-                <% end %>
-                </a>
-
-        <% end %>
-        </small>
-</td>
+                    <% get_collection(j.output).each do |c| %>
+                      <% c.files.each do |file| %>
+                        <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
+                      <% end %>
+                     <% end %>
+                  </a>
+              <% end %>
+            </small>
+          </td>
 
 <td>
   <small>
     <% if j.log %>
-      <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(j.log)%>
-      <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
+      <% get_log_collection(j.log).each do |c| %>
         <% c.files.each do |file| %>
           <a href="<%= collection_path(j.log) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">Log</a>
         <% end %>

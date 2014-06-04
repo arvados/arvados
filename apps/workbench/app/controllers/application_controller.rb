@@ -453,7 +453,7 @@ class ApplicationController < ActionController::Base
   helper_method :links_for_object
   def links_for_object object_or_uuid
     uuid = object_or_uuid.is_a?(String) ? object_or_uuid : object_or_uuid.uuid
-    preload_links_for_objects([uuid])
+    preload_links_for_objects([object_or_uuid])
     @all_links_for[uuid]
   end
 
@@ -479,19 +479,81 @@ class ApplicationController < ActionController::Base
   # this can be used to replace any uses of: "dataclass.limit(n)"
   helper_method :get_objects_of_type
   def get_objects_of_type dataclass, size
-    # if the objects_map has a value for this dataclass, and the size used
+    # if the objects_map_for has a value for this dataclass, and the size used
     # to retrieve those objects is greater than equal to size, return it
     size_key = "#{dataclass}_size"
-    if @objects_map && @objects_map[dataclass] && @objects_map[size_key] &&
-        (@objects_map[size_key] >= size)
-      return @objects_map[dataclass] 
+    if @objects_map_for && @objects_map_for[dataclass] && @objects_map_for[size_key] &&
+        (@objects_map_for[size_key] >= size)
+      return @objects_map_for[dataclass] 
     end
 
-    @objects_map = {}
-    @objects_map[dataclass] = dataclass.limit(size)
-    @objects_map[size_key] = size
+    @objects_map_for = {}
+    @objects_map_for[dataclass] = dataclass.limit(size)
+    @objects_map_for[size_key] = size
 
-    return @objects_map[dataclass]
+    return @objects_map_for[dataclass]
+  end
+
+  # helper method to get collection for the given uuid
+  helper_method :get_collection
+  def get_collection uuid
+    preload_collections([uuid])
+    (@all_collections_for[uuid] && @all_collections_for[uuid].first) ?
+          [@all_collections_for[uuid].first] : []
+  end
+
+  # helper method to preload collections for the given uuids
+  helper_method :preload_collections
+  def preload_collections uuids
+    @all_collections_for ||= {}
+    if not uuids.select { |x| @all_collections_for[x].nil? }.any?
+      # already preloaded for all of these uuids
+      return
+    end
+
+    uuids.each do |x|
+      @all_collections_for[x] = []
+    end
+
+    # TODO: make sure we get every page of results from API server
+    Collection.where(uuid: uuids).each do |collection|
+      @all_collections_for[collection.uuid] << collection
+    end
+  end
+
+  # helper method to get log collection for the given log
+  helper_method :get_log_collection
+  def get_log_collection log
+    fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
+    uuid = fixup[1]
+    preload_log_collections([uuid])
+    (@all_log_collections_for[uuid] && @all_log_collections_for[uuid].first) ?
+          [@all_log_collections_for[uuid].first] : []
+  end
+
+  # helper method to preload collections for the given uuids
+  helper_method :preload_log_collections
+  def preload_log_collections logs
+    uuids = []
+    logs.each do |log|
+      fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
+      uuids << fixup[1]
+    end
+
+    @all_log_collections_for ||= {}
+    if not uuids.select { |x| @all_log_collections_for[x].nil? }.any?
+      # already preloaded for all of these uuids
+      return
+    end
+
+    uuids.each do |x|
+      @all_log_collections_for[x] = []
+    end
+
+    # TODO: make sure we get every page of results from API server
+    Collection.limit(100).where(uuid: uuids).each do |collection|
+      @all_log_collections_for[collection.uuid] << collection
+    end
   end
 
 end
