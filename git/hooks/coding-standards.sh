@@ -23,6 +23,7 @@ $regex = /\[ref: (\d+)\]/
 $broken_commit_message = /Please enter a commit message to explain why this merge is necessary/
 $wrong_way_merge_master = /Merge( remote-tracking)? branch '([^\/]+\/)?master' into/
 $merge_master = /Merge branch '[^']+'((?! into)| into master)/
+$pull_merge = /Merge branch 'master' of /
 $refs_or_closes_or_no_issue = /(refs #|closes #|no issue #)/i
 
 # enforced custom commit message format
@@ -45,10 +46,11 @@ def check_message_format
       puts "\n******************************************************************\n"
       puts "\n\n"
       broken = true
-    elsif not $merge_master.match(message)
+    elsif not $merge_master.match(message) and not $pull_merge.match(message)
       puts "\n[POLICY] This does not appear to be a merge of a feature\n"
-      puts "\nbranch into master, or it does not follow the required\n"
-      puts "\nformat \"Merge branch 'feature-branch'\".\n\n"
+      puts "\nbranch into master or a merge of master heads.  Merges must follow\n"
+      puts "\nthe format \"Merge branch 'feature-branch'\" or\n"
+      puts "\n\"Merge branch 'master' of git.example.com:repository\".\n\n"
       puts "\n******************************************************************\n"
       puts "\nOffending commit: #{rev}\n\n"
       puts "\nOffending commit message:\n\n"
