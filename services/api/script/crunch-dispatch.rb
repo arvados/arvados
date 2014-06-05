@@ -41,27 +41,6 @@ class Dispatcher
     return act_as_system_user
   end
 
-  def refresh_running
-    Job.running.each do |jobrecord|
-      if !@running[jobrecord.uuid]
-        f = Log.where("object_uuid=?", jobrecord.uuid).limit(1).order("created_at desc").first
-        age = (Time.now - f.created_at)
-        if age > 300
-          $stderr.puts "dispatch: failing orphan job #{jobrecord.uuid}, last log is #{age} seconds old"
-          # job is marked running, but not known to crunch-dispatcher, and
-          # hasn't produced any log entries for 5 minutes, so mark it as failed.
-          jobrecord.running = false
-          jobrecord.canceled_at ||= Time.now
-          jobrecord.finished_at ||= Time.now
-          if jobrecord.success.nil?
-            jobrecord.success = false
-          end
-          jobrecord.save!
-        end
-      end
-    end
-  end
-
   def refresh_todo
     @todo = Job.queue.select do |j| j.repository end
     @todo_pipelines = PipelineInstance.queue
@@ -409,7 +388,6 @@ class Dispatcher
           end
         end
       else
-        refresh_running unless did_recently(:refresh_running, 60.0)
         refresh_todo unless did_recently(:refresh_todo, 1.0)
         update_node_status
         unless @todo.empty? or did_recently(:start_jobs, 1.0) or $signal[:term]
