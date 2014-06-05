@@ -16,7 +16,7 @@ class JobsController < ApplicationController
 
     @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {
       :request => request,
-      :all_script_parameters => true, 
+      :all_script_parameters => true,
       :script_version_nodes => true}
   end
 
@@ -27,12 +27,13 @@ class JobsController < ApplicationController
       generate_provenance(@objects)
     else
       @limit = 20
-      super
     end
+    super
   end
 
   def show
     generate_provenance([@object])
+    super
   end
 
   def index_pane_list

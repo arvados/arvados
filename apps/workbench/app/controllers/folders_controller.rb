@@ -74,6 +74,8 @@ class FoldersController < ApplicationController
     @shared_folder_tree =
       sorted_paths.call({'Shared with me' =>
                           buildtree.call(children_of, false)})
+
+    super
   end
 
   def choose

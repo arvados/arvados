@@ -87,7 +87,15 @@ class ApplicationController < ActionController::Base
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
     respond_to do |f|
       f.json { render json: @objects }
-      f.html { render }
+      f.html {
+        if params['tab_pane']
+          comparable = self.respond_to? :compare
+          render(partial: 'show_' + params['tab_pane'].downcase,
+                 locals: { comparable: comparable, objects: @objects })
+        else
+          render
+        end
+      }
       f.js { render }
     end
   end
@@ -97,12 +105,19 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
+      puts f
       f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
-        if request.method == 'GET'
-          render
+        if params['tab_pane']
+          comparable = self.respond_to? :compare
+          render(partial: 'show_' + params['tab_pane'].downcase,
+                 locals: { comparable: comparable, objects: @objects })
         else
-          redirect_to params[:return_to] || @object
+          if request.method == 'GET'
+            render
+          else
+            redirect_to params[:return_to] || @object
+          end
         end
       }
       f.js { render }

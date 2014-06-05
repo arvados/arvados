@@ -88,6 +88,8 @@ class CollectionsController < ApplicationController
       info[:links] << link
     end
     @request_url = request.url
+
+    super
   end
 
   def show_file_links
