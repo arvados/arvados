@@ -16,3 +16,6 @@ services/keep/pkg
 services/keep/src/github.com
 sdk/java/target
 *.class
+apps/workbench/vendor/bundle
+services/api/vendor/bundle
+sdk/java/log

@@ -21,7 +21,12 @@ class MountTestBase(unittest.TestCase):
     def tearDown(self):
         # llfuse.close is buggy, so use fusermount instead.
         #llfuse.close(unmount=True)
-        subprocess.call(["fusermount", "-u", self.mounttmp])
+        count = 0
+        success = 1
+        while (count < 9 and success != 0):
+          success = subprocess.call(["fusermount", "-u", self.mounttmp])
+          time.sleep(0.5)
+          count += 1
 
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)

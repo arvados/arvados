@@ -3,7 +3,7 @@ class AuthorizedKey < ArvadosBase
     if attr.to_s == 'authorized_user_uuid'
       current_user and current_user.is_admin
     else
-      super attr, *args
+      super
     end
   end
 end

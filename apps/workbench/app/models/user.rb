@@ -32,7 +32,7 @@ class User < ArvadosBase
   end
 
  def attribute_editable? attr, *args
-    (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super(attr, *args)
+    (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super
   end
 
   def friendly_link_name

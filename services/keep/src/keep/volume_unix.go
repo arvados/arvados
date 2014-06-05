@@ -109,23 +109,13 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 // corrupted data block.
 //
 func (v *UnixVolume) Read(loc string) ([]byte, error) {
-	var f *os.File
-	var err error
-	var buf []byte
-
 	blockFilename := filepath.Join(v.root, loc[0:3], loc)
-
-	f, err = os.Open(blockFilename)
+	buf, err := ioutil.ReadFile(blockFilename)
 	if err != nil {
+		log.Printf("%s: reading %s: %s\n", v, blockFilename, err)
 		return nil, err
 	}
 
-	if buf, err = ioutil.ReadAll(f); err != nil {
-		log.Printf("%s: reading %s: %s\n", v, blockFilename, err)
-		return buf, err
-	}
-
-	// Success!
 	return buf, nil
 }
 

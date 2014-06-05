@@ -30,9 +30,9 @@ class PipelineInstance < ArvadosBase
   end
   
   def attribute_editable? attr, *args
-    super(attr, *args) && (attr.to_sym == :name ||
-                           (attr.to_sym == :components and
-                            (self.state == 'New' || self.state == 'Ready')))
+    super && (attr.to_sym == :name ||
+              (attr.to_sym == :components and
+               (self.state == 'New' || self.state == 'Ready')))
   end
 
   def attributes_for_display

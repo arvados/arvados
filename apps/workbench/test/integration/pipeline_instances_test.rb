@@ -52,5 +52,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     # Pipeline is stopped. We have the option to resume it.
     page.assert_selector 'a,button', text: 'Run'
+
+    # Go over to the graph tab
+    click_link 'Graph'
+    assert page.has_css? 'div#provenance_graph'
   end
 end
