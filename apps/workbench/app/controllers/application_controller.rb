@@ -462,10 +462,12 @@ class ApplicationController < ActionController::Base
   def preload_links_for_objects objects_and_uuids
     uuids = objects_and_uuids.collect { |x| x.is_a?(String) ? x : x.uuid }
     @all_links_for ||= {}
+
+    # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @all_links_for[x].nil? }.any?
-      # already preloaded for all of these uuids
       return
     end
+
     uuids.each do |x|
       @all_links_for[x] = []
     end
@@ -480,7 +482,7 @@ class ApplicationController < ActionController::Base
   helper_method :get_n_objects_of_class
   def get_n_objects_of_class dataclass, size
     # if the objects_map_for has a value for this dataclass, and the size used
-    # to retrieve those objects is greater than equal to size, return it
+    # to retrieve those objects is greater than or equal to size, return it
     size_key = "#{dataclass}_size"
     if @objects_map_for && @objects_map_for[dataclass] && @objects_map_for[size_key] &&
         (@objects_map_for[size_key] >= size)
@@ -505,8 +507,9 @@ class ApplicationController < ActionController::Base
   helper_method :preload_collections_for_objects
   def preload_collections_for_objects uuids
     @all_collections_for ||= {}
+
+    # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @all_collections_for[x].nil? }.any?
-      # already preloaded for all of these uuids
       return
     end
 
@@ -538,9 +541,9 @@ class ApplicationController < ActionController::Base
       uuids << fixup[1]
     end
 
+    # if already preloaded for all of these uuids, return
     @all_log_collections_for ||= {}
     if not uuids.select { |x| @all_log_collections_for[x].nil? }.any?
-      # already preloaded for all of these uuids
       return
     end
 

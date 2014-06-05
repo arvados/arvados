@@ -245,7 +245,8 @@ module ApplicationHelper
       dn += '[value]'
     end
 
-    preload_uuids = [attrvalue]
+    # preload data
+    preload_uuids = []
     items = []
     selectables = []
 
