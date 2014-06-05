@@ -32,3 +32,4 @@ idle:
   info:
     :ping_secret: "69udawxvn3zzj45hs8bumvndricrha4lcpi23pd69e44soanc0"
     :slurm_state: "idle"
+    total_cpu_cores: 16
