@@ -46,11 +46,21 @@ def check_message_format
       puts "\n******************************************************************\n"
       puts "\n\n"
       broken = true
-    elsif not $merge_master.match(message) and not $pull_merge.match(message)
+    elsif $pull_merge.match(message)
+      puts "\n[POLICY] This appears to be a git pull merge of remote master into local\n"
+      puts "\nmaster.  In order to maintain a linear first-parent history of master,\n"
+      puts "\nplease remerge or rebase using the latest master.\n"
+      puts "\n******************************************************************\n"
+      puts "\nOffending commit: #{rev}\n\n"
+      puts "\nOffending commit message:\n\n"
+      puts message
+      puts "\n******************************************************************\n"
+      puts "\n\n"
+      broken = true
+    elsif not $merge_master.match(message) and not
       puts "\n[POLICY] This does not appear to be a merge of a feature\n"
-      puts "\nbranch into master or a merge of master heads.  Merges must follow\n"
-      puts "\nthe format \"Merge branch 'feature-branch'\" or\n"
-      puts "\n\"Merge branch 'master' of git.example.com:repository\".\n\n"
+      puts "\nbranch into master.  Merges must follow the format\n"
+      puts "\n\"Merge branch 'feature-branch'\".\n"
       puts "\n******************************************************************\n"
       puts "\nOffending commit: #{rev}\n\n"
       puts "\nOffending commit message:\n\n"
@@ -76,8 +86,8 @@ def check_message_format
     end
 
     if not $refs_or_closes_or_no_issue.match(message)
-      puts "\n[POLICY] All commits to master must include an issue (\"refs #\" or\n"
-      puts "\n\"closes #\") or specify \"no issue #\"\n\n"
+      puts "\n[POLICY] All commits to master must include an issue using \"refs #\" or\n"
+      puts "\n\"closes #\", or specify \"no issue #\"\n\n"
       puts "\n******************************************************************\n"
       puts "\nOffending commit: #{rev}\n\n"
       puts "\nOffending commit message:\n\n"
