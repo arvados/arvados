@@ -28,7 +28,7 @@ class UsersTest < ActionDispatch::IntegrationTest
       find('a', text: 'Show').
       click
     assert page.has_text? 'Attributes'
-    assert page.has_text? 'Metadata'
+    assert page.has_text? 'Advanced'
     assert page.has_text? 'Admin'
 
     # go to the Attributes tab
@@ -72,10 +72,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # verify that the new user showed up in the users page and find
     # the new user's UUID
-    new_user_uuid =
-      find('tr[data-object-uuid]', text: 'foo@example.com').
-      find('td', text: '-tpzed-').
-      text
+    new_user_uuid = 
+      find('tr[data-object-uuid]', text: 'foo@example.com')['data-object-uuid']
     assert new_user_uuid, "Expected new user uuid not found"
 
     # go to the new user's page
@@ -88,9 +86,10 @@ class UsersTest < ActionDispatch::IntegrationTest
       assert_equal "false", text, "Expected new user's is_active to be false"
     end
 
+    click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? '(Repository: test_repo)'
-    assert !(page.has_text? '(VirtualMachine:)')
+    assert page.has_text? 'Repository: test_repo'
+    assert !(page.has_text? 'VirtualMachine:')
 
     headless.stop
   end
@@ -128,9 +127,10 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     assert page.has_text? 'modified_by_client_uuid'
 
+    click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? '(Repository: test_repo)'
-    assert !(page.has_text? '(VirtualMachine:)')
+    assert page.has_text? 'Repository: test_repo'
+    assert !(page.has_text? 'VirtualMachine:')
 
     # Click on Setup button again and this time also choose a VM
     click_link 'Admin'
@@ -147,9 +147,10 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     assert page.has_text? 'modified_by_client_uuid'
 
+    click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? '(Repository: second_test_repo)'
-    assert page.has_text? '(VirtualMachine: testvm.shell)'
+    assert page.has_text? 'Repository: second_test_repo'
+    assert page.has_text? 'VirtualMachine: testvm.shell'
 
     headless.stop
   end
@@ -195,9 +196,9 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert !(page.has_text? '(Repository: test_repo)')
-    assert !(page.has_text? '(Repository: second_test_repo)')
-    assert !(page.has_text? '(VirtualMachine: testvm.shell)')
+    assert !(page.has_text? 'Repository: test_repo')
+    assert !(page.has_text? 'Repository: second_test_repo')
+    assert !(page.has_text? 'VirtualMachine: testvm.shell')
 
     # setup user again and verify links present
     click_link 'Admin'
@@ -216,8 +217,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert page.has_text? '(Repository: second_test_repo)'
-    assert page.has_text? '(VirtualMachine: testvm.shell)'
+    assert page.has_text? 'Repository: second_test_repo'
+    assert page.has_text? 'VirtualMachine: testvm.shell'
 
     headless.stop
   end
