@@ -89,7 +89,11 @@ module ApplicationHelper
             link_name = attrvalue.friendly_link_name
           else
             begin
-              link_name = collections_for_object(link_uuid).andand.first.andand.friendly_link_name
+              if resource_class.name == 'Collection'
+                link_name = collections_for_object(link_uuid).first.friendly_link_name
+              else 
+                link_name = object_for_dataclass(resource_class, link_uuid).friendly_link_name
+              end
             rescue RuntimeError
               # If that lookup failed, the link will too. So don't make one.
               return attrvalue
@@ -247,7 +251,7 @@ module ApplicationHelper
 
     attrtext = attrvalue
     if dataclass and dataclass.is_a? Class
-      objects = get_objects_of_type dataclass, 10
+      objects = get_n_objects_of_class dataclass, 10
       objects.each do |item|
         items << item
         preload_uuids << item.uuid

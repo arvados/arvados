@@ -477,8 +477,8 @@ class ApplicationController < ActionController::Base
 
   # helper method to get a certain number of objects of a specific type
   # this can be used to replace any uses of: "dataclass.limit(n)"
-  helper_method :get_objects_of_type
-  def get_objects_of_type dataclass, size
+  helper_method :get_n_objects_of_class
+  def get_n_objects_of_class dataclass, size
     # if the objects_map_for has a value for this dataclass, and the size used
     # to retrieve those objects is greater than equal to size, return it
     size_key = "#{dataclass}_size"
@@ -551,6 +551,28 @@ class ApplicationController < ActionController::Base
     # TODO: make sure we get every page of results from API server
     Collection.where(uuid: uuids).each do |collection|
       @all_log_collections_for[collection.uuid] << collection
+    end
+  end
+
+  # helper method to get object of a given dataclass and uuid
+  helper_method :object_for_dataclass
+  def object_for_dataclass dataclass, uuid
+    preload_objects_for_dataclass(dataclass, [uuid])
+    @objects_for[uuid]
+  end
+
+  # helper method to preload objects for given dataclass and uuids
+  helper_method :preload_objects_for_dataclass
+  def preload_objects_for_dataclass dataclass, uuids
+    @objects_for ||= {}
+
+    # if already preloaded for all of these uuids, return
+    if not uuids.select { |x| @objects_for[x].nil? }.any?
+      return
+    end
+
+    dataclass.where(uuid: uuids).each do |obj|
+      @objects_for[obj.uuid] = obj
     end
   end
 
