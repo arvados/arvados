@@ -25,7 +25,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     end
 
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
-      find('a[data-original-title=show]').
+      find('a', text: 'Show').
       click
     assert page.has_text? 'Attributes'
     assert page.has_text? 'Metadata'
@@ -80,7 +80,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # go to the new user's page
     find('tr', text: new_user_uuid).
-      find('a[data-original-title=show]').
+      find('a', text: 'Show').
       click
 
     assert page.has_text? 'modified_by_user_uuid'
@@ -107,7 +107,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # click on active user
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
-      find('a[data-original-title=show]').
+      find('a', text: 'Show').
       click
 
     # Setup user
@@ -167,7 +167,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # click on active user
     find('tr', text: 'zzzzz-tpzed-xurymjxw79nv3jz').
-      find('a[data-original-title=show]').
+      find('a', text: 'Show').
       click
 
     # Verify that is_active is set

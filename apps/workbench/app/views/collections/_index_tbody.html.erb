@@ -7,9 +7,11 @@
       <% friendly_name += raw(" <span class='label label-info'>#{tag_link.name}</span>") %>
     <% end %>
     <%= render :partial => "selection_checkbox", :locals => {:object => c, :friendly_name => friendly_name} %>
+
+    <%= render :partial => "show_object_button", :locals => {object: c, size: 'xs'} %>
   </td>
   <td>
-    <%= link_to_if_arvados_object c.uuid, {:no_tags => true } %>
+    <%= c.uuid %>
   </td>
   <td>
     <% i = 0 %>
