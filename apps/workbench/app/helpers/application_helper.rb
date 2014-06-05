@@ -91,7 +91,7 @@ module ApplicationHelper
             begin
               if resource_class.name == 'Collection'
                 link_name = collections_for_object(link_uuid).first.friendly_link_name
-              else 
+              else
                 link_name = object_for_dataclass(resource_class, link_uuid).friendly_link_name
               end
             rescue RuntimeError
@@ -275,7 +275,7 @@ module ApplicationHelper
         itemuuids << item.uuid
         selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       end
-      
+
       itemuuids.each do |itemuuid|
         links_for_object(itemuuid).each do |link|
           if link.link_class.in? ["tag", "identifier"]

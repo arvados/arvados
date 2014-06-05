@@ -486,7 +486,7 @@ class ApplicationController < ActionController::Base
     size_key = "#{dataclass}_size"
     if @objects_map_for && @objects_map_for[dataclass] && @objects_map_for[size_key] &&
         (@objects_map_for[size_key] >= size)
-      return @objects_map_for[dataclass] 
+      return @objects_map_for[dataclass]
     end
 
     @objects_map_for = {}
