@@ -16,6 +16,15 @@ class Blob
   class InvalidSignatureError < StandardError
   end
 
+  # Clock is a wrapper for Time.
+  # It can be replaced with a stub for unit testing (the poor man's mock).
+  # It must support a Clock.now method that returns a Time object.
+  @@Clock = Time
+
+  def self.set_clock c
+    @@Clock = c
+  end
+
   # Blob.sign_locator: return a signed and timestamped blob locator.
   #
   # The 'opts' argument should include:
@@ -35,7 +44,7 @@ class Blob
       end
       timestamp = opts[:expire]
     else
-      timestamp = Time.now.to_i + (opts[:ttl] || 600)
+      timestamp = @@Clock.now.to_i + (opts[:ttl] || 600)
     end
     timestamp_hex = timestamp.to_s(16)
     # => "53163cb4"
@@ -82,7 +91,7 @@ class Blob
     if !timestamp.match /^[\da-f]+$/
       raise Blob::InvalidSignatureError.new 'Timestamp is not a base16 number.'
     end
-    if timestamp.to_i(16) < Time.now.to_i
+    if timestamp.to_i(16) < @@Clock.now.to_i
       raise Blob::InvalidSignatureError.new 'Signature expiry time has passed.'
     end
 

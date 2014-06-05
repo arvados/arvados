@@ -2,6 +2,25 @@ require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
+  # StoppedClock.now always returns the same timestamp.
+  # Set the Blob permission signing clock to ensure that
+  # all permission hints use consistent timestamps for testing.
+
+  class StoppedClock
+    @@cached_timestamp = Time.now
+    def self.now
+      return @@cached_timestamp
+    end
+  end
+
+  def setup
+    Blob.set_clock(StoppedClock)
+  end
+
+  def teardown
+    Blob.set_clock(Time)
+  end
+
   test "should get index" do
     authorize_with :active
     get :index
