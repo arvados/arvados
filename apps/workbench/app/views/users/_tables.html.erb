@@ -25,17 +25,30 @@
           <th>Progress</th>
         </tr>
 
-        <% 
-          job_outputs = []
-          job_logs = []
+        <%# Preload collections, logs, and pipeline instance objects %>
+        <%
+          collection_uuids = []
+          log_uuids = []
           @my_jobs[0..6].each do |j|
-            job_outputs << j.output
-            job_logs << j.log
+            collection_uuids << j.output
+            log_uuids << j.log
           end
 
-          preload_collections_for_objects job_outputs
-          preload_log_collections_for_objects job_logs
+          @my_collections[0..6].each do |c|
+            collection_uuids << c.uuid
+          end
+
+          preload_collections_for_objects collection_uuids
+          preload_log_collections_for_objects log_uuids
+
+          pi_uuids = []
+          @my_pipelines[0..6].each do |p|
+            pi_uuids << p.uuid
+          end
+          resource_class = resource_class_for_uuid(pi_uuids.first, friendly_name: true)
+          preload_objects_for_dataclass resource_class, pi_uuids
         %>
+
         <% @my_jobs[0..6].each do |j| %>
           <tr data-object-uuid="<%= j.uuid %>">
             <td>
@@ -122,16 +135,6 @@
         <th>Progress</th>
       </tr>
 
-      <%
-        pi_uuids = []
-        @my_pipelines[0..6].each do |p|
-          pi_uuids << p.uuid
-        end
-
-        resource_class = resource_class_for_uuid(pi_uuids.first, friendly_name: true)
-        preload_objects_for_dataclass resource_class, pi_uuids
-      %>
-      
       <% @my_pipelines[0..6].each do |p| %>
         <tr data-object-uuid="<%= p.uuid %>">
           <td>
