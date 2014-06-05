@@ -10,7 +10,7 @@ class VirtualMachinesTest < ActionDispatch::IntegrationTest
     click_on 'Add a new virtual machine'
     find('tr', text: 'hostname').
       find('a[data-original-title=edit]').click
-    assert page.has_text? 'Update hostname'
+    assert page.has_text? 'Edit hostname'
     fill_in 'editable-text', with: 'testname'
     click_button 'editable-submit'
     assert page.has_text? 'testname'
