@@ -49,7 +49,7 @@ def check_message_format
     elsif $pull_merge.match(message)
       puts "\n[POLICY] This appears to be a git pull merge of remote master into local\n"
       puts "\nmaster.  In order to maintain a linear first-parent history of master,\n"
-      puts "\nplease remerge or rebase using the latest master.\n"
+      puts "\nplease reset your branch and remerge or rebase using the latest master.\n"
       puts "\n******************************************************************\n"
       puts "\nOffending commit: #{rev}\n\n"
       puts "\nOffending commit message:\n\n"
