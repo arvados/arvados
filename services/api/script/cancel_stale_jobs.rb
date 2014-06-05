@@ -13,7 +13,7 @@ ENV["RAILS_ENV"] = ARGV[0] || ENV["RAILS_ENV"] || "development"
 require File.dirname(__FILE__) + '/../config/boot'
 require File.dirname(__FILE__) + '/../config/environment'
 
-def refresh_running
+def cancel_stale_jobs
   Job.running.each do |jobrecord|
     f = Log.where("object_uuid=?", jobrecord.uuid).limit(1).order("created_at desc").first
     if f
@@ -34,4 +34,4 @@ def refresh_running
   end
 end
 
-refresh_running
+cancel_stale_jobs
