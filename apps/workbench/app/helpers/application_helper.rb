@@ -90,7 +90,7 @@ module ApplicationHelper
           else
             begin
               if resource_class.name == 'Collection'
-                link_name = collections_for_object(link_uuid).first.friendly_link_name
+                link_name = collections_for_object(link_uuid).andand.first.andand.friendly_link_name
               else
                 link_name = object_for_dataclass(resource_class, link_uuid).friendly_link_name
               end
