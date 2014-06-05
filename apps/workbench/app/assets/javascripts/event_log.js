@@ -4,7 +4,7 @@
 
 /* The subscribe method takes a window element id and object id.
    Any log events for that particular object id are sent to that window element. */
-function subscribeToEventLog (elementId) {
+function subscribeToEventLog () {
   // if websockets are not supported by browser, do not subscribe for events
   websocketsSupported = ('WebSocket' in window);
   if (websocketsSupported == false) {
@@ -40,6 +40,13 @@ function onEventLogDispatcherMessage(event) {
   object_uuid = parsedData.object_uuid;
 
   // if there are any listeners for this object uuid or "all", trigger the event
-  matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuid=\"all\"]";
+  matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuid=\"all\"],.arv-log-event-listener[data-object-type=\"" + object_uuid.slice(6, 11) + "\"]";
   $(matches).trigger('arv-log-event', event.data);
 }
+
+$(document).on('ajax:complete ready', function() {
+  var a = $('.arv-log-event-listener');
+  if (a.length > 0) {
+    subscribeToEventLog();
+  }
+});
