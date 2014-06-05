@@ -122,6 +122,16 @@
         <th>Progress</th>
       </tr>
 
+      <%
+        pi_uuids = []
+        @my_pipelines[0..6].each do |p|
+          pi_uuids << p.uuid
+        end
+
+        resource_class = resource_class_for_uuid(pi_uuids.first, friendly_name: true)
+        preload_objects_for_dataclass resource_class, pi_uuids
+      %>
+      
       <% @my_pipelines[0..6].each do |p| %>
         <tr data-object-uuid="<%= p.uuid %>">
           <td>
