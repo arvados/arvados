@@ -183,7 +183,7 @@ class PipelineInstancesController < ApplicationController
     if @object and @object.state.in? ['New', 'Ready']
       panes = %w(Inputs) + panes
     end
-    if not @object.components.values.collect { |x| x['job'] }.compact.any?
+    if not @object.components.values.collect { |x| x[:job] }.compact.any?
       panes -= ['Graph']
     end
     panes
