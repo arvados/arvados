@@ -371,6 +371,12 @@ class ApplicationController < ActionController::Base
     thread_with_api_token(true) do
       if Thread.current[:arvados_api_token]
         yield
+      elsif session[:arvados_api_token]
+        # Expired session. Clear it before refreshing login so that,
+        # if this login procedure fails, we end up showing the "please
+        # log in" page instead of getting stuck in a redirect loop.
+        session.delete :arvados_api_token
+        redirect_to_login
       else
         render 'users/welcome'
       end
