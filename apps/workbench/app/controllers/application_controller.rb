@@ -529,7 +529,9 @@ class ApplicationController < ActionController::Base
 
   helper_method :recent_jobs_and_pipelines
   def recent_jobs_and_pipelines
-    (Job.limit(10) | PipelineInstance.limit(10)).
+    in_my_folders = ['owner_uuid','in',my_folders.collect(&:uuid)]
+    (Job.limit(10).filter([in_my_folders]) |
+     PipelineInstance.limit(10).filter([in_my_folders])).
       sort_by do |x|
       x.finished_at || x.started_at || x.created_at rescue x.created_at
     end
