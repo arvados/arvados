@@ -1,7 +1,9 @@
 <% htmloptions = {class: ''}.merge(htmloptions || {})
-   htmloptions[:class] += " btn-#{size}" rescue nil %>
+   htmloptions[:class] += " btn-#{size}" rescue nil
+   link_text = 'Show' unless defined?(link_text)
+ %>
 <%= link_to_if_arvados_object object, {
-      link_text: raw('<i class="fa fa-fw ' + fa_icon_class_for_object(object) + '"></i> Show'),
+      link_text: raw('<i class="fa fa-fw ' + fa_icon_class_for_object(object) + '"></i> ' + link_text),
       name_link: (defined?(name_link) && name_link && name_link.uuid) ? name_link : nil
     }, {
       data: {
