@@ -1,6 +1,8 @@
 class JobsController < ApplicationController
 
   def generate_provenance(jobs)
+    return if params['tab_pane'] != "Provenance"
+
     nodes = []
     collections = []
     jobs.each do |j|

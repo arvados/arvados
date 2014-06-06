@@ -419,6 +419,8 @@ class ApplicationController < ActionController::Base
   }
 
   def check_user_notifications
+    return if params['tab_pane']
+
     @notification_count = 0
     @notifications = []
 

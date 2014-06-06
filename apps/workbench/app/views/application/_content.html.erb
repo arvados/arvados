@@ -1,3 +1,24 @@
+<% content_for :js do %>
+  function ajaxRefreshTabPane(pane) {
+    $.ajax('<%= url_for @object %>?tab_pane='+pane, {dataType: 'html', type: 'GET'}).
+      done(function(data, status, jqxhr) {
+        $('#' + pane + ' > div > div').html(data);
+        $(document).trigger('ajax:complete')
+      });
+  }
+
+  $(window).on('load', smart_scroll_fixup);
+
+  $(document).on('shown.bs.tab', 'ul.nav-tabs > li > a', smart_scroll_fixup);
+  $(document).on('shown.bs.tab', function(e) {
+    ajaxRefreshTabPane(e.target.id.slice(0, -4));
+  });
+
+  $(document).on('arv-log-event', function() {
+    ajaxRefreshTabPane($('.tab-pane.active')[0].id);
+  });
+<% end %>
+
 <% content_for :tab_panes do %>
 
 <% comparable = controller.respond_to? :compare %>
@@ -11,17 +32,19 @@
 <% pane_list.each_with_index do |pane, i| %>
   <div id="<%= pane %>"
        class="tab-pane fade <%= 'in active' if i==0 %> arv-log-event-listener"
-       data-object-uuid="<%= @object.uuid if @object %>">
+<% if controller.action_name == "index" %>
+       data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
+<% else %>
+       data-object-uuid="<%= @object.uuid %>"
+<% end %>
+>
 
 <% content_for :js do %>
-  $(document).on('<%= 'ready' if i != 0 %> arv-log-event', function() {
-  $.ajax('<%= url_for @object %>?tab_pane=<%= pane %>', {dataType: 'html', type: 'GET'}).
-  done(function(data, status, jqxhr) {
-    $('#<%= pane %> > div > div').html(data);
-  }).
-  fail(function(jqxhr, status, error) {
-  });
-  });
+  <% if i != 0 %>
+    $(document).on('ready', function() {
+      ajaxRefreshTabPane('<%= pane %>');
+    });
+  <% end %>
 <% end %>
 
     <div class="smart-scroll" style="margin-top:0.5em;">
@@ -38,9 +61,4 @@
 <% end %>
 </div>
 
-<% end %>
-
-<% content_for :js do %>
-    $(window).on('load', smart_scroll_fixup);
-    $(document).on('shown.bs.tab', 'ul.nav-tabs > li > a', smart_scroll_fixup);
 <% end %>
