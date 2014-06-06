@@ -2,25 +2,6 @@ require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
-  # StoppedClock.now always returns the same timestamp.
-  # Set the Blob permission signing clock to ensure that
-  # all permission hints use consistent timestamps for testing.
-
-  class StoppedClock
-    @@cached_timestamp = Time.now
-    def self.now
-      return @@cached_timestamp
-    end
-  end
-
-  def setup
-    Blob.set_clock(StoppedClock)
-  end
-
-  def teardown
-    Blob.set_clock(Time)
-  end
-
   test "should get index" do
     authorize_with :active
     get :index
@@ -75,9 +56,14 @@ EOS
       Digest::MD5.hexdigest(test_collection[:manifest_text]) +
       '+' +
       test_collection[:manifest_text].length.to_s
+
+    # post :create will modify test_collection in place, so we save a copy first.
+    # Hash.deep_dup is not sufficient as it preserves references of strings (??!?)
+    post_collection = Marshal.load(Marshal.dump(test_collection))
     post :create, {
-      collection: test_collection
+      collection: post_collection
     }
+
     assert_response :success
     assert_nil assigns(:objects)
 
@@ -88,7 +74,11 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal test_collection[:uuid], resp['uuid']
-    assert_equal test_collection[:manifest_text], resp['manifest_text']
+
+    # The manifest in the response will have had permission hints added.
+    # Remove any permission hints in the response before comparing it to the source.
+    stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+    assert_equal test_collection[:manifest_text], stripped_manifest
     assert_equal 9, resp['data_size']
     assert_equal [['.', 'foo.txt', 0],
                   ['.', 'bar.txt', 6],
@@ -412,18 +402,24 @@ EOS
       '+' +
       manifest_text.length.to_s
 
+    test_collection = {
+      manifest_text: manifest_text,
+      uuid: manifest_uuid,
+    }
+    post_collection = Marshal.load(Marshal.dump(test_collection))
     post :create, {
-      collection: {
-        manifest_text: manifest_text,
-        uuid: manifest_uuid,
-      }
+      collection: post_collection
     }
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['uuid']
     assert_equal 48, resp['data_size']
-    assert_equal resp['manifest_text'], manifest_text
+
+    # The manifest in the response will have had permission hints added.
+    # Remove any permission hints in the response before comparing it to the source.
+    stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+    assert_equal manifest_text, stripped_manifest
   end
 
   test "multiple signed locators per line" do
