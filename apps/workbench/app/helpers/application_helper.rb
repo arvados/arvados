@@ -267,7 +267,9 @@ module ApplicationHelper
          }.to_json,
         })
       return content_tag('div', :class => 'input-group') do
-        html = text_field_tag(dn, display_value, :class => 'form-control')
+        html = text_field_tag(dn, display_value,
+                              :class =>
+                              "form-control #{'required' if required}")
         html + content_tag('span', :class => 'input-group-btn') do
           link_to('Choose',
                   modal_path,
