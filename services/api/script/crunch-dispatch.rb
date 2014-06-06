@@ -170,14 +170,14 @@ class Dispatcher
   def start_jobs
     @todo.each do |job|
       next if @running[job.uuid]
-      nodelist = nodes_available_for_job(job)
-      next if nodelist.nil? or !take(job)
 
       cmd_args = nil
       case Server::Application.config.crunch_job_wrapper
       when :none
         cmd_args = []
       when :slurm_immediate
+        nodelist = nodes_available_for_job(job)
+        next if nodelist.nil?
         cmd_args = ["salloc",
                     "--chdir=/",
                     "--immediate",
@@ -188,6 +188,8 @@ class Dispatcher
       else
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
+
+      next if !take(job)
 
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
