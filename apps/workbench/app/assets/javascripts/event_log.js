@@ -40,7 +40,7 @@ function onEventLogDispatcherMessage(event) {
   object_uuid = parsedData.object_uuid;
 
   // if there are any listeners for this object uuid or "all", trigger the event
-  matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuid=\"all\"],.arv-log-event-listener[data-object-type=\"" + object_uuid.slice(6, 11) + "\"]";
+  matches = ".arv-log-event-listener[data-object-uuid=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuids~=\"" + object_uuid + "\"],.arv-log-event-listener[data-object-uuid=\"all\"],.arv-log-event-listener[data-object-kind=\"" + parsedData.object_kind + "\"]";
   $(matches).trigger('arv-log-event', event.data);
 }
 
