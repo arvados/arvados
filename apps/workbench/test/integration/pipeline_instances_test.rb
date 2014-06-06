@@ -21,7 +21,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     instance_page = current_path
 
     # Go over to the collections page and select something
-    click_link 'Collections (data files)'
+    visit '/collections'
     within('tr', text: 'GNU_General_Public_License') do
       find('input[type=checkbox]').click
     end
