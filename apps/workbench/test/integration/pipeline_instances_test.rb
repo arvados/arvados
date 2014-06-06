@@ -20,6 +20,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     instance_page = current_path
 
+    find('button', text: 'Choose a folder...').click
+    within('.modal-dialog') do
+      find('.selectable', text: 'A Folder').click
+      find('button', text: 'Move').click
+    end
+
     # Go over to the collections page and select something
     visit '/collections'
     within('tr', text: 'GNU_General_Public_License') do
@@ -27,18 +33,30 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     find('#persistent-selection-count').click
 
-    # Go back to the pipeline instance page to use the new selection
-    visit instance_page
+    # Add this collection to the folder
+    visit '/folders'
+    find('.arv-folder-list a,button', text: 'A Folder').click
+    find('.btn', text: 'Add data').click
+    find('span', text: 'foo_tag').click
+    within('.modal-dialog') do
+      find('.btn', text: 'Add').click
+    end
+   
+    find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
+      find('a', text: 'Show').
+      click
 
-    page.assert_selector 'a.disabled,button.disabled', text: 'Run'
     assert find('p', text: 'Provide a value')
 
     find('div.form-group', text: 'Foo/bar pair').
-      find('a,input').
+      find('.btn', text: 'Choose').
       click
-    find('.editable-input select').click
-    find('.editable-input').
-      first(:option, 'b519d9cb706a29fc7ea24dbea2f05851+249025').click
+
+    within('.modal-dialog') do
+      find('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+
     wait_for_ajax
 
     # "Run" button is now enabled
@@ -50,11 +68,13 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     page.assert_selector 'a,button', text: 'Stop'
     find('a,button', text: 'Stop').click
 
-    # Pipeline is stopped. We have the option to resume it.
-    page.assert_selector 'a,button', text: 'Run'
+    # Pipeline is stopped. It should now be in paused state.
+    assert page.has_text? 'Paused'
+    page.assert_selector 'a,button', text: 'Clone and edit'
 
     # Go over to the graph tab
-    click_link 'Graph'
-    assert page.has_css? 'div#provenance_graph'
+#    click_link 'Advanced'
+#    click_link 'Graph'
+#    assert page.has_css? 'div#provenance_graph'
   end
 end
