@@ -67,12 +67,17 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     first('a,button', text: 'Run').click
 
+    # Go over to the graph tab
+    click_link 'Provenance'
+    assert page.has_css? 'div#provenance_graph'
+
     # Pipeline is running. We have a "Stop" button instead now.
     page.assert_selector 'a,button', text: 'Stop'
     find('a,button', text: 'Stop').click
 
-    # Pipeline is stopped. It should now be in paused state.
+    # Pipeline is stopped. It should now be in paused state and Runnable again.
     assert page.has_text? 'Paused'
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
     page.assert_selector 'a,button', text: 'Clone and edit'
   end
 end
