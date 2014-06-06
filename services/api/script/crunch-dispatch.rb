@@ -87,7 +87,7 @@ class Dispatcher
             node = Node.where('hostname=?', re[1]).first
             if node
               $stderr.puts "dispatch: update #{re[1]} state to #{re[2]}"
-              node.info[:slurm_state] = re[2]
+              node.info['slurm_state'] = re[2]
               node.save
             elsif re[2] != 'down'
               $stderr.puts "dispatch: sinfo reports '#{re[1]}' is not down, but no node has that name"
