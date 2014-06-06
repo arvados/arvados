@@ -65,7 +65,6 @@ class Dispatcher
 
   def update_node_status
     if Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
-      @nodes_in_state = {idle: 0, alloc: 0, down: 0}
       @node_state ||= {}
       node_seen = {}
       begin
@@ -77,9 +76,6 @@ class Dispatcher
           # sinfo tells us about a node N times if it is shared by N partitions
           next if node_seen[re[1]]
           node_seen[re[1]] = true
-
-          # count nodes in each state
-          @nodes_in_state[re[2].to_sym] += 1
 
           # update our database (and cache) when a node's state changes
           if @node_state[re[1]] != re[2]
@@ -102,39 +98,98 @@ class Dispatcher
     end
   end
 
-  def start_jobs
-    @todo.each do |job|
+  def positive_int(raw_value, default=nil)
+    value = begin raw_value.to_i rescue 0 end
+    if value > 0
+      value
+    else
+      default
+    end
+  end
 
-      min_nodes = 1
-      begin
-        if job.runtime_constraints['min_nodes']
-          min_nodes = begin job.runtime_constraints['min_nodes'].to_i rescue 1 end
+  NODE_CONSTRAINT_MAP = {
+    # Map Job runtime_constraints keys to the corresponding Node info key.
+    'min_ram_mb_per_node' => 'total_ram_mb',
+    'min_scratch_mb_per_node' => 'total_scratch_mb',
+    'min_cores_per_node' => 'total_cpu_cores',
+  }
+
+  def nodes_available_for_job_now(job)
+    # Find Nodes that satisfy a Job's runtime constraints (by building
+    # a list of Procs and using them to test each Node).  If there
+    # enough to run the Job, return an array of their names.
+    # Otherwise, return nil.
+    need_procs = NODE_CONSTRAINT_MAP.each_pair.map do |job_key, node_key|
+      Proc.new do |node|
+        positive_int(node.info[node_key], 0) >=
+          positive_int(job.runtime_constraints[job_key], 0)
+      end
+    end
+    min_node_count = positive_int(job.runtime_constraints['min_nodes'], 1)
+    usable_nodes = []
+    Node.find_each do |node|
+      good_node = (node.info['slurm_state'] == 'idle')
+      need_procs.each { |node_test| good_node &&= node_test.call(node) }
+      if good_node
+        usable_nodes << node
+        if usable_nodes.count >= min_node_count
+          return usable_nodes.map { |node| node.hostname }
         end
       end
+    end
+    nil
+  end
 
-      begin
-        next if @nodes_in_state[:idle] < min_nodes
-      rescue
-      end
+  def nodes_available_for_job(job)
+    # Check if there are enough idle nodes with the Job's minimum
+    # hardware requirements to run it.  If so, return an array of
+    # their names.  If not, up to once per hour, signal start_jobs to
+    # hold off launching Jobs.  This delay is meant to give the Node
+    # Manager an opportunity to make new resources available for new
+    # Jobs.
+    #
+    # The exact timing parameters here might need to be adjusted for
+    # the best balance between helping the longest-waiting Jobs run,
+    # and making efficient use of immediately available resources.
+    # These are all just first efforts until we have more data to work
+    # with.
+    nodelist = nodes_available_for_job_now(job)
+    if nodelist.nil? and not did_recently(:wait_for_available_nodes, 3600)
+      $stderr.puts "dispatch: waiting for nodes for #{job.uuid}"
+      @node_wait_deadline = Time.now + 5.minutes
+    end
+    nodelist
+  end
 
+  def start_jobs
+    @todo.each do |job|
       next if @running[job.uuid]
-      next if !take(job)
 
       cmd_args = nil
       case Server::Application.config.crunch_job_wrapper
       when :none
         cmd_args = []
       when :slurm_immediate
+        nodelist = nodes_available_for_job(job)
+        if nodelist.nil?
+          if Time.now < @node_wait_deadline
+            break
+          else
+            next
+          end
+        end
         cmd_args = ["salloc",
                     "--chdir=/",
                     "--immediate",
                     "--exclusive",
                     "--no-kill",
                     "--job-name=#{job.uuid}",
-                    "--nodes=#{min_nodes}"]
+                    "--nodelist=#{nodelist.join(',')}"]
       else
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
+
+      next if !take(job)
 
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
@@ -212,6 +267,7 @@ class Dispatcher
         stderr_flushed_at: 0
       }
       i.close
+      update_node_status
     end
   end
 
