@@ -18,6 +18,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       find('a,button', text: 'Run').click
     end
 
+    # This pipeline needs input. So, Run should be disabled
+    page.assert_selector 'a.disabled,button.disabled', text: 'Run'
+
     instance_page = current_path
 
     find('button', text: 'Choose a folder...').click
@@ -71,10 +74,5 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # Pipeline is stopped. It should now be in paused state.
     assert page.has_text? 'Paused'
     page.assert_selector 'a,button', text: 'Clone and edit'
-
-    # Go over to the graph tab
-#    click_link 'Advanced'
-#    click_link 'Graph'
-#    assert page.has_css? 'div#provenance_graph'
   end
 end
