@@ -88,13 +88,16 @@ class Dispatcher
             if node
               $stderr.puts "dispatch: update #{re[1]} state to #{re[2]}"
               node.info['slurm_state'] = re[2]
-              node.save
+              if not node.save
+                $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
+              end
             elsif re[2] != 'down'
               $stderr.puts "dispatch: sinfo reports '#{re[1]}' is not down, but no node has that name"
             end
           end
         end
-      rescue
+      rescue => error
+        $stderr.puts "dispatch: error updating node status: #{error}"
       end
     end
   end
