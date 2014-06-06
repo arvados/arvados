@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'trollop'
-
 include Process
 
 $warned = {}
@@ -20,10 +18,6 @@ if ENV["CRUNCH_DISPATCH_LOCKFILE"]
   unless lockfile.flock File::LOCK_EX|File::LOCK_NB
     abort "Lock unavailable on #{lockfilename} - exit"
   end
-end
-
-$trollopts = Trollop::options do
-    opt :use_env, "Pass selected environment variables (PATH, PYTHONPATH, RUBYLIB, GEM_PATH, PERLLIB) to crunch-job"
 end
 
 ENV["RAILS_ENV"] = ARGV[0] || ENV["RAILS_ENV"] || "development"
@@ -186,10 +180,10 @@ class Dispatcher
       cmd_args << '--git-dir'
       cmd_args << arvados_internal
 
-      $stderr.puts "dispatch: #{cmd_args}"
+      $stderr.puts "dispatch: #{cmd_args.join ' '}"
 
       begin
-        i, o, e, t = Open3.popen3({}, *cmd_args, { :unsetenv_others => true})
+        i, o, e, t = Open3.popen3(*cmd_args)
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
         sleep 1
