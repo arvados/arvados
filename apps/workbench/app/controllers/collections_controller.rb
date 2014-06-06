@@ -3,6 +3,8 @@ class CollectionsController < ApplicationController
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
                      only: [:provenance, :show_file, :show_file_links])
+  # We depend on show_file to display the user agreement:
+  skip_before_filter :check_user_agreements, only: [:show_file]
 
   RELATION_LIMIT = 5
 
