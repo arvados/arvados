@@ -37,6 +37,7 @@ class Job < ArvadosModel
     t.add :dependencies
     t.add :nondeterministic
     t.add :repository
+    t.add :supplied_script_version
   end
 
   def assert_finished
@@ -80,6 +81,7 @@ class Job < ArvadosModel
     if new_record? or script_version_changed?
       sha1 = Commit.find_commit_range(current_user, self.repository, nil, self.script_version, nil)[0] rescue nil
       if sha1
+        self.supplied_script_version = self.script_version if self.supplied_script_version.nil? or self.supplied_script_version.empty?
         self.script_version = sha1
       else
         raise ArgumentError.new("Specified script_version does not resolve to a commit")

@@ -10,4 +10,8 @@ class Job < ArvadosBase
   def self.creatable?
     false
   end
+
+  def cancel
+    arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {}
+  end
 end
