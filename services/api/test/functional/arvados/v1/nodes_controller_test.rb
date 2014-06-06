@@ -75,4 +75,20 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_not_nil json_response['info']['ping_secret']
   end
 
+  test "ping adds node stats to info" do
+    node = nodes(:idle)
+    post :ping, {
+      id: node.uuid,
+      ping_secret: node.info['ping_secret'],
+      total_cpu_cores: 32,
+      total_ram_mb: 1024,
+      total_scratch_mb: 2048
+    }
+    assert_response :success
+    info = JSON.parse(@response.body)['info']
+    assert_equal(node.info['ping_secret'], info['ping_secret'])
+    assert_equal(32, info['total_cpu_cores'].to_i)
+    assert_equal(1024, info['total_ram_mb'].to_i)
+    assert_equal(2048, info['total_scratch_mb'].to_i)
+  end
 end
