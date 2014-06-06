@@ -80,4 +80,18 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert_not page.has_text? 'Graph'
   end
 
+  test 'view pipeline with job and see graph' do
+    visit page_with_token('active_trustedclient')
+
+    visit '/pipeline_instances'
+    assert page.has_text? 'pipeline_with_job'
+
+    find('a', text: 'pipeline_with_job').click
+
+    # since the pipeline component has a job, expect to see the graph
+    assert page.has_text? 'Graph'
+    click_link 'Graph'
+    assert page.has_text? 'script_version'
+  end
+
 end
