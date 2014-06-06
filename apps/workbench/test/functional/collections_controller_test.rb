@@ -153,4 +153,16 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_not_equal(read_token, session[:arvados_api_token],
                      "using a reader token set the session's API token")
   end
+
+  test "inactive user can retrieve user agreement" do
+    ua_collection = api_fixture('collections')['user_agreement']
+    get :show_file, {
+      uuid: ua_collection['uuid'],
+      file: ua_collection['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
+    }, session_for(:inactive)
+    assert_nil(assigns(:required_user_agreements),
+               "Did not skip check_user_agreements filter " +
+               "when showing the user agreement.")
+    assert_response :success
+  end
 end

@@ -368,8 +368,18 @@ class ApplicationController < ActionController::Base
   end
 
   def thread_with_mandatory_api_token
-    thread_with_api_token do
-      yield
+    thread_with_api_token(true) do
+      if Thread.current[:arvados_api_token]
+        yield
+      elsif session[:arvados_api_token]
+        # Expired session. Clear it before refreshing login so that,
+        # if this login procedure fails, we end up showing the "please
+        # log in" page instead of getting stuck in a redirect loop.
+        session.delete :arvados_api_token
+        redirect_to_login
+      else
+        render 'users/welcome'
+      end
     end
   end
 
@@ -403,7 +413,10 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_agreements
-    if current_user && !current_user.is_active && current_user.is_invited
+    if current_user && !current_user.is_active
+      if not current_user.is_invited
+        return render 'users/inactive'
+      end
       signatures = UserAgreement.signatures
       @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
       @required_user_agreements = UserAgreement.all.map do |ua|

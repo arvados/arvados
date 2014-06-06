@@ -44,16 +44,17 @@
 	<input type="text" class="form-control" placeholder="Search"/>
         -->
 	<div style="height:0.5em;"></div>
-        <% if not @logs.andand.any? %>
+        <% name_or_object = @name_link.andand.uuid ? @name_link : @object %>
+        <% if name_or_object.created_at and not @logs.andand.any? %>
           <p>
-            Created: <%= @object.created_at.to_s(:long) %>
+            Created: <%= name_or_object.created_at.to_s(:long) %>
           </p>
           <p>
-            Last modified: <%= @object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object @object.modified_by_user_uuid, friendly_name: true %>
+            Last modified: <%= name_or_object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object name_or_object.modified_by_user_uuid, friendly_name: true %>
           </p>
         <% else %>
           <%= render_arvados_object_list_start(@logs, 'Show all activity',
-                logs_path(filters: [['object_uuid','=',@object.uuid]].to_json)) do |log| %>
+                logs_path(filters: [['object_uuid','=',name_or_object.uuid]].to_json)) do |log| %>
           <p>
           <%= time_ago_in_words(log.event_at) rescue 'unknown time' %> ago: <%= log.summary %>
             <% if log.object_uuid %>

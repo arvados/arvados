@@ -1,23 +1,38 @@
 <% content_for :breadcrumbs do raw '<!-- -->' end %>
 
-<%= image_tag "dax.png", style: "float: left; max-width: 25%; margin-right: 2em" %>
-<h1>Hi there!  Please log in to use <%= Rails.configuration.site_name %>.</h1>
-<div class="row-fluid">
-  <div class="col span8" style="margin-top: 1em">
+<div class="row">
+  <div class="col-sm-8 col-sm-push-4" style="margin-top: 1em">
     <div class="well clearfix">
-      <p>When you click on the button below you will be taken to a Google sign-in page.
-	After entering your information, you will be redirected back to <%= Rails.configuration.site_name %>
-	If you have never used <%= Rails.configuration.site_name %> before, logging in for the first
-	time will also create a new user account. <%= Rails.configuration.site_name %> uses your name and
-	email address from Google services only for identification, and can not access any personal information
-  beyond that.
-  </p>
+      <%= image_tag "dax.png", style: "width: 147px; height: 197px; max-width: 25%; margin-right: 2em", class: 'pull-left' %>
+
+      <h3>Please log in.</h3>
+
       <p>
-	<a  class="pull-right btn btn-primary" href="<%= arvados_api_client.arvados_login_url(return_to: request.url) %>">
-	  Click here to log in to <%= Rails.configuration.site_name %> with a Google account</a>
+
+        The "Log in" button below will show you a Google sign-in page.
+	After you assure Google that you want to log in here with your
+	Google account, you will be redirected back here to
+	<%= Rails.configuration.site_name %>.
+
+      </p><p>
+
+	If you have never used <%= Rails.configuration.site_name %>
+	before, logging in for the first time will automatically
+	create a new account.
+
+      </p><p>
+
+        <i><%= Rails.configuration.site_name %> uses your name and
+	email address only for identification, and does not retrieve
+	any other personal information from Google.</i>
+
+      </p>
+      <p>
+	<%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "pull-right btn btn-primary" do %>
+          Log in to <%= Rails.configuration.site_name %>
+          <i class="fa fa-fw fa-arrow-circle-right"></i>
+        <% end %>
       </p>
     </div>
   </div>
 </div>
-
-

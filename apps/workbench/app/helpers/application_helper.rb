@@ -326,8 +326,9 @@ module ApplicationHelper
       "data-title" => "Set value for #{subattr[-1].to_s}",
       "data-name" => dn,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
-      "data-showbuttons" => "false",
       "data-value" => attrvalue,
+      # "clear" button interferes with form-control's up/down arrows
+      "data-clear" => false,
       :class => "editable #{'required' if required} form-control",
       :id => id
     }.merge(htmloptions)

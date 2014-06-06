@@ -32,7 +32,7 @@
 <% end %>
 
 <% if n_inputs == 0 %>
-  <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button.</p>
+  <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button whenever you're ready. (It's not too late to change existing settings, though.)</p>
 <% else %>
   <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</i></p>
   <%= content_for :pi_input_form %>
@@ -47,5 +47,5 @@
 <% end %>
 
 <div style="margin-top: 1em;">
-  <p>Click the "Components" tab above to see a full list of pipeline components and parameters.</p>
+  <p>Click the "Components" tab above to see a full list of pipeline settings.</p>
 </div>
