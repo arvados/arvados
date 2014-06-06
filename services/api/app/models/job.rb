@@ -35,22 +35,15 @@ class Job < ArvadosModel
     t.add :runtime_constraints
     t.add :tasks_summary
     t.add :dependencies
-    t.add :log_stream_href
-    t.add :log_buffer
     t.add :nondeterministic
     t.add :repository
+    t.add :supplied_script_version
   end
 
   def assert_finished
     update_attributes(finished_at: finished_at || Time.now,
                       success: success.nil? ? false : success,
                       running: false)
-  end
-
-  def log_stream_href
-    unless self.finished_at
-      "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}/log_tail_follow"
-    end
   end
 
   def self.queue
@@ -88,6 +81,7 @@ class Job < ArvadosModel
     if new_record? or script_version_changed?
       sha1 = Commit.find_commit_range(current_user, self.repository, nil, self.script_version, nil)[0] rescue nil
       if sha1
+        self.supplied_script_version = self.script_version if self.supplied_script_version.nil? or self.supplied_script_version.empty?
         self.script_version = sha1
       else
         raise ArgumentError.new("Specified script_version does not resolve to a commit")
@@ -185,17 +179,6 @@ class Job < ArvadosModel
       File.open(Rails.configuration.crunch_refresh_trigger, 'wb') do
         # That's all, just create/touch a file for crunch-job to see.
       end
-    end
-  end
-
-  def log_buffer
-    begin
-      @@redis ||= Redis.new(:timeout => 0)
-      if @@redis.exists uuid
-        @@redis.getrange(uuid, 0 - 2**10, -1)
-      end
-    rescue Redis::CannotConnectError
-      return '(not available)'
     end
   end
 end

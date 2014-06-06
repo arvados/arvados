@@ -164,7 +164,6 @@ GEM
     rake (10.2.2)
     rdoc (3.12.2)
       json (~> 1.4)
-    redis (3.0.7)
     ref (1.0.5)
     rvm-capistrano (1.5.1)
       capistrano (~> 2.15.4)
@@ -228,7 +227,6 @@ DEPENDENCIES
   pg
   pg_power
   rails (~> 3.2.0)
-  redis
   rvm-capistrano
   sass-rails (>= 3.2.0)
   simplecov (~> 0.7.1)

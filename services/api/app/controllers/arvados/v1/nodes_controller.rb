@@ -20,9 +20,15 @@ class Arvados::V1::NodesController < ApplicationController
       if !@object
         return render_not_found
       end
-      @object.ping({ ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
-                     ping_secret: params[:ping_secret],
-                     ec2_instance_id: params[:instance_id] })
+      ping_data = {
+        ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
+        ec2_instance_id: params[:instance_id]
+      }
+      [:ping_secret, :total_cpu_cores, :total_ram_mb, :total_scratch_mb]
+        .each do |key|
+        ping_data[key] = params[key] if params[key]
+      end
+      @object.ping(ping_data)
       if @object.info['ping_secret'] == params[:ping_secret]
         render json: @object.as_api_response(:superuser)
       else

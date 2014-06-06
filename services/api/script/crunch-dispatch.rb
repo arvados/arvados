@@ -140,23 +140,13 @@ class Dispatcher
       end
 
       if Server::Application.config.crunch_job_user
-        cmd_args.unshift("sudo", "-E", "-u", Server::Application.config.crunch_job_user)
-      end
-
-      cmd_args << "HOME=/dev/null"
-      cmd_args << "ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}"
-      cmd_args << "ARVADOS_API_HOST_INSECURE=#{ENV['ARVADOS_API_HOST_INSECURE']}" if ENV['ARVADOS_API_HOST_INSECURE']
-
-      ENV.each do |k, v|
-        cmd_args << "#{k}=#{v}" if k.starts_with? "CRUNCH_"
-      end
-
-      if $trollopts.use_env
-        cmd_args << "PATH=#{ENV['PATH']}"
-        cmd_args << "PYTHONPATH=#{ENV['PYTHONPATH']}"
-        cmd_args << "PERLLIB=#{ENV['PERLLIB']}"
-        cmd_args << "RUBYLIB=#{ENV['RUBYLIB']}"
-        cmd_args << "GEM_PATH=#{ENV['GEM_PATH']}"
+        cmd_args.unshift("sudo", "-E", "-u",
+                         Server::Application.config.crunch_job_user,
+                         "PATH=#{ENV['PATH']}",
+                         "PERLLIB=#{ENV['PERLLIB']}",
+                         "PYTHONPATH=#{ENV['PYTHONPATH']}",
+                         "RUBYLIB=#{ENV['RUBYLIB']}",
+                         "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
       job_auth = ApiClientAuthorization.
