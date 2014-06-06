@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'trollop'
-
 include Process
 
 $warned = {}
@@ -20,10 +18,6 @@ if ENV["CRUNCH_DISPATCH_LOCKFILE"]
   unless lockfile.flock File::LOCK_EX|File::LOCK_NB
     abort "Lock unavailable on #{lockfilename} - exit"
   end
-end
-
-$trollopts = Trollop::options do
-    opt :use_env, "Pass selected environment variables (PATH, PYTHONPATH, RUBYLIB, GEM_PATH, PERLLIB) to crunch-job"
 end
 
 ENV["RAILS_ENV"] = ARGV[0] || ENV["RAILS_ENV"] || "development"
@@ -140,23 +134,13 @@ class Dispatcher
       end
 
       if Server::Application.config.crunch_job_user
-        cmd_args.unshift("sudo", "-E", "-u", Server::Application.config.crunch_job_user)
-      end
-
-      cmd_args << "HOME=/dev/null"
-      cmd_args << "ARVADOS_API_HOST=#{ENV['ARVADOS_API_HOST']}"
-      cmd_args << "ARVADOS_API_HOST_INSECURE=#{ENV['ARVADOS_API_HOST_INSECURE']}" if ENV['ARVADOS_API_HOST_INSECURE']
-
-      ENV.each do |k, v|
-        cmd_args << "#{k}=#{v}" if k.starts_with? "CRUNCH_"
-      end
-
-      if $trollopts.use_env
-        cmd_args << "PATH=#{ENV['PATH']}"
-        cmd_args << "PYTHONPATH=#{ENV['PYTHONPATH']}"
-        cmd_args << "PERLLIB=#{ENV['PERLLIB']}"
-        cmd_args << "RUBYLIB=#{ENV['RUBYLIB']}"
-        cmd_args << "GEM_PATH=#{ENV['GEM_PATH']}"
+        cmd_args.unshift("sudo", "-E", "-u",
+                         Server::Application.config.crunch_job_user,
+                         "PATH=#{ENV['PATH']}",
+                         "PERLLIB=#{ENV['PERLLIB']}",
+                         "PYTHONPATH=#{ENV['PYTHONPATH']}",
+                         "RUBYLIB=#{ENV['RUBYLIB']}",
+                         "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
       job_auth = ApiClientAuthorization.
@@ -196,10 +180,10 @@ class Dispatcher
       cmd_args << '--git-dir'
       cmd_args << arvados_internal
 
-      $stderr.puts "dispatch: #{cmd_args}"
+      $stderr.puts "dispatch: #{cmd_args.join ' '}"
 
       begin
-        i, o, e, t = Open3.popen3({}, *cmd_args, { :unsetenv_others => true})
+        i, o, e, t = Open3.popen3(*cmd_args)
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
         sleep 1
