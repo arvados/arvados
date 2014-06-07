@@ -92,12 +92,14 @@ form.small-form-margin {
 
 /* top nav */
 $top-nav-bg: #3c163d;
+$top-nav-bg-bottom: #260027;
 nav.navbar-fixed-top .navbar-brand {
     color: #79537a;
     letter-spacing: 0.4em;
 }
 nav.navbar-fixed-top {
     background: $top-nav-bg;
+    background: linear-gradient(to bottom, $top-nav-bg 0%,$top-nav-bg-bottom 100%);
 }
 .navbar.breadcrumbs {
     line-height: 50px;
