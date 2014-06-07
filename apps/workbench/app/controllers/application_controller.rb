@@ -501,12 +501,17 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  helper_method :all_projects
+  def all_projects
+    @all_projects ||= Group.filter([['group_class','in',['project','folder']]])
+  end
+
   helper_method :my_projects
   def my_projects
     return @my_projects if @my_projects
     @my_projects = []
     root_of = {}
-    Group.filter([['group_class','in',['project','folder']]]).each do |g|
+    all_projects.each do |g|
       root_of[g.uuid] = g.owner_uuid
       @my_projects << g
     end
@@ -525,6 +530,12 @@ class ApplicationController < ActionController::Base
     @my_projects = @my_projects.select do |g|
       root_of[g.uuid] == current_user.uuid
     end
+  end
+
+  helper_method :projects_shared_with_me
+  def projects_shared_with_me
+    my_project_uuids = my_projects.collect &:uuid
+    all_projects.reject { |x| x.uuid.in? my_project_uuids }
   end
 
   helper_method :recent_jobs_and_pipelines
@@ -546,5 +557,35 @@ class ApplicationController < ActionController::Base
     end
     @get_object ||= {}
     @get_object[uuid]
+  end
+
+  helper_method :project_breadcrumbs
+  def project_breadcrumbs
+    crumbs = []
+    current = @name_link || @object
+    while current
+      if current.is_a?(Group) and current.group_class.in?(['project','folder'])
+        crumbs.prepend current
+      end
+      if current.is_a? Link
+        current = Group.find?(current.tail_uuid)
+      else
+        current = Group.find?(current.owner_uuid)
+      end
+    end
+    crumbs
+  end
+
+  helper_method :current_project_uuid
+  def current_project_uuid
+    if @object.is_a? Group and @object.group_class.in?(['project','folder'])
+      @object.uuid
+    elsif @name_link.andand.tail_uuid
+      @name_link.tail_uuid
+    elsif @object and resource_class_for_uuid(@object.owner_uuid) == Group
+      @object.owner_uuid
+    else
+      nil
+    end
   end
 end

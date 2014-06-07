@@ -90,13 +90,37 @@ form.small-form-margin {
     white-space: nowrap;
 }
 
-.navbar .nav li.nav-separator span {
-    display: block;
-    float: none;
-    color: #bbbbbb;
-    padding: 10px 0 10px;
-    text-decoration: none;
-    text-shadow: 0 1px 0 #ffffff;
+/* top nav */
+$top-nav-bg: #3c163d;
+nav.navbar-fixed-top .navbar-brand {
+    color: #79537a;
+    letter-spacing: 0.4em;
+}
+nav.navbar-fixed-top {
+    background: $top-nav-bg;
+}
+.navbar.breadcrumbs {
+    line-height: 50px;
+    border-radius: 0;
+    width: 10000px;
+    margin-bottom: 0;
+}
+.navbar.breadcrumbs .nav > li > a,
+.navbar.breadcrumbs .nav > li {
+    color: #000;
+}
+.navbar.breadcrumbs .nav > li.nav-separator > i {
+    color: #bbb;
+}
+nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a,
+nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a:focus,
+nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a:hover {
+    background: lighten($top-nav-bg, 5%);
+}
+nav.navbar-fixed-top .navbar-nav.navbar-right > li,
+nav.navbar-fixed-top .navbar-nav.navbar-right > li > a,
+nav.navbar-fixed-top .navbar-nav.navbar-right > li > a:hover {
+    color: #fff;
 }
 
 .dax {

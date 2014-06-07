@@ -34,10 +34,6 @@
 
     @media (max-width: 979px) { body { padding-top: 0; } }
 
-    .navbar .nav li.nav-separator > span.glyphicon.glyphicon-arrow-right {
-    padding-top: 1.25em;
-    }
-
     @media (max-width: 767px) {
     .breadcrumbs {
     display: none;
@@ -56,40 +52,10 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/"><%= Rails.configuration.site_name rescue Rails.application.class.parent_name %></a>
+        <a class="navbar-brand" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %></a>
       </div>
 
       <div class="collapse navbar-collapse">
-        <ul class="nav navbar-nav navbar-left breadcrumbs">
-          <% if current_user %>
-            <% if content_for?(:breadcrumbs) %>
-              <%= yield(:breadcrumbs) %>
-            <% else %>
-              <li class="nav-separator"><span class="glyphicon glyphicon-arrow-right"></span></li>
-              <li>
-                <% if @object and \
-                      ((@name_link and (o = Group.find?(@name_link.tail_uuid)))\
-                       or (o = Group.find?(@object.owner_uuid))) %>
-                  <%= link_to(o.name, project_path(o.uuid)) %>
-                <% else %>
-                  <%= link_to(
-                      controller.controller_name.humanize.downcase,
-                      url_for({controller: params[:controller]})) %>
-                <% end %>
-              </li>
-              <% if params[:action] != 'index' %>
-                <li class="nav-separator">
-                  <span class="glyphicon glyphicon-arrow-right"></span>
-                </li>
-                <li>
-                  
-                  <%= link_to_if_arvados_object (@name_link || @object), {friendly_name: true}, {data: {object_uuid: (@name_link.andand.uuid || @object.andand.uuid), name: 'name'}} %>
-                </li>
-              <% end %>
-            <% end %>
-          <% end %>
-        </ul>
-
         <ul class="nav navbar-nav navbar-right">
 
           <li>
@@ -108,67 +74,53 @@
           </li>
           -->
 
-          <li class="dropdown notification-menu">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="collections-menu">
-              <span class="glyphicon glyphicon-paperclip"></span>
-              <span class="badge" id="persistent-selection-count"></span>
-              <span class="caret"></span>
-            </a>
-              <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
-                <%= form_tag '/actions' do %>
-                <%= hidden_field_tag 'uuid', @object.andand.uuid %>
-                <div id="selection-form-content"></div>
-                <% end %>
-            </ul>
-          </li>
-
-          <% if current_user.is_active %>
+          <% if current_user %>
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
-              <span class="glyphicon glyphicon-envelope"></span>
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>
-              <span class="caret"></span>
+              <%= current_user.email %>
             </a>
             <ul class="dropdown-menu" role="menu">
-              <% if (@notifications || []).length > 0 %>
-                <% @notifications.each_with_index do |n, i| %>
-                  <% if i > 0 %><li class="divider"></li><% end %>
-                  <li class="notification"><%= n.call(self) %></li>
-                <% end %>
-              <% else %>
-                <li class="notification empty">No notifications.</li>
-              <% end %>
-            </ul>
-          </li>
-          <% end %>
-
-          <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="user-menu">
-              <span class="glyphicon glyphicon-user"></span><span class="caret"></span>
-            </a>
-            <ul class="dropdown-menu" role="menu">
-              <li role="presentation" class="dropdown-header"><%= current_user.email %></li>
               <% if current_user.is_active %>
-              <li role="presentation" class="divider"></li>
               <li role="presentation"><a href="/authorized_keys" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage ssh keys</a></li>
               <li role="presentation"><a href="/api_client_authorizations" role="menuitem"><i class="fa fa-ticket fa-fw"></i> Manage API tokens</a></li>
               <li role="presentation" class="divider"></li>
               <% end %>
               <li role="presentation"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+              <% if current_user.is_active and
+                    (@notifications || []).length > 0 %>
+                <li role="presentation" class="divider"></li>
+                <% @notifications.each_with_index do |n, i| %>
+                  <% if i > 0 %><li class="divider"></li><% end %>
+                  <li class="notification"><%= n.call(self) %></li>
+                <% end %>
+              <% end %>
+            </ul>
+          </li>
+          <% end %>
+
+          <li class="dropdown notification-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="collections-menu">
+              <span class="fa fa-lg fa-paperclip"></span>
+              <span class="badge" id="persistent-selection-count"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
+              <%= form_tag '/actions' do %>
+                <%= hidden_field_tag 'uuid', @object.andand.uuid %>
+                <div id="selection-form-content"></div>
+              <% end %>
             </ul>
           </li>
 
           <% if current_user.is_active %>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
-                <span class="glyphicon glyphicon-cog"></span><span class="caret"></span>
+                <span class="fa fa-lg fa-gear"></span>
               </a>
               <ul class="dropdown-menu" role="menu">
                 <li role="presentation" class="dropdown-header">
-                  <i class="fa fa-lg fa-fw"></i>
                   System tools
                 </li>
-                <li role="presentation" class="divider"></li>
                 <li role="presentation"><a href="/repositories">
                     <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
                 </a></li>
@@ -203,6 +155,54 @@
           <% end %>
         </ul>
       </div><!-- /.navbar-collapse -->
+    </nav>
+    <nav class="navbar navbar-default breadcrumbs" role="navigation">
+        <ul class="nav navbar-nav navbar-left">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="projects-menu">
+              <i class="fa fa-lg fa-fw fa-home"></i>
+              Projects
+              <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li role="presentation" class="dropdown-header">
+                <%= link_to projects_path('project[owner_uuid]' => current_project_uuid), method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
+                  <i class="fa fa-plus"></i> New project
+                <% end %>
+                My projects
+              </li>
+              <% my_projects.each do |p| %>
+                <li>
+                  <%= link_to(p.name, project_path(p.uuid)) %>
+                </li>
+              <% end %>
+              <li class="divider">
+              <li role="presentation" class="dropdown-header">
+                Projects shared with me
+              </li>
+              <% projects_shared_with_me.each do |p| %>
+                <li>
+                  <%= link_to project_path(p.uuid) do %>
+                    <i class="fa fa-fw fa-share-alt"></i> <%= p.name %>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          </li>
+          <% project_breadcrumbs.each do |p| %>
+            <li class="nav-separator">
+              <i class="fa fa-lg fa-angle-double-right"></i>
+            </li>
+            <li>
+              <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
+            </li>
+          <% end %>
+          <% if current_project_uuid.andand != @object.andand.uuid %>
+            <li class="nav-separator">
+              <i class="fa fa-lg fa-angle-double-right"></i>
+            </li>
+          <% end %>
+        </ul>
     </nav>
 
     <div id="page-wrapper">
