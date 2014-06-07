@@ -117,8 +117,8 @@ nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a:focus,
 nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a:hover {
     background: lighten($top-nav-bg, 5%);
 }
-nav.navbar-fixed-top .navbar-nav.navbar-right > li,
 nav.navbar-fixed-top .navbar-nav.navbar-right > li > a,
+nav.navbar-fixed-top .navbar-nav.navbar-right > li > a:focus,
 nav.navbar-fixed-top .navbar-nav.navbar-right > li > a:hover {
     color: #fff;
 }
