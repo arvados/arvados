@@ -23,6 +23,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     instance_page = current_path
 
+    # put this pipeline instance in "A Folder"
     find('button', text: 'Choose a folder...').click
     within('.modal-dialog') do
       find('.selectable', text: 'A Folder').click
@@ -75,6 +76,59 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Paused'
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
     page.assert_selector 'a,button', text: 'Clone and edit'
+
+    # Since it is test env, no jobs are created to run. So, graph not visible
+    assert_not page.has_text? 'Graph'
+  end
+
+  # Create a pipeline instance from within a folder and run
+  test 'Create pipeline inside a folder and run' do
+    visit page_with_token('active_trustedclient')
+
+    # Go over to the collections page and select something
+    visit '/collections'
+    within('tr', text: 'GNU_General_Public_License') do
+      find('input[type=checkbox]').click
+    end
+    find('#persistent-selection-count').click
+
+    # Add this collection to the folder
+    visit '/folders'
+    find('.arv-folder-list a,button', text: 'A Folder').click
+    find('.btn', text: 'Add data').click
+    find('span', text: 'foo_tag').click
+    within('.modal-dialog') do
+      find('.btn', text: 'Add').click
+    end
+
+    # create a pipeline instance
+    find('.btn', text: 'Run a pipeline').click
+    within('.modal-dialog') do
+      assert page.has_text? 'Two Part Pipeline Template'
+      find('.fa-gear').click
+      find('.btn', text: 'Next: choose inputs').click
+    end
+
+    assert find('p', text: 'Provide a value')
+
+    find('div.form-group', text: 'Foo/bar pair').
+      find('.btn', text: 'Choose').
+      click
+
+    within('.modal-dialog') do
+      find('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+
+    wait_for_ajax
+
+    # "Run" button present and enabled
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
+    first('a,button', text: 'Run').click
+
+    # Pipeline is running. We have a "Stop" button instead now.
+    page.assert_no_selector 'a,button', text: 'Run'
+    page.assert_selector 'a,button', text: 'Stop'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
     assert_not page.has_text? 'Graph'
