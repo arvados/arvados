@@ -92,14 +92,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     find('#persistent-selection-count').click
 
-    # Add this collection to the folder
+    # Add this collection to the folder using collections menu from top nav
     visit '/folders'
     find('.arv-folder-list a,button', text: 'A Folder').click
-    find('.btn', text: 'Add data').click
-    find('span', text: 'foo_tag').click
-    within('.modal-dialog') do
-      find('.btn', text: 'Add').click
-    end
+
+    find('#collections-menu').click
+    click_button 'Copy selections into this folder'
 
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
