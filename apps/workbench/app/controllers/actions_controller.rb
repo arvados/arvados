@@ -19,7 +19,7 @@ class ActionsController < ApplicationController
     redirect_to :back
   end
 
-  expose_action :copy_selections_into_folder do
+  expose_action :copy_selections_into_project do
     link_selections = Link.filter([['uuid','in',params["selection"]]])
     link_uuids = link_selections.collect(&:uuid)
 

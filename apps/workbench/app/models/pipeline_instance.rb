@@ -1,7 +1,7 @@
 class PipelineInstance < ArvadosBase
   attr_accessor :pipeline_template
 
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     true
   end
 

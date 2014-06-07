@@ -40,7 +40,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
   test "Collection page renders default name links" do
     uuid = api_fixture('collections')['foo_file']['uuid']
-    coll_name = api_fixture('links')['foo_collection_name_in_afolder']['name']
+    coll_name = api_fixture('links')['foo_collection_name_in_aproject']['name']
     visit page_with_token('active', "/collections/#{uuid}")
     assert(page.has_text?(coll_name), "Collection page did not include name")
     # Now check that the page is otherwise normal, and the collection name

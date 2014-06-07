@@ -70,7 +70,7 @@
                 <% if @object and \
                       ((@name_link and (o = Group.find?(@name_link.tail_uuid)))\
                        or (o = Group.find?(@object.owner_uuid))) %>
-                  <%= link_to(o.name, folder_path(o.uuid)) %>
+                  <%= link_to(o.name, project_path(o.uuid)) %>
                 <% else %>
                   <%= link_to(
                       controller.controller_name.humanize.downcase,
@@ -82,6 +82,7 @@
                   <span class="glyphicon glyphicon-arrow-right"></span>
                 </li>
                 <li>
+                  
                   <%= link_to_if_arvados_object (@name_link || @object), {friendly_name: true}, {data: {object_uuid: (@name_link.andand.uuid || @object.andand.uuid), name: 'name'}} %>
                 </li>
               <% end %>

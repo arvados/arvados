@@ -1,7 +1,7 @@
 <% content_for :content_top do %>
 
 <h2>
-  <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New folder" } %>
+  <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New project" } %>
 </h2>
 
 <div class="arv-description-as-subtitle">
@@ -12,8 +12,8 @@
 
 <% content_for :tab_line_buttons do %>
   <% if @objects_and_names.empty? %>
-    <%= button_to(folder_path(id: @object.uuid, return_to: folders_path), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete folder '#{@object.name}'?"}) do %>
-      <i class="fa fa-fw fa-trash-o"></i> Delete folder
+    <%= button_to(project_path(id: @object.uuid, return_to: projects_path), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
+      <i class="fa fa-fw fa-trash-o"></i> Delete project
     <% end %>
   <% end %>
 <% end %>
@@ -45,12 +45,12 @@
       <% if @object.editable? %>
         <%= link_to(
               choose_collections_path(
-                title: 'Add data to folder:',
+                title: 'Add data to project:',
                 multiple: true,
                 action_name: 'Add',
                 action_href: actions_path(id: @object.uuid),
                 action_method: 'post',
-                action_data: {selection_param: 'selection[]', copy_selections_into_folder: @object.uuid, success: 'page-refresh'}.to_json),
+                action_data: {selection_param: 'selection[]', copy_selections_into_project: @object.uuid, success: 'page-refresh'}.to_json),
               { class: "btn btn-primary btn-sm", remote: true, method: 'get', data: {'event-after-select' => 'page-refresh'} }) do %>
           <i class="fa fa-fw fa-plus"></i> Add data
         <% end %>
@@ -69,7 +69,7 @@
     <div class="col-sm-3">
       <form class="form-inline" role="form">
         Show:
-        <select class="form-control form-control-sm filterable-control" data-filterable-attribute="data-kind" data-filterable-target="table.arv-index.arv-folder-contents tbody">
+        <select class="form-control form-control-sm filterable-control" data-filterable-attribute="data-kind" data-filterable-target="table.arv-index.arv-project-contents tbody">
           <option value="">Everything</option>
           <option value="arvados#collection">Data</option>
           <option value="arvados#pipelineInstance arvados#job">Compute jobs</option>
@@ -83,17 +83,17 @@
       </form>
     </div>
     <div class="col-sm-4">
-      <input type="text" class="form-control filterable-control" placeholder="Search folder contents" data-filterable-target="table.arv-index.arv-folder-contents tbody"/>
+      <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-contents tbody"/>
     </div>
   </div>
 
-  <table class="table table-condensed table-fixedlayout arv-index arv-folder-contents" style="overflow-x: hidden">
+  <table class="table table-condensed table-fixedlayout arv-index arv-project-contents" style="overflow-x: hidden">
     <colgroup>
       <col width="40%" />
       <col width="60%" />
     </colgroup>
     <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: next_page_offset) if next_page_offset %>">
-      <%= render partial: 'show_contents_rows', locals: {folder: @object, objects_and_names: @objects_and_names} %>
+      <%= render partial: 'show_contents_rows', locals: {project: @object, objects_and_names: @objects_and_names} %>
     </tbody>
     <thead>
       <tr>

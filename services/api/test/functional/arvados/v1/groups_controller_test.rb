@@ -14,22 +14,22 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_response 403
   end
 
-  test "get list of folders" do
+  test "get list of projects" do
     authorize_with :active
-    get :index, filters: [['group_class', '=', 'folder']], format: :json
+    get :index, filters: [['group_class', 'in', ['project', 'folder']]], format: :json
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
-      assert_equal 'folder', group['group_class']
+      assert_includes ['folder', 'project'], group['group_class']
       group_uuids << group['uuid']
     end
-    assert_includes group_uuids, groups(:afolder).uuid
-    assert_includes group_uuids, groups(:asubfolder).uuid
+    assert_includes group_uuids, groups(:aproject).uuid
+    assert_includes group_uuids, groups(:asubproject).uuid
     assert_not_includes group_uuids, groups(:system_group).uuid
     assert_not_includes group_uuids, groups(:private).uuid
   end
 
-  test "get list of groups that are not folders" do
+  test "get list of groups that are not projects" do
     authorize_with :active
     get :index, filters: [['group_class', '=', nil]], format: :json
     assert_response :success
@@ -38,8 +38,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_equal nil, group['group_class']
       group_uuids << group['uuid']
     end
-    assert_not_includes group_uuids, groups(:afolder).uuid
-    assert_not_includes group_uuids, groups(:asubfolder).uuid
+    assert_not_includes group_uuids, groups(:aproject).uuid
+    assert_not_includes group_uuids, groups(:asubproject).uuid
     assert_includes group_uuids, groups(:private).uuid
   end
 
@@ -57,7 +57,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get group-owned objects' do
     authorize_with :active
     get :contents, {
-      id: groups(:afolder).uuid,
+      id: groups(:aproject).uuid,
       format: :json,
       include_linked: true,
     }
@@ -72,7 +72,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get group-owned objects with limit' do
     authorize_with :active
     get :contents, {
-      id: groups(:afolder).uuid,
+      id: groups(:aproject).uuid,
       limit: 1,
       format: :json,
     }
@@ -84,7 +84,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get group-owned objects with limit and offset' do
     authorize_with :active
     get :contents, {
-      id: groups(:afolder).uuid,
+      id: groups(:aproject).uuid,
       limit: 1,
       offset: 12345,
       format: :json,
@@ -97,7 +97,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get group-owned objects with additional filter matching nothing' do
     authorize_with :active
     get :contents, {
-      id: groups(:afolder).uuid,
+      id: groups(:aproject).uuid,
       filters: [['uuid', 'in', ['foo_not_a_uuid','bar_not_a_uuid']]],
       format: :json,
     }
@@ -107,10 +107,10 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   test 'get group-owned objects without include_linked' do
-    unexpected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
+    unexpected_uuid = specimens(:in_aproject_linked_from_asubproject).uuid
     authorize_with :active
     get :contents, {
-      id: groups(:asubfolder).uuid,
+      id: groups(:asubproject).uuid,
       format: :json,
     }
     assert_response :success
@@ -119,10 +119,10 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   test 'get group-owned objects with include_linked' do
-    expected_uuid = specimens(:in_afolder_linked_from_asubfolder).uuid
+    expected_uuid = specimens(:in_aproject_linked_from_asubproject).uuid
     authorize_with :active
     get :contents, {
-      id: groups(:asubfolder).uuid,
+      id: groups(:asubproject).uuid,
       include_linked: true,
       format: :json,
     }
@@ -130,7 +130,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes uuids, expected_uuid, "Did not get #{expected_uuid}"
 
-    expected_name = links(:specimen_is_in_two_folders).name
+    expected_name = links(:specimen_is_in_two_projects).name
     found_specimen_name = false
     assert(json_response['links'].any?,
            "Expected a non-empty array of links in response")
@@ -158,7 +158,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         # times within a test.
         @json_response = nil
         get :contents, {
-          id: groups(:afolder).uuid,
+          id: groups(:aproject).uuid,
           include_linked: inc_ind,
           limit: limit,
           offset: offset,
@@ -180,7 +180,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
           owner_received[item['owner_uuid']] = true
           offset += 1
           if not inc_ind
-            assert_equal groups(:afolder).uuid, item['owner_uuid']
+            assert_equal groups(:aproject).uuid, item['owner_uuid']
           end
         end
         break if offset >= items_available
@@ -197,7 +197,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       test "Raise error on bogus #{arg} parameter #{val.inspect}" do
         authorize_with :active
         get :contents, {
-          :id => groups(:afolder).uuid,
+          :id => groups(:aproject).uuid,
           :format => :json,
           arg => val,
         }
@@ -209,7 +209,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   test 'get writable_by list for owned group' do
     authorize_with :active
     get :show, {
-      id: groups(:afolder).uuid,
+      id: groups(:aproject).uuid,
       format: :json
     }
     assert_response :success

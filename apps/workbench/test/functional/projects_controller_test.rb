@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class FoldersControllerTest < ActionController::TestCase
+class ProjectsControllerTest < ActionController::TestCase
   test "inactive user is asked to sign user agreements on front page" do
     get :index, {}, session_for(:inactive)
     assert_response :success

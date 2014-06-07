@@ -304,7 +304,7 @@ test_timestamps:
   name: test
   properties: {}
 
-specimen_is_in_two_folders:
+specimen_is_in_two_projects:
   uuid: zzzzz-o0j2j-ryhm1bn83ni03sn
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   created_at: 2014-04-21 15:37:48 -0400
@@ -315,10 +315,10 @@ specimen_is_in_two_folders:
   tail_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   head_uuid: zzzzz-j58dm-5gid26432uujf79
   link_class: name
-  name: "I'm in a subfolder, too"
+  name: "I'm in a subproject, too"
   properties: {}
 
-template_name_in_afolder:
+template_name_in_aproject:
   uuid: zzzzz-o0j2j-4kpwf3d6rwkeqhl
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-29 16:47:26 -0400
@@ -329,10 +329,10 @@ template_name_in_afolder:
   tail_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   head_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
   link_class: name
-  name: "I'm a template in a folder"
+  name: "I'm a template in a project"
   properties: {}
 
-job_name_in_afolder:
+job_name_in_aproject:
   uuid: zzzzz-o0j2j-1kt6dppqcxbl1yt
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-29 16:47:26 -0400
@@ -343,11 +343,11 @@ job_name_in_afolder:
   tail_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   head_uuid: zzzzz-8i9sb-pshmckwoma9plh7
   link_class: name
-  name: "I'm a job in a folder"
+  name: "I'm a job in a project"
   properties: {}
 
-foo_collection_name_in_afolder:
-  uuid: zzzzz-o0j2j-foofoldername12
+foo_collection_name_in_aproject:
+  uuid: zzzzz-o0j2j-fooprojectname1
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-21 15:37:48 -0400
   modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
@@ -358,7 +358,7 @@ foo_collection_name_in_afolder:
   head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   link_class: name
   # This should resemble the default name assigned when a
-  # Collection is added to a Folder.
+  # Collection is added to a Project.
   name: "1f4b0bc7583c2a7f9102c395f4ffc5e3+45 added sometime"
   properties: {}
 

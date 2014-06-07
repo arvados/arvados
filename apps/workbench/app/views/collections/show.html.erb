@@ -83,12 +83,12 @@
         </div>
 
 	<div style="height:0.5em;"></div>
-        <% if @folders.andand.any? %>
-          <p>Included in folders:<br />
-          <%= render_arvados_object_list_start(@folders, 'Show all folders',
+        <% if @projects.andand.any? %>
+          <p>Included in projects:<br />
+          <%= render_arvados_object_list_start(@projects, 'Show all projects',
                 links_path(filter: [['head_uuid', '=', @object.uuid],
-                                    ['link_class', '=', 'name']].to_json)) do |folder| %>
-          <%= link_to_if_arvados_object(folder, friendly_name: true) %><br />
+                                    ['link_class', '=', 'name']].to_json)) do |project| %>
+          <%= link_to_if_arvados_object(project, friendly_name: true) %><br />
           <% end %>
           </p>
         <% end %>

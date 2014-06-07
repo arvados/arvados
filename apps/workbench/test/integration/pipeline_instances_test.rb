@@ -23,10 +23,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     instance_page = current_path
 
-    # put this pipeline instance in "A Folder"
-    find('button', text: 'Choose a folder...').click
+    # put this pipeline instance in "A Project"
+    find('button', text: 'Choose a project...').click
     within('.modal-dialog') do
-      find('.selectable', text: 'A Folder').click
+      find('.selectable', text: 'A Project').click
       find('button', text: 'Move').click
     end
 
@@ -37,9 +37,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     find('#persistent-selection-count').click
 
-    # Add this collection to the folder
-    visit '/folders'
-    find('.arv-folder-list a,button', text: 'A Folder').click
+    # Add this collection to the project
+    visit '/projects'
+    find('.arv-project-list a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
     find('span', text: 'foo_tag').click
     within('.modal-dialog') do
@@ -81,8 +81,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert_not page.has_text? 'Graph'
   end
 
-  # Create a pipeline instance from within a folder and run
-  test 'Create pipeline inside a folder and run' do
+  # Create a pipeline instance from within a project and run
+  test 'Create pipeline inside a project and run' do
     visit page_with_token('active_trustedclient')
 
     # Go over to the collections page and select something
@@ -92,12 +92,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
     find('#persistent-selection-count').click
 
-    # Add this collection to the folder using collections menu from top nav
-    visit '/folders'
-    find('.arv-folder-list a,button', text: 'A Folder').click
+    # Add this collection to the project using collections menu from top nav
+    visit '/projects'
+    find('.arv-project-list a,button', text: 'A Project').click
 
     find('#collections-menu').click
-    click_button 'Copy selections into this folder'
+    click_button 'Copy selections into this project'
 
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click

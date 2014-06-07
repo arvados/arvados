@@ -136,7 +136,7 @@ module ApplicationHelper
     attrvalue = object.send(attr) if attrvalue.nil?
     if !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
-         !object.owner_uuid.in?(my_folders.collect(&:uuid)))
+         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
       return ((attrvalue && attrvalue.length > 0 && attrvalue) ||
               (attr == 'name' and object.andand.default_name) ||
               '(none)')
@@ -222,7 +222,7 @@ module ApplicationHelper
     if !object or
         !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
-         !object.owner_uuid.in?(my_folders.collect(&:uuid)))
+         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
       return link_to_if_arvados_object attrvalue
     end
 

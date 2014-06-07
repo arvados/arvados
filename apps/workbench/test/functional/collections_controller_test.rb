@@ -53,11 +53,11 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
   end
 
-  test "viewing a collection fetches related folders" do
+  test "viewing a collection fetches related projects" do
     show_collection(:foo_file, :active)
-    assert_includes(assigns(:folders).map(&:uuid),
-                    api_fixture('groups')['afolder']['uuid'],
-                    "controller did not find linked folder")
+    assert_includes(assigns(:projects).map(&:uuid),
+                    api_fixture('groups')['aproject']['uuid'],
+                    "controller did not find linked project")
   end
 
   test "viewing a collection fetches related permissions" do

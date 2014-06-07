@@ -1,10 +1,10 @@
-class FoldersController < ApplicationController
+class ProjectsController < ApplicationController
   def model_class
     Group
   end
 
   def index_pane_list
-    %w(Folders)
+    %w(Projects)
   end
 
   def show_pane_list
@@ -14,7 +14,7 @@ class FoldersController < ApplicationController
   def remove_item
     params[:item_uuids] = [params[:item_uuid]]
     remove_items
-    render template: 'folders/remove_items'
+    render template: 'projects/remove_items'
   end
 
   def remove_items
@@ -25,7 +25,7 @@ class FoldersController < ApplicationController
           item.link_class == 'name' and
           item.tail_uuid == @object.uuid)
         # Given uuid is a name link, linking an object to this
-        # folder. First follow the link to find the item we're removing,
+        # project. First follow the link to find the item we're removing,
         # then delete the link.
         links << item
         item = ArvadosBase.find item.head_uuid
@@ -40,7 +40,7 @@ class FoldersController < ApplicationController
         link.destroy
       end
       if item.owner_uuid == @object.uuid
-        # Object is owned by this folder. Remove it from the folder by
+        # Object is owned by this project. Remove it from the project by
         # changing owner to the current user.
         item.update_attributes owner_uuid: current_user.uuid
         @removed_uuids << item.uuid
@@ -49,7 +49,9 @@ class FoldersController < ApplicationController
   end
 
   def find_objects_for_index
-    @objects = Group.where(group_class: 'folder').order('name')
+    @objects = Group.
+      filter([['group_class','in',['project','folder']]]).
+      order('name')
     super
     parent_of = {current_user.uuid => 'me'}
     @objects.each do |ob|
@@ -81,9 +83,9 @@ class FoldersController < ApplicationController
       end
       paths
     end
-    @my_folder_tree =
+    @my_project_tree =
       sorted_paths.call buildtree.call(children_of, 'me')
-    @shared_folder_tree =
+    @shared_project_tree =
       sorted_paths.call({'Shared with me' =>
                           buildtree.call(children_of, false)})
   end
@@ -121,7 +123,7 @@ class FoldersController < ApplicationController
                                       formats: [:html],
                                       locals: {
                                         objects_and_names: @objects_and_names,
-                                        folder: @object
+                                        project: @object
                                       }),
             next_page_href: (next_page_offset and
                              url_for(offset: next_page_offset, partial: true))
@@ -134,13 +136,13 @@ class FoldersController < ApplicationController
   end
 
   def create
-    @new_resource_attrs = (params['folder'] || {}).merge(group_class: 'folder')
-    @new_resource_attrs[:name] ||= 'New folder'
+    @new_resource_attrs = (params['project'] || {}).merge(group_class: 'project')
+    @new_resource_attrs[:name] ||= 'New project'
     super
   end
 
   def update
-    @updates = params['folder']
+    @updates = params['project']
     super
   end
 end

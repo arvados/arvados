@@ -501,14 +501,14 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  helper_method :my_folders
-  def my_folders
-    return @my_folders if @my_folders
-    @my_folders = []
+  helper_method :my_projects
+  def my_projects
+    return @my_projects if @my_projects
+    @my_projects = []
     root_of = {}
-    Group.filter([['group_class','=','folder']]).each do |g|
+    Group.filter([['group_class','in',['project','folder']]]).each do |g|
       root_of[g.uuid] = g.owner_uuid
-      @my_folders << g
+      @my_projects << g
     end
     done = false
     while not done
@@ -522,16 +522,16 @@ class ApplicationController < ActionController::Base
         end
       end
     end
-    @my_folders = @my_folders.select do |g|
+    @my_projects = @my_projects.select do |g|
       root_of[g.uuid] == current_user.uuid
     end
   end
 
   helper_method :recent_jobs_and_pipelines
   def recent_jobs_and_pipelines
-    in_my_folders = ['owner_uuid','in',my_folders.collect(&:uuid)]
-    (Job.limit(10).filter([in_my_folders]) |
-     PipelineInstance.limit(10).filter([in_my_folders])).
+    in_my_projects = ['owner_uuid','in',my_projects.collect(&:uuid)]
+    (Job.limit(10).filter([in_my_projects]) |
+     PipelineInstance.limit(10).filter([in_my_projects])).
       sort_by do |x|
       x.finished_at || x.started_at || x.created_at rescue x.created_at
     end

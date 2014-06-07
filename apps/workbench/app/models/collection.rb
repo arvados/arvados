@@ -6,7 +6,7 @@ class Collection < ArvadosBase
     !!locator.to_s.match("^#{MD5_EMPTY}(\\+.*)?\$")
   end
 
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     true
   end
 

@@ -6,7 +6,7 @@
 <div>
   <div class="row">
     <div class="col-sm-6">
-      <% if my_folders.empty? %>
+      <% if my_projects.empty? %>
         <div class="panel panel-info">
           <div class="panel-heading">
             <h3 class="panel-title">
@@ -19,7 +19,7 @@
               This site runs Arvados, the open source biomedical analysis platform. <a href="https://arvados.org" target="_blank">Learn more&hellip;</a>
             </p>
             <p>
-              <b>To get started,</b> create a folder using the "Add new folder" button below.
+              <b>To get started,</b> create a project using the "Add new project" button below.
             </p>
           </div>
         </div>
@@ -27,17 +27,17 @@
       <div class="panel panel-default">
         <div class="panel-heading">
           <div class="pull-right">
-            <%= button_to folders_path(method: 'post'), class: 'btn btn-xs btn-primary' do %>
+            <%= button_to projects_path(method: 'post'), class: 'btn btn-xs btn-primary' do %>
               <i class="fa fa-fw fa-plus"></i>
-              Add new folder
+              Add new project
             <% end %>
           </div>
           <h3 class="panel-title">
-            My folders
+            My projects
           </h3>
         </div>
         <div class="panel-body scroll-20em">
-          <%= render partial: 'index_folders', locals: {tree: @my_folder_tree, show_root_node: false} %>
+          <%= render partial: 'index_projects', locals: {tree: @my_project_tree, show_root_node: false} %>
         </div>
       </div>
     </div>
@@ -45,11 +45,11 @@
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title">
-            Shared folders
+            Shared projects
           </h3>
         </div>
         <div class="panel-body scroll-20em">
-          <%= render partial: 'index_folders', locals: {tree: @shared_folder_tree, show_root_node: false} %>
+          <%= render partial: 'index_projects', locals: {tree: @shared_project_tree, show_root_node: false} %>
         </div>
       </div>
     </div>

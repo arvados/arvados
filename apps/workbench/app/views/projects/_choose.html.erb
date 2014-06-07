@@ -4,25 +4,25 @@
 
       <div class="modal-header">
         <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title"><%= params[:title] || 'Choose folder' %></h4>
+        <h4 class="modal-title"><%= params[:title] || 'Choose project' %></h4>
       </div>
 
       <div class="modal-body">
         <div class="selectable-container" style="height: 15em; overflow-y: scroll">
-          <% [@my_folder_tree, @shared_folder_tree].each do |tree| %>
-            <% tree.each do |foldernode| %>
-              <% if foldernode[:object].is_a? String %>
-                <div class="row" style="padding-left: <%= 1 + foldernode[:depth] %>em;">
+          <% [@my_project_tree, @shared_project_tree].each do |tree| %>
+            <% tree.each do |projectnode| %>
+              <% if projectnode[:object].is_a? String %>
+                <div class="row" style="padding-left: <%= 1 + projectnode[:depth] %>em;">
                   <i class="fa fa-fw fa-folder-open-o"></i>
-                  <%= foldernode[:object] %>
+                  <%= projectnode[:object] %>
                 </div>
               <% else %>
-                <div class="<%= 'selectable folder' if !params[:editable] || foldernode[:object].editable? %> row" style="padding-left: <%= 1 + foldernode[:depth] %>em;" data-object-uuid="<%= foldernode[:object].uuid %>">
+                <div class="<%= 'selectable project' if !params[:editable] || projectnode[:object].editable? %> row" style="padding-left: <%= 1 + projectnode[:depth] %>em;" data-object-uuid="<%= projectnode[:object].uuid %>">
                   <i class="fa fa-fw fa-folder-o"></i>
-                  <% if foldernode[:object].uuid == current_user.uuid %>
-                    My Folders
+                  <% if projectnode[:object].uuid == current_user.uuid %>
+                    My Projects
                   <% else %>
-                    <%= foldernode[:object].friendly_link_name || 'New folder' %>
+                    <%= projectnode[:object].friendly_link_name || 'New project' %>
                   <% end %>
                 </div>
               <% end %>

@@ -26,7 +26,7 @@
             Inherited permissions
           </div>
           <div class="panel-body">
-            <p>Permissions for this folder are inherited by the owner or parent folder:
+            <p>Permissions for this project are inherited by the owner or parent project:
             </p>
             <p style="margin-left: 4em">
               <% if User == resource_class_for_uuid(@object.owner_uuid) %>
@@ -36,14 +36,14 @@
               <% end %>
               <%= link_to_if_arvados_object @object.owner_uuid, friendly_name: true %>
               <%= button_to('Move to...',
-                  choose_folders_path(
+                  choose_projects_path(
                    title: 'Move to...',
                    editable: true,
                    action_name: 'Move',
-                   action_href: folder_path(@object.uuid),
+                   action_href: project_path(@object.uuid),
                    action_method: 'put',
-                   action_data: {selection_param: 'folder[owner_uuid]', success: 'page-refresh'}.to_json),
-                  { class: "btn btn-default btn-xs arv-move-to-folder", remote: true, method: 'get' }) %>
+                   action_data: {selection_param: 'project[owner_uuid]', success: 'page-refresh'}.to_json),
+                  { class: "btn btn-default btn-xs arv-move-to-project", remote: true, method: 'get' }) %>
             </p>
           </div>
         </div>

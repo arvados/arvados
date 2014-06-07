@@ -294,7 +294,7 @@ class ArvadosBase < ActiveRecord::Base
     current_user
   end
 
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     false
   end
 
