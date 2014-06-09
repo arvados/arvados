@@ -25,10 +25,10 @@ global_client_object = None
 from api import *
 import config
 import arvados.errors
+import arvados.util
 
 class KeepLocator(object):
     EPOCH_DATETIME = datetime.datetime.utcfromtimestamp(0)
-    HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
 
     def __init__(self, locator_str):
         self.size = None
@@ -53,13 +53,6 @@ class KeepLocator(object):
                              self.permission_hint()]
             if s is not None)
 
-    def _is_hex_length(self, s, *size_spec):
-        if len(size_spec) == 1:
-            good_len = (len(s) == size_spec[0])
-        else:
-            good_len = (size_spec[0] <= len(s) <= size_spec[1])
-        return good_len and self.HEX_RE.match(s)
-
     def _make_hex_prop(name, length):
         # Build and return a new property with the given name that
         # must be a hex string of the given length.
@@ -67,7 +60,7 @@ class KeepLocator(object):
         def getter(self):
             return getattr(self, data_name)
         def setter(self, hex_str):
-            if not self._is_hex_length(hex_str, length):
+            if not arvados.util.is_hex(hex_str, length):
                 raise ValueError("{} must be a {}-digit hex string: {}".
                                  format(name, length, hex_str))
             setattr(self, data_name, hex_str)
@@ -82,7 +75,7 @@ class KeepLocator(object):
 
     @perm_expiry.setter
     def perm_expiry(self, value):
-        if not self._is_hex_length(value, 1, 8):
+        if not arvados.util.is_hex(value, 1, 8):
             raise ValueError(
                 "permission timestamp must be a hex Unix timestamp: {}".
                 format(value))
