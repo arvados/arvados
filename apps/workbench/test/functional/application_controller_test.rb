@@ -76,7 +76,7 @@ class ApplicationControllerTest < ActionController::TestCase
     ac = ApplicationController.new
 
     assert_raise ArgumentError do
-      links = ac.send :preload_links_for_objects, 'input not an array'
+      ac.send :preload_links_for_objects, 'input not an array'
     end
   end
 
@@ -86,7 +86,7 @@ class ApplicationControllerTest < ActionController::TestCase
     ac = ApplicationController.new
 
     assert_raise ArgumentError do
-      links = ac.send :preload_links_for_objects, nil
+      ac.send :preload_links_for_objects, nil
     end
   end
 
@@ -102,4 +102,82 @@ class ApplicationControllerTest < ActionController::TestCase
     assert links.size == 0, 'Expected no objects in the preloaded links hash'
   end
 
+  test "collections for object" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    uuid = api_fixture('collections')['foo_file']['uuid']
+
+    collections = ac.send :collections_for_object, uuid
+
+    assert collections, 'Expected collections'
+    assert collections.is_a?(Array), 'Expected an array'
+    assert collections.size == 1, 'Expected one collection object'
+    assert_equal collections[0][:uuid], uuid, 'Expected uuid not found in collections'
+  end
+
+  test "collections for no such object" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    collections = ac.send :collections_for_object, "no-such-uuid"
+
+    assert collections, 'Expected collections'
+    assert collections.is_a?(Array), 'Expected an array'
+    assert collections.size == 0, 'Expected no collection'
+  end
+
+  test "preload collections for given uuids" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    uuid1 = api_fixture('collections')['foo_file']['uuid']
+    uuid2 = api_fixture('collections')['bar_file']['uuid']
+
+    uuids = [uuid1, uuid2]
+    collections = ac.send :preload_collections_for_objects, uuids
+
+    assert collections, 'Expected collection'
+    assert collections.is_a?(Hash), 'Expected a hash'
+    assert collections.size == 2, 'Expected two objects in the preloaded collection hash'
+    assert collections[uuid1], 'Expected collections for the passed in uuid'
+    assert_equal collections[uuid1].size, 1, 'Expected one collection for the passed in uuid'
+    assert collections[uuid2], 'Expected collections for the passed in uuid'
+    assert_equal collections[uuid2].size, 1, 'Expected one collection for the passed in uuid'
+  end
+
+  test "preload collections for wrong typed input" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    assert_raise ArgumentError do
+      ac.send :preload_collections_for_objects, 'input not an array'
+    end
+  end
+
+  test "preload collections for nil input" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    assert_raise ArgumentError do
+      ac.send :preload_collections_for_objects, nil
+    end
+  end
+
+  test "preload collections for empty array input" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    collections = ac.send :preload_links_for_objects, []
+
+    assert collections, 'Expected collections'
+    assert collections.is_a?(Hash), 'Expected a hash'
+    assert collections.size == 0, 'Expected no objects in the preloaded collections hash'
+  end
 end
