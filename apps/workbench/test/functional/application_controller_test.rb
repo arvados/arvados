@@ -245,4 +245,55 @@ class ApplicationControllerTest < ActionController::TestCase
     assert collections[uuid1], 'Expected collections for the passed in uuid'
   end
 
+  test "object for dataclass" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    dataclass = ArvadosBase.resource_class_for_uuid(api_fixture('jobs')['running']['uuid'])
+    uuid = api_fixture('jobs')['running']['uuid']
+
+    obj = ac.send :object_for_dataclass, dataclass, uuid
+
+    assert obj, 'Expected object'
+    assert 'Job', obj.class
+    assert_equal uuid, obj['uuid'], 'Expected uuid not found'
+    assert_equal api_fixture('jobs')['running']['script_version'], obj['script_version'],
+      'Expected script_version not found'
+  end
+
+  test "preload objects for dataclass" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    dataclass = ArvadosBase.resource_class_for_uuid(api_fixture('jobs')['running']['uuid'])
+
+    uuid1 = api_fixture('jobs')['running']['uuid']
+    uuid2 = api_fixture('jobs')['running_cancelled']['uuid']
+
+    uuids = [uuid1, uuid2]
+    users = ac.send :preload_objects_for_dataclass, dataclass, uuids
+
+    assert users, 'Expected objects'
+    assert users.is_a?(Hash), 'Expected a hash'
+
+    assert users.size == 2, 'Expected two objects in the preloaded hash'
+    assert users[uuid1], 'Expected user object for the passed in uuid'
+    assert users[uuid2], 'Expected user object for the passed in uuid'
+
+    # invoke again for this same input. this time, the preloaded data will be returned
+    users = ac.send :preload_objects_for_dataclass, dataclass, uuids
+    assert users, 'Expected objects'
+    assert users.is_a?(Hash), 'Expected a hash'
+    assert users.size == 2, 'Expected two objects in the preloaded hash'
+
+    # invoke again for this with one more uuid
+    uuids << api_fixture('jobs')['foobar']['uuid']
+    users = ac.send :preload_objects_for_dataclass, dataclass, uuids
+    assert users, 'Expected objects'
+    assert users.is_a?(Hash), 'Expected a hash'
+    assert users.size == 3, 'Expected two objects in the preloaded hash'
+  end
+
 end
