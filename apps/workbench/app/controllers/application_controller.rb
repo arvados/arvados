@@ -517,6 +517,7 @@ class ApplicationController < ActionController::Base
   # helper method to get collections for the given uuid
   helper_method :collections_for_object
   def collections_for_object uuid
+    raise ArgumentError, 'No input argument' unless uuid
     preload_collections_for_objects([uuid])
     @all_collections_for[uuid] ||= []
   end
@@ -548,6 +549,8 @@ class ApplicationController < ActionController::Base
   # helper method to get log collections for the given log
   helper_method :log_collections_for_object
   def log_collections_for_object log
+    raise ArgumentError, 'No input argument' unless log
+
     preload_log_collections_for_objects([log])
 
     uuid = log
@@ -596,6 +599,7 @@ class ApplicationController < ActionController::Base
   # helper method to get object of a given dataclass and uuid
   helper_method :object_for_dataclass
   def object_for_dataclass dataclass, uuid
+    raise ArgumentError, 'No input argument dataclass' unless (dataclass && uuid)
     preload_objects_for_dataclass(dataclass, [uuid])
     @objects_for[uuid]
   end
@@ -605,7 +609,9 @@ class ApplicationController < ActionController::Base
   def preload_objects_for_dataclass dataclass, uuids
     @objects_for ||= {}
 
+    raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
     raise ArgumentError, 'Argument is not an array' unless uuids.is_a? Array
+
     return @all_collections_for if uuids.empty?
 
     # if already preloaded for all of these uuids, return
