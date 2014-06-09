@@ -463,14 +463,19 @@ class ApplicationController < ActionController::Base
   def links_for_object object_or_uuid
     uuid = object_or_uuid.is_a?(String) ? object_or_uuid : object_or_uuid.uuid
     preload_links_for_objects([object_or_uuid])
-    @all_links_for[uuid]
+
+    @all_links_for[uuid] ||= []
   end
 
   # helper method to preload links for given objects and uuids
   helper_method :preload_links_for_objects
   def preload_links_for_objects objects_and_uuids
-    uuids = objects_and_uuids.collect { |x| x.is_a?(String) ? x : x.uuid }
     @all_links_for ||= {}
+
+    raise ArgumentError, 'Argument is not an array' unless objects_and_uuids.is_a? Array
+    return @all_links_for if objects_and_uuids.empty?
+
+    uuids = objects_and_uuids.collect { |x| x.is_a?(String) ? x : x.uuid }
 
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @all_links_for[x].nil? }.any?
@@ -480,42 +485,46 @@ class ApplicationController < ActionController::Base
     uuids.each do |x|
       @all_links_for[x] = []
     end
+
     # TODO: make sure we get every page of results from API server
-    Link.filter([['head_uuid','in',uuids]]).each do |link|
+    Link.filter([['head_uuid', 'in', uuids]]).each do |link|
       @all_links_for[link.head_uuid] << link
     end
+    @all_links_for
   end
 
   # helper method to get a certain number of objects of a specific type
   # this can be used to replace any uses of: "dataclass.limit(n)"
   helper_method :get_n_objects_of_class
   def get_n_objects_of_class dataclass, size
-    # if the objects_map_for has a value for this dataclass, and the size used
-    # to retrieve those objects is greater than or equal to size, return it
+    @objects_map_for ||= {}
+
+    # if the objects_map_for has a value for this dataclass, and the
+    # size used to retrieve those objects is equal, return it
     size_key = "#{dataclass}_size"
-    if @objects_map_for && @objects_map_for[dataclass] && @objects_map_for[size_key] &&
-        (@objects_map_for[size_key] >= size)
+    if @objects_map_for[dataclass] && @objects_map_for[size_key] &&
+        (@objects_map_for[size_key] == size)
       return @objects_map_for[dataclass]
     end
 
-    @objects_map_for = {}
-    @objects_map_for[dataclass] = dataclass.limit(size)
     @objects_map_for[size_key] = size
-
-    return @objects_map_for[dataclass]
+    @objects_map_for[dataclass] = dataclass.limit(size)
   end
 
   # helper method to get collections for the given uuid
   helper_method :collections_for_object
   def collections_for_object uuid
     preload_collections_for_objects([uuid])
-    @all_collections_for[uuid]
+    @all_collections_for[uuid] ||= []
   end
 
   # helper method to preload collections for the given uuids
   helper_method :preload_collections_for_objects
   def preload_collections_for_objects uuids
     @all_collections_for ||= {}
+
+    raise ArgumentError, 'Argument is not an array' unless uuids.is_a? Array
+    return @all_collections_for if uuids.empty?
 
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @all_collections_for[x].nil? }.any?
@@ -530,28 +539,42 @@ class ApplicationController < ActionController::Base
     Collection.where(uuid: uuids).each do |collection|
       @all_collections_for[collection.uuid] << collection
     end
+    @all_collections_for
   end
 
   # helper method to get log collections for the given log
   helper_method :log_collections_for_object
   def log_collections_for_object log
+    preload_log_collections_for_objects([log])
+
+    uuid = log
     fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
-    uuid = fixup[1]
-    preload_log_collections_for_objects([uuid])
-    @all_log_collections_for[uuid]
+    if fixup && fixup.size>1
+      uuid = fixup[1]
+    end
+
+    @all_log_collections_for[uuid] ||= []
   end
 
   # helper method to preload collections for the given uuids
   helper_method :preload_log_collections_for_objects
   def preload_log_collections_for_objects logs
+    @all_log_collections_for ||= {}
+
+    raise ArgumentError, 'Argument is not an array' unless logs.is_a? Array
+    return @all_log_collections_for if logs.empty?
+
     uuids = []
     logs.each do |log|
       fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
-      uuids << fixup[1]
+      if fixup && fixup.size>1
+        uuids << fixup[1]
+      else
+        uuids << log
+      end
     end
 
     # if already preloaded for all of these uuids, return
-    @all_log_collections_for ||= {}
     if not uuids.select { |x| @all_log_collections_for[x].nil? }.any?
       return
     end
@@ -564,6 +587,7 @@ class ApplicationController < ActionController::Base
     Collection.where(uuid: uuids).each do |collection|
       @all_log_collections_for[collection.uuid] << collection
     end
+    @all_log_collections_for
   end
 
   # helper method to get object of a given dataclass and uuid
@@ -578,6 +602,9 @@ class ApplicationController < ActionController::Base
   def preload_objects_for_dataclass dataclass, uuids
     @objects_for ||= {}
 
+    raise ArgumentError, 'Argument is not an array' unless uuids.is_a? Array
+    return @all_collections_for if uuids.empty?
+
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @objects_for[x].nil? }.any?
       return
@@ -586,6 +613,7 @@ class ApplicationController < ActionController::Base
     dataclass.where(uuid: uuids).each do |obj|
       @objects_for[obj.uuid] = obj
     end
+    @objects_for
   end
 
 end
