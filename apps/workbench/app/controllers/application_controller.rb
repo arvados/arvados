@@ -105,7 +105,6 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      puts f
       f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
         if params['tab_pane']

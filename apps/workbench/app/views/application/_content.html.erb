@@ -1,6 +1,6 @@
 <% content_for :js do %>
   function ajaxRefreshTabPane(pane) {
-    $.ajax('<%= url_for @object %>?tab_pane='+pane, {dataType: 'html', type: 'GET'}).
+    $.ajax('<%=j url_for @object %>?tab_pane='+pane, {dataType: 'html', type: 'GET'}).
       done(function(data, status, jqxhr) {
         $('#' + pane + ' > div > div').html(data);
         $(document).trigger('ajax:complete')
@@ -42,7 +42,7 @@
 <% content_for :js do %>
   <% if i != 0 %>
     $(document).on('ready', function() {
-      ajaxRefreshTabPane('<%= pane %>');
+      ajaxRefreshTabPane('<%=j pane %>');
     });
   <% end %>
 <% end %>
