@@ -499,16 +499,19 @@ class ApplicationController < ActionController::Base
   def get_n_objects_of_class dataclass, size
     @objects_map_for ||= {}
 
+    raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
+    raise ArgumentError, 'Argument is not a valid limit size' unless (size && size>0)
+
     # if the objects_map_for has a value for this dataclass, and the
     # size used to retrieve those objects is equal, return it
-    size_key = "#{dataclass}_size"
-    if @objects_map_for[dataclass] && @objects_map_for[size_key] &&
+    size_key = "#{dataclass.name}_size"
+    if @objects_map_for[dataclass.name] && @objects_map_for[size_key] &&
         (@objects_map_for[size_key] == size)
-      return @objects_map_for[dataclass]
+      return @objects_map_for[dataclass.name]
     end
 
     @objects_map_for[size_key] = size
-    @objects_map_for[dataclass] = dataclass.limit(size)
+    @objects_map_for[dataclass.name] = dataclass.limit(size)
   end
 
   # helper method to get collections for the given uuid

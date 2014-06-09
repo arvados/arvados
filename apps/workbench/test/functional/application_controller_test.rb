@@ -102,6 +102,75 @@ class ApplicationControllerTest < ActionController::TestCase
     assert links.size == 0, 'Expected no objects in the preloaded links hash'
   end
 
+  test "get 10 objects of data class user" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    uuid = api_fixture('users')['active']['uuid']
+
+    dataclass = ArvadosBase.resource_class_for_uuid(uuid)
+    objects = ac.send :get_n_objects_of_class, dataclass, 10
+
+    assert objects, 'Expected objects'
+    assert objects.is_a?(ArvadosResourceList), 'Expected an ArvadosResourceList'
+
+    first_object = objects.first
+    assert first_object, 'Expected at least one object'
+    assert_equal 'User', first_object.class.name, 'Expected user object'
+
+    # invoke it again. this time, the preloaded info will be returned
+    objects = ac.send :get_n_objects_of_class, dataclass, 10
+    assert objects, 'Expected objects'
+    assert_equal 'User', objects.first.class.name, 'Expected user object'
+  end
+
+  test "get objects for incorrect input" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    assert_raise ArgumentError do
+      ac.send :get_n_objects_of_class, 'User', 10
+    end
+  end
+
+  test "get objects for nil data class" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    assert_raise ArgumentError do
+      ac.send :get_n_objects_of_class, nil, 10
+    end
+  end
+
+  test "get objects of data class user with no limit specified" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    uuid = api_fixture('users')['active']['uuid']
+
+    dataclass = ArvadosBase.resource_class_for_uuid(uuid)
+    assert_raise ArgumentError do
+      ac.send :get_n_objects_of_class, dataclass
+    end
+  end
+
+  test "get objects of data class user with incorrect limit size" do
+    use_token :active
+
+    ac = ApplicationController.new
+
+    uuid = api_fixture('users')['active']['uuid']
+
+    dataclass = ArvadosBase.resource_class_for_uuid(uuid)
+    assert_raise ArgumentError do
+      ac.send :get_n_objects_of_class, dataclass, 0
+    end
+  end
+
   test "collections for object" do
     use_token :active
 
