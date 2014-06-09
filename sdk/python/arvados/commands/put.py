@@ -19,118 +19,122 @@ import arvados.commands._util as arv_cmd
 
 CAUGHT_SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]
 
+upload_opts = argparse.ArgumentParser(add_help=False)
+
+upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
+                    help="""
+Local file or directory. Default: read from standard input.
+""")
+
+upload_opts.add_argument('--max-manifest-depth', type=int, metavar='N',
+                    default=-1, help="""
+Maximum depth of directory tree to represent in the manifest
+structure. A directory structure deeper than this will be represented
+as a single stream in the manifest. If N=0, the manifest will contain
+a single stream. Default: -1 (unlimited), i.e., exactly one manifest
+stream per filesystem directory that contains files.
+""")
+
+_group = upload_opts.add_mutually_exclusive_group()
+
+_group.add_argument('--as-stream', action='store_true', dest='stream',
+                   help="""
+Synonym for --stream.
+""")
+
+_group.add_argument('--stream', action='store_true',
+                   help="""
+Store the file content and display the resulting manifest on
+stdout. Do not write the manifest to Keep or save a Collection object
+in Arvados.
+""")
+
+_group.add_argument('--as-manifest', action='store_true', dest='manifest',
+                   help="""
+Synonym for --manifest.
+""")
+
+_group.add_argument('--in-manifest', action='store_true', dest='manifest',
+                   help="""
+Synonym for --manifest.
+""")
+
+_group.add_argument('--manifest', action='store_true',
+                   help="""
+Store the file data and resulting manifest in Keep, save a Collection
+object in Arvados, and display the manifest locator (Collection uuid)
+on stdout. This is the default behavior.
+""")
+
+_group.add_argument('--as-raw', action='store_true', dest='raw',
+                   help="""
+Synonym for --raw.
+""")
+
+_group.add_argument('--raw', action='store_true',
+                   help="""
+Store the file content and display the data block locators on stdout,
+separated by commas, with a trailing newline. Do not store a
+manifest.
+""")
+
+upload_opts.add_argument('--use-filename', type=str, default=None,
+                    dest='filename', help="""
+Synonym for --filename.
+""")
+
+upload_opts.add_argument('--filename', type=str, default=None,
+                    help="""
+Use the given filename in the manifest, instead of the name of the
+local file. This is useful when "-" or "/dev/stdin" is given as an
+input file. It can be used only if there is exactly one path given and
+it is not a directory. Implies --manifest.
+""")
+
+run_opts = argparse.ArgumentParser(add_help=False)
+_group = run_opts.add_mutually_exclusive_group()
+_group.add_argument('--progress', action='store_true',
+                   help="""
+Display human-readable progress on stderr (bytes and, if possible,
+percentage of total data size). This is the default behavior when
+stderr is a tty.
+""")
+
+_group.add_argument('--no-progress', action='store_true',
+                   help="""
+Do not display human-readable progress on stderr, even if stderr is a
+tty.
+""")
+
+_group.add_argument('--batch-progress', action='store_true',
+                   help="""
+Display machine-readable progress on stderr (bytes and, if known,
+total data size).
+""")
+
+_group = run_opts.add_mutually_exclusive_group()
+_group.add_argument('--resume', action='store_true', default=True,
+                   help="""
+Continue interrupted uploads from cached state (default).
+""")
+_group.add_argument('--no-resume', action='store_false', dest='resume',
+                   help="""
+Do not continue interrupted uploads from cached state.
+""")
+
+arg_parser = argparse.ArgumentParser(
+    description='Copy data from the local filesystem to Keep.',
+    parents=[upload_opts, run_opts])
+
 def parse_arguments(arguments):
-    parser = argparse.ArgumentParser(
-        description='Copy data from the local filesystem to Keep.')
-
-    parser.add_argument('paths', metavar='path', type=str, nargs='*',
-                        help="""
-    Local file or directory. Default: read from standard input.
-    """)
-
-    parser.add_argument('--max-manifest-depth', type=int, metavar='N',
-                        default=-1, help="""
-    Maximum depth of directory tree to represent in the manifest
-    structure. A directory structure deeper than this will be represented
-    as a single stream in the manifest. If N=0, the manifest will contain
-    a single stream. Default: -1 (unlimited), i.e., exactly one manifest
-    stream per filesystem directory that contains files.
-    """)
-
-    group = parser.add_mutually_exclusive_group()
-
-    group.add_argument('--as-stream', action='store_true', dest='stream',
-                       help="""
-    Synonym for --stream.
-    """)
-
-    group.add_argument('--stream', action='store_true',
-                       help="""
-    Store the file content and display the resulting manifest on
-    stdout. Do not write the manifest to Keep or save a Collection object
-    in Arvados.
-    """)
-
-    group.add_argument('--as-manifest', action='store_true', dest='manifest',
-                       help="""
-    Synonym for --manifest.
-    """)
-
-    group.add_argument('--in-manifest', action='store_true', dest='manifest',
-                       help="""
-    Synonym for --manifest.
-    """)
-
-    group.add_argument('--manifest', action='store_true',
-                       help="""
-    Store the file data and resulting manifest in Keep, save a Collection
-    object in Arvados, and display the manifest locator (Collection uuid)
-    on stdout. This is the default behavior.
-    """)
-
-    group.add_argument('--as-raw', action='store_true', dest='raw',
-                       help="""
-    Synonym for --raw.
-    """)
-
-    group.add_argument('--raw', action='store_true',
-                       help="""
-    Store the file content and display the data block locators on stdout,
-    separated by commas, with a trailing newline. Do not store a
-    manifest.
-    """)
-
-    parser.add_argument('--use-filename', type=str, default=None,
-                        dest='filename', help="""
-    Synonym for --filename.
-    """)
-
-    parser.add_argument('--filename', type=str, default=None,
-                        help="""
-    Use the given filename in the manifest, instead of the name of the
-    local file. This is useful when "-" or "/dev/stdin" is given as an
-    input file. It can be used only if there is exactly one path given and
-    it is not a directory. Implies --manifest.
-    """)
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--progress', action='store_true',
-                       help="""
-    Display human-readable progress on stderr (bytes and, if possible,
-    percentage of total data size). This is the default behavior when
-    stderr is a tty.
-    """)
-
-    group.add_argument('--no-progress', action='store_true',
-                       help="""
-    Do not display human-readable progress on stderr, even if stderr is a
-    tty.
-    """)
-
-    group.add_argument('--batch-progress', action='store_true',
-                       help="""
-    Display machine-readable progress on stderr (bytes and, if known,
-    total data size).
-    """)
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--resume', action='store_true', default=True,
-                       help="""
-    Continue interrupted uploads from cached state (default).
-    """)
-    group.add_argument('--no-resume', action='store_false', dest='resume',
-                       help="""
-    Do not continue interrupted uploads from cached state.
-    """)
-
-    args = parser.parse_args(arguments)
+    args = arg_parser.parse_args(arguments)
 
     if len(args.paths) == 0:
         args.paths += ['/dev/stdin']
 
     if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
         if args.filename:
-            parser.error("""
+            arg_parser.error("""
     --filename argument cannot be used when storing a directory or
     multiple files.
     """)
