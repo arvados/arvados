@@ -612,7 +612,7 @@ class ApplicationController < ActionController::Base
     raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
     raise ArgumentError, 'Argument is not an array' unless uuids.is_a? Array
 
-    return @all_collections_for if uuids.empty?
+    return @objects_for if uuids.empty?
 
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @objects_for[x].nil? }.any?
