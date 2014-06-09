@@ -139,6 +139,8 @@ GEM
       pg
       rails (~> 3.1)
     polyglot (0.3.4)
+    puma (2.8.2)
+      rack (>= 1.1, < 2.0)
     rack (1.4.5)
     rack-cache (1.2)
       rack (>= 0.4)
@@ -226,6 +228,7 @@ DEPENDENCIES
   passenger
   pg
   pg_power
+  puma
   rails (~> 3.2.0)
   rvm-capistrano
   sass-rails (>= 3.2.0)
