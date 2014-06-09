@@ -167,6 +167,8 @@ class CollectionsController < ApplicationController
                                                                :direction => :top_down,
                                                                :combine_jobs => :script_only,
                                                                :pdata_only => true}) rescue nil
+
+    super
   end
 
   def sharing_popup
