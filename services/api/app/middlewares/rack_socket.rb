@@ -69,7 +69,7 @@ class RackSocket
   def call env
     request = Rack::Request.new(env)
     if request.path_info == @endpoint and Faye::WebSocket.websocket?(env)
-      ws = Faye::WebSocket.new(env)
+      ws = Faye::WebSocket.new(env, nil, :ping => 30)
 
       # Notify handler about new connection
       @handler.on_connect ws
