@@ -136,7 +136,11 @@ class Dispatcher
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
                          Server::Application.config.crunch_job_user,
-                         "PERLLIB=#{ENV['PERLLIB']}")
+                         "PATH=#{ENV['PATH']}",
+                         "PERLLIB=#{ENV['PERLLIB']}",
+                         "PYTHONPATH=#{ENV['PYTHONPATH']}",
+                         "RUBYLIB=#{ENV['RUBYLIB']}",
+                         "GEM_PATH=#{ENV['GEM_PATH']}")
       end
 
       job_auth = ApiClientAuthorization.

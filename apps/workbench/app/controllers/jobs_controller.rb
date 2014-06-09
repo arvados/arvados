@@ -33,6 +33,11 @@ class JobsController < ApplicationController
     super
   end
 
+  def cancel
+    @object.cancel
+    redirect_to @object
+  end
+
   def show
     generate_provenance([@object])
     super
@@ -47,6 +52,6 @@ class JobsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Attributes Provenance Metadata JSON API)
+    %w(Status Attributes Provenance Metadata JSON API)
   end
 end

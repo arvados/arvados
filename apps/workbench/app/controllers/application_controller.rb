@@ -160,9 +160,18 @@ class ApplicationController < ActionController::Base
     @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
     @new_resource_attrs ||= {}
     @new_resource_attrs.reject! { |k,v| k.to_s == 'uuid' }
-    @object ||= model_class.new @new_resource_attrs
-    @object.save!
-    show
+    @object ||= model_class.new @new_resource_attrs, params["options"]
+    if @object.save
+      respond_to do |f|
+        f.json { render json: @object.attributes.merge(href: url_for(@object)) }
+        f.html {
+          redirect_to @object
+        }
+        f.js { render }
+      end
+    else
+      self.render_error status: 422
+    end
   end
 
   def destroy

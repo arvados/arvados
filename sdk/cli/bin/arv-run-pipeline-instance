@@ -578,7 +578,7 @@ class WhRunPipelineInstance
     failed = 0
     @components.each do |cname, c|
       if c[:job]
-        if c[:job][:finished_at]
+        if c[:job][:finished_at] or c[:job][:cancelled_at] or (c[:job][:running] == false and c[:job][:success] == false)
           ended += 1
           if c[:job][:success] == true
             succeeded += 1
