@@ -479,7 +479,7 @@ class ApplicationController < ActionController::Base
 
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @all_links_for[x].nil? }.any?
-      return
+      return @all_links_for
     end
 
     uuids.each do |x|
@@ -531,7 +531,7 @@ class ApplicationController < ActionController::Base
 
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @all_collections_for[x].nil? }.any?
-      return
+      return @all_collections_for
     end
 
     uuids.each do |x|
@@ -579,7 +579,7 @@ class ApplicationController < ActionController::Base
 
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @all_log_collections_for[x].nil? }.any?
-      return
+      return @all_log_collections_for
     end
 
     uuids.each do |x|
@@ -610,7 +610,7 @@ class ApplicationController < ActionController::Base
 
     # if already preloaded for all of these uuids, return
     if not uuids.select { |x| @objects_for[x].nil? }.any?
-      return
+      return @objects_for
     end
 
     dataclass.where(uuid: uuids).each do |obj|

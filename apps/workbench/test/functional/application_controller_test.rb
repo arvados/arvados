@@ -68,6 +68,13 @@ class ApplicationControllerTest < ActionController::TestCase
     assert links[link1_head_uuid], 'Expected links for the passed in link head_uuid'
     assert links[link2_object_uuid], 'Expected links for the passed in object uuid'
     assert links[link3_head_uuid], 'Expected links for the passed in link head_uuid'
+
+    # invoke again for this same input. this time, the preloaded data will be returned
+    links = ac.send :preload_links_for_objects, uuids
+    assert links, 'Expected links'
+    assert links.is_a?(Hash), 'Expected a hash'
+    assert links.size == 3, 'Expected two objects in the preloaded links hash'
+    assert links[link1_head_uuid], 'Expected links for the passed in link head_uuid'
   end
 
   test "preload links for wrong typed input" do
@@ -216,6 +223,13 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_equal collections[uuid1].size, 1, 'Expected one collection for the passed in uuid'
     assert collections[uuid2], 'Expected collections for the passed in uuid'
     assert_equal collections[uuid2].size, 1, 'Expected one collection for the passed in uuid'
+
+    # invoke again for this same input. this time, the preloaded data will be returned
+    collections = ac.send :preload_collections_for_objects, uuids
+    assert collections, 'Expected collection'
+    assert collections.is_a?(Hash), 'Expected a hash'
+    assert collections.size == 2, 'Expected two objects in the preloaded collection hash'
+    assert collections[uuid1], 'Expected collections for the passed in uuid'
   end
 
   test "preload collections for wrong typed input" do
