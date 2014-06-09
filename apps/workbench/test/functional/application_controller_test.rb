@@ -2,6 +2,10 @@ require 'test_helper'
 
 class ApplicationControllerTest < ActionController::TestCase
 
+  setup do
+    @user_dataclass = ArvadosBase.resource_class_for_uuid(api_fixture('users')['active']['uuid'])
+  end
+
   test "links for object" do
     use_token :active
 
@@ -29,25 +33,17 @@ class ApplicationControllerTest < ActionController::TestCase
     assert links.size == 0, 'Expected no links'
   end
 
-  test "preload links for given uuids" do
+  test "links for nil object" do
     use_token :active
 
     ac = ApplicationController.new
 
-    link_head_uuid1 = api_fixture('links')['foo_file_readable_by_active']['head_uuid']
-    link_head_uuid2 = api_fixture('links')['bar_file_readable_by_active']['head_uuid']
-
-    uuids = [link_head_uuid1, link_head_uuid2]
-    links = ac.send :preload_links_for_objects, uuids
-
-    assert links, 'Expected links'
-    assert links.is_a?(Hash), 'Expected a hash'
-    assert links.size == 2, 'Expected two objects in the preloaded links hash'
-    assert links[link_head_uuid1], 'Expected links for the passed in head_uuid'
-    assert links[link_head_uuid2], 'Expected links for the passed in head_uuid'
+    assert_raise ArgumentError do
+      ac.send :links_for_object, nil
+    end
   end
 
-  test "preload links for object and uuids" do
+  test "preload links for objects and uuids" do
     use_token :active
 
     ac = ApplicationController.new
@@ -77,26 +73,6 @@ class ApplicationControllerTest < ActionController::TestCase
     assert links[link1_head_uuid], 'Expected links for the passed in link head_uuid'
   end
 
-  test "preload links for wrong typed input" do
-    use_token :active
-
-    ac = ApplicationController.new
-
-    assert_raise ArgumentError do
-      ac.send :preload_links_for_objects, 'input not an array'
-    end
-  end
-
-  test "preload links for nil input" do
-    use_token :active
-
-    ac = ApplicationController.new
-
-    assert_raise ArgumentError do
-      ac.send :preload_links_for_objects, nil
-    end
-  end
-
   test "preload links for empty array input" do
     use_token :active
 
@@ -109,15 +85,32 @@ class ApplicationControllerTest < ActionController::TestCase
     assert links.size == 0, 'Expected no objects in the preloaded links hash'
   end
 
+  [ [:preload_links_for_objects, 'input not an array'],
+    [:preload_links_for_objects, nil],
+    [:preload_collections_for_objects, 'input not an array'],
+    [:preload_collections_for_objects, nil],
+    [:preload_log_collections_for_objects, 'input not an array'],
+    [:preload_log_collections_for_objects, nil],
+    [:preload_objects_for_dataclass, 'input not an array'],
+    [:preload_objects_for_dataclass, nil],    
+  ].each do |input|
+    test "preload links for wrong type input #{input}" do
+      use_token :active
+
+      ac = ApplicationController.new
+
+      assert_raise ArgumentError do
+        ac.send input[0], input[1]
+      end
+    end
+  end
+
   test "get 10 objects of data class user" do
     use_token :active
 
     ac = ApplicationController.new
 
-    uuid = api_fixture('users')['active']['uuid']
-
-    dataclass = ArvadosBase.resource_class_for_uuid(uuid)
-    objects = ac.send :get_n_objects_of_class, dataclass, 10
+    objects = ac.send :get_n_objects_of_class, @user_dataclass, 10
 
     assert objects, 'Expected objects'
     assert objects.is_a?(ArvadosResourceList), 'Expected an ArvadosResourceList'
@@ -127,54 +120,24 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_equal 'User', first_object.class.name, 'Expected user object'
 
     # invoke it again. this time, the preloaded info will be returned
-    objects = ac.send :get_n_objects_of_class, dataclass, 10
+    objects = ac.send :get_n_objects_of_class, @user_dataclass, 10
     assert objects, 'Expected objects'
     assert_equal 'User', objects.first.class.name, 'Expected user object'
   end
 
-  test "get objects for incorrect input" do
-    use_token :active
+  [ ['User', 10],
+    [nil, 10],
+    [@user_dataclass, 0],
+    [@user_dataclass, -1],
+    [@user_dataclass, nil] ].each do |input|
+    test "get_n_objects for incorrect input #{input}" do
+      use_token :active
 
-    ac = ApplicationController.new
+      ac = ApplicationController.new
 
-    assert_raise ArgumentError do
-      ac.send :get_n_objects_of_class, 'User', 10
-    end
-  end
-
-  test "get objects for nil data class" do
-    use_token :active
-
-    ac = ApplicationController.new
-
-    assert_raise ArgumentError do
-      ac.send :get_n_objects_of_class, nil, 10
-    end
-  end
-
-  test "get objects of data class user with no limit specified" do
-    use_token :active
-
-    ac = ApplicationController.new
-
-    uuid = api_fixture('users')['active']['uuid']
-
-    dataclass = ArvadosBase.resource_class_for_uuid(uuid)
-    assert_raise ArgumentError do
-      ac.send :get_n_objects_of_class, dataclass
-    end
-  end
-
-  test "get objects of data class user with incorrect limit size" do
-    use_token :active
-
-    ac = ApplicationController.new
-
-    uuid = api_fixture('users')['active']['uuid']
-
-    dataclass = ArvadosBase.resource_class_for_uuid(uuid)
-    assert_raise ArgumentError do
-      ac.send :get_n_objects_of_class, dataclass, 0
+      assert_raise ArgumentError do
+        ac.send :get_n_objects_of_class, input[0], input[1]
+      end
     end
   end
 
@@ -202,7 +165,7 @@ class ApplicationControllerTest < ActionController::TestCase
 
     assert collections, 'Expected collections'
     assert collections.is_a?(Array), 'Expected an array'
-    assert collections.size == 0, 'Expected no collection'
+    assert collections.size == 0, 'Expected no collections in response'
   end
 
   test "preload collections for given uuids" do
@@ -232,26 +195,6 @@ class ApplicationControllerTest < ActionController::TestCase
     assert collections[uuid1], 'Expected collections for the passed in uuid'
   end
 
-  test "preload collections for wrong typed input" do
-    use_token :active
-
-    ac = ApplicationController.new
-
-    assert_raise ArgumentError do
-      ac.send :preload_collections_for_objects, 'input not an array'
-    end
-  end
-
-  test "preload collections for nil input" do
-    use_token :active
-
-    ac = ApplicationController.new
-
-    assert_raise ArgumentError do
-      ac.send :preload_collections_for_objects, nil
-    end
-  end
-
   test "preload collections for empty array input" do
     use_token :active
 
@@ -263,4 +206,5 @@ class ApplicationControllerTest < ActionController::TestCase
     assert collections.is_a?(Hash), 'Expected a hash'
     assert collections.size == 0, 'Expected no objects in the preloaded collections hash'
   end
+
 end

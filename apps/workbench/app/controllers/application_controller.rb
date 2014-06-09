@@ -461,9 +461,9 @@ class ApplicationController < ActionController::Base
   # helper method to get links for given object or uuid
   helper_method :links_for_object
   def links_for_object object_or_uuid
-    uuid = object_or_uuid.is_a?(String) ? object_or_uuid : object_or_uuid.uuid
+    raise ArgumentError, 'No input argument' unless object_or_uuid
     preload_links_for_objects([object_or_uuid])
-
+    uuid = object_or_uuid.is_a?(String) ? object_or_uuid : object_or_uuid.uuid
     @all_links_for[uuid] ||= []
   end
 
