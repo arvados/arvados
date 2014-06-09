@@ -15,6 +15,8 @@ import signal
 import sys
 import tempfile
 
+import arvados.commands._util as arv_cmd
+
 CAUGHT_SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]
 
 def parse_arguments(arguments):
@@ -150,17 +152,11 @@ class ResumeCacheConflict(Exception):
 
 
 class ResumeCache(object):
-    CACHE_DIR = os.path.expanduser('~/.cache/arvados/arv-put')
+    CACHE_DIR = '.cache/arvados/arv-put'
 
     @classmethod
     def setup_user_cache(cls):
-        try:
-            os.makedirs(cls.CACHE_DIR)
-        except OSError as error:
-            if error.errno != errno.EEXIST:
-                raise
-        else:
-            os.chmod(cls.CACHE_DIR, 0o700)
+        return arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700)
 
     def __init__(self, file_spec):
         self.cache_file = open(file_spec, 'a+')
@@ -339,16 +335,18 @@ def main(arguments=None):
         reporter = None
     bytes_expected = expected_bytes_for(args.paths)
 
+    resume_cache = None
     try:
-        ResumeCache.setup_user_cache()
-        resume_cache = ResumeCache(ResumeCache.make_path(args))
+        if ResumeCache.setup_user_cache() is not None:
+            resume_cache = ResumeCache(ResumeCache.make_path(args))
     except (IOError, OSError):
-        # Couldn't open cache directory/file.  Continue without it.
-        resume_cache = None
-        writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
+        pass  # Couldn't open cache directory/file.  Continue without it.
     except ResumeCacheConflict:
         print "arv-put: Another process is already uploading this data."
         sys.exit(1)
+
+    if resume_cache is None:
+        writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
     else:
         if not args.resume:
             resume_cache.restart()
