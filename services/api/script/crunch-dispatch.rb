@@ -143,28 +143,22 @@ class Dispatcher
   def nodes_available_for_job(job)
     # Check if there are enough idle nodes with the Job's minimum
     # hardware requirements to run it.  If so, return an array of
-    # their names.  If not, we'll wait a little bit to see if the Node
-    # Manager makes some available--up to five minutes every
-    # hour--before returning nil.
+    # their names.  If not, up to once per hour, signal start_jobs to
+    # hold off launching Jobs.  This delay is meant to give the Node
+    # Manager an opportunity to make new resources available for new
+    # Jobs.
     #
     # The exact timing parameters here might need to be adjusted for
     # the best balance between helping the longest-waiting Jobs run,
     # and making efficient use of immediately available resources.
     # These are all just first efforts until we have more data to work
     # with.
-    if nodelist = nodes_available_for_job_now(job)
-      nodelist
-    elsif did_recently(:wait_for_available_nodes, 3600)
-      nil
-    else
+    nodelist = nodes_available_for_job_now(job)
+    if nodelist.nil? and not did_recently(:wait_for_available_nodes, 3600)
       $stderr.puts "dispatch: waiting for nodes for #{job.uuid}"
-      deadline = Time.now + 300
-      while (Time.now < deadline) and not $signal[:term]
-        sleep(60)
-        break if nodelist = nodes_available_for_job_now(job)
-      end
-      nodelist
+      @node_wait_deadline = Time.now + 5.minutes
     end
+    nodelist
   end
 
   def start_jobs
@@ -177,7 +171,13 @@ class Dispatcher
         cmd_args = []
       when :slurm_immediate
         nodelist = nodes_available_for_job(job)
-        next if nodelist.nil?
+        if nodelist.nil?
+          if Time.now < @node_wait_deadline
+            break
+          else
+            next
+          end
+        end
         cmd_args = ["salloc",
                     "--chdir=/",
                     "--immediate",
