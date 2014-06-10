@@ -57,6 +57,9 @@ $(document).
                         $(this).editable('option', 'url', response.href);
                     }
                     return;
+                },
+                error: function(response, newValue) {
+                    return response.responseJSON.errors.join();
                 }
             }).
             on('hidden', function(e, reason) {
