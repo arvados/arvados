@@ -63,6 +63,22 @@ class ApplicationController < ActionController::Base
     self.render_error status: 404
   end
 
+  def render_index
+    respond_to do |f|
+      f.json { render json: @objects }
+      f.html {
+        if params['tab_pane']
+          comparable = self.respond_to? :compare
+          render(partial: 'show_' + params['tab_pane'].downcase,
+                 locals: { comparable: comparable, objects: @objects })
+        else
+          render
+        end
+      }
+      f.js { render }
+    end
+  end
+
   def index
     @limit ||= 200
     if params[:limit]
@@ -85,11 +101,7 @@ class ApplicationController < ActionController::Base
 
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
-    respond_to do |f|
-      f.json { render json: @objects }
-      f.html { render }
-      f.js { render }
-    end
+    render_index
   end
 
   def show
@@ -99,10 +111,16 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
-        if request.method == 'GET'
-          render
+        if params['tab_pane']
+          comparable = self.respond_to? :compare
+          render(partial: 'show_' + params['tab_pane'].downcase,
+                 locals: { comparable: comparable, objects: @objects })
         else
-          redirect_to params[:return_to] || @object
+          if request.method == 'GET'
+            render
+          else
+            redirect_to params[:return_to] || @object
+          end
         end
       }
       f.js { render }
@@ -174,8 +192,18 @@ class ApplicationController < ActionController::Base
   end
 
   def current_user
+    return Thread.current[:user] if Thread.current[:user]
+
     if Thread.current[:arvados_api_token]
-      Thread.current[:user] ||= User.current
+      if session[:user]
+        if session[:user][:is_active] != true
+          Thread.current[:user] = User.current
+        else
+          Thread.current[:user] = User.new(session[:user])
+        end
+      else
+        Thread.current[:user] = User.current
+      end
     else
       logger.error "No API token in Thread"
       return nil
@@ -269,6 +297,16 @@ class ApplicationController < ActionController::Base
         # call to verify its authenticity.
         if verify_api_token
           session[:arvados_api_token] = params[:api_token]
+          u = User.current
+          session[:user] = {
+            uuid: u.uuid,
+            email: u.email,
+            first_name: u.first_name,
+            last_name: u.last_name,
+            is_active: u.is_active,
+            is_admin: u.is_admin,
+            prefs: u.prefs
+          }
           if !request.format.json? and request.method == 'GET'
             # Repeat this request with api_token in the (new) session
             # cookie instead of the query string.  This prevents API
@@ -413,6 +451,8 @@ class ApplicationController < ActionController::Base
   }
 
   def check_user_notifications
+    return if params['tab_pane']
+
     @notification_count = 0
     @notifications = []
 

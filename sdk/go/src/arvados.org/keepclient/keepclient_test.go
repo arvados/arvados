@@ -1,6 +1,7 @@
 package keepclient
 
 import (
+	"arvados.org/sdk"
 	"arvados.org/streamer"
 	"crypto/md5"
 	"flag"
@@ -62,20 +63,12 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
-
-	kc, err := MakeKeepClient()
-	c.Check(kc.ApiServer, Equals, "localhost:3001")
-	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	c.Check(kc.ApiInsecure, Equals, false)
-
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
-	kc, err = MakeKeepClient()
-	c.Check(kc.ApiServer, Equals, "localhost:3001")
-	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
-	c.Check(kc.ApiInsecure, Equals, true)
-	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
+	arv, err := sdk.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+
+	kc, err := MakeKeepClient(&arv)
 
 	c.Assert(err, Equals, nil)
 	c.Check(len(kc.ServiceRoots()), Equals, 2)
@@ -133,8 +126,10 @@ func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	kc, _ := MakeKeepClient()
-	kc.ApiToken = "abc123"
+	arv, _ := sdk.MakeArvadosClient()
+	arv.ApiToken = "abc123"
+
+	kc, _ := MakeKeepClient(&arv)
 
 	reader, writer := io.Pipe()
 	upload_status := make(chan uploadStatus)
@@ -265,10 +260,11 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		"foo",
 		make(chan string, 2)}
 
-	kc, _ := MakeKeepClient()
+	arv, _ := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
-	kc.ApiToken = "abc123"
+	arv.ApiToken = "abc123"
 	service_roots := make([]string, 5)
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
@@ -306,10 +302,11 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		"foo",
 		make(chan string, 2)}
 
-	kc, _ := MakeKeepClient()
+	arv, _ := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
-	kc.ApiToken = "abc123"
+	arv.ApiToken = "abc123"
 	service_roots := make([]string, 5)
 
 	ks := RunSomeFakeKeepServers(st, 5, 2990)
@@ -359,10 +356,11 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	fh := FailHandler{
 		make(chan string, 1)}
 
-	kc, _ := MakeKeepClient()
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
-	kc.ApiToken = "abc123"
+	arv.ApiToken = "abc123"
 	service_roots := make([]string, 5)
 
 	ks1 := RunSomeFakeKeepServers(st, 4, 2990)
@@ -407,10 +405,11 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	fh := FailHandler{
 		make(chan string, 4)}
 
-	kc, _ := MakeKeepClient()
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
-	kc.ApiToken = "abc123"
+	arv.ApiToken = "abc123"
 	service_roots := make([]string, 5)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
@@ -466,8 +465,9 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	kc, _ := MakeKeepClient()
-	kc.ApiToken = "abc123"
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
 	kc.SetServiceRoots([]string{url})
 
 	r, n, url2, err := kc.Get(hash)
@@ -491,8 +491,9 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	kc, _ := MakeKeepClient()
-	kc.ApiToken = "abc123"
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
 	kc.SetServiceRoots([]string{url})
 
 	r, n, url2, err := kc.Get(hash)
@@ -520,8 +521,9 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	kc, _ := MakeKeepClient()
-	kc.ApiToken = "abc123"
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
 	kc.SetServiceRoots([]string{url})
 
 	r, n, _, err := kc.Get(barhash)
@@ -552,8 +554,9 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 		"abc123",
 		[]byte("foo")}
 
-	kc, _ := MakeKeepClient()
-	kc.ApiToken = "abc123"
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
 	service_roots := make([]string, 5)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
@@ -586,7 +589,8 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
-	kc, err := MakeKeepClient()
+	arv, err := sdk.MakeArvadosClient()
+	kc, err := MakeKeepClient(&arv)
 	c.Assert(err, Equals, nil)
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
@@ -634,11 +638,12 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 
 	st := StubProxyHandler{make(chan string, 1)}
 
-	kc, _ := MakeKeepClient()
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
 	kc.Using_proxy = true
-	kc.ApiToken = "abc123"
+	arv.ApiToken = "abc123"
 	service_roots := make([]string, 1)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)
@@ -664,11 +669,12 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 
 	st := StubProxyHandler{make(chan string, 1)}
 
-	kc, _ := MakeKeepClient()
+	arv, err := sdk.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 3
 	kc.Using_proxy = true
-	kc.ApiToken = "abc123"
+	arv.ApiToken = "abc123"
 	service_roots := make([]string, 1)
 
 	ks1 := RunSomeFakeKeepServers(st, 1, 2990)

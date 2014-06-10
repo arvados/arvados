@@ -18,6 +18,4 @@ account.</p>
 <%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', data: {confirm: "Are you sure you want to deactivate #{@object.full_name}?"} %>
 </blockquote>
 
-<% content_for :footer_html do %>
 <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
-<% end %>

@@ -4,7 +4,9 @@ class PipelineInstancesController < ApplicationController
   include PipelineInstancesHelper
 
   def graph(pipelines)
-    count = {}    
+    return nil, nil if params['tab_pane'] != "Graph"
+
+    count = {}
     provenance = {}
     pips = {}
     n = 1
@@ -43,7 +45,7 @@ class PipelineInstancesController < ApplicationController
         pips[uuid] = 0 unless pips[uuid] != nil
         pips[uuid] |= n
       end
-      
+
       n = n << 1
     end
 
@@ -60,13 +62,15 @@ class PipelineInstancesController < ApplicationController
     end
 
     provenance, pips = graph(@pipelines)
+    if provenance
+      @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
+        :request => request,
+        :all_script_parameters => true,
+        :combine_jobs => :script_and_version,
+        :script_version_nodes => true,
+        :pips => pips }
+    end
 
-    @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
-      :request => request,
-      :all_script_parameters => true, 
-      :combine_jobs => :script_and_version,
-      :script_version_nodes => true,
-      :pips => pips }
     super
   end
 
@@ -135,7 +139,7 @@ class PipelineInstancesController < ApplicationController
 
     @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
       :request => request,
-      :all_script_parameters => true, 
+      :all_script_parameters => true,
       :combine_jobs => :script_and_version,
       :script_version_nodes => true,
       :pips => pips }
@@ -149,9 +153,9 @@ class PipelineInstancesController < ApplicationController
     panes
   end
 
-  def compare_pane_list 
+  def compare_pane_list
     %w(Compare Graph)
-  end 
+  end
 
   def index
     @limit = 20

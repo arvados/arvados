@@ -15,7 +15,7 @@
       <% end %>
       <%= button_tag "Same as this run", {class: 'btn btn-primary', id: "re-run-same-job-button"} %>
     <% end %>
-  <% if !@object.supplied_script_version.nil? and !@object.supplied_script_version.empty? and @object.script_version != @object.supplied_script_version%>
+  <% if @object.respond_to? :supplied_script_version and !@object.supplied_script_version.nil? and !@object.supplied_script_version.empty? and @object.script_version != @object.supplied_script_version%>
       <%= form_tag '/jobs', style: "display:inline" do |f| %>
       <% [:script, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
         <%= hidden_field :job, d, :value => @object[d] %>
