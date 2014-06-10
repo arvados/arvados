@@ -299,6 +299,7 @@ class ApplicationController < ActionController::Base
           session[:arvados_api_token] = params[:api_token]
           u = User.current
           session[:user] = {
+            uuid: u.uuid,
             email: u.email,
             first_name: u.first_name,
             last_name: u.last_name,
