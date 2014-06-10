@@ -328,7 +328,7 @@ def progress_writer(progress_func, outfile=sys.stderr):
 def exit_signal_handler(sigcode, frame):
     sys.exit(-sigcode)
 
-def main(arguments=None):
+def main(arguments=None, output_to=sys.stdout):
     args = parse_arguments(arguments)
 
     if args.progress:
@@ -346,7 +346,8 @@ def main(arguments=None):
     except (IOError, OSError):
         pass  # Couldn't open cache directory/file.  Continue without it.
     except ResumeCacheConflict:
-        print "arv-put: Another process is already uploading this data."
+        output_to.write(
+            "arv-put: Another process is already uploading this data.\n")
         sys.exit(1)
 
     if resume_cache is None:
@@ -382,9 +383,9 @@ def main(arguments=None):
         print >>sys.stderr
 
     if args.stream:
-        print writer.manifest_text(),
+        output = writer.manifest_text()
     elif args.raw:
-        print ','.join(writer.data_locators())
+        output = ','.join(writer.data_locators())
     else:
         # Register the resulting collection in Arvados.
         collection = arvados.api().collections().create(
@@ -395,13 +396,19 @@ def main(arguments=None):
             ).execute()
 
         # Print the locator (uuid) of the new collection.
-        print collection['uuid']
+        output = collection['uuid']
+
+    output_to.write(output)
+    if not output.endswith('\n'):
+        output_to.write('\n')
 
     for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)
 
     if resume_cache is not None:
         resume_cache.destroy()
+
+    return output
 
 if __name__ == '__main__':
     main()
