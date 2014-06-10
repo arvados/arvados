@@ -71,8 +71,9 @@ def check_docker(proc, description):
 def _get_docker_images():
     # Yield a DockerImage tuple for each installed image.
     list_proc = popen_docker(['images', '--no-trunc'], stdout=subprocess.PIPE)
-    next(list_proc.stdout)  # Ignore the header line
-    for line in list_proc.stdout:
+    list_output = iter(list_proc.stdout)
+    next(list_output)  # Ignore the header line
+    for line in list_output:
         words = line.split()
         size_index = len(words) - 2
         repo, tag, imageid = words[:3]
