@@ -1,20 +1,30 @@
 <% content_for :js do %>
+  tab_pane_valid_state = {};
+
   function ajaxRefreshTabPane(pane) {
-    $.ajax('<%=j url_for @object %>?tab_pane='+pane, {dataType: 'html', type: 'GET'}).
-      done(function(data, status, jqxhr) {
-        $('#' + pane + ' > div > div').html(data);
-        $(document).trigger('ajax:complete')
-      });
+    if (!tab_pane_valid_state[pane]) {
+      tab_pane_valid_state[pane] = true;
+      $(document).trigger('ajax:send');
+      $.ajax('<%=j url_for @object %>?tab_pane='+pane, {dataType: 'html', type: 'GET'}).
+        done(function(data, status, jqxhr) {
+          $('#' + pane + ' > div > div').html(data);
+          $(document).trigger('ajax:complete');
+          ajaxRefreshTabPane(pane);
+        });
+    }
   }
 
   $(window).on('load', smart_scroll_fixup);
-
   $(document).on('shown.bs.tab', 'ul.nav-tabs > li > a', smart_scroll_fixup);
+
   $(document).on('shown.bs.tab', function(e) {
     ajaxRefreshTabPane(e.target.id.slice(0, -4));
   });
 
   $(document).on('arv-log-event', function() {
+    <% pane_list.each do |pane| %>
+    tab_pane_valid_state['<%=j pane %>'] = false;
+    <% end %>
     ajaxRefreshTabPane($('.tab-pane.active')[0].id);
   });
 <% end %>
@@ -40,7 +50,10 @@
 >
 
 <% content_for :js do %>
-  <% if i != 0 %>
+  <% if i == 0 %>
+    tab_pane_valid_state['<%=j pane %>'] = true;
+  <% else %>
+    tab_pane_valid_state['<%=j pane %>'] = false;
     $(document).on('ready', function() {
       ajaxRefreshTabPane('<%=j pane %>');
     });
