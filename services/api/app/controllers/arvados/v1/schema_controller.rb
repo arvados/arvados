@@ -367,7 +367,8 @@ class Arvados::V1::SchemaController < ApplicationController
                   method[:parameters][k] = {}
                 end
                 if !method[:parameters][k][:default].nil?
-                  method[:parameters][k][:default] = 'string'
+                  # The JAVA SDK is sensitive to all values being strings
+                  method[:parameters][k][:default] = method[:parameters][k][:default].to_s
                 end
                 method[:parameters][k][:type] ||= 'string'
                 method[:parameters][k][:description] ||= ''
