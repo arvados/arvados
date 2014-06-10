@@ -83,7 +83,7 @@ class ApplicationControllerTest < ActionController::TestCase
     [:preload_log_collections_for_objects, nil],
     [:log_collections_for_object, nil],
     [:preload_objects_for_dataclass, 'input not an array'],
-    [:preload_objects_for_dataclass, nil],    
+    [:preload_objects_for_dataclass, nil],
     [:object_for_dataclass, 'some_dataclass', nil],
     [:object_for_dataclass, nil, 'some_uuid'],
   ].each do |input|
