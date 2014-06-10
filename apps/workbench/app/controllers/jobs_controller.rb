@@ -27,10 +27,11 @@ class JobsController < ApplicationController
     if params[:uuid]
       @objects = Job.where(uuid: params[:uuid])
       generate_provenance(@objects)
+      render_index
     else
       @limit = 20
+      super
     end
-    render_index
   end
 
   def cancel
