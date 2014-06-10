@@ -89,7 +89,7 @@ class CollectionsController < ApplicationController
     end
     @request_url = request.url
 
-    super
+    render_index
   end
 
   def show_file_links

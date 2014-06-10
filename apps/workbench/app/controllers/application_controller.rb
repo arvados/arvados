@@ -63,6 +63,22 @@ class ApplicationController < ActionController::Base
     self.render_error status: 404
   end
 
+  def render_index
+    respond_to do |f|
+      f.json { render json: @objects }
+      f.html {
+        if params['tab_pane']
+          comparable = self.respond_to? :compare
+          render(partial: 'show_' + params['tab_pane'].downcase,
+                 locals: { comparable: comparable, objects: @objects })
+        else
+          render
+        end
+      }
+      f.js { render }
+    end
+  end
+
   def index
     @limit ||= 200
     if params[:limit]
@@ -85,19 +101,7 @@ class ApplicationController < ActionController::Base
 
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
-    respond_to do |f|
-      f.json { render json: @objects }
-      f.html {
-        if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
-        else
-          render
-        end
-      }
-      f.js { render }
-    end
+    render_index
   end
 
   def show

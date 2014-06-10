@@ -75,7 +75,7 @@ class FoldersController < ApplicationController
       sorted_paths.call({'Shared with me' =>
                           buildtree.call(children_of, false)})
 
-    super
+    render_index
   end
 
   def choose

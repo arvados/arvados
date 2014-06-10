@@ -30,7 +30,7 @@ class JobsController < ApplicationController
     else
       @limit = 20
     end
-    super
+    render_index
   end
 
   def cancel
