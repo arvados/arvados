@@ -2,6 +2,7 @@ package main
 
 import (
 	"arvados.org/keepclient"
+	"arvados.org/sdk"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -67,7 +68,12 @@ func main() {
 
 	flagset.Parse(os.Args[1:])
 
-	kc, err := keepclient.MakeKeepClient()
+	arv, err := sdk.MakeArvadosClient()
+	if err != nil {
+		log.Fatalf("Error setting up arvados client %s", err.Error())
+	}
+
+	kc, err := keepclient.MakeKeepClient(&arv)
 	if err != nil {
 		log.Fatalf("Error setting up keep client %s", err.Error())
 	}
@@ -205,28 +211,10 @@ func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, re
 		return true
 	}
 
-	var usersreq *http.Request
-
-	if usersreq, err = http.NewRequest("HEAD", fmt.Sprintf("https://%s/arvados/v1/users/current", kc.ApiServer), nil); err != nil {
-		// Can't construct the request
+	arv := *kc.Arvados
+	arv.ApiToken = tok
+	if err := arv.Call("HEAD", "users", "", "current", nil, nil); err != nil {
 		log.Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
-		return false
-	}
-
-	// Add api token header
-	usersreq.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", tok))
-
-	// Actually make the request
-	var resp *http.Response
-	if resp, err = kc.Client.Do(usersreq); err != nil {
-		// Something else failed
-		log.Printf("%s: CheckAuthorizationHeader error connecting to API server: %v", GetRemoteAddress(req), err.Error())
-		return false
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		// Bad status
-		log.Printf("%s: CheckAuthorizationHeader API server responded: %v", GetRemoteAddress(req), resp.Status)
 		return false
 	}
 

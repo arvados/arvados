@@ -2,6 +2,7 @@ package main
 
 import (
 	"arvados.org/keepclient"
+	"arvados.org/sdk"
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
@@ -108,7 +109,8 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 
 	os.Setenv("ARVADOS_KEEP_PROXY", fmt.Sprintf("http://localhost:%v", port))
 	os.Setenv("ARVADOS_API_TOKEN", token)
-	kc, err := keepclient.MakeKeepClient()
+	arv, err := sdk.MakeArvadosClient()
+	kc, err := keepclient.MakeKeepClient(&arv)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
 	c.Check(kc.ServiceRoots()[0], Equals, fmt.Sprintf("http://localhost:%v", port))
@@ -129,8 +131,9 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	setupProxyService()
 
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
-	kc, err := keepclient.MakeKeepClient()
-	c.Check(kc.External, Equals, true)
+	arv, err := sdk.MakeArvadosClient()
+	kc, err := keepclient.MakeKeepClient(&arv)
+	c.Check(kc.Arvados.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
 	c.Check(kc.ServiceRoots()[0], Equals, "http://localhost:29950")

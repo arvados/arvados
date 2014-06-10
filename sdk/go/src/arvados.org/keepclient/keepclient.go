@@ -2,16 +2,15 @@
 package keepclient
 
 import (
+	"arvados.org/sdk"
 	"arvados.org/streamer"
 	"crypto/md5"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -34,41 +33,22 @@ const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 
 // Information about Arvados and Keep servers.
 type KeepClient struct {
-	ApiServer     string
-	ApiToken      string
-	ApiInsecure   bool
+	Arvados       *sdk.ArvadosClient
 	Want_replicas int
-	Client        *http.Client
 	Using_proxy   bool
-	External      bool
 	service_roots *[]string
 	lock          sync.Mutex
+	Client        *http.Client
 }
 
-// Create a new KeepClient, initialized with standard Arvados environment
-// variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
-// ARVADOS_API_HOST_INSECURE.  This will contact the API server to discover
-// Keep servers.
-func MakeKeepClient() (kc KeepClient, err error) {
-	insecure := (os.Getenv("ARVADOS_API_HOST_INSECURE") == "true")
-	external := (os.Getenv("ARVADOS_EXTERNAL_CLIENT") == "true")
-
+// Create a new KeepClient.  This will contact the API server to discover Keep
+// servers.
+func MakeKeepClient(arv *sdk.ArvadosClient) (kc KeepClient, err error) {
 	kc = KeepClient{
-		ApiServer:     os.Getenv("ARVADOS_API_HOST"),
-		ApiToken:      os.Getenv("ARVADOS_API_TOKEN"),
-		ApiInsecure:   insecure,
+		Arvados:       arv,
 		Want_replicas: 2,
-		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
-		Using_proxy: false,
-		External:    external}
-
-	if os.Getenv("ARVADOS_API_HOST") == "" {
-		return kc, MissingArvadosApiHost
-	}
-	if os.Getenv("ARVADOS_API_TOKEN") == "" {
-		return kc, MissingArvadosApiToken
-	}
+		Using_proxy:   false,
+		Client:        &http.Client{Transport: &http.Transport{}}}
 
 	err = (&kc).DiscoverKeepServers()
 
@@ -169,7 +149,7 @@ func (this KeepClient) AuthorizedGet(hash string,
 			continue
 		}
 
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
 
 		var resp *http.Response
 		if resp, err = this.Client.Do(req); err != nil {
@@ -211,7 +191,7 @@ func (this KeepClient) AuthorizedAsk(hash string, signature string,
 			continue
 		}
 
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
 
 		var resp *http.Response
 		if resp, err = this.Client.Do(req); err != nil {
