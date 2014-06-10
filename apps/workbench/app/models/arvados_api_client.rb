@@ -194,6 +194,10 @@ class ArvadosApiClient
     resource_class.to_s.underscore
   end
 
+  def self.class_kind(resource_class)
+    resource_class.to_s.underscore
+  end
+
   protected
   def profile_checkpoint label=nil
     return if !@@profiling_enabled

@@ -47,21 +47,12 @@ $(document).on('ready ajax:complete', function() {
     run_pipeline_button_state();
 });
 
-$(document).on('ajax:complete ready', function() {
-  var a = $('.arv-log-event-listener');
-  if (a.length > 0) {
-    $('.arv-log-event-listener').each(function() {
-      subscribeToEventLog(this.id);
-    });
-  }
-});
-
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
-  parsedData = JSON.parse(eventData);
+  var parsedData = JSON.parse(eventData);
 
-  propertyText = undefined
+  var propertyText = undefined
 
-  properties = parsedData.properties;
+  var properties = parsedData.properties;
     if (properties !== null) {
       propertyText = properties.text;
     }

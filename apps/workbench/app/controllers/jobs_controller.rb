@@ -1,6 +1,8 @@
 class JobsController < ApplicationController
 
   def generate_provenance(jobs)
+    return if params['tab_pane'] != "Provenance"
+
     nodes = []
     collections = []
     jobs.each do |j|
@@ -25,6 +27,7 @@ class JobsController < ApplicationController
     if params[:uuid]
       @objects = Job.where(uuid: params[:uuid])
       generate_provenance(@objects)
+      render_index
     else
       @limit = 20
       super
@@ -38,6 +41,7 @@ class JobsController < ApplicationController
 
   def show
     generate_provenance([@object])
+    super
   end
 
   def index_pane_list
