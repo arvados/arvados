@@ -12,6 +12,8 @@ import time
 import unittest
 import yaml
 
+from cStringIO import StringIO
+
 import arvados
 import arvados.commands.put as arv_put
 
@@ -323,9 +325,10 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
     def call_main_on_test_file(self):
+        self.main_output = StringIO()
         with self.make_test_file() as testfile:
             path = testfile.name
-            arv_put.main(['--stream', '--no-progress', path])
+            arv_put.main(['--stream', '--no-progress', path], self.main_output)
         self.assertTrue(
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
