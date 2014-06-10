@@ -143,10 +143,10 @@ class CollectionsController < ApplicationController
       end
       @output_of = jobs_with.call(output: @object.uuid)
       @log_of = jobs_with.call(log: @object.uuid)
-      folder_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+      @folder_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'name').results
-      folder_hash = Group.where(uuid: folder_links.map(&:tail_uuid)).to_hash
-      @folders = folder_links.map { |link| folder_hash[link.tail_uuid] }
+      folder_hash = Group.where(uuid: @folder_links.map(&:tail_uuid)).to_hash
+      @folders = @folder_links.map { |link| folder_hash[link.tail_uuid] }
       @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'permission',
                name: 'can_read').results
