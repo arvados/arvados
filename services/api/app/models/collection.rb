@@ -147,4 +147,49 @@ class Collection < ArvadosModel
     raise "uuid #{uuid} has no hash part" if !hash_part
     [hash_part, size_part].compact.join '+'
   end
+
+  def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
+    readers ||= [Thread.current[:user]]
+    base_search = Link.
+      readable_by(*readers).
+      readable_by(*readers, table_name: "collections").
+      joins("JOIN collections ON links.head_uuid = collections.uuid").
+      order("links.created_at DESC")
+
+    # If the search term is a Collection locator with an associated
+    # Docker image hash link, return that Collection.
+    coll_matches = base_search.
+      where(link_class: "docker_image_hash", collections: {uuid: search_term})
+    if match = coll_matches.first
+      return find_by_uuid(match.head_uuid)
+    end
+
+    # Find Collections with matching Docker image repository+tag pairs.
+    matches = base_search.
+      where(link_class: "docker_image_repo+tag",
+            name: "#{search_term}:#{search_tag || 'latest'}")
+
+    # If that didn't work, find Collections with matching Docker image hashes.
+    if matches.empty?
+      matches = base_search.
+        where("link_class = ? and name LIKE ?",
+              "docker_image_hash", "#{search_term}%")
+    end
+
+    # Select the image that was created most recently.  Note that the
+    # SQL search order and fallback timestamp values are chosen so
+    # that if image timestamps are missing, we use the image with the
+    # newest link.
+    latest_image_link = nil
+    latest_image_timestamp = "1900-01-01T00:00:00Z"
+    matches.find_each do |link|
+      link_timestamp = link.properties.fetch("image_timestamp",
+                                             "1900-01-01T00:00:01Z")
+      if link_timestamp > latest_image_timestamp
+        latest_image_link = link
+        latest_image_timestamp = link_timestamp
+      end
+    end
+    latest_image_link.nil? ? nil : find_by_uuid(latest_image_link.head_uuid)
+  end
 end
