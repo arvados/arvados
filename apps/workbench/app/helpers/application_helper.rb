@@ -265,7 +265,7 @@ module ApplicationHelper
       if attrvalue and !attrvalue.empty?
         links_for_object(attrvalue).each do |link|
           if link.link_class.in? ["tag", "identifier"]
-            attrtext += " [#{tag.name}]"
+            attrtext += " [#{link.name}]"
           end
         end
         selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
@@ -280,8 +280,8 @@ module ApplicationHelper
         links_for_object(itemuuid).each do |link|
           if link.link_class.in? ["tag", "identifier"]
             selectables.each do |selectable|
-              if selectable['uuid'] == tag.head_uuid
-                selectable['name'] += ' [' + tag.name + ']'
+              if selectable['uuid'] == link.head_uuid
+                selectable['name'] += ' [' + link.name + ']'
               end
             end
           end
