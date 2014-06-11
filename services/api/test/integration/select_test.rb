@@ -35,6 +35,16 @@ class SelectTest < ActionDispatch::IntegrationTest
     end
   end
 
+  def assert_link_classes_ascend(current_class, prev_class)
+    # Databases and Ruby don't always agree about string ordering with
+    # punctuation.  If the strings aren't ascending normally, check
+    # that they're equal up to punctuation.
+    if current_class < prev_class
+      class_prefix = current_class.split(/\W/).first
+      assert prev_class.start_with?(class_prefix)
+    end
+  end
+
   test "select two columns with order" do
     get "/arvados/v1/links", {:format => :json, :select => ['link_class', 'uuid'], :order => ['link_class asc', "uuid desc"]}, auth(:active)
     assert_response :success
@@ -49,7 +59,7 @@ class SelectTest < ActionDispatch::IntegrationTest
         prev_uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
       end
 
-      assert i['link_class'] >= prev_link_class
+      assert_link_classes_ascend(i['link_class'], prev_link_class)
       assert i['uuid'] < prev_uuid
 
       prev_link_class = i['link_class']
@@ -71,7 +81,7 @@ class SelectTest < ActionDispatch::IntegrationTest
         prev_uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
       end
 
-      assert i['link_class'] >= prev_link_class
+      assert_link_classes_ascend(i['link_class'], prev_link_class)
       assert i['uuid'] < prev_uuid
 
       prev_link_class = i['link_class']
