@@ -25,6 +25,30 @@
           <th>Progress</th>
         </tr>
 
+        <%# Preload collections, logs, and pipeline instance objects %>
+        <%
+          collection_uuids = []
+          log_uuids = []
+          @my_jobs[0..6].each do |j|
+            collection_uuids << j.output
+            log_uuids << j.log
+          end
+
+          @my_collections[0..6].each do |c|
+            collection_uuids << c.uuid
+          end
+
+          preload_collections_for_objects collection_uuids
+          preload_log_collections_for_objects log_uuids
+
+          pi_uuids = []
+          @my_pipelines[0..6].each do |p|
+            pi_uuids << p.uuid
+          end
+          resource_class = resource_class_for_uuid(pi_uuids.first, friendly_name: true)
+          preload_objects_for_dataclass resource_class, pi_uuids
+        %>
+
         <% @my_jobs[0..6].each do |j| %>
           <tr data-object-uuid="<%= j.uuid %>">
             <td>
@@ -36,24 +60,25 @@
             <td>
               <small>
                 <% if j.success and j.output %>
-
                   <a href="<%= collection_path(j.output) %>">
-                    <% Collection.limit(1).where(uuid: j.output).each do |c| %>
-                         <% c.files.each do |file| %>
-                      <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
-                    <% end %>
-                <% end %>
-                </a>
-
-        <% end %>
-        </small>
-</td>
+                    <% collections = collections_for_object(j.output) %>
+                      <% if collections && !collections.empty? %>
+                      <% c = collections.first %>
+                      <% c.files.each do |file| %>
+                        <%= file[0] == '.' ? file[1] : "#{file[0]}/#{file[1]}" %>
+                      <% end %>
+                     <% end %>
+                  </a>
+              <% end %>
+            </small>
+          </td>
 
 <td>
   <small>
     <% if j.log %>
-      <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(j.log)%>
-      <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
+      <% log_collections = log_collections_for_object(j.log) %>
+      <% if log_collections && !log_collections.empty? %>
+        <% c = log_collections.first %>
         <% c.files.each do |file| %>
           <a href="<%= collection_path(j.log) %>/<%= file[1] %>?disposition=inline&size=<%= file[2] %>">Log</a>
         <% end %>

@@ -497,4 +497,172 @@ class ApplicationController < ActionController::Base
       root_of[g.uuid] == current_user.uuid
     end
   end
+
+  # helper method to get links for given object or uuid
+  helper_method :links_for_object
+  def links_for_object object_or_uuid
+    raise ArgumentError, 'No input argument' unless object_or_uuid
+    preload_links_for_objects([object_or_uuid])
+    uuid = object_or_uuid.is_a?(String) ? object_or_uuid : object_or_uuid.uuid
+    @all_links_for[uuid] ||= []
+  end
+
+  # helper method to preload links for given objects and uuids
+  helper_method :preload_links_for_objects
+  def preload_links_for_objects objects_and_uuids
+    @all_links_for ||= {}
+
+    raise ArgumentError, 'Argument is not an array' unless objects_and_uuids.is_a? Array
+    return @all_links_for if objects_and_uuids.empty?
+
+    uuids = objects_and_uuids.collect { |x| x.is_a?(String) ? x : x.uuid }
+
+    # if already preloaded for all of these uuids, return
+    if not uuids.select { |x| @all_links_for[x].nil? }.any?
+      return @all_links_for
+    end
+
+    uuids.each do |x|
+      @all_links_for[x] = []
+    end
+
+    # TODO: make sure we get every page of results from API server
+    Link.filter([['head_uuid', 'in', uuids]]).each do |link|
+      @all_links_for[link.head_uuid] << link
+    end
+    @all_links_for
+  end
+
+  # helper method to get a certain number of objects of a specific type
+  # this can be used to replace any uses of: "dataclass.limit(n)"
+  helper_method :get_n_objects_of_class
+  def get_n_objects_of_class dataclass, size
+    @objects_map_for ||= {}
+
+    raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
+    raise ArgumentError, 'Argument is not a valid limit size' unless (size && size>0)
+
+    # if the objects_map_for has a value for this dataclass, and the
+    # size used to retrieve those objects is equal, return it
+    size_key = "#{dataclass.name}_size"
+    if @objects_map_for[dataclass.name] && @objects_map_for[size_key] &&
+        (@objects_map_for[size_key] == size)
+      return @objects_map_for[dataclass.name]
+    end
+
+    @objects_map_for[size_key] = size
+    @objects_map_for[dataclass.name] = dataclass.limit(size)
+  end
+
+  # helper method to get collections for the given uuid
+  helper_method :collections_for_object
+  def collections_for_object uuid
+    raise ArgumentError, 'No input argument' unless uuid
+    preload_collections_for_objects([uuid])
+    @all_collections_for[uuid] ||= []
+  end
+
+  # helper method to preload collections for the given uuids
+  helper_method :preload_collections_for_objects
+  def preload_collections_for_objects uuids
+    @all_collections_for ||= {}
+
+    raise ArgumentError, 'Argument is not an array' unless uuids.is_a? Array
+    return @all_collections_for if uuids.empty?
+
+    # if already preloaded for all of these uuids, return
+    if not uuids.select { |x| @all_collections_for[x].nil? }.any?
+      return @all_collections_for
+    end
+
+    uuids.each do |x|
+      @all_collections_for[x] = []
+    end
+
+    # TODO: make sure we get every page of results from API server
+    Collection.where(uuid: uuids).each do |collection|
+      @all_collections_for[collection.uuid] << collection
+    end
+    @all_collections_for
+  end
+
+  # helper method to get log collections for the given log
+  helper_method :log_collections_for_object
+  def log_collections_for_object log
+    raise ArgumentError, 'No input argument' unless log
+
+    preload_log_collections_for_objects([log])
+
+    uuid = log
+    fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
+    if fixup && fixup.size>1
+      uuid = fixup[1]
+    end
+
+    @all_log_collections_for[uuid] ||= []
+  end
+
+  # helper method to preload collections for the given uuids
+  helper_method :preload_log_collections_for_objects
+  def preload_log_collections_for_objects logs
+    @all_log_collections_for ||= {}
+
+    raise ArgumentError, 'Argument is not an array' unless logs.is_a? Array
+    return @all_log_collections_for if logs.empty?
+
+    uuids = []
+    logs.each do |log|
+      fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(log)
+      if fixup && fixup.size>1
+        uuids << fixup[1]
+      else
+        uuids << log
+      end
+    end
+
+    # if already preloaded for all of these uuids, return
+    if not uuids.select { |x| @all_log_collections_for[x].nil? }.any?
+      return @all_log_collections_for
+    end
+
+    uuids.each do |x|
+      @all_log_collections_for[x] = []
+    end
+
+    # TODO: make sure we get every page of results from API server
+    Collection.where(uuid: uuids).each do |collection|
+      @all_log_collections_for[collection.uuid] << collection
+    end
+    @all_log_collections_for
+  end
+
+  # helper method to get object of a given dataclass and uuid
+  helper_method :object_for_dataclass
+  def object_for_dataclass dataclass, uuid
+    raise ArgumentError, 'No input argument dataclass' unless (dataclass && uuid)
+    preload_objects_for_dataclass(dataclass, [uuid])
+    @objects_for[uuid]
+  end
+
+  # helper method to preload objects for given dataclass and uuids
+  helper_method :preload_objects_for_dataclass
+  def preload_objects_for_dataclass dataclass, uuids
+    @objects_for ||= {}
+
+    raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
+    raise ArgumentError, 'Argument is not an array' unless uuids.is_a? Array
+
+    return @objects_for if uuids.empty?
+
+    # if already preloaded for all of these uuids, return
+    if not uuids.select { |x| @objects_for[x].nil? }.any?
+      return @objects_for
+    end
+
+    dataclass.where(uuid: uuids).each do |obj|
+      @objects_for[obj.uuid] = obj
+    end
+    @objects_for
+  end
+
 end
