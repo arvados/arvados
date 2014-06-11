@@ -15,12 +15,14 @@ function addToLogViewer(logViewer, lines) {
   if (v11 != '&nbsp;') {
     if (/^stderr /.test(message)) {
         type = "task-output";
+        message = message.substr(7);
     } else {
         type = "task-dispatch";
     }
   } else {
     if (/^status: /.test(message)) {
-        type = "job-progress";
+        type = "job-status";
+        message = message.substr(8);
     } else {
         type = "crunch";
     }
@@ -107,16 +109,16 @@ $("#sort-by-task").on("change", function() {
     </div>
 <br>
   <div class="checkbox-inline">
-    <label><input id="show-task-output" type="checkbox" checked="true" class="toggle-filter"> Show task output</label>
+    <label><input id="show-crunch" type="checkbox" checked="true" class="toggle-filter"> Show crunch output</label>
+  </div>
+  <div class="checkbox-inline">
+    <label><input id="show-job-status" type="checkbox" checked="true" class="toggle-filter"> Show job status</label>
   </div>
   <div class="checkbox-inline">
     <label><input id="show-task-dispatch" type="checkbox" checked="true" class="toggle-filter"> Show task dispatch</label>
   </div>
   <div class="checkbox-inline">
-    <label><input id="show-crunch" type="checkbox" checked="true" class="toggle-filter"> Show crunch output</label>
-  </div>
-  <div class="checkbox-inline">
-    <label><input id="show-job-progress" type="checkbox" checked="true" class="toggle-filter"> Show job progress</label>
+    <label><input id="show-task-output" type="checkbox" checked="true" class="toggle-filter"> Show task output</label>
   </div>
 
 <div class="pull-right">
@@ -128,22 +130,22 @@ $("#sort-by-task").on("change", function() {
     </button>
 </div>
 
-  <table style='width: 100%; font-family:"Lucida Console", Monaco, monospace; font-size: 11px'>
+  <table class="log-viewer-table">
     <thead>
       <tr>
-        <th class="sort" data-sort="id" style="display:none;"></th>
-        <th class="sort" data-sort="timestamp" style="width: 12em">Timestamp</th>
-        <th class="sort" data-sort="type" style="width: 8em">Log type</th>
-        <th class="sort" data-sort="taskid" style="width: 4em">Task</th>
-        <th class="sort" data-sort="message" >Message</th>
+        <th class="sort" data-sort="id"></th>
+        <th class="sort" data-sort="timestamp">Timestamp</th>
+        <th class="sort" data-sort="type">Log type</th>
+        <th class="sort" data-sort="taskid">Task</th>
+        <th class="sort" data-sort="message">Message</th>
       </tr>
     </thead>
     <tbody class="list">
       <tr>
-        <td class="id" style="display:none;">0</td>
+        <td class="id"></td>
         <td class="timestamp"></td>
         <td class="type"></td>
-        <td class="taskid" style="text-align: center"></td>
+        <td class="taskid"></td>
         <td class="message"></td>
       </tr>
     </tbody>
