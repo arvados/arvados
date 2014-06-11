@@ -2,9 +2,11 @@ class Job < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  attr_protected :docker_image_locator
   serialize :script_parameters, Hash
   serialize :runtime_constraints, Hash
   serialize :tasks_summary, Hash
+  before_validation :find_docker_image_locator
   before_create :ensure_unique_submit_id
   before_create :ensure_script_version_is_commit
   before_update :ensure_script_version_is_commit
@@ -38,6 +40,7 @@ class Job < ArvadosModel
     t.add :nondeterministic
     t.add :repository
     t.add :supplied_script_version
+    t.add :docker_image_locator
   end
 
   def assert_finished
@@ -96,6 +99,48 @@ class Job < ArvadosModel
       end
     end
     true
+  end
+
+  def find_docker_image_locator
+    # Find the Collection that holds the Docker image specified in the
+    # runtime constraints, and store its locator in docker_image_locator.
+    image_name = runtime_constraints['docker_image']
+    if image_name.nil?
+      self.docker_image_locator = nil
+      return
+    elsif not (new_record? or runtime_constraints_changed?)
+      return
+    # Accept images specified as a locator, if there's an associated
+    # docker_image_hash link.
+    elsif coll = Collection.joins(:links_via_head).
+        where(uuid: image_name,
+              links: {link_class: 'docker_image_hash'}).first
+      self.docker_image_locator = (coll.links_via_head.any?) ? coll.uuid : nil
+    else  # Accept images specified by their Docker metadata.
+      link_search = {name: image_name}
+      if image_name =~ /^[0-9A-Fa-f]{64}$/
+        link_search[:link_class] = 'docker_image_hash'
+      else
+        # Search for a match on image repository + tag.
+        link_search[:link_class] = 'docker_image_repository'
+        tag_name = runtime_constraints['docker_image_tag'] || 'latest'
+        link_search[:head_uuid] = Link.select(:head_uuid).
+          where(link_class: 'docker_image_tag', name: tag_name).
+          map(&:head_uuid)
+      end
+      links = Link.where(link_search)
+      # Select the image that was created most recently.
+      latest = links.first
+      links.find_each do |link|
+        latest = link if (link.properties['image_timestamp'] >
+                          latest.properties['image_timestamp'])
+      end
+      self.docker_image_locator = latest.andand.head_uuid
+    end
+    if docker_image_locator.nil?
+      errors.add(:docker_image_locator, "Docker image not found")
+      false
+    end
   end
 
   def dependencies
