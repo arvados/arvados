@@ -1,0 +1,68 @@
+<script>
+logviewer_lines = [];
+
+function addToLogViewer(id, lines) {
+  var i = $(id);
+  var re = /((\d\d\d\d)-(\d\d)-(\d\d))_((\d\d):(\d\d):(\d\d)) ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}) (\d+) (\d+)? (.*)/;
+  for (var a in lines) {
+    var v = lines[a].match(re);
+    console.log(v);
+
+    v11 = v[11];
+    if (typeof v[11] === 'undefined') {
+      v11 = '';
+    }
+
+    i.append("<tr>"
+    + "<td>" + v[1] + " " + v[5] + "</td>"
+    //+ "<td>" + v[9] + "</td>"
+    //+ "<td>" + v[10] + "</td>"
+    + "<td>" + v11 + "</td>"
+    + "<td>" + v[12] + "</td>"
+    + "</tr>");
+  }
+}
+
+stuff = '2014-02-21_19:21:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  check slurm allocation\n'
++'2014-02-21_19:21:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  node compute0 - 8 slots\n'
++'2014-02-21_19:21:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  start\n'
++'2014-02-21_19:21:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  Install revision c981b80d8965d62435045518f569e3f270014298\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  Clean-work-dir exited 0\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  Install exited 256\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  script hash.py\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  script_version c981b80d8965d62435045518f569e3f270014298\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  script_parameters {"input":"887cd41e9c613463eab2f0d885c6dd96+83"}\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  runtime_constraints {"max_tasks_per_node":0}\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  start level 0\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  status: 0 done, 0 running, 1 todo\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976 0 job_task 4xphq-ot0gb-da3txjda030zl0o\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976 0 child 25679 started on compute0.1\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976  status: 0 done, 1 running, 0 todo\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976 0 stderr srun: error: SLURM job 13 has expired.\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976 0 stderr srun: Check SLURM_JOB_ID environment variable for expired or invalid job.\n'
++'2014-02-21_19:30:37 4xphq-8i9sb-b0espqb7k2zywt9 15976 0 child 25679 on compute0.1 exit 1 signal 0 success=\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976 0 failure (#1, permanent) after 0 seconds\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976 0 output\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976  Every node has failed -- giving up on this round\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976  wait for last 0 children to finish\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976  status: 0 done, 0 running, 0 todo\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976  release job allocation\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976  Freeze not implemented\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976  collate\n'
++'2014-02-21_19:30:38 4xphq-8i9sb-b0espqb7k2zywt9 15976  output d41d8cd98f00b204e9800998ecf8427e+0\n';
+
+addToLogViewer("#log-viewer", stuff.split("\n"));
+
+<% logcollection = Collection.find @object.log %>
+
+$.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
+  done(function(data, status, jqxhr) {
+    addToLogViewer("#log-viewer", data.split("\n"));
+  });
+
+
+</script>
+
+<table id="log-viewer" style="width: 100%">
+
+</table>
