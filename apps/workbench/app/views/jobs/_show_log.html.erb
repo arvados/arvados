@@ -17,8 +17,19 @@ function addToLogViewer(logViewer, lines) {
   var type = "";
   if (v11 != '&nbsp;') {
     if (/^stderr /.test(message)) {
-        type = "task-output";
-        message = message.substr(7);
+        if (/^stderr crunchstat: /.test(message)) {
+          type = "crunchstat";
+          message = message.substr(19);
+        } else if (/^stderr srun: /.test(message)) {
+          type = "task-dispatch";
+          message = message.substr(7);
+        } else if (/^stderr slurmd/.test(message)) {
+          type = "task-dispatch";
+          message = message.substr(7);
+        } else {
+          type = "task-output";
+          message = message.substr(7);
+        }
     } else {
         type = "task-dispatch";
     }
@@ -48,7 +59,8 @@ function addToLogViewer(logViewer, lines) {
 
 (function() {
 var logViewer = new List('log-viewer', {
-  valueNames: [ 'id', 'timestamp', 'taskid', 'message', 'type']
+  valueNames: [ 'id', 'timestamp', 'taskid', 'message', 'type'],
+  page: 10000,
 });
 
 var makeFilter = function() {
@@ -127,6 +139,9 @@ $("#sort-by-task").on("change", function() {
   <div class="checkbox-inline">
     <label><input id="show-task-output" type="checkbox" checked="true" class="toggle-filter"> Show task output</label>
   </div>
+  <div class="checkbox-inline">
+    <label><input id="show-crunchstat" type="checkbox" checked="true" class="toggle-filter"> Show compute usage</label>
+  </div>
 
 <div class="pull-right">
     <button id="filter-all" class="btn">
@@ -160,7 +175,7 @@ $("#sort-by-task").on("change", function() {
 
 </div>
 
-<% !if @object.log %>
+<% if !@object.log %>
   This job is still running.  The job log will be available when the job is complete.
 <% end %>
 
