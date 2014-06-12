@@ -77,18 +77,7 @@ $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
     $("#logloadspinner").detach();
   });
 <% else %>
-  <%# backlog = ""
-     Log.filter([['object_uuid', '=', @object.uuid],
-                  ['event_type', '=', 'stderr']]).order(["id", "asc"]).each do |l|
-        backlog += l.properties[:text]
-     end
-   %>
-
-  /* var backlog = "<%#=j backlog %>";
-    logViewer.filter();
-    addToLogViewer(logViewer, backlog.split("\n"));
-    logViewer.filter(makeFilter());  */
-
+  <%# Live log loading not implemented yet. %>
 <% end %>
 
 $(".toggle-filter").on("change", function() {
@@ -170,5 +159,9 @@ $("#sort-by-task").on("change", function() {
   </table>
 
 </div>
+
+<% !if @object.log %>
+  This job is still running.  The job log will be available when the job is complete.
+<% end %>
 
 <%= image_tag 'ajax-loader.gif', id: "logloadspinner" %>
