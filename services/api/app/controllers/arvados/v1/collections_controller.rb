@@ -13,7 +13,6 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     # Check permissions on the collection manifest.
     # If any signature cannot be verified, return 403 Permission denied.
-    perms_ok = true
     api_token = current_api_client_authorization.andand.api_token
     signing_opts = {
       key: Rails.configuration.blob_signing_key,
@@ -22,22 +21,27 @@ class Arvados::V1::CollectionsController < ApplicationController
     }
     resource_attrs[:manifest_text].lines.each do |entry|
       entry.split[1..-1].each do |tok|
-        # TODO(twp): in Phase 4, fail the request if the locator
-        # lacks a permission signature. (see #2755)
-        loc = Locator.parse(tok)
-        if loc and loc.signature
-          if !api_token
-            logger.warn "No API token present; cannot verify signature on #{loc}"
-            perms_ok = false
-          elsif !Blob.verify_signature tok, signing_opts
-            logger.warn "Invalid signature on locator #{loc}"
-            perms_ok = false
-          end
+        if /^[[:digit:]]+:[[:digit:]]+:/.match tok
+          # This is a filename token, not a blob locator. Note that we
+          # keep checking tokens after this, even though manifest
+          # format dictates that all subsequent tokens will also be
+          # filenames. Safety first!
+        elsif Blob.verify_signature tok, signing_opts
+          # OK.
+        elsif Locator.parse(tok).andand.signature
+          # Signature provided, but verify_signature did not like it.
+          logger.warn "Invalid signature on locator #{tok}"
+          raise ArvadosModel::PermissionDeniedError
+        elsif Rails.configuration.permit_create_collection_with_unsigned_manifest
+          # No signature provided, but we are running in insecure mode.
+          logger.debug "Missing signature on locator #{tok} ignored"
+        elsif Blob.new(tok).empty?
+          # No signature provided -- but no data to protect, either.
+        else
+          logger.warn "Missing signature on locator #{tok}"
+          raise ArvadosModel::PermissionDeniedError
         end
       end
-    end
-    unless perms_ok
-      raise ArvadosModel::PermissionDeniedError
     end
 
     # Remove any permission signatures from the manifest.

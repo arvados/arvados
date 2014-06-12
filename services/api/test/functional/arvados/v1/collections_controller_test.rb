@@ -2,6 +2,21 @@ require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 
+  setup do
+    # Unless otherwise specified in the test, we want normal/secure behavior.
+    permit_unsigned_manifests false
+  end
+
+  teardown do
+    # Reset to secure behavior after each test.
+    permit_unsigned_manifests false
+  end
+
+  def permit_unsigned_manifests isok=true
+    # Set security model for the life of a test.
+    Rails.configuration.permit_create_collection_with_unsigned_manifest = isok
+  end
+
   test "should get index" do
     authorize_with :active
     get :index
@@ -42,7 +57,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal 99999, resp['offset']
   end
 
-  test "should create" do
+  test "create with unsigned manifest" do
+    permit_unsigned_manifests
     authorize_with :active
     test_collection = {
       manifest_text: <<-EOS
@@ -105,6 +121,7 @@ EOS
   end
 
   test "create with owner_uuid set to owned group" do
+    permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
@@ -120,6 +137,7 @@ EOS
   end
 
   test "create with owner_uuid set to group i can_manage" do
+    permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
@@ -135,6 +153,7 @@ EOS
   end
 
   test "create with owner_uuid set to group with no can_manage permission" do
+    permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
@@ -148,6 +167,7 @@ EOS
   end
 
   test "admin create with owner_uuid set to group with no permission" do
+    permit_unsigned_manifests
     authorize_with :admin
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
@@ -161,6 +181,7 @@ EOS
   end
 
   test "should create with collection passed as json" do
+    permit_unsigned_manifests
     authorize_with :active
     post :create, {
       collection: <<-EOS
@@ -174,6 +195,7 @@ EOS
   end
 
   test "should fail to create with checksum mismatch" do
+    permit_unsigned_manifests
     authorize_with :active
     post :create, {
       collection: <<-EOS
@@ -187,6 +209,7 @@ EOS
   end
 
   test "collection UUID is normalized when created" do
+    permit_unsigned_manifests
     authorize_with :active
     post :create, {
       collection: {
@@ -243,48 +266,59 @@ EOS
     assert_equal true, !!found.index('1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
   end
 
-  test "create collection with signed manifest" do
-    authorize_with :active
-    locators = %w(
+  [false, true].each do |permit_unsigned|
+    test "create collection with signed manifest, permit_unsigned=#{permit_unsigned}" do
+      permit_unsigned_manifests permit_unsigned
+      authorize_with :active
+      locators = %w(
       d41d8cd98f00b204e9800998ecf8427e+0
       acbd18db4cc2f85cedef654fccc4a4d8+3
       ea10d51bcf88862dbcc36eb292017dfd+45)
 
-    unsigned_manifest = locators.map { |loc|
-      ". " + loc + " 0:0:foo.txt\n"
-    }.join()
-    manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest) +
-      '+' +
-      unsigned_manifest.length.to_s
+      unsigned_manifest = locators.map { |loc|
+        ". " + loc + " 0:0:foo.txt\n"
+      }.join()
+      manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest) +
+        '+' +
+        unsigned_manifest.length.to_s
 
-    # build a manifest with both signed and unsigned locators.
-    # TODO(twp): in phase 4, all locators will need to be signed, so
-    # this test should break and will need to be rewritten. Issue #2755.
-    signing_opts = {
-      key: Rails.configuration.blob_signing_key,
-      api_token: api_token(:active),
-    }
-    signed_manifest =
-      ". " + locators[0] + " 0:0:foo.txt\n" +
-      ". " + Blob.sign_locator(locators[1], signing_opts) + " 0:0:foo.txt\n" +
-      ". " + Blob.sign_locator(locators[2], signing_opts) + " 0:0:foo.txt\n"
-
-    post :create, {
-      collection: {
-        manifest_text: signed_manifest,
-        uuid: manifest_uuid,
+      # Build a manifest with both signed and unsigned locators.
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: api_token(:active),
       }
-    }
-    assert_response :success
-    assert_not_nil assigns(:object)
-    resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['uuid']
-    assert_equal 48, resp['data_size']
-    # All of the locators in the output must be signed.
-    resp['manifest_text'].lines.each do |entry|
-      m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
-      if m
-        assert Blob.verify_signature m[0], signing_opts
+      signed_locators = locators.collect do |x|
+        Blob.sign_locator x, signing_opts
+      end
+      if permit_unsigned
+        # Leave a non-empty blob unsigned.
+        signed_locators[1] = locators[1]
+      else
+        # Leave the empty blob unsigned. This should still be allowed.
+        signed_locators[0] = locators[0]
+      end
+      signed_manifest =
+        ". " + signed_locators[0] + " 0:0:foo.txt\n" +
+        ". " + signed_locators[1] + " 0:0:foo.txt\n" +
+        ". " + signed_locators[2] + " 0:0:foo.txt\n"
+
+      post :create, {
+        collection: {
+          manifest_text: signed_manifest,
+          uuid: manifest_uuid,
+        }
+      }
+      assert_response :success
+      assert_not_nil assigns(:object)
+      resp = JSON.parse(@response.body)
+      assert_equal manifest_uuid, resp['uuid']
+      assert_equal 48, resp['data_size']
+      # All of the locators in the output must be signed.
+      resp['manifest_text'].lines.each do |entry|
+        m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
+        if m
+          assert Blob.verify_signature m[0], signing_opts
+        end
       end
     end
   end
@@ -391,6 +425,7 @@ EOS
   end
 
   test "multiple locators per line" do
+    permit_unsigned_manifests
     authorize_with :active
     locators = %w(
       d41d8cd98f00b204e9800998ecf8427e+0
@@ -423,6 +458,7 @@ EOS
   end
 
   test "multiple signed locators per line" do
+    permit_unsigned_manifests
     authorize_with :active
     locators = %w(
       d41d8cd98f00b204e9800998ecf8427e+0
@@ -464,5 +500,21 @@ EOS
       end
     end
     assert_equal locators.count, returned_locator_count
+  end
+
+  test 'Reject manifest with unsigned blob' do
+    authorize_with :active
+    unsigned_manifest = ". 0cc175b9c0f1b6a831c399e269772661+1 0:1:a.txt\n"
+    manifest_uuid = Digest::MD5.hexdigest(unsigned_manifest)
+    post :create, {
+      collection: {
+        manifest_text: unsigned_manifest,
+        uuid: manifest_uuid,
+      }
+    }
+    assert_response 403,
+    "Creating a collection with unsigned blobs should respond 403"
+    assert_empty Collection.where('uuid like ?', manifest_uuid+'%'),
+    "Collection should not exist in database after failed create"
   end
 end
