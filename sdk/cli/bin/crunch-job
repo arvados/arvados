@@ -830,9 +830,9 @@ if ($collated_output)
       }
       push(@manifest_lines, join(" ", @words));
     }
-    my $manifest_text = join("", @manifest_lines);
+    my $stripped_manifest_text = join("", @manifest_lines);
     my $output = $arv->{'collections'}->{'create'}->execute('collection' => {
-      'uuid' => md5_hex($manifest_text),
+      'uuid' => md5_hex($stripped_manifest_text),
       'manifest_text' => $manifest_text,
     });
     $Job->update_attributes('output' => $output->{uuid});
