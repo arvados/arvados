@@ -44,11 +44,11 @@ func OutputChannel(stdout chan string, stderr chan string) {
 
 func FindStat(cgroup_path string, statgroup string, stat string) string {
 	path := fmt.Sprintf("%s/%s.%s", cgroup_path, statgroup, stat)
-	if _, err := os.Stat(path); err != nil {
+	if _, err := os.Stat(path); err == nil {
 		return path
 	}
 	path = fmt.Sprintf("%s/%s/%s.%s", cgroup_path, statgroup, statgroup, stat)
-	if _, err := os.Stat(path); err != nil {
+	if _, err := os.Stat(path); err == nil {
 		return path
 	}
 	return ""
