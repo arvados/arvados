@@ -11,9 +11,10 @@ setup(name='arvados-python-client',
       packages=find_packages(),
       scripts=[
         'bin/arv-get',
-        'bin/arv-put',
+        'bin/arv-keepdocker',
         'bin/arv-ls',
         'bin/arv-normalize',
+        'bin/arv-put',
         ],
       install_requires=[
         'python-gflags',
