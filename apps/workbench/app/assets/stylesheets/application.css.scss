@@ -104,8 +104,9 @@ nav.navbar-fixed-top {
 .navbar.breadcrumbs {
     line-height: 50px;
     border-radius: 0;
-    width: 10000px;
     margin-bottom: 0;
+    border-right: 0;
+    border-left: 0;
 }
 .navbar.breadcrumbs .nav > li > a,
 .navbar.breadcrumbs .nav > li {
