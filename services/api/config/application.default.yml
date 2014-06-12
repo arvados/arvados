@@ -129,3 +129,13 @@ common:
   # Amount of time (in seconds) for which a blob permission signature
   # remains valid.  Default: 2 weeks (1209600 seconds)
   blob_signing_ttl: 1209600
+
+  # Allow clients to create collections by providing a manifest with
+  # unsigned data blob locators. IMPORTANT: This effectively disables
+  # access controls for data stored in Keep: a client who knows a hash
+  # can write a manifest that references the hash, pass it to
+  # collections.create (which will create a permission link), use
+  # collections.get to obtain a signature for that data locator, and
+  # use that signed locator to retrieve the data from Keep.
+  # Do not use turn this on if you want to 
+  permit_create_collection_with_unsigned_manifest: false
