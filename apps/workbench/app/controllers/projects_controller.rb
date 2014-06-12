@@ -48,6 +48,21 @@ class ProjectsController < ApplicationController
     end
   end
 
+  def destroy
+    while (objects = Link.filter([['owner_uuid','=',@object.uuid],
+                                  ['tail_uuid','=',@object.uuid]])).any?
+      objects.each do |object|
+        object.destroy
+      end
+    end
+    while (objects = @object.contents(include_linked: false)).any?
+      objects.each do |object|
+        object.update_attributes! owner_uuid: current_user.uuid
+      end
+    end
+    super
+  end
+
   def find_objects_for_index
     @objects = Group.
       filter([['group_class','in',['project','folder']]]).

@@ -2,11 +2,11 @@
   <% any = false %>
   <% recent_jobs_and_pipelines[0..9].each do |object| %>
     <% any = true %>
-    <div class="row">
+    <div class="row" style="height: 4.5em">
       <div class="col-sm-4">
         <%= render :partial => "show_object_button", :locals => {object: object, size: 'xs'} %>
         <% if object.respond_to?(:name) %>
-          <%= render_editable_attribute object, 'name', nil, {tiptitle: 'rename', btnplacement: :left} %>
+          <%= render_editable_attribute object, 'name', nil, {tiptitle: 'rename'} %>
         <% else %>
           <%= object.class_for_display %> <%= object.uuid %>
         <% end %>

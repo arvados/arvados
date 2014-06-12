@@ -21,7 +21,7 @@
 	    action_method: 'post',
 	    action_data: {selection_param: 'selection[]', copy_selections_into_project: @object.uuid, success: 'page-refresh'}.to_json),
 	  { class: "btn btn-primary btn-sm", remote: true, method: 'get', data: {'event-after-select' => 'page-refresh'} }) do %>
-      <i class="fa fa-fw fa-plus"></i> Add data
+      <i class="fa fa-fw fa-plus"></i> Add data...
     <% end %>
     <%= link_to(
 	  choose_pipeline_templates_path(
@@ -31,9 +31,9 @@
 	    action_method: 'post',
 	    action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
 	  { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
-      <i class="fa fa-fw fa-gear"></i> Run a pipeline
+      <i class="fa fa-fw fa-gear"></i> Run a pipeline...
     <% end %>
-    <%= link_to projects_path(method: 'post', owner_uuid: @object.uuid), class: 'btn btn-sm btn-primary' do %>
+    <%= link_to projects_path('project[owner_uuid]' => @object.uuid), method: 'post', class: 'btn btn-sm btn-primary' do %>
       <i class="fa fa-fw fa-plus"></i>
       Add a subproject
     <% end %>
@@ -46,12 +46,10 @@
 	 action_method: 'put',
 	 action_data: {selection_param: 'project[owner_uuid]', success: 'page-refresh'}.to_json),
 	{ class: "btn btn-sm btn-primary arv-move-to-project", remote: true, method: 'get' }) do %>
-      <i class="fa fa-fw fa-truck"></i> Move to...
+      <i class="fa fa-fw fa-truck"></i> Move project...
     <% end %>
-    <% if @objects_and_names.empty? %>
-      <%= button_to(project_path(id: @object.uuid, return_to: projects_path), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
-	<i class="fa fa-fw fa-trash-o"></i> Delete project
-      <% end %>
+    <%= link_to(project_path(id: @object.uuid, return_to: projects_path), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
+      <i class="fa fa-fw fa-trash-o"></i> Delete project
     <% end %>
   <% end %>
 <% end %>
@@ -60,7 +58,7 @@
   <div class="row">
     <div class="col-sm-5">
       <div class="btn-group btn-group-sm">
-        <button type="button" class="btn btn-default">Selection...</button>
+        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection...</button>
         <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
           <span class="caret"></span>
           <span class="sr-only">Toggle Dropdown</span>

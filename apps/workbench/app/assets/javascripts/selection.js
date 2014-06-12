@@ -186,6 +186,9 @@ function dispatch_selection_action() {
     var data = [];
     var param_name = $(this).attr('data-selection-param-name');
     var href = $(this).attr('data-href');
+    if ($(this).closest('.disabled').length > 0) {
+	return false;
+    }
     $('.persistent-selection:checkbox:checked').each(function() {
         data.push({name: param_name, value: $(this).val()});
     });

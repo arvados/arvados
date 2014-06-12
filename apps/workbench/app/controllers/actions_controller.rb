@@ -39,7 +39,7 @@ class ActionsController < ApplicationController
                          tail_uuid: @object.uuid,
                          head_uuid: src.uuid,
                          link_class: 'name',
-                         name: @object.uuid)
+                         name: src.uuid)
         else
           case action
           when :copy

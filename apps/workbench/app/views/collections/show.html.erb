@@ -3,22 +3,20 @@
     <div class="panel panel-info">
       <div class="panel-heading">
 	<h3 class="panel-title">
-          <% i = 0 %>
-            <% @project_links.each do |l| %>
-              <%= if i > 0 then ', ' end %>
-              <% i += 1 %>
-              <%= l.name %>
-            <% end %>
+	  <%= @name_link.andand.name || @object.uuid %>
 	</h3>
       </div>
       <div class="panel-body">
         <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
+	<p><i>Content hash:</i><br />
+	  <span class="arvados-uuid"><%= @object.uuid %></span></p>
+
         <% if not (@output_of.andand.any? or @log_of.andand.any?) %>
           <p><i>No source information available.</i></p>
         <% end %>
 
         <% if @output_of.andand.any? %>
-          <p>This collection was the output of:<br />
+          <p><i>This collection was the output of:</i><br />
           <%= render_arvados_object_list_start(@output_of, 'Show all jobs',
                 jobs_path(filter: [['output', '=', @object.uuid]].to_json)) do |job| %>
             <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
@@ -27,7 +25,7 @@
         <% end %>
 
         <% if @log_of.andand.any? %>
-          <p>This collection contains log messages from:<br />
+          <p><i>This collection contains log messages from:</i><br />
           <%= render_arvados_object_list_start(@log_of, 'Show all jobs',
                 jobs_path(filter: [['log', '=', @object.uuid]].to_json)) do |job| %>
             <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
@@ -93,7 +91,7 @@
           <%= render_arvados_object_list_start(@projects, 'Show all projects',
                 links_path(filter: [['head_uuid', '=', @object.uuid],
                                     ['link_class', '=', 'name']].to_json)) do |project| %>
-          <%= link_to_if_arvados_object(project, friendly_name: true) %><br />
+            <%= link_to_if_arvados_object(project, friendly_name: true) %><br />
           <% end %>
           </p>
         <% end %>

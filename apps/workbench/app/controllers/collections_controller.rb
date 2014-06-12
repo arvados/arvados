@@ -162,7 +162,7 @@ class CollectionsController < ApplicationController
       @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'name').results
       project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
-      @projects = @project_links.map { |link| project_hash[link.tail_uuid] }
+      @projects = project_hash.values
       @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'permission',
                name: 'can_read').results

@@ -1,5 +1,5 @@
 <% content_for :content_top do %>
-  <% if @object and not @object.is_a?(Group) and @object.class.goes_in_projects? and @object.owner_uuid == current_user.uuid %>
+  <% if @object and not @object.is_a?(Group) and @object.class.goes_in_projects? and @object.owner_uuid == current_user.uuid and not @name_link %>
     <div class="pull-right" style="width: 40%">
       <div class="alert alert-warning alert-dismissable">
         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
