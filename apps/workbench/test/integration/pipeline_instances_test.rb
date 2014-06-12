@@ -96,7 +96,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     visit '/projects'
     find('.arv-project-list a,button', text: 'A Project').click
 
-    find('#collections-menu').click
+    find('li.selection-menu > a').click
     click_button 'Copy selections into this project'
 
     # create a pipeline instance

@@ -91,6 +91,9 @@ class ProjectsController < ApplicationController
   end
 
   def show
+    if !@object
+      return render_not_found("object not found")
+    end
     @objects = @object.contents(limit: 50,
                                 include_linked: true,
                                 offset: params[:offset] || 0)
