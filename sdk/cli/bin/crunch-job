@@ -501,13 +501,23 @@ if (!$have_slurm)
 
 # If this job requires a Docker image, install that.
 my $docker_bin = "/usr/bin/docker.io";
-my $docker_image = $Job->{runtime_constraints}->{docker_image} || "";
-if ($docker_image) {
+my ($docker_locator, $docker_hash);
+if ($docker_locator = $Job->{docker_image_locator}) {
+  $docker_hash = find_docker_hash($docker_locator);
+  if (!$docker_hash)
+  {
+    croak("No Docker image hash found from locator $docker_locator");
+  }
+  my $docker_install_script = qq{
+if ! $docker_bin images -q --no-trunc | grep -qxF \Q$docker_hash\E; then
+    arv-get \Q$docker_locator/$docker_hash.tar\E | $docker_bin load
+fi
+};
   my $docker_pid = fork();
   if ($docker_pid == 0)
   {
     srun (["srun", "--nodelist=" . join(',', @node)],
-          [$docker_bin, 'pull', $docker_image]);
+          ["/bin/sh", "-ec", $docker_install_script]);
     exit ($?);
   }
   while (1)
@@ -516,11 +526,9 @@ if ($docker_image) {
     freeze_if_want_freeze ($docker_pid);
     select (undef, undef, undef, 0.1);
   }
-  # If the Docker image was specified as a hash, pull will fail.
-  # Ignore that error.  We'll see what happens when we try to run later.
-  if (($? != 0) && ($docker_image !~ /^[0-9a-fA-F]{5,64}$/))
+  if ($? != 0)
   {
-    croak("Installing Docker image $docker_image returned exit code $?");
+    croak("Installing Docker image from $docker_locator returned exit code $?");
   }
 }
 
@@ -639,7 +647,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	  "&& perl -";
     }
     $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
-    if ($docker_image)
+    if ($docker_hash)
     {
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$ENV{TASK_WORK}/docker.cid -poll=10000 ";
       $command .= "$docker_bin run -i -a stdin -a stdout -a stderr --cidfile=$ENV{TASK_WORK}/docker.cid ";
@@ -659,7 +667,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
           $command .= "-e \Q$env_key=$env_val\E ";
         }
       }
-      $command .= "\Q$docker_image\E ";
+      $command .= "\Q$docker_hash\E ";
     } else {
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 "
     }
@@ -1435,6 +1443,21 @@ sub must_lock_now
   if (!flock L, LOCK_EX|LOCK_NB) {
     croak("Can't lock $lockfile: $error_message\n");
   }
+}
+
+sub find_docker_hash {
+  # Given a Keep locator, search for a matching link to find the Docker hash
+  # of the stored image.
+  my $locator = shift;
+  my $links_result = $arv->{links}->{list}->execute(
+    filters => [["head_uuid", "=", $locator],
+                ["link_class", "=", "docker_image_hash"]],
+    limit => 1);
+  my $docker_hash;
+  foreach my $link (@{$links_result->{items}}) {
+    $docker_hash = lc($link->{name});
+  }
+  return $docker_hash;
 }
 
 __DATA__
