@@ -443,6 +443,7 @@ class WhRunPipelineInstance
     moretodo = true
     interrupted = false
 
+    job_creation_failed = 0
     while moretodo
       moretodo = false
       @components.each do |cname, c|
@@ -485,7 +486,8 @@ class WhRunPipelineInstance
             debuglog "component #{cname} new job #{job[:uuid]}"
             c[:job] = job
           else
-            debuglog "component #{cname} new job failed"
+            debuglog "component #{cname} new job failed", 0
+            job_creation_failed += 1
           end
         end
 
@@ -562,6 +564,11 @@ class WhRunPipelineInstance
         moretodo = false
       end
 
+      # If job creation fails, just give up on this pipeline instance.
+      if job_creation_failed > 0
+        moretodo = false
+      end
+
       if moretodo
         begin
           sleep 10
@@ -578,7 +585,7 @@ class WhRunPipelineInstance
     failed = 0
     @components.each do |cname, c|
       if c[:job]
-        if c[:job][:finished_at]
+        if c[:job][:finished_at] or c[:job][:cancelled_at] or (c[:job][:running] == false and c[:job][:success] == false)
           ended += 1
           if c[:job][:success] == true
             succeeded += 1
@@ -591,6 +598,13 @@ class WhRunPipelineInstance
 
     success = (succeeded == @components.length)
 
+    # A job create call failed. Just give up.
+    if job_creation_failed > 0
+      debuglog "job creation failed - giving up on this pipeline instance", 0
+      success = false
+      failed += 1
+    end
+
     if interrupted
      if success
         @instance[:state] = 'Complete'
@@ -602,6 +616,8 @@ class WhRunPipelineInstance
         @instance[:state] = success ? 'Complete' : 'Failed'
       end
     end
+
+    debuglog "pipeline instance state is #{@instance[:state]}"
 
     # set components_summary
     components_summary = {"todo" => @components.length - ended, "done" => succeeded, "failed" => failed}

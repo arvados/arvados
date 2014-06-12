@@ -43,12 +43,20 @@ jQuery(function($){
         targets.fadeToggle(200);
     });
 
+    var ajaxCount = 0;
+
     $(document).
         on('ajax:send', function(e, xhr) {
-            $('.loading').fadeTo('fast', 1);
+            ajaxCount += 1;
+            if (ajaxCount == 1) {
+                $('.loading').fadeTo('fast', 1);
+            }
         }).
         on('ajax:complete', function(e, status) {
-            $('.loading').fadeOut('fast', 0);
+            ajaxCount -= 1;
+            if (ajaxCount == 0) {
+                $('.loading').fadeOut('fast', 0);
+            }
         }).
         on('click', '.removable-tag a', function(e) {
             var tag_span = $(this).parents('[data-tag-link-uuid]').eq(0)

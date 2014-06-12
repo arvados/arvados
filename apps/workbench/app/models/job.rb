@@ -29,4 +29,8 @@ class Job < ArvadosBase
       x += " submitted #{created_at.strftime('%b %-d')}"
     end
   end
+
+  def cancel
+    arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {}
+  end
 end

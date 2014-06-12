@@ -18,7 +18,9 @@ ArvadosWorkbench::Application.routes.draw do
   resources :virtual_machines
   resources :authorized_keys
   resources :job_tasks
-  resources :jobs
+  resources :jobs do
+    post 'cancel', :on => :member
+  end
   match '/logout' => 'sessions#destroy', via: [:get, :post]
   get '/logged_out' => 'sessions#index'
   resources :users do

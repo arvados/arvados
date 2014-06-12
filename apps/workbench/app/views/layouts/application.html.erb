@@ -14,7 +14,7 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <meta name="description" content="">
   <meta name="author" content="">
-  <% if current_user %>
+  <% if current_user and $arvados_api_client.discovery[:websocketUrl] %>
   <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
   <% end %>
   <meta name="robots" content="NOINDEX, NOFOLLOW">
@@ -212,8 +212,6 @@
       <%= yield %>
     </div>
   </div>
-
-</div>
 
   <%= yield :footer_html %>
   <%= piwik_tracking_tag %>

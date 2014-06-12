@@ -47,15 +47,6 @@ $(document).on('ready ajax:complete', function() {
     run_pipeline_button_state();
 });
 
-$(document).on('ajax:complete ready', function() {
-  var a = $('.arv-log-event-listener');
-  if (a.length > 0) {
-    $('.arv-log-event-listener').each(function() {
-      subscribeToEventLog(this.id);
-    });
-  }
-});
-
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
     var wasatbottom = ($(this).scrollTop() + $(this).height() >=
                        this.scrollHeight);

@@ -3,7 +3,12 @@
     <div class="panel panel-info">
       <div class="panel-heading">
 	<h3 class="panel-title">
-          <% "Collection #{@object.uuid}" %>
+          <% i = 0 %>
+            <% @folder_links.each do |l| %>
+              <%= if i > 0 then ', ' end %>
+              <% i += 1 %>
+              <%= l.name %>
+            <% end %>
 	</h3>
       </div>
       <div class="panel-body">

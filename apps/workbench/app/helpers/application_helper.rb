@@ -95,7 +95,11 @@ module ApplicationHelper
             link_name = attrvalue.friendly_link_name
           else
             begin
-              link_name = resource_class.find(link_uuid).friendly_link_name
+              if resource_class.name == 'Collection'
+                link_name = collections_for_object(link_uuid).andand.first.andand.friendly_link_name
+              else
+                link_name = object_for_dataclass(resource_class, link_uuid).andand.friendly_link_name
+              end
             rescue RuntimeError
               # If that lookup failed, the link will too. So don't make one.
               return attrvalue
@@ -106,13 +110,15 @@ module ApplicationHelper
           link_name = "#{resource_class.to_s}: #{link_name}"
         end
         if !opts[:no_tags] and resource_class == Collection
-          Link.where(head_uuid: link_uuid, link_class: ["tag", "identifier"]).each do |tag|
-            link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
+          links_for_object(link_uuid).each do |tag|
+            if tag.link_class.in? ["tag", "identifier"]
+              link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
+            end
           end
         end
         if opts[:thumbnail] and resource_class == Collection
           # add an image thumbnail if the collection consists of a single image file.
-          Collection.where(uuid: link_uuid).each do |c|
+          collections_for_object(link_uuid).each do |c|
             if c.files.length == 1 and CollectionsHelper::is_image c.files.first[1]
               link_name += " "
               link_name += image_tag "#{url_for c}/#{CollectionsHelper::file_path c.files.first}", style: "height: 4em; width: auto"
@@ -294,27 +300,45 @@ module ApplicationHelper
       datatype = 'text'
     end
 
+    # preload data
+    preload_uuids = []
+    items = []
     selectables = []
+
     attrtext = attrvalue
     if dataclass and dataclass.is_a? Class
+      objects = get_n_objects_of_class dataclass, 10
+      objects.each do |item|
+        items << item
+        preload_uuids << item.uuid
+      end
       if attrvalue and !attrvalue.empty?
-        Link.where(head_uuid: attrvalue, link_class: ["tag", "identifier"]).each do |tag|
-          attrtext += " [#{tag.name}]"
+        preload_uuids << attrvalue
+      end
+      preload_links_for_objects preload_uuids
+
+      if attrvalue and !attrvalue.empty?
+        links_for_object(attrvalue).each do |link|
+          if link.link_class.in? ["tag", "identifier"]
+            attrtext += " [#{link.name}]"
+          end
         end
         selectables.append({name: attrtext, uuid: attrvalue, type: dataclass.to_s})
       end
-      #dataclass.where(uuid: attrvalue).each do |item|
-      #  selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
-      #end
       itemuuids = []
-      dataclass.limit(10).each do |item|
+      items.each do |item|
         itemuuids << item.uuid
         selectables.append({name: item.uuid, uuid: item.uuid, type: dataclass.to_s})
       end
-      Link.where(head_uuid: itemuuids, link_class: ["tag", "identifier"]).each do |tag|
-        selectables.each do |selectable|
-          if selectable['uuid'] == tag.head_uuid
-            selectable['name'] += ' [' + tag.name + ']'
+
+      itemuuids.each do |itemuuid|
+        links_for_object(itemuuid).each do |link|
+          if link.link_class.in? ["tag", "identifier"]
+            selectables.each do |selectable|
+              if selectable['uuid'] == link.head_uuid
+                selectable['name'] += ' [' + link.name + ']'
+              end
+            end
           end
         end
       end

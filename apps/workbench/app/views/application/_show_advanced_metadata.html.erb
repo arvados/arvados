@@ -1,6 +1,18 @@
 <% outgoing = Link.where(tail_uuid: @object.uuid) %>
 <% incoming = Link.where(head_uuid: @object.uuid) %>
 
+<%
+  preload_uuids = []
+  preload_head_uuids = []
+  outgoing.results.each do |link|
+    preload_uuids << link.uuid
+    preload_uuids << link.head_uuid
+    preload_head_uuids << link.head_uuid
+  end
+  preload_collections_for_objects preload_uuids
+  preload_links_for_objects preload_head_uuids
+%>
+
 <% if (outgoing | incoming).any? %>
 <table class="table topalign">
   <colgroup>

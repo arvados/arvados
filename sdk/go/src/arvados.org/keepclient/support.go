@@ -3,7 +3,6 @@ package keepclient
 
 import (
 	"arvados.org/streamer"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,53 +28,17 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		return nil
 	}
 
-	// Construct request of keep disk list
-	var req *http.Request
-	var err error
-
-	if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_services/accessible?format=json", this.ApiServer), nil); err != nil {
-		return err
-	}
-
-	// Add api token header
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
-	if this.External {
-		req.Header.Add("X-External-Client", "1")
-	}
-
-	// Make the request
-	var resp *http.Response
-	if resp, err = this.Client.Do(req); err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		// fall back on keep disks
-		if req, err = http.NewRequest("GET", fmt.Sprintf("https://%s/arvados/v1/keep_disks", this.ApiServer), nil); err != nil {
-			return err
-		}
-		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
-		if resp, err = this.Client.Do(req); err != nil {
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(resp.Status)
-		}
-	}
-
-	// 'defer' is a stack, so it will drain the Body before closing it.
-	defer resp.Body.Close()
-	defer io.Copy(ioutil.Discard, resp.Body)
-
 	type svcList struct {
 		Items []keepDisk `json:"items"`
 	}
-
-	// Decode json reply
-	dec := json.NewDecoder(resp.Body)
 	var m svcList
-	if err := dec.Decode(&m); err != nil {
-		return err
+
+	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &m)
+
+	if err != nil {
+		if err := this.Arvados.List("keep_disks", nil, &m); err != nil {
+			return err
+		}
 	}
 
 	listed := make(map[string]bool)
@@ -181,7 +144,7 @@ func (this KeepClient) uploadToKeepServer(host string, hash string, body io.Read
 		req.ContentLength = expectedLength
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.ApiToken))
+	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", this.Arvados.ApiToken))
 	req.Header.Add("Content-Type", "application/octet-stream")
 
 	if this.Using_proxy {

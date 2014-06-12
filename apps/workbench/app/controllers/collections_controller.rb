@@ -104,6 +104,8 @@ class CollectionsController < ApplicationController
       info[:links] << link
     end
     @request_url = request.url
+
+    render_index
   end
 
   def show_file_links
@@ -157,10 +159,10 @@ class CollectionsController < ApplicationController
       end
       @output_of = jobs_with.call(output: @object.uuid)
       @log_of = jobs_with.call(log: @object.uuid)
-      project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+      @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'name').results
-      project_hash = Group.where(uuid: project_links.map(&:tail_uuid)).to_hash
-      @projects = project_links.map { |link| project_hash[link.tail_uuid] }
+      project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
+      @projects = @project_links.map { |link| project_hash[link.tail_uuid] }
       @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'permission',
                name: 'can_read').results
@@ -181,6 +183,8 @@ class CollectionsController < ApplicationController
                                                                :direction => :top_down,
                                                                :combine_jobs => :script_only,
                                                                :pdata_only => true}) rescue nil
+
+    super
   end
 
   def sharing_popup

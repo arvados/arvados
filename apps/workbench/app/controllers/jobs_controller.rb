@@ -1,6 +1,8 @@
 class JobsController < ApplicationController
 
   def generate_provenance(jobs)
+    return if params['tab_pane'] != "Provenance"
+
     nodes = []
     collections = []
     jobs.each do |j|
@@ -16,7 +18,7 @@ class JobsController < ApplicationController
 
     @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {
       :request => request,
-      :all_script_parameters => true, 
+      :all_script_parameters => true,
       :script_version_nodes => true}
   end
 
@@ -25,14 +27,21 @@ class JobsController < ApplicationController
     if params[:uuid]
       @objects = Job.where(uuid: params[:uuid])
       generate_provenance(@objects)
+      render_index
     else
       @limit = 20
       super
     end
   end
 
+  def cancel
+    @object.cancel
+    redirect_to @object
+  end
+
   def show
     generate_provenance([@object])
+    super
   end
 
   def index_pane_list
@@ -44,6 +53,6 @@ class JobsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Details Provenance Advanced)
+    %w(Status Details Provenance Advanced)
   end
 end
