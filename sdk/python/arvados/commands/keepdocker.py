@@ -20,7 +20,6 @@ STAT_CACHE_ERRORS = (IOError, OSError, ValueError)
 
 DockerImage = namedtuple('DockerImage',
                          ['repo', 'tag', 'hash', 'created', 'vsize'])
-_docker_image_list = None
 
 opt_parser = argparse.ArgumentParser(add_help=False)
 opt_parser.add_argument(
@@ -68,7 +67,7 @@ def check_docker(proc, description):
         raise DockerError("docker {} returned status code {}".
                           format(description, proc.returncode))
 
-def _get_docker_images():
+def docker_images():
     # Yield a DockerImage tuple for each installed image.
     list_proc = popen_docker(['images', '--no-trunc'], stdout=subprocess.PIPE)
     list_output = iter(list_proc.stdout)
@@ -82,12 +81,6 @@ def _get_docker_images():
         yield DockerImage(repo, tag, imageid, ctime, vsize)
     list_proc.stdout.close()
     check_docker(list_proc, "images")
-
-def docker_images():
-    global _docker_image_list
-    if _docker_image_list is None:
-        _docker_image_list = list(_get_docker_images())
-    return _docker_image_list
 
 def find_image_hash(image_name, image_tag):
     hash_search = image_name.lower()
