@@ -70,10 +70,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
-    click_link 'Permissions'
-    find('input[value="Move to..."]').click
+    click_link 'Move to...'
     find('.selectable', text: 'Project 1234').click
-    find('a,button', text: 'Move').click
+    find('.modal-footer a,button', text: 'Move').click
     wait_for_ajax
 
     # Wait for the page to refresh and show the new parent in Permissions panel
