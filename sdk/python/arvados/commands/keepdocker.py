@@ -161,7 +161,7 @@ def main(arguments=None):
                 format(image_hash)]
             message.extend(link['head_uuid'] for link in existing_links)
             print >>sys.stderr, "\n".join(message)
-            sys.exit(1)
+            sys.exit(0)
 
     # Open a file for the saved image, and write it if needed.
     outfile_name = '{}.tar'.format(image_hash)
