@@ -20,43 +20,51 @@ class ActionsController < ApplicationController
   end
 
   expose_action :copy_selections_into_project do
-    link_selections = Link.filter([['uuid','in',params["selection"]]])
-    link_uuids = link_selections.collect(&:uuid)
+    move_or_copy :copy
+  end
 
-    # Given a link uuid, we'll add the link's head_uuid. Given another
-    # type, we'll add the object itself.
-    uuids_to_add = params["selection"] - link_uuids
-    uuids_to_add += link_selections.collect(&:head_uuid)
+  expose_action :move_selections_into_project do
+    move_or_copy :move
+  end
 
-    # Skip anything that's already here.
-    already_named = Link.
-      filter([['tail_uuid','=',@object.uuid],
-              ['head_uuid','in',uuids_to_add],
-              ['link_class','=','name']]).
-      collect(&:head_uuid)
-    uuids_to_add -= already_named
-
-    # Given a name link, we'll try to add the linked object using the
-    # same name.
-    name_for = {}
-    link_selections.
-      select { |x| x.link_class == 'name' }.
-      each do |link|
-      name_for[link.head_uuid] = link.name
-    end
-
-    uuids_to_add.each do |s|
-      name = name_for[s] || s
-      begin
-        Link.create(tail_uuid: @object.uuid,
-                    head_uuid: s,
-                    link_class: 'name',
-                    name: name)
-      rescue
-        Link.create(tail_uuid: @object.uuid,
-                    head_uuid: s,
-                    link_class: 'name',
-                    name: name + " (#{Time.now.localtime})")
+  def move_or_copy action
+    uuids_to_add = params["selection"]
+    uuids_to_add.
+      collect { |x| ArvadosBase::resource_class_for_uuid(x) }.
+      uniq.
+      each do |resource_class|
+      resource_class.filter([['uuid','in',uuids_to_add]]).each do |src|
+        if resource_class == Collection
+          dst = Link.new(owner_uuid: @object.uuid,
+                         tail_uuid: @object.uuid,
+                         head_uuid: src.uuid,
+                         link_class: 'name',
+                         name: @object.uuid)
+        else
+          case action
+          when :copy
+            dst = src.dup
+            if dst.respond_to? :'name='
+              if dst.name
+                dst.name = "Copy of #{dst.name}"
+              else
+                dst.name = "Copy of unnamed #{dst.class_for_display.downcase}"
+              end
+            end
+          when :move
+            dst = src
+          else
+            raise ArgumentError.new "Unsupported action #{action}"
+          end
+          dst.owner_uuid = @object.uuid
+          dst.tail_uuid = @object.uuid if dst.class == Link
+        end
+        begin
+          dst.save!
+        rescue
+          dst.name += " (#{Time.now.localtime})" if dst.respond_to? :name=
+          dst.save!
+        end
       end
     end
     redirect_to @object
