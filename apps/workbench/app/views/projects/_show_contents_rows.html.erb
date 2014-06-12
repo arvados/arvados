@@ -9,7 +9,7 @@
 
       <% if project.editable? %>
         <%= link_to({action: 'remove_item', id: project.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this project?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'remove') do %>
-          <i class="fa fa-fw fa-ban"></i>
+          <i class="fa fa-fw fa-trash-o"></i>
         <% end %>
       <% else %>
         <i class="fa fa-fw"></i><%# placeholder %>
@@ -17,7 +17,7 @@
 
       <%= render :partial => "show_object_button", :locals => {object: object, size: 'sm', name_link: name_link} %>
 
-      <%= render_editable_attribute (name_link || object), 'name', nil, {btnplacement: :left, tiptitle: 'rename'} %>
+      <%= render_editable_attribute (name_link || object), 'name', nil, {tiptitle: 'rename'} %>
     </td>
     <td class="arv-description-in-table">
       <%= render_controller_partial(
