@@ -82,11 +82,17 @@ def docker_images():
     list_proc.stdout.close()
     check_docker(list_proc, "images")
 
-def find_image_hash(image_name, image_tag):
-    hash_search = image_name.lower()
+def find_image_hash(image_search, image_tag=None):
+    # Given one argument, search for one Docker image with a matching hash,
+    # and return its full hash.
+    # Given two arguments, also search for a Docker image with the same
+    # repository and tag.  If one is found, return its hash; otherwise,
+    # fall back to the one-argument hash search.
+    # Returns None if no match is found, or a hash search is ambiguous.
+    hash_search = image_search.lower()
     hash_matches = set()
     for image in docker_images():
-        if (image.repo == image_name) and (image.tag == image_tag):
+        if (image.repo == image_search) and (image.tag == image_tag):
             return image.hash
         elif image.hash.startswith(hash_search):
             hash_matches.add(image.hash)
@@ -143,7 +149,7 @@ def main(arguments=None):
 
     # Pull the image if requested, unless the image is specified as a hash
     # that we already have.
-    if args.pull and (find_image_hash(args.image, None) is None):
+    if args.pull and (find_image_hash(args.image) is None):
         pull_image(args.image, args.tag)
 
     image_hash = find_image_hash(args.image, args.tag)
