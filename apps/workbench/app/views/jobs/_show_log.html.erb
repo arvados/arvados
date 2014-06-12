@@ -77,16 +77,17 @@ $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
     $("#logloadspinner").detach();
   });
 <% else %>
-  <% backlog = ""
+  <%# backlog = ""
      Log.filter([['object_uuid', '=', @object.uuid],
                   ['event_type', '=', 'stderr']]).order(["id", "asc"]).each do |l|
-        backlog += l.properties["text"]
+        backlog += l.properties[:text]
      end
    %>
-  var backlog = "<%=j backlog %>";
+
+  /* var backlog = "<%#=j backlog %>";
     logViewer.filter();
     addToLogViewer(logViewer, backlog.split("\n"));
-    logViewer.filter(makeFilter());
+    logViewer.filter(makeFilter());  */
 
 <% end %>
 
