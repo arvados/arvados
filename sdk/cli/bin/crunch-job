@@ -663,6 +663,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     } else {
       $command .= "crunchstat -cgroup-path=/sys/fs/cgroup "
     }
+    $command .= "stdbuf -o0 -e0 ";
     $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
