@@ -87,3 +87,9 @@ bad_group_has_ownership_cycle_b:
   modified_at: 2014-05-03 18:50:08 -0400
   updated_at: 2014-05-03 18:50:08 -0400
   name: Owned by bad group a
+
+anonymous_group:
+  uuid: zzzzz-j7d0g-anonymouspublic
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: Anonymous group
+  description: Anonymous group
