@@ -11,9 +11,47 @@
 <% end %>
 
 <% content_for :tab_line_buttons do %>
-  <% if @objects_and_names.empty? %>
-    <%= button_to(project_path(id: @object.uuid, return_to: projects_path), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
-      <i class="fa fa-fw fa-trash-o"></i> Delete project
+  <% if @object.editable? %>
+    <%= link_to(
+	  choose_collections_path(
+	    title: 'Add data to project:',
+	    multiple: true,
+	    action_name: 'Add',
+	    action_href: actions_path(id: @object.uuid),
+	    action_method: 'post',
+	    action_data: {selection_param: 'selection[]', copy_selections_into_project: @object.uuid, success: 'page-refresh'}.to_json),
+	  { class: "btn btn-primary btn-sm", remote: true, method: 'get', data: {'event-after-select' => 'page-refresh'} }) do %>
+      <i class="fa fa-fw fa-plus"></i> Add data
+    <% end %>
+    <%= link_to(
+	  choose_pipeline_templates_path(
+	    title: 'Choose a pipeline to run:',
+	    action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
+	    action_href: pipeline_instances_path,
+	    action_method: 'post',
+	    action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
+	  { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
+      <i class="fa fa-fw fa-gear"></i> Run a pipeline
+    <% end %>
+    <%= link_to projects_path(method: 'post', owner_uuid: @object.uuid), class: 'btn btn-sm btn-primary' do %>
+      <i class="fa fa-fw fa-plus"></i>
+      Add a subproject
+    <% end %>
+    <%= link_to(
+	choose_projects_path(
+	 title: 'Move this project to...',
+	 editable: true,
+	 action_name: 'Move',
+	 action_href: project_path(@object.uuid),
+	 action_method: 'put',
+	 action_data: {selection_param: 'project[owner_uuid]', success: 'page-refresh'}.to_json),
+	{ class: "btn btn-sm btn-primary arv-move-to-project", remote: true, method: 'get' }) do %>
+      <i class="fa fa-fw fa-truck"></i> Move to...
+    <% end %>
+    <% if @objects_and_names.empty? %>
+      <%= button_to(project_path(id: @object.uuid, return_to: projects_path), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
+	<i class="fa fa-fw fa-trash-o"></i> Delete project
+      <% end %>
     <% end %>
   <% end %>
 <% end %>
@@ -42,29 +80,6 @@
             %></li>
         </ul>
       </div>
-      <% if @object.editable? %>
-        <%= link_to(
-              choose_collections_path(
-                title: 'Add data to project:',
-                multiple: true,
-                action_name: 'Add',
-                action_href: actions_path(id: @object.uuid),
-                action_method: 'post',
-                action_data: {selection_param: 'selection[]', copy_selections_into_project: @object.uuid, success: 'page-refresh'}.to_json),
-              { class: "btn btn-primary btn-sm", remote: true, method: 'get', data: {'event-after-select' => 'page-refresh'} }) do %>
-          <i class="fa fa-fw fa-plus"></i> Add data
-        <% end %>
-        <%= link_to(
-              choose_pipeline_templates_path(
-                title: 'Choose a pipeline to run:',
-                action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
-                action_href: pipeline_instances_path,
-                action_method: 'post',
-                action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
-              { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
-          <i class="fa fa-fw fa-gear"></i> Run a pipeline
-        <% end %>
-      <% end %>
     </div>
     <div class="col-sm-3">
       <form class="form-inline" role="form">
