@@ -5,6 +5,9 @@ function addToLogViewer(logViewer, lines) {
   for (var a in lines) {
     var v = lines[a].match(re);
     if (v != null) {
+
+    var ts = new Date(Date.UTC(v[2], v[3], v[4], v[6], v[7], v[8]));
+
     v11 = v[11];
     if (typeof v[11] === 'undefined') {
       v11 = '&nbsp;';
@@ -30,7 +33,7 @@ function addToLogViewer(logViewer, lines) {
 
     logViewer.add({
       id: logViewer.items.length,
-      timestamp: v[1] + " " + v[5],
+      timestamp: ts.toLocaleDateString() + " " + ts.toLocaleTimeString(),
       taskid: v11,
       message: message,
       type: type
