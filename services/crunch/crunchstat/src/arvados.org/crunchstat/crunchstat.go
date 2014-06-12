@@ -76,16 +76,16 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 	memory_stat := FindStat(cgroup_path, "memory", "stat")
 
 	if cpuacct_stat != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from ", cpuacct_stat)
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", cpuacct_stat)
 	}
 	if blkio_io_service_bytes != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from ", blkio_io_service_bytes)
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", blkio_io_service_bytes)
 	}
 	if cpuset_cpus != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from ", cpuset_cpus)
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", cpuset_cpus)
 	}
 	if memory_stat != "" {
-		stderr <- fmt.Sprintf("crunchstat: reading stats from ", memory_stat)
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", memory_stat)
 	}
 
 	var elapsed int64 = poll
