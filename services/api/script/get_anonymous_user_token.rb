@@ -11,12 +11,12 @@ opts = Trollop::options do
   banner "Usage: get_anonymous_user_token "
   banner ''
   opt :get, <<-eos
-Get an existing anonymous user token. If no such token exists \n
+Get an existing anonymous user token. If no such token exists \
 or if this option is omitted, a new token is created and returned.
   eos
 end
 
-create_or_get = opts[:get]
+get_existing = opts[:get]
 
 require File.dirname(__FILE__) + '/../config/environment'
 
@@ -32,7 +32,7 @@ def create_api_client_auth
   api_client_auth.reload
 end
 
-if create_or_get
+if get_existing
   api_client_auth = ApiClientAuthorization.
     where('user_id=?', anonymous_user.id.to_i).first
 end
