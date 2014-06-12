@@ -506,7 +506,7 @@ if ($docker_image) {
   my $docker_pid = fork();
   if ($docker_pid == 0)
   {
-    srun (["srun", "--nodelist=" . join(' ', @node)],
+    srun (["srun", "--nodelist=" . join(',', @node)],
           [$docker_bin, 'pull', $docker_image]);
     exit ($?);
   }
