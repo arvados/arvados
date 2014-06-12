@@ -42,6 +42,18 @@ func OutputChannel(stdout chan string, stderr chan string) {
 	}
 }
 
+func FindStat(cgroup_path string, statgroup string, stat string) string {
+	path := fmt.Sprintf("%s/%s.%s", cgroup_path, statgroup, stat)
+	if _, err := os.Stat(path); err != nil {
+		return path
+	}
+	path = fmt.Sprintf("%s/%s/%s.%s", cgroup_path, statgroup, statgroup, stat)
+	if _, err := os.Stat(path); err != nil {
+		return path
+	}
+	return ""
+}
+
 func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 	//var last_usage int64 = 0
 	var last_user int64 = 0
@@ -57,11 +69,11 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 
 	disk := make(map[string]*Disk)
 
-	//cpuacct_usage := fmt.Sprintf("%s/cpuacct.usage", cgroup_path)
-	cpuacct_stat := fmt.Sprintf("%s/cpuacct.stat", cgroup_path)
-	blkio_io_service_bytes := fmt.Sprintf("%s/blkio.io_service_bytes", cgroup_path)
-	cpuset_cpus := fmt.Sprintf("%s/cpuset.cpus", cgroup_path)
-	memory_stat := fmt.Sprintf("%s/memory.stat", cgroup_path)
+	//cpuacct_usage := FindStat(cgroup_path, "cpuacct", "usage")
+	cpuacct_stat := FindStat(cgroup_path, "cpuacct", "stat")
+	blkio_io_service_bytes := FindStat(cgroup_path, "blkio", "io_service_bytes")
+	cpuset_cpus := FindStat(cgroup_path, "cpuset", "cpus")
+	memory_stat := FindStat(cgroup_path, "memory", "stat")
 
 	var elapsed int64 = poll
 
@@ -79,7 +91,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 			c.Close()
 		}*/
 		var cpus int64 = 0
-		{
+		if cpuset_cpus != "" {
 			c, _ := os.Open(cpuset_cpus)
 			b, _ := ioutil.ReadAll(c)
 			sp := strings.Split(string(b), ",")
@@ -103,7 +115,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 		if cpus == 0 {
 			cpus = 1
 		}
-		{
+		if cpuacct_stat != "" {
 			c, _ := os.Open(cpuacct_stat)
 			b, _ := ioutil.ReadAll(c)
 			var next_user int64
@@ -135,7 +147,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 			last_user = next_user
 			last_sys = next_sys
 		}
-		{
+		if blkio_io_service_bytes != "" {
 			c, _ := os.Open(blkio_io_service_bytes)
 			b := bufio.NewScanner(c)
 			var device, op string
@@ -164,7 +176,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 			c.Close()
 		}
 
-		{
+		if memory_stat != "" {
 			c, _ := os.Open(memory_stat)
 			b := bufio.NewScanner(c)
 			var stat string
