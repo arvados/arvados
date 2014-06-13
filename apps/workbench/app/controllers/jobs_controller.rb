@@ -53,6 +53,6 @@ class JobsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Status Details Provenance Advanced)
+    %w(Status Log Details Provenance Advanced)
   end
 end

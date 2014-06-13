@@ -1,5 +1,13 @@
 class Blob
 
+  def initialize locator
+    @locator = locator
+  end
+
+  def empty?
+    !!@locator.match(/^d41d8cd98f00b204e9800998ecf8427e(\+.*)?$/)
+  end
+
   # In order to get a Blob from Keep, you have to prove either
   # [a] you have recently written it to Keep yourself, or
   # [b] apiserver has recently decided that you should be able to read it

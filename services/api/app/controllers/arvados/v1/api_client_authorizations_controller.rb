@@ -21,6 +21,12 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   end
 
   def create
+    # Note: the user could specify a owner_uuid for a different user, which on
+    # the surface appears to be a security hole.  However, the record will be
+    # rejected before being saved to the database by the ApiClientAuthorization
+    # model which enforces that user_id == current user or the user is an
+    # admin.
+
     if resource_attrs[:owner_uuid]
       # The model has an owner_id attribute instead of owner_uuid, but
       # we can't expect the client to know the local numeric ID. We

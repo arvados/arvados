@@ -1,0 +1,124 @@
+<script>
+(function() {
+var logViewer = new List('log-viewer', {
+  valueNames: [ 'id', 'timestamp', 'taskid', 'message', 'type'],
+  page: 10000,
+});
+
+var makeFilter = function() {
+  var pass = [];
+  $(".toggle-filter").each(function(i, e) {
+    if (e.checked) {
+      pass.push(e.id.substr(5));
+    }
+  });
+  return (function(item) {
+    for (a in pass) {
+      if (pass[a] == item.values().type) { return true; }
+    }
+    return false;
+  });
+}
+
+<% if @object.log %>
+<% logcollection = Collection.find @object.log %>
+
+$.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
+  done(function(data, status, jqxhr) {
+    logViewer.filter();
+    addToLogViewer(logViewer, data.split("\n"));
+    logViewer.filter(makeFilter());
+    $("#logloadspinner").detach();
+  });
+<% else %>
+  <%# Live log loading not implemented yet. %>
+<% end %>
+
+$(".toggle-filter").on("change", function() {
+  logViewer.filter(makeFilter());
+});
+
+$("#filter-all").on("click", function() {
+  $(".toggle-filter").each(function(i, f) { f.checked = true; });
+  logViewer.filter(makeFilter());
+});
+
+$("#filter-none").on("click", function() {
+  $(".toggle-filter").each(function(i, f) { f.checked = false; console.log(f); });
+  logViewer.filter(makeFilter());
+});
+
+$("#sort-by-time").on("change", function() {
+  logViewer.sort("id");
+});
+
+$("#sort-by-task").on("change", function() {
+  logViewer.sort("taskid");
+});
+
+})();
+
+</script>
+
+<div id="log-viewer">
+
+    <div class="radio-inline">
+      <label><input id="sort-by-time" type="radio" name="sort-radio" checked> Sort by time</label>
+    </div>
+    <div class="radio-inline">
+      <label><input id="sort-by-task" type="radio" name="sort-radio" > Sort by task</label>
+    </div>
+<br>
+  <div class="checkbox-inline">
+    <label><input id="show-crunch" type="checkbox" checked="true" class="toggle-filter"> Show crunch output</label>
+  </div>
+  <div class="checkbox-inline">
+    <label><input id="show-job-status" type="checkbox" checked="true" class="toggle-filter"> Show job status</label>
+  </div>
+  <div class="checkbox-inline">
+    <label><input id="show-task-dispatch" type="checkbox" checked="true" class="toggle-filter"> Show task dispatch</label>
+  </div>
+  <div class="checkbox-inline">
+    <label><input id="show-task-output" type="checkbox" checked="true" class="toggle-filter"> Show task output</label>
+  </div>
+  <div class="checkbox-inline">
+    <label><input id="show-crunchstat" type="checkbox" checked="true" class="toggle-filter"> Show compute usage</label>
+  </div>
+
+<div class="pull-right">
+    <button id="filter-all" class="btn">
+      Select all
+    </button>
+    <button id="filter-none" class="btn">
+      Select none
+    </button>
+</div>
+
+  <table class="log-viewer-table">
+    <thead>
+      <tr>
+        <th class="id" data-sort="id"></th>
+        <th class="timestamp" data-sort="timestamp">Timestamp</th>
+        <th class="type" data-sort="type">Log type</th>
+        <th class="taskid"  data-sort="taskid">Task</th>
+        <th class="message" data-sort="message">Message</th>
+      </tr>
+    </thead>
+    <tbody class="list">
+      <tr>
+        <td class="id"></td>
+        <td class="timestamp"></td>
+        <td class="type"></td>
+        <td class="taskid"></td>
+        <td class="message"></td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<% if !@object.log %>
+  This job is still running.  The job log will be available when the job is complete.
+<% end %>
+
+<%= image_tag 'ajax-loader.gif', id: "logloadspinner" %>

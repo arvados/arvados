@@ -42,7 +42,28 @@ func OutputChannel(stdout chan string, stderr chan string) {
 	}
 }
 
-func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
+func FindStat(cgroup_root string, cgroup_parent string, container_id string, statgroup string, stat string) string {
+	var path string
+	path = fmt.Sprintf("%s/%s/%s/%s/%s.%s", cgroup_root, statgroup, cgroup_parent, container_id, statgroup, stat)
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	path = fmt.Sprintf("%s/%s/%s/%s.%s", cgroup_root, cgroup_parent, container_id, statgroup, stat)
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	path = fmt.Sprintf("%s/%s/%s.%s", cgroup_root, statgroup, statgroup, stat)
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	path = fmt.Sprintf("%s/%s.%s", cgroup_root, statgroup, stat)
+	if _, err := os.Stat(path); err == nil {
+		return path
+	}
+	return ""
+}
+
+func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id string, stderr chan string, poll int64) {
 	//var last_usage int64 = 0
 	var last_user int64 = 0
 	var last_sys int64 = 0
@@ -57,11 +78,24 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 
 	disk := make(map[string]*Disk)
 
-	//cpuacct_usage := fmt.Sprintf("%s/cpuacct.usage", cgroup_path)
-	cpuacct_stat := fmt.Sprintf("%s/cpuacct.stat", cgroup_path)
-	blkio_io_service_bytes := fmt.Sprintf("%s/blkio.io_service_bytes", cgroup_path)
-	cpuset_cpus := fmt.Sprintf("%s/cpuset.cpus", cgroup_path)
-	memory_stat := fmt.Sprintf("%s/memory.stat", cgroup_path)
+	//cpuacct_usage := FindStat(cgroup_path, "cpuacct", "usage")
+	cpuacct_stat := FindStat(cgroup_root, cgroup_parent, container_id, "cpuacct", "stat")
+	blkio_io_service_bytes := FindStat(cgroup_root, cgroup_parent, container_id, "blkio", "io_service_bytes")
+	cpuset_cpus := FindStat(cgroup_root, cgroup_parent, container_id, "cpuset", "cpus")
+	memory_stat := FindStat(cgroup_root, cgroup_parent, container_id, "memory", "stat")
+
+	if cpuacct_stat != "" {
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", cpuacct_stat)
+	}
+	if blkio_io_service_bytes != "" {
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", blkio_io_service_bytes)
+	}
+	if cpuset_cpus != "" {
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", cpuset_cpus)
+	}
+	if memory_stat != "" {
+		stderr <- fmt.Sprintf("crunchstat: reading stats from %s", memory_stat)
+	}
 
 	var elapsed int64 = poll
 
@@ -79,7 +113,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 			c.Close()
 		}*/
 		var cpus int64 = 0
-		{
+		if cpuset_cpus != "" {
 			c, _ := os.Open(cpuset_cpus)
 			b, _ := ioutil.ReadAll(c)
 			sp := strings.Split(string(b), ",")
@@ -103,7 +137,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 		if cpus == 0 {
 			cpus = 1
 		}
-		{
+		if cpuacct_stat != "" {
 			c, _ := os.Open(cpuacct_stat)
 			b, _ := ioutil.ReadAll(c)
 			var next_user int64
@@ -135,7 +169,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 			last_user = next_user
 			last_sys = next_sys
 		}
-		{
+		if blkio_io_service_bytes != "" {
 			c, _ := os.Open(blkio_io_service_bytes)
 			b := bufio.NewScanner(c)
 			var device, op string
@@ -164,7 +198,7 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 			c.Close()
 		}
 
-		{
+		if memory_stat != "" {
 			c, _ := os.Open(memory_stat)
 			b := bufio.NewScanner(c)
 			var stat string
@@ -189,15 +223,15 @@ func PollCgroupStats(cgroup_path string, stderr chan string, poll int64) {
 func main() {
 
 	var (
-		cgroup_path    string
+		cgroup_root    string
 		cgroup_parent  string
 		cgroup_cidfile string
 		wait           int64
 		poll           int64
 	)
 
-	flag.StringVar(&cgroup_path, "cgroup-path", "", "Direct path to cgroup")
-	flag.StringVar(&cgroup_parent, "cgroup-parent", "", "Path to parent cgroup")
+	flag.StringVar(&cgroup_root, "cgroup-root", "", "Root of cgroup tree")
+	flag.StringVar(&cgroup_parent, "cgroup-parent", "", "Name of container parent under cgroup")
 	flag.StringVar(&cgroup_cidfile, "cgroup-cid", "", "Path to container id file")
 	flag.Int64Var(&wait, "wait", 5, "Maximum time (in seconds) to wait for cid file to show up")
 	flag.Int64Var(&poll, "poll", 1000, "Polling frequency, in milliseconds")
@@ -206,8 +240,8 @@ func main() {
 
 	logger := log.New(os.Stderr, "crunchstat: ", 0)
 
-	if cgroup_path == "" && cgroup_cidfile == "" {
-		logger.Fatal("Must provide either -cgroup-path or -cgroup-cid")
+	if cgroup_root == "" {
+		logger.Fatal("Must provide either -cgroup-root")
 	}
 
 	// Make output channel
@@ -260,6 +294,7 @@ func main() {
 	}
 
 	// Read the cid file
+	var container_id string
 	if cgroup_cidfile != "" {
 		// wait up to 'wait' seconds for the cid file to appear
 		var i time.Duration
@@ -268,26 +303,19 @@ func main() {
 			if err == nil {
 				cid, err2 := ioutil.ReadAll(f)
 				if err2 == nil && len(cid) > 0 {
-					cgroup_path = string(cid)
+					container_id = string(cid)
 					f.Close()
 					break
 				}
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		if cgroup_path == "" {
+		if cgroup_root == "" {
 			logger.Printf("Could not read cid file %s", cgroup_cidfile)
 		}
 	}
 
-	// add the parent prefix
-	if cgroup_parent != "" {
-		cgroup_path = fmt.Sprintf("%s/%s", cgroup_parent, cgroup_path)
-	}
-
-	logger.Print("Using cgroup ", cgroup_path)
-
-	go PollCgroupStats(cgroup_path, stderr_chan, poll)
+	go PollCgroupStats(cgroup_root, cgroup_parent, container_id, stderr_chan, poll)
 
 	// Wait for each of stdout and stderr to drain
 	<-finish_chan

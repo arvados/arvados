@@ -42,13 +42,16 @@ when 'keep'
   elsif ['less', 'check'].index @sub then
     # wh* shims
     exec `which wh#{@sub}`.strip, *ARGV
+  elsif @sub == 'docker'
+    exec `which arv-keepdocker`.strip, *ARGV
   else
     puts "Usage: \n" +
       "#{$0} keep ls\n" +
       "#{$0} keep get\n" +
       "#{$0} keep put\n" +
       "#{$0} keep less\n" +
-      "#{$0} keep check\n"
+      "#{$0} keep check\n" +
+      "#{$0} keep docker\n"
   end
   abort
 when 'pipeline'
