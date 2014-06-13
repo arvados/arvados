@@ -60,6 +60,11 @@ class ProjectsController < ApplicationController
         object.update_attributes! owner_uuid: current_user.uuid
       end
     end
+    if ArvadosBase::resource_class_for_uuid(@object.owner_uuid) == Group
+      params[:return_to] ||= group_path(@object.owner_uuid)
+    else
+      params[:return_to] ||= projects_path
+    end
     super
   end
 

@@ -48,7 +48,7 @@
 	{ class: "btn btn-sm btn-primary arv-move-to-project", remote: true, method: 'get' }) do %>
       <i class="fa fa-fw fa-truck"></i> Move project...
     <% end %>
-    <%= link_to(project_path(id: @object.uuid, return_to: projects_path), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
+    <%= link_to(project_path(id: @object.uuid), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
       <i class="fa fa-fw fa-trash-o"></i> Delete project
     <% end %>
   <% end %>
