@@ -135,8 +135,9 @@ module CurrentApiClient
           $anonymous_user = User.new(uuid: anonymous_user_uuid,
                                      is_active: true,
                                      is_admin: false,
-                                     first_name: 'anonymous',
-                                     last_name: 'anonymous')
+                                     email: 'anonymouspublic',
+                                     first_name: 'anonymouspublic',
+                                     last_name: 'anonymouspublic')
           $anonymous_user.save!
           $anonymous_user.reload
 

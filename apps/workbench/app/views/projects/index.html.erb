@@ -19,19 +19,23 @@
               This site runs Arvados, the open source biomedical analysis platform. <a href="https://arvados.org" target="_blank">Learn more&hellip;</a>
             </p>
             <p>
+              <% if current_user.uuid != anonymous_user.uuid %>
               <b>To get started,</b> create a project using the "Add new project" button below.
+              <% end %>
             </p>
           </div>
         </div>
       <% end %>
       <div class="panel panel-default">
         <div class="panel-heading">
+          <% if current_user.uuid != anonymous_user.uuid %>
           <div class="pull-right">
             <%= button_to projects_path(method: 'post'), class: 'btn btn-xs btn-primary' do %>
               <i class="fa fa-fw fa-plus"></i>
               Add new project
             <% end %>
           </div>
+          <% end %>
           <h3 class="panel-title">
             My projects
           </h3>

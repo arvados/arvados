@@ -75,6 +75,7 @@
           -->
 
           <% if current_user %>
+          <% if current_user.uuid != anonymous_user.uuid %>
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>
@@ -97,8 +98,12 @@
               <% end %>
             </ul>
           </li>
+          <% else %>
+            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+          <% end %>
           <% end %>
 
+          <% if !current_user.uuid.ends_with?('anonymouspublic') %>
           <li class="dropdown selection-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">
               <span class="fa fa-lg fa-paperclip"></span>
@@ -111,8 +116,9 @@
               <% end %>
             </ul>
           </li>
+          <% end %>
 
-          <% if current_user.is_active %>
+          <% if current_user.is_active && !current_user.uuid.ends_with?('anonymouspublic') %>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
                 <span class="fa fa-lg fa-gear"></span>
@@ -168,8 +174,10 @@
             </a>
             <ul class="dropdown-menu" role="menu">
               <li role="presentation" class="dropdown-header">
+                <% if current_user.uuid != anonymous_user.uuid %>
                 <%= link_to projects_path('project[owner_uuid]' => current_project_uuid), method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
                   <i class="fa fa-plus"></i> New project
+                <% end %>
                 <% end %>
                 My projects
               </li>

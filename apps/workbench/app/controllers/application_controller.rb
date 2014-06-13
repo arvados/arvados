@@ -354,6 +354,7 @@ class ApplicationController < ActionController::Base
     begin
       try_redirect_to_login = true
 
+      using_anonymous_user_token = false
       if !params[:api_token] && !session[:arvados_api_token]
         if session && (session['arv-referrer'] == 'logout')
           # do not use anonymous user token and let logout happen
@@ -872,10 +873,34 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
+  @@anonymous_user = nil
+  helper_method :anonymous_user
+  def anonymous_user
+    ApplicationController.anonymous_user
+  end
+  def self.anonymous_user
+    if !@@anonymous_user
+      anon_users = User.where(first_name: 'anonymouspublic', last_name: 'anonymouspublic')
+      anon_users.each do |user|
+        if user.uuid.ends_with? 'anonymouspublic'
+          @@anonymous_user = user
+          break
+        end
+      end
+    end
+    @@anonymous_user
+  end
+
   @@anonymous_group = nil
   def self.anonymous_group
     if !@@anonymous_group
-      @@anonymous_group = Group.where(name: 'Anonymous group').first
+      anon_groups = @@anonymous_group = Group.where(name: 'Anonymous group')
+      anon_groups.each do |group|
+        if group.uuid.ends_with? 'anonymouspublic'
+          @@anonymous_group = group
+          break
+        end
+      end
     end
     @@anonymous_group
   end
