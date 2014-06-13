@@ -179,7 +179,54 @@ class User < ArvadosModel
     self.save!
   end
 
+  def owns? object_uuid
+    return User.find_user_owning(object_uuid).andand.uuid == uuid
+  end
+
+  def can_manage? object_uuid
+    is_admin or
+      owns?(object_uuid) or
+      has_permission?(:can_manage, object_uuid)
+  end
+
   protected
+
+  # Returns the first User found in the ownership path for obj_uuid.
+  # If obj_uuid is not owned by any user, returns nil.
+  #
+  # TODO(twp): this code largely stolen from
+  # ArvadosModel::ensure_ownership_path_leads_to_user. See if we can
+  # refactor these methods to share more code.
+  #
+  def self.find_user_owning obj_uuid
+    uuid_in_path = {obj_uuid => true}
+    # Walk up the owner_uuid chain for obj_uuid until one of these
+    # conditions is met:
+    #   - the owner_uuid belongs to the User class
+    #   - no owner_uuid is found (no User owns this object)
+    #   - we discover an ownership cycle (a fatal consistency error)
+    #
+    x = obj_uuid
+    while (owner_class = ArvadosModel.resource_class_for_uuid(x)) != User
+      begin
+        if !owner_class.respond_to? :find_by_uuid
+          raise ActiveRecord::RecordNotFound.new
+        else
+          x = owner_class.find_by_uuid(x).owner_uuid
+        end
+      rescue ActiveRecord::RecordNotFound => e
+        # errors.add :owner_uuid, "is not owned by any user: #{e}"
+        return nil
+      end
+      # If there is an ownership cycle, we can conclude that
+      # no User owns this object.
+      if uuid_in_path[x]
+        return nil
+      end
+      uuid_in_path[x] = true
+    end
+    return owner_class.find_by_uuid(x)
+  end
 
   def ensure_ownership_path_leads_to_user
     true

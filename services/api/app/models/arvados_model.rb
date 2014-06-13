@@ -160,6 +160,13 @@ class ArvadosModel < ActiveRecord::Base
     attributes
   end
 
+  def has_permission? perm_type, target_uuid
+    Link.where(link_class: "permission",
+               name: perm_type,
+               tail_uuid: uuid,
+               head_uuid: target_uuid).any?
+  end
+
   protected
 
   def ensure_ownership_path_leads_to_user
@@ -212,6 +219,14 @@ class ArvadosModel < ActiveRecord::Base
     end
     if new_record?
       return true
+    elsif respond_to? :link_class and link_class == 'permission'
+      # Users are permitted to modify permission links themselves
+      # if they have "manage" permission on the destination object.
+      if current_user.can_manage? head_uuid
+        return true
+      else
+        raise PermissionDeniedError
+      end
     elsif current_user.uuid == self.owner_uuid_was or
         current_user.uuid == self.uuid or
         current_user.can? write: self.owner_uuid_was

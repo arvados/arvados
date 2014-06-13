@@ -5,6 +5,7 @@ class Link < ArvadosModel
   serialize :properties, Hash
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
+  before_save :permission_link_ownership, if: "link_class == 'permission'"
   after_update :maybe_invalidate_permissions_cache
   after_create :maybe_invalidate_permissions_cache
   after_destroy :maybe_invalidate_permissions_cache
@@ -51,14 +52,8 @@ class Link < ArvadosModel
     # Administrators can grant permissions
     return true if current_user.is_admin
 
-    # All users can grant permissions on objects they own
-    head_obj = self.class.
-      resource_class_for_uuid(self.head_uuid).
-      where('uuid=?',head_uuid).
-      first
-    if head_obj
-      return true if head_obj.owner_uuid == current_user.uuid
-    end
+    # All users can grant permissions on objects they own or can manage
+    return true if current_user.can_manage? head_uuid
 
     # Users with "can_grant" permission on an object can grant
     # permissions on that object
@@ -99,5 +94,11 @@ class Link < ArvadosModel
       self.owner_uuid = tail_uuid
       ensure_owner_uuid_is_permitted
     end
+  end
+
+  # permission_link_ownership: ensure that permission links are
+  # owned by root.
+  def permission_link_ownership
+    self.owner_uuid = system_user_uuid
   end
 end
