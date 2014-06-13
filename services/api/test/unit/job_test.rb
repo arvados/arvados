@@ -60,6 +60,13 @@ class JobTest < ActiveSupport::TestCase
     assert(job.invalid?, "Job with bad Docker tag valid")
   end
 
+  test "locate a Docker image with a partial hash" do
+    image_hash = links(:docker_image_collection_hash).name[0..24]
+    job = Job.new(runtime_constraints: {'docker_image' => image_hash})
+    assert(job.valid?, "Job with partial Docker image hash failed")
+    assert_equal(collections(:docker_image).uuid, job.docker_image_locator)
+  end
+
   { 'name' => 'arvados_test_nonexistent',
     'hash' => 'f' * 64,
     'locator' => BAD_COLLECTION,

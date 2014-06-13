@@ -147,4 +147,53 @@ class Collection < ArvadosModel
     raise "uuid #{uuid} has no hash part" if !hash_part
     [hash_part, size_part].compact.join '+'
   end
+
+  def self.for_latest_docker_image(search_term, search_tag=nil)
+    base_search = self.joins(:links_via_head).order("links.created_at DESC")
+    # If the search term is a Collection locator with an associated
+    # Docker image hash link, return that Collection.
+    coll_matches = base_search.
+      where(uuid: search_term, links: {link_class: 'docker_image_hash'})
+    if coll = coll_matches.first
+      return coll
+    end
+
+    # Find Collections with matching Docker image repository+tag pairs.
+    repo_matches = base_search.
+      where(links: {link_class: 'docker_image_repo+tag',
+                    name: "#{search_term}:#{search_tag || 'latest'}"})
+
+    # Find Collections with matching Docker image hashes, unless we're
+    # obviously doing a repo+tag search and already found a match that way.
+    if search_tag.nil? or repo_matches.first.nil?
+      hash_matches = base_search.
+        where("links.link_class = ? and links.name LIKE ?",
+              "docker_image_hash", "#{search_term}%")
+    else
+      hash_matches = nil
+    end
+
+    # Select the image that was created most recently from both repo
+    # and hash matches.
+    latest_image = nil
+    latest_image_timestamp = "1900-01-01T00:00:00Z"
+    [repo_matches, hash_matches].compact.each do |search_result|
+      search_result.find_each do |coll|
+        coll_latest_timestamp = "1900-01-01T00:00:00Z"
+
+        coll.links_via_head.find_each do |link|
+          this_link_timestamp = link.properties["image_timestamp"]
+          if (this_link_timestamp.andand > coll_latest_timestamp)
+            coll_latest_timestamp = this_link_timestamp
+          end
+        end
+
+        if coll_latest_timestamp > latest_image_timestamp
+          latest_image = coll
+          latest_image_timestamp = coll_latest_timestamp
+        end
+      end
+    end
+    latest_image
+  end
 end

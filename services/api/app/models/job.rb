@@ -104,40 +104,13 @@ class Job < ArvadosModel
   def find_docker_image_locator
     # Find the Collection that holds the Docker image specified in the
     # runtime constraints, and store its locator in docker_image_locator.
-    image_name = runtime_constraints['docker_image']
-    if image_name.nil?
+    image_search = runtime_constraints['docker_image']
+    image_tag = runtime_constraints['docker_image_tag']
+    if image_search.nil?
       self.docker_image_locator = nil
-      return
-    elsif not (new_record? or runtime_constraints_changed?)
-      return
-    # Accept images specified as a locator, if there's an associated
-    # docker_image_hash link.
-    elsif coll = Collection.joins(:links_via_head).
-        where(uuid: image_name,
-              links: {link_class: 'docker_image_hash'}).first
-      self.docker_image_locator = (coll.links_via_head.any?) ? coll.uuid : nil
-    else  # Accept images specified by their Docker metadata.
-      if image_name =~ /^[0-9A-Fa-f]{64}$/
-        link_search = {
-          link_class: 'docker_image_hash',
-          name: image_name,
-        }
-      else
-        link_search = {
-          link_class: 'docker_image_repo+tag',
-          name: "#{image_name}:#{runtime_constraints['docker_image_tag'] || 'latest'}",
-        }
-      end
-      links = Link.where(link_search)
-      # Select the image that was created most recently.
-      latest = links.first
-      links.find_each do |link|
-        latest = link if (link.properties['image_timestamp'] >
-                          latest.properties['image_timestamp'])
-      end
-      self.docker_image_locator = latest.andand.head_uuid
-    end
-    if docker_image_locator.nil?
+    elsif coll = Collection.for_latest_docker_image(image_search, image_tag)
+      self.docker_image_locator = coll.uuid
+    else
       errors.add(:docker_image_locator, "Docker image not found")
       false
     end
