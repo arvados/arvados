@@ -7,6 +7,7 @@ class Log < ArvadosModel
   attr_accessor :object, :object_kind
 
   api_accessible :user, extend: :common do |t|
+    t.add :id
     t.add :object_uuid
     t.add :object_owner_uuid
     t.add :object_kind

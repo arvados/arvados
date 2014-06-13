@@ -271,11 +271,11 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
   end
 
   test "refuse duplicate name" do
-    the_name = links(:job_name_in_afolder).name
-    the_folder = links(:job_name_in_afolder).tail_uuid
+    the_name = links(:job_name_in_aproject).name
+    the_project = links(:job_name_in_aproject).tail_uuid
     authorize_with :active
     post :create, link: {
-      tail_uuid: the_folder,
+      tail_uuid: the_project,
       head_uuid: specimens(:owned_by_active_user).uuid,
       link_class: 'name',
       name: the_name,

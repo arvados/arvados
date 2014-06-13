@@ -41,10 +41,9 @@ $.fn.editable.defaults.validate = function (value) {
 
 $(document).
     on('ready ajax:complete', function() {
-        $('#editable-submit').click(function() {
-            console.log($(this));
-        });
         $('.editable').
+            not('.editable-done-setup').
+            addClass('editable-done-setup').
             editable({
                 success: function(response, newValue) {
                     // If we just created a new object, stash its UUID
@@ -77,6 +76,15 @@ $(document).
                               $(this).html(html);
                       });
                 }
+            });
+    }).
+    on('ready ajax:complete', function() {
+        $("[data-toggle~='x-editable']").
+            not('.editable-done-setup').
+            addClass('editable-done-setup').
+            click(function(e) {
+                e.stopPropagation();
+                $($(this).attr('data-toggle-selector')).editable('toggle');
             });
     });
 

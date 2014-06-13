@@ -1,0 +1,5 @@
+<pre>
+import arvados
+
+x = arvados.api().<%= object.class.to_s.pluralize.underscore %>().get(uuid='<%= object.uuid %>').execute()
+</pre>

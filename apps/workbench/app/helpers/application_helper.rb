@@ -79,10 +79,16 @@ module ApplicationHelper
   #
   def link_to_if_arvados_object(attrvalue, opts={}, style_opts={})
     if (resource_class = resource_class_for_uuid(attrvalue, opts))
-      link_uuid = attrvalue.is_a?(ArvadosBase) ? attrvalue.uuid : attrvalue
+      if attrvalue.is_a? ArvadosBase
+        object = attrvalue
+        link_uuid = attrvalue.uuid
+      else
+        object = nil
+        link_uuid = attrvalue
+      end
       link_name = opts[:link_text]
       if !link_name
-        link_name = link_uuid
+        link_name = object.andand.default_name || resource_class.default_name
 
         if opts[:friendly_name]
           if attrvalue.respond_to? :friendly_link_name
@@ -124,7 +130,7 @@ module ApplicationHelper
       if opts[:no_link]
         raw(link_name)
       else
-        link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: link_uuid }, style_opts
+        link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts
       end
     else
       # just return attrvalue if it is not recognizable as an Arvados object or uuid.
@@ -136,8 +142,10 @@ module ApplicationHelper
     attrvalue = object.send(attr) if attrvalue.nil?
     if !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
-         !object.owner_uuid.in?(my_folders.collect(&:uuid)))
-      return attrvalue 
+         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
+      return ((attrvalue && attrvalue.length > 0 && attrvalue) ||
+              (attr == 'name' and object.andand.default_name) ||
+              '(none)')
     end
 
     input_type = 'text'
@@ -165,16 +173,26 @@ module ApplicationHelper
       ajax_options['data-pk'][:defaults] = object.attributes
     end
     ajax_options['data-pk'] = ajax_options['data-pk'].to_json
+    @unique_id ||= (Time.now.to_f*1000000).to_i
+    span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
-    content_tag 'span', attrvalue.to_s, {
-      "data-emptytext" => "none",
+    span_tag = content_tag 'span', attrvalue.to_s, {
+      "data-emptytext" => (object.andand.default_name || 'none'),
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-title" => "Update #{attr.gsub '_', ' '}",
+      "data-title" => "Edit #{attr.gsub '_', ' '}",
       "data-name" => attr,
       "data-object-uuid" => object.uuid,
+      "data-toggle" => "manual",
+      "id" => span_id,
       :class => "editable"
     }.merge(htmloptions).merge(ajax_options)
+    edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || 'edit') + '"><i class="fa fa-fw fa-pencil"></i></a>')
+    if htmloptions[:btnplacement] == :left
+      edit_button + ' ' + span_tag
+    else
+      span_tag + ' ' + edit_button
+    end
   end
 
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
@@ -210,7 +228,7 @@ module ApplicationHelper
     if !object or
         !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
-         !object.owner_uuid.in?(my_folders.collect(&:uuid)))
+         !object.owner_uuid.in?(my_projects.collect(&:uuid)))
       return link_to_if_arvados_object attrvalue
     end
 
@@ -221,6 +239,52 @@ module ApplicationHelper
       end
     else
       dataclass = ArvadosBase.resource_class_for_uuid(attrvalue)
+    end
+
+    id = "#{object.uuid}-#{subattr.join('-')}"
+    dn = "[#{attr}]"
+    subattr.each do |a|
+      dn += "[#{a}]"
+    end
+    if value_info.is_a? Hash
+      dn += '[value]'
+    end
+
+    if dataclass == Collection
+      selection_param = object.class.to_s.underscore + dn
+      display_value = attrvalue
+      if value_info.is_a?(Hash)
+        if (link = Link.find? value_info[:link_uuid])
+          display_value = link.name
+        elsif value_info[:link_name]
+          display_value = value_info[:link_name]
+        end
+      end
+      modal_path = choose_collections_path \
+      ({ title: 'Choose a dataset:',
+         filters: [['tail_uuid', '=', object.owner_uuid]].to_json,
+         action_name: 'OK',
+         action_href: pipeline_instance_path(id: object.uuid),
+         action_method: 'patch',
+         action_data: {
+           merge: true,
+           selection_param: selection_param,
+           success: 'page-refresh'
+         }.to_json,
+        })
+      return content_tag('div', :class => 'input-group') do
+        html = text_field_tag(dn, display_value,
+                              :class =>
+                              "form-control #{'required' if required}")
+        html + content_tag('span', :class => 'input-group-btn') do
+          link_to('Choose',
+                  modal_path,
+                  { :class => "btn btn-primary",
+                    :remote => true,
+                    :method => 'get',
+                  })
+        end
+      end
     end
 
     if dataclass.andand.is_a?(Class)
@@ -234,15 +298,6 @@ module ApplicationHelper
       datatype = 'number'
     elsif attrvalue.is_a? String
       datatype = 'text'
-    end
-
-    id = "#{object.uuid}-#{subattr.join('-')}"
-    dn = "[#{attr}]"
-    subattr.each do |a|
-      dn += "[#{a}]"
-    end
-    if value_info.is_a? Hash
-      dn += '[value]'
     end
 
     # preload data
@@ -297,8 +352,9 @@ module ApplicationHelper
       "data-title" => "Set value for #{subattr[-1].to_s}",
       "data-name" => dn,
       "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
-      "data-showbuttons" => "false",
       "data-value" => attrvalue,
+      # "clear" button interferes with form-control's up/down arrows
+      "data-clear" => false,
       :class => "editable #{'required' if required} form-control",
       :id => id
     }.merge(htmloptions)
@@ -325,6 +381,50 @@ module ApplicationHelper
       link_to(h(button_text) +
               raw(' &nbsp; <i class="fa fa-fw fa-arrow-circle-right"></i>'),
               button_href, params, *rest)
+    end
+  end
+
+  def render_controller_partial partial, opts
+    cname = opts.delete :controller_name
+    begin
+      render opts.merge(partial: "#{cname}/#{partial}")
+    rescue ActionView::MissingTemplate
+      render opts.merge(partial: "application/#{partial}")
+    end
+  end
+    
+  def fa_icon_class_for_object object
+    case object.class.to_s.to_sym
+    when :User
+      'fa-user'
+    when :Group
+      object.group_class ? 'fa-folder' : 'fa-users'
+    when :Job, :PipelineInstance, :PipelineTemplate
+      'fa-gears'
+    when :Collection
+      'fa-archive'
+    when :Specimen
+      'fa-flask'
+    when :Trait
+      'fa-clipboard'
+    when :Human
+      'fa-male'
+    when :VirtualMachine
+      'fa-terminal'
+    when :Repository
+      'fa-code-fork'
+    when :Link
+      'fa-arrows-h'
+    when :User
+      'fa-user'
+    when :Node
+      'fa-cloud'
+    when :KeepService
+      'fa-exchange'
+    when :KeepDisk
+      'fa-hdd-o'
+    else
+      'fa-cube'
     end
   end
 end

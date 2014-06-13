@@ -13,7 +13,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     page.assert_no_selector "div[data-persistent-state='#{oldstate}']"
   end
 
-  ['/collections', '/'].each do |path|
+  ['/collections', '/users/welcome'].each do |path|
     test "Flip persistent switch at #{path}" do
       Capybara.current_driver = Capybara.javascript_driver
       uuid = api_fixture('collections')['foo_file']['uuid']
@@ -40,8 +40,9 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
   test "Collection page renders default name links" do
     uuid = api_fixture('collections')['foo_file']['uuid']
-    coll_name = api_fixture('links')['foo_collection_name_in_afolder']['name']
-    visit page_with_token('active', "/collections/#{uuid}")
+    coll_name = api_fixture('links')['foo_collection_name_in_aproject']['name']
+    name_uuid = api_fixture('links')['foo_collection_name_in_aproject']['uuid']
+    visit page_with_token('active', "/collections/#{name_uuid}")
     assert(page.has_text?(coll_name), "Collection page did not include name")
     # Now check that the page is otherwise normal, and the collection name
     # isn't only showing up in an error message.

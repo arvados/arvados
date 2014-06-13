@@ -13,7 +13,7 @@ class SmokeTest < ActionDispatch::IntegrationTest
   end
 
   def all_links_in(find_spec, text_regexp=//)
-    find(find_spec).all('a').collect { |tag|
+    all(find_spec + ' a').collect { |tag|
       if tag[:href].nil? or tag[:href].empty? or (tag.text !~ text_regexp)
         nil
       else
@@ -26,7 +26,7 @@ class SmokeTest < ActionDispatch::IntegrationTest
   test "all first-level links succeed" do
     visit page_with_token('active_trustedclient', '/')
     assert_visit_success
-    click_link 'user-menu'
+    click_link 'notifications-menu'
     urls = [all_links_in('nav'),
             all_links_in('.navbar', /^Manage /)].flatten
     seen_urls = ['/']

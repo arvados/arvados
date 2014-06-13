@@ -73,7 +73,7 @@ class OwnerTest < ActiveSupport::TestCase
     end
   end
 
-  ['users(:active)', 'groups(:afolder)'].each do |ofixt|
+  ['users(:active)', 'groups(:aproject)'].each do |ofixt|
     test "delete #{ofixt} that owns other objects" do
       o = eval ofixt
       assert_equal(true, Specimen.where(owner_uuid: o.uuid).any?,

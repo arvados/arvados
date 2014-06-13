@@ -1,5 +1,5 @@
 function run_pipeline_button_state() {
-    var a = $('a.editable.required.editable-empty');
+    var a = $('a.editable.required.editable-empty,input.form-control.required[value=]');
     if (a.length > 0) {
         $(".run-pipeline-button").addClass("disabled");
     }
@@ -48,18 +48,41 @@ $(document).on('ready ajax:complete', function() {
 });
 
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
-  var parsedData = JSON.parse(eventData);
+    var wasatbottom = ($(this).scrollTop() + $(this).height() >=
+                       this.scrollHeight);
+    var parsedData = JSON.parse(eventData);
+    var propertyText = undefined;
+    var properties = parsedData.properties;
 
-  var propertyText = undefined
-
-  var properties = parsedData.properties;
     if (properties !== null) {
-      propertyText = properties.text;
+        propertyText = properties.text;
     }
-
     if (propertyText !== undefined) {
-      $(this).append(propertyText + "<br/>");
+        $(this).append(propertyText + "<br/>");
     } else {
-      $(this).append(parsedData.summary + "<br/>");
+        $(this).append(parsedData.summary + "<br/>");
     }
+    if (wasatbottom)
+        this.scrollTop = this.scrollHeight;
+}).on('ready ajax:complete', function(){
+    $('.arv-log-event-handler-append-logs').each(function() {
+        this.scrollTop = this.scrollHeight;
+    });
 });
+
+var showhide_compare = function() {
+    var form = $('form#compare')[0];
+    $('input[type=hidden][name="uuids[]"]', form).remove();
+    $('input[type=submit]', form).prop('disabled',true).show();
+    var checked_inputs = $('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]:checked');
+    if (checked_inputs.length >= 2 && checked_inputs.length <= 3) {
+        checked_inputs.each(function(){
+            if(this.checked) {
+                $('input[type=submit]', form).prop('disabled',false).show();
+                $(form).append($('<input type="hidden" name="uuids[]"/>').val(this.value));
+            }
+        });
+    }
+};
+$('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]').on('click', showhide_compare);
+showhide_compare();

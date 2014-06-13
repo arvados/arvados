@@ -1,0 +1,34 @@
+.log-viewer-table {
+ width: 100%;
+ font-family: "Lucida Console", Monaco, monospace;
+ font-size: 11px;
+ thead tr {
+   th {
+     padding-right: 1em;
+   }
+   th.id {
+     display: none;
+   }
+   th.timestamp {
+     width: 15em;
+   }
+   th.type {
+     width: 10em;
+   }
+   th.taskid {
+     width: 3em;
+   }
+ }
+ tbody tr {
+   vertical-align: top;
+   td {
+     padding-right: 1em;
+   }
+   td.id {
+     display: none;
+   }
+   td.taskid {
+     text-align: right;
+   }
+ }
+}

@@ -1,0 +1,31 @@
+<div class="container-fluid arv-project-list">
+  <% tree.each do |projectnode| %>
+    <% rowtype = projectnode[:object].class %>
+    <% next if rowtype != Group and !show_root_node %>
+    <div class="<%= 'project' if rowtype == Group %> row">
+      <div class="col-md-12" style="padding-left: <%= projectnode[:depth] - (show_root_node ? 0 : 1) %>em;">
+        <% if show_root_node and rowtype == String %>
+          <i class="fa fa-fw fa-folder-open-o"></i>
+          <%= projectnode[:object] %>
+        <% elsif show_root_node and rowtype == User %>
+          <% if projectnode[:object].uuid == current_user.andand.uuid %>
+            <i class="fa fa-fw fa-folder-open-o"></i>
+            My Projects
+          <% else %>
+            <i class="fa fa-fw fa-folder-o"></i>
+            <%= projectnode[:object].friendly_link_name %>
+          <% end %>
+        <% elsif rowtype == Group %>
+          <i class="fa fa-fw fa-folder-o"></i>
+          <% opts = {} %>
+          <% opts[:title] = projectnode[:object].description %>
+          <% opts[:'data-toggle'] = 'tooltip' %>
+          <% opts[:'data-placement'] = 'bottom' %>
+          <%= link_to projectnode[:object], opts do %>
+            <%= projectnode[:object].friendly_link_name %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
