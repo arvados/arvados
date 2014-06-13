@@ -8,7 +8,8 @@
       <% component[:script_parameters].andand.each do |pname, pvalue_spec| %>
         <% if pvalue_spec.is_a? Hash %>
           <% if (pvalue_spec[:description] or
-                 (pvalue_spec[:required] and not pvalue_spec[:value])) %>
+                 ((pvalue_spec[:required] or pvalue_spec[:optional] == false) and
+                  not pvalue_spec[:value])) %>
             <% n_inputs += 1 %>
             <label for="<% "#{cname}-#{pname}" %>">
               <%= pvalue_spec[:title] ||
@@ -31,20 +32,20 @@
 <% end %>
 
 <% if n_inputs == 0 %>
-  <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button.</p>
+  <p>This pipeline does not need any further inputs specified. You can start it by clicking the "Run" button whenever you're ready. (It's not too late to change existing settings, though.)</p>
 <% else %>
   <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the pipeline.</i></p>
   <%= content_for :pi_input_form %>
 
-  <%= form_tag @object, :method => :put do |f| %>
-    <%= hidden_field @object.class.to_s.underscore.singularize.to_sym, :state, :value => 'RunningOnServer' %>
-    <%= button_tag({class: 'btn btn-primary run-pipeline-button'}) do %>
-      Run <i class="fa fa-fw fa-play"></i>
-    <% end %>
+  <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
+      class: 'btn btn-primary run-pipeline-button',
+      method: :patch
+      ) do %>
+    Run <i class="fa fa-fw fa-play"></i>
   <% end %>
 
 <% end %>
 
 <div style="margin-top: 1em;">
-  <p>Click the "Components" tab above to see a full list of pipeline components and parameters.</p>
+  <p>Click the "Components" tab above to see a full list of pipeline settings.</p>
 </div>

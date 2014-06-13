@@ -18,7 +18,7 @@ class GroupTest < ActiveSupport::TestCase
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"
 
     # Use the group as the new owner of an existing object
-    s = specimens(:in_afolder)
+    s = specimens(:in_aproject)
     s.owner_uuid = groups(:bad_group_has_ownership_cycle_b).uuid
     assert s.valid?, "ownership should pass validation"
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"

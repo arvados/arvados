@@ -1,1 +1,55 @@
-../application/show.html.erb
+<% template = PipelineTemplate.find?(@object.pipeline_template_uuid) %>
+<%= content_for :content_top do %>
+  <h2>
+    <%= render_editable_attribute @object, 'name', nil %>
+  </h2>
+  <% if template %>
+  <blockquote><span class="deemphasize">From template:</span><br />
+    <%= link_to_if_arvados_object template, friendly_name: true %><br />
+    <%= template.description %>
+  </blockquote>
+  <% end %>
+<% end %>
+
+<% content_for :tab_line_buttons do %>
+  <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'pipeline_instance[state]' => 'New'),
+      class: 'btn btn-primary',
+      #data: {toggle: :tooltip, placement: :top}, title: 'copy and modify',
+      method: :post,
+      ) do %>
+    Clone and edit <i class="fa fa-fw fa-copy"></i>
+  <% end %>
+
+  <% if @object.state.in? ['New', 'Ready'] %>
+    <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
+        class: 'btn btn-primary run-pipeline-button',
+        method: :patch
+        ) do %>
+      Run <i class="fa fa-fw fa-play"></i>
+    <% end %>
+  <% else %>
+    <% if @object.state.in? ['RunningOnClient', 'RunningOnServer'] %>
+      <%= link_to(url_for('pipeline_instance[state]' => 'Paused'),
+          class: 'btn btn-primary run-pipeline-button',
+          method: :patch
+          ) do %>
+        Stop <i class="fa fa-fw fa-stop"></i>
+      <% end %>
+    <% elsif @object.state == 'Paused' %>
+      <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
+          class: 'btn btn-primary run-pipeline-button',
+          method: :patch
+          ) do %>
+        Resume <i class="fa fa-fw fa-play"></i>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<% if @object.state.in? %w(RunningOnServer RunningOnClient) %>
+  <% content_for :js do %>
+    setInterval(function(){$('a.refresh').click()}, 15000);
+  <% end %>
+<% end %>
+
+<%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.show_pane_list }%>

@@ -1,0 +1,5 @@
+<% pipeline_jobs(object).each do |pj| %>
+  <span class="label label-<%= pj[:labeltype] %>">
+    <%= pj[:name] %>
+  </span>&nbsp;
+<% end %>

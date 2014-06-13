@@ -19,16 +19,53 @@ class ActionsController < ApplicationController
     redirect_to :back
   end
 
-  expose_action :copy_selections_into_folder do
-    already_named = Link.
-      filter([['tail_uuid','=',@object.uuid],
-              ['head_uuid','in',params["selection"]]]).
-      collect(&:head_uuid)
-    (params["selection"] - already_named).each do |s|
-      Link.create(tail_uuid: @object.uuid,
-                  head_uuid: s,
-                  link_class: 'name',
-                  name: "#{s} added #{Time.now}")
+  expose_action :copy_selections_into_project do
+    move_or_copy :copy
+  end
+
+  expose_action :move_selections_into_project do
+    move_or_copy :move
+  end
+
+  def move_or_copy action
+    uuids_to_add = params["selection"]
+    uuids_to_add.
+      collect { |x| ArvadosBase::resource_class_for_uuid(x) }.
+      uniq.
+      each do |resource_class|
+      resource_class.filter([['uuid','in',uuids_to_add]]).each do |src|
+        if resource_class == Collection
+          dst = Link.new(owner_uuid: @object.uuid,
+                         tail_uuid: @object.uuid,
+                         head_uuid: src.uuid,
+                         link_class: 'name',
+                         name: src.uuid)
+        else
+          case action
+          when :copy
+            dst = src.dup
+            if dst.respond_to? :'name='
+              if dst.name
+                dst.name = "Copy of #{dst.name}"
+              else
+                dst.name = "Copy of unnamed #{dst.class_for_display.downcase}"
+              end
+            end
+          when :move
+            dst = src
+          else
+            raise ArgumentError.new "Unsupported action #{action}"
+          end
+          dst.owner_uuid = @object.uuid
+          dst.tail_uuid = @object.uuid if dst.class == Link
+        end
+        begin
+          dst.save!
+        rescue
+          dst.name += " (#{Time.now.localtime})" if dst.respond_to? :name=
+          dst.save!
+        end
+      end
     end
     redirect_to @object
   end

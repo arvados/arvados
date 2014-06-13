@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include ArvadosApiClientHelper
+  include ApplicationHelper
 
   respond_to :html, :json, :js
   protect_from_forgery
@@ -63,23 +64,7 @@ class ApplicationController < ActionController::Base
     self.render_error status: 404
   end
 
-  def render_index
-    respond_to do |f|
-      f.json { render json: @objects }
-      f.html {
-        if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
-        else
-          render
-        end
-      }
-      f.js { render }
-    end
-  end
-
-  def index
+  def find_objects_for_index
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
@@ -100,8 +85,42 @@ class ApplicationController < ActionController::Base
     end
 
     @objects ||= model_class
-    @objects = @objects.filter(@filters).limit(@limit).offset(@offset).all
+    @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
+  end
+
+  def render_index
+    respond_to do |f|
+      f.json { render json: @objects }
+      f.html {
+        if params['tab_pane']
+          comparable = self.respond_to? :compare
+          render(partial: 'show_' + params['tab_pane'].downcase,
+                 locals: { comparable: comparable, objects: @objects })
+        else
+          render
+        end
+      }
+      f.js { render }
+    end
+  end
+
+  def index
+    find_objects_for_index if !@objects
     render_index
+  end
+
+  helper_method :next_page_offset
+  def next_page_offset
+    if @objects.respond_to?(:result_offset) and
+        @objects.respond_to?(:result_limit) and
+        @objects.respond_to?(:items_available)
+      next_offset = @objects.result_offset + @objects.result_limit
+      if next_offset < @objects.items_available
+        next_offset
+      else
+        nil
+      end
+    end
   end
 
   def show
@@ -115,15 +134,35 @@ class ApplicationController < ActionController::Base
           comparable = self.respond_to? :compare
           render(partial: 'show_' + params['tab_pane'].downcase,
                  locals: { comparable: comparable, objects: @objects })
+        elsif request.method.in? ['GET', 'HEAD']
+          render
         else
-          if request.method == 'GET'
-            render
-          else
-            redirect_to params[:return_to] || @object
-          end
+          redirect_to params[:return_to] || @object
         end
       }
       f.js { render }
+    end
+  end
+
+  def choose
+    params[:limit] ||= 20
+    find_objects_for_index if !@objects
+    respond_to do |f|
+      if params[:partial]
+        f.json {
+          render json: {
+            content: render_to_string(partial: "choose_rows.html",
+                                      formats: [:html],
+                                      locals: {
+                                        multiple: params[:multiple]
+                                      }),
+            next_page_href: @next_page_href
+          }
+        }
+      end
+      f.js {
+        render partial: 'choose', locals: {multiple: params[:multiple]}
+      }
     end
   end
 
@@ -138,7 +177,7 @@ class ApplicationController < ActionController::Base
   end
 
   def update
-    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    @updates ||= params[@object.resource_param_name.to_sym]
     @updates.keys.each do |attr|
       if @object.send(attr).is_a? Hash
         if @updates[attr].is_a? String
@@ -175,6 +214,24 @@ class ApplicationController < ActionController::Base
     else
       self.render_error status: 422
     end
+  end
+
+  # Clone the given object, merging any attribute values supplied as
+  # with a create action.
+  def copy
+    @new_resource_attrs ||= params[model_class.to_s.underscore.singularize]
+    @new_resource_attrs ||= {}
+    @object = @object.dup
+    @object.update_attributes @new_resource_attrs
+    if not @new_resource_attrs[:name] and @object.respond_to? :name
+      if @object.name and @object.name != ''
+        @object.name = "Copy of #{@object.name}"
+      else
+        @object.name = "Copy of unnamed #{@object.class_for_display.downcase}"
+      end
+    end
+    @object.save!
+    show
   end
 
   def destroy
@@ -225,7 +282,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show_pane_list
-    %w(Attributes Metadata JSON API)
+    %w(Attributes Advanced)
   end
 
   protected
@@ -233,7 +290,7 @@ class ApplicationController < ActionController::Base
   def redirect_to_login
     respond_to do |f|
       f.html {
-        if request.method == 'GET'
+        if request.method.in? ['GET', 'HEAD']
           redirect_to arvados_api_client.arvados_login_url(return_to: request.url)
         else
           flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
@@ -272,7 +329,13 @@ class ApplicationController < ActionController::Base
       if params[:uuid].empty?
         @object = nil
       else
-        @object = model_class.find(params[:uuid])
+        if (model_class != Link and
+            resource_class_for_uuid(params[:uuid]) == Link)
+          @name_link = Link.find(params[:uuid])
+          @object = model_class.find(@name_link.head_uuid)
+        else
+          @object = model_class.find(params[:uuid])
+        end
       end
     else
       @object = model_class.where(uuid: params[:uuid]).first
@@ -307,7 +370,7 @@ class ApplicationController < ActionController::Base
             is_admin: u.is_admin,
             prefs: u.prefs
           }
-          if !request.format.json? and request.method == 'GET'
+          if !request.format.json? and request.method.in? ['GET', 'HEAD']
             # Repeat this request with api_token in the (new) session
             # cookie instead of the query string.  This prevents API
             # tokens from appearing in (and being inadvisedly copied
@@ -350,8 +413,18 @@ class ApplicationController < ActionController::Base
   end
 
   def thread_with_mandatory_api_token
-    thread_with_api_token do
-      yield
+    thread_with_api_token(true) do
+      if Thread.current[:arvados_api_token]
+        yield
+      elsif session[:arvados_api_token]
+        # Expired session. Clear it before refreshing login so that,
+        # if this login procedure fails, we end up showing the "please
+        # log in" page instead of getting stuck in a redirect loop.
+        session.delete :arvados_api_token
+        redirect_to_login
+      else
+        render 'users/welcome'
+      end
     end
   end
 
@@ -385,7 +458,10 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_agreements
-    if current_user && !current_user.is_active && current_user.is_invited
+    if current_user && !current_user.is_active
+      if not current_user.is_invited
+        return render 'users/inactive'
+      end
       signatures = UserAgreement.signatures
       @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
       @required_user_agreements = UserAgreement.all.map do |ua|
@@ -472,14 +548,20 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  helper_method :my_folders
-  def my_folders
-    return @my_folders if @my_folders
-    @my_folders = []
+  helper_method :all_projects
+  def all_projects
+    @all_projects ||= Group.
+      filter([['group_class','in',['project','folder']]]).order('name')
+  end
+
+  helper_method :my_projects
+  def my_projects
+    return @my_projects if @my_projects
+    @my_projects = []
     root_of = {}
-    Group.filter([['group_class','=','folder']]).each do |g|
+    all_projects.each do |g|
       root_of[g.uuid] = g.owner_uuid
-      @my_folders << g
+      @my_projects << g
     end
     done = false
     while not done
@@ -493,8 +575,115 @@ class ApplicationController < ActionController::Base
         end
       end
     end
-    @my_folders = @my_folders.select do |g|
+    @my_projects = @my_projects.select do |g|
       root_of[g.uuid] == current_user.uuid
+    end
+  end
+
+  helper_method :projects_shared_with_me
+  def projects_shared_with_me
+    my_project_uuids = my_projects.collect &:uuid
+    all_projects.reject { |x| x.uuid.in? my_project_uuids }
+  end
+
+  helper_method :recent_jobs_and_pipelines
+  def recent_jobs_and_pipelines
+    (Job.limit(10) |
+     PipelineInstance.limit(10)).
+      sort_by do |x|
+      x.finished_at || x.started_at || x.created_at rescue x.created_at
+    end
+  end
+
+  helper_method :my_project_tree
+  def my_project_tree
+    build_project_trees
+    @my_project_tree
+  end
+
+  helper_method :shared_project_tree
+  def shared_project_tree
+    build_project_trees
+    @shared_project_tree
+  end
+
+  def build_project_trees
+    return if @my_project_tree and @shared_project_tree
+    parent_of = {current_user.uuid => 'me'}
+    all_projects.each do |ob|
+      parent_of[ob.uuid] = ob.owner_uuid
+    end
+    children_of = {false => [], 'me' => [current_user]}
+    all_projects.each do |ob|
+      if ob.owner_uuid != current_user.uuid and
+          not parent_of.has_key? ob.owner_uuid
+        parent_of[ob.uuid] = false
+      end
+      children_of[parent_of[ob.uuid]] ||= []
+      children_of[parent_of[ob.uuid]] << ob
+    end
+    buildtree = lambda do |children_of, root_uuid=false|
+      tree = {}
+      children_of[root_uuid].andand.each do |ob|
+        tree[ob] = buildtree.call(children_of, ob.uuid)
+      end
+      tree
+    end
+    sorted_paths = lambda do |tree, depth=0|
+      paths = []
+      tree.keys.sort_by { |ob|
+        ob.is_a?(String) ? ob : ob.friendly_link_name
+      }.each do |ob|
+        paths << {object: ob, depth: depth}
+        paths += sorted_paths.call tree[ob], depth+1
+      end
+      paths
+    end
+    @my_project_tree =
+      sorted_paths.call buildtree.call(children_of, 'me')
+    @shared_project_tree =
+      sorted_paths.call({'Shared with me' =>
+                          buildtree.call(children_of, false)})
+  end
+
+  helper_method :get_object
+  def get_object uuid
+    if @get_object.nil? and @objects
+      @get_object = @objects.each_with_object({}) do |object, h|
+        h[object.uuid] = object
+      end
+    end
+    @get_object ||= {}
+    @get_object[uuid]
+  end
+
+  helper_method :project_breadcrumbs
+  def project_breadcrumbs
+    crumbs = []
+    current = @name_link || @object
+    while current
+      if current.is_a?(Group) and current.group_class.in?(['project','folder'])
+        crumbs.prepend current
+      end
+      if current.is_a? Link
+        current = Group.find?(current.tail_uuid)
+      else
+        current = Group.find?(current.owner_uuid)
+      end
+    end
+    crumbs
+  end
+
+  helper_method :current_project_uuid
+  def current_project_uuid
+    if @object.is_a? Group and @object.group_class.in?(['project','folder'])
+      @object.uuid
+    elsif @name_link.andand.tail_uuid
+      @name_link.tail_uuid
+    elsif @object and resource_class_for_uuid(@object.owner_uuid) == Group
+      @object.owner_uuid
+    else
+      nil
     end
   end
 

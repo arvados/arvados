@@ -13,32 +13,54 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test 'Create and run a pipeline' do
     visit page_with_token('active_trustedclient')
 
-    click_link 'Pipeline templates'
+    visit '/pipeline_templates'
     within('tr', text: 'Two Part Pipeline Template') do
       find('a,button', text: 'Run').click
     end
 
+    # This pipeline needs input. So, Run should be disabled
+    page.assert_selector 'a.disabled,button.disabled', text: 'Run'
+
     instance_page = current_path
 
+    # put this pipeline instance in "A Project"
+    find('button', text: 'Choose a project...').click
+    within('.modal-dialog') do
+      find('.selectable', text: 'A Project').click
+      find('button', text: 'Move').click
+    end
+
     # Go over to the collections page and select something
-    click_link 'Collections (data files)'
+    visit '/collections'
     within('tr', text: 'GNU_General_Public_License') do
       find('input[type=checkbox]').click
     end
     find('#persistent-selection-count').click
 
-    # Go back to the pipeline instance page to use the new selection
-    visit instance_page
+    # Add this collection to the project
+    visit '/projects'
+    find('.arv-project-list a,button', text: 'A Project').click
+    find('.btn', text: 'Add data').click
+    find('span', text: 'foo_tag').click
+    within('.modal-dialog') do
+      find('.btn', text: 'Add').click
+    end
+   
+    find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
+      find('a', text: 'Show').
+      click
 
-    page.assert_selector 'a.disabled,button.disabled', text: 'Run'
     assert find('p', text: 'Provide a value')
 
     find('div.form-group', text: 'Foo/bar pair').
-      find('a,input').
+      find('.btn', text: 'Choose').
       click
-    find('.editable-input select').click
-    find('.editable-input').
-      first(:option, 'b519d9cb706a29fc7ea24dbea2f05851+249025').click
+
+    within('.modal-dialog') do
+      find('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+
     wait_for_ajax
 
     # "Run" button is now enabled
@@ -50,11 +72,78 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     page.assert_selector 'a,button', text: 'Stop'
     find('a,button', text: 'Stop').click
 
-    # Pipeline is stopped. We have the option to resume it.
-    page.assert_selector 'a,button', text: 'Run'
+    # Pipeline is stopped. It should now be in paused state and Runnable again.
+    assert page.has_text? 'Paused'
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
+    page.assert_selector 'a,button', text: 'Clone and edit'
 
-    # Go over to the graph tab
-    click_link 'Graph'
-    assert page.has_css? 'div#provenance_graph'
+    # Since it is test env, no jobs are created to run. So, graph not visible
+    assert_not page.has_text? 'Graph'
   end
+
+  # Create a pipeline instance from within a project and run
+  test 'Create pipeline inside a project and run' do
+    visit page_with_token('active_trustedclient')
+
+    # Go over to the collections page and select something
+    visit '/collections'
+    within('tr', text: 'GNU_General_Public_License') do
+      find('input[type=checkbox]').click
+    end
+    find('#persistent-selection-count').click
+
+    # Add this collection to the project using collections menu from top nav
+    visit '/projects'
+    find('.arv-project-list a,button', text: 'A Project').click
+
+    find('li.selection-menu > a').click
+    click_button 'Copy selections into this project'
+
+    # create a pipeline instance
+    find('.btn', text: 'Run a pipeline').click
+    within('.modal-dialog') do
+      assert page.has_text? 'Two Part Pipeline Template'
+      find('.fa-gear').click
+      find('.btn', text: 'Next: choose inputs').click
+    end
+
+    assert find('p', text: 'Provide a value')
+
+    find('div.form-group', text: 'Foo/bar pair').
+      find('.btn', text: 'Choose').
+      click
+
+    within('.modal-dialog') do
+      find('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+
+    wait_for_ajax
+
+    # "Run" button present and enabled
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
+    first('a,button', text: 'Run').click
+
+    # Pipeline is running. We have a "Stop" button instead now.
+    page.assert_no_selector 'a,button', text: 'Run'
+    page.assert_selector 'a,button', text: 'Stop'
+
+    # Since it is test env, no jobs are created to run. So, graph not visible
+    assert_not page.has_text? 'Graph'
+  end
+
+  test 'view pipeline with job and see graph' do
+    visit page_with_token('active_trustedclient')
+
+    visit '/pipeline_instances'
+    assert page.has_text? 'pipeline_with_job'
+
+    find('a', text: 'pipeline_with_job').click
+
+    # since the pipeline component has a job, expect to see the graph
+    assert page.has_text? 'Graph'
+    click_link 'Graph'
+    assert page.has_text? 'script_version'
+  end
+
 end

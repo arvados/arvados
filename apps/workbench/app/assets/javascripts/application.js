@@ -119,6 +119,11 @@ jQuery(function($){
             $('.btn').button();
         });
 
+    $(document).
+        on('ready ajax:complete', function() {
+            $('[data-toggle~=tooltip]').tooltip({container:'body'});
+        });
+
     HeaderRowFixer = function(selector) {
         this.duplicateTheadTr = function() {
             $(selector).each(function() {

@@ -1,5 +1,5 @@
 class Specimen < ArvadosBase
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     true
   end
 end

@@ -21,3 +21,19 @@ has_component_with_empty_script_parameters:
    foo:
     script: foo
     script_version: master
+
+has_job:
+  name: pipeline_with_job
+  state: Ready
+  uuid: zzzzz-d1hrv-1yfj6xkidf2muk3
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job: {
+            uuid: zzzzz-8i9sb-pshmckwoma9plh7,
+            script_version: master
+         }

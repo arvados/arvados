@@ -37,9 +37,12 @@ ArvadosWorkbench::Application.routes.draw do
   resources :uploaded_datasets
   resources :groups
   resources :specimens
-  resources :pipeline_templates
+  resources :pipeline_templates do
+    get 'choose', on: :collection
+  end
   resources :pipeline_instances do
     get 'compare', on: :collection
+    post 'copy', on: :member
   end
   resources :links
   get '/collections/graph' => 'collections#graph'
@@ -48,20 +51,22 @@ ArvadosWorkbench::Application.routes.draw do
     get 'sharing_popup', :on => :member
     post 'share', :on => :member
     post 'unshare', :on => :member
+    get 'choose', on: :collection
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)
   get '/collections/download/:uuid/:reader_token' => 'collections#show_file_links'
   get '/collections/:uuid/*file' => 'collections#show_file', :format => false
-  resources :folders do
+  resources :projects do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
+    match 'remove_items', on: :member, via: :delete, action: :remove_items
     get 'choose', on: :collection
   end
 
   post 'actions' => 'actions#post'
   get 'websockets' => 'websocket#index'
 
-  root :to => 'users#welcome'
+  root :to => 'projects#index'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)

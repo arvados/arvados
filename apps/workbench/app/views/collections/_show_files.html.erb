@@ -1,14 +1,6 @@
 <% content_for :tab_line_buttons do %>
-<div class="row">
-  <div class="col-md-6"></div>
-  <div class="col-md-6">
-    <div class="pull-right">
-      <span style="padding-left: 1em">Collection storage status:</span>
-      <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
-
-    </div>
-  </div>
-</div>
+<span style="padding-left: 1em">Collection storage status:</span>
+<%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
 <% end %>
 
 <% file_tree = @object.andand.files_tree %>

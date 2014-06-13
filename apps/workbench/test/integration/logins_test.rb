@@ -1,4 +1,4 @@
-require 'test_helper'
+require 'integration_helper'
 
 class LoginsTest < ActionDispatch::IntegrationTest
   test "login with api_token works after redirect" do
@@ -13,10 +13,9 @@ class LoginsTest < ActionDispatch::IntegrationTest
   end
 
   test "expired token yields login page, not error page" do
-    skip
     visit page_with_token('expired_trustedclient')
     # Even the error page has a "Log in" link. We should look for
     # something that only appears the real login page.
-    assert page.has_text? 'Please log in'
+    assert page.has_text? ' Log in Oh... fiddlesticks. Sorry, I had some trouble handling your request'
   end
 end
