@@ -263,6 +263,8 @@ class Dispatcher
         job_auth: job_auth,
         stderr_buf_to_flush: '',
         stderr_flushed_at: 0,
+        bytes_logged: 0,
+        events_logged: 0,
         log_truncated: false
       }
       i.close
@@ -448,17 +450,13 @@ class Dispatcher
 
   protected
 
-  def too_many_bytes_logged_for_job(running_job)
-    bytes_logged = Log.where(uuid: running_job[:uuid]).map { |event|
-      (event.properties["text"] || "").length
-    }.sum
-    return (bytes_logged + j[:stderr_buf_to_flush].size >
+  def too_many_bytes_logged_for_job(j)
+    return (j[:bytes_logged] + j[:stderr_buf_to_flush].size >
             Rails.configuration.crunch_limit_log_event_bytes_per_job)
   end
 
-  def too_many_events_logged_for_job(running_job)
-    log_count = Log.where(uuid: running_job[:uuid]).count
-    return (log_count >= Rails.configuration.crunch_limit_log_events_per_job)
+  def too_many_events_logged_for_job(j)
+    return (j[:events_logged] >= Rails.configuration.crunch_limit_log_events_per_job)
   end
 
   def did_recently(thing, min_interval)
@@ -493,6 +491,8 @@ class Dispatcher
                       owner_uuid: running_job[:job].owner_uuid,
                       properties: {"text" => running_job[:stderr_buf_to_flush]})
         log.save!
+        running_job[:bytes_logged] += running_job[:stderr_buf_to_flush].size
+        running_job[:events_logged] += 1
         running_job[:stderr_buf_to_flush] = ''
         running_job[:stderr_flushed_at] = Time.now.to_i
       end
