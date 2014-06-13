@@ -204,7 +204,8 @@ def main(arguments=None):
     make_link('docker_image_hash', image_hash, **link_base)
     if not image_hash.startswith(args.image.lower()):
         make_link('docker_image_repository', args.image, **link_base)
-        make_link('docker_image_tag', args.tag, **link_base)
+        make_link('docker_image_repo+tag', '{}:{}'.format(args.image, args.tag),
+                  **link_base)
 
     # Clean up.
     image_file.close()
