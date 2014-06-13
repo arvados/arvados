@@ -53,11 +53,11 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal([['.', 'foo', 3]], assigns(:object).files)
   end
 
-  test "viewing a collection fetches related folders" do
+  test "viewing a collection fetches related projects" do
     show_collection(:foo_file, :active)
-    assert_includes(assigns(:folders).map(&:uuid),
-                    api_fixture('groups')['afolder']['uuid'],
-                    "controller did not find linked folder")
+    assert_includes(assigns(:projects).map(&:uuid),
+                    api_fixture('groups')['aproject']['uuid'],
+                    "controller did not find linked project")
   end
 
   test "viewing a collection fetches related permissions" do
@@ -152,5 +152,17 @@ class CollectionsControllerTest < ActionController::TestCase
                  "failed to get a correct file from Keep using a reader token")
     assert_not_equal(read_token, session[:arvados_api_token],
                      "using a reader token set the session's API token")
+  end
+
+  test "inactive user can retrieve user agreement" do
+    ua_collection = api_fixture('collections')['user_agreement']
+    get :show_file, {
+      uuid: ua_collection['uuid'],
+      file: ua_collection['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
+    }, session_for(:inactive)
+    assert_nil(assigns(:required_user_agreements),
+               "Did not skip check_user_agreements filter " +
+               "when showing the user agreement.")
+    assert_response :success
   end
 end

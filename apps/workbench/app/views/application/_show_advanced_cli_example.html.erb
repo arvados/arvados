@@ -1,0 +1,8 @@
+<pre>
+arv --pretty <%= object.class.to_s.underscore %> get \
+ --uuid <%= object.uuid %>
+
+arv <%= object.class.to_s.underscore %> update \
+ --uuid <%= object.uuid %> \
+ --<%= object.class.to_s.underscore.gsub '_', '-' %> '<%= JSON.generate({object.attributes.keys[-3] => object.attributes.values[-3]}).gsub("'","'\''") %>'
+</pre>

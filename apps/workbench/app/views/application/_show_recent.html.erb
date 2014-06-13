@@ -15,7 +15,7 @@
 <table class="table table-condensed arv-index">
   <thead>
     <tr>
-      <% if objects.first and objects.first.class.goes_in_folders? %>
+      <% if objects.first and objects.first.class.goes_in_projects? %>
         <th></th>
       <% end %>
       <th></th>
@@ -34,7 +34,7 @@
   <tbody>
     <% objects.each do |object| %>
     <tr data-object-uuid="<%= object.uuid %>">
-      <% if objects.first.class.goes_in_folders? %>
+      <% if objects.first.class.goes_in_projects? %>
         <td>
           <%= render :partial => "selection_checkbox", :locals => {:object => object} %>
         </td>

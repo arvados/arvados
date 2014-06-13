@@ -1,3 +1,24 @@
+<% content_for :content_top do %>
+  <% if @object and not @object.is_a?(Group) and @object.class.goes_in_projects? and @object.owner_uuid == current_user.uuid and not @name_link %>
+    <div class="pull-right" style="width: 40%">
+      <div class="alert alert-warning alert-dismissable">
+        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <strong>Hey.</strong> This <%= @object.class_for_display.downcase %> belongs to your account, but it's not in any of your projects. If you want it to be easy to find in the future, you should move it to a project.<br />
+        <%= button_to(choose_projects_path(
+                   title: 'Move to...',
+                   editable: true,
+                   action_name: 'Move',
+                   action_href: url_for(action: :update),
+                   action_method: 'patch',
+                   action_data: {selection_param: @object.resource_param_name+'[owner_uuid]', success: 'page-refresh'}.to_json),
+                  { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
+          <i class="fa fa-fw fa-folder"></i> Choose a project...
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+<% end %>
+
 <% content_for :js do %>
   tab_pane_valid_state = {};
 
@@ -5,7 +26,7 @@
     if (!tab_pane_valid_state[pane]) {
       tab_pane_valid_state[pane] = true;
       $(document).trigger('ajax:send');
-      $.ajax('<%=j url_for @object %>?tab_pane='+pane, {dataType: 'html', type: 'GET'}).
+      $.ajax('<%=j url_for() %>?tab_pane='+pane, {dataType: 'html', type: 'GET'}).
         done(function(data, status, jqxhr) {
           $('#' + pane + ' > div > div').html(data);
           $(document).trigger('ajax:complete');
@@ -60,7 +81,7 @@
   <% end %>
 <% end %>
 
-    <div class="smart-scroll" style="margin-top:0.5em;">
+    <div id="<%= pane %>-scroll" style="margin-top:0.5em;">
       <div class="pane-content">
         <% if i == 0 %>
           <%= render(partial: 'show_' + pane.downcase,

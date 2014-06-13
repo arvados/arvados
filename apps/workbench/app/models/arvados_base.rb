@@ -111,6 +111,10 @@ class ArvadosBase < ActiveRecord::Base
     new.private_reload(hash)
   end
 
+  def self.find?(*args)
+    find(*args) rescue nil
+  end
+
   def self.order(*args)
     ArvadosResourceList.new(self).order(*args)
   end
@@ -274,8 +278,9 @@ class ArvadosBase < ActiveRecord::Base
     uuid
   end
 
-  def dup
-    super.forget_uuid!
+  def initialize_copy orig
+    super
+    forget_uuid!
   end
 
   def attributes_for_display
@@ -287,14 +292,14 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def class_for_display
-    self.class.to_s
+    self.class.to_s.underscore.humanize
   end
 
   def self.creatable?
     current_user
   end
 
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     false
   end
 
@@ -349,8 +354,12 @@ class ArvadosBase < ActiveRecord::Base
     resource_class
   end
 
+  def resource_param_name
+    self.class.to_s.underscore
+  end
+
   def friendly_link_name
-    (name if self.respond_to? :name) || uuid
+    (name if self.respond_to? :name) || default_name
   end
 
   def content_summary
@@ -359,6 +368,27 @@ class ArvadosBase < ActiveRecord::Base
 
   def selection_label
     friendly_link_name
+  end
+
+  def self.default_name
+    self.to_s.underscore.humanize
+  end
+
+  def controller
+    (self.class.to_s.pluralize + 'Controller').constantize
+  end
+
+  def controller_name
+    self.class.to_s.tableize
+  end
+
+  # Placeholder for name when name is missing or empty
+  def default_name
+    if self.respond_to? :name
+      "New #{class_for_display.downcase}"
+    else
+      uuid
+    end
   end
 
   def owner

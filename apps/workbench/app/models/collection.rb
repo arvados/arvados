@@ -1,6 +1,4 @@
 class Collection < ArvadosBase
-  include ApplicationHelper
-
   MD5_EMPTY = 'd41d8cd98f00b204e9800998ecf8427e'
 
   # Return true if the given string is the locator of a zero-length blob
@@ -8,12 +6,12 @@ class Collection < ArvadosBase
     !!locator.to_s.match("^#{MD5_EMPTY}(\\+.*)?\$")
   end
 
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     true
   end
 
   def content_summary
-    human_readable_bytes_html(total_bytes) + " " + super
+    ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
   end
 
   def total_bytes
@@ -23,10 +21,13 @@ class Collection < ArvadosBase
         tot += file[2]
       end
       tot
+    else
+      0
     end
   end
 
   def files_tree
+    return [] if files.empty?
     tree = files.group_by { |file_spec| File.split(file_spec.first) }
     # Fill in entries for empty directories.
     tree.keys.map { |basedir, _| File.split(basedir) }.each do |splitdir|

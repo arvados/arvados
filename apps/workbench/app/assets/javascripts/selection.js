@@ -57,8 +57,10 @@ jQuery(function($){
         $("#persistent-selection-count").text(lst.length);
         if (lst.length > 0) {
             html = '<li><a href="#" class="btn btn-xs btn-info" id="clear_selections_button"><i class="fa fa-fw fa-ban"></i> Clear selections</a></li>';
-            if (this_object_uuid.match('-j7d0g-'))
-                html += '<li><button class="btn btn-xs btn-info" type="submit" name="copy_selections_into_folder" id="copy_selections_into_folder"><i class="fa fa-fw fa-folder-open"></i> Copy selections into this folder</button></li>';
+            if (this_object_uuid.match('-j7d0g-')) {
+                html += '<li><button class="btn btn-xs btn-info" type="submit" name="copy_selections_into_project" id="copy_selections_into_project"><i class="fa fa-fw fa-copy"></i> Copy selections into this project</button></li>';
+                html += '<li><button class="btn btn-xs btn-info" type="submit" name="move_selections_into_project" id="move_selections_into_project"><i class="fa fa-fw fa-truck"></i> Move selections into this project</button></li>';
+	    }
             html += '<li><button class="btn btn-xs btn-info" type="submit" name="combine_selected_files_into_collection" '
                 + ' id="combine_selected_files_into_collection">'
                 + '<i class="fa fa-fw fa-archive"></i> Combine selected collections and files into a new collection</button></li>'
@@ -100,13 +102,11 @@ jQuery(function($){
 
         $('.remove-selection').on('click', remove_selection_click);
         $('#clear_selections_button').on('click', clear_selections);
+        $(document).trigger('selections-updated', [lst]);
     };
 
     $(document).
         on('change', '.persistent-selection:checkbox', function(e) {
-            //console.log($(this));
-            //console.log($(this).val());
-
             var inc = 0;
             if ($(this).is(":checked")) {
                 add_selection($(this).val(), $(this).attr('friendly_name'), $(this).attr('href'), $(this).attr('friendly_type'));
@@ -115,7 +115,6 @@ jQuery(function($){
                 remove_selection($(this).val());
             }
         });
-
 
     $(window).on('load storage', update_count);
 
@@ -178,3 +177,45 @@ select_form_sources = null;
         return ret;
     };
 })();
+
+function dispatch_selection_action() {
+    // Build a new "href" attribute for this link by starting with the
+    // "data-href" attribute and appending ?foo[]=bar&foo[]=baz (or
+    // &foo=... as appropriate) to reflect the current object
+    // selections.
+    var data = [];
+    var param_name = $(this).attr('data-selection-param-name');
+    var href = $(this).attr('data-href');
+    if ($(this).closest('.disabled').length > 0) {
+	return false;
+    }
+    $('.persistent-selection:checkbox:checked').each(function() {
+        data.push({name: param_name, value: $(this).val()});
+    });
+    if (href.indexOf('?') >= 0)
+        href += '&';
+    else
+        href += '?';
+    href += $.param(data, true);
+    $(this).attr('href', href);
+    return true;
+}
+
+function enable_disable_selection_actions() {
+    var $checked = $('.persistent-selection:checkbox:checked');
+    $('[data-selection-action]').
+        closest('div.btn-group-sm').
+        find('ul li').
+        toggleClass('disabled', ($checked.length == 0));
+    $('[data-selection-action=compare]').
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.filter('[value*=-d1hrv-]').length < 2) ||
+                    ($checked.not('[value*=-d1hrv-]').length > 0));
+}
+
+$(document).
+    on('selections-updated ready ajax:complete', function() {
+        $('[data-selection-action]').click(dispatch_selection_action);
+        enable_disable_selection_actions();
+    });
