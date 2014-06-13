@@ -158,10 +158,17 @@ class Collection < ArvadosModel
       return coll
     end
 
-    # Find Collections with matching Docker image repository+tag pairs.
-    repo_matches = base_search.
-      where(links: {link_class: 'docker_image_repo+tag',
-                    name: "#{search_term}:#{search_tag || 'latest'}"})
+    # Find Collections with a matching Docker image repository,
+    # plus the tag pair if provided.
+    if search_tag.nil?
+      repo_matches = base_search.
+        where(links: {link_class: 'docker_image_repository',
+                      name: search_term})
+    else
+      repo_matches = base_search.
+        where(links: {link_class: 'docker_image_repo+tag',
+                      name: "#{search_term}:#{search_tag || 'latest'}"})
+    end
 
     # Find Collections with matching Docker image hashes, unless we're
     # obviously doing a repo+tag search and already found a match that way.
