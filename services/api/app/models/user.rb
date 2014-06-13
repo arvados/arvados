@@ -41,7 +41,11 @@ class User < ArvadosModel
   end
 
   def groups_i_can(verb)
-    self.group_permissions.select { |uuid, mask| mask[verb] }.keys
+    my_groups = self.group_permissions.select { |uuid, mask| mask[verb] }.keys
+    if verb == :read
+      my_groups << anonymous_group_uuid
+    end
+    my_groups
   end
 
   def can?(actions)
