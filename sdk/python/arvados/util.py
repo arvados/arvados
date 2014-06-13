@@ -7,6 +7,8 @@ import errno
 import sys
 from arvados.collection import *
 
+HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
+
 def clear_tmpdir(path=None):
     """
     Ensure the given directory (or TASK_TMPDIR if none given)
@@ -306,3 +308,25 @@ def listdir_recursive(dirname, base=None):
         else:
             allfiles += [ent_base]
     return allfiles
+
+def is_hex(s, *length_args):
+    """is_hex(s[, length[, max_length]]) -> boolean
+
+    Return True if s is a string of hexadecimal digits.
+    If one length argument is given, the string must contain exactly
+    that number of digits.
+    If two length arguments are given, the string must contain a number of
+    digits between those two lengths, inclusive.
+    Return False otherwise.
+    """
+    num_length_args = len(length_args)
+    if num_length_args > 2:
+        raise ArgumentError("is_hex accepts up to 3 arguments ({} given)".
+                            format(1 + num_length_args))
+    elif num_length_args == 2:
+        good_len = (length_args[0] <= len(s) <= length_args[1])
+    elif num_length_args == 1:
+        good_len = (len(s) == length_args[0])
+    else:
+        good_len = True
+    return bool(good_len and HEX_RE.match(s))

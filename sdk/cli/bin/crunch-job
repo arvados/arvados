@@ -641,8 +641,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_image)
     {
-      $command .= "crunchstat -cgroup-parent=/sys/fs/cgroup/lxc -cgroup-cid=$ENV{TASK_WORK}/docker.cid -poll=1000 ";
-      $command .= "$docker_bin run -i -a stdin -a stdout -a stderr -cidfile=$ENV{TASK_WORK}/docker.cid ";
+      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$ENV{TASK_WORK}/docker.cid -poll=10000 ";
+      $command .= "$docker_bin run -i -a stdin -a stdout -a stderr --cidfile=$ENV{TASK_WORK}/docker.cid ";
       # Dynamically configure the container to use the host system as its
       # DNS server.  Get the host's global addresses from the ip command,
       # and turn them into docker --dns options using gawk.
@@ -661,8 +661,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       }
       $command .= "\Q$docker_image\E ";
     } else {
-      $command .= "crunchstat -cgroup-path=/sys/fs/cgroup "
+      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 "
     }
+    $command .= "stdbuf -o0 -e0 ";
     $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
@@ -820,20 +821,22 @@ if ($collated_output)
         or die "failed to get collated manifest: $!";
     # Read the original manifest, and strip permission hints from it,
     # so we can put the result in a Collection.
-    my @manifest_lines = ();
+    my @stripped_manifest_lines = ();
+    my $orig_manifest_text = '';
     while (my $manifest_line = <$orig_manifest>) {
+      $orig_manifest_text .= $manifest_line;
       my @words = split(/ /, $manifest_line, -1);
       foreach my $ii (0..$#words) {
         if ($words[$ii] =~ /^[0-9a-f]{32}\+/) {
           $words[$ii] =~ s/\+A[0-9a-f]{40}@[0-9a-f]{8}\b//;
         }
       }
-      push(@manifest_lines, join(" ", @words));
+      push(@stripped_manifest_lines, join(" ", @words));
     }
-    my $manifest_text = join("", @manifest_lines);
+    my $stripped_manifest_text = join("", @stripped_manifest_lines);
     my $output = $arv->{'collections'}->{'create'}->execute('collection' => {
-      'uuid' => md5_hex($manifest_text),
-      'manifest_text' => $manifest_text,
+      'uuid' => md5_hex($stripped_manifest_text),
+      'manifest_text' => $orig_manifest_text,
     });
     $Job->update_attributes('output' => $output->{uuid});
     if ($Job->{'output_is_persistent'}) {
