@@ -81,7 +81,7 @@
   <% end %>
 <% end %>
 
-    <div id="<%= pane %>-scroll" class="<%= 'smart-scroll' if pane.match(/graph/) %>" style="margin-top:0.5em;">
+    <div id="<%= pane %>-scroll" style="margin-top:0.5em;">
       <div class="pane-content">
         <% if i == 0 %>
           <%= render(partial: 'show_' + pane.downcase,
