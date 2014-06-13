@@ -18,7 +18,7 @@
         <% if @output_of.andand.any? %>
           <p><i>This collection was the output of:</i><br />
           <%= render_arvados_object_list_start(@output_of, 'Show all jobs',
-                jobs_path(filter: [['output', '=', @object.uuid]].to_json)) do |job| %>
+                jobs_path(filters: [['output', '=', @object.uuid]].to_json)) do |job| %>
             <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
           <% end %>
           </p>
@@ -27,7 +27,7 @@
         <% if @log_of.andand.any? %>
           <p><i>This collection contains log messages from:</i><br />
           <%= render_arvados_object_list_start(@log_of, 'Show all jobs',
-                jobs_path(filter: [['log', '=', @object.uuid]].to_json)) do |job| %>
+                jobs_path(filters: [['log', '=', @object.uuid]].to_json)) do |job| %>
             <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
           <% end %>
           </p>
@@ -89,8 +89,8 @@
         <% if @projects.andand.any? %>
           <p>Included in projects:<br />
           <%= render_arvados_object_list_start(@projects, 'Show all projects',
-                links_path(filter: [['head_uuid', '=', @object.uuid],
-                                    ['link_class', '=', 'name']].to_json)) do |project| %>
+                links_path(filters: [['head_uuid', '=', @object.uuid],
+                                     ['link_class', '=', 'name']].to_json)) do |project| %>
             <%= link_to_if_arvados_object(project, friendly_name: true) %><br />
           <% end %>
           </p>
@@ -98,7 +98,7 @@
         <% if @permissions.andand.any? %>
           <p>Readable by:<br />
           <%= render_arvados_object_list_start(@permissions, 'Show all permissions',
-                links_path(filter: [['head_uuid', '=', @object.uuid],
+                links_path(filters: [['head_uuid', '=', @object.uuid],
                                     ['link_class', '=', 'permission']].to_json)) do |link| %>
           <%= link_to_if_arvados_object(link.tail_uuid, friendly_name: true) %><br />
           <% end %>
