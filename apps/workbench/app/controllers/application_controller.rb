@@ -290,6 +290,19 @@ class ApplicationController < ActionController::Base
   def thread_with_api_token(login_optional = false)
     begin
       try_redirect_to_login = true
+
+      if !params[:api_token] && !session[:arvados_api_token]
+        if session && (session['arv-referrer'] == 'logout')
+          # do not use anonymous user token and let logout happen
+        else
+          anonymous_user_token = Rails.configuration.anonymous_user_token
+          if anonymous_user_token.andand.size == 50
+            params[:api_token] = anonymous_user_token
+            using_anonymous_user_token = true
+          end
+        end
+      end
+
       if params[:api_token]
         try_redirect_to_login = false
         Thread.current[:arvados_api_token] = params[:api_token]
@@ -317,8 +330,13 @@ class ApplicationController < ActionController::Base
             yield
           end
         else
-          @errors = ['Invalid API token']
-          self.render_error status: 401
+          if using_anonymous_user_token
+            # bypass the invalid anonlymous user token, instead of showing error message.
+            try_redirect_to_login = true
+          else
+            @errors = ['Invalid API token']
+            self.render_error status: 401
+          end
         end
       elsif session[:arvados_api_token]
         # In this case, the token must have already verified at some
