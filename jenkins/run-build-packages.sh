@@ -63,6 +63,8 @@ python setup.py egg_info -b ".$GIT_HASH" sdist upload
 
 # Build debs for everything
 
+# Build arvados src deb package
+
 build_and_scp_deb () {
   PACKAGE=$1
   PACKAGE_NAME=$2
@@ -116,6 +118,22 @@ fi
 
 # Make sure our destination directory on $APTSERVER exists - prm can delete it when invoked improperly
 ssh -p2222 $APTUSER@$APTSERVER mkdir tmp
+
+# Arvados-src
+# We use $WORKSPACE/src-build-dir as the clean directory from which to build the src package
+if [[ ! -d "$WORKSPACE/src-build-dir" ]]; then
+  mkdir "$WORKSPACE/src-build-dir"
+  cd "$WORKSPACE/src-build-dir"
+  git clone https://github.com/curoverse/arvados.git
+fi  
+
+cd "$WORKSPACE/src-build-dir"
+git fetch -a
+git checkout $GIT_REV
+cd $WORKSPACE
+
+cd $WORKSPACE/debs
+build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH -x 'usr/local/arvados/src/.git*'"
 
 # Keep
 cd $WORKSPACE/services/keep
