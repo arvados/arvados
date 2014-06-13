@@ -117,16 +117,16 @@ class Job < ArvadosModel
               links: {link_class: 'docker_image_hash'}).first
       self.docker_image_locator = (coll.links_via_head.any?) ? coll.uuid : nil
     else  # Accept images specified by their Docker metadata.
-      link_search = {name: image_name}
       if image_name =~ /^[0-9A-Fa-f]{64}$/
-        link_search[:link_class] = 'docker_image_hash'
+        link_search = {
+          link_class: 'docker_image_hash',
+          name: image_name,
+        }
       else
-        # Search for a match on image repository + tag.
-        link_search[:link_class] = 'docker_image_repository'
-        tag_name = runtime_constraints['docker_image_tag'] || 'latest'
-        link_search[:head_uuid] = Link.select(:head_uuid).
-          where(link_class: 'docker_image_tag', name: tag_name).
-          map(&:head_uuid)
+        link_search = {
+          link_class: 'docker_image_repo+tag',
+          name: "#{image_name}:#{runtime_constraints['docker_image_tag'] || 'latest'}",
+        }
       end
       links = Link.where(link_search)
       # Select the image that was created most recently.

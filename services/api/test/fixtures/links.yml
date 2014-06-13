@@ -479,8 +479,8 @@ docker_image_collection_tag:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-11 14:30:00.184019565 Z
   updated_at: 2014-06-11 14:30:00.183829316 Z
-  link_class: docker_image_tag
-  name: latest
+  link_class: docker_image_repo+tag
+  name: arvados/apitestfixture:latest
   tail_uuid: ~
   head_uuid: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   properties:
@@ -494,8 +494,8 @@ docker_image_collection_tag2:
   modified_by_user_uuid: zzzzz-tpzed-000000000000000
   modified_at: 2014-06-11 14:30:00.184019565 Z
   updated_at: 2014-06-11 14:30:00.183829316 Z
-  link_class: docker_image_tag
-  name: june10
+  link_class: docker_image_repo+tag
+  name: arvados/apitestfixture:june10
   tail_uuid: ~
   head_uuid: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   properties:

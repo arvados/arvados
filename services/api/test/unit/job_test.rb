@@ -42,8 +42,8 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "locate a Docker image with a repository + tag" do
-    image_repo = links(:docker_image_collection_repository).name
-    image_tag = links(:docker_image_collection_tag2).name
+    image_repo, image_tag =
+      links(:docker_image_collection_tag2).name.split(':', 2)
     job = Job.new(runtime_constraints:
                   {'docker_image' => image_repo,
                     'docker_image_tag' => image_tag})
