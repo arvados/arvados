@@ -683,4 +683,48 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
+  @@anonymous_group = nil
+  def self.anonymous_group
+    if !@@anonymous_group
+      @@anonymous_group = Group.where(name: 'Anonymous group').first
+    end
+    @@anonymous_group
+  end
+
+  # helper method to create sharing link for anonymous user group
+  helper_method :share_with_anonymous_user
+  def share_with_anonymous_group uuid
+    anon_group = ApplicationController.anonymous_group
+    return if !anon_group
+
+    links = Link.where(link_class: 'permission',
+                       name: 'can_read',
+                       tail_uuid: anon_group[:uuid],
+                       head_uuid: uuid)
+
+    # no such link exists; so create one
+    if !links.any?
+      link = Link.create(link_class: 'permission',
+                         name: 'can_read',
+                         tail_uuid: anon_group[:uuid],
+                         head_uuid: uuid)
+    end
+  end
+
+  # helper method to delete sharing link for anonymous user group
+  helper_method :unshare_with_anonymous_user
+  def unshare_with_anonymous_group uuid
+    anon_group = ApplicationController.anonymous_group
+    return if !anon_group
+
+    links = Link.where(link_class: 'permission',
+                       name: 'can_read',
+                       tail_uuid: anon_group[:uuid],
+                       head_uuid: uuid)
+
+    links.each do |link|
+      link.destroy
+    end
+  end
+
 end

@@ -187,6 +187,7 @@ class CollectionsController < ApplicationController
 
   def share
     a = ApiClientAuthorization.create(scopes: sharing_scopes)
+    share_with_anonymous_group @object.uuid
     @search_sharing = search_scopes
     render 'sharing_popup'
   end
@@ -197,6 +198,7 @@ class CollectionsController < ApplicationController
       s.destroy
     end
     @search_sharing = search_scopes
+    unshare_with_anonymous_group @object.uuid
     render 'sharing_popup'
   end
 
