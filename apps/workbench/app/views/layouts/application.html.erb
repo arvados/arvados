@@ -173,7 +173,7 @@
                 <% end %>
                 My projects
               </li>
-              <% @my_project_tree.each do |pnode| %>
+              <% my_project_tree.each do |pnode| %>
                 <% next if pnode[:object].class != Group %>
                 <li style="padding-left: <%= pnode[:depth]-1 %>em">
                   <%= link_to(pnode[:object].name, project_path(pnode[:object].uuid)) %>
@@ -183,7 +183,7 @@
               <li role="presentation" class="dropdown-header">
                 Projects shared with me
               </li>
-              <% @shared_project_tree.each do |pnode| %>
+              <% shared_project_tree.each do |pnode| %>
                 <% next if pnode[:object].class != Group %>
                 <li style="padding-left: <%= pnode[:depth]-1 %>em">
                   <%= link_to project_path(pnode[:object].uuid) do %>

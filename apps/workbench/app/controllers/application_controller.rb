@@ -550,7 +550,8 @@ class ApplicationController < ActionController::Base
 
   helper_method :all_projects
   def all_projects
-    @all_projects ||= Group.filter([['group_class','in',['project','folder']]])
+    @all_projects ||= Group.
+      filter([['group_class','in',['project','folder']]]).order('name')
   end
 
   helper_method :my_projects
@@ -592,6 +593,57 @@ class ApplicationController < ActionController::Base
       sort_by do |x|
       x.finished_at || x.started_at || x.created_at rescue x.created_at
     end
+  end
+
+  helper_method :my_project_tree
+  def my_project_tree
+    build_project_trees
+    @my_project_tree
+  end
+
+  helper_method :shared_project_tree
+  def shared_project_tree
+    build_project_trees
+    @shared_project_tree
+  end
+
+  def build_project_trees
+    return if @my_project_tree and @shared_project_tree
+    parent_of = {current_user.uuid => 'me'}
+    all_projects.each do |ob|
+      parent_of[ob.uuid] = ob.owner_uuid
+    end
+    children_of = {false => [], 'me' => [current_user]}
+    all_projects.each do |ob|
+      if ob.owner_uuid != current_user.uuid and
+          not parent_of.has_key? ob.owner_uuid
+        parent_of[ob.uuid] = false
+      end
+      children_of[parent_of[ob.uuid]] ||= []
+      children_of[parent_of[ob.uuid]] << ob
+    end
+    buildtree = lambda do |children_of, root_uuid=false|
+      tree = {}
+      children_of[root_uuid].andand.each do |ob|
+        tree[ob] = buildtree.call(children_of, ob.uuid)
+      end
+      tree
+    end
+    sorted_paths = lambda do |tree, depth=0|
+      paths = []
+      tree.keys.sort_by { |ob|
+        ob.is_a?(String) ? ob : ob.friendly_link_name
+      }.each do |ob|
+        paths << {object: ob, depth: depth}
+        paths += sorted_paths.call tree[ob], depth+1
+      end
+      paths
+    end
+    @my_project_tree =
+      sorted_paths.call buildtree.call(children_of, 'me')
+    @shared_project_tree =
+      sorted_paths.call({'Shared with me' =>
+                          buildtree.call(children_of, false)})
   end
 
   helper_method :get_object

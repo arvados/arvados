@@ -9,7 +9,7 @@
 
       <div class="modal-body">
         <div class="selectable-container" style="height: 15em; overflow-y: scroll">
-          <% [@my_project_tree, @shared_project_tree].each do |tree| %>
+          <% [my_project_tree, shared_project_tree].each do |tree| %>
             <% tree.each do |projectnode| %>
               <% if projectnode[:object].is_a? String %>
                 <div class="row" style="padding-left: <%= 1 + projectnode[:depth] %>em;">
