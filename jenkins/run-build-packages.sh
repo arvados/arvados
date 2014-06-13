@@ -123,8 +123,8 @@ ssh -p2222 $APTUSER@$APTSERVER mkdir tmp
 # We use $WORKSPACE/src-build-dir as the clean directory from which to build the src package
 if [[ ! -d "$WORKSPACE/src-build-dir" ]]; then
   mkdir "$WORKSPACE/src-build-dir"
-  cd "$WORKSPACE/src-build-dir"
-  git clone https://github.com/curoverse/arvados.git
+  cd "$WORKSPACE"
+  git clone https://github.com/curoverse/arvados.git src-build-dir
 fi  
 
 cd "$WORKSPACE/src-build-dir"
