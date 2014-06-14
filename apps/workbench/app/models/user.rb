@@ -49,4 +49,12 @@ class User < ArvadosBase
     arvados_api_client.api(self, "/setup", params)
   end
 
+  def is_anonymous
+    self.uuid.andand.match(/anonymouspublic$/)
+  end
+
+  def can_act?
+    !self.is_anonymous # && self.is_active
+  end
+
 end

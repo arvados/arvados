@@ -873,24 +873,6 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
-  @@anonymous_user = nil
-  helper_method :anonymous_user
-  def anonymous_user
-    ApplicationController.anonymous_user
-  end
-  def self.anonymous_user
-    if !@@anonymous_user
-      anon_users = User.where(first_name: 'anonymouspublic', last_name: 'anonymouspublic')
-      anon_users.each do |user|
-        if user.uuid.ends_with? 'anonymouspublic'
-          @@anonymous_user = user
-          break
-        end
-      end
-    end
-    @@anonymous_user
-  end
-
   @@anonymous_group = nil
   def self.anonymous_group
     if !@@anonymous_group

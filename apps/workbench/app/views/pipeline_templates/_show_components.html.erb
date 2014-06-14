@@ -1,7 +1,9 @@
 <% content_for :tab_line_buttons do %>
   <%= form_tag '/pipeline_instances' do |f| %>
   <%= hidden_field :pipeline_instance, :pipeline_template_uuid, :value => @object.uuid %>
+  <% if current_user.andand.can_act? %>
   <%= button_tag "Run this pipeline", {class: 'btn btn-primary pull-right', id: "run-pipeline-button"} %>
+  <% end %>
 <% end %>
 <% end %>
 
