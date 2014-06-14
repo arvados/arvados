@@ -82,8 +82,9 @@ inactive_but_signed_user_agreement:
 
 anonymous:
   uuid: zzzzz-tpzed-anonymouspublic
-  first_name: anonymous
-  last_name: anonymous
+  email: anonymouspublic
+  first_name: anonymouspublic
+  last_name: anonymouspublic
   is_active: true
   is_admin: false
   prefs: {}

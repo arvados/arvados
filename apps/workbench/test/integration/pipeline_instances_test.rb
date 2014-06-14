@@ -150,4 +150,55 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'script_version'
   end
 
+  # Visit project as anonymous user and verify that pipeline cannot be modified
+  test 'visit shared project as anonymous user' do
+    add_a_collection_and_pipeline_to_project
+
+    # login as anonymous user and verify that top nav
+    visit page_with_token('anonymous')
+    
+    within('.navbar-fixed-top') do
+      assert page.has_text? 'You are viewing public data'
+      assert page.has_link? 'Log in'
+    end
+
+    assert page.has_text? 'Welcome'
+    assert page.has_no_text? 'My projects'
+    assert page.has_no_button? 'Add new project'
+    assert page.has_text? 'Projects shared with me'
+    assert page.has_no_text? 'A Project'
+
+    find('a', text: 'Projects').click
+    within('.dropdown-menu') do
+      page.has_no_text? ('New project')
+      page.has_text? ('Projects shared with me')
+    end
+
+    # share "A Project" with anonymous users
+    use_token :admin
+    ac = ApplicationController.new
+    ac.send :share_with_anonymous_group, api_fixture('groups')['aproject']['uuid']
+
+    # as anonymous user verify the shared project is accessible
+    visit page_with_token('anonymous')
+    assert page.has_text? 'A Project'
+    find('a', text: 'A Project').click
+
+    #find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
+    #  find('a', text: 'Show').click
+
+    # unshare "A Project" with anonymous users
+    use_token :admin
+    ac = ApplicationController.new
+    ac.send :unshare_with_anonymous_group, api_fixture('groups')['aproject']['uuid']
+
+    # as anonymous user verify the project is no longer shared
+    visit page_with_token('anonymous')
+    assert page.has_no_text? 'A Project'
+
+    # as active user "A Project" is accessible
+    visit page_with_token('active_trustedclient')
+    assert page.has_text? 'A Project'
+  end
+
 end
