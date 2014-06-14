@@ -83,6 +83,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   # Create a pipeline instance from within a project and run
   test 'Create pipeline inside a project and run' do
+    add_a_collection_and_pipeline_to_project
+  end
+
+  def add_a_collection_and_pipeline_to_project
     visit page_with_token('active_trustedclient')
 
     # Go over to the collections page and select something
