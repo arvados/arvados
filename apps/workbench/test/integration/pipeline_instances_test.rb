@@ -97,7 +97,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find('#persistent-selection-count').click
 
     # Add this collection to the project using collections menu from top nav
-    visit '/projects'
+    visit '/'
     find('.arv-project-list a,button', text: 'A Project').click
 
     find('li.selection-menu > a').click
@@ -168,6 +168,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Projects shared with me'
     assert page.has_no_text? 'A Project'
 
+    find('.arv-project-list a,button', text: 'Unrestricted public data').click
+    page.has_text? ('An anonymously accessible project')
+
     find('a', text: 'Projects').click
     within('.dropdown-menu') do
       page.has_no_text? ('New project')
@@ -183,6 +186,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     visit page_with_token('anonymous')
     assert page.has_text? 'A Project'
     find('a', text: 'A Project').click
+    page.has_text? ('Test project belonging to active user')
 
     #find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
     #  find('a', text: 'Show').click
@@ -197,8 +201,15 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_no_text? 'A Project'
 
     # as active user "A Project" is accessible
-    visit page_with_token('active_trustedclient')
+    visit page_with_token('active')
     assert page.has_text? 'A Project'
+    find('.arv-project-list a,button', text: 'Unrestricted public data').click
+    page.has_text? ('An anonymously accessible project')
+    find('a', text: 'Projects').click
+    within('.dropdown-menu') do
+      page.has_text? ('New project')
+      page.has_text? ('Projects shared with me')
+    end
   end
 
 end

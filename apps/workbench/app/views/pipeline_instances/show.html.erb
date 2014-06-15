@@ -12,6 +12,7 @@
 <% end %>
 
 <% content_for :tab_line_buttons do %>
+  <% if current_user.andand.can_act? %>
   <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'pipeline_instance[state]' => 'New'),
       class: 'btn btn-primary',
       #data: {toggle: :tooltip, placement: :top}, title: 'copy and modify',
@@ -27,30 +28,25 @@
         class: 'btn btn-primary run-pipeline-button',
         method: :patch
         ) do %>
-      <% if current_user.andand.can_act? %>
       Run <i class="fa fa-fw fa-play"></i>
       <% end %>
-    <% end %>
   <% else %>
     <% if @object.state.in? ['RunningOnClient', 'RunningOnServer'] %>
       <%= link_to(url_for('pipeline_instance[state]' => 'Paused'),
           class: 'btn btn-primary run-pipeline-button',
           method: :patch
           ) do %>
-        <% if current_user.andand.can_act? %>
         Stop <i class="fa fa-fw fa-stop"></i>
-        <% end %>
       <% end %>
     <% elsif @object.state == 'Paused' %>
       <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
           class: 'btn btn-primary run-pipeline-button',
           method: :patch
           ) do %>
-        <% if current_user.andand.can_act? %>
         Resume <i class="fa fa-fw fa-play"></i>
-        <% end %>
       <% end %>
     <% end %>
+  <% end %>
   <% end %>
 <% end %>
 

@@ -142,3 +142,4 @@ anonymous:
   user: anonymous
   api_token: 4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi
   expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /"]
