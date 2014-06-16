@@ -151,6 +151,7 @@ class Collection < ArvadosModel
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
     readers ||= [Thread.current[:user]]
     base_search = Link.
+      readable_by(*readers).
       readable_by(*readers, table_name: "collections").
       joins("JOIN collections ON links.head_uuid = collections.uuid").
       order("links.created_at DESC")
