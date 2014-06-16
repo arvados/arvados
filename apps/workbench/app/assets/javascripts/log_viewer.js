@@ -1,4 +1,4 @@
-function addToLogViewer(logViewer, lines) {
+function addToLogViewer(logViewer, lines, taskState) {
     var re = /((\d\d\d\d)-(\d\d)-(\d\d))_((\d\d):(\d\d):(\d\d)) ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}) (\d+) (\d+)? (.*)/;
     for (var a in lines) {
         var v = lines[a].match(re);
@@ -15,20 +15,22 @@ function addToLogViewer(logViewer, lines) {
             var type = "";
             if (v11 != '&nbsp;') {
                 if (/^stderr /.test(message)) {
-                    if (/^stderr crunchstat: /.test(message)) {
+                    message = message.substr(7);
+                    if (/^crunchstat: /.test(message)) {
                         type = "crunchstat";
-                        message = message.substr(19);
-                    } else if (/^stderr srun: /.test(message)) {
+                        message = message.substr(12);
+                    } else if (/^srun: /.test(message) || /^slurmd/.test(message)) {
                         type = "task-dispatch";
-                        message = message.substr(7);
-                    } else if (/^stderr slurmd/.test(message)) {
-                        type = "task-dispatch";
-                        message = message.substr(7);
                     } else {
                         type = "task-output";
-                        message = message.substr(7);
                     }
                 } else {
+                    if (/^success in (\d+)/) {
+                        taskState[v11] = "success";
+                    }
+                    if (/^failure \([^)]+\) (\d+)/) {
+                        taskState[v11] = "failure";
+                    }
                     type = "task-dispatch";
                 }
             } else {
