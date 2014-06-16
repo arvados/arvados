@@ -3,6 +3,10 @@ require 'test_helper'
 class JobTest < ActiveSupport::TestCase
   BAD_COLLECTION = "#{'f' * 32}+0"
 
+  setup do
+    set_user_from_auth :active
+  end
+
   test "Job without Docker image doesn't get locator" do
     job = Job.new
     assert job.valid?

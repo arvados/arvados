@@ -148,52 +148,52 @@ class Collection < ArvadosModel
     [hash_part, size_part].compact.join '+'
   end
 
-  def self.for_latest_docker_image(search_term, search_tag=nil)
-    base_search = self.joins(:links_via_head).order("links.created_at DESC")
+  def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
+    readers ||= [Thread.current[:user]]
+    base_search = Link.
+      readable_by(*readers, table_name: "collections").
+      joins("JOIN collections ON links.head_uuid = collections.uuid").
+      order("links.created_at DESC")
+
     # If the search term is a Collection locator with an associated
     # Docker image hash link, return that Collection.
     coll_matches = base_search.
-      where(uuid: search_term, links: {link_class: 'docker_image_hash'})
-    if coll = coll_matches.first
-      return coll
+      where(link_class: "docker_image_hash", collections: {uuid: search_term})
+    if match = coll_matches.first
+      return find_by_uuid(match.head_uuid)
     end
 
     # Find Collections with matching Docker image repository+tag pairs.
     repo_matches = base_search.
-      where(links: {link_class: 'docker_image_repo+tag',
-                    name: "#{search_term}:#{search_tag || 'latest'}"})
+      where(link_class: "docker_image_repo+tag",
+            name: "#{search_term}:#{search_tag || 'latest'}")
 
     # Find Collections with matching Docker image hashes, unless we're
     # obviously doing a repo+tag search and already found a match that way.
-    if search_tag.nil? or repo_matches.first.nil?
+    if search_tag.nil? or repo_matches.empty?
       hash_matches = base_search.
-        where("links.link_class = ? and links.name LIKE ?",
+        where("link_class = ? and name LIKE ?",
               "docker_image_hash", "#{search_term}%")
     else
       hash_matches = nil
     end
 
     # Select the image that was created most recently from both repo
-    # and hash matches.
-    latest_image = nil
+    # and hash matches.  Note that the SQL search order and fallback
+    # timestamp values are chosen so that if image timestamps are
+    # missing, we use the image with the newest link.
+    latest_image_link = nil
     latest_image_timestamp = "1900-01-01T00:00:00Z"
     [repo_matches, hash_matches].compact.each do |search_result|
-      search_result.find_each do |coll|
-        coll_latest_timestamp = "1900-01-01T00:00:00Z"
-
-        coll.links_via_head.find_each do |link|
-          this_link_timestamp = link.properties["image_timestamp"]
-          if (this_link_timestamp.andand > coll_latest_timestamp)
-            coll_latest_timestamp = this_link_timestamp
-          end
-        end
-
-        if coll_latest_timestamp > latest_image_timestamp
-          latest_image = coll
-          latest_image_timestamp = coll_latest_timestamp
+      search_result.find_each do |link|
+        link_timestamp = link.properties.fetch("image_timestamp",
+                                               "1900-01-01T00:00:01Z")
+        if link_timestamp > latest_image_timestamp
+          latest_image_link = link
+          latest_image_timestamp = link_timestamp
         end
       end
     end
-    latest_image
+    latest_image_link.nil? ? nil : find_by_uuid(latest_image_link.head_uuid)
   end
 end
