@@ -342,4 +342,73 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_not_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
     assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
   end
+
+  test "can reuse a Job with a Docker image" do
+    post(:create, {
+           job: {
+             script: "hash",
+             script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+             repository: "foo",
+             script_parameters: {
+               input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+               an_integer: '1'
+             },
+             runtime_constraints: {
+               docker_image: 'arvados/apitestfixture',
+             }
+           },
+           find_or_create: true,
+         })
+    assert_response :success
+    new_job = assigns(:object)
+    assert_not_nil new_job
+    target_job = jobs(:previous_docker_job_run)
+    [:uuid, :script_version, :docker_image_locator].each do |attr|
+      assert_equal(target_job.send(attr), new_job.send(attr))
+    end
+  end
+
+  test "can reuse a Job with a Docker image hash filter" do
+    post(:create, {
+           job: {
+             script: "hash",
+             script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+             repository: "foo",
+             script_parameters: {
+               input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+               an_integer: '1'
+             },
+           },
+           filters: [["docker_image_locator", "in range",
+                      links(:docker_image_collection_hash).name]],
+           find_or_create: true,
+         })
+    assert_response :success
+    new_job = assigns(:object)
+    assert_not_nil new_job
+    target_job = jobs(:previous_docker_job_run)
+    [:uuid, :script_version, :docker_image_locator].each do |attr|
+      assert_equal(target_job.send(attr), new_job.send(attr))
+    end
+  end
+
+  test "new job with unknown Docker image filter" do
+    post(:create, {
+           job: {
+             script: "hash",
+             script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+             repository: "foo",
+             script_parameters: {
+               input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+               an_integer: '1'
+             },
+           },
+           filters: [["docker_image_locator", "in range", "_nonexistentname_"]],
+           find_or_create: true,
+         })
+    assert_response :success
+    new_job = assigns(:object)
+    assert_not_nil new_job
+    assert_not_equal(jobs(:previous_docker_job_run).uuid, new_job.uuid)
+  end
 end

@@ -28,27 +28,26 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     if params[:find_or_create]
-      # Convert old special-purpose creation parameters to the new
-      # filters-based method.
+      # Translate older creation parameters and special range operators
+      # into standard filters.
       minimum_script_version = params[:minimum_script_version]
       exclude_script_versions = params.fetch(:exclude_script_versions, [])
-      @filters.select do |(col_name, operand, operator)|
-        case col_name
-        when "script_version"
-          case operand
-          when "in range"
-            minimum_script_version = operator
-            false
-          when "not in", "not in range"
-            begin
-              exclude_script_versions += operator
-            rescue TypeError
-              exclude_script_versions << operator
-            end
-            false
-          else
-            true
+      @filters.select do |filter|
+        case filter[0..1]
+        when ["script_version", "in range"]
+          minimum_script_version = filter.last
+          false
+        when ["script_version", "not in"], ["script_version", "not in range"]
+          begin
+            exclude_script_versions += filter.last
+          rescue TypeError
+            exclude_script_versions << filter.last
           end
+          false
+        when ["docker_image_locator", "in range"], ["docker_image_locator", "not in range"]
+          filter[1].sub!(/ range$/, '')
+          filter[2] = Collection.uuids_for_docker_image(filter[2])
+          true
         else
           true
         end
@@ -64,7 +63,19 @@ class Arvados::V1::JobsController < ApplicationController
       if @filters.select { |f| f.first == "script" }.empty?
         @filters.append(["script", "=", resource_attrs[:script]])
       end
+      if @filters.select { |f| f.first == "docker_image_locator" }.empty?
+        if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
+          image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
+          image_locator =
+            Collection.uuids_for_docker_image(image_search, image_tag).last
+          return super if image_locator.nil?  # We won't find anything to reuse.
+          @filters.append(["docker_image_locator", "=", image_locator])
+        else
+          @filters.append(["docker_image_locator", "=", nil])
+        end
+      end
 
+      # Search for a reusable Job, and return it if found.
       @objects = Job.readable_by(current_user)
       apply_filters
       @object = nil

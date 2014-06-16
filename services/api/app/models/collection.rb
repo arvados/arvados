@@ -148,7 +148,7 @@ class Collection < ArvadosModel
     [hash_part, size_part].compact.join '+'
   end
 
-  def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
+  def self.uuids_for_docker_image(search_term, search_tag=nil, readers=nil)
     readers ||= [Thread.current[:user]]
     base_search = Link.
       readable_by(*readers).
@@ -161,7 +161,7 @@ class Collection < ArvadosModel
     coll_matches = base_search.
       where(link_class: "docker_image_hash", collections: {uuid: search_term})
     if match = coll_matches.first
-      return find_by_uuid(match.head_uuid)
+      return [match.head_uuid]
     end
 
     # Find Collections with matching Docker image repository+tag pairs.
@@ -176,20 +176,27 @@ class Collection < ArvadosModel
               "docker_image_hash", "#{search_term}%")
     end
 
-    # Select the image that was created most recently.  Note that the
-    # SQL search order and fallback timestamp values are chosen so
-    # that if image timestamps are missing, we use the image with the
-    # newest link.
-    latest_image_link = nil
-    latest_image_timestamp = "1900-01-01T00:00:00Z"
+    # Generate an order key for each result.  We want to order the results
+    # so that anything with an image timestamp is considered more recent than
+    # anything without; then we use the link's created_at as a tiebreaker.
+    results = {}
     matches.find_each do |link|
-      link_timestamp = link.properties.fetch("image_timestamp",
-                                             "1900-01-01T00:00:01Z")
-      if link_timestamp > latest_image_timestamp
-        latest_image_link = link
-        latest_image_timestamp = link_timestamp
+      sort_key = []
+      if timestamp = link.properties["image_timestamp"]
+        sort_key.push("Z", timestamp.to_s)
       end
+      sort_key.push("Y", link.created_at.to_s(:db))
+      results[link] = sort_key.join("")
     end
-    latest_image_link.nil? ? nil : find_by_uuid(latest_image_link.head_uuid)
+    results.keys.sort_by { |link| results[link] }.map { |link| link.head_uuid }
+  end
+
+  def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
+    image_uuid = uuids_for_docker_image(search_term, search_tag, readers).last
+    if image_uuid.nil?
+      nil
+    else
+      find_by_uuid(image_uuid)
+    end
   end
 end
