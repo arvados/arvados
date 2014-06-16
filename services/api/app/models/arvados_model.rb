@@ -91,6 +91,13 @@ class ArvadosModel < ActiveRecord::Base
     # Get rid of troublesome nils
     users_list.compact!
 
+    # Load optional keyword arguments, if they exist.
+    if users_list.last.is_a? Hash
+      kwargs = users_list.pop
+    else
+      kwargs = {}
+    end
+
     # Check if any of the users are admin.  If so, we're done.
     if users_list.select { |u| u.is_admin }.empty?
 
@@ -101,6 +108,7 @@ class ArvadosModel < ActiveRecord::Base
         collect { |uuid| sanitize(uuid) }.join(', ')
       sql_conds = []
       sql_params = []
+      sql_table = kwargs.fetch(:table_name, table_name)
       or_object_uuid = ''
 
       # This row is owned by a member of users_list, or owned by a group
@@ -113,25 +121,25 @@ class ArvadosModel < ActiveRecord::Base
       # to this row, or to the owner of this row (see join() below).
       permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
 
-      sql_conds += ["#{table_name}.owner_uuid in (?)",
-                    "#{table_name}.uuid in (?)",
-                    "#{table_name}.uuid IN #{permitted_uuids}"]
+      sql_conds += ["#{sql_table}.owner_uuid in (?)",
+                    "#{sql_table}.uuid in (?)",
+                    "#{sql_table}.uuid IN #{permitted_uuids}"]
       sql_params += [uuid_list, user_uuids]
 
-      if self == Link and users_list.any?
+      if sql_table == "links" and users_list.any?
         # This row is a 'permission' or 'resources' link class
         # The uuid for a member of users_list is referenced in either the head
         # or tail of the link
-        sql_conds += ["(#{table_name}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{table_name}.head_uuid IN (?) OR #{table_name}.tail_uuid IN (?)))"]
+        sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
         sql_params += [user_uuids, user_uuids]
       end
 
-      if self == Log and users_list.any?
+      if sql_table == "logs" and users_list.any?
         # Link head points to the object described by this row
-        sql_conds += ["#{table_name}.object_uuid IN #{permitted_uuids}"]
+        sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
 
         # This object described by this row is owned by this user, or owned by a group readable by this user
-        sql_conds += ["#{table_name}.object_owner_uuid in (?)"]
+        sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
         sql_params += [uuid_list]
       end
 
