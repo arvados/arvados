@@ -28,8 +28,8 @@ class CrunchDispatchTest < ActionDispatch::IntegrationTest
       format: "json",
       job: {
         script: "log",
-        repository: "bar",
-        script_version: "143fec09e988160673c63457fa12a0f70b5b8a26",
+        repository: "crunch_dispatch_test",
+        script_version: "f35f99b7d32bac257f5989df02b9f12ee1a9b0d6",
         script_parameters: "{}"
       }
     }, auth(:admin)

@@ -16,7 +16,7 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
 
   #test "test_branch1" do
     a = Commit.find_commit_range(users(:active), nil, nil, 'master', nil)
-    assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57'], a
+    assert_equal ['f35f99b7d32bac257f5989df02b9f12ee1a9b0d6', '077ba2ad3ea24a929091a9e6ce545c93199b8e57'], a
 
   #test "test_branch2" do
     a = Commit.find_commit_range(users(:active), 'foo', nil, 'b1', nil)
