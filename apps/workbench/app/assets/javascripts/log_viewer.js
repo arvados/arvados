@@ -1,3 +1,11 @@
+function newTaskState() {
+    return {"complete_count": 0,
+            "failure_count": 0,
+            "task_count": 0,
+            "incomplete_count": 0,
+            "nodes": []};
+}
+
 function addToLogViewer(logViewer, lines, taskState) {
     var re = /((\d\d\d\d)-(\d\d)-(\d\d))_((\d\d):(\d\d):(\d\d)) ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}) (\d+) (\d+)? (.*)/;
     for (var a in lines) {
@@ -20,6 +28,7 @@ function addToLogViewer(logViewer, lines, taskState) {
             if (v11 !== "") {
                 if (!taskState.hasOwnProperty(v11)) {
                     taskState[v11] = {};
+                    taskState.task_count += 1;
                 }
 
                 if (/^stderr /.test(message)) {
@@ -37,13 +46,16 @@ function addToLogViewer(logViewer, lines, taskState) {
                     if (m = /^success in (\d+) second/.exec(message)) {
                         taskState[v11].outcome = "success";
                         taskState[v11].runtime = Number(m[1]);
-                        taskState.success_count += 1;
+                        taskState.complete_count += 1;
                         console.log(taskState[v11].runtime);
                     }
-                    else if (m = /^failure \([^\)]+\) after (\d+) second/.exec(message)) {
+                    else if (m = /^failure \(\#\d+, (temporary|permanent)\) after (\d+) second/.exec(message)) {
                         taskState[v11].outcome = "failure";
-                        taskState[v11].runtime = Number(m[1]);
+                        taskState[v11].runtime = Number(m[2]);
                         taskState.failure_count += 1;
+                        if (m[1] == "permanent") {
+                            taskState.incomplete_count += 1;
+                        }
                         console.log(taskState[v11].runtime);
                     }
                     else if (m = /^child \d+ started on ([^.]*)\.(\d+)/.exec(message)) {
@@ -200,9 +212,9 @@ function generateJobOverview(id, logViewer, taskState) {
         }
         seconds = duration;
 
-        var tcount = taskState.success_count + taskState.failure_count;
+        var tcount = taskState.task_count;
 
-        html += ".  " + dumbPluralize(tcount, " task") + " completed in ";
+        html += ".  " + dumbPluralize(tcount, " task") + " run over ";
         if (hours > 0) {
             html += dumbPluralize(hours, " hour");
         }
@@ -215,10 +227,11 @@ function generateJobOverview(id, logViewer, taskState) {
 
         html += " using " + dumbPluralize(taskState.nodes.length, " node");
 
-        html += ".  " + dumbPluralize(taskState.success_count, " success", "es");
-        html += ", " + dumbPluralize(taskState.failure_count, " failure");
+        html += ".  " + dumbPluralize(taskState.complete_count, "task") + " complete";
+        html += ",  " + dumbPluralize(taskState.incomplete_count, "task") +  " incomplete";
+        html += " (" + dumbPluralize(taskState.failure_count, " failure") + ")";
 
-        html += ".  Completed at " + last.values().timestamp;
+        html += ".  Finished at " + last.values().timestamp;
         html += "</div>";
     }
 

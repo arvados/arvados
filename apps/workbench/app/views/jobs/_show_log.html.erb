@@ -5,7 +5,7 @@ var logViewer = new List('log-viewer', {
   page: 10000,
 });
 
-var taskState = {"success_count": 0, "failure_count": 0, "nodes": []};
+var taskState = newTaskState();
 
 var makeFilter = function() {
   var pass = [];
