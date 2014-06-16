@@ -74,14 +74,31 @@ $("#sort-by-node").on("change", function() {
   logViewer.sort("node", {sortFunction: sortByNode});
 });
 
+$("#set-show-failed-only").on("click", function() {
+  $("#sort-by-task").prop("checked", true);
+  $("#show-failed-tasks").prop("checked", true);
+  $("#show-crunch").prop("checked", false);
+  $("#show-task-dispatch").prop("checked", true);
+  $("#show-task-output").prop("checked", true);
+  $("#show-crunchstat").prop("checked", false);
+  logViewer.filter(makeFilter());
+  logViewer.sort("taskid", {sortFunction: sortByTask});
+});
+
 })();
 
 </script>
 
 <div id="log-viewer">
 
-  <h3>Overview</h3>
+  <h3>Summary</h3>
   <div id="log-viewer-overview"></div>
+
+  <% if @object.tasks_summary[:failed] > 0 %>
+    <button id="set-show-failed-only" class="btn btn-danger" style="margin-top: 1em">
+      Show failed task output only
+    </button>
+ <% end %>
 
   <div class="h3">Log
 
@@ -123,9 +140,6 @@ $("#sort-by-node").on("change", function() {
   <div>
     <div class="checkbox-inline log-viewer-button" style="margin-left: 10px">
       <label><input id="show-crunch" type="checkbox" checked="true" class="toggle-filter"> Show crunch output</label>
-    </div>
-    <div class="checkbox-inline log-viewer-button">
-      <label><input id="show-job-status" type="checkbox" checked="true" class="toggle-filter"> Show job status</label>
     </div>
     <div class="checkbox-inline log-viewer-button">
       <label><input id="show-task-dispatch" type="checkbox" checked="true" class="toggle-filter"> Show task dispatch</label>

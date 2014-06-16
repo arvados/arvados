@@ -80,12 +80,7 @@ function addToLogViewer(logViewer, lines, taskState) {
                 node = taskState[v11].node;
                 slot = taskState[v11].slot;
             } else {
-                if (/^status: /.test(message)) {
-                    type = "job-status";
-                    message = message.substr(8);
-                } else {
-                    type = "crunch";
-                }
+                type = "crunch";
             }
 
             logViewer.add({
@@ -214,7 +209,7 @@ function generateJobOverview(id, logViewer, taskState) {
 
         var tcount = taskState.task_count;
 
-        html += ".  " + dumbPluralize(tcount, " task") + " run over ";
+        html += ".  Ran " + dumbPluralize(tcount, " task") + " over ";
         if (hours > 0) {
             html += dumbPluralize(hours, " hour");
         }
@@ -227,11 +222,11 @@ function generateJobOverview(id, logViewer, taskState) {
 
         html += " using " + dumbPluralize(taskState.nodes.length, " node");
 
-        html += ".  " + dumbPluralize(taskState.complete_count, "task") + " complete";
+        html += ".  " + dumbPluralize(taskState.complete_count, "task") + " completed";
         html += ",  " + dumbPluralize(taskState.incomplete_count, "task") +  " incomplete";
         html += " (" + dumbPluralize(taskState.failure_count, " failure") + ")";
 
-        html += ".  Finished at " + last.values().timestamp;
+        html += ".  Finished at " + last.values().timestamp + ".";
         html += "</div>";
     }
 
