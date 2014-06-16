@@ -1,6 +1,14 @@
 require 'test_helper'
 load 'test/functional/arvados/v1/git_setup.rb'
 
+# NOTE: calling Commit.find_commit_range(user, nil, nil, 'rev') will produce
+# an error message "fatal: bad object 'rev'" on stderr if 'rev' does not exist
+# in a given repository.  Many of these tests report such errors; their presence
+# does not represent a fatal condition.
+#
+# TODO(twp): consider better error handling of these messages, or
+# decide to abandon it.
+
 class Arvados::V1::CommitsControllerTest < ActionController::TestCase
   fixtures :repositories, :users
 
@@ -15,8 +23,9 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
     assert_equal ['31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
   #test "test_branch1" do
+    # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
     a = Commit.find_commit_range(users(:active), nil, nil, 'master', nil)
-    assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57'], a
+    assert_equal ['f35f99b7d32bac257f5989df02b9f12ee1a9b0d6', '077ba2ad3ea24a929091a9e6ce545c93199b8e57'], a
 
   #test "test_branch2" do
     a = Commit.find_commit_range(users(:active), 'foo', nil, 'b1', nil)
@@ -33,10 +42,13 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
     assert_equal nil, a
 
   #test "test_multi_revision" do
+    # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
     a = Commit.find_commit_range(users(:active), nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', nil)
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '4fe459abe02d9b365932b8f5dc419439ab4e2577', '31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
   #test "test_tag" do
+    # complains "fatal: ambiguous argument 'tag1': unknown revision or path
+    # not in the working tree."
     a = Commit.find_commit_range(users(:active), nil, 'tag1', 'master', nil)
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '4fe459abe02d9b365932b8f5dc419439ab4e2577'], a
 
@@ -45,6 +57,7 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
   #test "test_multi_revision_tagged_exclude" do
+    # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
     a = Commit.find_commit_range(users(:active), nil, '31ce37fe365b3dc204300a3e4c396ad333ed0556', '077ba2ad3ea24a929091a9e6ce545c93199b8e57', ['tag1'])
     assert_equal ['077ba2ad3ea24a929091a9e6ce545c93199b8e57', '31ce37fe365b3dc204300a3e4c396ad333ed0556'], a
 
@@ -70,11 +83,13 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
       assert_equal nil, a
 
       # invalid input to 'excludes'
+      # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
       a = Commit.find_commit_range(users(:active), nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["4fe459abe02d9b365932b8f5dc419439ab4e2577 ; touch #{touchdir}/uh_oh"])
       assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'excludes' parameter of find_commit_range is exploitable"
       assert_equal nil, a
 
       # invalid input to 'excludes'
+      # complains "fatal: bad object 077ba2ad3ea24a929091a9e6ce545c93199b8e57"
       a = Commit.find_commit_range(users(:active), nil, "31ce37fe365b3dc204300a3e4c396ad333ed0556", "077ba2ad3ea24a929091a9e6ce545c93199b8e57", ["$(uname>#{touchdir}/uh_oh)"])
       assert !File.exists?("#{touchdir}/uh_oh"), "#{touchdir}/uh_oh should not exist, 'excludes' parameter of find_commit_range is exploitable"
       assert_equal nil, a
