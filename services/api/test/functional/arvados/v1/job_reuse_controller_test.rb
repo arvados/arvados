@@ -278,4 +278,68 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_equal '077ba2ad3ea24a929091a9e6ce545c93199b8e57', new_job['script_version']
   end
 
+  test "can reuse a Job based on filters" do
+    post(:create, {
+           job: {
+             script: "hash",
+             script_version: "master",
+             repository: "foo",
+             script_parameters: {
+               input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+               an_integer: '1'
+             }
+           },
+           filters: [["script_version", "in range", "tag1"]],
+           find_or_create: true,
+         })
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_job = JSON.parse(@response.body)
+    assert_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
+    assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
+  end
+
+  test "can not reuse a Job based on filters" do
+    post(:create, {
+           job: {
+             script: "hash",
+             script_version: "master",
+             repository: "foo",
+             script_parameters: {
+               input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+               an_integer: '1'
+             }
+           },
+           filters: [["script_version", "in range",
+                      "31ce37fe365b3dc204300a3e4c396ad333ed0556"],
+                     ["script_version", "not in", ["tag1"]]],
+           find_or_create: true,
+         })
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_job = JSON.parse(@response.body)
+    assert_not_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
+    assert_equal '077ba2ad3ea24a929091a9e6ce545c93199b8e57', new_job['script_version']
+  end
+
+  test "can not reuse a Job based on arbitrary filters" do
+    post(:create, {
+           job: {
+             script: "hash",
+             script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+             repository: "foo",
+             script_parameters: {
+               input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+               an_integer: '1'
+             }
+           },
+           filters: [["created_at", "<", "2010-01-01T00:00:00Z"]],
+           find_or_create: true,
+         })
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_job = JSON.parse(@response.body)
+    assert_not_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
+    assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
+  end
 end

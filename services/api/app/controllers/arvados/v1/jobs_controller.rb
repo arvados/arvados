@@ -13,6 +13,7 @@ class Arvados::V1::JobsController < ApplicationController
         }, status: :unprocessable_entity
       end
     end
+    load_filters_param
 
     # We used to ask for the minimum_, exclude_, and no_reuse params
     # in the job resource. Now we advertise them as flags that alter
@@ -27,18 +28,48 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     if params[:find_or_create]
-      r = Commit.find_commit_range(current_user,
-                                   resource_attrs[:repository],
-                                   params[:minimum_script_version],
-                                   resource_attrs[:script_version],
-                                   params[:exclude_script_versions])
-      # Search for jobs whose script_version is in the list of commits
-      # returned by find_commit_range
+      # Convert old special-purpose creation parameters to the new
+      # filters-based method.
+      minimum_script_version = params[:minimum_script_version]
+      exclude_script_versions = params.fetch(:exclude_script_versions, [])
+      @filters.select do |(col_name, operand, operator)|
+        case col_name
+        when "script_version"
+          case operand
+          when "in range"
+            minimum_script_version = operator
+            false
+          when "not in", "not in range"
+            begin
+              exclude_script_versions += operator
+            rescue TypeError
+              exclude_script_versions << operator
+            end
+            false
+          else
+            true
+          end
+        else
+          true
+        end
+      end
+      @filters.append(["script_version", "in",
+                       Commit.find_commit_range(current_user,
+                                                resource_attrs[:repository],
+                                                minimum_script_version,
+                                                resource_attrs[:script_version],
+                                                exclude_script_versions)])
+
+      # Set up default filters for specific parameters.
+      if @filters.select { |f| f.first == "script" }.empty?
+        @filters.append(["script", "=", resource_attrs[:script]])
+      end
+
+      @objects = Job.readable_by(current_user)
+      apply_filters
       @object = nil
       incomplete_job = nil
-      Job.readable_by(current_user).where(script: resource_attrs[:script],
-                                          script_version: r).
-        each do |j|
+      @objects.each do |j|
         if j.nondeterministic != true and
             ((j.success == true and j.output != nil) or j.running == true) and
             j.script_parameters == resource_attrs[:script_parameters]
