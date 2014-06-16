@@ -26,8 +26,18 @@ class EventClient(WebSocketClient):
     def received_message(self, m):
         self.on_event(json.loads(str(m)))
 
+    def close_connection(self):
+        try:
+            self.sock.shutdown(socket.SHUT_RDWR)
+            self.sock.close()
+        except:
+            pass
+
 def subscribe(api, filters, on_event):
-    url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], config.get('ARVADOS_API_TOKEN'))
-    ws = EventClient(url, filters, on_event)
-    ws.connect()
-    return ws
+    try:
+        url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], config.get('ARVADOS_API_TOKEN'))
+        ws = EventClient(url, filters, on_event)
+        ws.connect()
+        return ws
+    except:
+        ws.close_connection()
