@@ -27,10 +27,10 @@ function addToLogViewer(logViewer, lines, taskState) {
                         type = "task-output";
                     }
                 } else {
-                    if (/^success in (\d+)/.test(message)) {
+                    if (/^success /.test(message)) {
                         taskState[v11] = "success";
                     }
-                    if (/^failure \([^)]+\) (\d+)/.test(message)) {
+                    else if (/^failure /.test(message)) {
                         taskState[v11] = "failure";
                     }
                     type = "task-dispatch";
