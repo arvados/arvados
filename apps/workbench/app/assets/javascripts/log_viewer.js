@@ -16,6 +16,7 @@ function addToLogViewer(logViewer, lines, taskState) {
             var message = v[12];
             var type = "";
             var node = "";
+            var slot = "";
             if (v11 !== "") {
                 if (!taskState.hasOwnProperty(v11)) {
                     taskState[v11] = {};
@@ -32,25 +33,32 @@ function addToLogViewer(logViewer, lines, taskState) {
                         type = "task-output";
                     }
                 } else {
-                    if (/^success /.test(message)) {
+                    var m;
+                    if (m = /^success in (\d+) second/.exec(message)) {
                         taskState[v11].outcome = "success";
+                        taskState[v11].runtime = Number(m[1]);
                         taskState.success_count += 1;
+                        console.log(taskState[v11].runtime);
                     }
-                    else if (/^failure /.test(message)) {
+                    else if (m = /^failure \([^\)]+\) after (\d+) second/.exec(message)) {
                         taskState[v11].outcome = "failure";
+                        taskState[v11].runtime = Number(m[1]);
                         taskState.failure_count += 1;
+                        console.log(taskState[v11].runtime);
                     }
-                    else {
-                        var child = message.match(/^child \d+ started on (.*)/);
-                        if (child != null) {
-                            taskState[v11].node = child[1];
-                            for (var i in logViewer.items) {
-                                if (i > 0) {
-                                    var val = logViewer.items[i].values();
-                                    if (val.taskid === v11) {
-                                        val.node = child[1];
-                                        logViewer.items[i].values(val);
-                                    }
+                    else if (m = /^child \d+ started on ([^.]*)\.(\d+)/.exec(message)) {
+                        taskState[v11].node = m[1];
+                        taskState[v11].slot = m[2];
+                        if (taskState.nodes.indexOf(m[1], 0) == -1) {
+                            taskState.nodes.push(m[1]);
+                        }
+                        for (var i in logViewer.items) {
+                            if (i > 0) {
+                                var val = logViewer.items[i].values();
+                                if (val.taskid === v11) {
+                                    val.node = m[1];
+                                    val.slot = m[2];
+                                    logViewer.items[i].values(val);
                                 }
                             }
                         }
@@ -58,6 +66,7 @@ function addToLogViewer(logViewer, lines, taskState) {
                     type = "task-dispatch";
                 }
                 node = taskState[v11].node;
+                slot = taskState[v11].slot;
             } else {
                 if (/^status: /.test(message)) {
                     type = "job-status";
@@ -73,6 +82,7 @@ function addToLogViewer(logViewer, lines, taskState) {
                 timestamp: ts.toLocaleDateString() + " " + ts.toLocaleTimeString(),
                 taskid: v11,
                 node: node,
+                slot: slot,
                 message: message,
                 type: type
             });
@@ -140,6 +150,15 @@ function sortByNode(a, b, opt) {
         }
     }
 
+    if (aa["slot"] !== "" && bb["slot"] !== "") {
+        if (aa["slot"] > bb["slot"]) {
+            return 1;
+        }
+        if (aa["slot"] < bb["slot"]) {
+            return -1;
+        }
+    }
+
     return sortById(a, b, opt);
 }
 
@@ -149,9 +168,9 @@ function dumbPluralize(n, s, p) {
         p = "s";
     }
     if (n == 0 || n > 1) {
-        return (s + p);
+        return n + " " + (s + p);
     } else {
-        return s;
+        return n + " " + s;
     }
 }
 
@@ -183,18 +202,21 @@ function generateJobOverview(id, logViewer, taskState) {
 
         var tcount = taskState.success_count + taskState.failure_count;
 
-        html += ".  " + tcount + dumbPluralize(tcount, " task") + " completed in ";
+        html += ".  " + dumbPluralize(tcount, " task") + " completed in ";
         if (hours > 0) {
-            html += hours + dumbPluralize(hours, " hour");
+            html += dumbPluralize(hours, " hour");
         }
         if (minutes > 0) {
-            html += " " + minutes + dumbPluralize(minutes, " minute");
+            html += " " + dumbPluralize(minutes, " minute");
         }
         if (seconds > 0) {
-            html += " " + seconds + dumbPluralize(seconds, " second");
+            html += " " + dumbPluralize(seconds, " second");
         }
-        html += ".  " + taskState.success_count + dumbPluralize(taskState.success_count, " success", "es");
-        html += ", " + taskState.failure_count + dumbPluralize(taskState.failure_count, " failure");
+
+        html += " using " + dumbPluralize(taskState.nodes.length, " node");
+
+        html += ".  " + dumbPluralize(taskState.success_count, " success", "es");
+        html += ", " + dumbPluralize(taskState.failure_count, " failure");
 
         html += ".  Completed at " + last.values().timestamp;
         html += "</div>";

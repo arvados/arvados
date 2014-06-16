@@ -17,10 +17,13 @@
      width: 8em;
    }
    th.taskid {
-     width: 3em;
+     width: 4em;
    }
    th.node {
      width: 8em;
+   }
+   th.slot {
+     width: 3em;
    }
    th.message {
      width: auto;
@@ -35,6 +38,9 @@
      display: none;
    }
    td.taskid {
+     text-align: right;
+   }
+   td.slot {
      text-align: right;
    }
    td.message {

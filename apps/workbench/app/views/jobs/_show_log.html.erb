@@ -5,7 +5,7 @@ var logViewer = new List('log-viewer', {
   page: 10000,
 });
 
-var taskState = {"success_count": 0, "failure_count": 0};
+var taskState = {"success_count": 0, "failure_count": 0, "nodes": []};
 
 var makeFilter = function() {
   var pass = [];
@@ -19,8 +19,9 @@ var makeFilter = function() {
     var v = false;
     if (item.values().taskid !== "") {
       for (a in pass) {
-        if (pass[a] == "successful-tasks" && taskState[item.values().taskid].outcome == "success") { v = true; }
-        if (pass[a] == "failed-tasks" && taskState[item.values().taskid].outcome == "failure") { v = true; }
+        if (pass[a] == "all-tasks") { v = true; }
+        else if (pass[a] == "successful-tasks" && taskState[item.values().taskid].outcome == "success") { v = true; }
+        else if (pass[a] == "failed-tasks" && taskState[item.values().taskid].outcome == "failure") { v = true; }
       }
     } else {
       v = true;
@@ -105,7 +106,19 @@ $("#sort-by-node").on("change", function() {
     <div class="radio-inline log-viewer-button">
       <label><input id="sort-by-task" type="radio" name="sort-radio" > Sort by task</label>
     </div>
+  </div>
+
+  <div>
+    <div class="radio-inline log-viewer-button" style="margin-left: 10px">
+      <label><input id="show-all-tasks" type="radio" name="show-tasks-group" checked="true" class="toggle-filter"> Show all tasks</label>
     </div>
+    <div class="radio-inline log-viewer-button">
+      <label><input id="show-successful-tasks" type="radio" name="show-tasks-group" class="toggle-filter"> Only successful tasks</label>
+    </div>
+    <div class="radio-inline log-viewer-button">
+      <label><input id="show-failed-tasks" type="radio" name="show-tasks-group" class="toggle-filter"> Only failed tasks</label>
+    </div>
+  </div>
 
   <div>
     <div class="checkbox-inline log-viewer-button" style="margin-left: 10px">
@@ -123,20 +136,16 @@ $("#sort-by-node").on("change", function() {
     <div class="checkbox-inline log-viewer-button">
       <label><input id="show-crunchstat" type="checkbox" checked="true" class="toggle-filter"> Show compute usage</label>
     </div>
-    <div class="checkbox-inline log-viewer-button">
-      <label><input id="show-successful-tasks" type="checkbox" checked="true" class="toggle-filter"> Show successful tasks</label>
-    </div>
-    <div class="checkbox-inline log-viewer-button">
-      <label><input id="show-failed-tasks" type="checkbox" checked="true" class="toggle-filter"> Show failed tasks</label>
-    </div>
-    </div>
+
+  </div>
 
   <table class="log-viewer-table">
     <thead>
       <tr>
         <th class="id" data-sort="id"></th>
         <th class="timestamp" data-sort="timestamp">Timestamp</th>
-        <th class="node"  data-sort="taskid">Node</th>
+        <th class="node"  data-sort="node">Node</th>
+        <th class="slot"  data-sort="slot">Slot</th>
         <th class="type" data-sort="type">Log type</th>
         <th class="taskid"  data-sort="taskid">Task</th>
         <th class="message" data-sort="message">Message</th>
@@ -147,6 +156,7 @@ $("#sort-by-node").on("change", function() {
         <td class="id"></td>
         <td class="timestamp"></td>
         <td class="node"></td>
+        <td class="slot"></td>
         <td class="type"></td>
         <td class="taskid"></td>
         <td class="message"></td>
