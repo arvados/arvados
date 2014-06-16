@@ -19,6 +19,9 @@
    th.taskid {
      width: 3em;
    }
+   th.node {
+     width: 8em;
+   }
    th.message {
      width: auto;
    }
@@ -38,4 +41,8 @@
      word-wrap: break-word;
    }
  }
+}
+
+.log-viewer-button {
+  width: 12em;
 }
