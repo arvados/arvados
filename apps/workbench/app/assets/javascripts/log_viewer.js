@@ -8,12 +8,14 @@ function addToLogViewer(logViewer, lines, taskState) {
 
             v11 = v[11];
             if (typeof v[11] === 'undefined') {
-                v11 = '&nbsp;';
+                v11 = "";
+            } else {
+                v11 = Number(v11);
             }
 
             var message = v[12];
             var type = "";
-            if (v11 != '&nbsp;') {
+            if (v11 !== "") {
                 if (/^stderr /.test(message)) {
                     message = message.substr(7);
                     if (/^crunchstat: /.test(message)) {
@@ -25,10 +27,10 @@ function addToLogViewer(logViewer, lines, taskState) {
                         type = "task-output";
                     }
                 } else {
-                    if (/^success in (\d+)/) {
+                    if (/^success in (\d+)/.test(message)) {
                         taskState[v11] = "success";
                     }
-                    if (/^failure \([^)]+\) (\d+)/) {
+                    if (/^failure \([^)]+\) (\d+)/.test(message)) {
                         taskState[v11] = "failure";
                     }
                     type = "task-dispatch";
@@ -55,4 +57,33 @@ function addToLogViewer(logViewer, lines, taskState) {
         }
     }
     logViewer.update();
+}
+
+function sortByTaskThenId(a, b, opt) {
+    a = a.values();
+    b = b.values();
+
+    if (a["taskid"] === "" && b["taskid"] !== "") {
+        return -1;
+    }
+    if (a["taskid"] !== "" && b["taskid"] === "") {
+        return 1;
+    }
+
+    if (a["taskid"] !== "" && b["taskid"] !== "") {
+        if (a["taskid"] > b["taskid"]) {
+            return 1;
+        }
+        if (a["taskid"] < b["taskid"]) {
+            return -1;
+        }
+    }
+
+    if (a["id"] > b["id"]) {
+        return 1;
+    }
+    if (a["id"] < b["id"]) {
+        return -1;
+    }
+    return 0;
 }

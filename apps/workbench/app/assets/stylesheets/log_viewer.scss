@@ -2,6 +2,7 @@
  width: 100%;
  font-family: "Lucida Console", Monaco, monospace;
  font-size: 11px;
+ table-layout: fixed;
  thead tr {
    th {
      padding-right: 1em;
@@ -10,13 +11,16 @@
      display: none;
    }
    th.timestamp {
-     width: 15em;
+     width: 14em;
    }
    th.type {
-     width: 10em;
+     width: 8em;
    }
    th.taskid {
      width: 3em;
+   }
+   th.message {
+     width: auto;
    }
  }
  tbody tr {
@@ -29,6 +33,9 @@
    }
    td.taskid {
      text-align: right;
+   }
+   td.message {
+     word-wrap: break-word;
    }
  }
 }

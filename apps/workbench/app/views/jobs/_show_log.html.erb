@@ -5,6 +5,8 @@ var logViewer = new List('log-viewer', {
   page: 10000,
 });
 
+var taskState = {};
+
 var makeFilter = function() {
   var pass = [];
   $(".toggle-filter").each(function(i, e) {
@@ -12,9 +14,19 @@ var makeFilter = function() {
       pass.push(e.id.substr(5));
     }
   });
+
   return (function(item) {
+    var v = false;
+    if (item.values().taskid !== "") {
+      for (a in pass) {
+        if (pass[a] == "successful-tasks" && taskState[item.values().taskid] == "success") { v = true; }
+        if (pass[a] == "failed-tasks" && taskState[item.values().taskid] == "failure") { v = true; }
+      }
+    } else {
+      v = true;
+    }
     for (a in pass) {
-      if (pass[a] == item.values().type) { return true; }
+      if (pass[a] == item.values().type) { return v; }
     }
     return false;
   });
@@ -26,7 +38,7 @@ var makeFilter = function() {
 $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
   done(function(data, status, jqxhr) {
     logViewer.filter();
-    addToLogViewer(logViewer, data.split("\n"));
+    addToLogViewer(logViewer, data.split("\n"), taskState);
     logViewer.filter(makeFilter());
     $("#logloadspinner").detach();
   });
@@ -53,7 +65,7 @@ $("#sort-by-time").on("change", function() {
 });
 
 $("#sort-by-task").on("change", function() {
-  logViewer.sort("taskid");
+  logViewer.sort("taskid", {sortFunction: sortByTaskThenId});
 });
 
 })();
@@ -69,17 +81,6 @@ $("#sort-by-task").on("change", function() {
       <label><input id="sort-by-task" type="radio" name="sort-radio" > Sort by task</label>
     </div>
 
-<br>
-    <div class="radio-inline">
-      <label><input id="filter-tasks-all" type="radio" name="tasks-radio" checked> Show all tasks</label>
-    </div>
-    <div class="radio-inline">
-      <label><input id="filter-tasks-successes" type="radio" name="tasks-radio" > Show successes only</label>
-    </div>
-    <div class="radio-inline">
-      <label><input id="filter-tasks-failures" type="radio" name="tasks-radio" > Show failures only</label>
-    </div>
-<br>
   <div class="checkbox-inline">
     <label><input id="show-crunch" type="checkbox" checked="true" class="toggle-filter"> Show crunch output</label>
   </div>
@@ -94,6 +95,12 @@ $("#sort-by-task").on("change", function() {
   </div>
   <div class="checkbox-inline">
     <label><input id="show-crunchstat" type="checkbox" checked="true" class="toggle-filter"> Show compute usage</label>
+  </div>
+  <div class="checkbox-inline">
+    <label><input id="show-successful-tasks" type="checkbox" checked="true" class="toggle-filter"> Show successful tasks</label>
+  </div>
+  <div class="checkbox-inline">
+    <label><input id="show-failed-tasks" type="checkbox" checked="true" class="toggle-filter"> Show failed tasks</label>
   </div>
 
 <div class="pull-right">
