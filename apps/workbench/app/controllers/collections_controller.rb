@@ -3,11 +3,13 @@ class CollectionsController < ApplicationController
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
                      only: [:provenance, :show_file, :show_file_links])
+  # We depend on show_file to display the user agreement:
+  skip_before_filter :check_user_agreements, only: [:show_file]
 
   RELATION_LIMIT = 5
 
   def show_pane_list
-    %w(Files Attributes Metadata Provenance_graph Used_by JSON API)
+    %w(Files Provenance_graph Used_by Advanced)
   end
 
   def set_persistent
@@ -38,6 +40,20 @@ class CollectionsController < ApplicationController
     respond_to do |f|
       f.json { render json: @object }
     end
+  end
+
+  def choose
+    params[:limit] ||= 20
+    @objects = Link.
+      filter([['link_class','=','name'],
+              ['head_uuid','is_a','arvados#collection']])
+    find_objects_for_index
+    @next_page_href = (next_page_offset and
+                       url_for(offset: next_page_offset, partial: true))
+    @name_links = @objects
+    @objects = Collection.
+      filter([['uuid','in',@name_links.collect(&:head_uuid)]])
+    super
   end
 
   def index
@@ -143,10 +159,10 @@ class CollectionsController < ApplicationController
       end
       @output_of = jobs_with.call(output: @object.uuid)
       @log_of = jobs_with.call(log: @object.uuid)
-      @folder_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
+      @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'name').results
-      folder_hash = Group.where(uuid: @folder_links.map(&:tail_uuid)).to_hash
-      @folders = @folder_links.map { |link| folder_hash[link.tail_uuid] }
+      project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
+      @projects = project_hash.values
       @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'permission',
                name: 'can_read').results

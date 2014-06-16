@@ -8,13 +8,13 @@ class LinkTest < ActiveSupport::TestCase
   end
 
   test 'name links with the same tail_uuid must be unique' do
-    a = Link.create!(tail_uuid: groups(:afolder).uuid,
+    a = Link.create!(tail_uuid: groups(:aproject).uuid,
                      head_uuid: specimens(:owned_by_active_user).uuid,
                      link_class: 'name',
                      name: 'foo')
     assert a.valid?, a.errors.to_s
     assert_raises ActiveRecord::RecordNotUnique do
-      b = Link.create!(tail_uuid: groups(:afolder).uuid,
+      b = Link.create!(tail_uuid: groups(:aproject).uuid,
                        head_uuid: specimens(:owned_by_active_user).uuid,
                        link_class: 'name',
                        name: 'foo')
@@ -22,12 +22,12 @@ class LinkTest < ActiveSupport::TestCase
   end
 
   test 'name links with different tail_uuid need not be unique' do
-    a = Link.create!(tail_uuid: groups(:afolder).uuid,
+    a = Link.create!(tail_uuid: groups(:aproject).uuid,
                      head_uuid: specimens(:owned_by_active_user).uuid,
                      link_class: 'name',
                      name: 'foo')
     assert a.valid?, a.errors.to_s
-    b = Link.create!(tail_uuid: groups(:asubfolder).uuid,
+    b = Link.create!(tail_uuid: groups(:asubproject).uuid,
                      head_uuid: specimens(:owned_by_active_user).uuid,
                      link_class: 'name',
                      name: 'foo')
@@ -38,7 +38,7 @@ class LinkTest < ActiveSupport::TestCase
 
   [nil, '', false].each do |name|
     test "name links cannot have name=#{name.inspect}" do
-      a = Link.create(tail_uuid: groups(:afolder).uuid,
+      a = Link.create(tail_uuid: groups(:aproject).uuid,
                       head_uuid: specimens(:owned_by_active_user).uuid,
                       link_class: 'name',
                       name: name)

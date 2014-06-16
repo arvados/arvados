@@ -1,8 +1,16 @@
 class PipelineInstance < ArvadosBase
   attr_accessor :pipeline_template
 
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     true
+  end
+
+  def content_summary
+    begin
+      PipelineTemplate.find(pipeline_template_uuid).name
+    rescue
+      super
+    end
   end
 
   def update_job_parameters(new_params)

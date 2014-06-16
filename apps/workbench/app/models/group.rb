@@ -1,5 +1,5 @@
 class Group < ArvadosBase
-  def self.goes_in_folders?
+  def self.goes_in_projects?
     true
   end
 
@@ -13,7 +13,7 @@ class Group < ArvadosBase
   end
 
   def class_for_display
-    group_class == 'folder' ? 'Folder' : super
+    group_class.in?(['folder', 'project']) ? 'Project' : super
   end
 
   def editable?

@@ -20,9 +20,10 @@
   </div>
   <% @objects.each do |object| %>
   <div class="col-sm-<%= pi_span %>" style="overflow-x: hidden; text-overflow: ellipsis;">
-    <%= link_to_if_arvados_object object, friendly_name: true %>
+    <%= render :partial => "show_object_button", :locals => {object: object, size: 'sm' } %>
+    <%= object.name || "unnamed #{object.class_for_display.downcase}" %>
     <br />
-    Template: <%= link_to_if_arvados_object object.pipeline_template_uuid, friendly_name: true %>
+    <span class="deemphasize">Template:</span> <%= link_to_if_arvados_object object.pipeline_template_uuid, friendly_name: true %>
   </div>
   <% end %>
   </div>

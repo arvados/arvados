@@ -1,4 +1,4 @@
-$('body > .modal-container').html("<%= escape_javascript(render partial: 'choose.html') %>");
+$('body > .modal-container').html("<%= escape_javascript(render partial: 'choose.html', locals: {multiple: multiple}) %>");
 $('body > .modal-container .modal').modal('show');
 $('body > .modal-container .modal .modal-footer .btn-primary').
     addClass('<%= j params[:action_class] %>').

@@ -1,6 +1,7 @@
 <% content_for :page_title do %>
   <%= (@object.respond_to?(:properties) ? @object.properties[:page_title] : nil) ||
-        @object.friendly_link_name %>
+      @name_link.andand.name ||
+      @object.friendly_link_name %>
 <% end %>
 
 <% content_for :content_top do %>

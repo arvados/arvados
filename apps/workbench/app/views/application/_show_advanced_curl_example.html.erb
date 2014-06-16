@@ -1,0 +1,9 @@
+<pre>
+curl -X PUT \
+ -H "Authorization: OAuth2 $ARVADOS_API_TOKEN" \
+ --data-urlencode <%= object.class.to_s.underscore %>@/dev/stdin \
+ https://$ARVADOS_API_HOST/arvados/v1/<%= object.class.to_s.pluralize.underscore %>/<%= object.uuid %> \
+ &lt;&lt;EOF
+<%= JSON.pretty_generate({object.attributes.keys[-3] => object.attributes.values[-3]}) %>
+EOF
+</pre>

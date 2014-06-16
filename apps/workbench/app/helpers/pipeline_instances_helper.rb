@@ -82,17 +82,22 @@ module PipelineInstancesHelper
       end
       if pj[:job][:success]
         pj[:result] = 'complete'
+        pj[:labeltype] = 'success'
         pj[:complete] = true
         pj[:progress] = 1.0
       elsif pj[:job][:finished_at]
         pj[:result] = 'failed'
+        pj[:labeltype] = 'danger'
         pj[:failed] = true
       elsif pj[:job][:started_at]
         pj[:result] = 'running'
+        pj[:labeltype] = 'primary'
       elsif pj[:job][:uuid]
         pj[:result] = 'queued'
+        pj[:labeltype] = 'default'
       else
         pj[:result] = 'none'
+        pj[:labeltype] = 'default'
       end
       pj[:job_id] = pj[:job][:uuid]
       pj[:script] = pj[:job][:script] || c[:script]
