@@ -6,6 +6,7 @@ import time
 import ssl
 import re
 import config
+import logging
 
 class EventClient(WebSocketClient):
     def __init__(self, url, filters, on_event):
@@ -34,10 +35,14 @@ class EventClient(WebSocketClient):
             pass
 
 def subscribe(api, filters, on_event):
+    ws = None
     try:
         url = "{}?api_token={}".format(api._rootDesc['websocketUrl'], config.get('ARVADOS_API_TOKEN'))
         ws = EventClient(url, filters, on_event)
         ws.connect()
         return ws
     except:
-        ws.close_connection()
+        logging.exception('')
+        if (ws):
+          ws.close_connection()        
+        raise
