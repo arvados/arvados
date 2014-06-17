@@ -8,6 +8,8 @@ function newTaskState() {
 
 function addToLogViewer(logViewer, lines, taskState) {
     var re = /((\d\d\d\d)-(\d\d)-(\d\d))_((\d\d):(\d\d):(\d\d)) ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}) (\d+) (\d+)? (.*)/;
+
+    var items = [];
     for (var a in lines) {
         var v = lines[a].match(re);
         if (v != null) {
@@ -47,7 +49,6 @@ function addToLogViewer(logViewer, lines, taskState) {
                         taskState[v11].outcome = "success";
                         taskState[v11].runtime = Number(m[1]);
                         taskState.complete_count += 1;
-                        console.log(taskState[v11].runtime);
                     }
                     else if (m = /^failure \(\#\d+, (temporary|permanent)\) after (\d+) second/.exec(message)) {
                         taskState[v11].outcome = "failure";
@@ -56,7 +57,6 @@ function addToLogViewer(logViewer, lines, taskState) {
                         if (m[1] == "permanent") {
                             taskState.incomplete_count += 1;
                         }
-                        console.log(taskState[v11].runtime);
                     }
                     else if (m = /^child \d+ started on ([^.]*)\.(\d+)/.exec(message)) {
                         taskState[v11].node = m[1];
@@ -64,13 +64,11 @@ function addToLogViewer(logViewer, lines, taskState) {
                         if (taskState.nodes.indexOf(m[1], 0) == -1) {
                             taskState.nodes.push(m[1]);
                         }
-                        for (var i in logViewer.items) {
+                        for (var i in items) {
                             if (i > 0) {
-                                var val = logViewer.items[i].values();
-                                if (val.taskid === v11) {
-                                    val.node = m[1];
-                                    val.slot = m[2];
-                                    logViewer.items[i].values(val);
+                                if (items[i].taskid === v11) {
+                                    items[i].node = m[1];
+                                    items[i].slot = m[2];
                                 }
                             }
                         }
@@ -83,7 +81,7 @@ function addToLogViewer(logViewer, lines, taskState) {
                 type = "crunch";
             }
 
-            logViewer.add({
+            items.push({
                 id: logViewer.items.length,
                 ts: ts,
                 timestamp: ts.toLocaleDateString() + " " + ts.toLocaleTimeString(),
@@ -93,12 +91,11 @@ function addToLogViewer(logViewer, lines, taskState) {
                 message: message,
                 type: type
             });
-
         } else {
             console.log("Did not parse: " + lines[a]);
         }
     }
-    logViewer.update();
+    logViewer.add(items);
 }
 
 function sortById(a, b, opt) {
@@ -231,4 +228,38 @@ function generateJobOverview(id, logViewer, taskState) {
     }
 
     $(id).html(html);
+}
+
+function gotoPage(n, logViewer, page, id) {
+    logViewer.page_offset = n;
+    logViewer.show(n*page, page);
+}
+
+function updatePaging(id, logViewer, page) {
+    var p = "";
+    var i = logViewer.matchingItems.length;
+    for (var n = 0; (n*page) < i; n += 1) {
+        if (n == logViewer.page_offset) {
+            p += " " + (n+1) + " ";
+        } else {
+            p += "<a href=\"#\" class='log-viewer-page-" + n + "'>" + (n+1) + "</a> ";
+        }
+    }
+    $(id).html(p);
+    for (var n = 0; (n*page) < i; n += 1) {
+        (function(n) {
+            $(".log-viewer-page-" + n).on("click", function() {
+                gotoPage(n, logViewer, page, id);
+                return false;
+            });
+        })(n);
+    }
+}
+
+function nextPage(logViewer, page, id) {
+    gotoPage(logViewer.page_offset+1, logViewer, page, id);
+}
+
+function prevPage(logViewer, page, id) {
+    gotoPage(logViewer.page_offset-1, logViewer, page, id);
 }

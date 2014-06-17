@@ -1,9 +1,15 @@
 <script>
 (function() {
+var pagesize = 100;
 var logViewer = new List('log-viewer', {
   valueNames: [ 'id', 'timestamp', 'taskid', 'message', 'type'],
-  page: 10000,
+  page: pagesize
 });
+
+logViewer.page_offset = 0;
+logViewer.on("updated", function() { updatePaging(".log-viewer-paging", logViewer, pagesize) } );
+$(".log-viewer-page-up").on("click", function() { prevPage(logViewer, pagesize, ".log-viewer-paging"); return false; });
+$(".log-viewer-page-down").on("click", function() { nextPage(logViewer, pagesize, ".log-viewer-paging"); return false; });
 
 var taskState = newTaskState();
 
@@ -153,6 +159,12 @@ $("#set-show-failed-only").on("click", function() {
 
   </div>
 
+  <div style="font-size: 18px">
+    <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
+    <span class="log-viewer-paging"></span>
+    <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
+  </div>
+
   <table class="log-viewer-table">
     <thead>
       <tr>
@@ -177,6 +189,14 @@ $("#set-show-failed-only").on("click", function() {
       </tr>
     </tbody>
   </table>
+
+
+  <div style="font-size: 18px">
+    <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
+    <span class="log-viewer-paging"></span>
+    <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
+  </div>
+
 
 </div>
 
