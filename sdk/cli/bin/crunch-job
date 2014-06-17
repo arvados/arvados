@@ -663,7 +663,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       }
       while (my ($env_key, $env_val) = each %ENV)
       {
-        if ($env_key =~ /^(JOB|TASK)_/) {
+        if ($env_key =~ /^(ARVADOS|JOB|TASK)_/) {
           $command .= "-e \Q$env_key=$env_val\E ";
         }
       }
