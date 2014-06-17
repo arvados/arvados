@@ -514,4 +514,19 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     refute_includes(assigns(:objects).map { |job| job.uuid },
                     jobs(:previous_job_run).uuid)
   end
+
+  test "find Job with Docker image using reader tokens" do
+    authorize_with :inactive
+    get(:index, {
+          filters: [["docker_image_locator", "in docker",
+                     "arvados/apitestfixture"]],
+          reader_tokens: [api_token(:active)],
+        })
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_docker_job_run).uuid)
+    refute_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_job_run).uuid)
+  end
 end
