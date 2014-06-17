@@ -1,6 +1,6 @@
 <script>
 (function() {
-var pagesize = 100;
+var pagesize = 1000;
 var logViewer = new List('log-viewer', {
   valueNames: [ 'id', 'timestamp', 'taskid', 'message', 'type'],
   page: pagesize
@@ -65,6 +65,7 @@ $("#filter-all").on("click", function() {
 
 $("#filter-none").on("click", function() {
   $(".toggle-filter").each(function(i, f) { f.checked = false; console.log(f); });
+  $("#show-all-tasks").prop("checked", true);
   logViewer.filter(makeFilter());
 });
 
@@ -104,19 +105,21 @@ $("#set-show-failed-only").on("click", function() {
     <button id="set-show-failed-only" class="btn btn-danger" style="margin-top: 1em">
       Show failed task output only
     </button>
- <% end %>
+  <% end %>
 
   <div class="h3">Log
 
-<span class="pull-right">
-    <button id="filter-all" class="btn">
-      Select all
-    </button>
-    <button id="filter-none" class="btn">
-      Select none
-    </button>
-</span>
-</div>
+    <span class="pull-right">
+      <button id="filter-all" class="btn">
+        Select all
+      </button>
+      <button id="filter-none" class="btn">
+        Select none
+      </button>
+    </span>
+  </div>
+
+  <input class="search pull-right" style="margin-top: 1em" placeholder="Search" />
 
   <div>
     <div class="radio-inline log-viewer-button" style="margin-left: 10px">
@@ -159,7 +162,7 @@ $("#set-show-failed-only").on("click", function() {
 
   </div>
 
-  <div style="font-size: 18px">
+  <div class="log-viewer-paging-div">
     <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
     <span class="log-viewer-paging"></span>
     <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>

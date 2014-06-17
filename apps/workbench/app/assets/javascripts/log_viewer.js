@@ -231,6 +231,8 @@ function generateJobOverview(id, logViewer, taskState) {
 }
 
 function gotoPage(n, logViewer, page, id) {
+    if (n < 0) { return; }
+    if (n*page > logViewer.matchingItems.length) { return; }
     logViewer.page_offset = n;
     logViewer.show(n*page, page);
 }
@@ -238,21 +240,34 @@ function gotoPage(n, logViewer, page, id) {
 function updatePaging(id, logViewer, page) {
     var p = "";
     var i = logViewer.matchingItems.length;
-    for (var n = 0; (n*page) < i; n += 1) {
+    var n;
+    for (n = 0; (n*page) < i; n += 1) {
         if (n == logViewer.page_offset) {
-            p += " " + (n+1) + " ";
+            p += "<span class='log-viewer-page-num'>" + (n+1) + "</span> ";
         } else {
-            p += "<a href=\"#\" class='log-viewer-page-" + n + "'>" + (n+1) + "</a> ";
+            p += "<a href=\"#\" class='log-viewer-page-num log-viewer-page-" + n + "'>" + (n+1) + "</a> ";
         }
     }
     $(id).html(p);
-    for (var n = 0; (n*page) < i; n += 1) {
+    for (n = 0; (n*page) < i; n += 1) {
         (function(n) {
             $(".log-viewer-page-" + n).on("click", function() {
                 gotoPage(n, logViewer, page, id);
                 return false;
             });
         })(n);
+    }
+
+    if (logViewer.page_offset == 0) {
+        $(".log-viewer-page-up").addClass("text-muted");
+    } else {
+        $(".log-viewer-page-up").removeClass("text-muted");
+    }
+
+    if (logViewer.page_offset == (n-1)) {
+        $(".log-viewer-page-down").addClass("text-muted");
+    } else {
+        $(".log-viewer-page-down").removeClass("text-muted");
     }
 }
 
