@@ -357,7 +357,7 @@ class ApplicationController < ActionController::Base
       using_anonymous_user_token = false
       if !params[:api_token] && !session[:arvados_api_token] &&
           !Thread.current[:anonymous_api_token]
-        if session && (session['arv-referrer'] == 'logout')
+        if session['arv-referrer'] == 'logout'
           # do not use anonymous user token and let logout happen
         else
           anonymous_user_token = Rails.configuration.anonymous_user_token
@@ -491,6 +491,8 @@ class ApplicationController < ActionController::Base
 
   def check_user_agreements
     if current_user && !current_user.is_active
+=begin
+      return render '/'
       if not current_user.is_invited
         return render 'users/inactive'
       end
@@ -512,6 +514,7 @@ class ApplicationController < ActionController::Base
       if !current_user.is_active
         render 'user_agreements/index'
       end
+=end
     end
     true
   end

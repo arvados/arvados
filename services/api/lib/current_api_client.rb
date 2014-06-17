@@ -133,7 +133,7 @@ module CurrentApiClient
         $anonymous_user = User.where('uuid=?', anonymous_user_uuid).first
         if !$anonymous_user
           $anonymous_user = User.new(uuid: anonymous_user_uuid,
-                                     is_active: true,
+                                     is_active: false,
                                      is_admin: false,
                                      email: 'anonymouspublic',
                                      first_name: 'anonymouspublic',

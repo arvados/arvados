@@ -53,7 +53,7 @@
           <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %>
-          <% if current_user && !current_user.can_act? %> . You are viewing public data. <% end %>
+          <% if current_user && !current_user.is_active %> . You are viewing public data. <% end %>
         </a>
       </div>
 
@@ -77,7 +77,7 @@
           -->
 
           <% if current_user %>
-          <% if current_user.can_act? %>
+          <% if current_user.is_active %>
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>
@@ -105,7 +105,7 @@
           <% end %>
           <% end %>
 
-          <% if current_user.andand.can_act? %>
+          <% if current_user.andand.is_active %>
           <li class="dropdown selection-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">
               <span class="fa fa-lg fa-paperclip"></span>
@@ -120,7 +120,7 @@
           </li>
           <% end %>
 
-            <% if current_user.andand.can_act? %>
+            <% if current_user.andand.is_active %>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
                 <span class="fa fa-lg fa-gear"></span>
@@ -176,7 +176,7 @@
             </a>
             <ul class="dropdown-menu" role="menu">
               <li role="presentation" class="dropdown-header">
-                <% if current_user.can_act? %>
+                <% if current_user.is_active %>
                 <%= link_to projects_path('project[owner_uuid]' => current_project_uuid), method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
                   <i class="fa fa-plus"></i> New project
                 <% end %>

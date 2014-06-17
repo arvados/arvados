@@ -50,11 +50,7 @@ class User < ArvadosBase
   end
 
   def is_anonymous
-    self.uuid.andand.match(/anonymouspublic$/)
-  end
-
-  def can_act?
-    !self.is_anonymous # && self.is_active
+    Thread.current[:arvados_api_token] == Rails.configuration.anonymous_user_token
   end
 
 end

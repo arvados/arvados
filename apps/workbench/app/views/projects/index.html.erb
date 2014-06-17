@@ -19,7 +19,7 @@
               This site runs Arvados, the open source biomedical analysis platform. <a href="https://arvados.org" target="_blank">Learn more&hellip;</a>
             </p>
             <p>
-              <% if current_user.andand.can_act? %>
+              <% if current_user.andand.is_active %>
               <b>To get started,</b> create a project using the "Add new project" button below.
               <% end %>
             </p>
@@ -27,7 +27,7 @@
         </div>
       <% end %>
 
-      <% if current_user.andand.can_act? %>
+      <% if current_user.andand.is_active %>
       <div class="panel panel-default">
         <div class="panel-heading">
           <div class="pull-right">

@@ -29,7 +29,7 @@
       <td>
         <%= form_tag '/pipeline_instances' do |f| %>
           <%= hidden_field :pipeline_instance, :pipeline_template_uuid, :value => ob.uuid %>
-          <% if current_user.andand.can_act? %>
+          <% if current_user.andand.is_active %>
           <%= button_tag nil, {class: "btn btn-default btn-xs", title: "Run #{ob.name}"} do %>
             Run <i class="fa fa-fw fa-play"></i>
           <% end %>
