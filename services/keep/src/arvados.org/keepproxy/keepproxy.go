@@ -297,14 +297,16 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		blocklen, _, err = kc.AuthorizedAsk(hash, locator.Signature, locator.Timestamp)
 	}
 
-	resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
+	if blocklen > 0 {
+		resp.Header().Set("Content-Length", fmt.Sprint(blocklen))
+	}
 
 	switch err {
 	case nil:
 		if reader != nil {
 			n, err2 := io.Copy(resp, reader)
 			if n != blocklen {
-				log.Printf("%s: %s %s mismatched return %v with Content-Length %v error", GetRemoteAddress(req), req.Method, hash, n, blocklen, err.Error())
+				log.Printf("%s: %s %s mismatched return %v with Content-Length %v error %v", GetRemoteAddress(req), req.Method, hash, n, blocklen, err2)
 			} else if err2 == nil {
 				log.Printf("%s: %s %s success returned %v bytes", GetRemoteAddress(req), req.Method, hash, n)
 			} else {
