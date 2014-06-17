@@ -34,18 +34,18 @@ class Arvados::V1::JobsController < ApplicationController
       exclude_script_versions = params.fetch(:exclude_script_versions, [])
       @filters.select do |filter|
         case filter[0..1]
-        when ["script_version", "in range"]
+        when ["script_version", "in git"]
           minimum_script_version = filter.last
           false
-        when ["script_version", "not in"], ["script_version", "not in range"]
+        when ["script_version", "not in"], ["script_version", "not in git"]
           begin
             exclude_script_versions += filter.last
           rescue TypeError
             exclude_script_versions << filter.last
           end
           false
-        when ["docker_image_locator", "in range"], ["docker_image_locator", "not in range"]
-          filter[1].sub!(/ range$/, '')
+        when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
+          filter[1].sub!(/ docker$/, '')
           filter[2] = Collection.uuids_for_docker_image(filter[2])
           true
         else

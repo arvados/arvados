@@ -289,7 +289,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: [["script_version", "in range", "tag1"]],
+           filters: [["script_version", "in git", "tag1"]],
            find_or_create: true,
          })
     assert_response :success
@@ -310,9 +310,9 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: [["script_version", "in range",
+           filters: [["script_version", "in git",
                       "31ce37fe365b3dc204300a3e4c396ad333ed0556"],
-                     ["script_version", "not in", ["tag1"]]],
+                     ["script_version", "not in git", ["tag1"]]],
            find_or_create: true,
          })
     assert_response :success
@@ -379,7 +379,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              },
            },
-           filters: [["docker_image_locator", "in range",
+           filters: [["docker_image_locator", "in docker",
                       links(:docker_image_collection_hash).name]],
            find_or_create: true,
          })
@@ -403,7 +403,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              },
            },
-           filters: [["docker_image_locator", "in range", "_nonexistentname_"]],
+           filters: [["docker_image_locator", "in docker", "_nonesuchname_"]],
            find_or_create: true,
          })
     assert_response :success
