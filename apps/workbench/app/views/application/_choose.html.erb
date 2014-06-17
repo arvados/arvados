@@ -15,9 +15,13 @@
             </div>
           </div>
         </div>
-        <div class="container-fluid arv-filterable-list selectable-container" style="height: 20em; overflow-y: scroll" data-infinite-scroller="#choose-scroll" id="choose-scroll" data-infinite-content-href="<%= @next_page_href %>">
+
+        <div class="row" style="height: 20em">
+          <div class="col-sm-6 container-fluid arv-filterable-list selectable-container" style="height: 100%; overflow-y: scroll" data-infinite-scroller="#choose-scroll" id="choose-scroll" data-infinite-content-href="<%= @next_page_href %>">
           <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
-        </div>
+          </div>
+          <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
+          </div>
       </div>
 
       <div class="modal-footer">

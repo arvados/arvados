@@ -174,16 +174,20 @@ class CollectionsController < ApplicationController
         .results.any?
       @search_sharing = search_scopes
     end
-    @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
-                                                          {:request => request,
-                                                            :direction => :bottom_up,
-                                                            :combine_jobs => :script_only}) rescue nil
-    @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
-                                                             {:request => request,
-                                                               :direction => :top_down,
-                                                               :combine_jobs => :script_only,
-                                                               :pdata_only => true}) rescue nil
 
+    if params["tab_pane"] == "Provenance_graph"
+      @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                            {:request => request,
+                                                              :direction => :bottom_up,
+                                                              :combine_jobs => :script_only}) rescue nil
+    end
+    if params["tab_pane"] == "Used_by"
+      @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                               {:request => request,
+                                                                 :direction => :top_down,
+                                                                 :combine_jobs => :script_only,
+                                                                 :pdata_only => true}) rescue nil
+    end
     super
   end
 
