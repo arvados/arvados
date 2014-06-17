@@ -12,7 +12,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_optional_api_token
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
-  before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
+  before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
   begin

@@ -34,7 +34,6 @@ function maybe_load_more_content() {
             done(function(data, status, jqxhr) {
                 $(this.container).append(data.content);
                 $(this.container).attr('data-infinite-content-href', data.next_page_href);
-                $(document).trigger('ajax:complete');
             });
     }
 }

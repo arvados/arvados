@@ -44,13 +44,23 @@ class CollectionsController < ApplicationController
 
   def choose
     params[:limit] ||= 20
-    @objects = Link.
-      filter([['link_class','=','name'],
-              ['head_uuid','is_a','arvados#collection']])
+
+    filter = [['link_class','=','name'],
+              ['head_uuid','is_a','arvados#collection']]
+
+    if params[:project_uuid] and !params[:project_uuid].empty?
+      filter << ['tail_uuid', '=', params[:project_uuid]]
+    end
+
+    @objects = Link.filter(filter)
+
     find_objects_for_index
     @next_page_href = (next_page_offset and
                        url_for(offset: next_page_offset, partial: true))
     @name_links = @objects
+
+    puts "and the result is (1) ", @name_links.results
+
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
     super

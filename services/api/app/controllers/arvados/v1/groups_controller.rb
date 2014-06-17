@@ -24,6 +24,9 @@ class Arvados::V1::GroupsController < ApplicationController
      Job, PipelineInstance, PipelineTemplate,
      Collection,
      Human, Specimen, Trait].each do |klass|
+      if params[:object_kind] and klass.kind != params[:object_kind]
+        continue
+      end
       @objects = klass.readable_by(*@read_users)
       cond_sql = "#{klass.table_name}.owner_uuid = ?"
       cond_params = [@object.uuid]

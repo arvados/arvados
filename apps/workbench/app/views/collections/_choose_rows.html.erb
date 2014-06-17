@@ -1,5 +1,8 @@
+<% puts "and the result is (2) ", @name_links.results, "objects is #{@objects}" %>
 <% @name_links.each do |name_link| %>
+  <% puts "looking up #{name_link.head_uuid}" %>
   <% if (object = get_object(name_link.head_uuid)) %>
+    <% puts "got #{object}" %>
     <div class="row filterable selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= name_link.uuid %>"
          data-preview-href="<%= url_for object %>?tab_pane=chooser_preview"
          style="margin-left: 1em; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: #DDDDDD">

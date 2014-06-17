@@ -58,6 +58,14 @@ jQuery(function($){
                 $('.loading').fadeOut('fast', 0);
             }
         }).
+        on('ajaxSend', function(e, xhr) {
+            // map jquery event to rails event
+            $(document).trigger('ajax:send');
+        }).
+        on('ajaxComplete', function(e, xhr) {
+            // map jquery event to rails event
+            $(document).trigger('ajax:complete');
+        }).
         on('click', '.removable-tag a', function(e) {
             var tag_span = $(this).parents('[data-tag-link-uuid]').eq(0)
             tag_span.fadeTo('fast', 0.2);

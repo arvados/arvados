@@ -25,11 +25,9 @@
   function ajaxRefreshTabPane(pane) {
     if (!tab_pane_valid_state[pane]) {
       tab_pane_valid_state[pane] = true;
-      $(document).trigger('ajax:send');
       $.ajax('<%=j url_for() %>?<%= raw(controller.request.query_string) %>&tab_pane='+pane, {dataType: 'html', type: 'GET'}).
         done(function(data, status, jqxhr) {
           $('#' + pane + ' > div > div').html(data);
-          $(document).trigger('ajax:complete');
           ajaxRefreshTabPane(pane);
         });
     }
