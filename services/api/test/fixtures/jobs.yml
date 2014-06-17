@@ -117,6 +117,7 @@ barbaz:
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -128,6 +129,7 @@ previous_job_run:
 previous_docker_job_run:
   uuid: zzzzz-8i9sb-k6emstgk4kw4yhi
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -140,6 +142,7 @@ previous_docker_job_run:
 previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -151,6 +154,7 @@ previous_job_run_no_output:
 nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
   script: hash2
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:

@@ -278,7 +278,20 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_equal '077ba2ad3ea24a929091a9e6ce545c93199b8e57', new_job['script_version']
   end
 
+  BASE_FILTERS = {
+    'repository' => ['=', 'foo'],
+    'script' => ['=', 'hash'],
+    'script_version' => ['in git', 'master'],
+    'docker_image_locator' => ['=', nil],
+  }
+
+  def filters_from_hash(hash)
+    hash.each_pair.map { |name, filter| [name] + filter }
+  end
+
   test "can reuse a Job based on filters" do
+    filter_h = BASE_FILTERS.
+      merge('script_version' => ['in git', 'tag1'])
     post(:create, {
            job: {
              script: "hash",
@@ -289,7 +302,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: [["script_version", "in git", "tag1"]],
+           filters: filters_from_hash(filter_h),
            find_or_create: true,
          })
     assert_response :success
@@ -300,6 +313,10 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can not reuse a Job based on filters" do
+    filter_a = filters_from_hash(BASE_FILTERS.reject { |k| k == 'script_version' })
+    filter_a += [["script_version", "in git",
+                  "31ce37fe365b3dc204300a3e4c396ad333ed0556"],
+                 ["script_version", "not in git", ["tag1"]]]
     post(:create, {
            job: {
              script: "hash",
@@ -310,9 +327,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: [["script_version", "in git",
-                      "31ce37fe365b3dc204300a3e4c396ad333ed0556"],
-                     ["script_version", "not in git", ["tag1"]]],
+           filters: filter_a,
            find_or_create: true,
          })
     assert_response :success
@@ -323,6 +338,8 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can not reuse a Job based on arbitrary filters" do
+    filter_h = BASE_FILTERS.
+      merge("created_at" => ["<", "2010-01-01T00:00:00Z"])
     post(:create, {
            job: {
              script: "hash",
@@ -333,7 +350,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              }
            },
-           filters: [["created_at", "<", "2010-01-01T00:00:00Z"]],
+           filters: filters_from_hash(filter_h),
            find_or_create: true,
          })
     assert_response :success
@@ -369,6 +386,11 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "can reuse a Job with a Docker image hash filter" do
+    filter_h = BASE_FILTERS.
+      merge("script_version" =>
+              ["=", "4fe459abe02d9b365932b8f5dc419439ab4e2577"],
+            "docker_image_locator" =>
+              ["in docker", links(:docker_image_collection_hash).name])
     post(:create, {
            job: {
              script: "hash",
@@ -379,8 +401,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              },
            },
-           filters: [["docker_image_locator", "in docker",
-                      links(:docker_image_collection_hash).name]],
+           filters: filters_from_hash(filter_h),
            find_or_create: true,
          })
     assert_response :success
@@ -393,6 +414,8 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   end
 
   test "new job with unknown Docker image filter" do
+    filter_h = BASE_FILTERS.
+      merge("docker_image_locator" => ["in docker", "_nonesuchname_"])
     post(:create, {
            job: {
              script: "hash",
@@ -403,12 +426,33 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                an_integer: '1'
              },
            },
-           filters: [["docker_image_locator", "in docker", "_nonesuchname_"]],
+           filters: filters_from_hash(filter_h),
            find_or_create: true,
          })
     assert_response :success
     new_job = assigns(:object)
     assert_not_nil new_job
     assert_not_equal(jobs(:previous_docker_job_run).uuid, new_job.uuid)
+  end
+
+  ["repository", "script"].each do |skip_key|
+    test "missing #{skip_key} filter raises an error" do
+      filter_a = filters_from_hash(BASE_FILTERS.reject { |k| k == skip_key })
+      post(:create, {
+             job: {
+               script: "hash",
+               script_version: "master",
+               repository: "foo",
+               script_parameters: {
+                 input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+                 an_integer: '1'
+               }
+             },
+             filters: filter_a,
+             find_or_create: true,
+           })
+      assert_includes(405..599, @response.code.to_i,
+                      "bad status code with missing #{skip_key} filter")
+    end
   end
 end
