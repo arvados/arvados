@@ -2,9 +2,11 @@ class Job < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  attr_protected :docker_image_locator
   serialize :script_parameters, Hash
   serialize :runtime_constraints, Hash
   serialize :tasks_summary, Hash
+  before_validation :find_docker_image_locator
   before_create :ensure_unique_submit_id
   before_create :ensure_script_version_is_commit
   before_update :ensure_script_version_is_commit
@@ -38,6 +40,7 @@ class Job < ArvadosModel
     t.add :nondeterministic
     t.add :repository
     t.add :supplied_script_version
+    t.add :docker_image_locator
   end
 
   def assert_finished
@@ -96,6 +99,21 @@ class Job < ArvadosModel
       end
     end
     true
+  end
+
+  def find_docker_image_locator
+    # Find the Collection that holds the Docker image specified in the
+    # runtime constraints, and store its locator in docker_image_locator.
+    image_search = runtime_constraints['docker_image']
+    image_tag = runtime_constraints['docker_image_tag']
+    if image_search.nil?
+      self.docker_image_locator = nil
+    elsif coll = Collection.for_latest_docker_image(image_search, image_tag)
+      self.docker_image_locator = coll.uuid
+    else
+      errors.add(:docker_image_locator, "Docker image not found")
+      false
+    end
   end
 
   def dependencies

@@ -18,7 +18,3 @@ common:
   arvados_login_base: https://arvados.local:3000/login
   arvados_v1_base: https://arvados.local:3000/arvados/v1
   arvados_insecure_https: true
-
-  # Set anonymous user token to enable anonymous user access.
-  # Get this using get_anonymous_user_token.rb and set here.
-  anonymous_user_token: none

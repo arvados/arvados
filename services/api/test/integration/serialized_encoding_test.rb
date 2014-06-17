@@ -13,7 +13,7 @@ class SerializedEncodingTest < ActionDispatch::IntegrationTest
 
     job: {
       repository: 'foo',
-      runtime_constraints: {docker_image: 'arvados/jobs'},
+      runtime_constraints: {docker_image: 'arvados/apitestfixture'},
       script: 'hash',
       script_version: 'master',
       script_parameters: {pattern: 'foobar'},

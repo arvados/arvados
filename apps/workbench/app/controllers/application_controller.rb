@@ -360,7 +360,7 @@ class ApplicationController < ActionController::Base
           # do not use anonymous user token and let logout happen
         else
           anonymous_user_token = Rails.configuration.anonymous_user_token
-          if anonymous_user_token.andand.size == 50
+          if anonymous_user_token
             params[:api_token] = anonymous_user_token
             using_anonymous_user_token = true
           end

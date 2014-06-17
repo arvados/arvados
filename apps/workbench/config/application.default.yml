@@ -75,6 +75,7 @@ common:
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
 
-  # Set anonymous user token to enable anonymous user access.
-  # Get this using get_anonymous_user_token.rb and set here.
-  anonymous_user_token: none
+  # Set anonymous user token to enable anonymous user access. You can get
+  # the token by running "bundle exec ./script/get_anonymous_user_token.rb"
+  # in the directory where you API server is running.
+  anonymous_user_token: false
