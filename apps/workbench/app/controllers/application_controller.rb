@@ -355,7 +355,8 @@ class ApplicationController < ActionController::Base
       try_redirect_to_login = true
 
       using_anonymous_user_token = false
-      if !params[:api_token] && !session[:arvados_api_token]
+      if !params[:api_token] && !session[:arvados_api_token] &&
+          !Thread.current[:anonymous_api_token]
         if session && (session['arv-referrer'] == 'logout')
           # do not use anonymous user token and let logout happen
         else
@@ -373,6 +374,7 @@ class ApplicationController < ActionController::Base
         # Before copying the token into session[], do a simple API
         # call to verify its authenticity.
         if verify_api_token
+         if !anonymous_user_token
           session[:arvados_api_token] = params[:api_token]
           u = User.current
           session[:user] = {
@@ -393,21 +395,32 @@ class ApplicationController < ActionController::Base
           else
             yield
           end
+         else     # using anonymous token
+            Thread.current[:user] = User.current
+            Thread.current[:anonymous_api_token] = params[:api_token]
+            redirect_to request.fullpath.sub(%r{([&\?]api_token=)[^&\?]*}, '')
+         end
         else
           if using_anonymous_user_token
-            # bypass the invalid anonlymous user token, instead of showing error message.
+            # bypass the invalid anonymous user token to prevent infinite looping
             try_redirect_to_login = true
+            Thread.current[:anonymous_api_token] = nil
           else
             @errors = ['Invalid API token']
             self.render_error status: 401
           end
         end
-      elsif session[:arvados_api_token]
+      elsif session[:arvados_api_token] || Thread.current[:anonymous_api_token]
         # In this case, the token must have already verified at some
         # point, but it might have been revoked since.  We'll try
         # using it, and catch the exception if it doesn't work.
         try_redirect_to_login = false
-        Thread.current[:arvados_api_token] = session[:arvados_api_token]
+        if session[:arvados_api_token]
+          Thread.current[:arvados_api_token] = session[:arvados_api_token]
+        elsif Thread.current[:anonymous_api_token]
+          Thread.current[:arvados_api_token] = Thread.current[:anonymous_api_token]
+          Thread.current[:anonymous_api_token] = nil
+        end
         begin
           yield
         rescue ArvadosApiClient::NotLoggedInException
