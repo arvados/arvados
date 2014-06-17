@@ -1,31 +1,41 @@
-<% failed = j[:tasks_summary][:failed] rescue 0 %>
-<% done = j[:tasks_summary][:done] rescue 0 %>
-<% running = j[:tasks_summary][:running] rescue 0 %>
-<% todo = j[:tasks_summary][:todo] rescue 0 %>
+<%
+   failed = j[:tasks_summary][:failed] || 0 rescue 0
+   done = j[:tasks_summary][:done] || 0 rescue 0
+   running = j[:tasks_summary][:running] || 0 rescue 0
+   todo = j[:tasks_summary][:todo] || 0 rescue 0
 
-<% if j[:success] == false and failed == 0 %>
-  <% failed = 1 # job failed, so show as though at least one task failed %>
-<% else %>
-
-<% if done + running + failed + todo == 0 %>
-  <% failed = 1 # no tasks ran; show as though one task ran and failed %>
-<% end %>
-
-<% percent_total_tasks = 100 / (done + running + failed + todo) %>
-
-<% if defined? scaleby %>
-  <% percent_total_tasks *= scaleby %>
-<% end %>
+   if j[:success] == false and done + running + failed == 0
+     # The job failed but no tasks were ever started (i.e. crunch-dispatch
+     # was unable to start the job). Display a full 100% failed progress bar.
+     failed_percent = 100
+     success_percent = 0
+     running_percent = 0
+   elsif done + running + failed + todo == 0
+     # No tasks were ever created for this job;
+     # render an empty progress bar.
+     failed_percent = 0
+     success_percent = 0
+     running_percent = 0
+   else
+     percent_total_tasks = 100.0 / (done + running + failed + todo)
+     if defined? scaleby
+       percent_total_tasks *= scaleby
+     end
+     failed_percent = (failed * percent_total_tasks).ceil
+     success_percent = (done * percent_total_tasks).ceil
+     running_percent = (running * percent_total_tasks).ceil
+   end
+%>
 
 <% if not defined? scaleby %>
   <div class="progress">
 <% end %>
 
-<span class="progress-bar progress-bar-success" style="width: <%= done * percent_total_tasks %>%;">
+<span class="progress-bar progress-bar-success" style="width: <%= success_percent %>%;">
 </span>
-<span class="progress-bar progress-bar-danger" style="width: <%= failed * percent_total_tasks %>%;">
+<span class="progress-bar progress-bar-danger" style="width: <%= failed_percent %>%;">
 </span>
-<span class="progress-bar" style="width: <%= running * percent_total_tasks %>%;">
+<span class="progress-bar" style="width: <%= running_percent %>%;">
 </span>
 
 <% if not defined? scaleby %>
