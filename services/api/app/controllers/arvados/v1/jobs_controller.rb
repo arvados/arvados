@@ -47,43 +47,12 @@ class Arvados::V1::JobsController < ApplicationController
         else
           @filters.append(["docker_image_locator", "=", nil])
         end
-      else
-        script_info = {"repository" => nil, "script" => nil}
-        script_range = Hash.new { |key| [] }
-        @filters.select! do |filter|
-          if script_info.has_key? filter[0]
-            script_info[filter[0]] = filter[2]
+      else  # Check specified filters for some reasonableness.
+        filter_names = @filters.map { |f| f.first }.uniq
+        ["repository", "script"].each do |req_filter|
+          if not filter_names.include?(req_filter)
+            raise ArgumentError.new("#{req_filter} filter required")
           end
-          case filter[0..1]
-          when ["script_version", "in git"]
-            script_range["min_version"] = filter.last
-            false
-          when ["script_version", "not in"], ["script_version", "not in git"]
-            begin
-              script_range["exclude_versions"] += filter.last
-            rescue TypeError
-              script_range["exclude_versions"] << filter.last
-            end
-            false
-          when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
-            filter[1].sub!(/ docker$/, '')
-            filter[2] = Collection.uuids_for_docker_image(filter[2])
-            true
-          else
-            true
-          end
-        end
-
-        script_info.each_pair do |key, value|
-          raise ArgumentError.new("#{key} filter required") if value.nil?
-        end
-        unless script_range.empty?
-          @filters.append(["script_version", "in",
-                           Commit.find_commit_range(current_user,
-                                                    script_info["repository"],
-                                                    script_range["min_version"],
-                                                    resource_attrs[:script_version],
-                                                    script_range["exclude_versions"])])
         end
       end
 
@@ -191,5 +160,57 @@ class Arvados::V1::JobsController < ApplicationController
 
   def self._queue_requires_parameters
     self._index_requires_parameters
+  end
+
+  protected
+
+  def load_filters_param
+    # Convert Job-specific git and Docker filters into normal SQL filters.
+    super
+    script_info = {"repository" => nil, "script" => nil}
+    script_range = {"exclude_versions" => []}
+    @filters.select! do |filter|
+      if (script_info.has_key? filter[0]) and (filter[1] == "=")
+        if script_info[filter[0]].nil?
+          script_info[filter[0]] = filter[2]
+        elsif script_info[filter[0]] != filter[2]
+          raise ArgumentError.new("incompatible #{filter[0]} filters")
+        end
+      end
+      case filter[0..1]
+      when ["script_version", "in git"]
+        script_range["min_version"] = filter.last
+        false
+      when ["script_version", "not in git"]
+        begin
+          script_range["exclude_versions"] += filter.last
+        rescue TypeError
+          script_range["exclude_versions"] << filter.last
+        end
+        false
+      when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
+        filter[1].sub!(/ docker$/, '')
+        filter[2] = Collection.uuids_for_docker_image(filter[2])
+        true
+      else
+        true
+      end
+    end
+
+    # Build a real script_version filter from any "not? in git" filters.
+    if (script_range.size > 1) or script_range["exclude_versions"].any?
+      script_info.each_pair do |key, value|
+        if value.nil?
+          raise ArgumentError.new("script_version filter needs #{key} filter")
+        end
+      end
+      last_version = begin resource_attrs[:script_version] rescue "HEAD" end
+      @filters.append(["script_version", "in",
+                       Commit.find_commit_range(current_user,
+                                                script_info["repository"],
+                                                script_range["min_version"],
+                                                last_version,
+                                                script_range["exclude_versions"])])
+    end
   end
 end

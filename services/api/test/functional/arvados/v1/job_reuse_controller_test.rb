@@ -455,4 +455,35 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                       "bad status code with missing #{skip_key} filter")
     end
   end
+
+  test "find Job with script version range" do
+    get :index, filters: [["repository", "=", "foo"],
+                          ["script", "=", "hash"],
+                          ["script_version", "in git", "tag1"]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_job_run).uuid)
+  end
+
+  test "find Job with script version range exclusions" do
+    get :index, filters: [["repository", "=", "foo"],
+                          ["script", "=", "hash"],
+                          ["script_version", "not in git", "tag1"]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    refute_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_job_run).uuid)
+  end
+
+  test "find Job with Docker image range" do
+    get :index, filters: [["docker_image_locator", "in docker",
+                           "arvados/apitestfixture"]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_docker_job_run).uuid)
+    refute_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_job_run).uuid)
+  end
 end
