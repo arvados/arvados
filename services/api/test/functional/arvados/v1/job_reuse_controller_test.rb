@@ -413,6 +413,34 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     end
   end
 
+  test "reuse Job with Docker image repo+tag" do
+    filter_h = BASE_FILTERS.
+      merge("script_version" =>
+              ["=", "4fe459abe02d9b365932b8f5dc419439ab4e2577"],
+            "docker_image_locator" =>
+              ["in docker", links(:docker_image_collection_tag2).name])
+    post(:create, {
+           job: {
+             script: "hash",
+             script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+             repository: "foo",
+             script_parameters: {
+               input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+               an_integer: '1'
+             },
+           },
+           filters: filters_from_hash(filter_h),
+           find_or_create: true,
+         })
+    assert_response :success
+    new_job = assigns(:object)
+    assert_not_nil new_job
+    target_job = jobs(:previous_docker_job_run)
+    [:uuid, :script_version, :docker_image_locator].each do |attr|
+      assert_equal(target_job.send(attr), new_job.send(attr))
+    end
+  end
+
   test "new job with unknown Docker image filter" do
     filter_h = BASE_FILTERS.
       merge("docker_image_locator" => ["in docker", "_nonesuchname_"])
