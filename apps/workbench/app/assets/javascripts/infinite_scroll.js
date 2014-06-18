@@ -15,7 +15,6 @@ function maybe_load_more_content() {
         // Don't start another request until this one finishes
         $(container).attr('data-infinite-content-href', null);
         $(container).append('<img src="/assets/ajax-loader.gif" class="infinite-scroller-spinner"></img>');
-        console.log("appended?");
         $.ajax(src,
                {dataType: 'json',
                 type: 'GET',

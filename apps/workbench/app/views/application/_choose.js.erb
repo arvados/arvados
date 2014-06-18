@@ -21,7 +21,6 @@ $(".chooser-show-project").on("click", function() {
     type: "GET",
     data: d
   }).done(function(data, status, jqxhr) {
-    console.log(data);
     $("#chooser-breadcrumb").text(t.text());
     $("#choose-scroll").html(data.content);
     $("#choose-scroll").prop("data-infinite-content-href", "next_page_href");
