@@ -103,17 +103,29 @@ $("#set-show-failed-only").on("click", function() {
 <div id="log-viewer">
 
   <h3>Summary</h3>
-  <div id="log-viewer-overview"></div>
-
-  <% if @object.tasks_summary[:failed] > 0 %>
-    <button id="set-show-failed-only" class="btn btn-danger" style="margin-top: 1em">
-      Show failed task output only
-    </button>
-  <% end %>
+  <p id="log-viewer-overview">
+    <% if !@object.log %>
+      <% if @object.finished_at %>
+        This job did not produce an output log.
+      <% else %>
+        This job is still running.  The job log will be available when the job is complete.
+      <% end %>
+    <% else %>
+      <% if !logcollection %>
+        The collection containing the job log was not found.
+      <% end %>
+    <% end %>
+  </p>
 
   <div class="h3">Log
 
     <span class="pull-right">
+      <% if @object.andand.tasks_summary.andand[:failed] and @object.tasks_summary[:failed] > 0 %>
+        <button id="set-show-failed-only" class="btn btn-danger">
+          Show failed task output only
+        </button>
+      <% end %>
+
       <button id="filter-all" class="btn">
         Select all
       </button>
@@ -166,50 +178,41 @@ $("#set-show-failed-only").on("click", function() {
 
   </div>
 
-  <div class="log-viewer-paging-div">
-    <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
-    <span class="log-viewer-paging"></span>
-    <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
+  <div class="smart-scroll" data-smart-scroll-padding-bottom="50" style="margin-bottom: 0px">
+    <table class="log-viewer-table">
+      <thead>
+        <tr>
+          <th class="id" data-sort="id"></th>
+          <th class="timestamp" data-sort="timestamp">Timestamp</th>
+          <th class="node"  data-sort="node">Node</th>
+          <th class="slot"  data-sort="slot">Slot</th>
+          <th class="type" data-sort="type">Log type</th>
+          <th class="taskid"  data-sort="taskid">Task</th>
+          <th class="message" data-sort="message">Message</th>
+        </tr>
+      </thead>
+      <tbody class="list">
+        <tr>
+          <td class="id"></td>
+          <td class="timestamp"></td>
+          <td class="node"></td>
+          <td class="slot"></td>
+          <td class="type"></td>
+          <td class="taskid"></td>
+          <td class="message"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <% if @object.log and logcollection %>
+      <%= image_tag 'ajax-loader.gif', id: "logloadspinner" %>
+    <% end %>
+
   </div>
 
-  <table class="log-viewer-table">
-    <thead>
-      <tr>
-        <th class="id" data-sort="id"></th>
-        <th class="timestamp" data-sort="timestamp">Timestamp</th>
-        <th class="node"  data-sort="node">Node</th>
-        <th class="slot"  data-sort="slot">Slot</th>
-        <th class="type" data-sort="type">Log type</th>
-        <th class="taskid"  data-sort="taskid">Task</th>
-        <th class="message" data-sort="message">Message</th>
-      </tr>
-    </thead>
-    <tbody class="list">
-      <tr>
-        <td class="id"></td>
-        <td class="timestamp"></td>
-        <td class="node"></td>
-        <td class="slot"></td>
-        <td class="type"></td>
-        <td class="taskid"></td>
-        <td class="message"></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div style="font-size: 18px">
+  <div class="log-viewer-paging-div" style="margin-bottom: -15px">
     <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
     <span class="log-viewer-paging"></span>
     <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
   </div>
 </div>
-
-<% if !@object.log %>
-    <p>This job is still running.  The job log will be available when the job is complete.</p>
-<% else %>
-  <% if logcollection %>
-    <%= image_tag 'ajax-loader.gif', id: "logloadspinner" %>
-  <% else %>
-    <p>The collection containing the job log was not found.</p>
-  <% end %>
-<% end %>
