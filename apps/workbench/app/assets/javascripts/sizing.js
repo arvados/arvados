@@ -11,20 +11,19 @@ function graph_zoom(divId, svgId, scale) {
 }
 
 function smart_scroll_fixup(s) {
-    //console.log(s);
+
     if (s != null && s.type == 'shown.bs.tab') {
         s = [s.target];
     }
     else {
         s = $(".smart-scroll");
     }
-    //console.log(s);
-    for (var i = 0; i < s.length; i++) {
-        a = s[i];
-        var h = window.innerHeight - a.getBoundingClientRect().top - 20;
+
+    s.each(function(i, a) {
+        var h = window.innerHeight - $(a).offset().top;
         height = String(h) + "px";
-        a.style['max-height'] = height;
-    }
+        $(a).css('max-height', height);
+    });
 }
 
-$(window).on('load resize scroll', smart_scroll_fixup);
+$(window).on('load ready resize scroll ajax:complete', smart_scroll_fixup);

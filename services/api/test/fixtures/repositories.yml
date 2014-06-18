@@ -1,3 +1,8 @@
+crunch_dispatch_test:
+  uuid: zzzzz-s0uqq-382brsig8rp3665
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
+  name: crunch_dispatch_test
+
 foo:
   uuid: zzzzz-s0uqq-382brsig8rp3666
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user

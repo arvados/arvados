@@ -42,7 +42,8 @@ $(document).
     on('ready ajax:complete', function() {
         $('[data-infinite-scroller]').each(function() {
             var $scroller = $($(this).attr('data-infinite-scroller'));
-            if (!$scroller.hasClass('smart-scroll'))
+            if (!$scroller.hasClass('smart-scroll') &&
+		'scroll' != $scroller.css('overflow-y'))
                 $scroller = $(window);
             $scroller.
                 addClass('infinite-scroller').

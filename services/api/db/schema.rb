@@ -11,8 +11,9 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
+ActiveRecord::Schema.define(:version => 20140611173003) do
 
-ActiveRecord::Schema.define(:version => 20140602143352) do
+
 
   create_table "api_client_authorizations", :force => true do |t|
     t.string   "api_token",                                           :null => false
@@ -195,6 +196,7 @@ ActiveRecord::Schema.define(:version => 20140602143352) do
     t.string   "repository"
     t.boolean  "output_is_persistent",     :default => false, :null => false
     t.string   "supplied_script_version"
+    t.string   "docker_image_locator"
   end
 
   add_index "jobs", ["created_at"], :name => "index_jobs_on_created_at"
