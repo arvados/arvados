@@ -20,9 +20,10 @@ function smart_scroll_fixup(s) {
     }
 
     s.each(function(i, a) {
-        var h = window.innerHeight - $(a).offset().top;
+        a = $(a);
+        var h = window.innerHeight - a.offset().top - a.attr("data-smart-scroll-padding-bottom");
         height = String(h) + "px";
-        $(a).css('max-height', height);
+        a.css('max-height', height);
     });
 }
 

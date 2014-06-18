@@ -101,15 +101,15 @@ $("#set-show-failed-only").on("click", function() {
   <h3>Summary</h3>
   <div id="log-viewer-overview"></div>
 
-  <% if @object.tasks_summary[:failed] > 0 %>
-    <button id="set-show-failed-only" class="btn btn-danger" style="margin-top: 1em">
-      Show failed task output only
-    </button>
-  <% end %>
-
   <div class="h3">Log
 
     <span class="pull-right">
+      <% if @object.tasks_summary[:failed] > 0 %>
+        <button id="set-show-failed-only" class="btn btn-danger">
+          Show failed task output only
+        </button>
+      <% end %>
+
       <button id="filter-all" class="btn">
         Select all
       </button>
@@ -162,12 +162,7 @@ $("#set-show-failed-only").on("click", function() {
 
   </div>
 
-  <div class="log-viewer-paging-div">
-    <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
-    <span class="log-viewer-paging"></span>
-    <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
-  </div>
-
+  <div class="smart-scroll" data-smart-scroll-padding-bottom="50" style="margin-bottom: 0px">
   <table class="log-viewer-table">
     <thead>
       <tr>
@@ -192,14 +187,12 @@ $("#set-show-failed-only").on("click", function() {
       </tr>
     </tbody>
   </table>
-
-
-  <div style="font-size: 18px">
+</div>
+  <div class="log-viewer-paging-div" style="margin-bottom: -15px">
     <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
     <span class="log-viewer-paging"></span>
     <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
   </div>
-
 
 </div>
 
