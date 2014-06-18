@@ -181,13 +181,12 @@ function dumbPluralize(n, s, p) {
 function generateJobOverview(id, logViewer, taskState) {
     var html = "";
 
-    var first = logViewer.items[1];
-    var last = logViewer.items[logViewer.items.length-1];
-
-    {
-        html += "<div>";
+    if (logViewer.items.length > 2) {
+        html += "<p>";
         html += "Started at " + first.values().timestamp;
 
+        var first = logViewer.items[1];
+        var last = logViewer.items[logViewer.items.length-1];
         var duration = (last.values().ts.getTime() - first.values().ts.getTime()) / 1000;
 
         var hours = 0;
@@ -224,7 +223,9 @@ function generateJobOverview(id, logViewer, taskState) {
         html += " (" + dumbPluralize(taskState.failure_count, " failure") + ")";
 
         html += ".  Finished at " + last.values().timestamp + ".";
-        html += "</div>";
+        html += "</p>";
+    } else {
+       html = "<p>Job log is empty or failed to load.</p>";
     }
 
     $(id).html(html);

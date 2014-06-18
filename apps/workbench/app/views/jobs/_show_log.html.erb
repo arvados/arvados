@@ -40,16 +40,20 @@ var makeFilter = function() {
 }
 
 <% if @object.log %>
-<% logcollection = Collection.find @object.log %>
-
-$.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
-  done(function(data, status, jqxhr) {
+  <% logcollection = Collection.find @object.log %>
+  <% if logcollection %>
+    $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
+    done(function(data, status, jqxhr) {
     logViewer.filter();
     addToLogViewer(logViewer, data.split("\n"), taskState);
     logViewer.filter(makeFilter());
     generateJobOverview("#log-viewer-overview", logViewer, taskState);
     $("#logloadspinner").detach();
-  });
+    }).
+    fail(function(jqxhr, status, error) {
+    $("#logloadspinner").detach();
+    });
+  <% end %>
 <% else %>
   <%# Live log loading not implemented yet. %>
 <% end %>
@@ -193,18 +197,19 @@ $("#set-show-failed-only").on("click", function() {
     </tbody>
   </table>
 
-
   <div style="font-size: 18px">
     <a href="#" class="log-viewer-page-up"><span class='glyphicon glyphicon-arrow-up'></span></a>
     <span class="log-viewer-paging"></span>
     <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
   </div>
-
-
 </div>
 
 <% if !@object.log %>
-  This job is still running.  The job log will be available when the job is complete.
+    <p>This job is still running.  The job log will be available when the job is complete.</p>
+<% else %>
+  <% if logcollection %>
+    <%= image_tag 'ajax-loader.gif', id: "logloadspinner" %>
+  <% else %>
+    <p>The collection containing the job log was not found.</p>
+  <% end %>
 <% end %>
-
-<%= image_tag 'ajax-loader.gif', id: "logloadspinner" %>
