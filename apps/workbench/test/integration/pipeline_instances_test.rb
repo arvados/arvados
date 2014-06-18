@@ -166,7 +166,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_no_text? 'My projects'
     assert page.has_no_button? 'Add new project'
     assert page.has_text? 'Projects shared with me'
-    assert page.has_no_text? 'A Project'
+    assert page.has_text? 'A Project'
+    assert page.has_text? 'Unrestricted public data'
 
     find('.arv-project-list a,button', text: 'Unrestricted public data').click
     page.has_text? ('An anonymously accessible project')
@@ -177,11 +178,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       page.has_text? ('Projects shared with me')
     end
 
-    # share "A Project" with anonymous users
-    use_token :admin
-    ac = ApplicationController.new
-    ac.send :share_with_anonymous_group, api_fixture('groups')['aproject']['uuid']
-
     # as anonymous user verify the shared project is accessible
     visit page_with_token('anonymous')
     assert page.has_text? 'A Project'
@@ -191,20 +187,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     #find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
     #  find('a', text: 'Show').click
 
-    # unshare "A Project" with anonymous users
-    use_token :admin
-    ac = ApplicationController.new
-    ac.send :unshare_with_anonymous_group, api_fixture('groups')['aproject']['uuid']
-
-    # as anonymous user verify the project is no longer shared
-    visit page_with_token('anonymous')
-    assert page.has_no_text? 'A Project'
-
-    # as active user "A Project" is accessible
-    visit page_with_token('active')
+    # as inactive user "A Project" is accessible
+    visit page_with_token('inactive')
     assert page.has_text? 'A Project'
     find('.arv-project-list a,button', text: 'Unrestricted public data').click
     page.has_text? ('An anonymously accessible project')
+    find('a', text: 'Projects').click
+    find('a', text: 'A Project').click
+    page.has_text? ('Test project belonging to active user')
     find('a', text: 'Projects').click
     within('.dropdown-menu') do
       page.has_text? ('New project')
