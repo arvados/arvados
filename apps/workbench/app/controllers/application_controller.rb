@@ -10,7 +10,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_clear
   around_filter :thread_with_mandatory_api_token, except: ERROR_ACTIONS
   around_filter :thread_with_optional_api_token
-  before_filter :check_user_agreements, except: ERROR_ACTIONS
+#  before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
   theme :select_theme
@@ -354,17 +354,21 @@ class ApplicationController < ActionController::Base
     begin
       try_redirect_to_login = true
 
+      anonymous_user_token = Rails.configuration.anonymous_user_token
       using_anonymous_user_token = false
       if !params[:api_token] && !session[:arvados_api_token] &&
           !Thread.current[:anonymous_api_token]
         if session['arv-referrer'] == 'logout'
           # do not use anonymous user token and let logout happen
         else
-          anonymous_user_token = Rails.configuration.anonymous_user_token
           if anonymous_user_token
             params[:api_token] = anonymous_user_token
             using_anonymous_user_token = true
           end
+        end
+      else
+        if params[:api_token] && (params[:api_token] == anonymous_user_token)
+          using_anonymous_user_token = true
         end
       end
 
@@ -374,7 +378,7 @@ class ApplicationController < ActionController::Base
         # Before copying the token into session[], do a simple API
         # call to verify its authenticity.
         if verify_api_token
-         if !anonymous_user_token
+         if !using_anonymous_user_token
           session[:arvados_api_token] = params[:api_token]
           u = User.current
           session[:user] = {
@@ -398,6 +402,8 @@ class ApplicationController < ActionController::Base
          else     # using anonymous token
             Thread.current[:user] = User.current
             Thread.current[:anonymous_api_token] = params[:api_token]
+            session[:arvados_api_token] = nil
+            session[:user] = nil
             redirect_to request.fullpath.sub(%r{([&\?]api_token=)[^&\?]*}, '')
          end
         else
@@ -491,8 +497,6 @@ class ApplicationController < ActionController::Base
 
   def check_user_agreements
     if current_user && !current_user.is_active
-=begin
-      return render '/'
       if not current_user.is_invited
         return render 'users/inactive'
       end
@@ -514,7 +518,6 @@ class ApplicationController < ActionController::Base
       if !current_user.is_active
         render 'user_agreements/index'
       end
-=end
     end
     true
   end

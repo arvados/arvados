@@ -77,7 +77,7 @@
           -->
 
           <% if current_user %>
-          <% if current_user.is_active %>
+          <% if current_user && !current_user.is_anonymous %>
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>
@@ -100,7 +100,7 @@
               <% end %>
             </ul>
           </li>
-          <% elsif current_user.is_anonymous %>    <%# current user is anonymous %>
+          <% else %>
             <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
           <% end %>
           <% end %>
@@ -165,7 +165,7 @@
       </div><!-- /.navbar-collapse -->
     </nav>
 
-    <% if current_user.andand.is_active %>
+    <% if current_user %>
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
           <li class="dropdown">

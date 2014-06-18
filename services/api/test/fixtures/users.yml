@@ -85,6 +85,6 @@ anonymous:
   email: anonymouspublic
   first_name: anonymouspublic
   last_name: anonymouspublic
-  is_active: true
+  is_active: false
   is_admin: false
   prefs: {}
