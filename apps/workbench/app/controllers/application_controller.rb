@@ -145,8 +145,13 @@ class ApplicationController < ActionController::Base
   end
 
   def choose
-    params[:limit] ||= 20
-    find_objects_for_index if !@objects
+    params[:limit] ||= 40
+    if !@objects
+      if params[:project_uuid] and !params[:project_uuid].empty?
+        @objects = Group.find(params[:project_uuid]).contents({:filters => [['uuid', 'is_a', "arvados\##{ArvadosApiClient.class_kind(model_class)}"]]})
+      end
+      find_objects_for_index if !@objects
+    end
     respond_to do |f|
       if params[:partial]
         f.json {

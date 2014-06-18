@@ -7,10 +7,11 @@ $('body > .modal-container .modal .modal-footer .btn-primary').
     data('action-data', <%= raw params[:action_data] %>);
 $(".chooser-show-project").on("click", function() {
   $("#choose-scroll").html("<%=j image_tag 'ajax-loader.gif' %>");
+  $(".modal-dialog-preview-pane").html('');
   var t = $(this);
   var d = {
       partial: true,
-      multiple: <%= multiple %>
+      multiple: <%= multiple || "false" %>
     };
   if (t.attr("data-project-uuid") != null) {
     d.project_uuid = t.attr("data-project-uuid");

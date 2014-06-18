@@ -43,7 +43,7 @@ class CollectionsController < ApplicationController
   end
 
   def choose
-    params[:limit] ||= 20
+    params[:limit] ||= 40
 
     filter = [['link_class','=','name'],
               ['head_uuid','is_a','arvados#collection']]
