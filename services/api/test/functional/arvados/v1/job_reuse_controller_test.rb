@@ -529,4 +529,26 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     refute_includes(assigns(:objects).map { |job| job.uuid },
                     jobs(:previous_job_run).uuid)
   end
+
+  test "'in docker' filter accepts arrays" do
+    get :index, filters: [["docker_image_locator", "in docker",
+                           ["_nonesuchname_", "arvados/apitestfixture"]]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_docker_job_run).uuid)
+    refute_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_job_run).uuid)
+  end
+
+  test "'not in docker' filter accepts arrays" do
+    get :index, filters: [["docker_image_locator", "not in docker",
+                           ["_nonesuchname_", "arvados/apitestfixture"]]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_job_run).uuid)
+    refute_includes(assigns(:objects).map { |job| job.uuid },
+                    jobs(:previous_docker_job_run).uuid)
+  end
 end
