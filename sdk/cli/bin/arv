@@ -32,6 +32,8 @@ if File.exist? config_file then
   end
 end
 
+subcommands = %w(keep pipeline tag ws)
+
 case ARGV[0]
 when 'keep'
   ARGV.shift
@@ -166,9 +168,15 @@ def to_boolean(s)
   !!(s =~ /^(true|t|yes|y|1)$/i)
 end
 
+def head_banner
+  "Arvados command line client\n"
+end
+
 def help_methods(discovery_document, resource, method=nil)
-  banner = "\n"
-  banner += "The #{resource} resource type supports the following methods:"
+  banner = head_banner
+  banner += "Usage: arv #{resource} [method] [--parameters]\n"
+  banner += "Use 'arv #{resource} [method] --help' to get more information about specific methods.\n\n"
+  banner += "The #{resource} resource supports the following methods:"
   banner += "\n\n"
   discovery_document["resources"][resource.pluralize]["methods"].
     each do |k,v|
@@ -182,28 +190,15 @@ def help_methods(discovery_document, resource, method=nil)
   banner += "\n"
   STDERR.puts banner
 
-  if not method.nil? and method != '--help' then
+  if not method.nil? and method != '--help' and method != '-h' then
     Trollop::die ("Unknown method #{method.inspect} " +
                   "for resource #{resource.inspect}")
   end
   exit 255
 end
 
-def help_resources(discovery_document, resource)
-  banner = "\n"
-  banner += "This Arvados instance supports the following resource types:"
-  banner += "\n\n"
-  discovery_document["resources"].each do |k,v|
-    description = ''
-    resource_info = discovery_document["schemas"][k.singularize.capitalize]
-    if resource_info and resource_info.include?('description')
-      # add only the first line of the discovery doc description
-      description = '  ' + resource_info["description"].split("\n").first.chomp
-    end
-    banner += "   #{sprintf("%30s",k.singularize)}#{description}\n"
-  end
-  banner += "\n"
-  STDERR.puts banner
+def help_resources(option_parser, discovery_document, resource)
+  option_parser.educate
 
   if not resource.nil? and resource != '--help' then
     Trollop::die "Unknown resource type #{resource.inspect}"
@@ -211,15 +206,19 @@ def help_resources(discovery_document, resource)
   exit 255
 end
 
-def parse_arguments(discovery_document)
+def parse_arguments(discovery_document, subcommands)
   resource_types = Array.new()
   discovery_document["resources"].each do |k,v|
     resource_types << k.singularize
   end
 
-  global_opts = Trollop::options do
+  option_parser = Trollop::Parser.new do
     version __FILE__
-    banner "arv: the Arvados CLI tool"
+    banner head_banner
+    banner "Usage: arv [--flags] subcommand|resource [method] [--parameters]"
+    banner ""
+    banner "Available flags:"
+
     opt :dry_run, "Don't actually do anything", :short => "-n"
     opt :verbose, "Print some things on stderr"
     opt :format,
@@ -228,8 +227,24 @@ def parse_arguments(discovery_document)
         :default => 'json'
     opt :short, "Return only UUIDs (equivalent to --format=uuid)"
     opt :resources, "Display list of resources known to this Arvados instance."
+
+    banner ""
+    banner "Use 'arv subcommand|resource --help' to get more information about a particular command or resource."
+    banner ""
+    banner "Available subcommands: #{subcommands.join(', ')}"
+    banner ""
+
+    banner "Available resources: #{discovery_document['resources'].keys.map { |k| k.singularize }.join(', ')}"
+
+    banner ""
+    banner "Additional options:"
+
     conflicts :short, :format
     stop_on resource_types
+  end
+
+  global_opts = Trollop::with_standard_exception_handling option_parser do
+    o = option_parser.parse ARGV
   end
 
   unless %w(json yaml uuid).include?(global_opts[:format])
@@ -244,7 +259,7 @@ def parse_arguments(discovery_document)
 
   resource = ARGV.shift
   if global_opts[:resources] or not resource_types.include?(resource)
-    help_resources(discovery_document, resource)
+    help_resources(option_parser, discovery_document, resource)
   end
 
   method = ARGV.shift
@@ -257,6 +272,11 @@ def parse_arguments(discovery_document)
     ["resources"][resource.pluralize]\
     ["methods"][method]["parameters"]
   method_opts = Trollop::options do
+    banner head_banner
+    banner "Usage: arv #{resource} #{method} [--parameters]"
+    banner ""
+    banner "This method supports the following parameters:"
+    banner ""
     discovered_params.each do |k,v|
       opts = Hash.new()
       opts[:type] = v["type"].to_sym if v.include?("type")
@@ -271,6 +291,7 @@ def parse_arguments(discovery_document)
       description = '  ' + v["description"] if v.include?("description")
       opt k.to_sym, description, opts
     end
+
     body_object = discovery_document["resources"][resource.pluralize]["methods"][method]["request"]
     if body_object and discovered_params[resource].nil?
       is_required = true
@@ -295,7 +316,8 @@ def parse_arguments(discovery_document)
   return resource, method, method_opts, global_opts, ARGV
 end
 
-resource_schema, method, method_opts, global_opts, remaining_opts = parse_arguments(arvados.discovery_document)
+# Parse arguments here
+resource_schema, method, method_opts, global_opts, remaining_opts = parse_arguments(arvados.discovery_document, subcommands)
 controller = resource_schema.pluralize
 
 api_method = 'arvados.' + controller + '.' + method
