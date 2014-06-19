@@ -13,7 +13,6 @@ class Arvados::V1::JobsController < ApplicationController
         }, status: :unprocessable_entity
       end
     end
-    load_filters_param
 
     # We used to ask for the minimum_, exclude_, and no_reuse params
     # in the job resource. Now we advertise them as flags that alter
@@ -28,43 +27,67 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     if params[:find_or_create]
-      # Convert old special-purpose creation parameters to the new
-      # filters-based method.
-      minimum_script_version = params[:minimum_script_version]
-      exclude_script_versions = params.fetch(:exclude_script_versions, [])
-      @filters.select do |(col_name, operand, operator)|
-        case col_name
-        when "script_version"
-          case operand
-          when "in range"
-            minimum_script_version = operator
+      load_filters_param
+      if @filters.empty?  # Translate older creation parameters into filters.
+        @filters = [:repository, :script].map do |attrsym|
+          [attrsym.to_s, "=", resource_attrs[attrsym]]
+        end
+        @filters.append(["script_version", "in",
+                         Commit.find_commit_range(current_user,
+                                                  resource_attrs[:repository],
+                                                  params[:minimum_script_version],
+                                                  resource_attrs[:script_version],
+                                                  params[:exclude_script_versions])])
+        if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
+          image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
+          image_locator = Collection.
+            uuids_for_docker_image(image_search, image_tag, @read_users).first
+          return super if image_locator.nil?  # We won't find anything to reuse.
+          @filters.append(["docker_image_locator", "=", image_locator])
+        else
+          @filters.append(["docker_image_locator", "=", nil])
+        end
+      else
+        script_info = {"repository" => nil, "script" => nil}
+        script_range = Hash.new { |key| [] }
+        @filters.select! do |filter|
+          if script_info.has_key? filter[0]
+            script_info[filter[0]] = filter[2]
+          end
+          case filter[0..1]
+          when ["script_version", "in git"]
+            script_range["min_version"] = filter.last
             false
-          when "not in", "not in range"
+          when ["script_version", "not in"], ["script_version", "not in git"]
             begin
-              exclude_script_versions += operator
+              script_range["exclude_versions"] += filter.last
             rescue TypeError
-              exclude_script_versions << operator
+              script_range["exclude_versions"] << filter.last
             end
             false
+          when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
+            filter[1].sub!(/ docker$/, '')
+            filter[2] = Collection.uuids_for_docker_image(filter[2])
+            true
           else
             true
           end
-        else
-          true
+        end
+
+        script_info.each_pair do |key, value|
+          raise ArgumentError.new("#{key} filter required") if value.nil?
+        end
+        unless script_range.empty?
+          @filters.append(["script_version", "in",
+                           Commit.find_commit_range(current_user,
+                                                    script_info["repository"],
+                                                    script_range["min_version"],
+                                                    resource_attrs[:script_version],
+                                                    script_range["exclude_versions"])])
         end
       end
-      @filters.append(["script_version", "in",
-                       Commit.find_commit_range(current_user,
-                                                resource_attrs[:repository],
-                                                minimum_script_version,
-                                                resource_attrs[:script_version],
-                                                exclude_script_versions)])
 
-      # Set up default filters for specific parameters.
-      if @filters.select { |f| f.first == "script" }.empty?
-        @filters.append(["script", "=", resource_attrs[:script]])
-      end
-
+      # Search for a reusable Job, and return it if found.
       @objects = Job.readable_by(current_user)
       apply_filters
       @object = nil

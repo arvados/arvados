@@ -468,7 +468,7 @@ docker_image_collection_hash:
   tail_uuid: ~
   head_uuid: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   properties:
-    image_timestamp: 2014-06-10T14:30:00.184019565Z
+    image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
 docker_image_collection_repository:
   uuid: zzzzz-o0j2j-dockercollrepos
@@ -483,7 +483,7 @@ docker_image_collection_repository:
   tail_uuid: ~
   head_uuid: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   properties:
-    image_timestamp: 2014-06-10T14:30:00.184019565Z
+    image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
 docker_image_collection_tag:
   uuid: zzzzz-o0j2j-dockercolltagbb
@@ -498,7 +498,7 @@ docker_image_collection_tag:
   tail_uuid: ~
   head_uuid: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   properties:
-    image_timestamp: 2014-06-10T14:30:00.184019565Z
+    image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
 docker_image_collection_tag2:
   uuid: zzzzz-o0j2j-dockercolltagbc
@@ -513,7 +513,7 @@ docker_image_collection_tag2:
   tail_uuid: ~
   head_uuid: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   properties:
-    image_timestamp: 2014-06-10T14:30:00.184019565Z
+    image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
 ancient_docker_image_collection_hash:
   # This image helps test that searches for Docker images find
@@ -532,4 +532,4 @@ ancient_docker_image_collection_hash:
   tail_uuid: ~
   head_uuid: b519d9cb706a29fc7ea24dbea2f05851+249025
   properties:
-    image_timestamp: 2010-06-10T14:30:00.184019565Z
+    image_timestamp: "2010-06-10T14:30:00.184019565Z"
