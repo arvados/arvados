@@ -198,7 +198,7 @@ class CollectionsController < ApplicationController
   helper_method :download_link
 
   def download_link
-    collections_url + "/download/#{@object.uuid}/#{@search_sharing.first.api_token}"
+    collections_url + "/download/#{@object.uuid}/#{@search_sharing.first.api_token}/"
   end
 
   def share
