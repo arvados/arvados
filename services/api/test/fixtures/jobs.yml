@@ -117,6 +117,7 @@ barbaz:
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -125,9 +126,23 @@ previous_job_run:
   success: true
   output: ea10d51bcf88862dbcc36eb292017dfd+45
 
+previous_docker_job_run:
+  uuid: zzzzz-8i9sb-k6emstgk4kw4yhi
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
+  script: hash
+  script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: "1"
+  success: true
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  docker_image_locator: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+
 previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
   script: hash
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
@@ -139,6 +154,7 @@ previous_job_run_no_output:
 nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  repository: foo
   script: hash2
   script_version: 4fe459abe02d9b365932b8f5dc419439ab4e2577
   script_parameters:
