@@ -15,6 +15,7 @@ setup(name='arvados-python-client',
         'bin/arv-ls',
         'bin/arv-normalize',
         'bin/arv-put',
+        'bin/arv-ws',
         ],
       install_requires=[
         'python-gflags',
