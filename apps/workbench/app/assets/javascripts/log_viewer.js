@@ -10,6 +10,7 @@ function addToLogViewer(logViewer, lines, taskState) {
     var re = /((\d\d\d\d)-(\d\d)-(\d\d))_((\d\d):(\d\d):(\d\d)) ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}) (\d+) (\d+)? (.*)/;
 
     var items = [];
+    var count = logViewer.items.length;
     for (var a in lines) {
         var v = lines[a].match(re);
         if (v != null) {
@@ -82,7 +83,7 @@ function addToLogViewer(logViewer, lines, taskState) {
             }
 
             items.push({
-                id: logViewer.items.length,
+                id: count,
                 ts: ts,
                 timestamp: ts.toLocaleDateString() + " " + ts.toLocaleTimeString(),
                 taskid: v11,
@@ -91,6 +92,7 @@ function addToLogViewer(logViewer, lines, taskState) {
                 message: message,
                 type: type
             });
+            count += 1;
         } else {
             console.log("Did not parse: " + lines[a]);
         }
@@ -182,9 +184,6 @@ function generateJobOverview(id, logViewer, taskState) {
     var html = "";
 
     if (logViewer.items.length > 2) {
-        html += "<p>";
-        html += "Started at " + first.values().timestamp;
-
         var first = logViewer.items[1];
         var last = logViewer.items[logViewer.items.length-1];
         var duration = (last.values().ts.getTime() - first.values().ts.getTime()) / 1000;
@@ -205,7 +204,9 @@ function generateJobOverview(id, logViewer, taskState) {
 
         var tcount = taskState.task_count;
 
-        html += ".  Ran " + dumbPluralize(tcount, " task") + " over ";
+        html += "<p>";
+        html += "Started at " + first.values().timestamp + ".  ";
+        html += "Ran " + dumbPluralize(tcount, " task") + " over ";
         if (hours > 0) {
             html += dumbPluralize(hours, " hour");
         }
