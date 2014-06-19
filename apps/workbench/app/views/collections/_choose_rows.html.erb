@@ -1,4 +1,3 @@
-<% puts "and the result is (2) ", @name_links.results, "objects is #{@objects}" %>
 <% @name_links.each do |name_link| %>
   <% puts "looking up #{name_link.head_uuid}" %>
   <% if (object = get_object(name_link.head_uuid)) %>

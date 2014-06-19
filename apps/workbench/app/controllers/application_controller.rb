@@ -148,6 +148,10 @@ class ApplicationController < ActionController::Base
     params[:limit] ||= 40
     if !@objects
       if params[:project_uuid] and !params[:project_uuid].empty?
+        # We want the chooser to show objects of the controllers's model_class
+        # type within a specific project specified by project_uuid, so fetch the
+        # project and request the contents of the project filtered on the
+        # controllers's model_class kind.
         @objects = Group.find(params[:project_uuid]).contents({:filters => [['uuid', 'is_a', "arvados\##{ArvadosApiClient.class_kind(model_class)}"]]})
       end
       find_objects_for_index if !@objects

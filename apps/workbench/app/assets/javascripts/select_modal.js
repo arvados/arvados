@@ -17,10 +17,14 @@ $(document).on('click', '.selectable', function() {
 
     if ($this.hasClass('active')) {
         $(".modal-dialog-preview-pane").html('<img src="/assets/ajax-loader.gif"></img>');
-        $.ajax($(this).attr('data-preview-href'),
-               {dataType: "html"}).done(function(data, status, jqxhr) {
-                   $(".modal-dialog-preview-pane").html(data);
-               });
+        $.ajax($this.attr('data-preview-href'),
+               {dataType: "html"}).
+           done(function(data, status, jqxhr) {
+                $(".modal-dialog-preview-pane").html(data);
+            }).
+            fail(function(data, status, jqxhr) {
+                $(".modal-dialog-preview-pane").text('Preview load failed.');
+            });
     }
 
 }).on('click', '.modal button[data-action-href]', function() {

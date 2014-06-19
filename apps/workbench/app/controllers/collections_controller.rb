@@ -59,8 +59,6 @@ class CollectionsController < ApplicationController
                        url_for(offset: next_page_offset, partial: true))
     @name_links = @objects
 
-    puts "and the result is (1) ", @name_links.results
-
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
     super

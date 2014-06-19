@@ -59,11 +59,14 @@ jQuery(function($){
             }
         }).
         on('ajaxSend', function(e, xhr) {
-            // map jquery event to rails event
+            // jQuery triggers 'ajaxSend' event when starting an ajax call, but
+            // rails-generated ajax triggers generate 'ajax:send'.  Workbench
+            // event listeners currently expect 'ajax:send', so trigger the
+            // rails event in response to the jQuery one.
             $(document).trigger('ajax:send');
         }).
         on('ajaxComplete', function(e, xhr) {
-            // map jquery event to rails event
+            // See comment above about ajaxSend/ajax:send
             $(document).trigger('ajax:complete');
         }).
         on('click', '.removable-tag a', function(e) {
