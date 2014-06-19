@@ -15,7 +15,7 @@ var taskState = newTaskState();
 
 var makeFilter = function() {
   var pass = [];
-  $(".toggle-filter").each(function(i, e) {
+  $(".toggle-filter, .radio-filter").each(function(i, e) {
     if (e.checked) {
       pass.push(e.id.substr(5));
     }
@@ -58,7 +58,7 @@ var makeFilter = function() {
   <%# Live log loading not implemented yet. %>
 <% end %>
 
-$(".toggle-filter").on("change", function() {
+$(".toggle-filter, .radio-filter").on("change", function() {
   logViewer.filter(makeFilter());
 });
 
@@ -69,7 +69,6 @@ $("#filter-all").on("click", function() {
 
 $("#filter-none").on("click", function() {
   $(".toggle-filter").each(function(i, f) { f.checked = false; console.log(f); });
-  $("#show-all-tasks").prop("checked", true);
   logViewer.filter(makeFilter());
 });
 
@@ -152,13 +151,13 @@ $("#set-show-failed-only").on("click", function() {
 
   <div>
     <div class="radio-inline log-viewer-button" style="margin-left: 10px">
-      <label><input id="show-all-tasks" type="radio" name="show-tasks-group" checked="true" class="toggle-filter"> Show all tasks</label>
+      <label><input id="show-all-tasks" type="radio" name="show-tasks-group" checked="true" class="radio-filter"> Show all tasks</label>
     </div>
     <div class="radio-inline log-viewer-button">
-      <label><input id="show-successful-tasks" type="radio" name="show-tasks-group" class="toggle-filter"> Only successful tasks</label>
+      <label><input id="show-successful-tasks" type="radio" name="show-tasks-group" class="radio-filter"> Only successful tasks</label>
     </div>
     <div class="radio-inline log-viewer-button">
-      <label><input id="show-failed-tasks" type="radio" name="show-tasks-group" class="toggle-filter"> Only failed tasks</label>
+      <label><input id="show-failed-tasks" type="radio" name="show-tasks-group" class="radio-filter"> Only failed tasks</label>
     </div>
   </div>
 
