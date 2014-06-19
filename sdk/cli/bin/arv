@@ -12,77 +12,6 @@ if RUBY_VERSION < '1.9.3' then
   EOS
 end
 
-# read authentication data from arvados configuration file if present
-lineno = 0
-config_file = File.expand_path('~/.config/arvados/settings.conf')
-if File.exist? config_file then
-  File.open(config_file, 'r').each do |line|
-    lineno = lineno + 1
-    # skip comments
-    if line.match('^\s*#') then
-      next
-    end
-    var, val = line.chomp.split('=', 2)
-    # allow environment settings to override config files.
-    if var and val
-      ENV[var] ||= val
-    else
-      warn "#{config_file}: #{lineno}: could not parse `#{line}'"
-    end
-  end
-end
-
-subcommands = %w(keep pipeline tag ws)
-
-case ARGV[0]
-when 'keep'
-  ARGV.shift
-  @sub = ARGV.shift
-  if ['get', 'put', 'ls', 'normalize'].index @sub then
-    # Native Arvados
-    exec `which arv-#{@sub}`.strip, *ARGV
-  elsif ['less', 'check'].index @sub then
-    # wh* shims
-    exec `which wh#{@sub}`.strip, *ARGV
-  elsif @sub == 'docker'
-    exec `which arv-keepdocker`.strip, *ARGV
-  else
-    puts "Usage: \n" +
-      "#{$0} keep ls\n" +
-      "#{$0} keep get\n" +
-      "#{$0} keep put\n" +
-      "#{$0} keep less\n" +
-      "#{$0} keep check\n" +
-      "#{$0} keep docker\n"
-  end
-  abort
-when 'pipeline'
-  ARGV.shift
-  @sub = ARGV.shift
-  if ['run'].index @sub then
-    exec `which arv-run-pipeline-instance`.strip, *ARGV
-  else
-    puts "Usage: \n" +
-      "#{$0} pipeline run [...]\n" +
-      "(see arv-run-pipeline-instance --help for details)\n"
-  end
-  abort
-when 'tag'
-  ARGV.shift
-  exec `which arv-tag`.strip, *ARGV
-when 'ws'
-  ARGV.shift
-  exec `which arv-ws`.strip, *ARGV
-end
-
-ENV['ARVADOS_API_VERSION'] ||= 'v1'
-
-if not ENV.include?('ARVADOS_API_HOST') or not ENV.include?('ARVADOS_API_TOKEN') then
-  abort <<-EOS
-ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables.
-  EOS
-end
-
 begin
   require 'curb'
   require 'rubygems'
@@ -99,10 +28,12 @@ rescue LoadError
 
 Please install all required gems:
 
-  gem install activesupport andand curb google-api-client json oj trollop
+  gem install activesupport andand curb google-api-client json oj trollop yaml
 
   EOS
 end
+
+# Search for 'ENTRY POINT' to see where things get going
 
 ActiveSupport::Inflector.inflections do |inflect|
   inflect.irregular 'specimen', 'specimens'
@@ -117,11 +48,6 @@ module Kernel
     $VERBOSE = original_verbosity
     return result
   end
-end
-
-# do this if you're testing with a dev server and you don't care about SSL certificate checks:
-if ENV['ARVADOS_API_HOST_INSECURE']
-  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
 end
 
 class Google::APIClient
@@ -156,12 +82,173 @@ class ArvadosClient < Google::APIClient
   end
 end
 
-begin
-  client = ArvadosClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
-  arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
-rescue Exception => e
-  puts "Failed to connect to Arvados API server: #{e}"
-  exit 1
+def init_config
+  # read authentication data from arvados configuration file if present
+  lineno = 0
+  config_file = File.expand_path('~/.config/arvados/settings.conf')
+  if File.exist? config_file then
+    File.open(config_file, 'r').each do |line|
+      lineno = lineno + 1
+      # skip comments
+      if line.match('^\s*#') then
+        next
+      end
+      var, val = line.chomp.split('=', 2)
+      # allow environment settings to override config files.
+      if var and val
+        ENV[var] ||= val
+      else
+        warn "#{config_file}: #{lineno}: could not parse `#{line}'"
+      end
+    end
+  end
+end
+
+subcommands = %w(keep pipeline tag ws edit)
+
+def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
+  case subcommand
+  when 'keep'
+    @sub = remaining_opts.shift
+    if ['get', 'put', 'ls', 'normalize'].index @sub then
+      # Native Arvados
+      exec `which arv-#{@sub}`.strip, *remaining_opts
+    elsif ['less', 'check'].index @sub then
+      # wh* shims
+      exec `which wh#{@sub}`.strip, *remaining_opts
+    elsif @sub == 'docker'
+      exec `which arv-keepdocker`.strip, *remaining_opts
+    else
+      puts "Usage: arv keep [method] [--parameters]\n"
+      puts "Use 'arv keep [method] --help' to get more information about specific methods.\n\n"
+      puts "Available methods: ls, get, put, less, check, docker"
+    end
+    abort
+  when 'pipeline'
+    exec `which arv-run-pipeline-instance`.strip, *remaining_opts
+  when 'tag'
+    exec `which arv-tag`.strip, *remaining_opts
+  when 'ws'
+    exec `which arv-ws`.strip, *remaining_opts
+  when 'edit'
+    arv_edit client, arvados, global_opts, remaining_opts
+  end
+end
+
+def arv_edit client, arvados, global_opts, remaining_opts
+  n = remaining_opts.shift
+  if n.nil? or n == "-h" or n == "--help"
+    puts head_banner
+    puts "Usage: arv edit [uuid]\n\n"
+    puts "Fetchs the specified Arvados object, opens an interactive text\n"
+    puts "editor on a text representation (json or yaml, use --format)\n"
+    puts "and then updates the object.  Will use 'nano' by default, customize\n"
+    puts "with the EDITOR or VISUAL environment variable."
+    exit 255
+  end
+
+  if not $stdout.tty?
+    puts "Not connected to a TTY, cannot run interactive editor."
+    exit 1
+  end
+
+  # determine controller
+
+  m = /([a-z0-9]{5})-([a-z0-9]{5})-([a-z0-9]{15})/.match n
+  if !m
+    abort puts "#{n} does not appear to be an arvados uuid"
+  end
+
+  rsc = nil
+  arvados.discovery_document["resources"].each do |k,v|
+    klass = k.singularize.camelize
+    dig = Digest::MD5.hexdigest(klass).to_i(16).to_s(36)[-5..-1]
+    if dig == m[2]
+      rsc = k
+    end
+  end
+
+  if rsc.nil?
+    abort "Could not determine resource type #{m[2]}"
+  end
+
+  api_method = 'arvados.' + rsc + '.get'
+
+  result = client.execute(:api_method => eval(api_method),
+                          :parameters => {"uuid" => n},
+                          :authenticated => false,
+                          :headers => {
+                            authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                          })
+  begin
+    results = JSON.parse result.body
+  rescue JSON::ParserError => e
+    abort "Failed to parse server response:\n" + e.to_s
+  end
+
+  content = ""
+
+  case global_opts[:format]
+  when 'json'
+    content = Oj.dump(results, :indent => 1)
+  when 'yaml'
+    content = results.to_yaml
+  end
+
+  require 'tempfile'
+
+  tmp = Tempfile.new(n)
+  tmp.write(content)
+  tmp.close
+
+  pid = Process::fork
+  if pid.nil?
+    editor ||= ENV["VISUAL"]
+    editor ||= ENV["EDITOR"]
+    editor ||= "nano"
+    exec editor, tmp.path
+  else
+    Process.wait pid
+  end
+
+  if $?.exitstatus == 0
+    tmp.open
+    newcontent = tmp.read()
+
+    newobj = {}
+    case global_opts[:format]
+    when 'json'
+      newobj = Oj.load(newcontent)
+    when 'yaml'
+      newobj = YAML.load(newcontent)
+    end
+    tmp.close
+    tmp.unlink
+
+    if newobj != results
+      api_method = 'arvados.' + rsc + '.update'
+      result = client.execute(:api_method => eval(api_method),
+                              :parameters => {"uuid" => n, rsc.singularize => Oj.dump(newobj)},
+                              :authenticated => false,
+                              :headers => {
+                                authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                              })
+
+      begin
+        results = JSON.parse result.body
+      rescue JSON::ParserError => e
+        abort "Failed to parse server response:\n" + e.to_s
+      end
+
+      if result.response.status != 200
+        puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
+      end
+    else
+      puts "Object is unchanged, did not update."
+    end
+  end
+
+  exit 0
 end
 
 def to_boolean(s)
@@ -191,8 +278,8 @@ def help_methods(discovery_document, resource, method=nil)
   STDERR.puts banner
 
   if not method.nil? and method != '--help' and method != '-h' then
-    Trollop::die ("Unknown method #{method.inspect} " +
-                  "for resource #{resource.inspect}")
+    abort "Unknown method #{method.inspect} " +
+                  "for resource #{resource.inspect}"
   end
   exit 255
 end
@@ -212,6 +299,8 @@ def parse_arguments(discovery_document, subcommands)
     resource_types << k.singularize
   end
 
+  resource_types += subcommands
+
   option_parser = Trollop::Parser.new do
     version __FILE__
     banner head_banner
@@ -226,7 +315,6 @@ def parse_arguments(discovery_document, subcommands)
         :type => :string,
         :default => 'json'
     opt :short, "Return only UUIDs (equivalent to --format=uuid)"
-    opt :resources, "Display list of resources known to this Arvados instance."
 
     banner ""
     banner "Use 'arv subcommand|resource --help' to get more information about a particular command or resource."
@@ -258,66 +346,100 @@ def parse_arguments(discovery_document, subcommands)
   end
 
   resource = ARGV.shift
-  if global_opts[:resources] or not resource_types.include?(resource)
-    help_resources(option_parser, discovery_document, resource)
-  end
 
-  method = ARGV.shift
-  if not (discovery_document["resources"][resource.pluralize]["methods"].
-          include?(method))
-    help_methods(discovery_document, resource, method)
-  end
+  if not subcommands.include? resource
+    if global_opts[:resources] or not resource_types.include?(resource)
+      help_resources(option_parser, discovery_document, resource)
+    end
 
-  discovered_params = discovery_document\
+    method = ARGV.shift
+    if not (discovery_document["resources"][resource.pluralize]["methods"].
+            include?(method))
+      help_methods(discovery_document, resource, method)
+    end
+
+    discovered_params = discovery_document\
     ["resources"][resource.pluralize]\
     ["methods"][method]["parameters"]
-  method_opts = Trollop::options do
-    banner head_banner
-    banner "Usage: arv #{resource} #{method} [--parameters]"
-    banner ""
-    banner "This method supports the following parameters:"
-    banner ""
+    method_opts = Trollop::options do
+      banner head_banner
+      banner "Usage: arv #{resource} #{method} [--parameters]"
+      banner ""
+      banner "This method supports the following parameters:"
+      banner ""
+      discovered_params.each do |k,v|
+        opts = Hash.new()
+        opts[:type] = v["type"].to_sym if v.include?("type")
+        if [:datetime, :text, :object, :array].index opts[:type]
+          opts[:type] = :string                       # else trollop bork
+        end
+        opts[:default] = v["default"] if v.include?("default")
+        opts[:default] = v["default"].to_i if opts[:type] == :integer
+        opts[:default] = to_boolean(v["default"]) if opts[:type] == :boolean
+        opts[:required] = true if v.include?("required") and v["required"]
+        description = ''
+        description = '  ' + v["description"] if v.include?("description")
+        opt k.to_sym, description, opts
+      end
+
+      body_object = discovery_document["resources"][resource.pluralize]["methods"][method]["request"]
+      if body_object and discovered_params[resource].nil?
+        is_required = true
+        if body_object["required"] == false
+          is_required = false
+        end
+        opt resource.to_sym, "#{resource} (request body)", {
+          required: is_required,
+          type: :string
+        }
+      end
+    end
+
     discovered_params.each do |k,v|
-      opts = Hash.new()
-      opts[:type] = v["type"].to_sym if v.include?("type")
-      if [:datetime, :text, :object, :array].index opts[:type]
-        opts[:type] = :string                       # else trollop bork
-      end
-      opts[:default] = v["default"] if v.include?("default")
-      opts[:default] = v["default"].to_i if opts[:type] == :integer
-      opts[:default] = to_boolean(v["default"]) if opts[:type] == :boolean
-      opts[:required] = true if v.include?("required") and v["required"]
-      description = ''
-      description = '  ' + v["description"] if v.include?("description")
-      opt k.to_sym, description, opts
-    end
-
-    body_object = discovery_document["resources"][resource.pluralize]["methods"][method]["request"]
-    if body_object and discovered_params[resource].nil?
-      is_required = true
-      if body_object["required"] == false
-        is_required = false
-      end
-      opt resource.to_sym, "#{resource} (request body)", {
-        required: is_required,
-        type: :string
-      }
-    end
-  end
-
-  discovered_params.each do |k,v|
-    k = k.to_sym
-    if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
-      if method_opts[k].andand.match /^\//
-        method_opts[k] = File.open method_opts[k], 'rb' do |f| f.read end
+      k = k.to_sym
+      if ['object', 'array'].index(v["type"]) and method_opts.has_key? k
+        if method_opts[k].andand.match /^\//
+          method_opts[k] = File.open method_opts[k], 'rb' do |f| f.read end
+        end
       end
     end
   end
+
   return resource, method, method_opts, global_opts, ARGV
+end
+
+#
+# ENTRY POINT
+#
+
+init_config
+
+ENV['ARVADOS_API_VERSION'] ||= 'v1'
+
+if not ENV.include?('ARVADOS_API_HOST') or not ENV.include?('ARVADOS_API_TOKEN') then
+  abort <<-EOS
+ARVADOS_API_HOST and ARVADOS_API_TOKEN need to be defined as environment variables.
+  EOS
+end
+
+# do this if you're testing with a dev server and you don't care about SSL certificate checks:
+if ENV['ARVADOS_API_HOST_INSECURE']
+  suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
+end
+
+begin
+  client = ArvadosClient.new(:host => ENV['ARVADOS_API_HOST'], :application_name => 'arvados-cli', :application_version => '1.0')
+  arvados = client.discovered_api('arvados', ENV['ARVADOS_API_VERSION'])
+rescue Exception => e
+  puts "Failed to connect to Arvados API server: #{e}"
+  exit 1
 end
 
 # Parse arguments here
 resource_schema, method, method_opts, global_opts, remaining_opts = parse_arguments(arvados.discovery_document, subcommands)
+
+check_subcommands client, arvados, resource_schema, global_opts, remaining_opts
+
 controller = resource_schema.pluralize
 
 api_method = 'arvados.' + controller + '.' + method
