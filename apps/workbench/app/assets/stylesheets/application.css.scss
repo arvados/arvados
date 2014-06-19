@@ -115,6 +115,15 @@ nav.navbar-fixed-top {
 .navbar.breadcrumbs .nav > li.nav-separator > i {
     color: #bbb;
 }
+.navbar.breadcrumbs .navbar-form {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+.navbar.breadcrumbs .navbar-text {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+
 nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a,
 nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a:focus,
 nav.navbar-fixed-top .navbar-nav.navbar-right > li.open > a:hover {

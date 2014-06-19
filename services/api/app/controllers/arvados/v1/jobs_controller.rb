@@ -27,18 +27,41 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     if params[:find_or_create]
-      r = Commit.find_commit_range(current_user,
-                                   resource_attrs[:repository],
-                                   params[:minimum_script_version],
-                                   resource_attrs[:script_version],
-                                   params[:exclude_script_versions])
-      # Search for jobs whose script_version is in the list of commits
-      # returned by find_commit_range
+      load_filters_param
+      if @filters.empty?  # Translate older creation parameters into filters.
+        @filters = [:repository, :script].map do |attrsym|
+          [attrsym.to_s, "=", resource_attrs[attrsym]]
+        end
+        @filters.append(["script_version", "in",
+                         Commit.find_commit_range(current_user,
+                                                  resource_attrs[:repository],
+                                                  params[:minimum_script_version],
+                                                  resource_attrs[:script_version],
+                                                  params[:exclude_script_versions])])
+        if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
+          image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
+          image_locator = Collection.
+            uuids_for_docker_image(image_search, image_tag, @read_users).first
+          return super if image_locator.nil?  # We won't find anything to reuse.
+          @filters.append(["docker_image_locator", "=", image_locator])
+        else
+          @filters.append(["docker_image_locator", "=", nil])
+        end
+      else  # Check specified filters for some reasonableness.
+        filter_names = @filters.map { |f| f.first }.uniq
+        ["repository", "script"].each do |req_filter|
+          if not filter_names.include?(req_filter)
+            raise ArgumentError.new("#{req_filter} filter required")
+          end
+        end
+      end
+
+      # Search for a reusable Job, and return it if found.
+      @objects = Job.readable_by(current_user)
+      apply_filters
       @object = nil
       incomplete_job = nil
-      Job.readable_by(current_user).where(script: resource_attrs[:script],
-                                          script_version: r).
-        each do |j|
+      @objects.each do |j|
         if j.nondeterministic != true and
             ((j.success == true and j.output != nil) or j.running == true) and
             j.script_parameters == resource_attrs[:script_parameters]
@@ -137,5 +160,61 @@ class Arvados::V1::JobsController < ApplicationController
 
   def self._queue_requires_parameters
     self._index_requires_parameters
+  end
+
+  protected
+
+  def load_filters_param
+    # Convert Job-specific git and Docker filters into normal SQL filters.
+    super
+    script_info = {"repository" => nil, "script" => nil}
+    script_range = {"exclude_versions" => []}
+    @filters.select! do |filter|
+      if (script_info.has_key? filter[0]) and (filter[1] == "=")
+        if script_info[filter[0]].nil?
+          script_info[filter[0]] = filter[2]
+        elsif script_info[filter[0]] != filter[2]
+          raise ArgumentError.new("incompatible #{filter[0]} filters")
+        end
+      end
+      case filter[0..1]
+      when ["script_version", "in git"]
+        script_range["min_version"] = filter.last
+        false
+      when ["script_version", "not in git"]
+        begin
+          script_range["exclude_versions"] += filter.last
+        rescue TypeError
+          script_range["exclude_versions"] << filter.last
+        end
+        false
+      when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
+        filter[1].sub!(/ docker$/, '')
+        search_list = filter[2].is_a?(Enumerable) ? filter[2] : [filter[2]]
+        filter[2] = search_list.flat_map do |search_term|
+          image_search, image_tag = search_term.split(':', 2)
+          Collection.uuids_for_docker_image(image_search, image_tag, @read_users)
+        end
+        true
+      else
+        true
+      end
+    end
+
+    # Build a real script_version filter from any "not? in git" filters.
+    if (script_range.size > 1) or script_range["exclude_versions"].any?
+      script_info.each_pair do |key, value|
+        if value.nil?
+          raise ArgumentError.new("script_version filter needs #{key} filter")
+        end
+      end
+      last_version = begin resource_attrs[:script_version] rescue "HEAD" end
+      @filters.append(["script_version", "in",
+                       Commit.find_commit_range(current_user,
+                                                script_info["repository"],
+                                                script_range["min_version"],
+                                                last_version,
+                                                script_range["exclude_versions"])])
+    end
   end
 end

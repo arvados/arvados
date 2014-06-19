@@ -20,7 +20,6 @@ jQuery(function($){
                }).
             done(function(data, status, jqxhr) {
                 var context = this;
-                $(document).trigger('ajax:complete');
                 // Remove "danger" status in case a previous action failed
                 $('.btn-danger', context.toggle_group).
                     addClass('btn-info').
@@ -32,7 +31,6 @@ jQuery(function($){
             fail(function(jqxhr, status, error) {
                 var context = this;
                 var saved_state;
-                $(document).trigger('ajax:complete');
                 // Add a visual indication that something failed
                 $(context.button).
                     addClass('btn-danger').
@@ -53,6 +51,5 @@ jQuery(function($){
                     window.alert("Request failed.");
                 }
             });
-        $(document).trigger('ajax:send');
     });
 });

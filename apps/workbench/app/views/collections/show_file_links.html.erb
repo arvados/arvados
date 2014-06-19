@@ -38,7 +38,8 @@ Arvados.  You can download individual files listed below.  To download
 the entire collection with wget, try:</p>
 
 <pre>$ wget --mirror --no-parent --no-host --cut-dirs=3 <%=
-         url_for(link_opts.merge(action: 'show_file_links', only_path: false))
+         url_for(link_opts.merge(action: 'show_file_links', only_path: false,
+                                 trailing_slash: true))
        %></pre>
 
 <h2>File Listing</h2>
@@ -58,9 +59,7 @@ the entire collection with wget, try:</p>
       <ul class="collection_files">
     <% else %>
       <%= link_to(filename,
-                  {controller: 'collections', action: 'show_file',
-                   uuid: @object.uuid, file: file_path,
-                   reader_token: params[:reader_token]},
+                  link_opts.merge(file: file_path),
                   {title: "Download #{file_path}"}) %>
       </li>
     <% end %>

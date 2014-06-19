@@ -3,27 +3,50 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.class_for_display}" %></h4>
+        <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.andand.class_for_display}" %></h4>
       </div>
       <div class="modal-body">
-        <div>
-          <div class="row">
-            <div class="col-sm-6">
-            </div>
-            <div class="col-sm-6">
-              <input type="text" class="form-control filterable-control" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
-            </div>
+        <nav class="navbar navbar-default breadcrumbs" role="navigation">
+          <ul class="nav navbar-nav navbar-left">
+            <li class="dropdown">
+            <%= render partial: "projects_tree_menu", locals: {
+                  :project_link_to => Proc.new do |pnode, &block|
+                    link_to "#", {"class" => "chooser-show-project", "data-project-uuid" => pnode[:object].uuid }, &block
+                   end,
+                  :top_button => Proc.new do %>
+                    <% link_to "#", {"class" => "chooser-show-project btn btn-xs btn-default pull-right" } do %>
+                      All <%= controller.model_class.class_for_display.pluralize.downcase %>
+                    <% end %>
+                  <% end %>
+             <% } %>
+            </li>
+            <li class="nav-separator">
+              <i class="fa fa-lg fa-angle-double-right"></i>
+            </li>
+            <li><p class="navbar-text" id="chooser-breadcrumb">All <%= controller.model_class.class_for_display.pluralize.downcase %></span></li>
+          </ul>
+          <div class="navbar-form navbar-right">
+            <input type="text" class="form-control filterable-control" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
+          </div>
+        </nav>
+
+        <div class="row" style="height: 20em">
+          <div class="col-sm-6 container-fluid arv-filterable-list selectable-container"
+               style="height: 100%; overflow-y: scroll"
+               data-infinite-scroller="#choose-scroll"
+               id="choose-scroll"
+               data-infinite-content-href="<%= @next_page_href %>">
+            <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
+          </div>
+          <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
           </div>
         </div>
-        <div class="container-fluid arv-filterable-list selectable-container" style="height: 20em; overflow-y: scroll" data-infinite-scroller="#choose-scroll" id="choose-scroll" data-infinite-content-href="<%= @next_page_href %>">
-          <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
-        </div>
-      </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
-        <button class="btn btn-primary" aria-hidden="true" data-enable-if-selection disabled><%= raw(params[:action_name]) || 'Select' %></button>
-        <div class="modal-error hide" style="text-align: left; margin-top: 1em;">
+        <div class="modal-footer">
+          <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
+          <button class="btn btn-primary" aria-hidden="true" data-enable-if-selection disabled><%= raw(params[:action_name]) || 'Select' %></button>
+          <div class="modal-error hide" style="text-align: left; margin-top: 1em;">
+          </div>
         </div>
       </div>
     </div>

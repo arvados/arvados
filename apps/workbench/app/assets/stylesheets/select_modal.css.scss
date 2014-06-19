@@ -5,6 +5,7 @@
 }
 .selectable.active, .selectable:hover {
     background: #d9edf7;
+    cursor: pointer;
 }
 .selectable.active,
 .selectable.active *,
