@@ -1,6 +1,7 @@
 class UserAgreementsController < ApplicationController
   skip_before_filter :check_user_agreements
   skip_before_filter :find_object_by_uuid
+  skip_around_filter :use_anonymous_token_if_necessary
 
   def model_class
     Collection

@@ -53,7 +53,7 @@
           <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %>
-          <% if current_user && !current_user.is_active %> . Your account is inactive and viewing public data. <% end %>
+          <% if current_user && !current_user.is_active %> . You are viewing public data. <% end %>
         </a>
       </div>
 

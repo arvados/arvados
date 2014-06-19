@@ -10,7 +10,8 @@ class ApplicationController < ActionController::Base
   around_filter :thread_clear
   around_filter :thread_with_mandatory_api_token, except: ERROR_ACTIONS
   around_filter :thread_with_optional_api_token
-#  before_filter :check_user_agreements, except: ERROR_ACTIONS
+  around_filter :use_anonymous_token_if_necessary
+  before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
   theme :select_theme
@@ -353,32 +354,12 @@ class ApplicationController < ActionController::Base
   def thread_with_api_token(login_optional = false)
     begin
       try_redirect_to_login = true
-
-      anonymous_user_token = Rails.configuration.anonymous_user_token
-      using_anonymous_user_token = false
-      if !params[:api_token] && !session[:arvados_api_token] &&
-          !Thread.current[:anonymous_api_token]
-        if session['arv-referrer'] == 'logout'
-          # do not use anonymous user token and let logout happen
-        else
-          if anonymous_user_token
-            params[:api_token] = anonymous_user_token
-            using_anonymous_user_token = true
-          end
-        end
-      else
-        if params[:api_token] && (params[:api_token] == anonymous_user_token)
-          using_anonymous_user_token = true
-        end
-      end
-
       if params[:api_token]
         try_redirect_to_login = false
         Thread.current[:arvados_api_token] = params[:api_token]
         # Before copying the token into session[], do a simple API
         # call to verify its authenticity.
         if verify_api_token
-         if !using_anonymous_user_token
           session[:arvados_api_token] = params[:api_token]
           u = User.current
           session[:user] = {
@@ -399,38 +380,26 @@ class ApplicationController < ActionController::Base
           else
             yield
           end
-         else     # using anonymous token
-            Thread.current[:user] = User.current
-            Thread.current[:anonymous_api_token] = params[:api_token]
-            session[:arvados_api_token] = nil
-            session[:user] = nil
-            redirect_to request.fullpath.sub(%r{([&\?]api_token=)[^&\?]*}, '')
-         end
         else
-          if using_anonymous_user_token
-            # bypass the invalid anonymous user token to prevent infinite looping
-            try_redirect_to_login = true
-            Thread.current[:anonymous_api_token] = nil
-          else
-            @errors = ['Invalid API token']
-            self.render_error status: 401
-          end
+          @errors = ['Invalid API token']
+          self.render_error status: 401
         end
-      elsif session[:arvados_api_token] || Thread.current[:anonymous_api_token]
+      elsif session[:arvados_api_token]
         # In this case, the token must have already verified at some
         # point, but it might have been revoked since.  We'll try
         # using it, and catch the exception if it doesn't work.
         try_redirect_to_login = false
-        if session[:arvados_api_token]
-          Thread.current[:arvados_api_token] = session[:arvados_api_token]
-        elsif Thread.current[:anonymous_api_token]
-          Thread.current[:arvados_api_token] = Thread.current[:anonymous_api_token]
-          Thread.current[:anonymous_api_token] = nil
-        end
+        Thread.current[:arvados_api_token] = session[:arvados_api_token]
         begin
           yield
         rescue ArvadosApiClient::NotLoggedInException
           try_redirect_to_login = true
+        end
+      elsif Rails.configuration.anonymous_user_token
+        check_anonymous_token
+        if Thread.current[:arvados_api_token]
+          try_redirect_to_login = false
+          yield
         end
       else
         logger.debug "No token received, session is #{session.inspect}"
@@ -488,6 +457,51 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def use_anonymous_token_if_necessary
+    check_anonymous_token
+    yield
+  end
+
+  def check_anonymous_token
+    if session['arv-referrer'] == 'logout'
+      # do not use anonymous user token and let logout happen
+      return
+    end
+
+    anonymous_user_token = Rails.configuration.anonymous_user_token
+    if !anonymous_user_token
+      return
+    end
+
+    if !Thread.current[:arvados_api_token]
+      Thread.current[:arvados_api_token] = anonymous_user_token
+      if verify_api_token 
+        session[:arvados_api_token] = anonymous_user_token
+        u = User.current
+        session[:user] = {
+          uuid: u.uuid,
+          email: u.email,
+          first_name: u.first_name,
+          last_name: u.last_name,
+          is_active: u.is_active,
+          is_admin: u.is_admin,
+          prefs: u.prefs
+        }
+      end
+    elsif current_user && !current_user.andand.is_active
+      previous_api_token = Thread.current[:arvados_api_token]
+      if anonymous_user_token != previous_api_token
+        Thread.current[:arvados_api_token] = anonymous_user_token
+        valid_anonymous_token = verify_api_token
+        Thread.current[:arvados_api_token] = previous_api_token
+        verify_api_token
+        if valid_anonymous_token
+          Thread.current[:arvados_api_token] = anonymous_user_token
+        end
+      end
+    end
+  end
+
   def ensure_current_user_is_admin
     unless current_user and current_user.is_admin
       @errors = ['Permission denied']
@@ -496,6 +510,8 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_agreements
+    return if (Thread.current[:arvados_api_token] == Rails.configuration.anonymous_user_token)
+
     if current_user && !current_user.is_active
       if not current_user.is_invited
         return render 'users/inactive'
@@ -890,56 +906,6 @@ class ApplicationController < ActionController::Base
       @objects_for[obj.uuid] = obj
     end
     @objects_for
-  end
-
-  @@anonymous_group = nil
-  def self.anonymous_group
-    if !@@anonymous_group
-      anon_groups = @@anonymous_group = Group.where(name: 'Anonymous group')
-      anon_groups.each do |group|
-        if group.uuid.ends_with? 'anonymouspublic'
-          @@anonymous_group = group
-          break
-        end
-      end
-    end
-    @@anonymous_group
-  end
-
-  # helper method to create sharing link for anonymous user group
-  helper_method :share_with_anonymous_user
-  def share_with_anonymous_group uuid
-    anon_group = ApplicationController.anonymous_group
-    return if !anon_group
-
-    links = Link.where(link_class: 'permission',
-                       name: 'can_read',
-                       tail_uuid: anon_group[:uuid],
-                       head_uuid: uuid)
-
-    # no such link exists; so create one
-    if !links.any?
-      link = Link.create(link_class: 'permission',
-                         name: 'can_read',
-                         tail_uuid: anon_group[:uuid],
-                         head_uuid: uuid)
-    end
-  end
-
-  # helper method to delete sharing link for anonymous user group
-  helper_method :unshare_with_anonymous_user
-  def unshare_with_anonymous_group uuid
-    anon_group = ApplicationController.anonymous_group
-    return if !anon_group
-
-    links = Link.where(link_class: 'permission',
-                       name: 'can_read',
-                       tail_uuid: anon_group[:uuid],
-                       head_uuid: uuid)
-
-    links.each do |link|
-      link.destroy
-    end
   end
 
 end
