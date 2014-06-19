@@ -42,7 +42,7 @@ function addToLogViewer(logViewer, lines, taskState) {
                     } else if (/^srun: /.test(message) || /^slurmd/.test(message)) {
                         type = "task-dispatch";
                     } else {
-                        type = "task-output";
+                        type = "task-print";
                     }
                 } else {
                     var m;

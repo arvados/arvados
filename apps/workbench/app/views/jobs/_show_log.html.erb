@@ -90,7 +90,7 @@ $("#set-show-failed-only").on("click", function() {
   $("#show-failed-tasks").prop("checked", true);
   $("#show-crunch").prop("checked", false);
   $("#show-task-dispatch").prop("checked", true);
-  $("#show-task-output").prop("checked", true);
+  $("#show-script-print").prop("checked", true);
   $("#show-crunchstat").prop("checked", false);
   logViewer.filter(makeFilter());
   logViewer.sort("taskid", {sortFunction: sortByTask});
@@ -106,7 +106,7 @@ $("#set-show-failed-only").on("click", function() {
   <p id="log-viewer-overview">
     <% if !@object.log %>
       <% if @object.finished_at %>
-        This job did not produce an output log.
+        This job did not produce an diagnostic log.
       <% else %>
         This job is still running.  The job log will be available when the job is complete.
       <% end %>
@@ -122,7 +122,7 @@ $("#set-show-failed-only").on("click", function() {
     <span class="pull-right">
       <% if @object.andand.tasks_summary.andand[:failed] and @object.tasks_summary[:failed] > 0 %>
         <button id="set-show-failed-only" class="btn btn-danger">
-          Show failed task output only
+          Show failed task diagnostics only
         </button>
       <% end %>
 
@@ -164,13 +164,13 @@ $("#set-show-failed-only").on("click", function() {
 
   <div>
     <div class="checkbox-inline log-viewer-button" style="margin-left: 10px">
-      <label><input id="show-crunch" type="checkbox" checked="true" class="toggle-filter"> Show crunch output</label>
+      <label><input id="show-crunch" type="checkbox" checked="true" class="toggle-filter"> Show crunch diagnostics</label>
     </div>
     <div class="checkbox-inline log-viewer-button">
       <label><input id="show-task-dispatch" type="checkbox" checked="true" class="toggle-filter"> Show task dispatch</label>
     </div>
     <div class="checkbox-inline log-viewer-button">
-      <label><input id="show-task-output" type="checkbox" checked="true" class="toggle-filter"> Show task output</label>
+      <label><input id="show-task-print" type="checkbox" checked="true" class="toggle-filter"> Show task diagnostics</label>
     </div>
     <div class="checkbox-inline log-viewer-button">
       <label><input id="show-crunchstat" type="checkbox" checked="true" class="toggle-filter"> Show compute usage</label>
