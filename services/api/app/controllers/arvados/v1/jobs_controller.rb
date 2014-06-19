@@ -190,7 +190,9 @@ class Arvados::V1::JobsController < ApplicationController
         false
       when ["docker_image_locator", "in docker"], ["docker_image_locator", "not in docker"]
         filter[1].sub!(/ docker$/, '')
-        filter[2] = Collection.uuids_for_docker_image(*filter[2].split(':', 2))
+        image_search, image_tag = filter[2].split(':', 2)
+        filter[2] = Collection.
+          uuids_for_docker_image(image_search, image_tag, @read_users)
         true
       else
         true
