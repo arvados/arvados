@@ -179,16 +179,13 @@ class Collection < ArvadosModel
     # Generate an order key for each result.  We want to order the results
     # so that anything with an image timestamp is considered more recent than
     # anything without; then we use the link's created_at as a tiebreaker.
-    results = {}
+    uuid_timestamps = {}
     matches.find_each do |link|
-      sort_key = []
-      if timestamp = link.properties["image_timestamp"]
-        sort_key.push("Z", timestamp.to_s)
-      end
-      sort_key.push("Y", link.created_at.to_s(:db))
-      results[link] = sort_key.join("")
+      uuid_timestamps[link.head_uuid] =
+        [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
+         -link.created_at.to_i]
     end
-    results.keys.sort_by { |link| results[link] }.map { |link| link.head_uuid }
+    uuid_timestamps.keys.sort_by { |uuid| uuid_timestamps[uuid] }
   end
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)

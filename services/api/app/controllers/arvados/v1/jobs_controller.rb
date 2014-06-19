@@ -41,7 +41,7 @@ class Arvados::V1::JobsController < ApplicationController
         if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
           image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
           image_locator = Collection.
-            uuids_for_docker_image(image_search, image_tag, @read_users).last
+            uuids_for_docker_image(image_search, image_tag, @read_users).first
           return super if image_locator.nil?  # We won't find anything to reuse.
           @filters.append(["docker_image_locator", "=", image_locator])
         else
