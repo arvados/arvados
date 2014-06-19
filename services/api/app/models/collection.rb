@@ -189,7 +189,7 @@ class Collection < ArvadosModel
   end
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
-    image_uuid = uuids_for_docker_image(search_term, search_tag, readers).last
+    image_uuid = uuids_for_docker_image(search_term, search_tag, readers).first
     if image_uuid.nil?
       nil
     else
