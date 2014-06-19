@@ -59,9 +59,7 @@ the entire collection with wget, try:</p>
       <ul class="collection_files">
     <% else %>
       <%= link_to(filename,
-                  {controller: 'collections', action: 'show_file',
-                   uuid: @object.uuid, file: file_path,
-                   reader_token: params[:reader_token]},
+                  link_opts.merge(file: file_path),
                   {title: "Download #{file_path}"}) %>
       </li>
     <% end %>
