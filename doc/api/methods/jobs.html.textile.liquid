@@ -34,28 +34,37 @@ table(table table-bordered table-condensed).
 |minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.[1]|query|@"c3e86c9"@|
 |exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@
 @["badtag1","badtag2"]@|
+|filters|array|Conditions to find Jobs to reuse.|query||
 |find_or_create         |boolean    |Before creating, look for an existing job that has identical script, script_version, and script_parameters to those in the present job, has nondeterministic=false, and did not fail (it could be queued, running, or completed). If such a job exists, respond with the existing job instead of submitting a new one.|query|@false@|
 
 When a job is submitted to the queue using the **create** method, the @script_version@ attribute is updated to a full 40-character Git commit hash based on the current content of the specified repository. If @script_version@ cannot be resolved, the job submission is rejected.
 
 fn1. See the "note about specifying Git commits on the Job resource page":{{site.baseurl}}/api/schema/Job.html#script_version for more detail.
 
+h3. Specialized filters
+
+Special filter operations are available for specific Job columns.
+
+* @script_version@ @in git@ @REFSPEC@<br>Resolve @REFSPEC@ to a list of git commits, and match jobs with a @script_version@ in that list.  The create method will find commits between @REFSPEC@ and the submitted job's @script_version@; the list method will search between @REFSPEC@ and HEAD.  This list may include parallel branches if there is more than one path between @REFSPEC@ and the end commit in the graph.  Use @not in@ or @not in git@ filters (below) to blacklist specific commits.
+
+* @script_version@ @not in git@ @REFSPEC@<br>Resolve @REFSPEC@ to a list of git commits, and match jobs with a @script_version@ not in that list.
+
+* @docker_image_locator@ @in docker@ @SEARCH@<br>@SEARCH@ can be a Docker image hash, a repository name, or a repository name and tag separated by a colon (@:@).  The server will find collections that contain a Docker image that match that search criteria, then match jobs with a @docker_image_locator@ in that list.
+
+* @docker_image_locator@ @not in docker@ @SEARCH@<br>Negate the @in docker@ filter.
+
 h3. Reusing jobs
 
-Because Arvados records the exact version of the script, input parameters, and runtime environment [1] that was used to run the job, if the script is deterministic (meaning that the same code version is guaranteed to produce the same outputs from the same inputs) then it is possible to re-use the results of past jobs, and avoid re-running the computation to save time.  Arvados uses the following algorithm to determine if a past job can be re-used:
+Because Arvados records the exact version of the script, input parameters, and runtime environment that was used to run the job, if the script is deterministic (meaning that the same code version is guaranteed to produce the same outputs from the same inputs) then it is possible to re-use the results of past jobs, and avoid re-running the computation to save time.  Arvados uses the following algorithm to determine if a past job can be re-used:
 
 notextile. <div class="spaced-out">
 
 # If @find_or_create@ is false or omitted, create a new job and skip the rest of these steps.
-# Find a list of acceptable values for @script_version@.  If @minimum_script_version@ is specified, this is the set of all revisions in the Git commit graph between @minimum_script_version@ and the @script_version@ in the submitted "job object":{{site.baseurl}}/api/schema/Job.html (inclusive)[2].  If @minimum_script_version@ is not specified, only @script_version@ is added to the list.  If @exclude_script_versions@ is specified, the listed versions are excluded from the list.
-# Select jobs whose @script@ and @script_parameters@ attributes match those in the submitted "job object":{{site.baseurl}}/api/schema/Job.html, and whose @script_version@ attribute is in the list of acceptable versions.  Exclude jobs that failed or set @nondeterministic@ to true.
-# If more than one of the candidate jobs has finished, check that all such jobs actually did produce the same output.
-# If existing jobs exist and do not disagree with one another about the correct output, return one of the selected past jobs instead of creating a new job. If there is more than one match, which job will be returned is undefined.
-# If an existing job could not be chosen this way, create a new job.
-
-fn1. As of this writing, versioning the runtime environment is still under development.
-
-fn2. This may include parallel branches if there is more than one path between @minimum_script_version@ and the submitted job's @script_version@ in the Git commit graph.  Use @exclude_script_versions@ to blacklist specific commits.
+# If @filters@ are specified, find jobs that match those filters.  Filters *must* be specified to limit the @repository@ and @script@ attributes.  An error is returned if they are missing.
+# If @filters@ are not specified, find jobs with the same @repository@ and @script@, with a @script_version@ between @minimum_script_version@ and @script_version@ (excluding @excluded_script_versions@), and a @docker_image_locator@ with the latest Collection that matches the submitted job's @docker_image@ constraint.
+# If the found jobs include a completed job, and all found completed jobs have consistent output, return one of them.  Which specific job is returned is undefined.
+# If the found jobs only include incomplete jobs, return one of them.  Which specific job is returned is undefined.
+# If no job has been returned so far, create and return a new job.
 
 </div>
 
@@ -158,6 +167,8 @@ table(table table-bordered table-condensed).
 |limit|integer (default 100)|Maximum number of jobs to return.|query||
 |order|string|Order in which to return matching jobs.|query||
 |filters|array|Conditions for filtering jobs.|query||
+
+See the create method documentation for more information about Job-specific filters.
 
 h2. log_tail_follow
 

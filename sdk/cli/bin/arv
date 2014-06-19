@@ -68,6 +68,9 @@ when 'pipeline'
 when 'tag'
   ARGV.shift
   exec `which arv-tag`.strip, *ARGV
+when 'ws'
+  ARGV.shift
+  exec `which arv-ws`.strip, *ARGV
 end
 
 ENV['ARVADOS_API_VERSION'] ||= 'v1'

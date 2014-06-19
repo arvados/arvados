@@ -2,6 +2,7 @@
  width: 100%;
  font-family: "Lucida Console", Monaco, monospace;
  font-size: 11px;
+ table-layout: fixed;
  thead tr {
    th {
      padding-right: 1em;
@@ -13,10 +14,19 @@
      width: 15em;
    }
    th.type {
-     width: 10em;
+     width: 8em;
    }
    th.taskid {
+     width: 4em;
+   }
+   th.node {
+     width: 8em;
+   }
+   th.slot {
      width: 3em;
+   }
+   th.message {
+     width: auto;
    }
  }
  tbody tr {
@@ -30,5 +40,25 @@
    td.taskid {
      text-align: right;
    }
+   td.slot {
+     text-align: right;
+   }
+   td.message {
+     word-wrap: break-word;
+   }
  }
+}
+
+.log-viewer-button {
+  width: 12em;
+}
+
+.log-viewer-paging-div {
+  font-size: 18px;
+  text-align: center;
+}
+
+.log-viewer-page-num {
+  padding-left: .3em;
+  padding-right: .3em;
 }

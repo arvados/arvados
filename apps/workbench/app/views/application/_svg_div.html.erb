@@ -24,7 +24,7 @@ stroke-linecap: round;
     });
 <% end %>
 
-<div id="_<%= divId %>_container" style="padding-top: 41px; margin-top: -41px">
+<div id="_<%= divId %>_container">
   <div style="text-align: right">
     <a style="cursor: pointer"><span class="glyphicon glyphicon-zoom-out" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', .9)"></span></a>
     <a style="cursor: pointer"><span class="glyphicon glyphicon-zoom-in" onclick="graph_zoom('<%= divId %>', '<%= svgId %>', 1./.9)"></span></a>
@@ -34,5 +34,4 @@ stroke-linecap: round;
     <span id="_<%= divId %>_center" style="padding-left: 0px"></span>
     <%= raw(svg) %>
   </div>
-  <div id="_<%= divId %>_padding" style="padding-bottom: 1em"></div>
 </div>
