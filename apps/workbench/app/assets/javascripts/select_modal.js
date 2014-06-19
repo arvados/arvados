@@ -14,6 +14,19 @@ $(document).on('click', '.selectable', function() {
         closest('.modal').
         find('[data-enable-if-selection]').
         prop('disabled', !any);
+
+    if ($this.hasClass('active')) {
+        $(".modal-dialog-preview-pane").html('<img src="/assets/ajax-loader.gif"></img>');
+        $.ajax($this.attr('data-preview-href'),
+               {dataType: "html"}).
+           done(function(data, status, jqxhr) {
+                $(".modal-dialog-preview-pane").html(data);
+            }).
+            fail(function(data, status, jqxhr) {
+                $(".modal-dialog-preview-pane").text('Preview load failed.');
+            });
+    }
+
 }).on('click', '.modal button[data-action-href]', function() {
     var selection = [];
     var data = [];

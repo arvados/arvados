@@ -43,14 +43,22 @@ class CollectionsController < ApplicationController
   end
 
   def choose
-    params[:limit] ||= 20
-    @objects = Link.
-      filter([['link_class','=','name'],
-              ['head_uuid','is_a','arvados#collection']])
+    params[:limit] ||= 40
+
+    filter = [['link_class','=','name'],
+              ['head_uuid','is_a','arvados#collection']]
+
+    if params[:project_uuid] and !params[:project_uuid].empty?
+      filter << ['tail_uuid', '=', params[:project_uuid]]
+    end
+
+    @objects = Link.filter(filter)
+
     find_objects_for_index
     @next_page_href = (next_page_offset and
                        url_for(offset: next_page_offset, partial: true))
     @name_links = @objects
+
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
     super
@@ -174,16 +182,20 @@ class CollectionsController < ApplicationController
         .results.any?
       @search_sharing = search_scopes
     end
-    @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
-                                                          {:request => request,
-                                                            :direction => :bottom_up,
-                                                            :combine_jobs => :script_only}) rescue nil
-    @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
-                                                             {:request => request,
-                                                               :direction => :top_down,
-                                                               :combine_jobs => :script_only,
-                                                               :pdata_only => true}) rescue nil
 
+    if params["tab_pane"] == "Provenance_graph"
+      @prov_svg = ProvenanceHelper::create_provenance_graph(@object.provenance, "provenance_svg",
+                                                            {:request => request,
+                                                              :direction => :bottom_up,
+                                                              :combine_jobs => :script_only}) rescue nil
+    end
+    if params["tab_pane"] == "Used_by"
+      @used_by_svg = ProvenanceHelper::create_provenance_graph(@object.used_by, "used_by_svg",
+                                                               {:request => request,
+                                                                 :direction => :top_down,
+                                                                 :combine_jobs => :script_only,
+                                                                 :pdata_only => true}) rescue nil
+    end
     super
   end
 

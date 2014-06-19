@@ -295,6 +295,10 @@ class ArvadosBase < ActiveRecord::Base
     self.class.to_s.underscore.humanize
   end
 
+  def self.class_for_display
+    self.to_s.underscore.humanize
+  end
+
   def self.creatable?
     current_user
   end

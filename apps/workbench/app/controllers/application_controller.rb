@@ -12,7 +12,7 @@ class ApplicationController < ActionController::Base
   around_filter :thread_with_optional_api_token
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
-  before_filter :find_object_by_uuid, except: [:index] + ERROR_ACTIONS
+  before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -145,8 +145,17 @@ class ApplicationController < ActionController::Base
   end
 
   def choose
-    params[:limit] ||= 20
-    find_objects_for_index if !@objects
+    params[:limit] ||= 40
+    if !@objects
+      if params[:project_uuid] and !params[:project_uuid].empty?
+        # We want the chooser to show objects of the controllers's model_class
+        # type within a specific project specified by project_uuid, so fetch the
+        # project and request the contents of the project filtered on the
+        # controllers's model_class kind.
+        @objects = Group.find(params[:project_uuid]).contents({:filters => [['uuid', 'is_a', "arvados\##{ArvadosApiClient.class_kind(model_class)}"]]})
+      end
+      find_objects_for_index if !@objects
+    end
     respond_to do |f|
       if params[:partial]
         f.json {

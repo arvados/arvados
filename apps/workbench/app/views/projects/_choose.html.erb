@@ -12,12 +12,13 @@
           <% [my_project_tree, shared_project_tree].each do |tree| %>
             <% tree.each do |projectnode| %>
               <% if projectnode[:object].is_a? String %>
-                <div class="row" style="padding-left: <%= 1 + projectnode[:depth] %>em;">
+                <div class="row" style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px">
                   <i class="fa fa-fw fa-folder-open-o"></i>
                   <%= projectnode[:object] %>
                 </div>
               <% else %>
-                <div class="<%= 'selectable project' if !params[:editable] || projectnode[:object].editable? %> row" style="padding-left: <%= 1 + projectnode[:depth] %>em;" data-object-uuid="<%= projectnode[:object].uuid %>">
+                <div class="<%= 'selectable project' if !params[:editable] || projectnode[:object].editable? %> row"
+                     style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px" data-object-uuid="<%= projectnode[:object].uuid %>">
                   <i class="fa fa-fw fa-folder-o"></i>
                   <% if projectnode[:object].uuid == current_user.uuid %>
                     My Projects

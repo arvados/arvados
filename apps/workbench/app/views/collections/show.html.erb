@@ -11,27 +11,7 @@
 	<p><i>Content hash:</i><br />
 	  <span class="arvados-uuid"><%= @object.uuid %></span></p>
 
-        <% if not (@output_of.andand.any? or @log_of.andand.any?) %>
-          <p><i>No source information available.</i></p>
-        <% end %>
-
-        <% if @output_of.andand.any? %>
-          <p><i>This collection was the output of:</i><br />
-          <%= render_arvados_object_list_start(@output_of, 'Show all jobs',
-                jobs_path(filters: [['output', '=', @object.uuid]].to_json)) do |job| %>
-            <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
-          <% end %>
-          </p>
-        <% end %>
-
-        <% if @log_of.andand.any? %>
-          <p><i>This collection contains log messages from:</i><br />
-          <%= render_arvados_object_list_start(@log_of, 'Show all jobs',
-                jobs_path(filters: [['log', '=', @object.uuid]].to_json)) do |job| %>
-            <%= link_to_if_arvados_object(job, friendly_name: true) %><br />
-          <% end %>
-          </p>
-        <% end %>
+        <%= render partial: "show_source_summary" %>
       </div>
     </div>
   </div>
