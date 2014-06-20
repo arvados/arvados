@@ -83,10 +83,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
   # Create a pipeline instance from within a project and run
   test 'Create pipeline inside a project and run' do
-    add_a_collection_and_pipeline_to_project
-  end
-
-  def add_a_collection_and_pipeline_to_project
     visit page_with_token('active_trustedclient')
 
     # Go over to the collections page and select something
@@ -97,7 +93,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find('#persistent-selection-count').click
 
     # Add this collection to the project using collections menu from top nav
-    visit '/'
+    visit '/projects'
     find('.arv-project-list a,button', text: 'A Project').click
 
     find('li.selection-menu > a').click
@@ -148,58 +144,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Graph'
     click_link 'Graph'
     assert page.has_text? 'script_version'
-  end
-
-  # Visit project as anonymous user and verify that pipeline cannot be modified
-  test 'visit shared project as anonymous user' do
-    add_a_collection_and_pipeline_to_project
-
-    # login as anonymous user and verify that top nav
-    visit page_with_token('anonymous')
-    
-    within('.navbar-fixed-top') do
-      assert page.has_text? 'You are viewing public data'
-      assert page.has_link? 'Log in'
-    end
-
-    assert page.has_text? 'Welcome'
-    assert page.has_no_text? 'My projects'
-    assert page.has_no_button? 'Add new project'
-    assert page.has_text? 'Projects shared with me'
-    assert page.has_text? 'A Project'
-    assert page.has_text? 'Unrestricted public data'
-
-    find('.arv-project-list a,button', text: 'Unrestricted public data').click
-    page.has_text? ('An anonymously accessible project')
-
-    find('a', text: 'Projects').click
-    within('.dropdown-menu') do
-      page.has_no_text? ('New project')
-      page.has_text? ('Projects shared with me')
-    end
-
-    # as anonymous user verify the shared project is accessible
-    visit page_with_token('anonymous')
-    assert page.has_text? 'A Project'
-    find('a', text: 'A Project').click
-    page.has_text? ('Test project belonging to active user')
-
-    #find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
-    #  find('a', text: 'Show').click
-
-    # as inactive user "A Project" is accessible
-    visit page_with_token('inactive')
-    assert page.has_text? 'A Project'
-    find('.arv-project-list a,button', text: 'Unrestricted public data').click
-    page.has_text? ('An anonymously accessible project')
-    find('a', text: 'Projects').click
-    find('a', text: 'A Project').click
-    page.has_text? ('Test project belonging to active user')
-    find('a', text: 'Projects').click
-    within('.dropdown-menu') do
-      page.has_text? ('New project')
-      page.has_text? ('Projects shared with me')
-    end
   end
 
 end

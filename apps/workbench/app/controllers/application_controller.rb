@@ -498,6 +498,8 @@ class ApplicationController < ActionController::Base
           prefs: u.prefs
         }
         @@anonymous_user = u
+      else
+        @@anonymous_user = nil
       end
     elsif current_user && !current_user.andand.is_active
       previous_api_token = Thread.current[:arvados_api_token]
@@ -506,6 +508,8 @@ class ApplicationController < ActionController::Base
         valid_anonymous_token = verify_api_token
         if valid_anonymous_token
           @@anonymous_user = User.current
+        else
+          @@anonymous_user = nil
         end
         Thread.current[:arvados_api_token] = previous_api_token
         verify_api_token
@@ -934,7 +938,7 @@ class ApplicationController < ActionController::Base
   def anonymous_login_enabled
     # to avoid the case where bogus anonymous token is configured,
     # safer to check this object which is set after token verification
-    return @@anonymous_user
+    return @@anonymous_user && Rails.configuration.anonymous_user_token
   end
 
 end
