@@ -176,7 +176,7 @@
       </div><!-- /.navbar-collapse -->
     </nav>
 
-    <% if current_user.andand.is_active || (current_user && is_anonymous(current_user))%>
+    <% if current_user.andand.is_active || (current_user && anonymous_login_enabled)%>
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
           <li class="dropdown">
