@@ -929,6 +929,8 @@ class ApplicationController < ActionController::Base
   end
   helper_method :anonymous_login_enabled
   def anonymous_login_enabled
+    # to avoid the case where bogus anonymous token is configured,
+    # safer to check this object which is set after token verification
     return @@anonymous_user
   end
 
