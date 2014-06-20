@@ -111,7 +111,7 @@ class Job < ArvadosModel
     elsif coll = Collection.for_latest_docker_image(image_search, image_tag)
       self.docker_image_locator = coll.uuid
     else
-      errors.add(:docker_image_locator, "Docker image not found")
+      errors.add(:docker_image_locator, "not found for #{image_search}")
       false
     end
   end
