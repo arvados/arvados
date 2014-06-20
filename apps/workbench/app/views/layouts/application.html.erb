@@ -89,6 +89,15 @@
               <li role="presentation"><a href="/api_client_authorizations" role="menuitem"><i class="fa fa-ticket fa-fw"></i> Manage API tokens</a></li>
               <li role="presentation" class="divider"></li>
               <% end %>
+
+              <% if !current_user.is_active %> 
+                <% if !current_user.is_invited %>
+                  <li role="presentation"><a href="/users/inactive" role="menuitem"><i class="fa fa-fw"></i> Inactive </a></li>
+                <% else %>
+                  <li role="presentation"><a href="/user_agreements" role="menuitem"><i class="fa fa-fw"></i> Inactive </a></li>
+                <% end %>
+              <% end %>
+
               <li role="presentation"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
               <% if current_user.is_active and
                     (@notifications || []).length > 0 %>
@@ -103,10 +112,6 @@
           <% else %>
             <% if is_anonymous(current_user) %>
               <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
-            <% elsif !current_user.is_invited %>
-              <li><a href="<%= users/inactive %>">Inactive</a></li>
-            <% else %>
-              <li><a href="<%= user_agreements/index %>">Inactive</a></li>
             <% end %>
           <% end %>
           <% end %>
