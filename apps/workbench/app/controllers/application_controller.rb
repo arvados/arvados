@@ -294,11 +294,15 @@ class ApplicationController < ActionController::Base
 
   protected
 
+  def strip_token_from_path(path)
+    path.sub(/([\?&;])api_token=[^&;]*[&;]?/, '\1')
+  end
+
   def redirect_to_login
     respond_to do |f|
       f.html {
         if request.method.in? ['GET', 'HEAD']
-          redirect_to arvados_api_client.arvados_login_url(return_to: request.url)
+          redirect_to arvados_api_client.arvados_login_url(return_to: strip_token_from_path(request.url))
         else
           flash[:error] = "Either you are not logged in, or your session has timed out. I can't automatically log you in and re-attempt this request."
           redirect_to :back
@@ -361,11 +365,11 @@ class ApplicationController < ActionController::Base
     begin
       try_redirect_to_login = true
       if params[:api_token]
-        try_redirect_to_login = false
         Thread.current[:arvados_api_token] = params[:api_token]
         # Before copying the token into session[], do a simple API
         # call to verify its authenticity.
         if verify_api_token
+          try_redirect_to_login = false
           session[:arvados_api_token] = params[:api_token]
           u = User.current
           session[:user] = {
@@ -382,24 +386,22 @@ class ApplicationController < ActionController::Base
             # cookie instead of the query string.  This prevents API
             # tokens from appearing in (and being inadvisedly copied
             # and pasted from) browser Location bars.
-            redirect_to request.fullpath.sub(%r{([&\?]api_token=)[^&\?]*}, '')
+            redirect_to strip_token_from_path(request.fullpath)
           else
             yield
           end
-        else
-          @errors = ['Invalid API token']
-          self.render_error status: 401
         end
       elsif session[:arvados_api_token]
         # In this case, the token must have already verified at some
         # point, but it might have been revoked since.  We'll try
         # using it, and catch the exception if it doesn't work.
-        try_redirect_to_login = false
         Thread.current[:arvados_api_token] = session[:arvados_api_token]
         begin
           yield
         rescue ArvadosApiClient::NotLoggedInException
-          try_redirect_to_login = true
+          # We'll try to redirect to login later.
+        else
+          try_redirect_to_login = false
         end
       else
         logger.debug "No token received, session is #{session.inspect}"
