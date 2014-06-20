@@ -473,7 +473,8 @@ class ApplicationController < ActionController::Base
 
   def check_anonymous_token
     if session['arv-referrer'] == 'logout'
-      # do not use anonymous user token and let logout happen
+      # Do not use anonymous user token and let logout happen. But clear it for future relogins.
+      session['arv-referrer'] = nil
       return
     end
 
