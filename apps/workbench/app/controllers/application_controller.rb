@@ -932,7 +932,7 @@ class ApplicationController < ActionController::Base
   # helper method to create sharing link for anonymous user user
   helper_method :is_anonymous
   def is_anonymous user
-    return user.uuid == @@anonymous_user.andand.uuid
+    return Rails.configuration.anonymous_user_token && (user.andand.uuid == @@anonymous_user.andand.uuid)
   end
   helper_method :anonymous_login_enabled
   def anonymous_login_enabled

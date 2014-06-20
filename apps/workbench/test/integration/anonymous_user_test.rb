@@ -142,6 +142,7 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
 
   [
     [nil, nil, false],
+    ['anonymous', api_fixture('users')['anonymous'], false],
     ['inactive', api_fixture('users')['inactive'], true],
     ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false],
     ['active', api_fixture('users')['active'], true]
@@ -160,6 +161,7 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
 
   [
     [nil, nil, false],
+    ['anonymous', api_fixture('users')['anonymous'], false],
     ['inactive', api_fixture('users')['inactive'], true],
     ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false],
     ['active', api_fixture('users')['active'], true]
