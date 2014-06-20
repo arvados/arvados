@@ -45,7 +45,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     within('.modal-dialog') do
       find('.btn', text: 'Add').click
     end
-   
+
     find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
       find('a', text: 'Show').
       click
@@ -57,7 +57,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       click
 
     within('.modal-dialog') do
-      find('span', text: 'foo_tag').click
+      first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end
 
@@ -114,7 +114,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       click
 
     within('.modal-dialog') do
-      find('span', text: 'foo_tag').click
+      first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end
 
