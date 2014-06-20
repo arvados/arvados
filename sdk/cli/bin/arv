@@ -139,11 +139,11 @@ def arv_edit client, arvados, global_opts, remaining_opts
   n = remaining_opts.shift
   if n.nil? or n == "-h" or n == "--help"
     puts head_banner
-    puts "Usage: arv edit [uuid]\n\n"
-    puts "Fetchs the specified Arvados object, opens an interactive text\n"
-    puts "editor on a text representation (json or yaml, use --format)\n"
-    puts "and then updates the object.  Will use 'nano' by default, customize\n"
-    puts "with the EDITOR or VISUAL environment variable."
+    puts "Usage: arv edit [uuid] [fields...]\n\n"
+    puts "Fetchs the specified Arvados object, select the specified fields, and\n"
+    puts "open an interactive text editor on a text representation (json or\n"
+    puts "yaml, use --format) and then updates the object.  Will use 'nano'\n"
+    puts "by default, customize with the EDITOR or VISUAL environment variable.\n"
     exit 255
   end
 
@@ -184,6 +184,10 @@ def arv_edit client, arvados, global_opts, remaining_opts
     results = JSON.parse result.body
   rescue JSON::ParserError => e
     abort "Failed to parse server response:\n" + e.to_s
+  end
+
+  if remaining_opts.length > 0
+    results.select! { |k, v| remaining_opts.include? k }
   end
 
   content = ""
