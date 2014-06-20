@@ -53,13 +53,21 @@ class ApplicationController < ActionController::Base
     else
       @errors = [e.to_s]
     end
-    self.render_error status: 422
+    if e.is_a? ArvadosApiClient::NotLoggedInException
+      self.render_error status: 422
+    else
+      thread_with_optional_api_token do
+        self.render_error status: 422
+      end
+    end
   end
 
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
     @errors = ["Path not found"]
-    self.render_error status: 404
+    thread_with_optional_api_token do
+      self.render_error status: 404
+    end
   end
 
   def find_objects_for_index
