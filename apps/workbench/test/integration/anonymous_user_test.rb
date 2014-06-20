@@ -85,10 +85,24 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
 
     assert page.has_text? 'A Project'
     find('a', text: 'A Project').click
-    page.has_text? ('Test project belonging to active user')
+    assert page.has_text? ('Test project belonging to active user')
 
     #find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
     #  find('a', text: 'Show').click
+
+    if user && !user['is_active']
+      within('.navbar-fixed-top') do
+        find('a', text: "#{user['email']}").click
+        within('.dropdown-menu') do
+          find('a', text: 'Inactive').click
+        end
+      end
+          
+      if !invited
+        assert page.has_text? 'Your account must be activated'
+      else
+      end
+    end
   end
 
   def verify_homepage_anonymous_login_not_configured user, invited
