@@ -77,7 +77,7 @@
           -->
 
           <% if current_user %>
-          <% if current_user && !current_user.is_anonymous %>
+          <% if current_user && !is_anonymous(current_user) %>
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>

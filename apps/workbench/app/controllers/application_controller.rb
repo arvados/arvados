@@ -496,12 +496,16 @@ class ApplicationController < ActionController::Base
           is_admin: u.is_admin,
           prefs: u.prefs
         }
+        @@anonymous_user = u
       end
     elsif current_user && !current_user.andand.is_active
       previous_api_token = Thread.current[:arvados_api_token]
       if anonymous_user_token != previous_api_token
         Thread.current[:arvados_api_token] = anonymous_user_token
         valid_anonymous_token = verify_api_token
+        if valid_anonymous_token
+          @@anonymous_user = User.current
+        end
         Thread.current[:arvados_api_token] = previous_api_token
         verify_api_token
         if valid_anonymous_token
@@ -917,4 +921,10 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
+  @@anonymous_user = nil
+  # helper method to create sharing link for anonymous user user
+  helper_method :is_anonymous
+  def is_anonymous user
+    return user.uuid == @@anonymous_user.andand.uuid
+  end
 end
