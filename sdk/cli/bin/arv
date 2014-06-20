@@ -125,7 +125,15 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     end
     abort
   when 'pipeline'
-    exec `which arv-run-pipeline-instance`.strip, *remaining_opts
+    sub = remaining_opts.shift
+    if sub == 'run'
+      exec `which arv-run-pipeline-instance`.strip, *remaining_opts
+    else
+      puts "Usage: arv pipeline [method] [--parameters]\n"
+      puts "Use 'arv pipeline [method] --help' to get more information about specific methods.\n\n"
+      puts "Available methods: run"
+    end
+    abort
   when 'tag'
     exec `which arv-tag`.strip, *remaining_opts
   when 'ws'
@@ -140,9 +148,9 @@ def arv_edit client, arvados, global_opts, remaining_opts
   if n.nil? or n == "-h" or n == "--help"
     puts head_banner
     puts "Usage: arv edit [uuid] [fields...]\n\n"
-    puts "Fetchs the specified Arvados object, select the specified fields, and\n"
+    puts "Fetch the specified Arvados object, select the specified fields, \n"
     puts "open an interactive text editor on a text representation (json or\n"
-    puts "yaml, use --format) and then updates the object.  Will use 'nano'\n"
+    puts "yaml, use --format) and then update the object.  Will use 'nano'\n"
     puts "by default, customize with the EDITOR or VISUAL environment variable.\n"
     exit 255
   end
@@ -156,7 +164,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
 
   m = /([a-z0-9]{5})-([a-z0-9]{5})-([a-z0-9]{15})/.match n
   if !m
-    abort puts "#{n} does not appear to be an arvados uuid"
+    abort puts "#{n} does not appear to be an Arvados uuid"
   end
 
   rsc = nil
@@ -205,61 +213,76 @@ def arv_edit client, arvados, global_opts, remaining_opts
   tmp.write(content)
   tmp.close
 
-  pid = Process::fork
-  if pid.nil?
-    editor ||= ENV["VISUAL"]
-    editor ||= ENV["EDITOR"]
-    editor ||= "nano"
-    exec editor, tmp.path
-  else
-    Process.wait pid
-  end
+  need_edit = true
 
-  if $?.exitstatus == 0
-    tmp.open
-    newcontent = tmp.read()
-
-    newobj = {}
-    begin
-      case global_opts[:format]
-      when 'json'
-        newobj = Oj.load(newcontent)
-      when 'yaml'
-        newobj = YAML.load(newcontent)
-      end
-    rescue Exception => e
-      puts "Parse error! " + e.to_s
-      n = 1
-      newcontent.each_line do |line|
-        puts "#{n.to_s.rjust 4}  #{line}"
-        n += 1
-      end
-      exit 1
+  while need_edit
+    pid = Process::fork
+    if pid.nil?
+      editor ||= ENV["VISUAL"]
+      editor ||= ENV["EDITOR"]
+      editor ||= "nano"
+      exec editor, tmp.path
+    else
+      Process.wait pid
     end
 
-    tmp.close(true)
+    if $?.exitstatus == 0
+      tmp.open
+      newcontent = tmp.read()
 
-    if newobj != results
-      api_method = 'arvados.' + rsc + '.update'
-      result = client.execute(:api_method => eval(api_method),
-                              :parameters => {"uuid" => n, rsc.singularize => Oj.dump(newobj)},
-                              :authenticated => false,
-                              :headers => {
-                                authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                              })
-
+      newobj = {}
       begin
-        results = JSON.parse result.body
-      rescue JSON::ParserError => e
-        abort "Failed to parse server response:\n" + e.to_s
-      end
-
-      if result.response.status != 200
-        puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
+        case global_opts[:format]
+        when 'json'
+          newobj = Oj.load(newcontent)
+        when 'yaml'
+          newobj = YAML.load(newcontent)
+        end
+        need_edit = false
+      rescue Exception => e
+        puts "Parse error! " + e.to_s
+        n = 1
+        newcontent.each_line do |line|
+          puts "#{n.to_s.rjust 4}  #{line}"
+          n += 1
+        end
+        puts "\nTry again (y/n)? "
+        yn = $stdin.read 1
+        if yn == 'n' or yn == 'N'
+          exit 1
+        end
       end
     else
-      puts "Object is unchanged, did not update."
+      puts "Editor exited with status #{$?.exitstatus}"
+      exit $?.exitstatus
     end
+  end
+
+  tmp.close(true)
+
+  if newobj != results
+    api_method = 'arvados.' + rsc + '.update'
+    dumped = Oj.dump(newobj)
+    result = client.execute(:api_method => eval(api_method),
+                            :parameters => {"uuid" => n, rsc.singularize => dumped},
+                            :authenticated => false,
+                            :headers => {
+                              authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                            })
+
+    begin
+      results = JSON.parse result.body
+    rescue JSON::ParserError => e
+      abort "Failed to parse server response:\n" + e.to_s
+    end
+
+    if result.response.status != 200
+      puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
+      puts "Update body was:"
+      puts dumped
+    end
+  else
+    puts "Object is unchanged, did not update."
   end
 
   exit 0
