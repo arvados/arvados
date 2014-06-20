@@ -164,7 +164,11 @@ def arv_edit client, arvados, global_opts, remaining_opts
 
   m = /([a-z0-9]{5})-([a-z0-9]{5})-([a-z0-9]{15})/.match n
   if !m
-    abort puts "#{n} does not appear to be an Arvados uuid"
+    if /^[a-f0-9]{32}/.match n
+      abort "Arvados collections are not editable."
+    else
+      abort "#{n} does not appear to be an Arvados uuid"
+    end
   end
 
   rsc = nil
@@ -385,7 +389,8 @@ def parse_arguments(discovery_document, subcommands)
   resource = ARGV.shift
 
   if not subcommands.include? resource
-    if global_opts[:resources] or not resource_types.include?(resource)
+    if not resource_types.include?(resource)
+      puts "Resource or subcommand '#{resource}' is not recognized.\n\n"
       help_resources(option_parser, discovery_document, resource)
     end
 
