@@ -220,14 +220,24 @@ def arv_edit client, arvados, global_opts, remaining_opts
     newcontent = tmp.read()
 
     newobj = {}
-    case global_opts[:format]
-    when 'json'
-      newobj = Oj.load(newcontent)
-    when 'yaml'
-      newobj = YAML.load(newcontent)
+    begin
+      case global_opts[:format]
+      when 'json'
+        newobj = Oj.load(newcontent)
+      when 'yaml'
+        newobj = YAML.load(newcontent)
+      end
+    rescue Exception => e
+      puts "Parse error! " + e.to_s
+      n = 1
+      newcontent.each_line do |line|
+        puts "#{n.to_s.rjust 4}  #{line}"
+        n += 1
+      end
+      exit 1
     end
-    tmp.close
-    tmp.unlink
+
+    tmp.close(true)
 
     if newobj != results
       api_method = 'arvados.' + rsc + '.update'
