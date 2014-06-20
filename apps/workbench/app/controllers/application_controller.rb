@@ -305,7 +305,7 @@ class ApplicationController < ActionController::Base
   protected
 
   def strip_token_from_path(path)
-    path.sub(/([&\?])api_token=[^&]*/, '\1')
+    path.sub(/([\?&;])api_token=[^&;]*[&;]?/, '\1')
   end
 
   def redirect_to_login
