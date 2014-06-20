@@ -101,7 +101,13 @@
             </ul>
           </li>
           <% else %>
-            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+            <% if is_anonymous(current_user) %>
+              <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
+            <% elsif !current_user.is_invited %>
+              <li><a href="<%= users/inactive %>">Inactive</a></li>
+            <% else %>
+              <li><a href="<%= user_agreements/index %>">Inactive</a></li>
+            <% end %>
           <% end %>
           <% end %>
 
@@ -165,7 +171,7 @@
       </div><!-- /.navbar-collapse -->
     </nav>
 
-    <% if current_user %>
+    <% if current_user.andand.is_active || (current_user && anonymous_login_enabled)%>
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
           <li class="dropdown">

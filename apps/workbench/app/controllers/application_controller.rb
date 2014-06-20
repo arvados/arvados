@@ -927,4 +927,9 @@ class ApplicationController < ActionController::Base
   def is_anonymous user
     return user.uuid == @@anonymous_user.andand.uuid
   end
+  helper_method :anonymous_login_enabled
+  def anonymous_login_enabled
+    return @@anonymous_user
+  end
+
 end
