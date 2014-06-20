@@ -201,7 +201,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
 
   require 'tempfile'
 
-  tmp = Tempfile.new(n)
+  tmp = Tempfile.new([n, "." + global_opts[:format]])
   tmp.write(content)
   tmp.close
 
