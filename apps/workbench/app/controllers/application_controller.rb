@@ -512,6 +512,8 @@ class ApplicationController < ActionController::Base
         if valid_anonymous_token
           Thread.current[:arvados_api_token] = anonymous_user_token
         end
+      else
+        @@anonymous_user = User.current
       end
     end
   end
