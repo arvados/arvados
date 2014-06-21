@@ -101,6 +101,7 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
       if !invited
         assert page.has_text? 'Your account must be activated'
       else
+        assert page.has_text? 'Please check the box below to indicate that you have read and accepted the user agreement'
       end
     end
   end
