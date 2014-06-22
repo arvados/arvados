@@ -480,6 +480,8 @@ class ApplicationController < ActionController::Base
 
     anonymous_user_token = Rails.configuration.anonymous_user_token
     if !anonymous_user_token
+      @@anonymous_user = nil
+      Thread.current[:arvados_anonymous_api_token] = nil
       return
     end
 
@@ -498,8 +500,11 @@ class ApplicationController < ActionController::Base
           prefs: u.prefs
         }
         @@anonymous_user = u
+        Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
       else
         @@anonymous_user = nil
+        Thread.current[:arvados_api_token] = nil
+        Thread.current[:arvados_anonymous_api_token] = nil
       end
     elsif current_user && !current_user.andand.is_active
       previous_api_token = Thread.current[:arvados_api_token]
@@ -508,16 +513,16 @@ class ApplicationController < ActionController::Base
         valid_anonymous_token = verify_api_token
         if valid_anonymous_token
           @@anonymous_user = User.current
+          Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
         else
           @@anonymous_user = nil
+          Thread.current[:arvados_anonymous_api_token] = nil
         end
         Thread.current[:arvados_api_token] = previous_api_token
         verify_api_token
-        if valid_anonymous_token
-          Thread.current[:arvados_api_token] = anonymous_user_token
-        end
       else
         @@anonymous_user = User.current
+        Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
       end
     end
   end
@@ -530,7 +535,7 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_agreements
-    return if (Thread.current[:arvados_api_token] == Rails.configuration.anonymous_user_token)
+    return if Thread.current[:arvados_anonymous_api_token]
 
     if current_user && !current_user.is_active
       if not current_user.is_invited
