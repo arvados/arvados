@@ -541,6 +541,17 @@ class ApplicationController < ActionController::Base
       if not current_user.is_invited
         return render 'users/inactive'
       end
+
+      check_user_agreements_signatures true
+      if !current_user.is_active
+        render 'user_agreements/index'
+      end
+    end
+    true
+  end
+
+  helper_method :check_user_agreements_signatures
+  def check_user_agreements_signatures try_to_activate
       signatures = UserAgreement.signatures
       @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
       @required_user_agreements = UserAgreement.all.map do |ua|
@@ -548,7 +559,7 @@ class ApplicationController < ActionController::Base
           Collection.find(ua.uuid)
         end
       end.compact
-      if @required_user_agreements.empty?
+      if @required_user_agreements.empty? && try_to_activate
         # No agreements to sign. Perhaps we just need to ask?
         current_user.activate
         if !current_user.is_active
@@ -556,11 +567,7 @@ class ApplicationController < ActionController::Base
             "No user agreements to sign, but activate failed!"
         end
       end
-      if !current_user.is_active
-        render 'user_agreements/index'
-      end
-    end
-    true
+      @required_user_agreements
   end
 
   def select_theme

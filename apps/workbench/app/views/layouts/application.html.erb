@@ -92,9 +92,16 @@
 
               <% if anonymous_login_enabled && !current_user.is_active %> 
                 <% if !current_user.is_invited %>
-                  <li role="presentation"><a href="/users/welcome" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Inactive </a></li>
+                  <li role="presentation"><a href="/users/welcome" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Not active </a></li>
                 <% else %>
-                  <li role="presentation"><a href="/user_agreements" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Inactive </a></li>
+                  <% required_user_agreements = check_user_agreements_signatures true %>
+                  <% if !current_user.is_active %>
+                    <% if required_user_agreements.empty? %>
+                      <li role="presentation"><a href="/users/welcome" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Not active </a></li>
+                    <% else %>
+                      <li role="presentation"><a href="/user_agreements" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Sign agreements </a></li>
+                    <% end %>
+                  <% end %>
                 <% end %>
               <% end %>
 

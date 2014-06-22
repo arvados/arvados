@@ -24,7 +24,8 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
           page.has_link? ('Logout')
-          page.has_no_link? ('Inactive')
+          page.has_no_link? ('Not active')
+          page.has_no_link? ('Sign agreements')
           page.has_link? ('Manage ssh keys')
           page.has_link? ('Manage API tokens')
         end
@@ -38,7 +39,11 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
           find('a', text: "#{user['email']}").click
           within('.dropdown-menu') do
             page.has_link? ('Logout')
-            page.has_link? ('Inactive')
+            if !invited
+              page.has_link? ('Not active')
+            else
+              page.has_link? ('Sign agreements')
+            end
             page.has_no_link? ('Manage ssh keys')
             page.has_no_link? ('Manage API tokens')
           end
@@ -94,7 +99,11 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
       within('.navbar-fixed-top') do
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
-          find('a', text: 'Inactive').click
+          if !invited
+            find('a', text: 'Not active').click
+          else
+            find('a', text: 'Sign agreements').click
+          end
         end
       end
           
@@ -116,7 +125,11 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
           page.has_link? ('Logout')
-          page.has_no_link? ('Inactive')
+          if !invited
+            page.has_no_link? ('Not active')
+          else
+            page.has_no_link? ('Sign agreements')
+          end
         end
       end
     end
