@@ -300,7 +300,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def self.creatable?
-    current_user && (!current_user[:uuid].ends_with?('anonymouspublic'))
+    current_user && !current_user.is_anonymous
   end
 
   def self.goes_in_projects?

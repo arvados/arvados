@@ -45,7 +45,7 @@
         </div>
       </div>
       <% elsif current_user %>
-        <% if is_anonymous current_user %>
+        <% if current_user.is_anonymous %>
           <div class="panel panel-default">
             <div class="panel-body">
               <p>

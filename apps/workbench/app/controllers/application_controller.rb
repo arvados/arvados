@@ -486,7 +486,6 @@ class ApplicationController < ActionController::Base
 
     anonymous_user_token = Rails.configuration.anonymous_user_token
     if !anonymous_user_token
-      @@anonymous_user = nil
       Thread.current[:arvados_anonymous_api_token] = nil
       return
     end
@@ -505,10 +504,8 @@ class ApplicationController < ActionController::Base
           is_admin: u.is_admin,
           prefs: u.prefs
         }
-        @@anonymous_user = u
         Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
       else
-        @@anonymous_user = nil
         Thread.current[:arvados_api_token] = nil
         Thread.current[:arvados_anonymous_api_token] = nil
       end
@@ -518,16 +515,13 @@ class ApplicationController < ActionController::Base
         Thread.current[:arvados_api_token] = anonymous_user_token
         valid_anonymous_token = verify_api_token
         if valid_anonymous_token
-          @@anonymous_user = User.current
           Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
         else
-          @@anonymous_user = nil
           Thread.current[:arvados_anonymous_api_token] = nil
         end
         Thread.current[:arvados_api_token] = previous_api_token
         verify_api_token
       else
-        @@anonymous_user = User.current
         Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
       end
     end
@@ -946,17 +940,11 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
-  @@anonymous_user = nil
-  # helper method to create sharing link for anonymous user user
-  helper_method :is_anonymous
-  def is_anonymous user
-    return Rails.configuration.anonymous_user_token && (user.andand.uuid == @@anonymous_user.andand.uuid)
-  end
   helper_method :anonymous_login_enabled
   def anonymous_login_enabled
     # to avoid the case where bogus anonymous token is configured,
     # safer to check this object which is set after token verification
-    return @@anonymous_user && Rails.configuration.anonymous_user_token
+    return Thread.current[:arvados_anonymous_api_token] && Rails.configuration.anonymous_user_token
   end
 
 end
