@@ -8,8 +8,8 @@ class ApplicationController < ActionController::Base
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
   around_filter :thread_clear
+  around_filter :thread_with_api_token
   around_filter :thread_with_mandatory_api_token, except: ERROR_ACTIONS
-  around_filter :thread_with_optional_api_token
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -56,7 +56,7 @@ class ApplicationController < ActionController::Base
     if e.is_a? ArvadosApiClient::NotLoggedInException
       self.render_error status: 422
     else
-      thread_with_optional_api_token do
+      thread_with_api_token do
         self.render_error status: 422
       end
     end
@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
     @errors = ["Path not found"]
-    thread_with_optional_api_token do
+    thread_with_api_token do
       self.render_error status: 404
     end
   end
@@ -369,56 +369,46 @@ class ApplicationController < ActionController::Base
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
   end
 
-  def thread_with_api_token(login_optional = false)
+  def thread_with_api_token
+    # If an API token has already been found, pass it through.
+    if Thread.current[:arvados_api_token]
+      yield
+      return
+    end
+
     begin
-      try_redirect_to_login = true
-      if params[:api_token]
-        Thread.current[:arvados_api_token] = params[:api_token]
-        # Before copying the token into session[], do a simple API
-        # call to verify its authenticity.
-        if verify_api_token
-          try_redirect_to_login = false
-          session[:arvados_api_token] = params[:api_token]
-          u = User.current
-          session[:user] = {
-            uuid: u.uuid,
-            email: u.email,
-            first_name: u.first_name,
-            last_name: u.last_name,
-            is_active: u.is_active,
-            is_admin: u.is_admin,
-            prefs: u.prefs
-          }
-          if !request.format.json? and request.method.in? ['GET', 'HEAD']
-            # Repeat this request with api_token in the (new) session
-            # cookie instead of the query string.  This prevents API
-            # tokens from appearing in (and being inadvisedly copied
-            # and pasted from) browser Location bars.
-            redirect_to strip_token_from_path(request.fullpath)
-          else
-            yield
-          end
+      # If there's a valid api_token parameter, use it to set up the session.
+      if (Thread.current[:arvados_api_token] = params[:api_token]) and
+          verify_api_token
+        session[:arvados_api_token] = params[:api_token]
+        u = User.current
+        session[:user] = {
+          uuid: u.uuid,
+          email: u.email,
+          first_name: u.first_name,
+          last_name: u.last_name,
+          is_active: u.is_active,
+          is_admin: u.is_admin,
+          prefs: u.prefs
+        }
+        if !request.format.json? and request.method.in? ['GET', 'HEAD']
+          # Repeat this request with api_token in the (new) session
+          # cookie instead of the query string.  This prevents API
+          # tokens from appearing in (and being inadvisedly copied
+          # and pasted from) browser Location bars.
+          redirect_to strip_token_from_path(request.fullpath)
+          return
         end
-      elsif session[:arvados_api_token]
-        # In this case, the token must have already verified at some
-        # point, but it might have been revoked since.  We'll try
-        # using it, and catch the exception if it doesn't work.
-        Thread.current[:arvados_api_token] = session[:arvados_api_token]
-        begin
-          yield
-        rescue ArvadosApiClient::NotLoggedInException
-          # We'll try to redirect to login later.
-        else
-          try_redirect_to_login = false
-        end
-      else
-        logger.debug "No token received, session is #{session.inspect}"
       end
-      if try_redirect_to_login
-        unless login_optional
-          redirect_to_login
-        else
-          # login is optional for this route so go on to the regular controller
+
+      # With setup done, handle the request using the session token.
+      Thread.current[:arvados_api_token] = session[:arvados_api_token]
+      begin
+        yield
+      rescue ArvadosApiClient::NotLoggedInException
+        # If we got this error with a token, it must've expired.
+        # Retry the request without a token.
+        unless Thread.current[:arvados_api_token].nil?
           Thread.current[:arvados_api_token] = nil
           yield
         end
@@ -430,31 +420,16 @@ class ApplicationController < ActionController::Base
   end
 
   def thread_with_mandatory_api_token
-    thread_with_api_token(true) do
-      if Thread.current[:arvados_api_token]
-        yield
-      elsif session[:arvados_api_token]
-        # Expired session. Clear it before refreshing login so that,
-        # if this login procedure fails, we end up showing the "please
-        # log in" page instead of getting stuck in a redirect loop.
-        session.delete :arvados_api_token
-        redirect_to_login
-      else
-        render 'users/welcome'
-      end
-    end
-  end
-
-  # This runs after thread_with_mandatory_api_token in the filter chain.
-  def thread_with_optional_api_token
     if Thread.current[:arvados_api_token]
-      # We are already inside thread_with_mandatory_api_token.
       yield
+    elsif session[:arvados_api_token]
+      # Expired session. Clear it before refreshing login so that,
+      # if this login procedure fails, we end up showing the "please
+      # log in" page instead of getting stuck in a redirect loop.
+      session.delete :arvados_api_token
+      redirect_to_login
     else
-      # We skipped thread_with_mandatory_api_token. Use the optional version.
-      thread_with_api_token(true) do
-        yield
-      end
+      render 'users/welcome'
     end
   end
 
