@@ -1,1 +1,1 @@
-../../python/bin/arv-mount
+../../../services/fuse/bin/arv-mount
