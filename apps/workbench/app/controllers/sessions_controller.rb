@@ -1,6 +1,6 @@
 class SessionsController < ApplicationController
-  skip_around_filter :thread_with_mandatory_api_token, :only => [:destroy, :index]
-  skip_around_filter :thread_with_optional_api_token, :only => [:destroy, :index]
+  skip_around_filter :require_thread_api_token, :only => [:destroy, :index]
+  skip_around_filter :set_thread_api_token, :only => [:destroy, :index]
   skip_before_filter :find_object_by_uuid, :only => [:destroy, :index]
 
   def destroy
