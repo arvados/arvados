@@ -390,7 +390,7 @@ def parse_arguments(discovery_document, subcommands)
 
   if not subcommands.include? resource
     if not resource_types.include?(resource)
-      puts "Resource or subcommand '#{resource}' is not recognized.\n\n"
+      puts "Resource or subcommand '#{resource}' is not recognized.\n\n" if !resource.nil?
       help_resources(option_parser, discovery_document, resource)
     end
 
