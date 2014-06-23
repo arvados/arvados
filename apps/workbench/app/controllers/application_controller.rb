@@ -344,22 +344,23 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    if not model_class
-      @object = nil
-    elsif params[:uuid].is_a? String
-      if params[:uuid].empty?
+    begin
+      if not model_class
         @object = nil
+      elsif not params[:uuid].is_a?(String)
+        @object = model_class.where(uuid: params[:uuid]).first
+      elsif params[:uuid].empty?
+        @object = nil
+      elsif (model_class != Link and
+             resource_class_for_uuid(params[:uuid]) == Link)
+        @name_link = Link.find(params[:uuid])
+        @object = model_class.find(@name_link.head_uuid)
       else
-        if (model_class != Link and
-            resource_class_for_uuid(params[:uuid]) == Link)
-          @name_link = Link.find(params[:uuid])
-          @object = model_class.find(@name_link.head_uuid)
-        else
-          @object = model_class.find(params[:uuid])
-        end
+        @object = model_class.find(params[:uuid])
       end
-    else
-      @object = model_class.where(uuid: params[:uuid]).first
+    rescue ArvadosApiClient::NotFoundException => error
+      render_not_found(error)
+      return false
     end
   end
 
