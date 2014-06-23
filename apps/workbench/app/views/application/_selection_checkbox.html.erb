@@ -1,4 +1,4 @@
-<%if object and (object.class.goes_in_projects? or (object.is_a?(Link) and ArvadosBase::resource_class_for_uuid(object.head_uuid).to_s == 'Collection')) %>
+<%if object and object.uuid and (object.class.goes_in_projects? or (object.is_a?(Link) and ArvadosBase::resource_class_for_uuid(object.head_uuid).to_s == 'Collection')) %>
   <% fn = if defined? friendly_name
             friendly_name
           else
