@@ -100,7 +100,7 @@ module ApplicationHelper
               else
                 link_name = object_for_dataclass(resource_class, link_uuid).andand.friendly_link_name
               end
-            rescue RuntimeError
+            rescue ArvadosApiClient::NotFoundException
               # If that lookup failed, the link will too. So don't make one.
               return attrvalue
             end
@@ -392,7 +392,7 @@ module ApplicationHelper
       render opts.merge(partial: "application/#{partial}")
     end
   end
-    
+
   def fa_icon_class_for_object object
     case object.class.to_s.to_sym
     when :User
