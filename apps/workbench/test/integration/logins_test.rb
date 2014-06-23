@@ -7,15 +7,12 @@ class LoginsTest < ActionDispatch::IntegrationTest
     assert_no_match(/\bapi_token=/, current_path)
   end
 
-  test "can't use expired token" do
+  test "trying to use expired token redirects to login page" do
     visit page_with_token('expired_trustedclient')
-    assert page.has_text? 'Log in'
-  end
-
-  test "expired token yields login page, not error page" do
-    visit page_with_token('expired_trustedclient')
-    # Even the error page has a "Log in" link. We should look for
-    # something that only appears the real login page.
-    assert page.has_text? ' Log in Oh... fiddlesticks. Sorry, I had some trouble handling your request'
+    buttons = all("a.btn", text: /Log in/)
+    assert_equal(1, buttons.size, "Failed to find one login button")
+    login_link = buttons.first[:href]
+    assert_match(%r{//[^/]+/login}, login_link)
+    assert_no_match(/\bapi_token=/, login_link)
   end
 end

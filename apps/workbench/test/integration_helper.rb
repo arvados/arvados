@@ -54,11 +54,17 @@ class ActionDispatch::IntegrationTest
     end
   end
 
-  @@screenshot_count = 0
+  @@screenshot_count = 1
   def screenshot
-    image_file = "./tmp/workbench-fail-#{@@screenshot_count += 1}.png"
-    page.save_screenshot image_file
-    puts "Saved #{image_file}"
+    image_file = "./tmp/workbench-fail-#{@@screenshot_count}.png"
+    begin
+      page.save_screenshot image_file
+    rescue Capybara::NotSupportedByDriverError
+      # C'est la vie.
+    else
+      puts "Saved #{image_file}"
+      @@screenshot_count += 1
+    end
   end
 
   teardown do
