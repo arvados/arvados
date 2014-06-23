@@ -16,16 +16,14 @@ class ApplicationController < ActionController::Base
   theme :select_theme
 
   begin
-    rescue_from Exception,
-    :with => :render_exception
-    rescue_from ActiveRecord::RecordNotFound,
-    :with => :render_not_found
-    rescue_from ActionController::RoutingError,
-    :with => :render_not_found
-    rescue_from ActionController::UnknownController,
-    :with => :render_not_found
-    rescue_from ::AbstractController::ActionNotFound,
-    :with => :render_not_found
+    rescue_from(ActiveRecord::RecordNotFound,
+                ActionController::RoutingError,
+                ActionController::UnknownController,
+                AbstractController::ActionNotFound,
+                with: :render_not_found)
+    rescue_from(Exception,
+                ActionController::UrlGenerationError,
+                with: :render_exception)
   end
 
   def unprocessable(message=nil)
