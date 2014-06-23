@@ -344,7 +344,15 @@ class ApplicationController < ActionController::Base
           @name_link = Link.find(params[:uuid])
           @object = model_class.find(@name_link.head_uuid)
         else
-          @object = model_class.find(params[:uuid])
+          if Thread.current[:arvados_anonymous_api_token]
+            begin
+              @object = model_class.find(params[:uuid])
+            rescue
+              # not authorized
+            end
+          else
+            @object = model_class.find(params[:uuid])
+          end
         end
       end
     else
