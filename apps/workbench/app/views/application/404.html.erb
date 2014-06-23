@@ -1,0 +1,12 @@
+<h2>Not Found</h2>
+
+<p>The item you requested was not found.
+
+<% if controller.andand.action_name == 'show' %>
+Perhaps you'd like to
+<%= link_to("browse all #{controller.model_class.to_s.underscore.pluralize.humanize(capitalize: false)}",
+            action: :index) %>?
+<% end %>
+
+</p>
+

@@ -35,15 +35,15 @@ class ApplicationController < ActionController::Base
     render_error status: 422
   end
 
-  def render_error(opts)
-    opts = {status: 500}.merge opts
+  def render_error(opts={})
+    opts[:status] ||= 500
     respond_to do |f|
       # json must come before html here, so it gets used as the
       # default format when js is requested by the client. This lets
       # ajax:error callback parse the response correctly, even though
       # the browser can't.
       f.json { render opts.merge(json: {success: false, errors: @errors}) }
-      f.html { render opts.merge(controller: 'application', action: 'error') }
+      f.html { render({action: 'error'}.merge(opts)) }
     end
   end
 
@@ -68,7 +68,7 @@ class ApplicationController < ActionController::Base
     logger.error e.inspect
     @errors = ["Path not found"]
     set_thread_api_token do
-      self.render_error status: 404
+      self.render_error(action: '404', status: 404)
     end
   end
 
