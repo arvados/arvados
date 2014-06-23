@@ -242,14 +242,10 @@ class CollectionsController < ApplicationController
         begin
           yield
           return api_token
-        rescue ArvadosApiClient::NotLoggedInException => error
-          status = 401
-        rescue => error
-          status = (error.message =~ /\[API: (\d+)\]$/) ? $1.to_i : nil
-          raise unless [401, 403, 404].include?(status)
-        end
-        if status >= most_specific_error.first
-          most_specific_error = [status, error]
+        rescue ArvadosApiClient::ApiError => error
+          if error.api_status >= most_specific_error.first
+            most_specific_error = [error.api_status, error]
+          end
         end
       end
     end

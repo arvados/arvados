@@ -2,12 +2,49 @@ require 'httpclient'
 require 'thread'
 
 class ArvadosApiClient
-  class NotLoggedInException < StandardError
+  class ApiError < StandardError
+    attr_reader :api_response, :api_response_s, :api_status, :request_url
+
+    def initialize(request_url, errmsg)
+      @request_url = request_url
+      @api_response ||= {}
+      super(errmsg)
+    end
   end
-  class InvalidApiResponseException < StandardError
+
+
+  class InvalidApiResponseException < ApiError
+    def initialize(request_url, api_response)
+      @api_status = api_response.status_code
+      @api_response_s = api_response.content
+      super(request_url, "Unparseable response from API server")
+    end
   end
-  class AccessForbiddenException < StandardError
+
+  class ApiErrorResponseException < ApiError
+    def initialize(request_url, api_response)
+      @api_status = api_response.status_code
+      @api_response_s = api_response.content
+      @api_response = Oj.load(@api_response_s, :symbol_keys => true)
+      errors = @api_response[:errors]
+      if errors.respond_to?(:join)
+        errors = errors.join("\n\n")
+      else
+        errors = errors.to_s
+      end
+      super(request_url, "#{errors} [API: #{@api_status}]")
+    end
   end
+
+  class AccessForbiddenException < ApiErrorResponseException; end
+  class NotFoundException < ApiErrorResponseException; end
+  class NotLoggedInException < ApiErrorResponseException; end
+
+  ERROR_CODE_CLASSES = {
+    401 => NotLoggedInException,
+    403 => AccessForbiddenException,
+    404 => NotFoundException,
+  }
 
   @@profiling_enabled = Rails.configuration.profiling_enabled
   @@discovery = nil
@@ -84,29 +121,18 @@ class ArvadosApiClient
     end
     profile_checkpoint 'API transaction'
 
-    if msg.status_code == 401
-      raise NotLoggedInException.new
-    end
-
-    json = msg.content
-
     begin
-      resp = Oj.load(json, :symbol_keys => true)
+      resp = Oj.load(msg.content, :symbol_keys => true)
     rescue Oj::ParseError
-      raise InvalidApiResponseException.new json
+      resp = nil
     end
     if not resp.is_a? Hash
-      raise InvalidApiResponseException.new json
+      raise InvalidApiResponseException.new(url, msg)
+    elsif msg.status_code != 200
+      error_class = ERROR_CODE_CLASSES.fetch(msg.status_code, ApiError)
+      raise error_class.new(url, msg)
     end
-    if msg.status_code != 200
-      errors = resp[:errors]
-      errors = errors.join("\n\n") if errors.is_a? Array
-      if msg.status_code == 403
-        raise AccessForbiddenException.new "#{errors} [API: #{msg.status_code}]"
-      else
-        raise "#{errors} [API: #{msg.status_code}]"
-      end
-    end
+
     if resp[:_profile]
       Rails.logger.info "API client: " \
       "#{resp.delete(:_profile)[:request_time]} request_time"
