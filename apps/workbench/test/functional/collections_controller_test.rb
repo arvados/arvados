@@ -1,6 +1,8 @@
 require 'test_helper'
 
 class CollectionsControllerTest < ActionController::TestCase
+  NONEXISTENT_COLLECTION = "ffffffffffffffffffffffffffffffff+0"
+
   def collection_params(collection_name, file_name=nil)
     uuid = api_fixture('collections')[collection_name.to_s]['uuid']
     params = {uuid: uuid, id: uuid}
@@ -172,5 +174,10 @@ class CollectionsControllerTest < ActionController::TestCase
                "Did not skip check_user_agreements filter " +
                "when showing the user agreement.")
     assert_response :success
+  end
+
+  test "requesting nonexistent Collection returns 404" do
+    show_collection({uuid: NONEXISTENT_COLLECTION, id: NONEXISTENT_COLLECTION},
+                    :active, 404)
   end
 end
