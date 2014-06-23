@@ -1,5 +1,5 @@
 class CollectionsController < ApplicationController
-  skip_around_filter(:thread_with_mandatory_api_token,
+  skip_around_filter(:require_thread_api_token,
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
                      only: [:provenance, :show_file, :show_file_links])

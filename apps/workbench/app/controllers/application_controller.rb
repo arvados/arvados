@@ -8,8 +8,10 @@ class ApplicationController < ActionController::Base
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
   around_filter :thread_clear
-  around_filter :thread_with_api_token
-  around_filter :thread_with_mandatory_api_token, except: ERROR_ACTIONS
+  around_filter :set_thread_api_token
+  # Methods that don't require login should
+  #   skip_around_filter :require_thread_api_token
+  around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -56,7 +58,7 @@ class ApplicationController < ActionController::Base
     if e.is_a? ArvadosApiClient::NotLoggedInException
       self.render_error status: 422
     else
-      thread_with_api_token do
+      set_thread_api_token do
         self.render_error status: 422
       end
     end
@@ -65,7 +67,7 @@ class ApplicationController < ActionController::Base
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
     @errors = ["Path not found"]
-    thread_with_api_token do
+    set_thread_api_token do
       self.render_error status: 404
     end
   end
@@ -369,7 +371,12 @@ class ApplicationController < ActionController::Base
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
   end
 
-  def thread_with_api_token
+  # Save the session API token in thread-local storage, and yield.
+  # This method also takes care of session setup if the request
+  # provides a valid api_token parameter.
+  # If a token is unavailable or expired, the block is still run, with
+  # a nil token.
+  def set_thread_api_token
     # If an API token has already been found, pass it through.
     if Thread.current[:arvados_api_token]
       yield
@@ -419,7 +426,8 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def thread_with_mandatory_api_token
+  # Reroute this request if an API token is unavailable.
+  def require_thread_api_token
     if Thread.current[:arvados_api_token]
       yield
     elsif session[:arvados_api_token]
