@@ -187,7 +187,9 @@ if $options[:instance]
     abort "#{$0}: syntax error: --instance cannot be combined with --template or --submit."
   end
 elsif not $options[:template]
-  abort "#{$0}: syntax error: you must supply a --template or --instance."
+  puts "error: you must supply a --template or --instance."
+  p.educate
+  abort
 end
 
 if $options[:run_here] == $options[:submit]
