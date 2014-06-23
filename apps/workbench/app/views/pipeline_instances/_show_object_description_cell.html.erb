@@ -1,4 +1,5 @@
 <div class="nowrap">
-  <%= object.content_summary %><br />
+  <%= object.content_summary %>
+  <%= render :partial => "pipeline_status_label", :locals => {p: object} %><br />
   <%= render partial: 'pipeline_instances/component_labels', locals: {object: object} %>
 </div>
