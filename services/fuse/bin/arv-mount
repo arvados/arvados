@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-from arvados_fuse import *
-import arvados
-import subprocess
 import argparse
+import arvados
 import daemon
+import os
 import signal
+import subprocess
+
+from arvados_fuse import *
 
 if __name__ == '__main__':
     # Handle command line parameters
@@ -94,12 +96,9 @@ collections on the server.""")
 
         exit(rc)
     else:
-        if args.foreground:
-            # Initialize the fuse connection
-            llfuse.init(operations, args.mountpoint, opts)
-            llfuse.main()
-        else:
-            # Initialize the fuse connection
-            llfuse.init(operations, args.mountpoint, opts)
-            with daemon.DaemonContext():
-                llfuse.main()
+        os.chdir(args.mountpoint)
+        if not args.foreground:
+            daemon_ctx = daemon.DaemonContext(working_directory='.')
+            daemon_ctx.open()
+        llfuse.init(operations, '.', opts)
+        llfuse.main()
