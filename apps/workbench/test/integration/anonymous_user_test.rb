@@ -116,24 +116,6 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
   end
 
   def verify_homepage_anonymous_login_not_configured user, invited
-    within('.navbar-fixed-top') do
-      assert page.has_no_text? 'You are viewing public data'
-      if !user
-        assert page.has_link? 'Log in'
-      else
-        assert page.has_link? "#{user['email']}"
-        find('a', text: "#{user['email']}").click
-        within('.dropdown-menu') do
-          page.has_link? ('Logout')
-          if !invited
-            page.has_no_link? ('Not active')
-          else
-            page.has_no_link? ('Sign agreements')
-          end
-        end
-      end
-    end
-
     if !user
       assert page.has_text? 'Please log in'
       assert page.has_text? 'The "Log in" button below will show you a Google sign-in page'
@@ -146,6 +128,37 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
       assert page.has_text? 'Please check the box below to indicate that you have read and accepted the user agreement'
     else
       assert page.has_text? 'Your account is inactive'
+    end
+
+    verify_logged_out_page = false
+    within('.navbar-fixed-top') do
+      assert page.has_no_text? 'You are viewing public data'
+      if !user
+        assert page.has_link? 'Log in'
+      else
+        assert page.has_link? "#{user['email']}"
+        find('a', text: "#{user['email']}").click
+        within('.dropdown-menu') do
+          if !invited
+            page.has_no_link? ('Not active')
+          else
+            page.has_no_link? ('Sign agreements')
+          end
+          page.has_link? ('Log out')
+          find('a', text: "Log out").click
+          verify_logged_out_page = true
+        end
+      end
+    end
+
+    if verify_logged_out_page
+      assert page.has_text? 'Goodbye'
+      assert page.has_link? "Log in to #{Rails.configuration.site_name}"
+      assert page.has_no_link? "Projects"
+      within('.navbar-fixed-top') do
+        assert page.has_no_text? 'You are viewing public data'
+        assert page.has_link? "Log in"
+      end
     end
   end
 
