@@ -8,11 +8,12 @@ class ApplicationController < ActionController::Base
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
   around_filter :thread_clear
+  before_filter :permit_anonymous_browsing_if_no_thread_token
   around_filter :set_thread_api_token
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
-  around_filter :use_anonymous_token_if_necessary
+  before_filter :permit_anonymous_browsing_for_inactive_user
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -415,11 +416,6 @@ class ApplicationController < ActionController::Base
           redirect_to strip_token_from_path(request.fullpath)
           return
         end
-      elsif Rails.configuration.anonymous_user_token && !session[:arvados_api_token]
-        check_anonymous_token
-        if Thread.current[:arvados_api_token]
-          try_redirect_to_login = false
-        end
       else
         logger.debug "No token received, session is #{session.inspect}"
       end
@@ -466,19 +462,14 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def use_anonymous_token_if_necessary
-    check_anonymous_token
-    yield
-  end
-
-  def check_anonymous_token
+  def permit_anonymous_browsing_if_no_thread_token
     anonymous_user_token = Rails.configuration.anonymous_user_token
     if !anonymous_user_token
       Thread.current[:arvados_anonymous_api_token] = nil
       return
     end
 
-    if !Thread.current[:arvados_api_token]
+    if !Thread.current[:arvados_api_token] && !params[:api_token] && !session[:arvados_api_token]
       Thread.current[:arvados_api_token] = anonymous_user_token
       if verify_api_token 
         session[:arvados_api_token] = anonymous_user_token
@@ -497,7 +488,17 @@ class ApplicationController < ActionController::Base
         Thread.current[:arvados_api_token] = nil
         Thread.current[:arvados_anonymous_api_token] = nil
       end
-    elsif current_user && !current_user.andand.is_active
+    end
+  end
+
+  def permit_anonymous_browsing_for_inactive_user
+    anonymous_user_token = Rails.configuration.anonymous_user_token
+    if !anonymous_user_token
+      Thread.current[:arvados_anonymous_api_token] = nil
+      return
+    end
+
+    if current_user && !current_user.andand.is_active
       previous_api_token = Thread.current[:arvados_api_token]
       if anonymous_user_token != previous_api_token
         Thread.current[:arvados_api_token] = anonymous_user_token
