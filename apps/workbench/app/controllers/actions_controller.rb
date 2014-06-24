@@ -109,15 +109,24 @@ class ActionsController < ApplicationController
     IO.popen(['arv-normalize'], 'w+b') do |io|
       io.write combined
       io.close_write
-      while buf = io.read(2**20)
+      while buf = io.read(2**16)
         normalized += buf
+      end
+    end
+
+    normalized_stripped = ''
+    IO.popen(['arv-normalize', '--strip'], 'w+b') do |io|
+      io.write combined
+      io.close_write
+      while buf = io.read(2**16)
+        normalized_stripped += buf
       end
     end
 
     require 'digest/md5'
 
     d = Digest::MD5.new()
-    d << normalized
+    d << normalized_stripped
     newuuid = "#{d.hexdigest}+#{normalized.length}"
 
     env = Hash[ENV].
