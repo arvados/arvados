@@ -104,8 +104,8 @@
                   <% end %>
                 <% end %>
               <% end %>
-
-              <li role="presentation"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+              <% logged_out_url = root_url.chomp('/') + '/user_sessions/logged_out' %>
+              <li role="presentation"><a href="<%= arvados_api_client.arvados_logout_url(return_to: logged_out_url) %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
               <% if current_user.is_active and
                     (@notifications || []).length > 0 %>
                 <li role="presentation" class="divider"></li>
