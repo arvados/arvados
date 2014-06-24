@@ -193,7 +193,6 @@ class CollectionDirectory(Directory):
                         cwd = cwd._entries[part]
                 for k, v in s.files().items():
                     cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v))
-            print "found"
             self.fresh()
         except Exception as detail:
             print("%s: error: %s" % (self.collection_locator,detail) )
