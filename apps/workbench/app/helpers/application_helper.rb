@@ -306,7 +306,7 @@ module ApplicationHelper
     selectables = []
 
     attrtext = attrvalue
-    if dataclass and dataclass.is_a? Class
+    if dataclass and dataclass.is_a? ArvadosBase
       objects = get_n_objects_of_class dataclass, 10
       objects.each do |item|
         items << item
@@ -392,7 +392,7 @@ module ApplicationHelper
       render opts.merge(partial: "application/#{partial}")
     end
   end
-    
+
   def fa_icon_class_for_object object
     case object.class.to_s.to_sym
     when :User
