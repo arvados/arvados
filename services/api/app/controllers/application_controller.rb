@@ -20,11 +20,10 @@ class ApplicationController < ActionController::Base
   include LoadParam
   include RecordFilters
 
-  ERROR_ACTIONS = [:render_error, :render_not_found]
-
-
   respond_to :json
   protect_from_forgery
+
+  ERROR_ACTIONS = [:render_error, :render_not_found]
 
   before_filter :respond_with_json_by_default
   before_filter :remote_ip
@@ -45,6 +44,17 @@ class ApplicationController < ActionController::Base
   theme :select_theme
 
   attr_accessor :resource_attrs
+
+  begin
+    rescue_from(Exception,
+                ArvadosModel::PermissionDeniedError,
+                :with => :render_error)
+    rescue_from(ActiveRecord::RecordNotFound,
+                ActionController::RoutingError,
+                ActionController::UnknownController,
+                AbstractController::ActionNotFound,
+                :with => :render_not_found)
+  end
 
   def index
     @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
@@ -83,21 +93,6 @@ class ApplicationController < ActionController::Base
         session[:redirect_to] = params[:redirect_to]
       end
     end
-  end
-
-  begin
-    rescue_from Exception,
-    :with => :render_error
-    rescue_from ActiveRecord::RecordNotFound,
-    :with => :render_not_found
-    rescue_from ActionController::RoutingError,
-    :with => :render_not_found
-    rescue_from ActionController::UnknownController,
-    :with => :render_not_found
-    rescue_from AbstractController::ActionNotFound,
-    :with => :render_not_found
-    rescue_from ArvadosModel::PermissionDeniedError,
-    :with => :render_error
   end
 
   def render_404_if_no_object
