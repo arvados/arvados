@@ -2,6 +2,7 @@
 # FUSE driver for Arvados Keep
 #
 
+from __future__ import print_function
 import os
 import sys
 
@@ -18,6 +19,8 @@ import json
 
 from time import time
 from llfuse import FUSEError
+
+DEBUG = False
 
 class FreshBase(object):
     '''Base class for maintaining fresh/stale state to determine when to update.'''
@@ -123,7 +126,8 @@ class Directory(FreshBase):
             try:
                 self.update()
             except apiclient.errors.HttpError as e:
-                print e
+                if DEBUG:
+                    print(e, file=sys.stderr)
 
     def __getitem__(self, item):
         self.checkupdate()
@@ -194,8 +198,11 @@ class CollectionDirectory(Directory):
                 for k, v in s.files().items():
                     cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v))
             self.fresh()
+            return True
         except Exception as detail:
-            print("%s: error: %s" % (self.collection_locator,detail) )
+            if DEBUG:
+                print("arv-mount %s: error: %s" % (self.collection_locator,detail), file=sys.stderr)
+            return False
 
 class MagicDirectory(Directory):
     '''A special directory that logically contains the set of all extant keep
@@ -215,19 +222,22 @@ class MagicDirectory(Directory):
         if k in self._entries:
             return True
         try:
-            if arvados.Keep.get(k):
+            e = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, k))
+            if e.update():
+                self._entries[k] = e
                 return True
             else:
                 return False
         except Exception as e:
-            #print 'exception keep', e
+            if DEBUG:
+                print('arv-mount exception keep', e, file=sys.stderr)
             return False
 
     def __getitem__(self, item):
-        if item not in self._entries:
-            self._entries[item] = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, item))
-        return self._entries[item]
-
+        if self.__contains__(item):
+            return self._entries[item]
+        else:
+            raise KeyError()
 
 class TagsDirectory(Directory):
     '''A special directory that contains as subdirectories all tags visible to the user.'''
@@ -410,8 +420,13 @@ class Operations(llfuse.Operations):
     so request handlers do not run concurrently unless the lock is explicitly released
     with llfuse.lock_released.'''
 
-    def __init__(self, uid, gid):
+    def __init__(self, uid, gid, debug):
         super(Operations, self).__init__()
+
+        if debug:
+            global DEBUG
+            DEBUG = True
+            print("arv-mount debug enabled", file=sys.stderr)
 
         self.inodes = Inodes()
         self.uid = uid
@@ -469,7 +484,8 @@ class Operations(llfuse.Operations):
         return entry
 
     def lookup(self, parent_inode, name):
-        #print "lookup: parent_inode", parent_inode, "name", name
+        if DEBUG:
+            print("arv-mount lookup: parent_inode", parent_inode, "name", name, file=sys.stderr)
         inode = None
 
         if name == '.':
@@ -505,7 +521,8 @@ class Operations(llfuse.Operations):
         return fh
 
     def read(self, fh, off, size):
-        #print "read", fh, off, size
+        if DEBUG:
+            print("arv-mount read", fh, off, size, file=sys.stderr)
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
@@ -522,7 +539,8 @@ class Operations(llfuse.Operations):
             del self._filehandles[fh]
 
     def opendir(self, inode):
-        #print "opendir: inode", inode
+        if DEBUG:
+            print("arv-mount opendir: inode", inode, file=sys.stderr)
 
         if inode in self.inodes:
             p = self.inodes[inode]
@@ -543,14 +561,16 @@ class Operations(llfuse.Operations):
         return fh
 
     def readdir(self, fh, off):
-        #print "readdir: fh", fh, "off", off
+        if DEBUG:
+            print("arv-mount readdir: fh", fh, "off", off, file=sys.stderr)
 
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
-        #print "handle.entry", handle.entry
+        if DEBUG:
+            print("arv-mount handle.entry", handle.entry, file=sys.stderr)
 
         e = off
         while e < len(handle.entry):
