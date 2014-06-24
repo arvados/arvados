@@ -5,7 +5,6 @@ class SessionsController < ApplicationController
 
   def destroy
     session.clear
-    session['arv-referrer'] = 'logout'
     redirect_to arvados_api_client.arvados_logout_url(return_to: root_url)
   end
 

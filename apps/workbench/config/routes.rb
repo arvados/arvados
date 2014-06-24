@@ -10,6 +10,7 @@ ArvadosWorkbench::Application.routes.draw do
   get '/user_agreements/signatures' => 'user_agreements#signatures'
   get "users/setup_popup" => 'users#setup_popup', :as => :setup_user_popup
   get "users/setup" => 'users#setup', :as => :setup_user
+  get "user_sessions/logged_out" => 'user_sessions#logged_out'
   resources :nodes
   resources :humans
   resources :traits

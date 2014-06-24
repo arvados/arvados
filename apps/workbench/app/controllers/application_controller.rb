@@ -472,12 +472,6 @@ class ApplicationController < ActionController::Base
   end
 
   def check_anonymous_token
-    if session['arv-referrer'] == 'logout'
-      # Do not use anonymous user token and let logout happen. But clear it for future relogins.
-      session['arv-referrer'] = nil
-      return
-    end
-
     anonymous_user_token = Rails.configuration.anonymous_user_token
     if !anonymous_user_token
       Thread.current[:arvados_anonymous_api_token] = nil

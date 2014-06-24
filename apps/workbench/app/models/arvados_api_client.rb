@@ -175,7 +175,7 @@ class ArvadosApiClient
   end
 
   def arvados_logout_url(params={})
-    arvados_login_url(params).sub('/login','/logout')
+    "/user_sessions/logged_out"
   end
 
   def arvados_v1_base

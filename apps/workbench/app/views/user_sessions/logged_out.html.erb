@@ -1,0 +1,24 @@
+<% content_for :breadcrumbs do raw '<!-- -->' end %>
+
+<div class="row">
+  <div class="col-sm-8 col-sm-push-4" style="margin-top: 1em">
+    <div class="well clearfix">
+      <%= image_tag "dax.png", style: "width: 147px; height: 197px; max-width: 25%; margin-right: 2em", class: 'pull-left' %>
+
+      <h3>Goodbye</h3>
+
+      <p>
+        Thank you for using Arvados.
+      </p> <p>
+        Please use the "Log in" button below to log back into
+	      <%= Rails.configuration.site_name %>.
+      </p>
+      <p>
+	        <%= link_to arvados_api_client.arvados_login_url(return_to: root_url), class: "pull-right btn btn-primary" do %>
+            Log in to <%= Rails.configuration.site_name %>
+            <i class="fa fa-fw fa-arrow-circle-right"></i>
+          <% end %>
+      </p>
+    </div>
+  </div>
+</div>
