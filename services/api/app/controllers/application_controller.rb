@@ -110,15 +110,28 @@ class ApplicationController < ActionController::Base
       errors = [e.inspect]
     end
     status = e.respond_to?(:http_status) ? e.http_status : 422
-    render json: { errors: errors }, status: status
+    send_error(*errors, status: status)
   end
 
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
-    render json: { errors: ["Path not found"] }, status: 404
+    send_error("Path not found", status: 404)
   end
 
   protected
+
+  def send_error(*args)
+    if args.last.is_a? Hash
+      err = args.pop
+    else
+      err = {}
+    end
+    err[:errors] ||= args
+    err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
+    status = err.delete(:status) || 422
+    logger.error "Error #{err[:error_token]}: #{status}"
+    render json: err, status: status
+  end
 
   def find_objects_for_index
     @objects ||= model_class.readable_by(*@read_users)
@@ -242,12 +255,8 @@ class ApplicationController < ActionController::Base
   def require_login
     if not current_user
       respond_to do |format|
-        format.json {
-          render :json => { errors: ['Not logged in'] }.to_json, status: 401
-        }
-        format.html {
-          redirect_to '/auth/joshid'
-        }
+        format.json { send_error("Not logged in", status: 401) }
+        format.html { redirect_to '/auth/joshid' }
       end
       false
     end
@@ -255,14 +264,14 @@ class ApplicationController < ActionController::Base
 
   def admin_required
     unless current_user and current_user.is_admin
-      render :json => { errors: ['Forbidden'] }.to_json, status: 403
+      send_error("Forbidden", status: 403)
     end
   end
 
   def require_auth_scope
     if @read_auths.empty?
       if require_login != false
-        render :json => { errors: ['Forbidden'] }.to_json, status: 403
+        send_error("Forbidden", status: 403)
       end
       false
     end

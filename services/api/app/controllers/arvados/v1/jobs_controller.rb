@@ -8,9 +8,8 @@ class Arvados::V1::JobsController < ApplicationController
   def create
     [:repository, :script, :script_version, :script_parameters].each do |r|
       if !resource_attrs[r]
-        return render json: {
-          :errors => ["#{r} attribute must be specified"]
-        }, status: :unprocessable_entity
+        return send_error("#{r} attribute must be specified",
+                          status: :unprocessable_entity)
       end
     end
 
