@@ -15,7 +15,7 @@ function addToLogViewer(logViewer, lines, taskState) {
         var v = lines[a].match(re);
         if (v != null) {
 
-            var ts = new Date(Date.UTC(v[2], v[3], v[4], v[6], v[7], v[8]));
+            var ts = new Date(Date.UTC(v[2], v[3]-1, v[4], v[6], v[7], v[8]));
 
             v11 = v[11];
             if (typeof v[11] === 'undefined') {
