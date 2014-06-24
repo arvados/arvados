@@ -376,6 +376,7 @@ class ApplicationController < ActionController::Base
   def thread_clear
     Thread.current[:arvados_api_token] = nil
     Thread.current[:user] = nil
+    Thread.current[:arvados_anonymous_api_token] = nil
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
     yield
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
