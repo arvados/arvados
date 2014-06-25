@@ -114,31 +114,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
     end
 
-    # test the system menu
-    if user && user['is_active']
-      look_for_add_new = nil
-      within('.navbar-fixed-top') do
-        page.find("#system-menu").click
-        if user['is_admin']
-          within('.dropdown-menu') do
-            assert page.has_text? 'Groups'
-            find('a', text: 'Users').click
-            look_for_add_new = 'Add a new user'
-          end
-        else
-          within('.dropdown-menu') do
-            assert page.has_no_text? 'Users'
-            find('a', text: 'Groups').click
-            look_for_add_new = 'Add a new group'
-          end
-        end
-      end
-      if look_for_add_new
-        assert page.has_text? look_for_add_new
-      end
-    else
-      assert page.has_no_link? '#system-menu'
-    end
+    check_system_menu user
   end
 
   def verify_homepage_anonymous_login_not_configured user, invited
@@ -174,7 +150,11 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
     end
 
-    # test the system menu
+    check_system_menu user
+  end
+
+  # test the system menu
+  def check_system_menu user
     if user && user['is_active']
       look_for_add_new = nil
       within('.navbar-fixed-top') do
