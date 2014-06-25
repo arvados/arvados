@@ -50,17 +50,22 @@ class ApplicationController < ActionController::Base
   def render_exception(e)
     logger.error e.inspect
     logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
-    if @object.andand.errors.andand.full_messages.andand.any?
+    err_opts = {status: 422}
+    if e.is_a?(ArvadosApiClient::ApiError)
+      err_opts.merge!(action: 'api_error', locals: {api_error: e})
+      @errors = e.api_response[:errors]
+    elsif @object.andand.errors.andand.full_messages.andand.any?
       @errors = @object.errors.full_messages
     else
       @errors = [e.to_s]
     end
     if e.is_a? ArvadosApiClient::NotLoggedInException
-      self.render_error status: 422
+      prep_token = :thread_clear
     else
-      set_thread_api_token do
-        self.render_error status: 422
-      end
+      prep_token = :set_thread_api_token
+    end
+    send(prep_token) do
+      render_error(err_opts)
     end
   end
 
