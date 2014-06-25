@@ -464,31 +464,8 @@ class ApplicationController < ActionController::Base
   end
 
   def permit_anonymous_browsing_if_no_thread_token
-    anonymous_user_token = Rails.configuration.anonymous_user_token
-    if !anonymous_user_token
-      Thread.current[:arvados_anonymous_api_token] = nil
-      return
-    end
-
     if !Thread.current[:arvados_api_token] && !params[:api_token] && !session[:arvados_api_token]
-      Thread.current[:arvados_api_token] = anonymous_user_token
-      if verify_api_token 
-        session[:arvados_api_token] = anonymous_user_token
-        u = User.current
-        session[:user] = {
-          uuid: u.uuid,
-          email: u.email,
-          first_name: u.first_name,
-          last_name: u.last_name,
-          is_active: u.is_active,
-          is_admin: u.is_admin,
-          prefs: u.prefs
-        }
-        Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
-      else
-        Thread.current[:arvados_api_token] = nil
-        Thread.current[:arvados_anonymous_api_token] = nil
-      end
+      params[:api_token] = Rails.configuration.anonymous_user_token
     end
   end
 
