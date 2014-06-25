@@ -30,4 +30,27 @@ class ErrorsTest < ActionDispatch::IntegrationTest
     assert(all("a").any? { |a| a[:href] =~ %r{/collections/?(\?|$)} },
            "no search link found on 404 page")
   end
+
+  def now_timestamp
+    Time.now.utc.to_i
+  end
+
+  def page_has_error_token?(start_stamp)
+    matching_stamps = (start_stamp .. now_timestamp).to_a.join("|")
+    # Check the page HTML because we really don't care how it's presented.
+    # I think it would even be reasonable to put it in a comment.
+    page.html =~ /\b(#{matching_stamps})\+[0-9A-Fa-f]{8}\b/
+  end
+
+  # We use API tokens with limited scopes as the quickest way to get the API
+  # server to return an error.  If Workbench gets smarter about coping when
+  # it has a too-limited token, these tests will need to be adjusted.
+  test "API error page includes error token" do
+    start_stamp = now_timestamp
+    visit(page_with_token("active_readonly", "/authorized_keys"))
+    click_on "Add a new authorized key"
+    assert(page.has_text?(/fiddlesticks/i),
+           "Not on an error page after making an SSH key out of scope")
+    assert(page_has_error_token?(start_stamp), "no error token on 404 page")
+  end
 end
