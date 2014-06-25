@@ -5,7 +5,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
   test "error page renders user navigation" do
     visit(page_with_token("active", "/collections/#{BAD_UUID}"))
-    assert(page.has_text?(@@API_AUTHS["active"]["email"]),
+    assert(page.has_text?(api_fixture("users")["active"]["email"]),
            "User information missing from error page")
     assert(page.has_no_text?(/log ?in/i),
            "Logged in user prompted to log in on error page")
