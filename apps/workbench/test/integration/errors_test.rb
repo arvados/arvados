@@ -11,6 +11,14 @@ class ErrorsTest < ActionDispatch::IntegrationTest
            "Logged in user prompted to log in on error page")
   end
 
+  test "no user navigation with expired token" do
+    visit(page_with_token("expired", "/collections/#{BAD_UUID}"))
+    assert(page.has_no_text?(api_fixture("users")["active"]["email"]),
+           "Page visited with expired token included user information")
+    assert(page.has_selector?("a", text: /log ?in/i),
+           "Login prompt missing on expired token error page")
+  end
+
   test "error page renders without login" do
     visit "/collections/download/#{BAD_UUID}/#{@@API_AUTHS['active']['api_token']}"
     assert(page.has_no_text?(/\b500\b/),
