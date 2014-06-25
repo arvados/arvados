@@ -930,8 +930,13 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
-  helper_method :anonymous_login_enabled
-  def anonymous_login_enabled
+  helper_method :is_anonymous
+  def is_anonymous
+    return Rails.configuration.anonymous_user_token && (Thread.current[:arvados_anonymous_api_token] == Thread.current[:arvados_api_token])
+  end
+
+  helper_method :anonymous_browsing_enabled
+  def anonymous_browsing_enabled
     # to avoid the case where bogus anonymous token is configured,
     # safer to check this object which is set after token verification
     return Thread.current[:arvados_anonymous_api_token] && Rails.configuration.anonymous_user_token

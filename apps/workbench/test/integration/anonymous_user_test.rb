@@ -23,7 +23,7 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
         assert page.has_link? "#{user['email']}"
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
-          page.has_link? ('Logout')
+          page.has_link? ('Log out')
           page.has_no_link? ('Not active')
           page.has_no_link? ('Sign agreements')
           page.has_link? ('Manage ssh keys')
@@ -38,7 +38,7 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
           assert page.has_link? "#{user['email']}"
           find('a', text: "#{user['email']}").click
           within('.dropdown-menu') do
-            page.has_link? ('Logout')
+            page.has_link? ('Log out')
             if !invited
               page.has_link? ('Not active')
             else
@@ -130,7 +130,6 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
       assert page.has_text? 'Your account is inactive'
     end
 
-    verify_logged_out_page = false
     within('.navbar-fixed-top') do
       assert page.has_no_text? 'You are viewing public data'
       if !user
@@ -145,19 +144,7 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
             page.has_no_link? ('Sign agreements')
           end
           page.has_link? ('Log out')
-          find('a', text: "Log out").click
-          verify_logged_out_page = true
         end
-      end
-    end
-
-    if verify_logged_out_page
-      assert page.has_text? 'Goodbye'
-      assert page.has_link? "Log in to #{Rails.configuration.site_name}"
-      assert page.has_no_link? "Projects"
-      within('.navbar-fixed-top') do
-        assert page.has_no_text? 'You are viewing public data'
-        assert page.has_link? "Log in"
       end
     end
   end

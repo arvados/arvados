@@ -53,7 +53,7 @@
           <span class="icon-bar"></span>
         </button>
         <a class="navbar-brand" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %>
-          <% if current_user && !current_user.is_active && anonymous_login_enabled %>  You are viewing public data. <% end %>
+          <% if current_user && !current_user.is_active && anonymous_browsing_enabled %>  You are viewing public data. <% end %>
         </a>
       </div>
 
@@ -77,7 +77,7 @@
           -->
 
           <% if current_user %>
-          <% if !current_user.is_anonymous %>
+          <% if !is_anonymous %>
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>
@@ -90,7 +90,7 @@
               <li role="presentation" class="divider"></li>
               <% end %>
 
-              <% if anonymous_login_enabled && !current_user.is_active %> 
+              <% if anonymous_browsing_enabled && !current_user.is_active %> 
                 <% if !current_user.is_invited %>
                   <li role="presentation"><a href="/users/welcome" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Not active </a></li>
                 <% else %>
@@ -117,7 +117,7 @@
             </ul>
           </li>
           <% else %>
-            <% if current_user.is_anonymous %>
+            <% if is_anonymous %>
               <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
             <% end %>
           <% end %>
@@ -183,7 +183,7 @@
       </div><!-- /.navbar-collapse -->
     </nav>
 
-    <% if current_user.andand.is_active || (current_user && anonymous_login_enabled)%>
+    <% if current_user.andand.is_active || (current_user && anonymous_browsing_enabled)%>
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
           <li class="dropdown">

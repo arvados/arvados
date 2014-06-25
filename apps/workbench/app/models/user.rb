@@ -48,10 +48,4 @@ class User < ArvadosBase
   def self.setup params
     arvados_api_client.api(self, "/setup", params)
   end
-
-  def is_anonymous
-    return Rails.configuration.anonymous_user_token &&
-           (Thread.current[:arvados_api_token] == Thread.current[:arvados_anonymous_api_token])
-  end
-
 end
