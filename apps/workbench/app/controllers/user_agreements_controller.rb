@@ -1,6 +1,5 @@
 class UserAgreementsController < ApplicationController
   skip_before_filter :permit_anonymous_browsing_if_no_thread_token
-  skip_before_filter :permit_anonymous_browsing_for_inactive_user
   skip_before_filter :check_user_agreements
   skip_before_filter :find_object_by_uuid
   def model_class
