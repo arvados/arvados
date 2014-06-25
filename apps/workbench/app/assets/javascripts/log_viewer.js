@@ -89,7 +89,7 @@ function addToLogViewer(logViewer, lines, taskState) {
                 taskid: v11,
                 node: node,
                 slot: slot,
-                message: message,
+                message: message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
                 type: type
             });
             count += 1;
