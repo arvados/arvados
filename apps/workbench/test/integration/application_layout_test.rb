@@ -2,7 +2,7 @@ require 'integration_helper'
 require 'selenium-webdriver'
 require 'headless'
 
-class AnonymousUserTest < ActionDispatch::IntegrationTest
+class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   setup do
     headless = Headless.new
     headless.start
@@ -113,6 +113,32 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
         assert page.has_text? 'Please check the box below to indicate that you have read and accepted the user agreement'
       end
     end
+
+    # test the system menu
+    if user && user['is_active']
+      look_for_add_new = nil
+      within('.navbar-fixed-top') do
+        page.find("#system-menu").click
+        if user['is_admin']
+          within('.dropdown-menu') do
+            assert page.has_text? 'Groups'
+            find('a', text: 'Users').click
+            look_for_add_new = 'Add a new user'
+          end
+        else
+          within('.dropdown-menu') do
+            assert page.has_no_text? 'Users'
+            find('a', text: 'Groups').click
+            look_for_add_new = 'Add a new group'
+          end
+        end
+      end
+      if look_for_add_new
+        assert page.has_text? look_for_add_new
+      end
+    else
+      assert page.has_no_link? '#system-menu'
+    end
   end
 
   def verify_homepage_anonymous_login_not_configured user, invited
@@ -147,6 +173,32 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
         end
       end
     end
+
+    # test the system menu
+    if user && user['is_active']
+      look_for_add_new = nil
+      within('.navbar-fixed-top') do
+        page.find("#system-menu").click
+        if user['is_admin']
+          within('.dropdown-menu') do
+            assert page.has_text? 'Groups'
+            find('a', text: 'Users').click
+            look_for_add_new = 'Add a new user'
+          end
+        else
+          within('.dropdown-menu') do
+            assert page.has_no_text? 'Users'
+            find('a', text: 'Groups').click
+            look_for_add_new = 'Add a new group'
+          end
+        end
+      end
+      if look_for_add_new
+        assert page.has_text? look_for_add_new
+      end
+    else
+      assert page.has_no_link? '#system-menu'
+    end
   end
 
   [
@@ -154,7 +206,8 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
     ['anonymous', nil, false],
     ['inactive', api_fixture('users')['inactive'], true],
     ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false],
-    ['active', api_fixture('users')['active'], true]
+    ['active', api_fixture('users')['active'], true],
+    ['admin', api_fixture('users')['admin'], true],
   ].each do |token, user, invited|
     test "visit home page when anonymous login configured for user #{token}" do
       Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
@@ -173,7 +226,8 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
     ['anonymous', api_fixture('users')['anonymous'], false],
     ['inactive', api_fixture('users')['inactive'], true],
     ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false],
-    ['active', api_fixture('users')['active'], true]
+    ['active', api_fixture('users')['active'], true],
+    ['admin', api_fixture('users')['admin'], true],
   ].each do |token, user, invited|
     test "visit home page when anonymous login configured with bogus token for user #{token}" do
       Rails.configuration.anonymous_user_token = 'no-such-token'
@@ -192,7 +246,8 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
     ['anonymous', api_fixture('users')['anonymous'], false],
     ['inactive', api_fixture('users')['inactive'], true],
     ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false],
-    ['active', api_fixture('users')['active'], true]
+    ['active', api_fixture('users')['active'], true],
+    ['admin', api_fixture('users')['admin'], true],
   ].each do |token, user, invited|
     test "visit home page when anonymous login not configured for user #{token}" do
       Rails.configuration.anonymous_user_token = false
