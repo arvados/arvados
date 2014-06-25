@@ -176,7 +176,7 @@ class AnonymousUserTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true]
   ].each do |token, user, invited|
     test "visit home page when anonymous login configured with bogus token for user #{token}" do
-      Rails.configuration.anonymous_user_token = false
+      Rails.configuration.anonymous_user_token = 'no-such-token'
 
       if !token
         visit ('/')

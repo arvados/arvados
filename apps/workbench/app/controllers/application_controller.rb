@@ -469,6 +469,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  # if inactive user, set enable anonymous browsing if applicable
   def permit_anonymous_browsing_for_inactive_user
     anonymous_user_token = Rails.configuration.anonymous_user_token
     if !anonymous_user_token
