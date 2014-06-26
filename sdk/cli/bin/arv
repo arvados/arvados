@@ -184,6 +184,8 @@ def arv_edit client, arvados, global_opts, remaining_opts
     abort "Could not determine resource type #{m[2]}"
   end
 
+  require 'fileutils'
+
   api_method = 'arvados.' + rsc + '.get'
 
   result = client.execute(:api_method => eval(api_method),
@@ -251,8 +253,13 @@ def arv_edit client, arvados, global_opts, remaining_opts
           n += 1
         end
         puts "\nTry again (y/n)? "
-        yn = $stdin.read 1
+        yn = "X"
+        while not ["y", "Y", "n", "N"].include?(yn)
+          yn = $stdin.read 1
+        end
         if yn == 'n' or yn == 'N'
+          FileUtils::cp tmp.path, tmp.path + ".saved"
+          puts "Saved contents to " + tmp.path + ".saved"
           exit 1
         end
       end
@@ -262,31 +269,47 @@ def arv_edit client, arvados, global_opts, remaining_opts
     end
   end
 
-  tmp.close(true)
+  begin
+    if newobj != results
+      api_method = 'arvados.' + rsc + '.update'
+      dumped = Oj.dump(newobj)
 
-  if newobj != results
-    api_method = 'arvados.' + rsc + '.update'
-    dumped = Oj.dump(newobj)
-    result = client.execute(:api_method => eval(api_method),
-                            :parameters => {"uuid" => n, rsc.singularize => dumped},
-                            :authenticated => false,
-                            :headers => {
-                              authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                            })
+      begin
+        result = client.execute(:api_method => eval(api_method),
+                                :parameters => {"uuid" => n},
+                                :body => { rsc.singularize => dumped },
+                                :authenticated => false,
+                                :headers => {
+                                  authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                                })
+      rescue Exception => e
+        FileUtils::cp tmp.path, tmp.path + ".saved"
+        puts "Error communicating with server, error was #{e}"
+        puts "Update body was:"
+        puts dumped
+        puts "Saved contents to " + tmp.path + ".saved"
+        abort
+      end
 
-    begin
-      results = JSON.parse result.body
-    rescue JSON::ParserError => e
-      abort "Failed to parse server response:\n" + e.to_s
+      begin
+        results = JSON.parse result.body
+      rescue JSON::ParserError => e
+        abort "Failed to parse server response:\n" + e.to_s
+      end
+
+      if result.response.status != 200
+        FileUtils::cp tmp.path, tmp.path + ".saved"
+        puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
+        puts "Update body was:"
+        puts dumped
+        puts "Saved contents to " + tmp.path + ".saved"
+        abort
+      end
+    else
+      puts "Object is unchanged, did not update."
     end
-
-    if result.response.status != 200
-      puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
-      puts "Update body was:"
-      puts dumped
-    end
-  else
-    puts "Object is unchanged, did not update."
+  ensure
+    tmp.close(true)
   end
 
   exit 0
