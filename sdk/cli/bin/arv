@@ -143,6 +143,11 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   end
 end
 
+def arv_edit_save_tmp tmp
+  FileUtils::cp tmp.path, tmp.path + ".saved"
+  puts "Saved contents to " + tmp.path + ".saved"
+end
+
 def arv_edit client, arvados, global_opts, remaining_opts
   uuid = remaining_opts.shift
   if uuid.nil? or uuid == "-h" or uuid == "--help"
@@ -183,8 +188,6 @@ def arv_edit client, arvados, global_opts, remaining_opts
   if rsc.nil?
     abort "Could not determine resource type #{m[2]}"
   end
-
-  require 'fileutils'
 
   api_method = 'arvados.' + rsc + '.get'
 
@@ -258,9 +261,8 @@ def arv_edit client, arvados, global_opts, remaining_opts
           yn = $stdin.read 1
         end
         if yn == 'n' or yn == 'N'
-          FileUtils::cp tmp.path, tmp.path + ".saved"
-          puts "Saved contents to " + tmp.path + ".saved"
-          exit 1
+          arv_edit_save_tmp tmp
+          abort
         end
       end
     else
@@ -283,11 +285,10 @@ def arv_edit client, arvados, global_opts, remaining_opts
                                   authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
                                 })
       rescue Exception => e
-        FileUtils::cp tmp.path, tmp.path + ".saved"
         puts "Error communicating with server, error was #{e}"
         puts "Update body was:"
         puts dumped
-        puts "Saved contents to " + tmp.path + ".saved"
+        arv_edit_save_tmp tmp
         abort
       end
 
@@ -298,11 +299,10 @@ def arv_edit client, arvados, global_opts, remaining_opts
       end
 
       if result.response.status != 200
-        FileUtils::cp tmp.path, tmp.path + ".saved"
         puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
         puts "Update body was:"
         puts dumped
-        puts "Saved contents to " + tmp.path + ".saved"
+        arv_edit_save_tmp tmp
         abort
       end
     else
