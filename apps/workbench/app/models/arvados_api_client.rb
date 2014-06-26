@@ -5,43 +5,40 @@ class ArvadosApiClient
   class ApiError < StandardError
     attr_reader :api_response, :api_response_s, :api_status, :request_url
 
-    def initialize(request_url, api_response)
+    def initialize(request_url, errmsg)
       @request_url = request_url
-      @api_status = api_response.status_code
-      @api_response_s = api_response.content
-      @api_response = parse_response
-      super("#{error_message} [API: #{@api_status}]")
-    end
-
-    protected
-
-    def parse_response
-      Oj.load(@api_response_s, :symbol_keys => true)
-    end
-
-    def error_message
-      errors = @api_response[:errors]
-      if errors.respond_to?(:join)
-        errors.join("\n\n")
-      else
-        errors.to_s
-      end
+      @api_response ||= {}
+      super(errmsg)
     end
   end
+
 
   class InvalidApiResponseException < ApiError
-    def parse_response
-      {}  # We already know it's not parseable.
-    end
-
-    def error_message
-      "Unparseable response from API server"
+    def initialize(request_url, api_response)
+      @api_status = api_response.status_code
+      @api_response_s = api_response.content
+      super(request_url, "Unparseable response from API server")
     end
   end
 
-  class AccessForbiddenException < ApiError; end
-  class NotFoundException < ApiError; end
-  class NotLoggedInException < ApiError; end
+  class ApiErrorResponseException < ApiError
+    def initialize(request_url, api_response)
+      @api_status = api_response.status_code
+      @api_response_s = api_response.content
+      @api_response = Oj.load(@api_response_s, :symbol_keys => true)
+      errors = @api_response[:errors]
+      if errors.respond_to?(:join)
+        errors = errors.join("\n\n")
+      else
+        errors = errors.to_s
+      end
+      super(request_url, "#{errors} [API: #{@api_status}]")
+    end
+  end
+
+  class AccessForbiddenException < ApiErrorResponseException; end
+  class NotFoundException < ApiErrorResponseException; end
+  class NotLoggedInException < ApiErrorResponseException; end
 
   ERROR_CODE_CLASSES = {
     401 => NotLoggedInException,
