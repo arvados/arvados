@@ -12,6 +12,13 @@ class ArvadosApiClient
     end
   end
 
+  class NoApiResponseException < ApiError
+    def initialize(request_url, exception)
+      @api_response_s = exception.to_s
+      super(request_url,
+            "#{exception.class.to_s} error connecting to API server")
+    end
+  end
 
   class InvalidApiResponseException < ApiError
     def initialize(request_url, api_response)
@@ -115,9 +122,11 @@ class ArvadosApiClient
 
     profile_checkpoint { "Prepare request #{url} #{query[:uuid]} #{query[:where]} #{query[:filters]}" }
     msg = @client_mtx.synchronize do
-      @api_client.post(url,
-                       query,
-                       header: header)
+      begin
+        @api_client.post(url, query, header: header)
+      rescue => exception
+        raise NoApiResponseException.new(url, exception)
+      end
     end
     profile_checkpoint 'API transaction'
 
