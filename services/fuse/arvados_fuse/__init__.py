@@ -226,7 +226,7 @@ class MagicDirectory(Directory):
             else:
                 return False
         except Exception as e:
-            logging.debug('arv-mount exception keep', e)
+            logging.debug('arv-mount exception keep %s', e)
             return False
 
     def __getitem__(self, item):
@@ -421,7 +421,7 @@ class Operations(llfuse.Operations):
         super(Operations, self).__init__()
 
         if debug:
-            logging.setLevel(logging.DEBUG)
+            logging.basicConfig(level=logging.DEBUG)
             logging.info("arv-mount debug enabled")
 
         self.inodes = Inodes()
@@ -480,7 +480,7 @@ class Operations(llfuse.Operations):
         return entry
 
     def lookup(self, parent_inode, name):
-        logging.debug("arv-mount lookup: parent_inode", parent_inode, "name", name)
+        logging.debug("arv-mount lookup: parent_inode %i name %s", parent_inode, name)
         inode = None
 
         if name == '.':
@@ -516,7 +516,7 @@ class Operations(llfuse.Operations):
         return fh
 
     def read(self, fh, off, size):
-        logging.debug("arv-mount read", fh, off, size)
+        logging.debug("arv-mount read %i %i %i", fh, off, size)
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
@@ -533,7 +533,7 @@ class Operations(llfuse.Operations):
             del self._filehandles[fh]
 
     def opendir(self, inode):
-        logging.debug("arv-mount opendir: inode", inode)
+        logging.debug("arv-mount opendir: inode %i", inode)
 
         if inode in self.inodes:
             p = self.inodes[inode]
@@ -554,14 +554,14 @@ class Operations(llfuse.Operations):
         return fh
 
     def readdir(self, fh, off):
-        logging.debug("arv-mount readdir: fh", fh, "off", off)
+        logging.debug("arv-mount readdir: fh %i off %i", fh, off)
 
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
-        logging.debug("arv-mount handle.entry", handle.entry)
+        logging.debug("arv-mount handle.entry %s", handle.entry)
 
         e = off
         while e < len(handle.entry):
