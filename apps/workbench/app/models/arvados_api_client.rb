@@ -70,6 +70,13 @@ class ArvadosApiClient
     else
       query["_method"] = "GET"
     end
+    # Use anonymous token if available when it is a GET request for a resource other than
+    # user agreements and collections (specifically user agreement collections)
+    if (query["_method"] == "GET") && !Thread.current[:user].andand.is_active &&
+        Thread.current[:arvados_anonymous_api_token] &&
+        (url.include?('user_agreements') == false) && (url.include?('collections') == false)
+      query["api_token"] = Thread.current[:arvados_anonymous_api_token]
+    end
     if @@profiling_enabled
       query["_profile"] = "true"
     end
