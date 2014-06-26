@@ -3,9 +3,10 @@
 <p>The item you requested was not found.
 
 <% if params[:uuid] and (model_class = resource_class_for_uuid(params[:uuid]))
-     then class_name = model_class.to_s.pluralize.downcase %>
+     then class_name = model_class.to_s.underscore.pluralize %>
 Perhaps you'd like to
-<%= link_to("browse all #{class_name}", send("#{class_name}_path".to_sym)) %>?
+<%= link_to("browse all #{class_name.humanize(capitalize: false)}",
+            send("#{class_name}_path".to_sym)) %>?
 <% end %>
 
 </p>
