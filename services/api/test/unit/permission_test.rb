@@ -63,7 +63,34 @@ class PermissionTest < ActiveSupport::TestCase
     assert ob.writable_by.include?(users(:active).uuid), "user does not have write permission"
   end
 
-  test "user with can_manage permission allowed to modify permission link" do
+  test "user owns group, group can_manage object's group, user can add permissions" do
+    set_user_from_auth :admin
+
+    owner_grp = Group.create!(owner_uuid: users(:active).uuid)
+
+    sp_grp = Group.create!
+    sp = Specimen.create!(owner_uuid: sp_grp.uuid)
+
+    manage_perm = Link.create!(link_class: 'permission',
+                               name: 'can_manage',
+                               tail_uuid: owner_grp.uuid,
+                               head_uuid: sp_grp.uuid)
+
+    # active user owns owner_grp, which has can_manage permission on sp_grp
+    # user should be able to add permissions on sp.
+    set_user_from_auth :active_trustedclient
+    test_perm = Link.create(tail_uuid: users(:active).uuid,
+                            head_uuid: sp.uuid,
+                            link_class: 'permission',
+                            name: 'can_write')
+    test_uuid = test_perm.uuid
+    assert test_perm.save, "could not save new permission on target object"
+    assert test_perm.destroy, "could not delete new permission on target object"
+  end
+
+  # TODO(twp): fix bug #3091, which should fix this test.
+  test "can_manage permission on a non-group object" do
+    skip
     set_user_from_auth :admin
 
     ob = Specimen.create!

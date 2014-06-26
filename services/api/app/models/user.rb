@@ -71,19 +71,30 @@ class User < ArvadosModel
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
+  #
+  # The permission graph is built by repeatedly enumerating all
+  # permission links reachable from self.uuid, and then calling
+  # search_permissions
   def group_permissions
     Rails.cache.fetch "groups_for_user_#{self.uuid}" do
       permissions_from = {}
       todo = {self.uuid => true}
       done = {}
+      # Build the equivalence class of permissions starting with
+      # self.uuid. On each iteration of this loop, todo contains
+      # the next set of uuids in the permission equivalence class
+      # to evaluate.
       while !todo.empty?
         lookup_uuids = todo.keys
         lookup_uuids.each do |uuid| done[uuid] = true end
         todo = {}
         newgroups = []
+        # include all groups owned by the current set of uuids.
         Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
           newgroups << [group.owner_uuid, group.uuid, 'can_manage']
         end
+        # add any permission links from the current lookup_uuids to a
+        # User or Group.
         Link.where('tail_uuid in (?) and link_class = ? and (head_uuid like ? or head_uuid like ?)',
                    lookup_uuids,
                    'permission',
@@ -179,54 +190,7 @@ class User < ArvadosModel
     self.save!
   end
 
-  def owns? object_uuid
-    return User.find_user_owning(object_uuid).andand.uuid == uuid
-  end
-
-  def can_manage? object_uuid
-    is_admin or
-      owns?(object_uuid) or
-      has_permission?(:can_manage, object_uuid)
-  end
-
   protected
-
-  # Returns the first User found in the ownership path for obj_uuid.
-  # If obj_uuid is not owned by any user, returns nil.
-  #
-  # TODO(twp): this code largely stolen from
-  # ArvadosModel::ensure_ownership_path_leads_to_user. See if we can
-  # refactor these methods to share more code.
-  #
-  def self.find_user_owning obj_uuid
-    uuid_in_path = {obj_uuid => true}
-    # Walk up the owner_uuid chain for obj_uuid until one of these
-    # conditions is met:
-    #   - the owner_uuid belongs to the User class
-    #   - no owner_uuid is found (no User owns this object)
-    #   - we discover an ownership cycle (a fatal consistency error)
-    #
-    x = obj_uuid
-    while (owner_class = ArvadosModel.resource_class_for_uuid(x)) != User
-      begin
-        if !owner_class.respond_to? :find_by_uuid
-          raise ActiveRecord::RecordNotFound.new
-        else
-          x = owner_class.find_by_uuid(x).owner_uuid
-        end
-      rescue ActiveRecord::RecordNotFound => e
-        # errors.add :owner_uuid, "is not owned by any user: #{e}"
-        return nil
-      end
-      # If there is an ownership cycle, we can conclude that
-      # no User owns this object.
-      if uuid_in_path[x]
-        return nil
-      end
-      uuid_in_path[x] = true
-    end
-    return owner_class.find_by_uuid(x)
-  end
 
   def ensure_ownership_path_leads_to_user
     true

@@ -283,4 +283,70 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "get_permissions returns list" do
+    # add some permissions
+    post "/arvados/v1/links", {
+      :format => :json,
+      :link => {
+        tail_uuid: users(:spectator).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: collections(:foo_file).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+    can_read_uuid = json_response['uuid']
+
+    post "/arvados/v1/links", {
+      :format => :json,
+      :link => {
+        tail_uuid: users(:active).uuid,
+        link_class: 'permission',
+        name: 'can_write',
+        head_uuid: collections(:foo_file).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+    can_write_uuid = json_response['uuid']
+
+    post "/arvados/v1/links", {
+      :format => :json,
+      :link => {
+        tail_uuid: users(:inactive).uuid,
+        link_class: 'permission',
+        name: 'can_manage',
+        head_uuid: collections(:foo_file).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+    can_manage_uuid = json_response['uuid']
+
+    get "/arvados/v1/permissions/#{collections(:foo_file).uuid}", {
+      :format => :json,
+    }, auth(:admin)
+    assert_response :success
+
+    perm_uuids = json_response['items'].map { |item| item['uuid'] }
+    assert perm_uuids.include?(can_read_uuid), "can_read_uuid not found"
+    assert perm_uuids.include?(can_write_uuid), "can_write_uuid not found"
+    assert perm_uuids.include?(can_manage_uuid), "can_manage_uuid not found"
+  end
+
+  test "get_permissions returns 404 for nonexistent uuid" do
+    nonexistent = Collection.generate_uuid
+    # make sure it really doesn't exist
+    get "/arvados/v1/collections/#{nonexistent}", { :format => :json }, auth(:admin)
+    assert_response 404
+
+    get "/arvados/v1/permissions/#{nonexistent}", { :format => :json }, auth(:active)
+    assert_response 404
+  end
+
+  test "get_permissions returns 403 if user lacks manage permission" do
+    get "/arvados/v1/permissions/#{collections(:foo_file).uuid}", { :format => :json }, auth(:active)
+    assert_response 403
+  end
 end

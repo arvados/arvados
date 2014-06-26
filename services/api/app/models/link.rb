@@ -5,7 +5,6 @@ class Link < ArvadosModel
   serialize :properties, Hash
   before_create :permission_to_attach_to_objects
   before_update :permission_to_attach_to_objects
-  before_save :permission_link_ownership, if: "link_class == 'permission'"
   after_update :maybe_invalidate_permissions_cache
   after_create :maybe_invalidate_permissions_cache
   after_destroy :maybe_invalidate_permissions_cache
@@ -53,15 +52,8 @@ class Link < ArvadosModel
     return true if current_user.is_admin
 
     # All users can grant permissions on objects they own or can manage
-    return true if current_user.can_manage? head_uuid
-
-    # Users with "can_grant" permission on an object can grant
-    # permissions on that object
-    has_grant_permission = self.class.
-      where('link_class=? AND name=? AND tail_uuid=? AND head_uuid=?',
-            'permission', 'can_grant', current_user.uuid, self.head_uuid).
-      count > 0
-    return true if has_grant_permission
+    head_obj = ArvadosModel.lookup_by_uuid(head_uuid)
+    return true if current_user.can?(manage: head_obj)
 
     # Default = deny.
     false
@@ -96,9 +88,20 @@ class Link < ArvadosModel
     end
   end
 
-  # permission_link_ownership: ensure that permission links are
-  # owned by root.
-  def permission_link_ownership
-    self.owner_uuid = system_user_uuid
+  # A user is permitted to create, update or modify a permission link
+  # if and only if they have "manage" permission on the destination
+  # object.
+  # All other links are treated as regular ArvadosModel objects.
+  #
+  def ensure_owner_uuid_is_permitted
+    if link_class == 'permission'
+      ob = ArvadosModel.lookup_by_uuid(head_uuid)
+      raise PermissionDeniedError unless current_user.can?(manage: ob)
+      # All permission links should be owned by the system user.
+      self.owner_uuid = system_user_uuid
+      return true
+    else
+      super
+    end
   end
 end

@@ -219,14 +219,6 @@ class ArvadosModel < ActiveRecord::Base
     end
     if new_record?
       return true
-    elsif respond_to? :link_class and link_class == 'permission'
-      # Users are permitted to modify permission links themselves
-      # if they have "manage" permission on the destination object.
-      if current_user.can_manage? head_uuid
-        return true
-      else
-        raise PermissionDeniedError
-      end
     elsif current_user.uuid == self.owner_uuid_was or
         current_user.uuid == self.uuid or
         current_user.can? write: self.owner_uuid_was
@@ -460,6 +452,10 @@ class ArvadosModel < ActiveRecord::Base
     end
 
     nil
+  end
+
+  def self.lookup_by_uuid(uuid)
+    ArvadosModel.resource_class_for_uuid(uuid).find_by_uuid(uuid)
   end
 
   def log_start_state
