@@ -72,11 +72,13 @@ class ActionsController < ApplicationController
 
   def arv_normalize mt, *opts
     r = ""
+    puts "['arv-normalize', #{opts}]"
     IO.popen(['arv-normalize'] + opts, 'w+b') do |io|
-    io.write mt
-    io.close_write
-    while buf = io.read(2**16)
-      r += buf
+      io.write mt
+      io.close_write
+      while buf = io.read(2**16)
+        r += buf
+      end
     end
     r
   end
@@ -85,7 +87,17 @@ class ActionsController < ApplicationController
     lst = []
     files = []
     params["selection"].each do |s|
-      m = CollectionsHelper.match(s)
+      a = ArvadosBase::resource_class_for_uuid s
+      m = nil
+      if a == Link
+        begin
+          m = CollectionsHelper.match(Link.find(s).head_uuid)
+        rescue
+        end
+      else
+        m = CollectionsHelper.match(s)
+      end
+
       if m and m[1] and m[2]
         lst.append(m[1] + m[2])
         files.append(m)
@@ -117,7 +129,7 @@ class ActionsController < ApplicationController
 
     d = Digest::MD5.new()
     d << normalized_stripped
-    newuuid = "#{d.hexdigest}+#{normalized.length}"
+    newuuid = "#{d.hexdigest}+#{normalized_stripped.length}"
 
     env = Hash[ENV].
       merge({
@@ -131,7 +143,7 @@ class ActionsController < ApplicationController
             })
 
     IO.popen([env, 'arv-put', '--raw'], 'w+b') do |io|
-      io.write normalized
+      io.write normalized_stripped
       io.close_write
       while buf = io.read(2**20)
 
