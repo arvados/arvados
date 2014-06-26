@@ -27,12 +27,20 @@
 
     <tr>
       <td>
-        <%= form_tag '/pipeline_instances' do |f| %>
-          <%= hidden_field :pipeline_instance, :pipeline_template_uuid, :value => ob.uuid %>
-          <%= button_tag nil, {class: "btn btn-default btn-xs", title: "Run #{ob.name}"} do %>
-            Run <i class="fa fa-fw fa-play"></i>
-          <% end %>
-        <% end %>
+        <%= button_to(choose_projects_path(id: "run-pipeline-button",
+                                     title: 'Choose project',
+                                     editable: true,
+                                     action_name: 'Choose',
+                                     action_href: pipeline_instances_path,
+                                     action_method: 'post',
+                                     action_data: {selection_param: 'pipeline_instance[owner_uuid]',
+                                                   'pipeline_instance[pipeline_template_uuid]' => ob.uuid,
+                                                   'success' => 'redirect-to-created-object'
+                                                  }.to_json),
+                { class: "btn btn-default btn-xs", title: "Run #{ob.name}", remote: true, method: 'get' }
+            ) do %>
+               <i class="fa fa-fw fa-play"></i>Run
+              <% end %>
       </td>
       <td>
         <%= render :partial => "show_object_button", :locals => {object: ob, size: 'xs'} %>
