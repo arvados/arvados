@@ -641,7 +641,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         ."mkdir -p $ENV{JOB_WORK} $ENV{CRUNCH_TMP} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
         ."&& chmod og+wrx $ENV{TASK_WORK}"
 	."&& cd $ENV{CRUNCH_TMP} ";
-    umask(077);
     if ($build_script)
     {
       $build_script_to_send = $build_script;
@@ -680,11 +679,15 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         }
       }
       $command .= "\Q$docker_hash\E ";
+      $command .= "stdbuf -o0 -e0 ";
+      $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};
     } else {
-      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 "
+      # Non-docker run
+      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
+      $command .= "stdbuf -o0 -e0 ";
+      $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
-    $command .= "stdbuf -o0 -e0 ";
-    $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};
+
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
     exit (111);
