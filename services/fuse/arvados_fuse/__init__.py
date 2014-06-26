@@ -256,10 +256,11 @@ class TagsDirectory(Directory):
 
     def update(self):
         tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = True).execute()
-        self.merge(tags['items'],
-                   lambda i: i['name'],
-                   lambda a, i: a.tag == i,
-                   lambda i: TagDirectory(self.inode, self.inodes, self.api, i['name'], poll=self._poll, poll_time=self._poll_time))
+        if "items" in tags:
+            self.merge(tags['items'],
+                       lambda i: i['name'],
+                       lambda a, i: a.tag == i,
+                       lambda i: TagDirectory(self.inode, self.inodes, self.api, i['name'], poll=self._poll, poll_time=self._poll_time))
 
 class TagDirectory(Directory):
     '''A special directory that contains as subdirectories all collections visible
@@ -416,7 +417,7 @@ class Operations(llfuse.Operations):
     so request handlers do not run concurrently unless the lock is explicitly released
     with llfuse.lock_released.'''
 
-    def __init__(self, uid, gid, debug):
+    def __init__(self, uid, gid, debug=False):
         super(Operations, self).__init__()
 
         if debug:
