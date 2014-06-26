@@ -70,6 +70,17 @@ class ActionsController < ApplicationController
     redirect_to @object
   end
 
+  def arv_normalize mt, *opts
+    r = ""
+    IO.popen(['arv-normalize'] + opts, 'w+b') do |io|
+    io.write mt
+    io.close_write
+    while buf = io.read(2**16)
+      r += buf
+    end
+    r
+  end
+
   expose_action :combine_selected_files_into_collection do
     lst = []
     files = []
@@ -93,35 +104,14 @@ class ActionsController < ApplicationController
     files.each do |m|
       mt = chash[m[1]+m[2]].manifest_text
       if m[4]
-        IO.popen(['arv-normalize', '--extract', m[4][1..-1]], 'w+b') do |io|
-          io.write mt
-          io.close_write
-          while buf = io.read(2**20)
-            combined += buf
-          end
-        end
+        combined += arv_normalize mt, '--extract', m[4][1..-1]
       else
         combined += chash[m[1]+m[2]].manifest_text
       end
     end
 
-    normalized = ''
-    IO.popen(['arv-normalize'], 'w+b') do |io|
-      io.write combined
-      io.close_write
-      while buf = io.read(2**16)
-        normalized += buf
-      end
-    end
-
-    normalized_stripped = ''
-    IO.popen(['arv-normalize', '--strip'], 'w+b') do |io|
-      io.write combined
-      io.close_write
-      while buf = io.read(2**16)
-        normalized_stripped += buf
-      end
-    end
+    normalized = arv_normalize combined
+    normalized_stripped = arv_normalize combined, '--strip'
 
     require 'digest/md5'
 
