@@ -20,7 +20,6 @@ class CancelJobs
   def cancel_stale_jobs
     act_as_system_user do
       Job.running.each do |jobrecord|
-        puts jobrecord
         f = Log.where("object_uuid=?", jobrecord.uuid).limit(1).order("created_at desc").first
         if f
           age = (Time.now - f.created_at)
