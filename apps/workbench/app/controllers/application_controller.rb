@@ -273,7 +273,11 @@ class ApplicationController < ActionController::Base
   def current_user
     return Thread.current[:user] if Thread.current[:user]
 
-    if Thread.current[:arvados_api_token]
+    if User.columns.empty?
+      # We can't even get the discovery document from the API server.
+      # We're not going to be able to instantiate any user object.
+      nil
+    elsif Thread.current[:arvados_api_token]
       if session[:user]
         if session[:user][:is_active] != true
           Thread.current[:user] = User.current
