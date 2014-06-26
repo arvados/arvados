@@ -72,7 +72,6 @@ class ActionsController < ApplicationController
 
   def arv_normalize mt, *opts
     r = ""
-    puts "['arv-normalize', #{opts}]"
     IO.popen(['arv-normalize'] + opts, 'w+b') do |io|
       io.write mt
       io.close_write
@@ -145,8 +144,7 @@ class ActionsController < ApplicationController
     IO.popen([env, 'arv-put', '--raw'], 'w+b') do |io|
       io.write normalized_stripped
       io.close_write
-      while buf = io.read(2**20)
-
+      while buf = io.read(2**16)
       end
     end
 
