@@ -16,11 +16,10 @@ import arvados.events
 import re
 import apiclient
 import json
+import logging
 
 from time import time
 from llfuse import FUSEError
-
-DEBUG = False
 
 class FreshBase(object):
     '''Base class for maintaining fresh/stale state to determine when to update.'''
@@ -126,8 +125,7 @@ class Directory(FreshBase):
             try:
                 self.update()
             except apiclient.errors.HttpError as e:
-                if DEBUG:
-                    print(e, file=sys.stderr)
+                logging.debug(e)
 
     def __getitem__(self, item):
         self.checkupdate()
@@ -200,8 +198,7 @@ class CollectionDirectory(Directory):
             self.fresh()
             return True
         except Exception as detail:
-            if DEBUG:
-                print("arv-mount %s: error: %s" % (self.collection_locator,detail), file=sys.stderr)
+            logging.debug("arv-mount %s: error: %s" % (self.collection_locator,detail))
             return False
 
 class MagicDirectory(Directory):
@@ -229,15 +226,14 @@ class MagicDirectory(Directory):
             else:
                 return False
         except Exception as e:
-            if DEBUG:
-                print('arv-mount exception keep', e, file=sys.stderr)
+            logging.debug('arv-mount exception keep', e)
             return False
 
     def __getitem__(self, item):
-        if self.__contains__(item):
+        if item in self:
             return self._entries[item]
         else:
-            raise KeyError()
+            raise KeyError("No collection with id " + item)
 
 class TagsDirectory(Directory):
     '''A special directory that contains as subdirectories all tags visible to the user.'''
@@ -424,9 +420,8 @@ class Operations(llfuse.Operations):
         super(Operations, self).__init__()
 
         if debug:
-            global DEBUG
-            DEBUG = True
-            print("arv-mount debug enabled", file=sys.stderr)
+            logging.setLevel(logging.DEBUG)
+            logging.info("arv-mount debug enabled")
 
         self.inodes = Inodes()
         self.uid = uid
@@ -484,8 +479,7 @@ class Operations(llfuse.Operations):
         return entry
 
     def lookup(self, parent_inode, name):
-        if DEBUG:
-            print("arv-mount lookup: parent_inode", parent_inode, "name", name, file=sys.stderr)
+        logging.debug("arv-mount lookup: parent_inode", parent_inode, "name", name)
         inode = None
 
         if name == '.':
@@ -521,8 +515,7 @@ class Operations(llfuse.Operations):
         return fh
 
     def read(self, fh, off, size):
-        if DEBUG:
-            print("arv-mount read", fh, off, size, file=sys.stderr)
+        logging.debug("arv-mount read", fh, off, size)
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
@@ -539,8 +532,7 @@ class Operations(llfuse.Operations):
             del self._filehandles[fh]
 
     def opendir(self, inode):
-        if DEBUG:
-            print("arv-mount opendir: inode", inode, file=sys.stderr)
+        logging.debug("arv-mount opendir: inode", inode)
 
         if inode in self.inodes:
             p = self.inodes[inode]
@@ -561,16 +553,14 @@ class Operations(llfuse.Operations):
         return fh
 
     def readdir(self, fh, off):
-        if DEBUG:
-            print("arv-mount readdir: fh", fh, "off", off, file=sys.stderr)
+        logging.debug("arv-mount readdir: fh", fh, "off", off)
 
         if fh in self._filehandles:
             handle = self._filehandles[fh]
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
-        if DEBUG:
-            print("arv-mount handle.entry", handle.entry, file=sys.stderr)
+        logging.debug("arv-mount handle.entry", handle.entry)
 
         e = off
         while e < len(handle.entry):
