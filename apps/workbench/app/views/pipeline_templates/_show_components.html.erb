@@ -5,9 +5,8 @@
                                      action_name: 'Choose',
                                      action_href: pipeline_instances_path,
                                      action_method: 'post',
-                                     action_data: {selection_param: 'project[uuid]',
+                                     action_data: {selection_param: 'pipeline_instance[owner_uuid]',
                                                    'pipeline_instance[pipeline_template_uuid]' => @object.uuid,
-                                                   'pipeline_instance[owner_uuid]' => @object.owner_uuid,
                                                    'success' => 'redirect-to-created-object'
                                                   }.to_json),
                 { class: "btn btn-primary btn-sm", remote: true, method: 'get' }
