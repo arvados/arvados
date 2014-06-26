@@ -269,7 +269,7 @@ class StreamReader(object):
         manifest_text = [self.name().replace(' ', '\\040')]
         if strip:
             for d in self._data_locators:
-                m = re.match(r'^[0-9a-f]{32}\+(\d+)*', d[LOCATOR])
+                m = re.match(r'^[0-9a-f]{32}\+\d+', d[LOCATOR])
                 manifest_text.append(m.group(0))
         else:
             manifest_text.extend([d[LOCATOR] for d in self._data_locators])
