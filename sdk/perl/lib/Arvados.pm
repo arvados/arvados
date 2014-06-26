@@ -135,7 +135,7 @@ sub new_request
 {
     my $self = shift;
     local $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'};
-    if ($self{'noVerifyHostname'} || ($host =~ /\.local$/)) {
+    if ($self->{'noVerifyHostname'} || ($host =~ /\.local$/)) {
         $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'} = 0;
     }
     Arvados::Request->new();
