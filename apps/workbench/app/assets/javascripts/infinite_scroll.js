@@ -14,7 +14,7 @@ function maybe_load_more_content() {
             return;
         // Don't start another request until this one finishes
         $(container).attr('data-infinite-content-href', null);
-        $(container).append('<img src="/assets/ajax-loader.gif" class="infinite-scroller-spinner"></img>');
+        $(container).append('<div class="spinner spinner-32px spinner-h-center infinite-scroller-spinner"></div>');
         $.ajax(src,
                {dataType: 'json',
                 type: 'GET',
@@ -33,7 +33,7 @@ function maybe_load_more_content() {
                 $(this.container).attr('data-infinite-content-href', this.src);
             }).
             done(function(data, status, jqxhr) {
-                $(this.container).find(".infinite-scroller-spinner").detach();
+                $(this.container).find(".spinner").detach();
                 $(this.container).append(data.content);
                 $(this.container).attr('data-infinite-content-href', data.next_page_href);
             });
