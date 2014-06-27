@@ -238,14 +238,14 @@ class CollectionsController < ApplicationController
     # error we encounter, and return nil.
     most_specific_error = [401]
     token_list.each do |api_token|
-      using_specific_api_token(api_token) do
-        begin
+      begin
+        using_specific_api_token(api_token) do
           yield
           return api_token
-        rescue ArvadosApiClient::ApiError => error
-          if error.api_status >= most_specific_error.first
-            most_specific_error = [error.api_status, error]
-          end
+        end
+      rescue ArvadosApiClient::ApiError => error
+        if error.api_status >= most_specific_error.first
+          most_specific_error = [error.api_status, error]
         end
       end
     end
