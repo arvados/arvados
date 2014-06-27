@@ -235,7 +235,11 @@ class CollectionWriter(object):
         path, stream_name, max_manifest_depth = self._queued_trees[0]
         make_dirents = (util.listdir_recursive if (max_manifest_depth == 0)
                         else os.listdir)
-        self._queue_dirents(stream_name, make_dirents(path))
+        d = make_dirents(path)
+        if len(d) > 0:
+            self._queue_dirents(stream_name, d)
+        else:
+            self._queued_trees.popleft()
 
     def _queue_file(self, source, filename=None):
         assert (self._queued_file is None), "tried to queue more than one file"
@@ -379,10 +383,10 @@ class CollectionWriter(object):
             manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
 
-        #print 'writer',manifest
-        #print 'after reader',CollectionReader(manifest).manifest_text()
-
-        return CollectionReader(manifest).manifest_text()
+        if len(manifest) > 0:
+            return CollectionReader(manifest).manifest_text()
+        else:
+            return ""
 
     def data_locators(self):
         ret = []
