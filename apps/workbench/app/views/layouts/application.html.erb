@@ -156,7 +156,6 @@
     </nav>
 
     <% if current_user.andand.is_active %>
-     <% begin %>
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
           <li class="dropdown">
@@ -181,10 +180,6 @@
           <% end %>
         </ul>
       </nav>
-     <% rescue ArvadosApiClient::NotLoggedInException %>
-       <% raise  # Let ApplicationController handle this. %>
-     <% rescue ArvadosApiClient::ApiError  # Just skip rendering projects.  %>
-     <% end %>
     <% end %>
 
     <div id="page-wrapper">

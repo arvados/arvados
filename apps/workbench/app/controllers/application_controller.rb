@@ -66,6 +66,15 @@ class ApplicationController < ActionController::Base
     rescue ArvadosApiClient::ApiError
       load_api_token(nil)
     end
+    # Preload projects trees for the template.  If that fails, set empty
+    # trees so error page rendering can proceed.  (It's easier to rescue the
+    # exception here than in a template.)
+    begin
+      build_project_trees
+    rescue ArvadosApiClient::ApiError
+      @my_project_tree ||= []
+      @shared_project_tree ||= []
+    end
     render_error(err_opts)
   end
 
