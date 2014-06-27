@@ -143,9 +143,13 @@ class CollectionReader(object):
             for f in s.all_files():
                 yield f
 
-    def manifest_text(self):
+    def manifest_text(self, strip=False):
         self._populate()
-        return self._manifest_text
+        if strip:
+            m = ''.join([StreamReader(stream).manifest_text(strip=True) for stream in self._streams])
+            return m
+        else:
+            return self._manifest_text
 
 class CollectionWriter(object):
     KEEP_BLOCK_SIZE = 2**26
@@ -359,7 +363,7 @@ class CollectionWriter(object):
                              for x in fields[1:-1] ]
                 clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
         return clean
-        
+
     def manifest_text(self):
         self.finish_current_stream()
         manifest = ''
