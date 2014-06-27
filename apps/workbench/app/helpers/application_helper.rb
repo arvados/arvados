@@ -306,7 +306,7 @@ module ApplicationHelper
     selectables = []
 
     attrtext = attrvalue
-    if dataclass and dataclass.is_a? ArvadosBase
+    if dataclass.is_a? Class and dataclass < ArvadosBase
       objects = get_n_objects_of_class dataclass, 10
       objects.each do |item|
         items << item
