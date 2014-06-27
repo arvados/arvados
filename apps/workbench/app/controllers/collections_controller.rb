@@ -118,7 +118,7 @@ class CollectionsController < ApplicationController
 
   def show_file_links
     Thread.current[:reader_tokens] = [params[:reader_token]]
-    find_object_by_uuid
+    return if false.equal?(find_object_by_uuid)
     render layout: false
   end
 

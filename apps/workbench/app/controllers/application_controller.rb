@@ -348,7 +348,8 @@ class ApplicationController < ActionController::Base
         @object = model_class.find(params[:uuid])
       end
     rescue ArvadosApiClient::NotFoundException => error
-      @object = nil
+      render_not_found(error)
+      return false
     end
   end
 
