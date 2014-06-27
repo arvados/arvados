@@ -70,11 +70,33 @@ class ActionsController < ApplicationController
     redirect_to @object
   end
 
+  def arv_normalize mt, *opts
+    r = ""
+    IO.popen(['arv-normalize'] + opts, 'w+b') do |io|
+      io.write mt
+      io.close_write
+      while buf = io.read(2**16)
+        r += buf
+      end
+    end
+    r
+  end
+
   expose_action :combine_selected_files_into_collection do
     lst = []
     files = []
     params["selection"].each do |s|
-      m = CollectionsHelper.match(s)
+      a = ArvadosBase::resource_class_for_uuid s
+      m = nil
+      if a == Link
+        begin
+          m = CollectionsHelper.match(Link.find(s).head_uuid)
+        rescue
+        end
+      else
+        m = CollectionsHelper.match(s)
+      end
+
       if m and m[1] and m[2]
         lst.append(m[1] + m[2])
         files.append(m)
@@ -93,32 +115,20 @@ class ActionsController < ApplicationController
     files.each do |m|
       mt = chash[m[1]+m[2]].manifest_text
       if m[4]
-        IO.popen(['arv-normalize', '--extract', m[4][1..-1]], 'w+b') do |io|
-          io.write mt
-          io.close_write
-          while buf = io.read(2**20)
-            combined += buf
-          end
-        end
+        combined += arv_normalize mt, '--extract', m[4][1..-1]
       else
         combined += chash[m[1]+m[2]].manifest_text
       end
     end
 
-    normalized = ''
-    IO.popen(['arv-normalize'], 'w+b') do |io|
-      io.write combined
-      io.close_write
-      while buf = io.read(2**20)
-        normalized += buf
-      end
-    end
+    normalized = arv_normalize combined
+    normalized_stripped = arv_normalize combined, '--strip'
 
     require 'digest/md5'
 
     d = Digest::MD5.new()
-    d << normalized
-    newuuid = "#{d.hexdigest}+#{normalized.length}"
+    d << normalized_stripped
+    newuuid = "#{d.hexdigest}+#{normalized_stripped.length}"
 
     env = Hash[ENV].
       merge({
@@ -132,10 +142,9 @@ class ActionsController < ApplicationController
             })
 
     IO.popen([env, 'arv-put', '--raw'], 'w+b') do |io|
-      io.write normalized
+      io.write normalized_stripped
       io.close_write
-      while buf = io.read(2**20)
-
+      while buf = io.read(2**16)
       end
     end
 

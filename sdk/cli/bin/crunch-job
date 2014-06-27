@@ -639,6 +639,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
         ."mkdir -p $ENV{JOB_WORK} $ENV{CRUNCH_TMP} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
+        ."&& chmod og+wrx $ENV{TASK_WORK}"
 	."&& cd $ENV{CRUNCH_TMP} ";
     if ($build_script)
     {
@@ -657,22 +658,36 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .=
           q{$(ip -o address show scope global |
               gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
-      foreach my $env_key (qw(CRUNCH_SRC CRUNCH_TMP TASK_KEEPMOUNT))
-      {
-        $command .= "-v \Q$ENV{$env_key}:$ENV{$env_key}:rw\E ";
-      }
+      $command .= "-v \Q$ENV{TASK_WORK}:/tmp/crunch-job:rw\E ";
+      $command .= "-v \Q$ENV{CRUNCH_SRC}:/tmp/crunch-src:ro\E ";
+      $command .= "-v \Q$ENV{TASK_KEEPMOUNT}:/mnt:ro\E ";
       while (my ($env_key, $env_val) = each %ENV)
       {
         if ($env_key =~ /^(ARVADOS|JOB|TASK)_/) {
-          $command .= "-e \Q$env_key=$env_val\E ";
+          if ($env_key eq "TASK_WORK") {
+            $command .= "-e \QTASK_WORK=/tmp/crunch-job\E ";
+          }
+          elsif ($env_key eq "TASK_KEEPMOUNT") {
+            $command .= "-e \QTASK_KEEPMOUNT=/mnt\E ";
+          }
+          elsif ($env_key eq "CRUNCH_SRC") {
+            $command .= "-e \QCRUNCH_SRC=/tmp/crunch-src\E ";
+          }
+          else {
+            $command .= "-e \Q$env_key=$env_val\E ";
+          }
         }
       }
       $command .= "\Q$docker_hash\E ";
+      $command .= "stdbuf -o0 -e0 ";
+      $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};
     } else {
-      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 "
+      # Non-docker run
+      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
+      $command .= "stdbuf -o0 -e0 ";
+      $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
-    $command .= "stdbuf -o0 -e0 ";
-    $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
     exit (111);
