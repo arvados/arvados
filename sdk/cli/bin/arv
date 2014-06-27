@@ -143,9 +143,14 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   end
 end
 
+def arv_edit_save_tmp tmp
+  FileUtils::cp tmp.path, tmp.path + ".saved"
+  puts "Saved contents to " + tmp.path + ".saved"
+end
+
 def arv_edit client, arvados, global_opts, remaining_opts
-  n = remaining_opts.shift
-  if n.nil? or n == "-h" or n == "--help"
+  uuid = remaining_opts.shift
+  if uuid.nil? or uuid == "-h" or uuid == "--help"
     puts head_banner
     puts "Usage: arv edit [uuid] [fields...]\n\n"
     puts "Fetch the specified Arvados object, select the specified fields, \n"
@@ -162,9 +167,9 @@ def arv_edit client, arvados, global_opts, remaining_opts
 
   # determine controller
 
-  m = /([a-z0-9]{5})-([a-z0-9]{5})-([a-z0-9]{15})/.match n
+  m = /([a-z0-9]{5})-([a-z0-9]{5})-([a-z0-9]{15})/.match uuid
   if !m
-    if /^[a-f0-9]{32}/.match n
+    if /^[a-f0-9]{32}/.match uuid
       abort "Arvados collections are not editable."
     else
       abort "#{n} does not appear to be an Arvados uuid"
@@ -187,7 +192,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
   api_method = 'arvados.' + rsc + '.get'
 
   result = client.execute(:api_method => eval(api_method),
-                          :parameters => {"uuid" => n},
+                          :parameters => {"uuid" => uuid},
                           :authenticated => false,
                           :headers => {
                             authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
@@ -213,7 +218,7 @@ def arv_edit client, arvados, global_opts, remaining_opts
 
   require 'tempfile'
 
-  tmp = Tempfile.new([n, "." + global_opts[:format]])
+  tmp = Tempfile.new([uuid, "." + global_opts[:format]])
   tmp.write(content)
   tmp.close
 
@@ -251,9 +256,13 @@ def arv_edit client, arvados, global_opts, remaining_opts
           n += 1
         end
         puts "\nTry again (y/n)? "
-        yn = $stdin.read 1
+        yn = "X"
+        while not ["y", "Y", "n", "N"].include?(yn)
+          yn = $stdin.read 1
+        end
         if yn == 'n' or yn == 'N'
-          exit 1
+          arv_edit_save_tmp tmp
+          abort
         end
       end
     else
@@ -262,31 +271,45 @@ def arv_edit client, arvados, global_opts, remaining_opts
     end
   end
 
-  tmp.close(true)
+  begin
+    if newobj != results
+      api_method = 'arvados.' + rsc + '.update'
+      dumped = Oj.dump(newobj)
 
-  if newobj != results
-    api_method = 'arvados.' + rsc + '.update'
-    dumped = Oj.dump(newobj)
-    result = client.execute(:api_method => eval(api_method),
-                            :parameters => {"uuid" => n, rsc.singularize => dumped},
-                            :authenticated => false,
-                            :headers => {
-                              authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                            })
+      begin
+        result = client.execute(:api_method => eval(api_method),
+                                :parameters => {"uuid" => uuid},
+                                :body => { rsc.singularize => dumped },
+                                :authenticated => false,
+                                :headers => {
+                                  authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                                })
+      rescue Exception => e
+        puts "Error communicating with server, error was #{e}"
+        puts "Update body was:"
+        puts dumped
+        arv_edit_save_tmp tmp
+        abort
+      end
 
-    begin
-      results = JSON.parse result.body
-    rescue JSON::ParserError => e
-      abort "Failed to parse server response:\n" + e.to_s
+      begin
+        results = JSON.parse result.body
+      rescue JSON::ParserError => e
+        abort "Failed to parse server response:\n" + e.to_s
+      end
+
+      if result.response.status != 200
+        puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
+        puts "Update body was:"
+        puts dumped
+        arv_edit_save_tmp tmp
+        abort
+      end
+    else
+      puts "Object is unchanged, did not update."
     end
-
-    if result.response.status != 200
-      puts "Update failed.  Server responded #{result.response.status}: #{results['errors']} "
-      puts "Update body was:"
-      puts dumped
-    end
-  else
-    puts "Object is unchanged, did not update."
+  ensure
+    tmp.close(true)
   end
 
   exit 0
