@@ -182,14 +182,14 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 					if op == "Read" {
 						disk[device].last_read = disk[device].next_read
 						disk[device].next_read = next
-						if disk[device].last_read > 0 {
+						if disk[device].last_read > 0 && (disk[device].next_read != disk[device].last_read) {
 							stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s read %v", device, disk[device].next_read-disk[device].last_read)
 						}
 					}
 					if op == "Write" {
 						disk[device].last_write = disk[device].next_write
 						disk[device].next_write = next
-						if disk[device].last_write > 0 {
+						if disk[device].last_write > 0 && (disk[device].next_write != disk[device].last_write) {
 							stderr <- fmt.Sprintf("crunchstat: blkio.io_service_bytes %s write %v", device, disk[device].next_write-disk[device].last_write)
 						}
 					}

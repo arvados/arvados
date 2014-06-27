@@ -728,7 +728,7 @@ class ApplicationController < ActionController::Base
   def get_n_objects_of_class dataclass, size
     @objects_map_for ||= {}
 
-    raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
+    raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class and dataclass < ArvadosBase
     raise ArgumentError, 'Argument is not a valid limit size' unless (size && size>0)
 
     # if the objects_map_for has a value for this dataclass, and the
