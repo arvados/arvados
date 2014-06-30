@@ -204,11 +204,6 @@ function do_start {
         start_keep=true
     fi
 
-    if [[ $start_doc != false ]]
-    then
-        start_container "$start_doc:80" "doc_server" '' '' "arvados/doc"
-    fi
-
     if [[ $start_sso != false ]]
     then
         start_container "$start_sso:443" "sso_server" '' '' "arvados/sso"
@@ -217,11 +212,6 @@ function do_start {
     if [[ $start_api != false ]]
     then
         start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
-    fi
-
-    if [[ $start_workbench != false ]]
-    then
-        start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
     fi
 
     if [[ $start_keep != false ]]
@@ -241,6 +231,16 @@ function do_start {
             "${keep_volumes[1]}:/dev/keep-0" \
             "api_server:api" \
             "arvados/keep"
+    fi
+
+    if [[ $start_doc != false ]]
+    then
+        start_container "$start_doc:80" "doc_server" '' '' "arvados/doc"
+    fi
+
+    if [[ $start_workbench != false ]]
+    then
+        start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
     fi
 
     if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
