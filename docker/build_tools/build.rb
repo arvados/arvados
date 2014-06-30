@@ -18,7 +18,12 @@ def main options
   #      - TODO: mount cgroup automatically
   #      - TODO: start the docker service if not started
 
-  docker_path = %x(which docker).chomp
+  docker_path = %x(which docker.io).chomp
+
+  if docker_path.empty?
+    docker_path = %x(which docker).chomp
+  end
+
   if docker_path.empty?
     warn "Docker not found."
     warn ""
@@ -27,14 +32,14 @@ def main options
     warn ""
     warn "Installation instructions for a variety of platforms can be found at"
     warn "http://docs.docker.io/en/latest/installation/"
-    exit
-  elsif not docker_ok?
+    exit 1
+  elsif not docker_ok? docker_path
     warn "WARNING: docker could not be run."
     warn "Please make sure that:"
     warn "  * You have permission to read and write /var/run/docker.sock"
     warn "  * a 'cgroup' volume is mounted on your machine"
     warn "  * the docker daemon is running"
-    exit
+    exit 2
   end
 
   # Check that debootstrap is installed.
@@ -48,7 +53,7 @@ def main options
     print "Generating config.yml.\n"
     print "Arvados needs to know the email address of the administrative user,\n"
     print "so that when that user logs in they are automatically made an admin.\n"
-    print "This should be the email address you use to log in to Google.\n"
+    print "This should be an email address associated with a Google account.\n"
     print "\n"
     admin_email_address = ""
     until is_valid_email? admin_email_address
@@ -75,11 +80,11 @@ def main options
 
   # If all prerequisites are met, go ahead and build.
   if ip_forwarding_enabled? and
-      docker_ok? and
+      docker_ok? docker_path and
       debootstrap_ok? and
       File.exists? 'config.yml'
     warn "Building Arvados."
-    system '/usr/bin/make', '-f', options[:makefile], *ARGV
+    system({"DOCKER" => docker_path}, '/usr/bin/make', '-f', options[:makefile], *ARGV)
   end
 end
 
@@ -133,8 +138,8 @@ end
 # docker_ok?
 #   Returns 'true' if docker can be run as the current user.
 #
-def docker_ok?
-  return system 'docker images > /dev/null 2>&1'
+def docker_ok?(docker_path)
+  return system "#{docker_path} images > /dev/null 2>&1"
 end
 
 # find_or_create_ssh_key arvados_name
@@ -169,7 +174,7 @@ def install_docker
     if not linux_release.match '^1[234]\.'
       warn "Arvados requires at least Ubuntu 12.04 (Precise Pangolin)."
       warn "Your system is Ubuntu #{linux_release}."
-      exit
+      exit 3
     end
     if linux_release.match '^12' and kernel_release.start_with? '3.2'
       # Ubuntu Precise ships with a 3.2 kernel and must be upgraded.
@@ -178,7 +183,7 @@ def install_docker
       warn "  sudo apt-get update"
       warn "  sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring"
       warn "  sudo reboot"
-      exit
+      exit 4
     else
       # install AUFS
       sudo 'apt-get', 'update'
@@ -203,7 +208,7 @@ def install_docker
   when 'Debian'
   else
     warn "Must be running a Debian or Ubuntu release in order to run Docker."
-    exit
+    exit 5
   end
 end
 

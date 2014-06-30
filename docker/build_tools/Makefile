@@ -1,4 +1,4 @@
-all: api-image doc-image workbench-image warehouse-image sso-image
+all: api-image doc-image workbench-image keep-image sso-image
 
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
@@ -10,9 +10,9 @@ clean:
 # `make realclean' will also remove the docker images and force
 # subsequent makes to build the entire chain from the ground up
 realclean: clean
-	-[ -n "`docker ps -q`" ] && docker stop `docker ps -q`
-	-docker rm `docker ps -a -q`
-	-docker rmi `docker images -q`
+	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
+	-$(DOCKER) rm `$(DOCKER) ps -a -q`
+	-$(DOCKER) rmi `$(DOCKER) images -q`
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
@@ -34,9 +34,7 @@ WORKBENCH_DEPS = workbench/Dockerfile \
                  workbench/passenger.conf \
                  $(WORKBENCH_GENERATED)
 
-WAREHOUSE_DEPS = warehouse/Dockerfile \
-                 warehouse/supervisor.conf \
-                 $(WAREHOUSE_GENERATED)
+KEEP_DEPS = keep/Dockerfile
 
 SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
 
@@ -47,8 +45,7 @@ API_GENERATED = \
         api/generated/config_databases.sh \
         api/generated/database.yml \
         api/generated/omniauth.rb \
-        api/generated/production.rb \
-        api/generated/secret_token.rb \
+        api/generated/application.yml \
         api/generated/superuser_token
 
 API_GENERATED_IN = \
@@ -56,23 +53,16 @@ API_GENERATED_IN = \
         api/config_databases.sh.in \
         api/database.yml.in \
         api/omniauth.rb.in \
-        api/production.rb.in \
-        api/secret_token.rb.in \
+        api/application.yml.in \
         api/superuser_token.in
 
 WORKBENCH_GENERATED = \
         workbench/generated/apache2_vhost \
-        workbench/generated/production.rb \
-        workbench/generated/secret_token.rb
+        workbench/generated/application.yml
 
 WORKBENCH_GENERATED_IN = \
         workbench/apache2_vhost.in \
-        workbench/production.rb.in \
-        workbench/secret_token.rb.in
-
-WAREHOUSE_GENERATED = warehouse/generated/warehouse.conf
-
-WAREHOUSE_GENERATED_IN = warehouse/warehouse.conf.in
+        workbench/application.yml.in
 
 SSO_GENERATED = \
         sso/generated/apache2_vhost \
@@ -115,7 +105,7 @@ $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 # The docker build -q option suppresses verbose build output.
 # Necessary to prevent failure on building warehouse; see
 # https://github.com/dotcloud/docker/issues/3172
-DOCKER_BUILD = docker build -q
+DOCKER_BUILD = $(DOCKER) build -q
 
 # ============================================================
 # The main Arvados servers: api, doc, workbench, warehouse
@@ -131,6 +121,10 @@ doc-image: base-image $(BUILD) $(DOC_DEPS)
 	tar -czf doc/generated/doc.tar.gz -C build doc
 	$(DOCKER_BUILD) -t arvados/doc doc
 	date >doc-image
+
+keep-image: debian-image $(BUILD) $(KEEP_DEPS)
+	$(DOCKER_BUILD) -t arvados/keep keep
+	date >keep-image
 
 jobs-image: base-image $(BUILD) $(JOBS_DEPS)
 	$(DOCKER_BUILD) -t arvados/jobs jobs

@@ -8,5 +8,10 @@ if [[ ! "$ENABLE_SSH" =~ (0|false|no|f|^$) ]]; then
   /etc/init.d/ssh start
 fi
 
+# Override the default API server address if necessary.
+if [[ "$API_PORT_443_TCP_ADDR" != "" ]]; then 
+  sed -i "s/localhost:9900/$API_PORT_443_TCP_ADDR/" /usr/src/arvados/apps/workbench/config/application.yml
+fi
+
 source /etc/apache2/envvars
 /usr/sbin/apache2 -D FOREGROUND
