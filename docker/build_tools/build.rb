@@ -18,7 +18,12 @@ def main options
   #      - TODO: mount cgroup automatically
   #      - TODO: start the docker service if not started
 
-  docker_path = %x(which docker).chomp
+  docker_path = %x(which docker.io).chomp
+
+  if docker_path.empty?
+    docker_path = %x(which docker).chomp
+  end
+
   if docker_path.empty?
     warn "Docker not found."
     warn ""
@@ -28,7 +33,7 @@ def main options
     warn "Installation instructions for a variety of platforms can be found at"
     warn "http://docs.docker.io/en/latest/installation/"
     exit 1
-  elsif not docker_ok?
+  elsif not docker_ok? docker_path
     warn "WARNING: docker could not be run."
     warn "Please make sure that:"
     warn "  * You have permission to read and write /var/run/docker.sock"
@@ -75,7 +80,7 @@ def main options
 
   # If all prerequisites are met, go ahead and build.
   if ip_forwarding_enabled? and
-      docker_ok? and
+      docker_ok? docker_path and
       debootstrap_ok? and
       File.exists? 'config.yml'
     warn "Building Arvados."
@@ -133,8 +138,8 @@ end
 # docker_ok?
 #   Returns 'true' if docker can be run as the current user.
 #
-def docker_ok?
-  return system 'docker images > /dev/null 2>&1'
+def docker_ok?(docker_path)
+  return system "#{docker_path} images > /dev/null 2>&1"
 end
 
 # find_or_create_ssh_key arvados_name
