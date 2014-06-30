@@ -53,7 +53,7 @@ def main options
     print "Generating config.yml.\n"
     print "Arvados needs to know the email address of the administrative user,\n"
     print "so that when that user logs in they are automatically made an admin.\n"
-    print "This should be the email address you use to log in to Google.\n"
+    print "This should be an email address associated with a Google account.\n"
     print "\n"
     admin_email_address = ""
     until is_valid_email? admin_email_address
