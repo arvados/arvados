@@ -52,7 +52,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     end
 
     assert page.has_text? 'Projects shared with me'
-    assert page.has_text? 'A Project'
     assert page.has_text? 'Unrestricted public data'
 
     if user && user['is_active']
@@ -87,13 +86,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
       page.has_text? ('Projects shared with me')
     end
-
-    assert page.has_text? 'A Project'
-    find('a', text: 'A Project').click
-    assert page.has_text? ('Test project belonging to active user')
-
-    #find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
-    #  find('a', text: 'Show').click
 
     if user && !user['is_active']
       within('.navbar-fixed-top') do
