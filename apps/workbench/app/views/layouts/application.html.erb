@@ -119,7 +119,7 @@
               </a>
               <ul class="dropdown-menu" role="menu">
                 <li role="presentation" class="dropdown-header">
-                  System tools
+                  Settings
                 </li>
                 <li role="presentation"><a href="/repositories">
                     <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
@@ -153,6 +153,17 @@
           <% else %>
             <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
           <% end %>
+
+          <li class="dropdown help-menu">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="arv-help">
+              <span class="fa fa-lg fa-question-circle"></span>
+            </a>
+            <ul class="dropdown-menu">
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Tutorials and User guide'), "#{Rails.configuration.arvados_docsite}/user", target: "_blank" %></li>
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
+              <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
+            </ul>
+          </li>
         </ul>
       </div><!-- /.navbar-collapse -->
     </nav>
