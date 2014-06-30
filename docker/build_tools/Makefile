@@ -47,8 +47,7 @@ API_GENERATED = \
         api/generated/config_databases.sh \
         api/generated/database.yml \
         api/generated/omniauth.rb \
-        api/generated/production.rb \
-        api/generated/secret_token.rb \
+        api/generated/application.yml \
         api/generated/superuser_token
 
 API_GENERATED_IN = \
@@ -56,19 +55,16 @@ API_GENERATED_IN = \
         api/config_databases.sh.in \
         api/database.yml.in \
         api/omniauth.rb.in \
-        api/production.rb.in \
-        api/secret_token.rb.in \
+        api/application.yml.in \
         api/superuser_token.in
 
 WORKBENCH_GENERATED = \
         workbench/generated/apache2_vhost \
-        workbench/generated/production.rb \
-        workbench/generated/secret_token.rb
+        workbench/generated/application.yml
 
 WORKBENCH_GENERATED_IN = \
         workbench/apache2_vhost.in \
-        workbench/production.rb.in \
-        workbench/secret_token.rb.in
+        workbench/application.yml.in
 
 WAREHOUSE_GENERATED = warehouse/generated/warehouse.conf
 
