@@ -27,14 +27,14 @@ def main options
     warn ""
     warn "Installation instructions for a variety of platforms can be found at"
     warn "http://docs.docker.io/en/latest/installation/"
-    exit
+    exit 1
   elsif not docker_ok?
     warn "WARNING: docker could not be run."
     warn "Please make sure that:"
     warn "  * You have permission to read and write /var/run/docker.sock"
     warn "  * a 'cgroup' volume is mounted on your machine"
     warn "  * the docker daemon is running"
-    exit
+    exit 2
   end
 
   # Check that debootstrap is installed.
@@ -169,7 +169,7 @@ def install_docker
     if not linux_release.match '^1[234]\.'
       warn "Arvados requires at least Ubuntu 12.04 (Precise Pangolin)."
       warn "Your system is Ubuntu #{linux_release}."
-      exit
+      exit 3
     end
     if linux_release.match '^12' and kernel_release.start_with? '3.2'
       # Ubuntu Precise ships with a 3.2 kernel and must be upgraded.
@@ -178,7 +178,7 @@ def install_docker
       warn "  sudo apt-get update"
       warn "  sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring"
       warn "  sudo reboot"
-      exit
+      exit 4
     else
       # install AUFS
       sudo 'apt-get', 'update'
@@ -203,7 +203,7 @@ def install_docker
   when 'Debian'
   else
     warn "Must be running a Debian or Ubuntu release in order to run Docker."
-    exit
+    exit 5
   end
 end
 
