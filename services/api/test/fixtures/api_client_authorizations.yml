@@ -87,6 +87,13 @@ active_apitokens:
   scopes: ["GET /arvados/v1/api_client_authorizations",
            "POST /arvados/v1/api_client_authorizations"]
 
+active_readonly:
+  api_client: untrusted
+  user: active
+  api_token: activereadonlyabcdefghijklmnopqrstuvwxyz1234568790
+  expires_at: 2038-01-01 00:00:00
+  scopes: ["GET /"]
+
 spectator:
   api_client: untrusted
   user: spectator

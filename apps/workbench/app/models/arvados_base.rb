@@ -56,7 +56,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def self.columns
-    return @columns unless @columns.nil?
+    return @columns if @columns.andand.any?
     @columns = []
     @attribute_info ||= {}
     schema = arvados_api_client.discovery[:schemas][self.to_s.to_sym]

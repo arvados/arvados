@@ -76,7 +76,6 @@
           </li>
           -->
 
-          <% if current_user %>
           <% if !is_anonymous %>
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
@@ -117,10 +116,7 @@
             </ul>
           </li>
           <% else %>
-            <% if is_anonymous %>
-              <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
-            <% end %>
-          <% end %>
+            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
           <% end %>
 
           <% if current_user.andand.is_active %>
