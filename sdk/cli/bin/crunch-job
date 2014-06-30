@@ -662,6 +662,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "-v \Q$ENV{TASK_WORK}:/tmp/crunch-job:rw\E ";
       $command .= "-v \Q$ENV{CRUNCH_SRC}:/tmp/crunch-src:ro\E ";
       $command .= "-v \Q$ENV{TASK_KEEPMOUNT}:/mnt:ro\E ";
+      $command .= "-e \QHOME=/tmp/crunch-job\E ";
       while (my ($env_key, $env_val) = each %ENV)
       {
         if ($env_key =~ /^(ARVADOS|JOB|TASK)_/) {
