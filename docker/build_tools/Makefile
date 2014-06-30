@@ -1,4 +1,4 @@
-all: api-image doc-image workbench-image warehouse-image sso-image
+all: api-image doc-image workbench-image keep-image sso-image
 
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
@@ -34,9 +34,7 @@ WORKBENCH_DEPS = workbench/Dockerfile \
                  workbench/passenger.conf \
                  $(WORKBENCH_GENERATED)
 
-WAREHOUSE_DEPS = warehouse/Dockerfile \
-                 warehouse/supervisor.conf \
-                 $(WAREHOUSE_GENERATED)
+KEEP_DEPS = keep/Dockerfile
 
 SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
 
@@ -65,10 +63,6 @@ WORKBENCH_GENERATED = \
 WORKBENCH_GENERATED_IN = \
         workbench/apache2_vhost.in \
         workbench/application.yml.in
-
-WAREHOUSE_GENERATED = warehouse/generated/warehouse.conf
-
-WAREHOUSE_GENERATED_IN = warehouse/warehouse.conf.in
 
 SSO_GENERATED = \
         sso/generated/apache2_vhost \
@@ -127,6 +121,10 @@ doc-image: base-image $(BUILD) $(DOC_DEPS)
 	tar -czf doc/generated/doc.tar.gz -C build doc
 	$(DOCKER_BUILD) -t arvados/doc doc
 	date >doc-image
+
+keep-image: debian-image $(BUILD) $(KEEP_DEPS)
+	$(DOCKER_BUILD) -t arvados/keep keep
+	date >keep-image
 
 jobs-image: base-image $(BUILD) $(JOBS_DEPS)
 	$(DOCKER_BUILD) -t arvados/jobs jobs

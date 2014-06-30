@@ -218,11 +218,11 @@ function do_start {
 	start_container "25107:25107" "keep_server_0" \
 	    "${keep_volumes[0]}:/dev/keep-0" \
 	    "api_server:api" \
-	    "arvados/warehouse"
+	    "arvados/keep"
 	start_container "25108:25107" "keep_server_1" \
 	    "${keep_volumes[1]}:/dev/keep-0" \
 	    "api_server:api" \
-	    "arvados/warehouse"
+	    "arvados/keep"
     fi
 
     if [ -d $HOME/.config/arvados ] || mkdir -p $HOME/.config/arvados
