@@ -1,6 +1,11 @@
 #!/bin/bash
 
 ENABLE_SSH=false
+DOCKER=`which docker.io`
+
+if [[ "$DOCKER" == "" ]]; then
+    DOCKER=`which docker`
+fi
 
 function usage {
     echo >&2
@@ -23,7 +28,7 @@ function usage {
 
 function ip_address {
     local container=$1
-    echo `docker inspect $container  |grep IPAddress |cut -f4 -d\"`
+    echo `$DOCKER inspect $container  |grep IPAddress |cut -f4 -d\"`
 }
 
 function start_container {
@@ -51,18 +56,18 @@ function start_container {
       args="$args -e ENABLE_SSH=$ENABLE_SSH"
     fi
 
-    `docker ps |grep -P "$name[^/]" -q`
+    `$DOCKER ps |grep -P "$name[^/]" -q`
     if [[ "$?" == "0" ]]; then
       echo "You have a running container with name $name -- skipping."
       return
     fi
 
     # Remove any existing container by this name.
-    docker rm "$name" 2>/dev/null
+    $DOCKER rm "$name" 2>/dev/null
 
     echo "Starting container:"
-    echo "  docker run $args $image"
-    container=`docker run $args $image`
+    echo "  $DOCKER run $args $image"
+    container=`$DOCKER run $args $image`
     if [[ "$?" != "0" ]]; then
       echo "Unable to start container"
       exit 1
@@ -288,7 +293,7 @@ function do_stop {
 	stop_keep="keep_server_0 keep_server_1"
     fi
 
-    docker stop $stop_doc $stop_sso $stop_api $stop_workbench $stop_keep \
+    $DOCKER stop $stop_doc $stop_sso $stop_api $stop_workbench $stop_keep \
 	2>/dev/null
 }
 
@@ -313,7 +318,7 @@ function do_test {
 		python -m unittest discover ../sdk/python
 		;;
 	    api)
-		docker run -t -i arvados/api \
+		$DOCKER run -t -i arvados/api \
 		    /usr/src/arvados/services/api/script/rake_test.sh
 		;;
 	    *)
