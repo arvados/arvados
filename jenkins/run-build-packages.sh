@@ -128,12 +128,19 @@ if [[ ! -d "$WORKSPACE/src-build-dir" ]]; then
 fi  
 
 cd "$WORKSPACE/src-build-dir"
-git fetch -a
-git checkout $GIT_REV
+# just in case, check out master
+git checkout master
+git pull
+# go into detached-head state
+git checkout `git log --format=format:%h -n1 .`
 cd $WORKSPACE
 
 cd $WORKSPACE/debs
 build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH -x 'usr/local/arvados/src/.git*'"
+
+# clean up, check out master and step away from detached-head state
+cd "$WORKSPACE/src-build-dir"
+git checkout master
 
 # Keep
 cd $WORKSPACE/services/keep
