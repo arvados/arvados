@@ -53,4 +53,10 @@ class ErrorsTest < ActionDispatch::IntegrationTest
            "Not on an error page after making an SSH key out of scope")
     assert(page_has_error_token?(start_stamp), "no error token on 404 page")
   end
+
+  test "showing a bad UUID returns 404" do
+    visit(page_with_token("active", "/pipeline_templates/zzz"))
+    assert(page.has_no_text?(/fiddlesticks/i),
+           "trying to show a bad UUID rendered a fiddlesticks page, not 404")
+  end
 end
