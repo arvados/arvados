@@ -14,13 +14,14 @@ parser = argparse.ArgumentParser(
     description='Read manifest on standard input and put normalized manifest on standard output.')
 
 parser.add_argument('--extract', type=str, help="The file to extract from the input manifest")
+parser.add_argument('--strip', action='store_true', help="Strip authorization tokens")
 
 args = parser.parse_args()
 
 import arvados
 
 r = sys.stdin.read()
-    
+
 cr = arvados.CollectionReader(r)
 
 if args.extract:
@@ -36,4 +37,4 @@ if args.extract:
             if fn in s.files():
                 sys.stdout.write(s.files()[fn].as_manifest())
 else:
-    sys.stdout.write(cr.manifest_text())
+    sys.stdout.write(cr.manifest_text(args.strip))

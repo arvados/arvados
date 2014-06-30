@@ -18,17 +18,16 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       find('a,button', text: 'Run').click
     end
 
+    # project chooser
+    within('.modal-dialog') do
+      find('.selectable', text: 'A Project').click
+      find('button', text: 'Choose').click
+    end
+
     # This pipeline needs input. So, Run should be disabled
     page.assert_selector 'a.disabled,button.disabled', text: 'Run'
 
     instance_page = current_path
-
-    # put this pipeline instance in "A Project"
-    find('button', text: 'Choose a project...').click
-    within('.modal-dialog') do
-      find('.selectable', text: 'A Project').click
-      find('button', text: 'Move').click
-    end
 
     # Go over to the collections page and select something
     visit '/collections'

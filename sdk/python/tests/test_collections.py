@@ -127,7 +127,7 @@ class ArvadosCollectionsTest(ArvadosKeepLocalStoreTestCase):
         cw.start_new_file('zero.txt')
         cw.write('')
 
-        self.assertEqual(cw.manifest_text(), ". 0:0:zero.txt\n")
+        self.assertEqual(cw.manifest_text(), ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:zero.txt\n")
         self.check_manifest_file_sizes(cw.manifest_text(), [0])
         cw = arvados.CollectionWriter()
         cw.start_new_file('zero.txt')

@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+import arvados
+import re
+import os
+import subprocess
+import sys
+import shutil
+import subst
+
+os.umask(0077)
+
+t = arvados.current_task().tmpdir
+
+os.chdir(arvados.current_task().tmpdir)
+os.mkdir("tmpdir")
+os.mkdir("output")
+
+os.chdir("output")
+
+if len(arvados.current_task()['parameters']) > 0:
+    p = arvados.current_task()['parameters']
+else:
+    p = arvados.current_job()['script_parameters']
+
+links = []
+
+def sub_link(v):
+    r = os.path.basename(v)
+    os.symlink(os.path.join(os.environ['TASK_KEEPMOUNT'], v) , r)
+    links.append(r)
+    return r
+
+def sub_tmpdir(v):
+    return os.path.join(arvados.current_task().tmpdir, 'tmpdir')
+
+subst.default_subs["link "] = sub_link
+subst.default_subs["tmpdir"] = sub_tmpdir
+
+rcode = 1
+
+try:
+    cmd = []
+    for c in p["command"]:
+        cmd.append(subst.do_substitution(p, c))
+
+    stdoutname = None
+    stdoutfile = None
+    if "stdout" in p:
+        stdoutname = subst.do_substitution(p, p["stdout"])
+        stdoutfile = open(stdoutname, "wb")
+
+    print("Running command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+
+    rcode = subprocess.call(cmd, stdout=stdoutfile)
+
+except Exception as e:
+    print("Caught exception {}".format(e))
+
+finally:
+    for l in links:
+        os.unlink(l)
+
+    out = arvados.CollectionWriter()
+    out.write_directory_tree(".", max_manifest_depth=0)
+    arvados.current_task().set_output(out.finish())
+
+if rcode == 0:
+    os.chdir("..")
+    shutil.rmtree("tmpdir")
+    shutil.rmtree("output")
+
+sys.exit(rcode)

@@ -140,18 +140,18 @@ module CurrentApiClient
                                      last_name: 'anonymouspublic')
           $anonymous_user.save!
           $anonymous_user.reload
+        end
 
-          group_perms = Link.where(tail_uuid: anonymous_user_uuid,
-                                   head_uuid: anonymous_group_uuid,
-                                   link_class: 'permission',
-                                   name: 'can_read')
+        group_perms = Link.where(tail_uuid: anonymous_user_uuid,
+                                 head_uuid: anonymous_group_uuid,
+                                 link_class: 'permission',
+                                 name: 'can_read')
 
-          if !group_perms.any?
-            group_perm = Link.create(tail_uuid: anonymous_user_uuid,
-                                   head_uuid: anonymous_group_uuid,
-                                   link_class: 'permission',
-                                   name: 'can_read')
-          end
+        if !group_perms.any?
+          group_perm = Link.create!(tail_uuid: anonymous_user_uuid,
+                                    head_uuid: anonymous_group_uuid,
+                                    link_class: 'permission',
+                                    name: 'can_read')
         end
       end
     end

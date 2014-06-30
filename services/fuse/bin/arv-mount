@@ -38,7 +38,10 @@ collections on the server.""")
     args = parser.parse_args()
 
     # Create the request handler
-    operations = Operations(os.getuid(), os.getgid())
+    operations = Operations(os.getuid(), os.getgid(), args.debug)
+
+    if args.debug:
+        arvados.config.settings()['ARVADOS_DEBUG'] = 'true'
 
     if args.groups:
         api = arvados.api('v1')

@@ -469,6 +469,7 @@ class WhRunPipelineInstance
             :repository => c[:repository],
             :nondeterministic => c[:nondeterministic],
             :output_is_persistent => c[:output_is_persistent] || false,
+            :runtime_constraints => c[:runtime_constraints],
             :owner_uuid => owner_uuid,
             # TODO: Delete the following three attributes when
             # supporting pre-20140418 API servers is no longer
@@ -591,7 +592,7 @@ class WhRunPipelineInstance
           ended += 1
           if c[:job][:success] == true
             succeeded += 1
-          elsif c[:job][:success] == false
+          elsif c[:job][:success] == false or c[:job][:cancelled_at]
             failed += 1
           end
         end

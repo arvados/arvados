@@ -6,14 +6,14 @@ Arvados -- client library for Arvados services
 
   use Arvados;
   $arv = Arvados->new(apiHost => 'arvados.local');
-  
+
   my $instances = $arv->{'pipeline_instances'}->{'list'}->execute();
   print "UUID is ", $instances->{'items'}->[0]->{'uuid'}, "\n";
-  
+
   $uuid = 'eiv0u-arx5y-2c5ovx43zw90gvh';
   $instance = $arv->{'pipeline_instances'}->{'get'}->execute('uuid' => $uuid);
   print "ETag is ", $instance->{'etag'}, "\n";
-  
+
   $instance->{'active'} = 1;
   $instance->{'name'} = '';
   $instance->save();
@@ -58,15 +58,20 @@ Default C<v1>
 =cut
 
 package Arvados;
+
+use Net::SSL (); # From Crypt-SSLeay
+BEGIN {
+  $Net::HTTPS::SSL_SOCKET_CLASS = "Net::SSL"; # Force use of Net::SSL
+}
+
 use JSON;
-use Data::Dumper;
-use IO::Socket::SSL;
 use Carp;
 use Arvados::ResourceAccessor;
 use Arvados::ResourceMethod;
 use Arvados::ResourceProxy;
 use Arvados::ResourceProxyList;
 use Arvados::Request;
+use Data::Dumper;
 
 $Arvados::VERSION = 0.1;
 
@@ -85,11 +90,14 @@ sub build
 
     $config = load_config_file("$ENV{HOME}/.config/arvados/settings.conf");
 
-    $self->{'authToken'} ||= 
+    $self->{'authToken'} ||=
 	$ENV{ARVADOS_API_TOKEN} || $config->{ARVADOS_API_TOKEN};
 
     $self->{'apiHost'} ||=
 	$ENV{ARVADOS_API_HOST} || $config->{ARVADOS_API_HOST};
+
+    $self->{'noVerifyHostname'} ||=
+	$ENV{ARVADOS_API_HOST_INSECURE};
 
     $self->{'apiProtocolScheme'} ||=
 	$ENV{ARVADOS_API_PROTOCOL_SCHEME} ||
@@ -127,7 +135,7 @@ sub new_request
 {
     my $self = shift;
     local $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'};
-    if ($opts{'noVerifyHostname'} || ($host =~ /\.local$/)) {
+    if ($self->{'noVerifyHostname'} || ($host =~ /\.local$/)) {
         $ENV{'PERL_LWP_SSL_VERIFY_HOSTNAME'} = 0;
     }
     Arvados::Request->new();

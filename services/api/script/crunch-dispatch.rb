@@ -166,6 +166,10 @@ class Dispatcher
       cmd_args = nil
       case Server::Application.config.crunch_job_wrapper
       when :none
+        if @running.size > 0
+            # Don't run more than one at a time.
+            return
+        end
         cmd_args = []
       when :slurm_immediate
         nodelist = nodes_available_for_job(job)

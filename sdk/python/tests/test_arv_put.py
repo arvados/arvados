@@ -213,12 +213,12 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
         cwriter.write_file('/dev/null')
         cwriter.cache_state()
         self.assertTrue(self.cache.load())
-        self.assertEquals(". 0:0:null\n", cwriter.manifest_text())
+        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter()
         cwriter.write_file('/dev/null')
-        self.assertEquals(". 0:0:null\n", cwriter.manifest_text())
+        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumes_from_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
@@ -237,12 +237,12 @@ class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
             cwriter.write_file(testfile.name, 'test')
         new_writer = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         new_writer.write_file('/dev/null')
-        self.assertEquals(". 0:0:null\n", new_writer.manifest_text())
+        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", new_writer.manifest_text())
 
     def test_new_writer_from_empty_cache(self):
         cwriter = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
         cwriter.write_file('/dev/null')
-        self.assertEquals(". 0:0:null\n", cwriter.manifest_text())
+        self.assertEquals(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
     def test_writer_resumable_after_arbitrary_bytes(self):
         cwriter = arv_put.ArvPutCollectionWriter(self.cache)
