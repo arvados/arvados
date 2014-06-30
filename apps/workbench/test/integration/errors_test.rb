@@ -59,4 +59,18 @@ class ErrorsTest < ActionDispatch::IntegrationTest
     assert(page.has_no_text?(/fiddlesticks/i),
            "trying to show a bad UUID rendered a fiddlesticks page, not 404")
   end
+
+  test "404 page includes information about missing object" do
+    visit(page_with_token("active", "/groups/zazazaz"))
+    assert(page.has_text?(/group with UUID zazazaz/i),
+           "name of searched group missing from 404 page")
+  end
+
+  test "unrouted 404 page works" do
+    visit(page_with_token("active", "/__asdf/ghjk/zxcv"))
+    assert(page.has_text?(/not found/i),
+           "unrouted page missing 404 text")
+    assert(page.has_no_text?(/fiddlesticks/i),
+           "unrouted request returned a generic error page, not 404")
+  end
 end
