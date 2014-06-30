@@ -356,7 +356,10 @@ class ApplicationController < ActionController::Base
       else
         @object = model_class.find(params[:uuid])
       end
-    rescue ArvadosApiClient::NotFoundException => error
+    rescue ArvadosApiClient::NotFoundException, RuntimeError => error
+      if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
+        raise
+      end
       render_not_found(error)
       return false
     end
