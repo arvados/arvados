@@ -41,6 +41,9 @@ def normalize_stream(s, stream):
                 blocks[b[arvados.LOCATOR]] = streamoffset
                 streamoffset += b[arvados.BLOCKSIZE]
 
+    if len(stream_tokens) == 1:
+        stream_tokens.append(config.EMPTY_BLOCK_LOCATOR)
+
     for f in sortedfiles:
         current_span = None
         fout = f.replace(' ', '\\040')
@@ -143,9 +146,13 @@ class CollectionReader(object):
             for f in s.all_files():
                 yield f
 
-    def manifest_text(self):
+    def manifest_text(self, strip=False):
         self._populate()
-        return self._manifest_text
+        if strip:
+            m = ''.join([StreamReader(stream).manifest_text(strip=True) for stream in self._streams])
+            return m
+        else:
+            return self._manifest_text
 
 class CollectionWriter(object):
     KEEP_BLOCK_SIZE = 2**26
@@ -228,7 +235,11 @@ class CollectionWriter(object):
         path, stream_name, max_manifest_depth = self._queued_trees[0]
         make_dirents = (util.listdir_recursive if (max_manifest_depth == 0)
                         else os.listdir)
-        self._queue_dirents(stream_name, make_dirents(path))
+        d = make_dirents(path)
+        if len(d) > 0:
+            self._queue_dirents(stream_name, d)
+        else:
+            self._queued_trees.popleft()
 
     def _queue_file(self, source, filename=None):
         assert (self._queued_file is None), "tried to queue more than one file"
@@ -359,7 +370,7 @@ class CollectionWriter(object):
                              for x in fields[1:-1] ]
                 clean += fields[0] + ' ' + ' '.join(locators) + ' ' + fields[-1] + "\n"
         return clean
-        
+
     def manifest_text(self):
         self.finish_current_stream()
         manifest = ''
@@ -372,10 +383,10 @@ class CollectionWriter(object):
             manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
 
-        #print 'writer',manifest
-        #print 'after reader',CollectionReader(manifest).manifest_text()
-
-        return CollectionReader(manifest).manifest_text()
+        if len(manifest) > 0:
+            return CollectionReader(manifest).manifest_text()
+        else:
+            return ""
 
     def data_locators(self):
         ret = []

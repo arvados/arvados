@@ -71,7 +71,7 @@ def locators_and_ranges(data_locators, range_start, range_size, debug=False):
         block_size = data_locators[i][BLOCKSIZE]
         block_start = data_locators[i][OFFSET]
         block_end = block_start + block_size
-    
+
     while i < len(data_locators):
         locator, block_size, block_start = data_locators[i]
         block_end = block_start + block_size
@@ -169,7 +169,7 @@ class StreamFileReader(object):
             dc = bz2.BZ2Decompressor()
             return self.decompress(lambda segment: dc.decompress(segment), size)
         elif re.search('\.gz$', self._name):
-            dc = zlib.decompressobj(16+zlib.MAX_WBITS)            
+            dc = zlib.decompressobj(16+zlib.MAX_WBITS)
             return self.decompress(lambda segment: dc.decompress(dc.unconsumed_tail + segment), size)
         else:
             return self.readall(size)
@@ -209,7 +209,7 @@ class StreamReader(object):
             self._keep = keep
         else:
             self._keep = Keep.global_client_object()
-            
+
         streamoffset = 0L
 
         # parse stream
@@ -264,11 +264,16 @@ class StreamReader(object):
         for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._data_locators, start, size):
             data += self._keep.get(locator)[segmentoffset:segmentoffset+segmentsize]
         return data
-    
-    def manifest_text(self):
+
+    def manifest_text(self, strip=False):
         manifest_text = [self.name().replace(' ', '\\040')]
-        manifest_text.extend([d[LOCATOR] for d in self._data_locators])
-        manifest_text.extend([' '.join(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], f.name().replace(' ', '\\040')) 
+        if strip:
+            for d in self._data_locators:
+                m = re.match(r'^[0-9a-f]{32}\+\d+', d[LOCATOR])
+                manifest_text.append(m.group(0))
+        else:
+            manifest_text.extend([d[LOCATOR] for d in self._data_locators])
+        manifest_text.extend([' '.join(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], f.name().replace(' ', '\\040'))
                                         for seg in f.segments])
                               for f in self._files.values()])
         return ' '.join(manifest_text) + '\n'

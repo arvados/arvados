@@ -26,7 +26,7 @@
     <% end %>
   </td>
   <td>
-    <%= raw(distance_of_time_in_words(c.created_at, Time.now).sub('about ','~').sub(' ','&nbsp;')) if c.created_at %>
+    <%= c.created_at.to_s if c.created_at %>
   </td>
   <td>
     <% current_state = @collection_info[c.uuid][:wanted_by_me] ? 'persistent' : 'cache' %>
