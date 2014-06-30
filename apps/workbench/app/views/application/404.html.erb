@@ -1,0 +1,21 @@
+<%
+   if (controller.andand.action_name == 'show') and params[:uuid]
+     class_name = controller.model_class.to_s.underscore.humanize(capitalize: false)
+     req_item = safe_join([class_name, " with UUID ",
+                           raw("<code>"), params[:uuid], raw("</code>")], "")
+   else
+     req_item = "page you requested"
+   end
+%>
+
+<h2>Not Found</h2>
+
+<p>The <%= req_item %> was not found.
+
+<% if class_name %>
+Perhaps you'd like to
+<%= link_to("browse all #{class_name.pluralize}", action: :index) %>?
+<% end %>
+
+</p>
+

@@ -7,7 +7,7 @@ class UsersControllerTest < ActionController::TestCase
   end
 
   test "ignore previously valid token (for deleted user), don't crash" do
-    get :welcome, {}, session_for(:valid_token_deleted_user)
+    get :activity, {}, session_for(:valid_token_deleted_user)
     assert_response :redirect
     assert_match /^#{Rails.configuration.arvados_login_base}/, @response.redirect_url
     assert_nil assigns(:my_jobs)

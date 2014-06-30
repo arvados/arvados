@@ -82,7 +82,8 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
 
   def current_api_client_is_trusted
     unless Thread.current[:api_client].andand.is_trusted
-      render :json => { errors: ['Forbidden: this API client cannot manipulate other clients\' access tokens.'] }.to_json, status: 403
+      send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
+                 status: 403)
     end
   end
 end

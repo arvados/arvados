@@ -118,7 +118,7 @@ class CollectionsController < ApplicationController
 
   def show_file_links
     Thread.current[:reader_tokens] = [params[:reader_token]]
-    find_object_by_uuid
+    return if false.equal?(find_object_by_uuid)
     render layout: false
   end
 
@@ -238,18 +238,14 @@ class CollectionsController < ApplicationController
     # error we encounter, and return nil.
     most_specific_error = [401]
     token_list.each do |api_token|
-      using_specific_api_token(api_token) do
-        begin
+      begin
+        using_specific_api_token(api_token) do
           yield
           return api_token
-        rescue ArvadosApiClient::NotLoggedInException => error
-          status = 401
-        rescue => error
-          status = (error.message =~ /\[API: (\d+)\]$/) ? $1.to_i : nil
-          raise unless [401, 403, 404].include?(status)
         end
-        if status >= most_specific_error.first
-          most_specific_error = [status, error]
+      rescue ArvadosApiClient::ApiError => error
+        if error.api_status >= most_specific_error.first
+          most_specific_error = [error.api_status, error]
         end
       end
     end
