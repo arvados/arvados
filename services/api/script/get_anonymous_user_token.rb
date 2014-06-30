@@ -27,6 +27,7 @@ def create_api_client_auth
   api_client_auth = ApiClientAuthorization.
     new(user: anonymous_user,
         api_client_id: 0,
+        expires_at: Time.now + 100.years,
         scopes: ['GET /'])
   api_client_auth.save!
   api_client_auth.reload
@@ -34,7 +35,10 @@ end
 
 if get_existing
   api_client_auth = ApiClientAuthorization.
-    where('user_id=?', anonymous_user.id.to_i).first
+    where('user_id=?', anonymous_user.id.to_i).
+    where('expires_at>?', Time.now).
+    select { |auth| auth.scopes == ['GET /'] }.
+    first
 end
 
 # either not a get or no api_client_auth was found
