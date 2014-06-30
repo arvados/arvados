@@ -81,6 +81,24 @@ function start_container {
       echo "    ssh root@$ip"
       echo
     fi
+
+    if [[ "$name" == "doc_server" ]]; then
+      echo
+      echo "*****************************************************************"
+      echo "You can access the Arvados documentation at http://localhost:${port%:*}"
+      echo "*****************************************************************"
+      echo
+    fi
+
+    if [[ "$name" == "workbench_server" ]]; then
+      echo
+      echo "*****************************************************************"
+      echo "You can access the Arvados workbench at http://localhost:${port%:*}"
+      echo "*****************************************************************"
+      echo
+   fi
+
+
 }
 
 declare -a keep_volumes
@@ -188,22 +206,22 @@ function do_start {
 
     if [[ $start_doc != false ]]
     then
-	start_container "9898:80" "doc_server" '' '' "arvados/doc"
+	start_container "$start_doc:80" "doc_server" '' '' "arvados/doc"
     fi
 
     if [[ $start_sso != false ]]
     then
-	start_container "9901:443" "sso_server" '' '' "arvados/sso"
+	start_container "$start_sso:443" "sso_server" '' '' "arvados/sso"
     fi
 
     if [[ $start_api != false ]]
     then
-	start_container "9900:443" "api_server" '' "sso_server:sso" "arvados/api"
+	start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
     fi
 
     if [[ $start_workbench != false ]]
     then
-	start_container "9899:80" "workbench_server" '' "api_server:api" "arvados/workbench"
+	start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
     fi
 
     if [[ $start_keep != false ]]
@@ -233,6 +251,7 @@ ARVADOS_API_HOST_INSECURE=yes
 ARVADOS_API_TOKEN=$(cat api/generated/superuser_token)
 EOF
     fi
+
 }
 
 function do_stop {
@@ -279,7 +298,7 @@ function do_stop {
 	esac
     done
 
-    # If no options were selected, then start all servers.
+    # If no options were selected, then stop all servers.
     if [[ $stop_doc == "" &&
 	  $stop_sso == "" &&
 	  $stop_api == "" &&
