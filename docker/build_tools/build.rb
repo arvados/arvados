@@ -84,7 +84,7 @@ def main options
       debootstrap_ok? and
       File.exists? 'config.yml'
     warn "Building Arvados."
-    system '/usr/bin/make', '-f', options[:makefile], *ARGV
+    system({"DOCKER" => docker_path}, '/usr/bin/make', '-f', options[:makefile], *ARGV)
   end
 end
 

@@ -10,9 +10,9 @@ clean:
 # `make realclean' will also remove the docker images and force
 # subsequent makes to build the entire chain from the ground up
 realclean: clean
-	-[ -n "`docker ps -q`" ] && docker stop `docker ps -q`
-	-docker rm `docker ps -a -q`
-	-docker rmi `docker images -q`
+	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
+	-$(DOCKER) rm `$(DOCKER) ps -a -q`
+	-$(DOCKER) rmi `$(DOCKER) images -q`
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
@@ -115,7 +115,7 @@ $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 # The docker build -q option suppresses verbose build output.
 # Necessary to prevent failure on building warehouse; see
 # https://github.com/dotcloud/docker/issues/3172
-DOCKER_BUILD = docker build -q
+DOCKER_BUILD = $(DOCKER) build -q
 
 # ============================================================
 # The main Arvados servers: api, doc, workbench, warehouse
