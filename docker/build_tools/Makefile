@@ -26,6 +26,8 @@ BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
 
 JOBS_DEPS = jobs/Dockerfile
 
+BWA_SAMTOOLS_DEPS = bwa-samtools/Dockerfile
+
 API_DEPS = api/Dockerfile $(API_GENERATED)
 
 DOC_DEPS = doc/Dockerfile doc/apache2_vhost
@@ -129,6 +131,10 @@ keep-image: debian-image $(BUILD) $(KEEP_DEPS)
 jobs-image: base-image $(BUILD) $(JOBS_DEPS)
 	$(DOCKER_BUILD) -t arvados/jobs jobs
 	date >jobs-image
+
+bwa-samtools-image: jobs-image $(BUILD) $(BWA_SAMTOOLS_DEPS)
+	$(DOCKER_BUILD) -t arvados/jobs-bwa-samtools bwa-samtools
+	date >bwa-samtools-image
 
 workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated

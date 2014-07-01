@@ -41,6 +41,18 @@ module CurrentApiClient
      '000000000000000'].join('-')
   end
 
+  def anonymous_group_uuid
+    [Server::Application.config.uuid_prefix,
+     Group.uuid_prefix,
+     'anonymouspublic'].join('-')
+  end
+
+  def anonymous_user_uuid
+    [Server::Application.config.uuid_prefix,
+     User.uuid_prefix,
+     'anonymouspublic'].join('-')
+  end
+
   def system_user
     if not $system_user
       real_current_user = Thread.current[:user]
@@ -99,4 +111,51 @@ module CurrentApiClient
       Thread.current[:user] = system_user
     end
   end
+
+  def anonymous_group
+    if not $anonymous_group
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          $anonymous_group = Group.
+          where(uuid: anonymous_group_uuid).first_or_create do |g|
+            g.update_attributes(name: "Anonymous group",
+                                description: "Anonymous group")
+          end
+        end
+      end
+    end
+    $anonymous_group
+  end
+
+  def anonymous_user
+    if not $anonymous_user
+      act_as_system_user do
+        $anonymous_user = User.where('uuid=?', anonymous_user_uuid).first
+        if !$anonymous_user
+          $anonymous_user = User.new(uuid: anonymous_user_uuid,
+                                     is_active: false,
+                                     is_admin: false,
+                                     email: 'anonymouspublic',
+                                     first_name: 'anonymouspublic',
+                                     last_name: 'anonymouspublic')
+          $anonymous_user.save!
+          $anonymous_user.reload
+        end
+
+        group_perms = Link.where(tail_uuid: anonymous_user_uuid,
+                                 head_uuid: anonymous_group_uuid,
+                                 link_class: 'permission',
+                                 name: 'can_read')
+
+        if !group_perms.any?
+          group_perm = Link.create!(tail_uuid: anonymous_user_uuid,
+                                    head_uuid: anonymous_group_uuid,
+                                    link_class: 'permission',
+                                    name: 'can_read')
+        end
+      end
+    end
+    $anonymous_user
+  end
+
 end

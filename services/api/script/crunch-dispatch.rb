@@ -230,7 +230,7 @@ class Dispatcher
         next
       end
 
-      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch --no-tags #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
+      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch-pack --all #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
 
       cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'

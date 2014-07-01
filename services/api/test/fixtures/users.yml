@@ -80,3 +80,11 @@ inactive_but_signed_user_agreement:
   is_admin: false
   prefs: {}
 
+anonymous:
+  uuid: zzzzz-tpzed-anonymouspublic
+  email: anonymouspublic
+  first_name: anonymouspublic
+  last_name: anonymouspublic
+  is_active: false
+  is_admin: false
+  prefs: {}

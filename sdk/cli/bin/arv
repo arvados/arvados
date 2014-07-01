@@ -56,14 +56,20 @@ class Google::APIClient
    return @discovery_documents["#{api}:#{version}"] ||=
      begin
        # fetch new API discovery doc if stale
-       cached_doc = File.expand_path '~/.cache/arvados/discovery_uri.json'
-       if not File.exist?(cached_doc) or (Time.now - File.mtime(cached_doc)) > 86400
+       cached_doc = File.expand_path '~/.cache/arvados/discovery_uri.json' rescue nil
+
+       if cached_doc.nil? or not File.exist?(cached_doc) or (Time.now - File.mtime(cached_doc)) > 86400
          response = self.execute!(:http_method => :get,
                                   :uri => self.discovery_uri(api, version),
                                   :authenticated => false)
-         FileUtils.makedirs(File.dirname cached_doc)
-         File.open(cached_doc, 'w') do |f|
-           f.puts response.body
+
+         begin
+           FileUtils.makedirs(File.dirname cached_doc)
+           File.open(cached_doc, 'w') do |f|
+             f.puts response.body
+           end
+         rescue
+           return JSON.load response.body
          end
        end
 
@@ -85,8 +91,8 @@ end
 def init_config
   # read authentication data from arvados configuration file if present
   lineno = 0
-  config_file = File.expand_path('~/.config/arvados/settings.conf')
-  if File.exist? config_file then
+  config_file = File.expand_path('~/.config/arvados/settings.conf') rescue nil
+  if not config_file.nil? and File.exist? config_file then
     File.open(config_file, 'r').each do |line|
       lineno = lineno + 1
       # skip comments
