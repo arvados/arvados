@@ -38,3 +38,4 @@ fi
 
 title "docker build complete"
 
+exit $EXITCODE
