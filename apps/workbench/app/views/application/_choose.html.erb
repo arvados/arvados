@@ -1,4 +1,4 @@
-<div class="modal arv-choose">
+<div class="modal arv-choose modal-with-loading-spinner">
   <div class="modal-dialog" style="width:80%">
     <div class="modal-content">
       <div class="modal-header">
@@ -6,6 +6,7 @@
         <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.andand.class_for_display}" %></h4>
       </div>
       <div class="modal-body">
+        <div class="spinner spinner-32px spinner-h-center spinner-v-center" hidden="true"></div>
         <nav class="navbar navbar-default breadcrumbs" role="navigation">
           <ul class="nav navbar-nav navbar-left">
             <li class="dropdown">

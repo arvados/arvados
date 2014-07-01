@@ -1,4 +1,4 @@
-<div class="modal-dialog">
+<div class="modal-dialog modal-with-loading-spinner">
   <div class="modal-content">
 
     <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get',
@@ -10,6 +10,7 @@
     </div>
 
     <div class="modal-body">
+      <div class="spinner spinner-32px spinner-h-center spinner-v-center" hidden="true"></div>
       <% if @object%>
         <% uuid = @object.uuid %>
         <% email = @object.email %>
