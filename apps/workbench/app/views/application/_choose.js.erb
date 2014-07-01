@@ -6,7 +6,7 @@ $('body > .modal-container .modal .modal-footer .btn-primary').
     attr('data-method', '<%= j params[:action_method] %>').
     data('action-data', <%= raw params[:action_data] %>);
 $(".chooser-show-project").on("click", function() {
-  $("#choose-scroll").html("<%=j image_tag 'ajax-loader.gif' %>");
+  $("#choose-scroll").html("<div class=\"spinner spinner-32px spinner-h-center\"></div>");
   $(".modal-dialog-preview-pane").html('');
   var t = $(this);
   var d = {
