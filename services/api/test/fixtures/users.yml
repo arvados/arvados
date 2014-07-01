@@ -40,6 +40,16 @@ active:
   is_admin: false
   prefs: {}
 
+project_viewer:
+  uuid: zzzzz-tpzed-projectviewer1a
+  email: project-viewer@arvados.local
+  first_name: Project
+  last_name: Viewer
+  identity_url: https://project-viewer.openid.local
+  is_active: true
+  is_admin: false
+  prefs: {}
+
 spectator:
   uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   email: spectator@arvados.local
