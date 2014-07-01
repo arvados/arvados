@@ -50,7 +50,7 @@ try:
         stdoutname = subst.do_substitution(p, p["stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    print("run-command running: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+    print("run-command {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
     rcode = subprocess.call(cmd, stdout=stdoutfile)
 
@@ -62,6 +62,12 @@ except Exception as e:
 finally:
     for l in links:
         os.unlink(l)
+
+    print("run-command output:")
+
+    subprocess.call(["find", "."])
+
+    print("run-command writing to keep")
 
     out = arvados.CollectionWriter()
     out.write_directory_tree(".", max_manifest_depth=0)
@@ -77,5 +83,8 @@ if rcode == 0:
     os.chdir("..")
     shutil.rmtree("tmpdir")
     shutil.rmtree("output")
+    print("run-command success")
+else:
+    print("run-command failed")
 
 sys.exit(rcode)
