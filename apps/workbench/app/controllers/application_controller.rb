@@ -504,13 +504,12 @@ class ApplicationController < ActionController::Base
       if anonymous_user_token != previous_api_token
         Thread.current[:arvados_api_token] = anonymous_user_token
         valid_anonymous_token = verify_api_token
+        Thread.current[:arvados_api_token] = previous_api_token
         if valid_anonymous_token
           Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
         else
           Thread.current[:arvados_anonymous_api_token] = nil
         end
-        Thread.current[:arvados_api_token] = previous_api_token
-        verify_api_token
       else
         Thread.current[:arvados_anonymous_api_token] = anonymous_user_token
       end
