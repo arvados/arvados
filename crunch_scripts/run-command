@@ -50,12 +50,14 @@ try:
         stdoutname = subst.do_substitution(p, p["stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    print("Running command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+    print("run-command running: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
     rcode = subprocess.call(cmd, stdout=stdoutfile)
 
+    print("run-command completed with exit code %i" % rcode)
+
 except Exception as e:
-    print("Caught exception {}".format(e))
+    print("run-command exception: {}".format(e))
 
 finally:
     for l in links:
