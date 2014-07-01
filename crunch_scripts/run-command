@@ -56,7 +56,6 @@ try:
 
 except Exception as e:
     print("Caught exception {}".format(e))
-    rcode = 1
 
 finally:
     for l in links:
@@ -64,7 +63,13 @@ finally:
 
     out = arvados.CollectionWriter()
     out.write_directory_tree(".", max_manifest_depth=0)
-    arvados.current_task().set_output(out.finish())
+    outuuid = out.finish()
+    arvados.api('v1').job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                         body={
+                                             'output':outuuid,
+                                             'success': (rcode == 0),
+                                             'progress':1.0
+                                         }).execute()
 
 if rcode == 0:
     os.chdir("..")
