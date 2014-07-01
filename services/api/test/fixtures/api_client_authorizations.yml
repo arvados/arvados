@@ -43,6 +43,12 @@ active_noscope:
   expires_at: 2038-01-01 00:00:00
   scopes: []
 
+project_viewer:
+  api_client: untrusted
+  user: project_viewer
+  api_token: projectviewertoken1234567890abcdefghijklmnopqrstuv
+  expires_at: 2038-01-01 00:00:00
+
 admin_vm:
   api_client: untrusted
   user: admin
