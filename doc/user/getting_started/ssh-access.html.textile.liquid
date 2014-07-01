@@ -1,10 +1,12 @@
 ---
 layout: default
 navsection: userguide
-title: Accessing an Arvados VM with SSH
+title: Accessing Arvados VM with SSH - Unix Environments
 ...
 
 Arvados requires a public SSH key in order to securely log in to an Arvados VM instance, or to access an Arvados Git repository.
+
+This document is for unix environments (Linux, OS X, Cygwin). If you are using a windows environment, please visit the "Accessing Arvados VM with SSH - Windows Environments":ssh-access-windows.html
 
 This document is divided up into three sections.
 
@@ -14,10 +16,7 @@ This document is divided up into three sections.
 
 h1(#gettingkey). Getting your SSH key
 
-# "Using SSH":#unix (Linux, OS X, Cygwin)
-# "Using PuTTY":#windows (Windows)
-
-h2(#unix). Unix: Using ssh-keygen
+h2(#unix). Using ssh-keygen
 
 Start by opening a terminal window.  Check if you have an existing public key:
 
@@ -82,45 +81,6 @@ When everything is set up, @ssh-add -l@ should yield output that looks something
 
 You may now proceed to "adding your key to the Arvados Workbench.":#workbench
 
-h2(#windows). Windows: Using PuTTY
-
-(Note: if you are using the SSH client that comes with "Cygwin":http://cygwin.com you should follow the "Unix":#unix instructions).
-
-"PuTTY":http://www.chiark.greenend.org.uk/~sgtatham/putty/ is a free (MIT-licensed) Win32 Telnet and SSH client. PuTTY includes all the tools a Windows user needs to create private keys and make SSH connections to your virtual machines in the Arvados Cloud.
-
-You can "download PuTTY from its Web site":http://www.chiark.greenend.org.uk/~sgtatham/putty/.  Note that you should download the installer or .zip file with all of the PuTTY tools (PuTTYtel is not required).
-
-h3. Step 1 - Adding PuTTY to the PATH
-
-# After downloading PuTTY and installing it, you should have a PuTTY folder in @C:\Program Files\@ or @C:\Program Files (x86)\@ (if you are using a 64 bit operating system).  If you downloaded a zip file, extract it to the location you wish to install the PuTTY applications.
-# Open the Control Panel.
-# Select _Advanced System Settings_, and choose _Environment Variables_.
-# Under system variables, find and edit @PATH@.
-# If you installed PuTTY in @C:\Program Files\PuTTY\@, add the following to the end of PATH (make sure to include semicolon and quotation marks):
-<code>;\"C:\Program Files\PuTTY\"</code>
-If you installed PuTTY in @C:\Program Files (x86)\PuTTY\@, add the following to the end of PATH (make sure to include semicolon and quotation marks):
-<code>;\"C:\Program Files (x86)\PuTTY\"</code>
-# Click through the OKs to close all the dialogs you’ve opened.
-
-h3. Step 2 - Creating a Public Key
-
-# Start PuTTYgen from the Start Menu or the folder where it was installed.
-# At the bottom of the window, make sure the ‘Number of bits in a generated key’ field is set to 4096.
-# Click Generate and follow the instructions to generate a key.
-# Click to save the Public Key.
-# Click to save the Private Key (we recommend using a strong passphrase).
-# Select the text of the Public Key and copy it to the clipboard.
-
-h3. Step 3 - Set up Pageant
-
-Pageant is a PuTTY utility that manages your private keys so is not necessary to enter your private key passphrase every time you make a new SSH connection.
-
-# Start Pageant from the Start Menu or the folder where it was installed.
-# Pageant will now be running in the system tray. Click the Pageant icon to configure.
-# Choose _Add Key_ and add the private key which you created in the previous step.
-
-You are now ready to proceed to "adding your key to the Arvados Workbench.":#workbench
-
 h1(#workbench). Adding your key to Arvados Workbench
 
 h3. From the Workbench dashboard
@@ -142,8 +102,6 @@ Paste the public key that you copied to the cliboard in the previous section int
 h1(#login). Using SSH to log into an Arvados VM
 
 To see a list of virtual machines that you have access to and determine the name and login information, click on Compute %(rarr)&rarr;% Virtual machines.  Once on the *Virtual machines* page, The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Your login name is the text inside the quotes.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login name as appropriate.
-
-This section consists of two sets of instructions, depending on whether you will be logging in using a "Unix":#unixvm (Linux, OS X, Cygwin) or "Windows":#windowsvm client.
 
 h2(#unixvm). Logging in using the @ssh@ command
 
@@ -183,28 +141,5 @@ The command line above is cumbersome, but you can configure SSH to remember many
 This will recognize any host ending in ".arvados" and automatically apply the proxy, user and forwarding settings from the configuration file, allowing you to log in with a much simpler command:
 
 notextile. <pre><code>$ <span class="userinput">ssh <b>shell</b>.arvados</span></code></pre>
-
-h2(#windowsvm). Logging in using PuTTY (Windows)
-
-h3. Initial configuration
-
-# Open PuTTY from the Start Menu.
-# On the Session screen set the Host Name (or IP address) to “shell”.
-# On the Session screen set the Port to “22”.
-# On the Connection %(rarr)&rarr;% Data screen set the Auto-login username to the username listed in the *logins* column on the Arvados Workbench page _Compute %(rarr)&rarr;% Virtual machines_.
-# On the Connection %(rarr)&rarr;% Proxy screen set the Proxy Type to “Local”.
-# On the Connection %(rarr)&rarr;% Proxy screen in the “Telnet command, or local proxy command” box enter:
-<code>plink -P 2222 turnout@switchyard.qr1hi.arvadosapi.com %host</code>
-Make sure there is no newline at the end of the text entry.
-# Return to the Session screen. In the Saved Sessions box, enter a name for this configuration and click Save.
-
-_Note: We recommend you do not delete the “Default” Saved Session._
-
-h3. Connecting to the VM
-
-# Open PuTTY from the Start Menu.
-# Click on the Saved Session name you created in the previous section.
-# Click Load to load those saved session settings.
-# Click Open to open the SSH window at the command prompt. You will now be logged into your virtual machine.
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html

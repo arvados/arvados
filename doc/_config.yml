@@ -18,6 +18,7 @@ navbar:
       - user/index.html.textile.liquid
       - user/getting_started/workbench.html.textile.liquid
       - user/getting_started/ssh-access.html.textile.liquid
+      - user/getting_started/ssh-access-windows.html.textile.liquid
       - user/getting_started/check-environment.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
     - Tutorials:
