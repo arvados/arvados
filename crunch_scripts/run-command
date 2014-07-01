@@ -65,7 +65,7 @@ finally:
 
     print("run-command output:")
 
-    subprocess.call(["find", "."])
+    subprocess.call(["find", ".", "-type", "f", "-printf", "run-command %12.12s %h/%f\\\n"])
 
     print("run-command writing to keep")
 
