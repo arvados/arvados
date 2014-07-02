@@ -413,6 +413,9 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		// This type assertion is safe because the only errors
 		// GetBlock can return are CorruptError or NotFoundError.
+		if err == NotFoundError {
+			log.Printf("%s: not found, giving up\n", hash)
+		}
 		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 		return
 	}
@@ -601,7 +604,6 @@ func GetBlock(hash string) ([]byte, error) {
 		}
 	}
 
-	log.Printf("%s: not found on any volumes, giving up\n", hash)
 	return nil, NotFoundError
 }
 
