@@ -65,7 +65,7 @@ If you want to add more SSH keys, click on the user icon <span class="glyphicon 
 
 On the *Authorized keys* page, the click on the button <span class="btn btn-primary disabled">Add a new authorized key</span> in the upper right corner.
 
-The page will reload with a new row of information.  Under the *public_key* column heading, click on the cell +none+.  This will open an editing popup as shown in this screenshot:
+The page will reload with a new row of information.  Under the *public_key* column heading, click on the cell +New authorized key+.  This will open an editing popup as shown in this screenshot:
 
 !{{ site.baseurl }}/images/ssh-adding-public-key.png!
 
@@ -73,16 +73,16 @@ Paste the public key that you copied to the cliboard in the previous section int
 
 h1(#login). Using SSH to log into an Arvados VM
 
-To see a list of virtual machines that you have access to and determine the name and login information, click on Compute %(rarr)&rarr;% Virtual machines.  Once on the *Virtual machines* page, The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Your login name is the text inside the quotes.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login name as appropriate.
+To see a list of virtual machines that you have access to and determine the name and login information, click on *Settings* menu in the top navigation bar and click on *Virtual machines*.  Once on the *Virtual machines* page, The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Your login name is the text inside the quotes.  In this guide the hostname will be *_shell_* and the login will be *_you_*.  Replace these with your hostname and login name as appropriate.
 
 h2(#windowsvm). Logging in using PuTTY
 
 h3. Initial configuration
 
 # Open PuTTY from the Start Menu.
-# On the Session screen set the Host Name (or IP address) to “shell”.
+# On the Session screen set the Host Name (or IP address) to “shell”, which is the hostname listed in the _Virtual Machines_ page.
 # On the Session screen set the Port to “22”.
-# On the Connection %(rarr)&rarr;% Data screen set the Auto-login username to the username listed in the *logins* column on the Arvados Workbench page _Compute %(rarr)&rarr;% Virtual machines_.
+# On the Connection %(rarr)&rarr;% Data screen set the Auto-login username to the username listed in the *logins* column on the Arvados Workbench page _Settings %(rarr)&rarr;% Virtual machines_ page.
 # On the Connection %(rarr)&rarr;% Proxy screen set the Proxy Type to “Local”.
 # On the Connection %(rarr)&rarr;% Proxy screen in the “Telnet command, or local proxy command” box enter:
 <code>plink -P 2222 turnout@switchyard.qr1hi.arvadosapi.com %host</code>
@@ -97,5 +97,7 @@ h3. Connecting to the VM
 # Click on the Saved Session name you created in the previous section.
 # Click Load to load those saved session settings.
 # Click Open to open the SSH window at the command prompt. You will now be logged into your virtual machine.
+
+_Note_: If you see a blank terminal window that just hangs: open a new terminal window and type <code>plink -P 2222 turnout@switchyard.qr1hi.arvadosapi.com shell</code> in it. Hit enter and type _y_ when prompted to cache the session state. Go back and start PuTTY session using the start menu button.
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
