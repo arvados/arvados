@@ -1,12 +1,24 @@
 ---
 layout: default
 navsection: installguide
-title: Overview
+title: Installation overview
 ...
 
-{% include 'alert_stub' %}
+Arvados can be installed in multiple ways. Arvados does not depend on any particular cloud operating stack. Arvados runs on one or more GNU/Linux system(s). Arvados is being developed on Debian and Ubuntu GNU/Linux.
 
-h2. Installation Overview
+The simplest way to try out Arvados is to use the Docker-based installation, which installs Arvados in a series of Docker containers.
+
+For larger scale installations, a manual installation is more appropriate.
+
+h2. Docker
+
+{% include 'alert_docker' %}
+
+"Installing with Docker":install-docker.html
+
+h2. Manual installation
+
+{% include 'alert_stub' %}
 
 # Set up a cluster, or use Amazon
 # Create and mount Keep volumes

@@ -86,13 +86,17 @@ if [ ! "$repo" ] || [ ! "$suite" ]; then
 fi
 
 # some rudimentary detection for whether we need to "sudo" our docker calls
-docker=''
-if docker version > /dev/null 2>&1; then
-	docker='docker'
-elif sudo docker version > /dev/null 2>&1; then
-	docker='sudo docker'
-elif command -v docker > /dev/null 2>&1; then
-	docker='docker'
+docker=`which docker.io`
+if [[ "$docker" == "" ]]; then
+	docker=`which docker`
+fi
+
+if $docker version > /dev/null 2>&1; then
+	docker="$docker"
+elif sudo $docker version > /dev/null 2>&1; then
+	docker="sudo $docker"
+elif command -v $docker > /dev/null 2>&1; then
+	docker="$docker"
 else
 	echo >&2 "warning: either docker isn't installed, or your current user cannot run it;"
 	echo >&2 "         this script is not likely to work as expected"

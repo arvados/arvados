@@ -149,7 +149,7 @@ func main() {
 	flag.IntVar(
 		&permission_ttl_sec,
 		"permission-ttl",
-		300,
+		1209600,
 		"Expiration time (in seconds) for newly generated permission "+
 			"signatures.")
 	flag.BoolVar(

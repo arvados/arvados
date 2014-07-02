@@ -2,6 +2,27 @@
     opacity: 0;
 }
 
+.spinner {
+    /* placeholder for stuff like $.find('.spinner').detach() */
+}
+
+.spinner-32px {
+    background-image: url('<%= asset_path('spinner_32px.gif') %>');
+    background-repeat: no-repeat;
+    width: 32px;
+    height: 32px;
+}
+
+.spinner-h-center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.spinner-v-center {
+    position: relative;
+    top: 45%;
+}
+
 .rotating {
     color: #f00;
     /* Chrome and Firefox, at least in Linux, render a horrible shaky

@@ -16,7 +16,7 @@ $(document).on('click', '.selectable', function() {
         prop('disabled', !any);
 
     if ($this.hasClass('active')) {
-        $(".modal-dialog-preview-pane").html('<img src="/assets/ajax-loader.gif"></img>');
+        $(".modal-dialog-preview-pane").html('<div class="spinner spinner-32px spinner-h-center spinner-v-center"></div>');
         $.ajax($this.attr('data-preview-href'),
                {dataType: "html"}).
            done(function(data, status, jqxhr) {

@@ -43,18 +43,22 @@ collections on the server.""")
     if args.debug:
         arvados.config.settings()['ARVADOS_DEBUG'] = 'true'
 
-    if args.groups:
+    try:
         api = arvados.api('v1')
-        e = operations.inodes.add_entry(GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
-    elif args.tags:
-        api = arvados.api('v1')
-        e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
-    elif args.collection != None:
-        # Set up the request handler with the collection at the root
-        e = operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
-    else:
-        # Set up the request handler with the 'magic directory' at the root
-        operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+
+        if args.groups:
+            e = operations.inodes.add_entry(GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        elif args.tags:
+            e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        elif args.collection != None:
+            # Set up the request handler with the collection at the root
+            e = operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
+        else:
+            # Set up the request handler with the 'magic directory' at the root
+            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+    except Exception as ex:
+        print("arv-mount: %s" % ex)
+        exit(1)
 
     # FUSE options, see mount.fuse(8)
     opts = [optname for optname in ['allow_other', 'debug']

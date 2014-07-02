@@ -43,16 +43,16 @@ var makeFilter = function() {
   <% logcollection = Collection.find @object.log %>
   <% if logcollection %>
     $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
-    done(function(data, status, jqxhr) {
-    logViewer.filter();
-    addToLogViewer(logViewer, data.split("\n"), taskState);
-    logViewer.filter(makeFilter());
-    generateJobOverview("#log-viewer-overview", logViewer, taskState);
-    $("#logloadspinner").detach();
-    }).
-    fail(function(jqxhr, status, error) {
-    $("#logloadspinner").detach();
-    });
+	done(function(data, status, jqxhr) {
+	    logViewer.filter();
+	    addToLogViewer(logViewer, data.split("\n"), taskState);
+	    logViewer.filter(makeFilter());
+	    generateJobOverview("#log-viewer-overview", logViewer, taskState);
+	    $("#log-viewer .spinner").detach();
+	}).
+	fail(function(jqxhr, status, error) {
+	    $("#log-viewer .spinner").detach();
+	});
   <% end %>
 <% else %>
   <%# Live log loading not implemented yet. %>
@@ -204,7 +204,7 @@ $("#set-show-failed-only").on("click", function() {
     </table>
 
     <% if @object.log and logcollection %>
-      <%= image_tag 'ajax-loader.gif', id: "logloadspinner" %>
+      <div class="spinner spinner-32px"></div>
     <% end %>
 
   </div>

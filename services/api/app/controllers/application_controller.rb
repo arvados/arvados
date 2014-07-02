@@ -20,11 +20,10 @@ class ApplicationController < ActionController::Base
   include LoadParam
   include RecordFilters
 
-  ERROR_ACTIONS = [:render_error, :render_not_found]
-
-
   respond_to :json
   protect_from_forgery
+
+  ERROR_ACTIONS = [:render_error, :render_not_found]
 
   before_filter :respond_with_json_by_default
   before_filter :remote_ip
@@ -45,6 +44,17 @@ class ApplicationController < ActionController::Base
   theme :select_theme
 
   attr_accessor :resource_attrs
+
+  begin
+    rescue_from(Exception,
+                ArvadosModel::PermissionDeniedError,
+                :with => :render_error)
+    rescue_from(ActiveRecord::RecordNotFound,
+                ActionController::RoutingError,
+                ActionController::UnknownController,
+                AbstractController::ActionNotFound,
+                :with => :render_not_found)
+  end
 
   def index
     @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
@@ -85,21 +95,6 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  begin
-    rescue_from Exception,
-    :with => :render_error
-    rescue_from ActiveRecord::RecordNotFound,
-    :with => :render_not_found
-    rescue_from ActionController::RoutingError,
-    :with => :render_not_found
-    rescue_from ActionController::UnknownController,
-    :with => :render_not_found
-    rescue_from AbstractController::ActionNotFound,
-    :with => :render_not_found
-    rescue_from ArvadosModel::PermissionDeniedError,
-    :with => :render_error
-  end
-
   def render_404_if_no_object
     render_not_found "Object not found" if !@object
   end
@@ -115,15 +110,28 @@ class ApplicationController < ActionController::Base
       errors = [e.inspect]
     end
     status = e.respond_to?(:http_status) ? e.http_status : 422
-    render json: { errors: errors }, status: status
+    send_error(*errors, status: status)
   end
 
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
-    render json: { errors: ["Path not found"] }, status: 404
+    send_error("Path not found", status: 404)
   end
 
   protected
+
+  def send_error(*args)
+    if args.last.is_a? Hash
+      err = args.pop
+    else
+      err = {}
+    end
+    err[:errors] ||= args
+    err[:error_token] = [Time.now.utc.to_i, "%08x" % rand(16 ** 8)].join("+")
+    status = err.delete(:status) || 422
+    logger.error "Error #{err[:error_token]}: #{status}"
+    render json: err, status: status
+  end
 
   def find_objects_for_index
     @objects ||= model_class.readable_by(*@read_users)
@@ -247,12 +255,8 @@ class ApplicationController < ActionController::Base
   def require_login
     if not current_user
       respond_to do |format|
-        format.json {
-          render :json => { errors: ['Not logged in'] }.to_json, status: 401
-        }
-        format.html {
-          redirect_to '/auth/joshid'
-        }
+        format.json { send_error("Not logged in", status: 401) }
+        format.html { redirect_to '/auth/joshid' }
       end
       false
     end
@@ -260,14 +264,14 @@ class ApplicationController < ActionController::Base
 
   def admin_required
     unless current_user and current_user.is_admin
-      render :json => { errors: ['Forbidden'] }.to_json, status: 403
+      send_error("Forbidden", status: 403)
     end
   end
 
   def require_auth_scope
     if @read_auths.empty?
       if require_login != false
-        render :json => { errors: ['Forbidden'] }.to_json, status: 403
+        send_error("Forbidden", status: 403)
       end
       false
     end

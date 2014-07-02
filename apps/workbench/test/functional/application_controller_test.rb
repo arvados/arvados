@@ -296,4 +296,11 @@ class ApplicationControllerTest < ActionController::TestCase
     assert users.size == 3, 'Expected two objects in the preloaded hash'
   end
 
+  test "requesting a nonexistent object returns 404" do
+    # We're really testing ApplicationController's find_object_by_uuid.
+    # It's easiest to do that by instantiating a concrete controller.
+    @controller = NodesController.new
+    get(:show, {id: "zzzzz-zzzzz-zzzzzzzzzzzzzzz"}, session_for(:admin))
+    assert_response 404
+  end
 end

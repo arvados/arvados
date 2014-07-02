@@ -18,9 +18,9 @@ ADD generated/api.tar.gz /usr/src/arvados/services/
 
 # Install generated config files
 ADD generated/database.yml /usr/src/arvados/services/api/config/database.yml
-ADD generated/secret_token.rb /usr/src/arvados/services/api/config/initializers/secret_token.rb
 ADD generated/omniauth.rb /usr/src/arvados/services/api/config/initializers/omniauth.rb
-ADD generated/production.rb /usr/src/arvados/services/api/config/environments/production.rb
+RUN /bin/cp /usr/src/arvados/services/api/config/environments/production.rb.example /usr/src/arvados/services/api/config/environments/production.rb
+ADD generated/application.yml /usr/src/arvados/services/api/config/application.yml
 ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 
 # Configure Rails databases.

@@ -2,7 +2,8 @@ class Arvados::V1::LinksController < ApplicationController
 
   def check_uuid_kind uuid, kind
     if kind and ArvadosModel::resource_class_for_uuid(uuid).andand.kind != kind
-      render :json => { errors: ["'#{kind}' does not match uuid '#{uuid}', expected '#{ArvadosModel::resource_class_for_uuid(uuid).andand.kind}'"] }.to_json, status: 422
+      send_error("'#{kind}' does not match uuid '#{uuid}', expected '#{ArvadosModel::resource_class_for_uuid(uuid).andand.kind}'",
+                 status: 422)
       nil
     else
       true

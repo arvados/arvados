@@ -35,40 +35,54 @@ class ApplicationController < ActionController::Base
     render_error status: 422
   end
 
-  def render_error(opts)
-    opts = {status: 500}.merge opts
+  def render_error(opts={})
+    opts[:status] ||= 500
     respond_to do |f|
       # json must come before html here, so it gets used as the
       # default format when js is requested by the client. This lets
       # ajax:error callback parse the response correctly, even though
       # the browser can't.
       f.json { render opts.merge(json: {success: false, errors: @errors}) }
-      f.html { render opts.merge(controller: 'application', action: 'error') }
+      f.html { render({action: 'error'}.merge(opts)) }
     end
   end
 
   def render_exception(e)
     logger.error e.inspect
     logger.error e.backtrace.collect { |x| x + "\n" }.join('') if e.backtrace
-    if @object.andand.errors.andand.full_messages.andand.any?
+    err_opts = {status: 422}
+    if e.is_a?(ArvadosApiClient::ApiError)
+      err_opts.merge!(action: 'api_error', locals: {api_error: e})
+      @errors = e.api_response[:errors]
+    elsif @object.andand.errors.andand.full_messages.andand.any?
       @errors = @object.errors.full_messages
     else
       @errors = [e.to_s]
     end
-    if e.is_a? ArvadosApiClient::NotLoggedInException
-      self.render_error status: 422
-    else
-      set_thread_api_token do
-        self.render_error status: 422
-      end
+    # If the user has an active session, and the API server is available,
+    # make user information available on the error page.
+    begin
+      load_api_token(session[:arvados_api_token])
+    rescue ArvadosApiClient::ApiError
+      load_api_token(nil)
     end
+    # Preload projects trees for the template.  If that fails, set empty
+    # trees so error page rendering can proceed.  (It's easier to rescue the
+    # exception here than in a template.)
+    begin
+      build_project_trees
+    rescue ArvadosApiClient::ApiError
+      @my_project_tree ||= []
+      @shared_project_tree ||= []
+    end
+    render_error(err_opts)
   end
 
   def render_not_found(e=ActionController::RoutingError.new("Path not found"))
     logger.error e.inspect
     @errors = ["Path not found"]
     set_thread_api_token do
-      self.render_error status: 404
+      self.render_error(action: '404', status: 404)
     end
   end
 
@@ -266,22 +280,7 @@ class ApplicationController < ActionController::Base
   end
 
   def current_user
-    return Thread.current[:user] if Thread.current[:user]
-
-    if Thread.current[:arvados_api_token]
-      if session[:user]
-        if session[:user][:is_active] != true
-          Thread.current[:user] = User.current
-        else
-          Thread.current[:user] = User.new(session[:user])
-        end
-      else
-        Thread.current[:user] = User.current
-      end
-    else
-      logger.error "No API token in Thread"
-      return nil
-    end
+    Thread.current[:user]
   end
 
   def model_class
@@ -331,8 +330,7 @@ class ApplicationController < ActionController::Base
     [:arvados_api_token, :user].each do |key|
       start_values[key] = Thread.current[key]
     end
-    Thread.current[:arvados_api_token] = api_token
-    Thread.current[:user] = nil
+    load_api_token(api_token)
     begin
       yield
     ensure
@@ -344,31 +342,83 @@ class ApplicationController < ActionController::Base
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
-    if not model_class
-      @object = nil
-    elsif params[:uuid].is_a? String
-      if params[:uuid].empty?
+    begin
+      if not model_class
         @object = nil
+      elsif not params[:uuid].is_a?(String)
+        @object = model_class.where(uuid: params[:uuid]).first
+      elsif params[:uuid].empty?
+        @object = nil
+      elsif (model_class != Link and
+             resource_class_for_uuid(params[:uuid]) == Link)
+        @name_link = Link.find(params[:uuid])
+        @object = model_class.find(@name_link.head_uuid)
       else
-        if (model_class != Link and
-            resource_class_for_uuid(params[:uuid]) == Link)
-          @name_link = Link.find(params[:uuid])
-          @object = model_class.find(@name_link.head_uuid)
-        else
-          @object = model_class.find(params[:uuid])
-        end
+        @object = model_class.find(params[:uuid])
       end
-    else
-      @object = model_class.where(uuid: params[:uuid]).first
+    rescue ArvadosApiClient::NotFoundException, RuntimeError => error
+      if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
+        raise
+      end
+      render_not_found(error)
+      return false
     end
   end
 
   def thread_clear
-    Thread.current[:arvados_api_token] = nil
-    Thread.current[:user] = nil
+    load_api_token(nil)
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
     yield
     Rails.cache.delete_matched(/^request_#{Thread.current.object_id}_/)
+  end
+
+  # Set up the thread with the given API token and associated user object.
+  def load_api_token(new_token)
+    Thread.current[:arvados_api_token] = new_token
+    if new_token.nil?
+      Thread.current[:user] = nil
+    elsif (new_token == session[:arvados_api_token]) and
+        session[:user].andand[:is_active]
+      Thread.current[:user] = User.new(session[:user])
+    else
+      Thread.current[:user] = User.current
+    end
+  end
+
+  # If there's a valid api_token parameter, set up the session with that
+  # user's information.  Return true if the method redirects the request
+  # (usually a post-login redirect); false otherwise.
+  def setup_user_session
+    return false unless params[:api_token]
+    Thread.current[:arvados_api_token] = params[:api_token]
+    begin
+      user = User.current
+    rescue ArvadosApiClient::NotLoggedInException
+      false  # We may redirect to login, or not, based on the current action.
+    else
+      session[:arvados_api_token] = params[:api_token]
+      session[:user] = {
+        uuid: user.uuid,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        is_active: user.is_active,
+        is_admin: user.is_admin,
+        prefs: user.prefs
+      }
+      if !request.format.json? and request.method.in? ['GET', 'HEAD']
+        # Repeat this request with api_token in the (new) session
+        # cookie instead of the query string.  This prevents API
+        # tokens from appearing in (and being inadvisedly copied
+        # and pasted from) browser Location bars.
+        redirect_to strip_token_from_path(request.fullpath)
+        true
+      else
+        false
+      end
+    ensure
+      Thread.current[:arvados_api_token] = nil
+    end
   end
 
   # Save the session API token in thread-local storage, and yield.
@@ -377,52 +427,26 @@ class ApplicationController < ActionController::Base
   # If a token is unavailable or expired, the block is still run, with
   # a nil token.
   def set_thread_api_token
-    # If an API token has already been found, pass it through.
     if Thread.current[:arvados_api_token]
-      yield
+      yield   # An API token has already been found - pass it through.
       return
+    elsif setup_user_session
+      return  # A new session was set up and received a response.
     end
 
     begin
-      # If there's a valid api_token parameter, use it to set up the session.
-      if (Thread.current[:arvados_api_token] = params[:api_token]) and
-          verify_api_token
-        session[:arvados_api_token] = params[:api_token]
-        u = User.current
-        session[:user] = {
-          uuid: u.uuid,
-          email: u.email,
-          first_name: u.first_name,
-          last_name: u.last_name,
-          is_active: u.is_active,
-          is_admin: u.is_admin,
-          prefs: u.prefs
-        }
-        if !request.format.json? and request.method.in? ['GET', 'HEAD']
-          # Repeat this request with api_token in the (new) session
-          # cookie instead of the query string.  This prevents API
-          # tokens from appearing in (and being inadvisedly copied
-          # and pasted from) browser Location bars.
-          redirect_to strip_token_from_path(request.fullpath)
-          return
-        end
-      end
-
-      # With setup done, handle the request using the session token.
-      Thread.current[:arvados_api_token] = session[:arvados_api_token]
-      begin
+      load_api_token(session[:arvados_api_token])
+      yield
+    rescue ArvadosApiClient::NotLoggedInException
+      # If we got this error with a token, it must've expired.
+      # Retry the request without a token.
+      unless Thread.current[:arvados_api_token].nil?
+        load_api_token(nil)
         yield
-      rescue ArvadosApiClient::NotLoggedInException
-        # If we got this error with a token, it must've expired.
-        # Retry the request without a token.
-        unless Thread.current[:arvados_api_token].nil?
-          Thread.current[:arvados_api_token] = nil
-          yield
-        end
       end
     ensure
       # Remove token in case this Thread is used for anything else.
-      Thread.current[:arvados_api_token] = nil
+      load_api_token(nil)
     end
   end
 
@@ -438,15 +462,6 @@ class ApplicationController < ActionController::Base
       redirect_to_login
     else
       render 'users/welcome'
-    end
-  end
-
-  def verify_api_token
-    begin
-      Link.where(uuid: 'just-verifying-my-api-token')
-      true
-    rescue ArvadosApiClient::NotLoggedInException
-      false
     end
   end
 
