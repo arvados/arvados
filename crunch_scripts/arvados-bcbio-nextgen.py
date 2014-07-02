@@ -19,7 +19,7 @@ shutil.copy("/usr/local/share/bcbio-nextgen/config/bcbio_system.yaml", "/usr/loc
 
 os.mkdir("/usr/local/share/bcbio-nextgen/galaxy/tool-data")
 
-with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/tool_data_table_conf.xml") as f:
+with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/tool_data_table_conf.xml", "w") as f:
     f.write('''<tables>
     <!-- Locations of indexes in the BWA mapper format -->
     <table name="bwa_indexes" comment_char="#">
