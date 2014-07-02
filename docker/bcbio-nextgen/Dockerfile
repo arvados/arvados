@@ -3,16 +3,16 @@ MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
 
 USER root
 
-ADD generated/arvados.tar.gz /usr/src/arvados/
-ENV GEM_HOME /usr/local/rvm/gems/ruby-2.1.0
-ENV GEM_PATH /usr/local/rvm/gems/ruby-2.1.0:/usr/local/rvm/gems/ruby-2.1.0@global
-ENV PATH /usr/local/rvm/gems/ruby-2.1.0/bin:/usr/local/rvm/gems/ruby-2.1.0@global/bin:/usr/local/rvm/rubies/ruby-2.1.0/bin:/usr/local/rvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
 # Install Ruby 2.1.0
 RUN apt-get remove --quiet --assume-yes ruby && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.1.0 && \
     /bin/mkdir -p /usr/src/arvados
+
+ADD generated/arvados.tar.gz /usr/src/arvados/
+ENV GEM_HOME /usr/local/rvm/gems/ruby-2.1.0
+ENV GEM_PATH /usr/local/rvm/gems/ruby-2.1.0:/usr/local/rvm/gems/ruby-2.1.0@global
+ENV PATH /usr/local/rvm/gems/ruby-2.1.0/bin:/usr/local/rvm/gems/ruby-2.1.0@global/bin:/usr/local/rvm/rubies/ruby-2.1.0/bin:/usr/local/rvm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Install dependencies and set up system.
 # The FUSE packages help ensure that we can install the Python SDK (arv-mount).
