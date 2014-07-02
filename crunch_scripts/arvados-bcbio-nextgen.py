@@ -54,6 +54,31 @@ with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/tool_data_table_conf.
 </tables>
 ''')
 
+os.mkdir("/usr/local/share/bcbio-nextgen/galaxy/templates")
+
+with open("/usr/local/share/bcbio-nextgen/galaxy/templates/gatk-variant.yaml", "w") as f:
+    f.write('''
+# Template for whole genome Illumina variant calling with GATK pipeline
+---
+details:
+  - analysis: variant2
+    genome_build: GRCh37
+    # to do multi-sample variant calling, assign samples the same metadata / batch
+    # metadata:
+    #   batch: your-arbitrary-batch-name
+    algorithm:
+      aligner: bwa
+      mark_duplicates: picard
+      recalibrate: gatk
+      realign: gatk
+      variantcaller: gatk-haplotype
+      platform: illumina
+      quality_format: Standard
+      coverage_interval: genome
+      # for targetted projects, set the region
+      # variant_regions: /path/to/your.bed
+''')
+
 with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/bowtie2_indices.loc", "w") as f:
     f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(dir $(bowtie2_indices))"))
 
