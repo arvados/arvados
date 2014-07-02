@@ -95,8 +95,8 @@ with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/sam_fa_indices.loc", 
 os.chdir(arvados.current_task().tmpdir)
 
 rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "/tmp/crunch-job/gatk-variant.yaml", "project1",
-                         subst.do_substitution(p, "$(R1)"),
-                         subst.do_substitution(p, "$(R2)")])
+                         subst.do_substitution(p, "$(file $(R1))"),
+                         subst.do_substitution(p, "$(file $(R2))")])
 
 os.chdir("project1/work")
 
