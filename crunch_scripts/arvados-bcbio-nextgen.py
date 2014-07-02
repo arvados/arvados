@@ -15,7 +15,7 @@ t = arvados.current_task().tmpdir
 
 os.unlink("/usr/local/share/bcbio-nextgen/galaxy")
 os.mkdir("/usr/local/share/bcbio-nextgen/galaxy")
-shutil.copy("/usr/local/share/bcbio-nextgen/galaxy/config/bcbio_system.yaml", "/usr/local/share/bcbio-nextgen/galaxy")
+shutil.copy("/usr/local/share/bcbio-nextgen/config/bcbio_system.yaml", "/usr/local/share/bcbio-nextgen/galaxy")
 
 os.mkdir("/usr/local/share/bcbio-nextgen/galaxy/tool-data")
 
