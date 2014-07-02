@@ -116,8 +116,11 @@ navbar:
       - admin/index.html.md.liquid
       - admin/cheat_sheet.html.textile.liquid
   installguide:
-    - Install:
+    - Overview:
       - install/index.html.textile.liquid
+    - Docker:
+      - install/install-docker.html.textile.liquid
+    - Manual installation:
       - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
