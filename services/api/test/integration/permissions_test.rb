@@ -284,6 +284,12 @@ class PermissionsTest < ActionDispatch::IntegrationTest
   end
 
   test "get_permissions returns list" do
+    # First confirm that user :active cannot get permissions on group :public
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", {
+      :format => :json,
+    }, auth(:active)
+    assert_response 404
+
     # add some permissions
     post "/arvados/v1/links", {
       :format => :json,
@@ -291,7 +297,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
         tail_uuid: users(:spectator).uuid,
         link_class: 'permission',
         name: 'can_read',
-        head_uuid: collections(:foo_file).uuid,
+        head_uuid: groups(:public).uuid,
         properties: {}
       }
     }, auth(:admin)
@@ -301,10 +307,10 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_uuid: users(:active).uuid,
+        tail_uuid: users(:inactive).uuid,
         link_class: 'permission',
         name: 'can_write',
-        head_uuid: collections(:foo_file).uuid,
+        head_uuid: groups(:public).uuid,
         properties: {}
       }
     }, auth(:admin)
@@ -314,25 +320,27 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
-        tail_uuid: users(:inactive).uuid,
+        tail_uuid: users(:active).uuid,
         link_class: 'permission',
         name: 'can_manage',
-        head_uuid: collections(:foo_file).uuid,
+        head_uuid: groups(:public).uuid,
         properties: {}
       }
     }, auth(:admin)
     assert_response :success
     can_manage_uuid = json_response['uuid']
 
-    get "/arvados/v1/permissions/#{collections(:foo_file).uuid}", {
+    # Now user :active should be able to retrieve permissions
+    # on group :public.
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", {
       :format => :json,
-    }, auth(:admin)
+    }, auth(:active)
     assert_response :success
 
     perm_uuids = json_response['items'].map { |item| item['uuid'] }
-    assert perm_uuids.include?(can_read_uuid), "can_read_uuid not found"
-    assert perm_uuids.include?(can_write_uuid), "can_write_uuid not found"
-    assert perm_uuids.include?(can_manage_uuid), "can_manage_uuid not found"
+    assert_includes perm_uuids, can_read_uuid, "can_read_uuid not found"
+    assert_includes perm_uuids, can_write_uuid, "can_write_uuid not found"
+    assert_includes perm_uuids, can_manage_uuid, "can_manage_uuid not found"
   end
 
   test "get_permissions returns 404 for nonexistent uuid" do

@@ -454,8 +454,16 @@ class ArvadosModel < ActiveRecord::Base
     nil
   end
 
-  def self.lookup_by_uuid(uuid)
-    ArvadosModel.resource_class_for_uuid(uuid).find_by_uuid(uuid)
+  # ArvadosModel.find_by_uuid needs extra magic to allow it to return
+  # an object in any class.
+  def self.find_by_uuid uuid
+    if self == ArvadosModel
+      # If called directly as ArvadosModel.find_by_uuid rather than via subclass,
+      # delegate to the appropriate subclass based on the given uuid.
+      self.resource_class_for_uuid(uuid).find_by_uuid(uuid)
+    else
+      super
+    end
   end
 
   def log_start_state

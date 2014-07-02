@@ -21,12 +21,8 @@ class Arvados::V1::LinksController < ApplicationController
   def get_permissions
     if current_user.can?(manage: @object)
       # find all links and return them
-      @where = { link_class: "permission", head_uuid: params[:uuid] }
-      @offset = 0
-      @orders = []
-      @filters = []
-      @objects = nil
-      find_objects_for_index
+      @objects = Link.where(link_class: "permission",
+                            head_uuid: params[:uuid])
       render_list
     else
       render :json => { errors: ['Forbidden'] }.to_json, status: 403
@@ -39,10 +35,10 @@ class Arvados::V1::LinksController < ApplicationController
   # called on a uuid belonging to any class.
   def find_object_by_uuid
     if action_name == 'get_permissions'
-      @objects = ArvadosModel::resource_class_for_uuid(params[:uuid])
+      @object = ArvadosModel::resource_class_for_uuid(params[:uuid])
         .readable_by(*@read_users)
         .where(uuid: params[:uuid])
-      @object = @objects.first
+        .first
     else
       super
     end
