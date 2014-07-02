@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.add_dependency('activesupport', '>= 3.2.13')
   s.add_dependency('json', '>= 1.7.7')
   s.add_dependency('andand')
+  s.add_runtime_dependency('jwt', '>= 0.1.5', '< 1.0.0')
   s.homepage    =
     'http://arvados.org'
 end
