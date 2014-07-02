@@ -50,24 +50,24 @@ try:
         stdoutname = subst.do_substitution(p, p["stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    print("run-command {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+    print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
     rcode = subprocess.call(cmd, stdout=stdoutfile)
 
-    print("run-command completed with exit code %i" % rcode)
+    print("run-command: completed with exit code %i" % rcode)
 
 except Exception as e:
-    print("run-command exception: {}".format(e))
+    print("run-command: caught exception: {}".format(e))
 
 finally:
     for l in links:
         os.unlink(l)
 
-    print("run-command output:")
+    print("run-command: the follow output files will be saved to keep:")
 
-    subprocess.call(["find", ".", "-type", "f", "-printf", "run-command %12.12s %h/%f\\n"])
+    subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"])
 
-    print("run-command writing to keep")
+    print("run-command: start writing output to keep")
 
     out = arvados.CollectionWriter()
     out.write_directory_tree(".", max_manifest_depth=0)
@@ -83,8 +83,8 @@ if rcode == 0:
     os.chdir("..")
     shutil.rmtree("tmpdir")
     shutil.rmtree("output")
-    print("run-command success")
+    print("run-command: success")
 else:
-    print("run-command failed")
+    print("run-command: failed")
 
 sys.exit(rcode)
