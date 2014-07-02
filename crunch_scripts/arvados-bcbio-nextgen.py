@@ -77,4 +77,4 @@ rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "gatk-var
 
 os.chdir("project1/work")
 
-rcode = subprocess.call(["bcbio_nextgen.py", "../config/project1.yaml")])
+rcode = subprocess.call(["bcbio_nextgen.py", "../config/project1.yaml"])
