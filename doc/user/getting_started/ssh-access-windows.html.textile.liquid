@@ -22,16 +22,19 @@ h2(#windows). Using PuTTY
 
 You can "download PuTTY from its Web site":http://www.chiark.greenend.org.uk/~sgtatham/putty/.  Note that you should download the installer or .zip file with all of the PuTTY tools (PuTTYtel is not required).
 
+If you downloaded the zip file, extract it to the location you wish to install the PuTTY applications. This document assumes that you installed PuTTY in the default directory under @C:\Program Files\@ or @C:\Program Files (x86)\@ (if you are using a 64 bit operating system).
+
 h3. Step 1 - Adding PuTTY to the PATH
 
-# After downloading PuTTY and installing it, you should have a PuTTY folder in @C:\Program Files\@ or @C:\Program Files (x86)\@ (if you are using a 64 bit operating system).  If you downloaded a zip file, extract it to the location you wish to install the PuTTY applications.
+# After downloading PuTTY and installing it, you should have a PuTTY folder in @C:\Program Files\@ or @C:\Program Files (x86)\@ (if you are using a 64 bit operating system).  
 # Open the Control Panel.
 # Select _Advanced System Settings_, and choose _Environment Variables_.
+If you are using newer systems like Windows 7, you may use the following to open _Advanced System Settings_. Open Control Panel. Click on _System and Security_. Click on _System_. Click on _Advanced system settings_ and choose _Environment Variables..._
 # Under system variables, find and edit @PATH@.
-# If you installed PuTTY in @C:\Program Files\PuTTY\@, add the following to the end of PATH (make sure to include semicolon and quotation marks):
-<code>;\"C:\Program Files\PuTTY\"</code>
-If you installed PuTTY in @C:\Program Files (x86)\PuTTY\@, add the following to the end of PATH (make sure to include semicolon and quotation marks):
-<code>;\"C:\Program Files (x86)\PuTTY\"</code>
+# If you installed PuTTY in @C:\Program Files\PuTTY\@, add the following to the end of PATH:
+<code>;C:\Program Files\PuTTY</code>
+If you installed PuTTY in @C:\Program Files (x86)\PuTTY\@, add the following to the end of PATH:
+<code>;C:\Program Files (x86)\PuTTY</code>
 # Click through the OKs to close all the dialogs you’ve opened.
 
 h3. Step 2 - Creating a Public Key
