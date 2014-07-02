@@ -54,9 +54,7 @@ with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/tool_data_table_conf.
 </tables>
 ''')
 
-os.mkdir("/usr/local/share/bcbio-nextgen/galaxy/templates")
-
-with open("/usr/local/share/bcbio-nextgen/galaxy/templates/gatk-variant.yaml", "w") as f:
+with open("/tmp/crunch-job/gatk-variant.yaml", "w") as f:
     f.write('''
 # Template for whole genome Illumina variant calling with GATK pipeline
 ---
@@ -96,7 +94,7 @@ with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/sam_fa_indices.loc", 
 
 os.chdir(arvados.current_task().tmpdir)
 
-rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "gatk-variant", "project1",
+rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "/tmp/crunch-job/gatk-variant.yaml", "project1",
                          subst.do_substitution(p, "$(R1)"),
                          subst.do_substitution(p, "$(R2)")])
 
