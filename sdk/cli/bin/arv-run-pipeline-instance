@@ -471,19 +471,13 @@ class WhRunPipelineInstance
             :output_is_persistent => c[:output_is_persistent] || false,
             :runtime_constraints => c[:runtime_constraints],
             :owner_uuid => owner_uuid,
-            # TODO: Delete the following three attributes when
-            # supporting pre-20140418 API servers is no longer
-            # important. New API servers take these as flags that
-            # control behavior of create, rather than job attributes.
-            :minimum_script_version => c[:minimum_script_version],
-            :exclude_script_versions => c[:exclude_minimum_script_versions],
-            :no_reuse => @options[:no_reuse] || c[:nondeterministic],
           }, {
             # This is the right place to put these attributes when
             # dealing with new API servers.
             :minimum_script_version => c[:minimum_script_version],
             :exclude_script_versions => c[:exclude_minimum_script_versions],
             :find_or_create => !(@options[:no_reuse] || c[:nondeterministic]),
+            :filters => c[:filters]
           })
           if job
             debuglog "component #{cname} new job #{job[:uuid]}"
