@@ -55,19 +55,19 @@ with open("/usr/local/share/bcbio-nextgen/galaxy/tool_data_table_conf.xml", "w")
 os.mkdir("/usr/local/share/bcbio-nextgen/galaxy/tool-data")
 
 with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/bowtie2_indices.loc", "w") as f:
-    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(dir $(bowtie2_indices))"))
+    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(dir $(bowtie2_indices))\n"))
 
-with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/bwa_indices.loc", "w") as f:
-    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(file $(bwa_indices))"))
+with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/bwa_index.loc", "w") as f:
+    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(file $(bwa_index))\n"))
 
 with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/gatk_sorted_picard_index.loc", "w") as f:
-    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(file $(gatk_sorted_picard_index))"))
+    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(file $(gatk_sorted_picard_index))\n"))
 
 with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/picard_index.loc", "w") as f:
-    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(file $(picard_index))"))
+    f.write(subst.do_substitution(p, "GRCh37\tGRCh37\tHuman (GRCh37)\t$(file $(picard_index))\n"))
 
 with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/sam_fa_indices.loc", "w") as f:
-    f.write(subst.do_substitution(p, "index\tGRCh37\t$(file $(sam_fa_indices))"))
+    f.write(subst.do_substitution(p, "index\tGRCh37\t$(file $(sam_fa_indices))\n"))
 
 with open("/tmp/crunch-job/gatk-variant.yaml", "w") as f:
     f.write('''
