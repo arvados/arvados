@@ -324,10 +324,16 @@ class JobCache
   end
   def self.create(job, create_params)
     @cache ||= {}
+
+    jsonified_create_params = {}
+    create_params.each do |k, v|
+      jsonified_create_params[k] = v.to_json
+    end
+
     result = $client.execute(:api_method => $arvados.jobs.create,
                              :body => {
                                :job => job.to_json
-                             }.merge(create_params),
+                             }.merge(jsonified_create_params),
                              :authenticated => false,
                              :headers => {
                                authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
