@@ -104,6 +104,10 @@ class Job < ArvadosModel
   def find_docker_image_locator
     # Find the Collection that holds the Docker image specified in the
     # runtime constraints, and store its locator in docker_image_locator.
+    if runtime_constraints.nil? then
+      self.docker_image_locator = nil
+      return false
+    end
     image_search = runtime_constraints['docker_image']
     image_tag = runtime_constraints['docker_image_tag']
     if image_search.nil?
