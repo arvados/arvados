@@ -40,6 +40,8 @@ KEEP_DEPS = keep/Dockerfile
 
 SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
 
+BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
+
 BASE_GENERATED = base/generated/arvados.tar.gz
 
 API_GENERATED = \

@@ -1,3 +1,13 @@
+# Install Arvados SDK into bcbio-nextgen Docker image.
+#
+# To build bcbio-nextgen:
+#
+# $ git clone https://github.com/chapmanb/bcbio-nextgen.git
+# $ cd bcbio-nextgen
+# $ docker build
+# $ docker tag <image> bcbio-nextgen
+#
+
 FROM bcbio-nextgen
 MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
 
