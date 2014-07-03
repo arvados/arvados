@@ -131,6 +131,10 @@ class ArvadosBase < ActiveRecord::Base
     ArvadosResourceList.new(self).limit(*args)
   end
 
+  def self.select(*args)
+    ArvadosResourceList.new(self).select(*args)
+  end
+
   def self.eager(*args)
     ArvadosResourceList.new(self).eager(*args)
   end
