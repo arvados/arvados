@@ -285,12 +285,11 @@ class PermissionsTest < ActionDispatch::IntegrationTest
 
   test "get_permissions returns list" do
     # First confirm that user :active cannot get permissions on group :public
-    get "/arvados/v1/permissions/#{groups(:public).uuid}", {
-      :format => :json,
-    }, auth(:active)
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
     assert_response 404
 
-    # add some permissions
+    # add some permissions, including can_manage
+    # permission for user :active
     post "/arvados/v1/links", {
       :format => :json,
       :link => {
@@ -332,9 +331,9 @@ class PermissionsTest < ActionDispatch::IntegrationTest
 
     # Now user :active should be able to retrieve permissions
     # on group :public.
-    get "/arvados/v1/permissions/#{groups(:public).uuid}", {
-      :format => :json,
-    }, auth(:active)
+    get("/arvados/v1/permissions/#{groups(:public).uuid}",
+        { :format => :json },
+        auth(:active))
     assert_response :success
 
     perm_uuids = json_response['items'].map { |item| item['uuid'] }
@@ -344,17 +343,33 @@ class PermissionsTest < ActionDispatch::IntegrationTest
   end
 
   test "get_permissions returns 404 for nonexistent uuid" do
-    nonexistent = Collection.generate_uuid
+    nonexistent = Group.generate_uuid
     # make sure it really doesn't exist
-    get "/arvados/v1/collections/#{nonexistent}", { :format => :json }, auth(:admin)
+    get "/arvados/v1/groups/#{nonexistent}", nil, auth(:admin)
     assert_response 404
 
-    get "/arvados/v1/permissions/#{nonexistent}", { :format => :json }, auth(:active)
+    get "/arvados/v1/permissions/#{nonexistent}", nil, auth(:active)
     assert_response 404
   end
 
-  test "get_permissions returns 403 if user lacks manage permission" do
-    get "/arvados/v1/permissions/#{collections(:foo_file).uuid}", { :format => :json }, auth(:active)
+  test "get_permissions returns 404 for unreadable uuid" do
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
+    assert_response 404
+  end
+
+  test "get_permissions returns 403 if user can read but not manage" do
+    post "/arvados/v1/links", {
+      :link => {
+        tail_uuid: users(:active).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:public).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
     assert_response 403
   end
 end

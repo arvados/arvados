@@ -23,6 +23,8 @@ class Arvados::V1::LinksController < ApplicationController
       # find all links and return them
       @objects = Link.where(link_class: "permission",
                             head_uuid: params[:uuid])
+      @offset = 0
+      @limit = @objects.count
       render_list
     else
       render :json => { errors: ['Forbidden'] }.to_json, status: 403
