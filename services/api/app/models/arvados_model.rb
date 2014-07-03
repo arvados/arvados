@@ -160,6 +160,13 @@ class ArvadosModel < ActiveRecord::Base
     attributes
   end
 
+  def has_permission? perm_type, target_uuid
+    Link.where(link_class: "permission",
+               name: perm_type,
+               tail_uuid: uuid,
+               head_uuid: target_uuid).any?
+  end
+
   protected
 
   def ensure_ownership_path_leads_to_user
@@ -445,6 +452,18 @@ class ArvadosModel < ActiveRecord::Base
     end
 
     nil
+  end
+
+  # ArvadosModel.find_by_uuid needs extra magic to allow it to return
+  # an object in any class.
+  def self.find_by_uuid uuid
+    if self == ArvadosModel
+      # If called directly as ArvadosModel.find_by_uuid rather than via subclass,
+      # delegate to the appropriate subclass based on the given uuid.
+      self.resource_class_for_uuid(uuid).find_by_uuid(uuid)
+    else
+      super
+    end
   end
 
   def log_start_state

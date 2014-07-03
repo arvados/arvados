@@ -75,19 +75,30 @@ class User < ArvadosModel
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
+  #
+  # The permission graph is built by repeatedly enumerating all
+  # permission links reachable from self.uuid, and then calling
+  # search_permissions
   def group_permissions
     Rails.cache.fetch "groups_for_user_#{self.uuid}" do
       permissions_from = {}
       todo = {self.uuid => true}
       done = {}
+      # Build the equivalence class of permissions starting with
+      # self.uuid. On each iteration of this loop, todo contains
+      # the next set of uuids in the permission equivalence class
+      # to evaluate.
       while !todo.empty?
         lookup_uuids = todo.keys
         lookup_uuids.each do |uuid| done[uuid] = true end
         todo = {}
         newgroups = []
+        # include all groups owned by the current set of uuids.
         Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
           newgroups << [group.owner_uuid, group.uuid, 'can_manage']
         end
+        # add any permission links from the current lookup_uuids to a
+        # User or Group.
         Link.where('tail_uuid in (?) and link_class = ? and (head_uuid like ? or head_uuid like ?)',
                    lookup_uuids,
                    'permission',
