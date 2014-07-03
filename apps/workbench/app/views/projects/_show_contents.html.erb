@@ -86,6 +86,7 @@
       <col width="60%" />
     </colgroup>
     <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: next_page_offset) if next_page_offset %>">
+<% puts "\n**********objects_and_names in contents page = #{@objects_and_names}" %>
       <%= render partial: 'show_contents_rows', locals: {project: @object, objects_and_names: @objects_and_names} %>
     </tbody>
     <thead>
