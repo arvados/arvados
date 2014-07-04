@@ -1,4 +1,3 @@
-<% puts "\n***************** IN SHOW CONTENT ROWS objects_and_names = #{objects_and_names.inspect} " %>
 <% objects_and_names.each do |object, name_link| %>
   <% name_object = (object.respond_to?(:name) || !name_link) ? object : name_link %>
   <tr class="filterable"
