@@ -575,13 +575,12 @@ func GetBlock(hash string) ([]byte, error) {
 	for _, vol := range KeepVM.Volumes() {
 		if buf, err := vol.Get(hash); err != nil {
 			// IsNotExist is an expected error and may be ignored.
-			// "not found" is the equivalent for the MockVolume backend.
 			// (If all volumes report IsNotExist, we return a NotFoundError)
 			// A CorruptError should be returned immediately.
 			// Any other errors should be logged but we continue trying to
 			// read.
 			switch {
-			case (os.IsNotExist(err) || err.Error() == "not found"):
+			case os.IsNotExist(err):
 				continue
 			default:
 				log.Printf("GetBlock: reading %s: %s\n", hash, err)
