@@ -327,7 +327,7 @@ class JobCache
 
     jsonified_create_params = {}
     create_params.each do |k, v|
-      jsonified_create_params[k] = v.to_json
+      jsonified_create_params[k] = v.to_json unless v.nil?
     end
 
     result = $client.execute(:api_method => $arvados.jobs.create,
