@@ -32,7 +32,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
         opened = true
         if timeout
           EM::Timer.new 4 do
-            too_long = true
+            too_long = true if close_status.nil?
             EM.stop_event_loop
           end
         end
