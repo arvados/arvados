@@ -120,6 +120,26 @@ Arvados should re-use a previous job if the "script_version" of the previous job
 }
 </pre></notextile>
 
+The same behavior, using filters:
+
+<notextile><pre>
+{
+  "job": {
+    "script": "hash.py",
+    "repository": "<b>you</b>",
+    "script_version": "master",
+    "script_parameters": {
+      "input": "c1bad4b39ca5a924e481008009d94e32+210"
+    }
+  },
+  "filters": [["script", "=", "hash.py"],
+              ["repository", "=", "<b>you</b>"],
+              ["script_version", "in git", "earlier_version_tag"],
+              ["script_version", "not in git", "blacklisted_version_tag"]],
+  "find_or_create": true
+}
+</pre></notextile>
+
 Run the script "crunch_scripts/monte-carlo.py" in the repository "you" using the current "master" commit. Because it is marked as "nondeterministic", this job will not be considered as a suitable candidate for future job submissions that use the "find_or_create" feature.
 
 <notextile><pre>

@@ -13,6 +13,7 @@ class LinkTest < ActiveSupport::TestCase
                      link_class: 'name',
                      name: 'foo')
     assert a.valid?, a.errors.to_s
+    assert_equal groups(:aproject).uuid, a.owner_uuid
     assert_raises ActiveRecord::RecordNotUnique do
       b = Link.create!(tail_uuid: groups(:aproject).uuid,
                        head_uuid: specimens(:owned_by_active_user).uuid,
@@ -27,11 +28,13 @@ class LinkTest < ActiveSupport::TestCase
                      link_class: 'name',
                      name: 'foo')
     assert a.valid?, a.errors.to_s
+    assert_equal groups(:aproject).uuid, a.owner_uuid
     b = Link.create!(tail_uuid: groups(:asubproject).uuid,
                      head_uuid: specimens(:owned_by_active_user).uuid,
                      link_class: 'name',
                      name: 'foo')
     assert b.valid?, b.errors.to_s
+    assert_equal groups(:asubproject).uuid, b.owner_uuid
     assert_not_equal(a.uuid, b.uuid,
                      "created two links and got the same uuid back.")
   end
@@ -52,6 +55,7 @@ class LinkTest < ActiveSupport::TestCase
                        head_uuid: ob.uuid,
                        link_class: 'test',
                        name: 'test')
+    assert_equal users(:admin).uuid, link.owner_uuid
     assert_raises(ActiveRecord::DeleteRestrictionError,
                   "should not delete #{ob.uuid} with link #{link.uuid}") do
       ob.destroy

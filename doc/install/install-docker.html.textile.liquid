@@ -4,6 +4,8 @@ navsection: installguide
 title: Installing with Docker
 ...
 
+{% include 'alert_docker' %}
+
 h2. Prerequisites:
 
 # A GNU/Linux (virtual) machine
@@ -20,14 +22,15 @@ See also: "Downloading the source code":https://arvados.org/projects/arvados/wik
 
 h2. Building the Arvados Docker containers
 
-First we need a suitable @config.yml@ file.
+First of all, a suitable @config.yml@ file is needed.
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd arvados/docker</span>
 ~$ <span class="userinput">cp config.yml.example config.yml</span>
 </code></pre></notextile>
 
-Now it's time to edit the @config.yml@ file and fill in suitable values for at a minimum these parameters:
+Edit the @config.yml@ file and fill in values for at a minimum these
+parameters:
 
 <pre>
 PUBLIC_KEY_PATH
@@ -35,12 +38,54 @@ API_HOSTNAME
 API_AUTO_ADMIN_USER
 </pre>
 
+Then build the docker containers (this will take a while):
+
+<notextile>
+<pre><code>
+~$ <span class="userinput">./build.sh</span>
+...
+ ---> 05f0ae429530
+Step 9 : ADD apache2_foreground.sh /etc/apache2/foreground.sh
+ ---> 7292b241305a
+Step 10 : CMD ["/etc/apache2/foreground.sh"]
+ ---> Running in 82d59061ead8
+ ---> 72cee36a9281
+Successfully built 72cee36a9281
+Removing intermediate container 2bc8c98c83c7
+Removing intermediate container 9457483a59cf
+Removing intermediate container 7cc5723df67c
+Removing intermediate container 5cb2cede73de
+Removing intermediate container 0acc147a7f6d
+Removing intermediate container 82d59061ead8
+Removing intermediate container 9c022a467396
+Removing intermediate container 16044441463f
+Removing intermediate container cffbbddd82d1
+date >sso-image
+</code></pre></notextile>
+
+If all goes well, you should now have a number of docker images built:
+
+<notextile>
+<pre><code>~$ <span class="userinput">docker.io images</span>
+REPOSITORY          TAG                 IMAGE ID            CREATED              VIRTUAL SIZE
+arvados/sso         latest              72cee36a9281        11 seconds ago       1.727 GB
+arvados/keep        latest              c3842f856bcb        56 seconds ago       210.6 MB
+arvados/workbench   latest              b91aa980597c        About a minute ago   2.07 GB
+arvados/doc         latest              050e9e6b8213        About a minute ago   1.442 GB
+arvados/api         latest              79843d0a8997        About a minute ago   2.112 GB
+arvados/passenger   latest              2342a550da7f        2 minutes ago        1.658 GB
+arvados/base        latest              68caefd8ea5b        5 minutes ago        1.383 GB
+arvados/debian      7.5                 6e32119ffcd0        8 minutes ago        116.8 MB
+arvados/debian      latest              6e32119ffcd0        8 minutes ago        116.8 MB
+arvados/debian      wheezy              6e32119ffcd0        8 minutes ago        116.8 MB
+</code></pre></notextile>
+
 h2. Running the Arvados Docker containers
 
 The @arvdock@ command can be used to start and stop the docker containers. It has a number of options:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd arvados/docker</span>
+<pre><code>
 ~$ <span class="userinput">./arvdock -h</span>
 
 usage: ./arvdock (start|stop|restart|test) [options]
@@ -67,7 +112,7 @@ The @--ssh@ option can be useful to debug issues with the Docker containers; it 
 Start the docker containers:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd arvados/docker</span>
+<pre><code>
 ~$ <span class="userinput">./arvdock start</span>
 sso_server
 Starting container:
