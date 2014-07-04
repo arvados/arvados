@@ -1,9 +1,9 @@
 require 'test_helper'
-load 'test/functional/arvados/v1/git_setup.rb'
+require 'helpers/git_test_helper'
 
 class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
-  include GitSetup
+  include GitTestHelper
 
   test "submit a job" do
     authorize_with :active
