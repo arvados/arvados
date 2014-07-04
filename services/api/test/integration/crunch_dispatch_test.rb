@@ -1,8 +1,8 @@
 require 'test_helper'
-load 'test/functional/arvados/v1/git_setup.rb'
+require 'helpers/git_test_helper'
 
 class CrunchDispatchTest < ActionDispatch::IntegrationTest
-  include GitSetup
+  include GitTestHelper
 
   fixtures :all
 
