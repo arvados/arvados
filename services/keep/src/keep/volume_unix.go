@@ -111,12 +111,7 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 func (v *UnixVolume) Read(loc string) ([]byte, error) {
 	blockFilename := filepath.Join(v.root, loc[0:3], loc)
 	buf, err := ioutil.ReadFile(blockFilename)
-	if err != nil {
-		log.Printf("%s: reading %s: %s\n", v, blockFilename, err)
-		return nil, err
-	}
-
-	return buf, nil
+	return buf, err
 }
 
 // Write stores a block of data identified by the locator string
