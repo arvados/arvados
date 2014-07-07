@@ -1,5 +1,5 @@
 require 'test_helper'
-load 'test/functional/arvados/v1/git_setup.rb'
+require 'helpers/git_test_helper'
 
 # NOTE: calling Commit.find_commit_range(user, nil, nil, 'rev') will produce
 # an error message "fatal: bad object 'rev'" on stderr if 'rev' does not exist
@@ -13,7 +13,7 @@ class Arvados::V1::CommitsControllerTest < ActionController::TestCase
   fixtures :repositories, :users
 
   # See git_setup.rb for the commit log for test.git.tar
-  include GitSetup
+  include GitTestHelper
 
   test "test_find_commit_range" do
     authorize_with :active
