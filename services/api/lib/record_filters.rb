@@ -30,22 +30,39 @@ module RecordFilters
       end
       case operator.downcase
       when '=', '<', '<=', '>', '>=', '!=', 'like'
+        attr_type = model_class.attribute_column(attr).type
+        operator = '<>' if operator == '!='
         if operand.is_a? String
-          if operator == '!='
-            operator = '<>'
+          if attr_type == :boolean
+            if not ['=', '<>'].include?(operator)
+              raise ArgumentError.new("Invalid operator '#{operator}' for " \
+                                      "boolean attribute '#{attr}'")
+            end
+            case operand.downcase
+            when '1', 't', 'true', 'y', 'yes'
+              operand = true
+            when '0', 'f', 'false', 'n', 'no'
+              operand = false
+            else
+              raise ArgumentError("Invalid operand '#{operand}' for " \
+                                  "boolean attribute '#{attr}'")
+            end
           end
           cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
           if (# any operator that operates on value rather than
               # representation:
-              operator.match(/[<=>]/) and
-              model_class.attribute_column(attr).type == :datetime)
+              operator.match(/[<=>]/) and (attr_type == :datetime))
             operand = Time.parse operand
           end
           param_out << operand
         elsif operand.nil? and operator == '='
           cond_out << "#{ar_table_name}.#{attr} is null"
-        elsif operand.nil? and operator == '!='
+        elsif operand.nil? and operator == '<>'
           cond_out << "#{ar_table_name}.#{attr} is not null"
+        elsif (attr_type == :boolean) and ['=', '<>'].include?(operator) and
+            [true, false].include?(operand)
+          cond_out << "#{ar_table_name}.#{attr} #{operator} ?"
+          param_out << operand
         else
           raise ArgumentError.new("Invalid operand type '#{operand.class}' "\
                                   "for '#{operator}' operator in filters")
