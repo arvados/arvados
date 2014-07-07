@@ -325,14 +325,23 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
     def call_main_on_test_file(self):
-        self.main_output = StringIO()
+        self.main_stdout = StringIO()
+        self.main_stderr = StringIO()
         with self.make_test_file() as testfile:
             path = testfile.name
-            arv_put.main(['--stream', '--no-progress', path], self.main_output)
+            arv_put.main(['--stream', '--no-progress', path],
+                         self.main_stdout, self.main_stderr)
         self.assertTrue(
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
             "did not find file stream in Keep store")
+
+    def tearDown(self):
+        for outbuf in ['main_stdout', 'main_stderr']:
+            if hasattr(self, outbuf):
+                getattr(self, outbuf).close()
+                delattr(self, outbuf)
+        super(ArvadosPutTest, self).tearDown()
 
     def test_simple_file_put(self):
         self.call_main_on_test_file()

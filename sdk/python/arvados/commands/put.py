@@ -328,7 +328,7 @@ def progress_writer(progress_func, outfile=sys.stderr):
 def exit_signal_handler(sigcode, frame):
     sys.exit(-sigcode)
 
-def main(arguments=None, output_to=sys.stdout):
+def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     args = parse_arguments(arguments)
 
     if args.progress:
@@ -346,7 +346,7 @@ def main(arguments=None, output_to=sys.stdout):
     except (IOError, OSError):
         pass  # Couldn't open cache directory/file.  Continue without it.
     except ResumeCacheConflict:
-        output_to.write(
+        stdout.write(
             "arv-put: Another process is already uploading this data.\n")
         sys.exit(1)
 
@@ -364,7 +364,7 @@ def main(arguments=None, output_to=sys.stdout):
                             for sigcode in CAUGHT_SIGNALS}
 
     if writer.bytes_written > 0:  # We're resuming a previous upload.
-        print >>sys.stderr, "\n".join([
+        print >>stderr, "\n".join([
                 "arv-put: Resuming previous upload from last checkpoint.",
                 "         Use the --no-resume option to start over."])
 
@@ -380,7 +380,7 @@ def main(arguments=None, output_to=sys.stdout):
     writer.finish_current_stream()
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
-        print >>sys.stderr
+        print >>stderr
 
     if args.stream:
         output = writer.manifest_text()
@@ -398,9 +398,9 @@ def main(arguments=None, output_to=sys.stdout):
         # Print the locator (uuid) of the new collection.
         output = collection['uuid']
 
-    output_to.write(output)
+    stdout.write(output)
     if not output.endswith('\n'):
-        output_to.write('\n')
+        stdout.write('\n')
 
     for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)
