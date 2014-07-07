@@ -85,6 +85,19 @@ fi
 
 title "Deploying API server complete"
 
+# Install updated debian packages
+title "Deploying updated arvados debian packages"
+
+ssh -p2222 $IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get install arvados-src python-arvados-fuse python-arvados-python-client"
+
+if [[ "$ECODE" != "0" ]]; then
+  title "!!!!!! DEPLOYING DEBIAN PACKAGES FAILED !!!!!!"
+  EXITCODE=$(($EXITCODE + $ECODE))
+  exit $EXITCODE
+fi
+
+title "Deploying updated arvados debian packages complete"
+
 # Deploy Workbench
 title "Deploying workbench"
 cd "$WORKSPACE"
