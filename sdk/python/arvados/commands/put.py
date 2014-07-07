@@ -170,10 +170,6 @@ class ResumeCacheConflict(Exception):
 class ResumeCache(object):
     CACHE_DIR = '.cache/arvados/arv-put'
 
-    @classmethod
-    def setup_user_cache(cls):
-        return arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700)
-
     def __init__(self, file_spec):
         self.cache_file = open(file_spec, 'a+')
         self._lock_file(self.cache_file)
@@ -189,7 +185,9 @@ class ResumeCache(object):
             md5.update(str(max(args.max_manifest_depth, -1)))
         elif args.filename:
             md5.update(args.filename)
-        return os.path.join(cls.CACHE_DIR, md5.hexdigest())
+        return os.path.join(
+            arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700, 'raise'),
+            md5.hexdigest())
 
     def _lock_file(self, fileobj):
         try:
@@ -401,9 +399,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     resume_cache = None
     try:
-        if ResumeCache.setup_user_cache() is not None:
-            resume_cache = ResumeCache(ResumeCache.make_path(args))
-    except (IOError, OSError):
+        resume_cache = ResumeCache(ResumeCache.make_path(args))
+    except (IOError, OSError, ValueError):
         pass  # Couldn't open cache directory/file.  Continue without it.
     except ResumeCacheConflict:
         stdout.write(
