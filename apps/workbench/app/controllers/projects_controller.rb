@@ -8,7 +8,7 @@ class ProjectsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Contents Permissions Advanced)
+    %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Permissions Advanced)
   end
 
   def remove_item
