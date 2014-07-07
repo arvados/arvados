@@ -34,8 +34,10 @@ module LoadParam
     elsif params[:filters].is_a? String and !params[:filters].empty?
       begin
         f = Oj.load params[:filters]
-        raise unless f.is_a? Array
-        @filters += f
+        if not f.nil?
+          raise unless f.is_a? Array
+          @filters += f
+        end
       rescue
         raise ArgumentError.new("Could not parse \"filters\" param as an array")
       end

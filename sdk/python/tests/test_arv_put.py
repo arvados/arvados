@@ -398,7 +398,10 @@ class ArvPutIntegrationTest(unittest.TestCase):
                                "config",
                                "application.yml")) as f:
             rails_config = yaml.load(f.read())
-        config_blob_signing_key = rails_config["test"]["blob_signing_key"]
+        try:
+            config_blob_signing_key = rails_config["test"]["blob_signing_key"]
+        except KeyError:
+            config_blob_signing_key = rails_config["common"]["blob_signing_key"]
         run_test_server.run()
         run_test_server.run_keep(blob_signing_key=config_blob_signing_key,
                                  enforce_permissions=True)

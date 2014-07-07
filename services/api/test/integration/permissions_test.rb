@@ -283,4 +283,93 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "get_permissions returns list" do
+    # First confirm that user :active cannot get permissions on group :public
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
+    assert_response 404
+
+    # add some permissions, including can_manage
+    # permission for user :active
+    post "/arvados/v1/links", {
+      :format => :json,
+      :link => {
+        tail_uuid: users(:spectator).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:public).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+    can_read_uuid = json_response['uuid']
+
+    post "/arvados/v1/links", {
+      :format => :json,
+      :link => {
+        tail_uuid: users(:inactive).uuid,
+        link_class: 'permission',
+        name: 'can_write',
+        head_uuid: groups(:public).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+    can_write_uuid = json_response['uuid']
+
+    post "/arvados/v1/links", {
+      :format => :json,
+      :link => {
+        tail_uuid: users(:active).uuid,
+        link_class: 'permission',
+        name: 'can_manage',
+        head_uuid: groups(:public).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+    can_manage_uuid = json_response['uuid']
+
+    # Now user :active should be able to retrieve permissions
+    # on group :public.
+    get("/arvados/v1/permissions/#{groups(:public).uuid}",
+        { :format => :json },
+        auth(:active))
+    assert_response :success
+
+    perm_uuids = json_response['items'].map { |item| item['uuid'] }
+    assert_includes perm_uuids, can_read_uuid, "can_read_uuid not found"
+    assert_includes perm_uuids, can_write_uuid, "can_write_uuid not found"
+    assert_includes perm_uuids, can_manage_uuid, "can_manage_uuid not found"
+  end
+
+  test "get_permissions returns 404 for nonexistent uuid" do
+    nonexistent = Group.generate_uuid
+    # make sure it really doesn't exist
+    get "/arvados/v1/groups/#{nonexistent}", nil, auth(:admin)
+    assert_response 404
+
+    get "/arvados/v1/permissions/#{nonexistent}", nil, auth(:active)
+    assert_response 404
+  end
+
+  test "get_permissions returns 404 for unreadable uuid" do
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
+    assert_response 404
+  end
+
+  test "get_permissions returns 403 if user can read but not manage" do
+    post "/arvados/v1/links", {
+      :link => {
+        tail_uuid: users(:active).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: groups(:public).uuid,
+        properties: {}
+      }
+    }, auth(:admin)
+    assert_response :success
+
+    get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
+    assert_response 403
+  end
 end

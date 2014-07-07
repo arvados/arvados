@@ -1,11 +1,11 @@
 require 'test_helper'
-load 'test/functional/arvados/v1/git_setup.rb'
+require 'helpers/git_test_helper'
 
 class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
   fixtures :repositories, :users, :jobs, :links, :collections
 
   # See git_setup.rb for the commit log for test.git.tar
-  include GitSetup
+  include GitTestHelper
 
   setup do
     @controller = Arvados::V1::JobsController.new

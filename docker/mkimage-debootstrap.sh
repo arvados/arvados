@@ -86,10 +86,12 @@ if [ ! "$repo" ] || [ ! "$suite" ]; then
 fi
 
 # some rudimentary detection for whether we need to "sudo" our docker calls
+set +e
 docker=`which docker.io`
 if [[ "$docker" == "" ]]; then
 	docker=`which docker`
 fi
+set -e
 
 if $docker version > /dev/null 2>&1; then
 	docker="$docker"

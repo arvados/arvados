@@ -26,7 +26,7 @@ BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
 
 JOBS_DEPS = jobs/Dockerfile
 
-BWA_SAMTOOLS_DEPS = bwa-samtools/Dockerfile
+JAVA_BWA_SAMTOOLS_DEPS = java-bwa-samtools/Dockerfile
 
 API_DEPS = api/Dockerfile $(API_GENERATED)
 
@@ -39,6 +39,8 @@ WORKBENCH_DEPS = workbench/Dockerfile \
 KEEP_DEPS = keep/Dockerfile
 
 SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
+
+BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
 
 BASE_GENERATED = base/generated/arvados.tar.gz
 
@@ -132,9 +134,15 @@ jobs-image: base-image $(BUILD) $(JOBS_DEPS)
 	$(DOCKER_BUILD) -t arvados/jobs jobs
 	date >jobs-image
 
-bwa-samtools-image: jobs-image $(BUILD) $(BWA_SAMTOOLS_DEPS)
-	$(DOCKER_BUILD) -t arvados/jobs-bwa-samtools bwa-samtools
-	date >bwa-samtools-image
+java-bwa-samtools-image: jobs-image $(BUILD) $(JAVA_BWA_SAMTOOLS_DEPS)
+	$(DOCKER_BUILD) -t arvados/jobs-java-bwa-samtools java-bwa-samtools
+	date >java-bwa-samtools-image
+
+bcbio-nextgen-image: $(BUILD) $(BASE_GENERATED) $(BCBIO_NEXTGEN_DEPS)
+	rm -rf bcbio-nextgen/generated
+	cp -r base/generated bcbio-nextgen
+	$(DOCKER_BUILD) -t arvados/bcbio-nextgen bcbio-nextgen
+	date >bcbio-nextgen-image
 
 workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
 	mkdir -p workbench/generated

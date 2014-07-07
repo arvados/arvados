@@ -8,12 +8,12 @@ RUN /usr/bin/apt-get install -q -y python-dev python-llfuse python-pip \
       fuse libattr1-dev libfuse-dev && \
     /usr/sbin/adduser --disabled-password \
       --gecos 'Crunch execution user' crunch && \
-    /usr/bin/install -d -o crunch -g crunch -m 0700 /tmp/crunch-job && \
+    /usr/bin/install --directory --owner=crunch --group=crunch --mode=0700 /keep /tmp/crunch-src /tmp/crunch-job && \
     /bin/ln -s /usr/src/arvados /usr/local/src/arvados
 
 # Install Arvados packages.
-RUN find /usr/src/arvados/sdk -name '*.gem' -print0 | \
-      xargs -0rn 1 gem install && \
+RUN (find /usr/src/arvados/sdk -name '*.gem' -print0 | \
+      xargs -0rn 1 gem install) && \
     cd /usr/src/arvados/services/fuse && \
     python setup.py install && \
     cd /usr/src/arvados/sdk/python && \
