@@ -7,10 +7,13 @@ import subprocess
 import sys
 import shutil
 import subst
+import time
 
 os.umask(0077)
 
 t = arvados.current_task().tmpdir
+
+api = arvados.api('v1')
 
 os.chdir(arvados.current_task().tmpdir)
 os.mkdir("tmpdir")
@@ -71,13 +74,20 @@ finally:
 
     out = arvados.CollectionWriter()
     out.write_directory_tree(".", max_manifest_depth=0)
-    outuuid = out.finish()
-    arvados.api('v1').job_tasks().update(uuid=arvados.current_task()['uuid'],
-                                         body={
-                                             'output':outuuid,
-                                             'success': (rcode == 0),
-                                             'progress':1.0
-                                         }).execute()
+    done = False
+    while not done:
+        try:
+            outuuid = out.finish()
+            api.job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                                 body={
+                                                     'output':outuuid,
+                                                     'success': (rcode == 0),
+                                                     'progress':1.0
+                                                 }).execute()
+            done = True
+        except Exception as e:
+            print("run-command: caught exception: {}".format(e))
+            time.sleep(5)
 
 if rcode == 0:
     os.chdir("..")
