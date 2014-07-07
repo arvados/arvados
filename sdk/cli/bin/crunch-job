@@ -96,15 +96,6 @@ $ENV{"CRUNCH_INSTALL"} = "$ENV{CRUNCH_TMP}/opt";
 $ENV{"CRUNCH_WORK"} = $ENV{"JOB_WORK"}; # deprecated
 mkdir ($ENV{"JOB_WORK"});
 
-my $arv_cli;
-
-if (defined $ENV{"ARV_CLI"}) {
-  $arv_cli = $ENV{"ARV_CLI"};
-}
-else {
-  $arv_cli = 'arv';
-}
-
 my $force_unlock;
 my $git_dir;
 my $jobspec;
@@ -841,7 +832,7 @@ if ($job_has_uuid) {
 if ($collated_output)
 {
   eval {
-    open(my $orig_manifest, '-|', 'arv', 'keep', 'get', $collated_output)
+    open(my $orig_manifest, '-|', 'arv-get', $collated_output)
         or die "failed to get collated manifest: $!";
     # Read the original manifest, and strip permission hints from it,
     # so we can put the result in a Collection.
@@ -1179,7 +1170,7 @@ sub fetch_block
   my $hash = shift;
   my ($keep, $child_out, $output_block);
 
-  my $cmd = "$arv_cli keep get \Q$hash\E";
+  my $cmd = "arv-get \Q$hash\E";
   open($keep, '-|', $cmd) or die "fetch_block: $cmd: $!";
   sysread($keep, $output_block, 64 * 1024 * 1024);
   close $keep;
@@ -1191,7 +1182,7 @@ sub collate_output
   Log (undef, "collate");
 
   my ($child_out, $child_in);
-  my $pid = open2($child_out, $child_in, $arv_cli, 'keep', 'put', '--raw');
+  my $pid = open2($child_out, $child_in, 'arv-put', '--raw');
   my $joboutput;
   for (@jobstep)
   {
@@ -1228,7 +1219,7 @@ sub collate_output
       sysread($child_out, $joboutput, 64 * 1024 * 1024);
       chomp($joboutput);
     } else {
-      Log (undef, "timed out reading from 'arv keep put'");
+      Log (undef, "timed out reading from 'arv-put'");
     }
   }
   waitpid($pid, 0);
@@ -1341,7 +1332,7 @@ sub save_meta
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
   $local_logfile->flush;
-  my $cmd = "$arv_cli keep put --filename ''\Q$keep_logfile\E "
+  my $cmd = "arv-put --filename ''\Q$keep_logfile\E "
       . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;
