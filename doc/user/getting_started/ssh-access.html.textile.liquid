@@ -1,10 +1,10 @@
 ---
 layout: default
 navsection: userguide
-title: Accessing Arvados VM with SSH - Unix Environments
+title: Accessing an Arvados VM with SSH - Unix Environments
 ...
 
-This document is for unix environments (Linux, OS X, Cygwin). If you are using a windows environment, please visit the "Accessing Arvados VM with SSH - Windows Environments":ssh-access-windows.html
+This document is for unix environments (Linux, OS X, Cygwin). If you are using a windows environment, please visit the "Accessing Arvados VM with SSH - Windows Environments":ssh-access-windows.html page.
 
 Arvados requires a public SSH key in order to securely log in to an Arvados VM instance, or to access an Arvados Git repository. The three sections below help you get started:
 
@@ -14,7 +14,7 @@ Arvados requires a public SSH key in order to securely log in to an Arvados VM i
 
 h1(#gettingkey). Getting your SSH key
 
-h2(#unix). Using ssh-keygen
+h3(#unix). Generate key using ssh-keygen
 
 Start by opening a terminal window.  Check if you have an existing public key:
 
@@ -48,7 +48,7 @@ ssh-rsa AAAAB3NzaC1ycEDoNotUseExampleKeyDoNotUseExampleKeyDoNotUseExampleKeyDoNo
 
 Now you can set up @ssh-agent@ (next) or proceed with "adding your key to the Arvados Workbench.":#workbench
 
-h3. Setting up ssh-agent (recommended)
+h3. Set up ssh-agent (recommended)
 
 If you find you are entering your passphrase frequently, you can use @ssh-agent@ to manage your credentials.  Use @ssh-add -l@ to test if you already have ssh-agent running:
 
@@ -100,8 +100,6 @@ Paste the public key that you copied to the cliboard in the previous section int
 h1(#login). Using SSH to log into an Arvados VM
 
 To see a list of virtual machines that you have access to and determine the name and login information, click on Compute %(rarr)&rarr;% Virtual machines.  Once on the *Virtual machines* page, The *hostname* columns lists the name of each available VM.  The *logins* column will have a value in the form of @["you"]@.  Your login name is the text inside the quotes.  In this guide the hostname will be _shell_ and the login will be _you_.  Replace these with your hostname and login name as appropriate.
-
-h2(#unixvm). Logging in using the @SSH@ command
 
 h3. Connecting to the virtual machine
 
