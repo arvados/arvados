@@ -828,6 +828,20 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     check_inactive_user_findable(reader_tokens: [api_token(:admin)])
   end
 
+  test "admin can filter on user.is_active" do
+    authorize_with :admin
+    get(:index, filters: [["is_active", "=", "true"]])
+    assert_response :success
+    check_active_users_index
+  end
+
+  test "admin can search where user.is_active" do
+    authorize_with :admin
+    get(:index, where: {is_active: true})
+    assert_response :success
+    check_active_users_index
+  end
+
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
                          "last_name"].sort
 
