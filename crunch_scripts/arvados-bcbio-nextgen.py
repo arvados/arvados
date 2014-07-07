@@ -102,4 +102,4 @@ os.chdir("project1/work")
 
 os.symlink("/usr/local/share/bcbio-nextgen/galaxy/tool-data", "tool-data")
 
-rcode = subprocess.call(["bcbio_nextgen.py", "../config/project1.yaml", "-n", os.environ('CRUNCH_NODE_SLOTS')])
+rcode = subprocess.call(["bcbio_nextgen.py", "../config/project1.yaml", "-n", os.environ['CRUNCH_NODE_SLOTS']])
