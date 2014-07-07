@@ -322,7 +322,7 @@ class JobCache
       []
     end
   end
-  def self.create(job, create_params)
+  def self.create(pipeline, component, job, create_params)
     @cache ||= {}
 
     jsonified_create_params = {}
@@ -330,10 +330,10 @@ class JobCache
       jsonified_create_params[k] = v.to_json unless v.nil?
     end
 
+    body = { :job => job }.merge(jsonified_create_params)
+
     result = $client.execute(:api_method => $arvados.jobs.create,
-                             :body => {
-                               :job => job.to_json
-                             }.merge(jsonified_create_params),
+                             :body => body,
                              :authenticated => false,
                              :headers => {
                                authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
@@ -342,7 +342,27 @@ class JobCache
     if j.is_a? Hash and j[:uuid]
       @cache[j[:uuid]] = j
     else
-      debuglog "create job: #{j[:errors] rescue nil} with attributes #{job}", 0
+      debuglog "create job: #{j[:errors] rescue nil} with attributes #{body}", 0
+
+      msg = ""
+      j[:errors].each do |err|
+        msg += "Error creating job for component #{component}: #{err}\n"
+      end
+      msg += "Job submission was: #{body.to_json}"
+
+      $client.execute(:api_method => $arvados.logs.create,
+                      :body => {
+                        :log => {
+                          :object_uuid => pipeline[:uuid],
+                          :event_type => 'stderr',
+                          :owner_uuid => pipeline[:owner_uuid],
+                          :properties => {"text" => msg}
+                        }
+                      },
+                      :authenticated => false,
+                      :headers => {
+                        authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
+                      })
       nil
     end
   end
@@ -468,7 +488,7 @@ class WhRunPipelineInstance
           # No job yet associated with this component and is component inputs
           # are fully specified (any output_of script_parameters are resolved
           # to real value)
-          job = JobCache.create({
+          job = JobCache.create(@instance, cname, {
             :script => c[:script],
             :script_parameters => c[:script_parameters],
             :script_version => c[:script_version],
