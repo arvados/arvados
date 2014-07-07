@@ -27,6 +27,7 @@
        <div class="collection_files_row">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
+          <% if !defined? no_checkboxes or !no_checkboxes %>
           <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
                 :class => 'persistent-selection',
                 :friendly_type => "File",
@@ -35,6 +36,7 @@
                                  uuid: @object.uuid, file: file_path),
                 :title => "Include #{file_path} in your selections",
               } %>
+          <% end %>
           <%= link_to(raw('<i class="fa fa-search"></i>'),
                       link_params.merge(disposition: 'inline'),
                       {title: "View #{file_path}", class: "btn btn-info btn-sm"}) %>
