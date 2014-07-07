@@ -69,9 +69,11 @@ with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/picard_index.loc", "w
 with open("/usr/local/share/bcbio-nextgen/galaxy/tool-data/sam_fa_indices.loc", "w") as f:
     f.write(subst.do_substitution(p, "index\tGRCh37\t$(file $(sam_fa_indices))\n"))
 
-with open("/tmp/crunch-job/gatk-variant.yaml", "w") as f:
+with open("/tmp/crunch-job/freebayes-variant.yaml", "w") as f:
     f.write('''
-# Template for whole genome Illumina variant calling with GATK pipeline
+# Template for whole genome Illumina variant calling with FreeBayes
+# This is a GATK-free pipeline without post-alignment BAM pre-processing
+# (recalibration and realignment)
 ---
 details:
   - analysis: variant2
@@ -81,20 +83,19 @@ details:
     #   batch: your-arbitrary-batch-name
     algorithm:
       aligner: bwa
-      mark_duplicates: picard
-      recalibrate: gatk
-      realign: gatk
-      variantcaller: gatk-haplotype
+      mark_duplicates: true
+      recalibrate: false
+      realign: false
+      variantcaller: freebayes
       platform: illumina
       quality_format: Standard
-      coverage_interval: genome
       # for targetted projects, set the region
       # variant_regions: /path/to/your.bed
 ''')
 
 os.chdir(arvados.current_task().tmpdir)
 
-rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "/tmp/crunch-job/gatk-variant.yaml", "project1",
+rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "/tmp/crunch-job/freebayes-variant.yaml", "project1",
                          subst.do_substitution(p, "$(file $(R1))"),
                          subst.do_substitution(p, "$(file $(R2))")])
 
