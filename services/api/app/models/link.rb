@@ -51,22 +51,9 @@ class Link < ArvadosModel
     # Administrators can grant permissions
     return true if current_user.is_admin
 
-    # All users can grant permissions on objects they own
-    head_obj = self.class.
-      resource_class_for_uuid(self.head_uuid).
-      where('uuid=?',head_uuid).
-      first
-    if head_obj
-      return true if head_obj.owner_uuid == current_user.uuid
-    end
-
-    # Users with "can_grant" permission on an object can grant
-    # permissions on that object
-    has_grant_permission = self.class.
-      where('link_class=? AND name=? AND tail_uuid=? AND head_uuid=?',
-            'permission', 'can_grant', current_user.uuid, self.head_uuid).
-      count > 0
-    return true if has_grant_permission
+    # All users can grant permissions on objects they own or can manage
+    head_obj = ArvadosModel.find_by_uuid(head_uuid)
+    return true if current_user.can?(manage: head_obj)
 
     # Default = deny.
     false
@@ -98,6 +85,23 @@ class Link < ArvadosModel
     if link_class == 'name'
       self.owner_uuid = tail_uuid
       ensure_owner_uuid_is_permitted
+    end
+  end
+
+  # A user is permitted to create, update or modify a permission link
+  # if and only if they have "manage" permission on the destination
+  # object.
+  # All other links are treated as regular ArvadosModel objects.
+  #
+  def ensure_owner_uuid_is_permitted
+    if link_class == 'permission'
+      ob = ArvadosModel.find_by_uuid(head_uuid)
+      raise PermissionDeniedError unless current_user.can?(manage: ob)
+      # All permission links should be owned by the system user.
+      self.owner_uuid = system_user_uuid
+      return true
+    else
+      super
     end
   end
 end

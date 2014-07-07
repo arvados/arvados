@@ -6,11 +6,10 @@ class Job < ArvadosModel
   serialize :script_parameters, Hash
   serialize :runtime_constraints, Hash
   serialize :tasks_summary, Hash
-  before_validation :find_docker_image_locator
   before_create :ensure_unique_submit_id
-  before_create :ensure_script_version_is_commit
-  before_update :ensure_script_version_is_commit
   after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
+  validate :ensure_script_version_is_commit
+  validate :find_docker_image_locator
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
 
@@ -87,7 +86,8 @@ class Job < ArvadosModel
         self.supplied_script_version = self.script_version if self.supplied_script_version.nil? or self.supplied_script_version.empty?
         self.script_version = sha1
       else
-        raise ArgumentError.new("Specified script_version does not resolve to a commit")
+        self.errors.add :script_version, "#{self.script_version} does not resolve to a commit"
+        return false
       end
     end
   end
@@ -104,12 +104,22 @@ class Job < ArvadosModel
   def find_docker_image_locator
     # Find the Collection that holds the Docker image specified in the
     # runtime constraints, and store its locator in docker_image_locator.
+    unless runtime_constraints.is_a? Hash
+      # We're still in validation stage, so we can't assume
+      # runtime_constraints isn't something horrible like an array or
+      # a string. Treat those cases as "no docker image supplied";
+      # other validations will fail anyway.
+      self.docker_image_locator = nil
+      return true
+    end
     image_search = runtime_constraints['docker_image']
     image_tag = runtime_constraints['docker_image_tag']
     if image_search.nil?
       self.docker_image_locator = nil
+      true
     elsif coll = Collection.for_latest_docker_image(image_search, image_tag)
       self.docker_image_locator = coll.uuid
+      true
     else
       errors.add(:docker_image_locator, "not found for #{image_search}")
       false

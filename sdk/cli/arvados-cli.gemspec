@@ -27,6 +27,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
   s.add_runtime_dependency 'oj', '~> 2.0', '>= 2.0.3'
   s.add_runtime_dependency 'curb', '~> 0.8'
+  s.add_runtime_dependency('jwt', '>= 0.1.5', '< 1.0.0')
   s.homepage    =
     'http://arvados.org'
 end

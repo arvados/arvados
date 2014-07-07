@@ -3,7 +3,8 @@ MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
 
 USER root
 
-RUN cd /tmp && \
+RUN apt-get install -y -q openjdk-7-jre-headless && \
+    cd /tmp && \
     curl --location http://downloads.sourceforge.net/project/bio-bwa/bwa-0.7.9a.tar.bz2 -o bwa-0.7.9a.tar.bz2 && \
     tar xjf bwa-0.7.9a.tar.bz2 && \
     cd bwa-0.7.9a && \

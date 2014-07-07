@@ -56,6 +56,7 @@ Server::Application.routes.draw do
         get 'logins', on: :member
         get 'get_all_logins', on: :collection
       end
+      get '/permissions/:uuid', :to => 'links#get_permissions'
     end
   end
 

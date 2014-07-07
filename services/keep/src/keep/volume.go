@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"os"
 )
 
 type Volume interface {
@@ -38,7 +39,7 @@ func (v *MockVolume) Get(loc string) ([]byte, error) {
 	} else if block, ok := v.Store[loc]; ok {
 		return block, nil
 	}
-	return nil, errors.New("not found")
+	return nil, os.ErrNotExist
 }
 
 func (v *MockVolume) Put(loc string, block []byte) error {
