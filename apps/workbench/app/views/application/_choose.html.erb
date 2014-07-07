@@ -4,9 +4,9 @@
       <div class="modal-header">
         <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
         <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.andand.class_for_display}" %></h4>
+        <div class="spinner spinner-32px spinner-h-center pull-left" hidden="true"></div>
       </div>
       <div class="modal-body">
-        <div class="spinner spinner-32px spinner-h-center spinner-v-center" hidden="true"></div>
         <nav class="navbar navbar-default breadcrumbs" role="navigation">
           <ul class="nav navbar-nav navbar-left">
             <li class="dropdown">
