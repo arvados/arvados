@@ -16,6 +16,19 @@
                   'data-remote' => true,
                   'method' => 'delete'
             %></li>
+	  <li><%= link_to "Move selected", '#',
+		  'data-href' => choose_projects_path(
+                                   title: 'Move to...',
+                                   editable: true,
+                                   action_name: 'Move',
+                                   action_href: url_for(action: :update),
+                                   action_method: 'patch',
+                                   action_data: {selection_param: @object.resource_param_name+'[owner_uuid]',
+                                                 success: 'page-refresh'}.to_json),
+                  'data-remote' => true,
+                  'data-selection-param-name' => 'uuids[]',
+		  'data-selection-action' => 'move'
+            %></li>
         </ul>
       </div>
     </div>
