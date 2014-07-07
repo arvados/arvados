@@ -3,6 +3,7 @@
 
 import apiclient
 import os
+import pwd
 import re
 import shutil
 import subprocess
@@ -323,14 +324,87 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
                                       arv_put.human_progress(count, None)))
 
 
+class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
+    Z_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
+
+    def setUp(self):
+        self.stderr = StringIO()
+        super(ArvadosPutProjectLinkTest, self).setUp()
+
+    def tearDown(self):
+        self.stderr.close()
+        super(ArvadosPutProjectLinkTest, self).tearDown()
+
+    def prep_link_from_arguments(self, args, uuid_found=True):
+        try:
+            link = arv_put.prep_project_link(arv_put.parse_arguments(args),
+                                             self.stderr,
+                                             lambda uuid: uuid_found)
+        finally:
+            self.stderr.seek(0)
+        return link
+
+    def check_link(self, link, project_uuid, link_name=None):
+        self.assertEqual(project_uuid, link.get('tail_uuid'))
+        self.assertEqual('name', link.get('link_class'))
+        if link_name is None:
+            self.assertNotIn('name', link)
+        else:
+            self.assertEqual(link_name, link.get('name'))
+        self.assertNotIn('head_uuid', link)
+
+    def check_stderr_empty(self):
+        self.assertEqual('', self.stderr.getvalue())
+
+    def test_project_link_with_name(self):
+        link = self.prep_link_from_arguments(['--project-uuid', self.Z_UUID,
+                                              '--name', 'test link AAA'])
+        self.check_link(link, self.Z_UUID, 'test link AAA')
+        self.check_stderr_empty()
+
+    def test_project_link_without_name(self):
+        link = self.prep_link_from_arguments(['--project-uuid', self.Z_UUID])
+        self.check_link(link, self.Z_UUID)
+        self.check_stderr_empty()
+
+    def test_collection_without_project_warned(self):
+        self.assertIsNone(self.prep_link_from_arguments([]))
+        for line in self.stderr:
+            if "--project-uuid or --name" in line:
+                break
+        else:
+            self.fail("no warning emitted about the lack of project name")
+
+    def test_no_link_or_warning_with_no_collection(self):
+        self.assertIsNone(self.prep_link_from_arguments(['--raw']))
+        self.check_stderr_empty()
+
+    def test_error_when_project_not_found(self):
+        self.assertRaises(ValueError,
+                          self.prep_link_from_arguments,
+                          ['--project-uuid', self.Z_UUID], False)
+
+    def test_name_without_project_is_error(self):
+        self.assertRaises(ValueError,
+                          self.prep_link_from_arguments,
+                          ['--name', 'test'])
+
+    def test_link_without_collection_is_error(self):
+        self.assertRaises(ValueError,
+                          self.prep_link_from_arguments,
+                          ['--project-uuid', self.Z_UUID, '--stream'])
+
+
 class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
-    def call_main_on_test_file(self):
+    def call_main_with_args(self, args):
         self.main_stdout = StringIO()
         self.main_stderr = StringIO()
+        return arv_put.main(args, self.main_stdout, self.main_stderr)
+
+    def call_main_on_test_file(self):
         with self.make_test_file() as testfile:
             path = testfile.name
-            arv_put.main(['--stream', '--no-progress', path],
-                         self.main_stdout, self.main_stderr)
+            self.call_main_with_args(['--stream', '--no-progress', path])
         self.assertTrue(
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
@@ -391,8 +465,18 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             self.fail("arv-put returned exit code {}".format(returncode))
         self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
 
+    def test_link_without_project_uuid_aborts(self):
+        self.assertRaises(SystemExit, self.call_main_with_args,
+                          ['--name', 'test without project UUID', '/dev/null'])
+
+    def test_link_without_collection_aborts(self):
+        self.assertRaises(SystemExit, self.call_main_with_args,
+                          ['--name', 'test without Collection',
+                           '--stream', '/dev/null'])
 
 class ArvPutIntegrationTest(unittest.TestCase):
+    PROJECT_UUID = run_test_server.fixture('groups')['aproject']['uuid']
+
     @classmethod
     def setUpClass(cls):
         try:
@@ -420,15 +504,31 @@ class ArvPutIntegrationTest(unittest.TestCase):
         run_test_server.stop()
         run_test_server.stop_keep()
 
-    def test_ArvPutSignedManifest(self):
-        # ArvPutSignedManifest runs "arv-put foo" and then attempts to get
-        # the newly created manifest from the API server, testing to confirm
-        # that the block locators in the returned manifest are signed.
-        run_test_server.authorize_with('active')
+    def authorize_with(self, token_name):
+        run_test_server.authorize_with(token_name)
         for v in ["ARVADOS_API_HOST",
                   "ARVADOS_API_HOST_INSECURE",
                   "ARVADOS_API_TOKEN"]:
             os.environ[v] = arvados.config.settings()[v]
+
+    def test_check_real_project_found(self):
+        self.assertTrue(arv_put.check_project_exists(self.PROJECT_UUID),
+                        "did not correctly find test fixture project")
+
+    def test_check_error_finding_nonexistent_project(self):
+        BAD_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
+        try:
+            result = arv_put.check_project_exists(BAD_UUID)
+        except ValueError as error:
+            self.assertIn(BAD_UUID, error.message)
+        else:
+            self.assertFalse(result, "incorrectly found nonexistent project")
+
+    def test_ArvPutSignedManifest(self):
+        # ArvPutSignedManifest runs "arv-put foo" and then attempts to get
+        # the newly created manifest from the API server, testing to confirm
+        # that the block locators in the returned manifest are signed.
+        self.authorize_with('active')
 
         # Before doing anything, demonstrate that the collection
         # we're about to create is not present in our test fixture.
@@ -456,6 +556,34 @@ class ArvPutIntegrationTest(unittest.TestCase):
 
         os.remove(os.path.join(datadir, "foo"))
         os.rmdir(datadir)
+
+    def run_and_find_link(self, text, extra_args=[]):
+        self.authorize_with('active')
+        pipe = subprocess.Popen(
+            [sys.executable, arv_put.__file__,
+             '--project-uuid', self.PROJECT_UUID] + extra_args,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = pipe.communicate(text)
+        link_list = arvados.api('v1', cache=False).links().list(
+            filters=[['head_uuid', '=', stdout.strip()],
+                     ['tail_uuid', '=', self.PROJECT_UUID],
+                     ['link_class', '=', 'name']]).execute().get('items', [])
+        self.assertEqual(1, len(link_list))
+        return link_list[0]
+
+    def test_put_collection_with_unnamed_project_link(self):
+        link = self.run_and_find_link("Test unnamed collection")
+        username = pwd.getpwuid(os.getuid()).pw_name
+        self.assertRegexpMatches(
+            link['name'],
+            r'^Collection saved by {}@'.format(re.escape(username)))
+
+    def test_put_collection_with_named_project_link(self):
+        link_name = 'Test auto Collection Link'
+        link = self.run_and_find_link("Test named collection",
+                                      ['--name', link_name])
+        self.assertEqual(link_name, link['name'])
 
 
 if __name__ == '__main__':
