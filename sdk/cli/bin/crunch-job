@@ -678,6 +678,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
           }
         }
       }
+      $command .= "--env=\QCRUNCH_NODE_SLOTS=$ENV{CRUNCH_NODE_SLOTS}\E ";
       $command .= "\Q$docker_hash\E ";
       $command .= "stdbuf --output=0 --error=0 ";
       $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};

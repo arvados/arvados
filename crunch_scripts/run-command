@@ -37,8 +37,12 @@ def sub_link(v):
 def sub_tmpdir(v):
     return os.path.join(arvados.current_task().tmpdir, 'tmpdir')
 
+def sub_cores(v):
+     return os.environ['CRUNCH_NODE_SLOTS']
+
 subst.default_subs["link "] = sub_link
 subst.default_subs["tmpdir"] = sub_tmpdir
+subst.default_subs["node.cores"] = sub_cores
 
 rcode = 1
 
