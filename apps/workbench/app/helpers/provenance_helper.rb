@@ -8,7 +8,7 @@ module ProvenanceHelper
       @jobs = {}
       @node_extra = {}
     end
-    
+
     def self.collection_uuid(uuid)
       m = CollectionsHelper.match(uuid)
       if m
@@ -23,12 +23,12 @@ module ProvenanceHelper
     end
 
     def url_for u
-      p = { :host => @opts[:request].host, 
+      p = { :host => @opts[:request].host,
         :port => @opts[:request].port,
         :protocol => @opts[:request].protocol }
       p.merge! u
-      Rails.application.routes.url_helpers.url_for (p)      
-    end 
+      Rails.application.routes.url_helpers.url_for (p)
+    end
 
     def determine_fillcolor(n)
       fillcolor = %w(aaaaaa aaffaa aaaaff aaaaaa ffaaaa)[n || 0] || 'aaaaaa'
@@ -41,27 +41,27 @@ module ProvenanceHelper
 
       rsc = ArvadosBase::resource_class_for_uuid uuid.to_s
       if rsc
-        href = url_for ({:controller => rsc.to_s.tableize, 
-                          :action => :show, 
+        href = url_for ({:controller => rsc.to_s.tableize,
+                          :action => :show,
                           :id => uuid.to_s })
-      
+
         #"\"#{uuid}\" [label=\"#{rsc}\\n#{uuid}\",href=\"#{href}\"];\n"
         if rsc == Collection
           if Collection.is_empty_blob_locator? uuid.to_s
             # special case
             return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
           end
-          if @pdata[uuid] 
+          if @pdata[uuid]
             if @pdata[uuid][:name]
               return "\"#{uuid}\" [label=\"#{@pdata[uuid][:name]}\",href=\"#{href}\",shape=oval,#{bgcolor}];\n"
-            else              
+            else
               files = nil
               if @pdata[uuid].respond_to? :files
                 files = @pdata[uuid].files
               elsif @pdata[uuid][:files]
                 files = @pdata[uuid][:files]
               end
-              
+
               if files
                 i = 0
                 label = ""
@@ -78,7 +78,7 @@ module ProvenanceHelper
                 }.andand.join ","
                 return "\"#{uuid}\" [label=\"#{label}\",href=\"#{href}\",shape=oval,#{bgcolor},#{extra_s}];\n"
               end
-            end  
+            end
           end
         end
         return "\"#{uuid}\" [label=\"#{rsc}\",href=\"#{href}\",#{bgcolor}];\n"
@@ -87,10 +87,11 @@ module ProvenanceHelper
     end
 
     def job_uuid(job)
+      d = Digest::MD5.hexdigest(job[:script_parameters].to_json)
       if @opts[:combine_jobs] == :script_only
-        uuid = "#{job[:script]}"
+        uuid = "#{job[:script]}_#{d}"
       elsif @opts[:combine_jobs] == :script_and_version
-        uuid = "#{job[:script]}_#{job[:script_version]}"
+        uuid = "#{job[:script]}_#{job[:script_version]}_#{d}"
       else
         uuid = "#{job[:uuid]}"
       end
@@ -131,20 +132,25 @@ module ProvenanceHelper
       when Array
         i = 0
         node = ""
+        count = 0
         sp.each do |v|
           if GenerateGraph::collection_uuid(v)
             gr += script_param_edges(job, "#{prefix}[#{i}]", v)
           elsif @opts[:all_script_parameters]
-            node += "', '" unless node == ""
+            t = "#{v}"
+            nl = (if (count+t.length) > 60 then "\\n" else " " end)
+            count = 0 if (count+t.length) > 60
+            node += "',#{nl}'" unless node == ""
             node = "['" if node == ""
-            node += "#{v}"
+            node += t
+            count += t.length
           end
           i += 1
         end
         unless node == ""
           node += "']"
           gr += "\"#{node}\" [label=\"#{node}\"];\n"
-          gr += edge(job_uuid(job), node, {:label => prefix})        
+          gr += edge(job_uuid(job), node, {:label => prefix})
         end
       when String
         return '' if sp.empty?
@@ -171,7 +177,7 @@ module ProvenanceHelper
         return ""
       end
 
-      if not @pdata[uuid] then 
+      if not @pdata[uuid] then
         return describe_node(uuid)
       else
         @visited[uuid] = true
@@ -221,12 +227,12 @@ module ProvenanceHelper
 
       @pdata.each do |k, link|
         if link[:head_uuid] == uuid.to_s and link[:link_class] == "provenance"
-          href = url_for ({:controller => Link.to_s.tableize, 
-                            :action => :show, 
+          href = url_for ({:controller => Link.to_s.tableize,
+                            :action => :show,
                             :id => link[:uuid] })
 
           gr += describe_node(link[:tail_uuid])
-          gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => href}) 
+          gr += edge(link[:head_uuid], link[:tail_uuid], {:label => link[:name], :href => href})
           gr += generate_provenance_edges(link[:tail_uuid])
         end
       end
@@ -237,11 +243,11 @@ module ProvenanceHelper
     def describe_jobs
       gr = ""
       @jobs.each do |k, v|
-        href = url_for ({:controller => Job.to_s.tableize, 
+        href = url_for ({:controller => Job.to_s.tableize,
                           :action => :index })
 
         gr += "\"#{k}\" [href=\"#{href}?"
-        
+
         n = 0
         v.each do |u|
           gr += "uuid%5b%5d=#{u[:uuid]}&"
@@ -249,7 +255,7 @@ module ProvenanceHelper
         end
 
         gr += "\",label=\""
-        
+
         if @opts[:combine_jobs] == :script_only
           gr += "#{v[0][:script]}"
         elsif @opts[:combine_jobs] == :script_and_version
@@ -276,7 +282,7 @@ module ProvenanceHelper
     unless pdata.is_a? Hash
       raise "create_provenance_graph accepts Array or Hash for pdata only, pdata is #{pdata.class}"
     end
-    
+
     gr = """strict digraph {
 node [fontsize=10,shape=box];
 edge [fontsize=10];
