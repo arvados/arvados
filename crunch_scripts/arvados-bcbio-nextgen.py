@@ -5,6 +5,7 @@ import subprocess
 import subst
 import shutil
 import os
+import sys
 
 if len(arvados.current_task()['parameters']) > 0:
     p = arvados.current_task()['parameters']
