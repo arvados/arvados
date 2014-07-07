@@ -788,6 +788,92 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'Expected workbench url in email body'
   end
 
+  test "non-admin user can get basic information about active users" do
+    authorize_with :spectator
+    get(:index)
+    check_non_admin_index
+    check_active_users_index
+  end
+
+  test "non-admin user can limit index" do
+    authorize_with :spectator
+    get(:index, limit: 2)
+    check_non_admin_index
+    assert_equal(2, json_response["items"].size,
+                 "non-admin index limit was ineffective")
+  end
+
+  test "filters are ignored for non-admin index" do
+    check_index_condition_fails(:spectator,
+                                filters: [["last_name", "=", "__nonexistent__"]])
+  end
+
+  test "where is ignored for non-admin index" do
+    check_index_condition_fails(:spectator,
+                                where: {last_name: "__nonexistent__"})
+  end
+
+  test "group admin is treated like non-admin for index" do
+    check_index_condition_fails(:rominiadmin,
+                                filters: [["last_name", "=", "__nonexistent__"]])
+  end
+
+  test "admin has full index powers" do
+    authorize_with :admin
+    check_inactive_user_findable
+  end
+
+  test "reader token can grant admin index powers" do
+    authorize_with :spectator
+    check_inactive_user_findable(reader_tokens: [api_token(:admin)])
+  end
+
+  NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
+                         "last_name"].sort
+
+  def check_non_admin_index
+    assert_response :success
+    response_items = json_response["items"]
+    assert_not_nil response_items
+    response_items.each do |user_data|
+      assert_equal(NON_ADMIN_USER_DATA, user_data.keys.sort,
+                   "data in all users response did not match expectations")
+      assert_equal("arvados#user", user_data["kind"])
+      assert(user_data["is_active"], "non-admin index returned inactive user")
+    end
+  end
+
+  def check_active_users_index
+    response_uuids = json_response["items"].map { |u| u["uuid"] }
+    [:admin, :miniadmin, :active, :spectator].each do |user_key|
+      assert_includes(response_uuids, users(user_key).uuid,
+                      "#{user_key} missing from index")
+    end
+    refute_includes(response_uuids, users(:inactive).uuid,
+                    "inactive user included in index")
+  end
+
+  def check_index_condition_fails(user_sym, params)
+    authorize_with user_sym
+    get(:index, params)
+    check_non_admin_index
+    assert(json_response["items"]
+             .any? { |u| u["last_name"] != "__nonexistent__" },
+           "#{params.inspect} successfully applied to non-admin index")
+  end
+
+  def check_inactive_user_findable(params={})
+    inactive_user = users(:inactive)
+    get(:index, params.merge(filters: [["email", "=", inactive_user.email]]))
+    assert_response :success
+    user_list = json_response["items"]
+    assert_equal(1, user_list.andand.count)
+    # This test needs to check a column non-admins have no access to,
+    # to ensure that admins see all user information.
+    assert_equal(inactive_user.identity_url, user_list.first["identity_url"],
+                 "admin's filtered index did not return inactive user")
+  end
+
   def verify_num_links (original_links, expected_additional_links)
     links_now = Link.all
     assert_equal expected_additional_links, Link.all.size-original_links.size,
