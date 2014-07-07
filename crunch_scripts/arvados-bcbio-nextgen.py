@@ -103,3 +103,33 @@ os.chdir("project1/work")
 os.symlink("/usr/local/share/bcbio-nextgen/galaxy/tool-data", "tool-data")
 
 rcode = subprocess.call(["bcbio_nextgen.py", "../config/project1.yaml", "-n", os.environ['CRUNCH_NODE_SLOTS']])
+
+print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+
+if rcode == 0:
+    os.chdir("../final")
+
+    print("arvados-bcbio-nextgen: the follow output files will be saved to keep:")
+
+    subprocess.call(["find", ".", "-type", "f", "-printf", "arvados-bcbio-nextgen: %12.12s %h/%f\\n"])
+
+    print("arvados-bcbio-nextgen: start writing output to keep")
+
+    done = False
+    while not done:
+        try:
+            out = arvados.CollectionWriter()
+            out.write_directory_tree(".", max_manifest_depth=0)
+            outuuid = out.finish()
+            api.job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                                 body={
+                                                     'output':outuuid,
+                                                     'success': (rcode == 0),
+                                                     'progress':1.0
+                                                 }).execute()
+            done = True
+        except Exception as e:
+            print("arvados-bcbio-nextgen: caught exception: {}".format(e))
+            time.sleep(5)
+
+sys.exit(rcode)
