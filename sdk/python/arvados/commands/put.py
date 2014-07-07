@@ -367,8 +367,8 @@ def main(arguments=None, output_to=sys.stdout):
         print >>sys.stderr, "\n".join([
                 "arv-put: Resuming previous upload from last checkpoint.",
                 "         Use the --no-resume option to start over."])
-        writer.report_progress()
 
+    writer.report_progress()
     writer.do_queued_work()  # Do work resumed from cache.
     for path in args.paths:  # Copy file data to Keep.
         if os.path.isdir(path):
