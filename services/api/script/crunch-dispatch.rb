@@ -78,7 +78,7 @@ class Dispatcher
           # update our database (and cache) when a node's state changes
           if @node_state[re[1]] != re[2]
             @node_state[re[1]] = re[2]
-            node = Node.where('hostname=?', re[1]).first
+            node = Node.where('hostname=?', re[1]).order(:last_ping_at).last
             if node
               $stderr.puts "dispatch: update #{re[1]} state to #{re[2]}"
               node.info['slurm_state'] = re[2]
