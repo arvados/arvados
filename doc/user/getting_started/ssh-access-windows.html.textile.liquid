@@ -4,7 +4,7 @@ navsection: userguide
 title: Accessing an Arvados VM with SSH - Windows Environments
 ...
 
-This document is for windows environments. If you are using a unix environment (Linux, OS X, Cygwin), please visit the "Accessing Arvados VM with SSH - Unix Environments":ssh-access-unix.html page.
+This document is for windows environments. If you are using a Unix environment (Linux, OS X, Cygwin), please visit the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access.html page.
 
 Arvados requires a public SSH key in order to securely log in to an Arvados VM instance, or to access an Arvados Git repository. The three sections below help you get started:
 
@@ -14,7 +14,7 @@ Arvados requires a public SSH key in order to securely log in to an Arvados VM i
 
 h1(#gettingkey). Getting your SSH key
 
-(Note: if you are using the SSH client that comes with "Cygwin":http://cygwin.com you should follow the "Unix":ssh-access-unix.html).
+(Note: if you are using the SSH client that comes with "Cygwin":http://cygwin.com, please use instructions found in the "Accessing an Arvados VM with SSH - Unix Environments":ssh-access.html page.)
 
 We will be using PuTTY to connect to Arvados. "PuTTY":http://www.chiark.greenend.org.uk/~sgtatham/putty/ is a free (MIT-licensed) Win32 Telnet and SSH client. PuTTY includes all the tools a Windows user needs to create private keys and make SSH connections to your virtual machines in the Arvados Cloud.
 
@@ -97,6 +97,6 @@ h3. Connecting to the VM
 # Click Load to load those saved session settings.
 # Click Open to open the SSH window at the command prompt. You will now be logged into your virtual machine.
 
-_Note_: If you see a hung terminal window with no further action: open a new terminal window by using the Start menu and type <code>plink -P 2222 turnout@switchyard.{{ site.arvados_api_host }} shell</code> in it. Please make sure to replace *shell* with the hostname listed in the _Virtual Machines_ page. Hit enter and type _y_ when prompted to cache the session state. Go back and start PuTTY session using the start menu button.
+_Note_: If you see a hung Command Prompt window with no further action: open a new _Command Prompt_ window using the Windows -> Start menu and type <code>plink -P 2222 turnout@switchyard.{{ site.arvados_api_host }} shell</code> in it. Please make sure to replace *shell* with the hostname listed in the _Virtual Machines_ page. Hit enter and type _y_ when prompted to cache the session state. Go back and start PuTTY session using the start menu button.
 
 You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
