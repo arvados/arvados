@@ -325,7 +325,7 @@ class JobCache
   def self.create(pipeline, component, job, create_params)
     @cache ||= {}
 
-    body = { :job => job }.merge(create_params.select { |k,v| not v.nil? })
+    body = {job: no_nil_values(job)}.merge(no_nil_values(create_params))
 
     result = $client.execute(:api_method => $arvados.jobs.create,
                              :body => body,
@@ -360,6 +360,12 @@ class JobCache
                       })
       nil
     end
+  end
+
+  protected
+
+  def self.no_nil_values(hash)
+    hash.reject { |key, value| value.nil? }
   end
 end
 
