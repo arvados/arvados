@@ -59,6 +59,7 @@ class SigHandler(object):
     def send_signal(self, sp, signum):
         sp.send_signal(signum)
         self.sig = signum
+        print("We get signal! %s" % signum)
 
 try:
     cmd = []
@@ -83,6 +84,9 @@ try:
 
     # wait for process to complete.
     rcode = sp.wait()
+
+    print("Sig is %s" % sig)
+    print("Sig.sig is %s" % sig.sig)
 
     if sig.sig != None:
         print("run-command: terminating on signal %s" % sig.sig)
