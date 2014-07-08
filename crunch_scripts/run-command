@@ -59,7 +59,6 @@ class SigHandler(object):
     def send_signal(self, sp, signum):
         sp.send_signal(signum)
         self.sig = signum
-        print("We get signal! %s" % signum)
 
 try:
     cmd = []
@@ -85,55 +84,51 @@ try:
     # wait for process to complete.
     rcode = sp.wait()
 
-    print("Sig is %s" % sig)
-    print("Sig.sig is %s" % sig.sig)
-
     if sig.sig != None:
         print("run-command: terminating on signal %s" % sig.sig)
-        sys.exit(rcode)
+        sys.exit(2)
     else:
         print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
 except Exception as e:
     print("run-command: caught exception: {}".format(e))
 
-finally:
-    # restore default signal handlers.
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-    signal.signal(signal.SIGQUIT, signal.SIG_DFL)
+# restore default signal handlers.
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+signal.signal(signal.SIGTERM, signal.SIG_DFL)
+signal.signal(signal.SIGQUIT, signal.SIG_DFL)
 
-    for l in links:
-        os.unlink(l)
+for l in links:
+    os.unlink(l)
 
-    print("run-command: the follow output files will be saved to keep:")
+print("run-command: the follow output files will be saved to keep:")
 
-    subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"])
+subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"])
 
-    print("run-command: start writing output to keep")
+print("run-command: start writing output to keep")
 
-    done = False
-    resume_cache = put.ResumeCache(os.path.join(arvados.current_task().tmpdir, "upload-output-checkpoint"))
-    reporter = put.progress_writer(machine_progress)
-    bytes_expected = put.expected_bytes_for(".")
-    while not done:
-        try:
-            out = put.ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
-            out.do_queued_work()
-            out.write_directory_tree(".", max_manifest_depth=0)
-            outuuid = out.finish()
-            api.job_tasks().update(uuid=arvados.current_task()['uuid'],
-                                                 body={
-                                                     'output':outuuid,
-                                                     'success': (rcode == 0),
-                                                     'progress':1.0
-                                                 }).execute()
-            done = True
-        except KeyboardInterrupt:
-            print("run-command: terminating on signal SIGINT")
-            done = True
-        except Exception as e:
-            print("run-command: caught exception: {}".format(e))
-            time.sleep(5)
+done = False
+resume_cache = put.ResumeCache(os.path.join(arvados.current_task().tmpdir, "upload-output-checkpoint"))
+reporter = put.progress_writer(machine_progress)
+bytes_expected = put.expected_bytes_for(".")
+while not done:
+    try:
+        out = put.ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
+        out.do_queued_work()
+        out.write_directory_tree(".", max_manifest_depth=0)
+        outuuid = out.finish()
+        api.job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                             body={
+                                                 'output':outuuid,
+                                                 'success': (rcode == 0),
+                                                 'progress':1.0
+                                             }).execute()
+        done = True
+    except KeyboardInterrupt:
+        print("run-command: terminating on signal 2")
+        sys.exit(2)
+    except Exception as e:
+        print("run-command: caught exception: {}".format(e))
+        time.sleep(5)
 
 sys.exit(rcode)
