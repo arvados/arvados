@@ -26,32 +26,35 @@ class Arvados::V1::JobsController < ApplicationController
     end
 
     if params[:find_or_create]
-      load_filters_param
+      return if false.equal?(load_filters_param)
       if @filters.empty?  # Translate older creation parameters into filters.
-        @filters = [:repository, :script].map do |attrsym|
-          [attrsym.to_s, "=", resource_attrs[attrsym]]
-        end
-        @filters.append(["script_version", "in",
-                         Commit.find_commit_range(current_user,
-                                                  resource_attrs[:repository],
-                                                  params[:minimum_script_version],
-                                                  resource_attrs[:script_version],
-                                                  params[:exclude_script_versions])])
+        @filters =
+          [["repository", "=", resource_attrs[:repository]],
+           ["script", "=", resource_attrs[:script]],
+           ["script_version", "in git",
+            params[:minimum_script_version] || resource_attrs[:script_version]],
+           ["script_version", "not in git", params[:exclude_script_versions]],
+          ].reject { |filter| filter.last.nil? }
         if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
-          image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
-          image_locator = Collection.
-            uuids_for_docker_image(image_search, image_tag, @read_users).first
-          return super if image_locator.nil?  # We won't find anything to reuse.
-          @filters.append(["docker_image_locator", "=", image_locator])
+          if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
+            image_search += ":#{image_tag}"
+          end
+          @filters.append(["docker_image_locator", "in docker", image_search])
         else
           @filters.append(["docker_image_locator", "=", nil])
         end
-      else  # Check specified filters for some reasonableness.
-        filter_names = @filters.map { |f| f.first }.uniq
-        ["repository", "script"].each do |req_filter|
-          if not filter_names.include?(req_filter)
-            raise ArgumentError.new("#{req_filter} filter required")
-          end
+        begin
+          load_job_specific_filters
+        rescue ArgumentError => error
+          return send_error(error.message)
+        end
+      end
+
+      # Check specified filters for some reasonableness.
+      filter_names = @filters.map { |f| f.first }.uniq
+      ["repository", "script"].each do |req_filter|
+        if not filter_names.include?(req_filter)
+          return send_error("#{req_filter} filter required")
         end
       end
 
@@ -152,7 +155,7 @@ class Arvados::V1::JobsController < ApplicationController
                     cancelled_at: nil,
                     success: nil
                   })
-    load_filters_param
+    return if false.equal?(load_filters_param)
     find_objects_for_index
     index
   end
@@ -163,9 +166,8 @@ class Arvados::V1::JobsController < ApplicationController
 
   protected
 
-  def load_filters_param
-    # Convert Job-specific git and Docker filters into normal SQL filters.
-    super
+  def load_job_specific_filters
+    # Convert Job-specific @filters entries into general SQL filters.
     script_info = {"repository" => nil, "script" => nil}
     script_range = {"exclude_versions" => []}
     @filters.select! do |filter|
@@ -208,12 +210,28 @@ class Arvados::V1::JobsController < ApplicationController
         end
       end
       last_version = begin resource_attrs[:script_version] rescue "HEAD" end
-      @filters.append(["script_version", "in",
-                       Commit.find_commit_range(current_user,
-                                                script_info["repository"],
-                                                script_range["min_version"],
-                                                last_version,
-                                                script_range["exclude_versions"])])
+      version_range = Commit.find_commit_range(current_user,
+                                               script_info["repository"],
+                                               script_range["min_version"],
+                                               last_version,
+                                               script_range["exclude_versions"])
+      if version_range.nil?
+        raise ArgumentError.
+          new(["error searching #{script_info['repository']} from",
+               "#{script_range['min_version']} to #{last_version},",
+               "excluding #{script_range['exclude_versions']}"].join(" "))
+      end
+      @filters.append(["script_version", "in", version_range])
+    end
+  end
+
+  def load_filters_param
+    begin
+      super
+      load_job_specific_filters
+    rescue ArgumentError => error
+      send_error(error.message)
+      false
     end
   end
 end
