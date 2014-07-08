@@ -52,6 +52,10 @@ def machine_progress(bytes_written, bytes_expected):
     return "run-command: {} written {} total\n".format(
         bytes_written, -1 if (bytes_expected is None) else bytes_expected)
 
+def send_signal(sp, signum, sig):
+    sp.send_signal(signum)
+    sig.append(signum)
+
 try:
     cmd = []
     for c in p["command"]:
@@ -66,16 +70,21 @@ try:
     print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
     sp = subprocess.Popen(cmd, shell=False, stdout=stdoutfile)
+    sig = []
 
     # forward signals to the process.
-    signal.signal(signal.SIGINT, lambda signum, frame: sp.send_signal(signum))
-    signal.signal(signal.SIGTERM, lambda signum, frame: sp.send_signal(signum))
-    signal.signal(signal.SIGQUIT, lambda signum, frame: sp.send_signal(signum))
+    signal.signal(signal.SIGINT, lambda signum, frame: send_signal(sp, signum, sig))
+    signal.signal(signal.SIGTERM, lambda signum, frame: send_signal(sp, signum, sig))
+    signal.signal(signal.SIGQUIT, lambda signum, frame: send_signal(sp, signum, sig))
 
     # wait for process to complete.
     rcode = sp.wait()
 
-    print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+    if len(sig) > 0:
+        print("run-command: terminating on signal %s" % sig[0])
+        sys.exit(rcode)
+    else:
+        print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
 except Exception as e:
     print("run-command: caught exception: {}".format(e))
@@ -111,6 +120,9 @@ finally:
                                                      'success': (rcode == 0),
                                                      'progress':1.0
                                                  }).execute()
+            done = True
+        except KeyboardInterrupt:
+            print("run-command: terminating on signal SIGINT")
             done = True
         except Exception as e:
             print("run-command: caught exception: {}".format(e))
