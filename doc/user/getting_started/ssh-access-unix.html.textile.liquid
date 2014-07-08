@@ -1,0 +1,115 @@
+---
+layout: default
+navsection: userguide
+title: Accessing an Arvados VM with SSH - Unix Environments
+...
+
+This document is for Unix environments (Linux, OS X, Cygwin). If you are using a Windows environment, please visit the "Accessing an Arvados VM with SSH - Windows Environments":ssh-access-windows.html page.
+
+{% include 'ssh_intro' %}
+
+h1(#gettingkey). Getting your SSH key
+
+h3(#unix). Generate a key using ssh-keygen
+
+Start by opening a terminal window.  Check if you have an existing public key:
+
+notextile. <pre><code>$ <span class="userinput">ls ~/.ssh/id_rsa.pub</span></code></pre>
+
+If the file @id_rsa.pub@ exists, then you may use your existing key.  Copy the contents of @~/.ssh/id_rsa.pub@ onto the clipboard (this is your public key).  You can skip the rest of this section and proceed by "adding your key to the Arvados Workbench.":#workbench
+
+If there is no file @~/.ssh/id_rsa.pub@, you must generate a new key.  Use @ssh-keygen@ to do this:
+
+<notextile>
+<pre><code>$ <span class="userinput">ssh-keygen -t rsa -C "you@example.com"</span>
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/example/.ssh/id_rsa):
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+</code></pre>
+</notextile>
+
+* @-t@ specifies the key type (must be "rsa")
+* @-C@ specifies a comment (to remember which account the key is associated with)
+
+We strongly recommend that you protect your key with a passphrase.  This means that when the key is used, you will be required to enter the passphrase.  However, unlike logging into remote system using a password, the passphrase is never sent over the network, it is only used to decrypt your private key.
+
+Display the contents of @~/.ssh/id_rsa.pub@ (this is your public key) using @cat@ and then copy it onto the clipboard:
+
+<notextile>
+<pre><code>$ <span class="userinput">cat ~/.ssh/id_rsa.pub</span>
+ssh-rsa AAAAB3NzaC1ycEDoNotUseExampleKeyDoNotUseExampleKeyDoNotUseExampleKeyDoNotUse9lmzkpBq983bQradKGT3LuKda9QOGe8MatI6wzSrJLSGhHm3hk6D8OWWUG4SneuCtKIk2bH0pgBj1G29+uzDIez90WzfCTZKbz4RcVQmPkowSSUAQDwb0ffwvRDhCgcJ1loT1wQAJzqJmljQ7xEYaCOIMqnfYE0lX7B3MSvCV6Ie2rWL33YecLp48LVtqiCOZU4XRyO8RSDFRFLVW+mjkLirwtDHZCRtORScaIEN0jw51p+T+9X5iA9QH/Mn+xlgk7fCgH+JtpBj808N/Qds2Gpff+Kb6ulUrVVfMK6L you@example.com
+</code></pre>
+</notextile>
+
+Now you can set up @ssh-agent@ (next) or proceed with "adding your key to the Arvados Workbench.":#workbench
+
+h3. Set up ssh-agent (recommended)
+
+If you find you are entering your passphrase frequently, you can use @ssh-agent@ to manage your credentials.  Use @ssh-add -l@ to test if you already have ssh-agent running:
+
+notextile. <pre><code>$ <span class="userinput">ssh-add -l</span></code></pre>
+
+If you get the error "Could not open a connection to your authentication agent" you will need to run @ssh-agent@ with the following command:
+
+notextile. <pre><code>$ <span class="userinput">eval $(ssh-agent -s)</span></code></pre>
+
+@ssh-agent -s@ prints out values for environment variables SSH_AUTH_SOCK and SSH_AGENT_PID and then runs in the background.  Using "eval" on the output as shown here causes those variables to be set in the current shell environment so that subsequent calls to SSH can discover how to access the agent process.
+
+After running @ssh-agent@, or if @ssh-add -l@ prints "The agent has no identities", add your key using the following command.  The passphrase to decrypt the key is the same used to protect the key when it was created with @ssh-keygen@:
+
+<notextile>
+<pre><code>$ <span class="userinput">ssh-add</span>
+Enter passphrase for /home/example/.ssh/id_rsa:
+Identity added: /home/example/.ssh/id_rsa (/home/example/.ssh/id_rsa)
+</code></pre>
+</notextile>
+
+When everything is set up, @ssh-add -l@ should yield output that looks something like this:
+
+<notextile>
+<pre><code>$ <span class="userinput">ssh-add -l</span>
+2048 eb:fa:15:f2:44:26:95:58:37:37:f4:aa:ff:ee:c2:85 you@example.com (RSA)
+</code></pre>
+</notextile>
+
+{% include 'ssh_addkey' %}
+
+h3. Connecting to the virtual machine
+
+Use the following command to connect to the _shell_ VM instance as _you_.  Replace *<code>you@shell</code>* at the end of the following command with your *login* and *hostname* from Workbench:
+
+notextile. <pre><code>$ <span class="userinput">ssh -o "ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} <b>shell</b>" -A -x <b>you@shell</b></span></code></pre>
+
+This command does several things at once. You usually cannot log in directly to virtual machines over the public Internet.  Instead, you log into a "switchyard" server and then tell the switchyard which virtual machine you want to connect to.
+
+* @-o "ProxyCommand ..."@ configures SSH to run the specified command to create a proxy and route your connection through it.
+* @-a@ tells SSH not to forward your ssh-agent credentials to the switchyard.
+* @-x@ tells SSH not to forward your X session to the switchyard.
+* @-p2222@ specifies that the switchyard is running on non-standard port 2222.
+* <code>turnout@switchyard.{{ site.arvados_api_host }}</code> specifies the user (@turnout@) and hostname (@switchyard.{{ site.arvados_api_host }}@) of the switchyard server that will proxy our connection to the VM.
+* *@shell@* is the name of the VM that we want to connect to.  This is sent to the switchyard server as if it were an SSH command, and the switchyard server connects to the VM on our behalf.
+* After the ProxyCommand section, we repeat @-x@ to disable X session forwarding to the virtual machine.
+* @-A@ specifies that we want to forward access to @ssh-agent@ to the VM.
+* Finally, *<code>you@shell</code>* specifies your login name and repeats the hostname of the VM.  The username can be found in the *logins* column in the VMs Workbench page, discussed in the previous section.
+
+You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
+
+h3. Configuration (recommended)
+
+The command line above is cumbersome, but you can configure SSH to remember many of these settings.  Add this text to the file @.ssh/config@ in your home directory (create a new file if @.ssh/config@ doesn't exist):
+
+<notextile>
+<pre><code class="userinput">Host *.arvados
+  ProxyCommand ssh -a -x -p2222 turnout@switchyard.{{ site.arvados_api_host }} $SSH_PROXY_FLAGS %h
+  User <b>you</b>
+  ForwardAgent yes
+  ForwardX11 no
+</code></pre>
+</notextile>
+
+This will recognize any host ending in ".arvados" and automatically apply the proxy, user and forwarding settings from the configuration file, allowing you to log in with a much simpler command:
+
+notextile. <pre><code>$ <span class="userinput">ssh <b>shell</b>.arvados</span></code></pre>
+
+You should now be able to log into the Arvados VM and "check your environment.":check-environment.html
