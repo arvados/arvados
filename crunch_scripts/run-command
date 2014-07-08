@@ -8,6 +8,7 @@ import sys
 import shutil
 import subst
 import time
+import arvados.commands.put as put
 
 os.umask(0077)
 
@@ -46,6 +47,10 @@ subst.default_subs["node.cores"] = sub_cores
 
 rcode = 1
 
+def machine_progress(bytes_written, bytes_expected):
+    return "run-command: {} written {} total\n".format(
+        bytes_written, -1 if (bytes_expected is None) else bytes_expected)
+
 try:
     cmd = []
     for c in p["command"]:
@@ -77,9 +82,13 @@ finally:
     print("run-command: start writing output to keep")
 
     done = False
+    resume_cache = put.ResumeCache(os.path.join(arvados.current_task().tmpdir, "upload-output-checkpoint"))
+    reporter = put.progress_writer(machine_progress)
+    bytes_expected = put.expected_bytes_for(".")
     while not done:
         try:
-            out = arvados.CollectionWriter()
+            out = put.ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
+            out.do_queued_work()
             out.write_directory_tree(".", max_manifest_depth=0)
             outuuid = out.finish()
             api.job_tasks().update(uuid=arvados.current_task()['uuid'],
