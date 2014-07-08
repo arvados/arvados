@@ -52,13 +52,9 @@ def machine_progress(bytes_written, bytes_expected):
     return "run-command: {} written {} total\n".format(
         bytes_written, -1 if (bytes_expected is None) else bytes_expected)
 
-class SigHandler(object):
-    def __init__(self):
-        self.sig = None
-
-    def send_signal(self, sp, signum):
-        sp.send_signal(signum)
-        self.sig = signum
+def send_signal(sp, signum, sig):
+    sp.send_signal(signum)
+    sig.append(signum)
 
 try:
     cmd = []
@@ -74,18 +70,18 @@ try:
     print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
     sp = subprocess.Popen(cmd, shell=False, stdout=stdoutfile)
-    sig = SigHandler()
+    sig = []
 
     # forward signals to the process.
-    signal.signal(signal.SIGINT, lambda signum, frame: sig.send_signal(sp, signum))
-    signal.signal(signal.SIGTERM, lambda signum, frame: sig.send_signal(sp, signum))
-    signal.signal(signal.SIGQUIT, lambda signum, frame: sig.send_signal(sp, signum))
+    signal.signal(signal.SIGINT, lambda signum, frame: send_signal(sp, signum, sig))
+    signal.signal(signal.SIGTERM, lambda signum, frame: send_signal(sp, signum, sig))
+    signal.signal(signal.SIGQUIT, lambda signum, frame: send_signal(sp, signum, sig))
 
     # wait for process to complete.
     rcode = sp.wait()
 
-    if sig.sig != None:
-        print("run-command: terminating on signal %s" % sig.sig)
+    if len(sig) > 0:
+        print("run-command: terminating on signal %s" % sig[0])
         sys.exit(rcode)
     else:
         print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
