@@ -56,7 +56,7 @@ class SigHandler(object):
     def __init__(self):
         self.sig = None
 
-    def send_signal(self, sp, signum, sig):
+    def send_signal(self, sp, signum):
         sp.send_signal(signum)
         self.sig = signum
 
