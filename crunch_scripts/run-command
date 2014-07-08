@@ -49,7 +49,7 @@ subst.default_subs["node.cores"] = sub_cores
 rcode = 1
 
 def machine_progress(bytes_written, bytes_expected):
-    return "run-command: {} written {} total\n".format(
+    return "run-command: wrote {} total {}\n".format(
         bytes_written, -1 if (bytes_expected is None) else bytes_expected)
 
 class SigHandler(object):
@@ -113,7 +113,7 @@ reporter = put.progress_writer(machine_progress)
 bytes_expected = put.expected_bytes_for(".")
 while not done:
     try:
-        out = put.ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
+        out = put.ArvPutCollectionWriter.from_cache(resume_cache, reporter, bytes_expected)
         out.do_queued_work()
         out.write_directory_tree(".", max_manifest_depth=0)
         outuuid = out.finish()
