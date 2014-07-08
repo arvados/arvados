@@ -9,6 +9,7 @@ import shutil
 import subst
 import time
 import arvados.commands.put as put
+import signal
 
 os.umask(0077)
 
@@ -64,7 +65,15 @@ try:
 
     print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
-    rcode = subprocess.call(cmd, stdout=stdoutfile)
+    sp = subprocess.Popen(cmd, shell=False, stdout=stdoutfile)
+
+    # forward signals to the process.
+    signal.signal(signal.SIGINT, lambda signum, frame: sp.send_signal(signum))
+    signal.signal(signal.SIGTERM, lambda signum, frame: sp.send_signal(signum))
+    signal.signal(signal.SIGQUIT, lambda signum, frame: sp.send_signal(signum))
+
+    # wait for process to complete.
+    rcode = sp.wait()
 
     print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
@@ -72,6 +81,11 @@ except Exception as e:
     print("run-command: caught exception: {}".format(e))
 
 finally:
+    # restore default signal handlers.
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    signal.signal(signal.SIGQUIT, signal.SIG_DFL)
+
     for l in links:
         os.unlink(l)
 
