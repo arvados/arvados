@@ -6,17 +6,21 @@ title: "Running a pipeline using Workbench"
 
 notextile. <div class="spaced-out">
 
-# Go to "Collections":https://{{ site.arvados_workbench_host }}/collections (*Data* %(rarr)&rarr;% *Collections (data files)*).
-# On the Collections page, go to the search box <span class="glyphicon glyphicon-search"></span> and search for "tutorial".
-# The results should include a collection with the contents *var-GS000016015-ASM.tsv.bz2*.
-# Click on the check box to the left of *var-GS000016015-ASM.tsv.bz2*.  This puts the collection in your persistent selection list.  You can click on the paperclip <span class="glyphicon glyphicon-paperclip"></span> in the upper right to review your current selections.
-# Go to "Pipeline templates":https://{{ site.arvados_workbench_host }}/pipeline_templates (*Compute* %(rarr)&rarr;% *Pipeline templates*).
-# Look for a pipeline named *Tutorial pipeline*.
-# Click on the play button <span class="glyphicon glyphicon-play"></span> to the left of *Tutorial pipeline*.  This will take you to a new page to configure the pipeline.
-# Under the *parameter* column, look for *input*.  Set the value of *input* by clicking on *none* to get a selection popup.  The collection that you selected in step 4 will be at the top of that pulldown menu.  Select that collection in the pulldown menu.
-# You can now click on the *Run pipeline* button in the upper right to start the pipeline.  A new page shows the pipeline status, queued to run.
+# If you have not yet created any projects, first create a new project to save your work. Please see "Accessing Arvados Workbench":{{site.baseurl}}/user/getting_started/workbench.html page for details. If you already have created a project for your work, go to the project by clicking on the project in *My projects* panel.
+# Click on the <span class="btn btn-primary glyphicon-plus"> Add data...</span> button.
+# In the *Add data to project* popup window, enter *tutorial* in the search box.
+# The results should include a *tutorial* collection. 
+# Click on this collection and verify that it is the collection *var-GS000016015-ASM.tsv.bz2*.
+# Click on the <span class="btn btn-primary"> Add </span> button in the popup.  This adds the *var-GS000016015-ASM.tsv.bz2* collection to your project.
+# Click on the <span class="btn btn-primary glyphicon-gear"> Run a pipeline... </span> button
+# In the *Choose a pipeline to run* popup window, enter *tutorial* in the search box.
+# The result should include *Tutorial pipeline* template.
+# Click on this template and the click on <span class="btn btn-primary"> Next: choose inputs </span> button. This will take you to a new page to configure the pipeline instance.
+# In the *Inputs* tab, click on <span class="btn btn-primary"> Choose </span> button
+# In the *Choose a dataset* popup, click on the *tutorial* collection and click on <span class="btn btn-primary"> OK </span> button.
+# You can now run this pipeline by clicking on the <span class="btn btn-primary"> Run </span> button.
 # The page refreshes automatically every 15 seconds.  You should see the pipeline running, and then finish successfully.
-# Once the pipeline is finished, click on the link under the *output* column.  This will take you to the collection page for the output of this pipeline.
+# Once the pipeline is finished, click on the *Show output files* button. This will take you to the collection page for the output of this pipeline.
 # Click on *md5sum.txt* to see the actual file that is the output of this pipeline.
 # Go back to the collection page for the result.  Click on the *Provenance graph* tab to see a graph illustrating the collections and scripts that were used to generate this file.
 
