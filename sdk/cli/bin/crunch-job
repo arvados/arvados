@@ -82,6 +82,7 @@ use IPC::Open2;
 use IO::Select;
 use File::Temp;
 use Fcntl ':flock';
+use File::Path qw( make_path );
 
 $ENV{"TMPDIR"} ||= "/tmp";
 unless (defined $ENV{"CRUNCH_TMP"}) {
@@ -91,6 +92,13 @@ unless (defined $ENV{"CRUNCH_TMP"}) {
     $ENV{"CRUNCH_TMP"} .= "-$<";
   }
 }
+}
+
+# Create the tmp directory if it does not exist
+if ( ! -d $ENV{"CRUNCH_TMP"} ) {
+  make_path $ENV{"CRUNCH_TMP"} or die "Failed to create temporary working directory: " . $ENV{"CRUNCH_TMP"};
+}
+
 $ENV{"JOB_WORK"} = $ENV{"CRUNCH_TMP"} . "/work";
 $ENV{"CRUNCH_INSTALL"} = "$ENV{CRUNCH_TMP}/opt";
 $ENV{"CRUNCH_WORK"} = $ENV{"JOB_WORK"}; # deprecated
