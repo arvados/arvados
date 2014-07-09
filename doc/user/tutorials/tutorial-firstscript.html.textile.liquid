@@ -20,7 +20,7 @@ All Crunch scripts are managed through the Git revision control system.  Before 
 ~$ <span class="userinput">git config --global user.email <b>you</b>@example.com</span></code></pre>
 </notextile>
 
-On the Arvados Workbench, navigate to "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}/repositories.  You should see a repository with your user name listed in the *name* column.  Next to *name* is the column *push_url*.  Copy the *push_url* value associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:<b>you</b>.git</code></notextile>.
+On the Arvados Workbench, navigate to "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  You should see a repository with your user name listed in the *name* column.  Next to *name* is the column *push_url*.  Copy the *push_url* value associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:<b>you</b>.git</code></notextile>.
 
 Next, on the Arvados virtual machine, clone your Git repository:
 
@@ -127,7 +127,7 @@ EOF
 * @"name"@ is a human-readable name for the pipeline.
 * @"components"@ is a set of scripts that make up the pipeline.
 * The component is listed with a human-readable name (@"do_hash"@ in this example).
-* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "Compute %(rarr)&rarr;% Code repositories":https://{{site.arvados_workbench_host}}/repositories.  Your shell should automatically fill in @$USER@ with your login name, so that the final JSON has @"repository"@ pointed at your personal Git repository.
+* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  Your shell should automatically fill in @$USER@ with your login name, so that the final JSON has @"repository"@ pointed at your personal Git repository.
 * @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit Git revision hash, a tag, or a branch (in which case it will use the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
 * @"script"@ specifies the filename of the script to run.  Crunch expects to find this in the @crunch_scripts/@ subdirectory of the Git repository.
 * @"script_parameters"@ describes the parameters for the script.  In this example, there is one parameter called @input@ which is @required@ and is a @Collection@.
@@ -140,6 +140,6 @@ Now, use @arv pipeline_template create@ to register your pipeline template in Ar
 </code></pre>
 </notextile>
 
-Your new pipeline template will appear on the Workbench "Compute %(rarr)&rarr;% Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.
+Your new pipeline template will appear on the Workbench "Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.
 
 For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html
