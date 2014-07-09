@@ -4,7 +4,6 @@ class JobTask < ArvadosModel
   include CommonApiTemplate
   serialize :parameters, Hash
   after_update :delete_created_job_tasks_if_failed
-  after_update :assign_created_job_tasks_qsequence_if_succeeded
 
   api_accessible :user, extend: :common do |t|
     t.add :job_uuid
@@ -22,15 +21,6 @@ class JobTask < ArvadosModel
   def delete_created_job_tasks_if_failed
     if self.success == false and self.success != self.success_was
       JobTask.delete_all ['created_by_job_task_uuid = ?', self.uuid]
-    end
-  end
-
-  def assign_created_job_tasks_qsequence_if_succeeded
-    if self.success == false and self.success != self.success_was
-      # xxx qsequence should be sequential as advertised; for now at
-      # least it's non-decreasing.
-      JobTask.update_all(['qsequence = ?', (Time.now.to_f*10000000).to_i],
-                         ['created_by_job_task_uuid = ?', self.uuid])
     end
   end
 end
