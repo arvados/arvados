@@ -244,7 +244,7 @@ class PipelineInstance
   def self.create(attributes)
     result = $client.execute(:api_method => $arvados.pipeline_instances.create,
                              :body => {
-                               :pipeline_instance => attributes
+                               :pipeline_instance => attributes.to_json
                              },
                              :authenticated => false,
                              :headers => {
@@ -252,7 +252,7 @@ class PipelineInstance
                              })
     j = JSON.parse result.body, :symbolize_names => true
     unless j.is_a? Hash and j[:uuid]
-      abort "Failed to create pipeline_instance: #{j[:errors] rescue nil} #{j.inspect}"
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nFailed to create pipeline_instance: #{j[:errors] rescue nil} #{j.inspect}"
     end
     debuglog "Created pipeline instance: #{j[:uuid]}"
     self.new(j)
@@ -325,7 +325,7 @@ class JobCache
   def self.create(pipeline, component, job, create_params)
     @cache ||= {}
 
-    body = { :job => job }.merge(create_params.select { |k,v| not v.nil? })
+    body = {job: no_nil_values(job)}.merge(no_nil_values(create_params))
 
     result = $client.execute(:api_method => $arvados.jobs.create,
                              :body => body,
@@ -360,6 +360,12 @@ class JobCache
                       })
       nil
     end
+  end
+
+  protected
+
+  def self.no_nil_values(hash)
+    hash.reject { |key, value| value.nil? }
   end
 end
 
@@ -412,7 +418,7 @@ class WhRunPipelineInstance
         param = params_args.shift.sub /^--/, ''
         params[param] = params_args.shift
       else
-        abort "Syntax error: I do not know what to do with arg \"#{params_args[0]}\""
+        abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nSyntax error: I do not know what to do with arg \"#{params_args[0]}\""
       end
     end
 
@@ -441,7 +447,7 @@ class WhRunPipelineInstance
       end
     end
     if !errors.empty?
-      abort "Errors:\n#{errors.collect { |c,p,e| "#{c}::#{p} - #{e}\n" }.join ""}"
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nErrors:\n#{errors.collect { |c,p,e| "#{c}::#{p} - #{e}\n" }.join ""}"
     end
     debuglog "options=" + @options.pretty_inspect
     self

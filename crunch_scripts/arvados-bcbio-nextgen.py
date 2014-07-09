@@ -94,6 +94,9 @@ details:
       # variant_regions: /path/to/your.bed
 ''')
 
+os.unlink("/usr/local/share/bcbio-nextgen/gemini_data")
+os.symlink(arvados.get_job_param_mount("gemini_data"), "/usr/local/share/bcbio-nextgen/gemini_data")
+
 os.chdir(arvados.current_task().tmpdir)
 
 rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "/tmp/crunch-job/freebayes-variant.yaml", "project1",

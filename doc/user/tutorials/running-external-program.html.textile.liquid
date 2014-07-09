@@ -6,7 +6,7 @@ title: "Using Crunch to run external programs"
 
 This tutorial demonstrates how to use Crunch to run an external program by writting a wrapper using the Python SDK.
 
-*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
+{% include 'tutorial_expectations' %}
 
 In this tutorial, you will use the external program @md5sum@ to compute hashes instead of the built-in Python library used in earlier tutorials.
 
@@ -65,4 +65,4 @@ EOF
 
 (Your shell should automatically fill in @$USER@ with your login name.  The JSON that gets saved should have @"repository"@ pointed at your personal Git repository.)
 
-Your new pipeline template will appear on the Workbench "Compute %(rarr)&rarr;% Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.
+Your new pipeline template will appear on the Workbench "Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.

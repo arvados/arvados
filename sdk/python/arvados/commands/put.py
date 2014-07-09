@@ -3,15 +3,19 @@
 # TODO:
 # --md5sum - display md5 of each file as read from disk
 
+import apiclient.errors
 import argparse
 import arvados
 import base64
+import datetime
 import errno
 import fcntl
 import hashlib
 import json
 import os
+import pwd
 import signal
+import socket
 import sys
 import tempfile
 
@@ -33,6 +37,14 @@ structure. A directory structure deeper than this will be represented
 as a single stream in the manifest. If N=0, the manifest will contain
 a single stream. Default: -1 (unlimited), i.e., exactly one manifest
 stream per filesystem directory that contains files.
+""")
+
+upload_opts.add_argument('--project-uuid', metavar='UUID', help="""
+When a Collection is made, make a Link to save it under the specified project.
+""")
+
+upload_opts.add_argument('--name', help="""
+When a Collection is linked to a project, use the specified name.
 """)
 
 _group = upload_opts.add_mutually_exclusive_group()
@@ -158,10 +170,6 @@ class ResumeCacheConflict(Exception):
 class ResumeCache(object):
     CACHE_DIR = '.cache/arvados/arv-put'
 
-    @classmethod
-    def setup_user_cache(cls):
-        return arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700)
-
     def __init__(self, file_spec):
         self.cache_file = open(file_spec, 'a+')
         self._lock_file(self.cache_file)
@@ -177,7 +185,9 @@ class ResumeCache(object):
             md5.update(str(max(args.max_manifest_depth, -1)))
         elif args.filename:
             md5.update(args.filename)
-        return os.path.join(cls.CACHE_DIR, md5.hexdigest())
+        return os.path.join(
+            arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700, 'raise'),
+            md5.hexdigest())
 
     def _lock_file(self, fileobj):
         try:
@@ -328,8 +338,56 @@ def progress_writer(progress_func, outfile=sys.stderr):
 def exit_signal_handler(sigcode, frame):
     sys.exit(-sigcode)
 
-def main(arguments=None, output_to=sys.stdout):
+def check_project_exists(project_uuid):
+    try:
+        arvados.api('v1').groups().get(uuid=project_uuid).execute()
+    except (apiclient.errors.Error, arvados.errors.NotFoundError) as error:
+        raise ValueError("Project {} not found ({})".format(project_uuid,
+                                                            error))
+    else:
+        return True
+
+def prep_project_link(args, stderr, project_exists=check_project_exists):
+    # Given the user's command line arguments, return a dictionary with data
+    # to create the desired project link for this Collection, or None.
+    # Raises ValueError if the arguments request something impossible.
+    making_collection = not (args.raw or args.stream)
+    any_link_spec = args.project_uuid or args.name
+    if not making_collection:
+        if any_link_spec:
+            raise ValueError("Requested a Link without creating a Collection")
+        return None
+    elif not any_link_spec:
+        stderr.write(
+            "arv-put: No --project-uuid or --name specified.  This data will be cached\n"
+            "in Keep.  You will need to find this upload by its locator(s) later.\n")
+        return None
+    elif not args.project_uuid:
+        raise ValueError("--name requires --project-uuid")
+    elif not project_exists(args.project_uuid):
+        raise ValueError("Project {} not found".format(args.project_uuid))
+    link = {'tail_uuid': args.project_uuid, 'link_class': 'name'}
+    if args.name:
+        link['name'] = args.name
+    return link
+
+def create_project_link(locator, link):
+    link['head_uuid'] = locator
+    link.setdefault('name', "Collection saved by {}@{} at {}".format(
+            pwd.getpwuid(os.getuid()).pw_name,
+            socket.gethostname(),
+            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")))
+    return arvados.api('v1').links().create(body=link).execute()
+
+def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
+    status = 0
+
     args = parse_arguments(arguments)
+    try:
+        project_link = prep_project_link(args, stderr)
+    except ValueError as error:
+        print >>stderr, "arv-put: {}.".format(error)
+        sys.exit(2)
 
     if args.progress:
         reporter = progress_writer(human_progress)
@@ -341,12 +399,11 @@ def main(arguments=None, output_to=sys.stdout):
 
     resume_cache = None
     try:
-        if ResumeCache.setup_user_cache() is not None:
-            resume_cache = ResumeCache(ResumeCache.make_path(args))
-    except (IOError, OSError):
+        resume_cache = ResumeCache(ResumeCache.make_path(args))
+    except (IOError, OSError, ValueError):
         pass  # Couldn't open cache directory/file.  Continue without it.
     except ResumeCacheConflict:
-        output_to.write(
+        stdout.write(
             "arv-put: Another process is already uploading this data.\n")
         sys.exit(1)
 
@@ -364,11 +421,11 @@ def main(arguments=None, output_to=sys.stdout):
                             for sigcode in CAUGHT_SIGNALS}
 
     if writer.bytes_written > 0:  # We're resuming a previous upload.
-        print >>sys.stderr, "\n".join([
+        print >>stderr, "\n".join([
                 "arv-put: Resuming previous upload from last checkpoint.",
                 "         Use the --no-resume option to start over."])
-        writer.report_progress()
 
+    writer.report_progress()
     writer.do_queued_work()  # Do work resumed from cache.
     for path in args.paths:  # Copy file data to Keep.
         if os.path.isdir(path):
@@ -380,7 +437,7 @@ def main(arguments=None, output_to=sys.stdout):
     writer.finish_current_stream()
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
-        print >>sys.stderr
+        print >>stderr
 
     if args.stream:
         output = writer.manifest_text()
@@ -397,13 +454,24 @@ def main(arguments=None, output_to=sys.stdout):
 
         # Print the locator (uuid) of the new collection.
         output = collection['uuid']
+        if project_link is not None:
+            try:
+                create_project_link(output, project_link)
+            except apiclient.errors.Error as error:
+                print >>stderr, (
+                    "arv-put: Error adding Collection to project: {}.".format(
+                        error))
+                status = 1
 
-    output_to.write(output)
+    stdout.write(output)
     if not output.endswith('\n'):
-        output_to.write('\n')
+        stdout.write('\n')
 
     for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)
+
+    if status != 0:
+        sys.exit(status)
 
     if resume_cache is not None:
         resume_cache.destroy()
