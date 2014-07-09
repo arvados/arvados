@@ -20,4 +20,23 @@ class JobsApiTest < ActionDispatch::IntegrationTest
     assert_response 404
   end
 
+  test "task qsequence values automatically increase monotonically" do
+    post_args = ["/arvados/v1/job_tasks",
+                 {job_task: {
+                     job_uuid: jobs(:running).uuid,
+                     sequence: 1,
+                   }},
+                 auth(:active)]
+    last_qsequence = -1
+    (1..3).each do |task_num|
+      @response = nil
+      post(*post_args)
+      assert_response :success
+      qsequence = json_response["qsequence"]
+      assert_not_nil(qsequence, "task not assigned qsequence")
+      assert_operator(qsequence, :>, last_qsequence,
+                      "qsequence did not increase between tasks")
+      last_qsequence = qsequence
+    end
+  end
 end
