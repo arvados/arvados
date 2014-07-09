@@ -1,6 +1,13 @@
 <%= content_for :content_top %>
-<br clear="all" />
-<div class="pull-right">
-  <%= content_for :tab_line_buttons %>
-</div>
+  <% if @object and @object.is_a?(Group) and @object.group_class.in?(['project','folder']) %>
+  <div class="pull-right">
+    <%= content_for :tab_line_buttons %>
+  </div>
+  <br clear="all" />
+<% else %>
+  <br clear="all" />
+  <div class="pull-right">
+    <%= content_for :tab_line_buttons %>
+  </div>
+<% end %>
 <%= content_for :tab_panes %>

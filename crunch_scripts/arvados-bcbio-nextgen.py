@@ -5,6 +5,7 @@ import subprocess
 import subst
 import shutil
 import os
+import sys
 
 if len(arvados.current_task()['parameters']) > 0:
     p = arvados.current_task()['parameters']
@@ -92,6 +93,9 @@ details:
       # for targetted projects, set the region
       # variant_regions: /path/to/your.bed
 ''')
+
+os.unlink("/usr/local/share/bcbio-nextgen/gemini_data")
+os.symlink(arvados.get_job_param_mount("gemini_data"), "/usr/local/share/bcbio-nextgen/gemini_data")
 
 os.chdir(arvados.current_task().tmpdir)
 

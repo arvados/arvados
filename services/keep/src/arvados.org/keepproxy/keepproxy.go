@@ -193,35 +193,34 @@ func GetRemoteAddress(req *http.Request) string {
 	return req.RemoteAddr
 }
 
-func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) bool {
+func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
 	var auth string
 	if auth = req.Header.Get("Authorization"); auth == "" {
-		return false
+		return false, ""
 	}
 
-	var tok string
 	_, err := fmt.Sscanf(auth, "OAuth2 %s", &tok)
 	if err != nil {
 		// Scanning error
-		return false
+		return false, ""
 	}
 
 	if cache.RecallToken(tok) {
 		// Valid in the cache, short circut
-		return true
+		return true, tok
 	}
 
 	arv := *kc.Arvados
 	arv.ApiToken = tok
 	if err := arv.Call("HEAD", "users", "", "current", nil, nil); err != nil {
 		log.Printf("%s: CheckAuthorizationHeader error: %v", GetRemoteAddress(req), err)
-		return false
+		return false, ""
 	}
 
 	// Success!  Update cache
 	cache.RememberToken(tok)
 
-	return true
+	return true, tok
 }
 
 type GetBlockHandler struct {
@@ -281,10 +280,17 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	log.Printf("%s: %s %s", GetRemoteAddress(req), req.Method, hash)
 
-	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
+	var pass bool
+	var tok string
+	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
 		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
 		return
 	}
+
+	// Copy ArvadosClient struct and use the client's API token
+	arvclient := *kc.Arvados
+	arvclient.ApiToken = tok
+	kc.Arvados = &arvclient
 
 	var reader io.ReadCloser
 	var err error
@@ -356,10 +362,17 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if !CheckAuthorizationHeader(kc, this.ApiTokenCache, req) {
+	var pass bool
+	var tok string
+	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
 		http.Error(resp, "Missing or invalid Authorization header", http.StatusForbidden)
 		return
 	}
+
+	// Copy ArvadosClient struct and use the client's API token
+	arvclient := *kc.Arvados
+	arvclient.ApiToken = tok
+	kc.Arvados = &arvclient
 
 	// Check if the client specified the number of replicas
 	if req.Header.Get("X-Keep-Desired-Replicas") != "" {

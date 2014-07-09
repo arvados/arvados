@@ -6,7 +6,7 @@ title: "Running a Crunch job on the command line"
 
 This tutorial introduces how to run individual Crunch jobs using the @arv@ command line tool.
 
-*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
+{% include 'tutorial_expectations' %}
 
 You will create a job to run the "hash" Crunch script.  The "hash" script computes the MD5 hash of each file in a collection.
 
@@ -34,7 +34,7 @@ EOF
 * @cat@ is a standard Unix utility that writes a sequence of input to standard output.
 * @<<EOF@ tells the shell to direct the following lines into the standard input for @cat@ up until it sees the line @EOF@.
 * @>~/the_job@ redirects standard output to a file called @~/the_job@.
-* @"repository"@ is the name of a Git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "*Compute* %(rarr)&rarr;% *Code repositories*":https://{{site.arvados_workbench_host}}/repositories.
+* @"repository"@ is the name of a Git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "*Code repositories*":https://{{site.arvados_workbench_host}}/repositories.
 * @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit Git revision hash, a tag, or a branch.  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
 * @"script"@ specifies the name of the script to run.  The script must be given relative to the @crunch_scripts/@ subdirectory of the Git repository.
 * @"script_parameters"@ are provided to the script.  In this case, the input is the PGP data Collection that we "put in Keep earlier":{{site.baseurl}}/user/tutorials/tutorial-keep.html.
@@ -88,7 +88,7 @@ The job is now queued and will start running as soon as it reaches the front of 
 
 h2. Monitor job progress
 
-Go to the "Workbench dashboard":https://{{site.arvados_workbench_host}} and visit *Activity* %(rarr)&rarr;% *Recent jobs*.  Your job should be near the top of the table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
+Go to "*Recent jobs*":https://{{site.arvados_workbench_host}}/jobs in the Workbench.  Your job should be near the top of the table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
 
 h2. Inspect the job output
 
@@ -162,7 +162,7 @@ This MD5 hash matches the MD5 hash which we "computed earlier":{{site.baseurl}}/
 
 h2. The job log
 
-When the job completes, you can access the job log.  On the Workbench, visit *Activity* %(rarr)&rarr;% *Recent jobs* %(rarr)&rarr;% your job's UUID under the *uuid* column %(rarr)&rarr;% the collection link on the *log* row.
+When the job completes, you can access the job log.  On the Workbench, visit "*Recent jobs*":https://{{site.arvados_workbench_host}}/jobs %(rarr)&rarr;% your job's UUID under the *uuid* column %(rarr)&rarr;% the collection link on the *log* row.
 
 On the command line, the Keep identifier listed in the @"log"@ field from @arv job get@ specifies a collection.  You can list the files in the collection:
 

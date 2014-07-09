@@ -6,7 +6,7 @@ title: "Debugging a Crunch script"
 
 To test changes to a script by running a job, the change must be pushed to your hosted repository, and the job might have to wait in the queue before it runs. This cycle can be an inefficient way to develop and debug scripts. This tutorial demonstrates an alternative: using @arv-crunch-job@ to run your job in your local VM.  This avoids the job queue and allows you to execute the script directly from your git working tree without committing or pushing.
 
-*This tutorial assumes that you are "logged into an Arvados VM instance":{{site.baseurl}}/user/getting_started/ssh-access.html#login, and have a "working environment.":{{site.baseurl}}/user/getting_started/check-environment.html*
+{% include 'tutorial_expectations' %}
 
 This tutorial uses *@you@* to denote your username.  Replace *@you@* with your user name in all the following examples.
 
