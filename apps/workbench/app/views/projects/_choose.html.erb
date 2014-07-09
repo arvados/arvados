@@ -21,7 +21,7 @@
                  folder_class = "fa-folder-o"
                  if projectnode[:object].uuid == current_user.uuid
                    row_name = "My Projects"
-                   row_selectable &&= (resource_class_for_uuid(params[:action_href].split("/").last) == Group) rescue false
+                   row_selectable &&= params[:my_root_selectable]
                    folder_class = "fa-folder-open-o" if not row_selectable
                  else
                    row_name = projectnode[:object].friendly_link_name || 'New project'
