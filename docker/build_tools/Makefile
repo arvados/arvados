@@ -11,8 +11,8 @@ clean:
 # subsequent makes to build the entire chain from the ground up
 realclean: clean
 	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
-	-$(DOCKER) rm `$(DOCKER) ps -a -q`
-	-$(DOCKER) rmi `$(DOCKER) images -q`
+	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
+	-$(DOCKER) rmi `$(DOCKER) images -q arvados/*`
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
@@ -108,7 +108,7 @@ $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 # The docker build -q option suppresses verbose build output.
 # Necessary to prevent failure on building warehouse; see
 # https://github.com/dotcloud/docker/issues/3172
-DOCKER_BUILD = $(DOCKER) build -q
+DOCKER_BUILD = $(DOCKER) build -q --rm=true
 
 # ============================================================
 # The main Arvados servers: api, doc, workbench, warehouse
