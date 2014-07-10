@@ -33,12 +33,11 @@ API_DEPS = api/Dockerfile $(API_GENERATED)
 DOC_DEPS = doc/Dockerfile doc/apache2_vhost
 
 WORKBENCH_DEPS = workbench/Dockerfile \
-                 workbench/passenger.conf \
                  $(WORKBENCH_GENERATED)
 
 KEEP_DEPS = keep/Dockerfile
 
-SSO_DEPS = sso/passenger.conf $(SSO_GENERATED)
+SSO_DEPS = $(SSO_GENERATED)
 
 BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
 
