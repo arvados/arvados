@@ -49,6 +49,7 @@ RUN a2dissite default && \
 
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
+ADD ssh.sh /usr/local/bin/ssh.sh
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
 # Start the supervisor.
