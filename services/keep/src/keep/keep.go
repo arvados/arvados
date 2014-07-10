@@ -71,15 +71,15 @@ type KeepError struct {
 
 var (
 	BadRequestError = &KeepError{400, "Bad Request"}
-	CollisionError  = &KeepError{400, "Collision"}
-	MD5Error        = &KeepError{401, "MD5 Failure"}
-	PermissionError = &KeepError{401, "Permission denied"}
-	CorruptError    = &KeepError{402, "Corruption"}
-	ExpiredError    = &KeepError{403, "Expired permission signature"}
+	CollisionError  = &KeepError{500, "Collision"}
+	RequestHashError= &KeepError{422, "Hash mismatch in request"}
+	PermissionError = &KeepError{403, "Forbidden"}
+	DiskHashError   = &KeepError{500, "Hash mismatch in stored data"}
+	ExpiredError    = &KeepError{401, "Expired permission signature"}
 	NotFoundError   = &KeepError{404, "Not Found"}
 	GenericError    = &KeepError{500, "Fail"}
 	FullError       = &KeepError{503, "Full"}
-	TooLongError    = &KeepError{504, "Too Long"}
+	TooLongError    = &KeepError{504, "Timeout"}
 )
 
 func (e *KeepError) Error() string {
@@ -412,7 +412,7 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		// This type assertion is safe because the only errors
-		// GetBlock can return are CorruptError or NotFoundError.
+		// GetBlock can return are DiskHashError or NotFoundError.
 		if err == NotFoundError {
 			log.Printf("%s: not found, giving up\n", hash)
 		}
@@ -480,7 +480,7 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 
 	// Only the data manager may issue /index requests,
 	// and only if enforce_permissions is enabled.
-	// All other requests return 403 Permission denied.
+	// All other requests return 403 Forbidden.
 	api_token := GetApiToken(req)
 	if !enforce_permissions ||
 		api_token == "" ||
@@ -619,10 +619,10 @@ func GetBlock(hash string) ([]byte, error) {
    On success, PutBlock returns nil.
    On failure, it returns a KeepError with one of the following codes:
 
-   400 Collision
+   500 Collision
           A different block with the same hash already exists on this
           Keep server.
-   401 MD5Fail
+   422 MD5Fail
           The MD5 hash of the BLOCK does not match the argument HASH.
    503 Full
           There was not enough space left in any Keep volume to store
@@ -643,7 +643,7 @@ func PutBlock(block []byte, hash string) error {
 
 	// If we already have a block on disk under this identifier, return
 	// success (but check for MD5 collisions).
-	// The only errors that GetBlock can return are ErrCorrupt and ErrNotFound.
+	// The only errors that GetBlock can return are DiskHashError and NotFoundError.
 	// In either case, we want to write our new (good) block to disk,
 	// so there is nothing special to do if err != nil.
 	if oldblock, err := GetBlock(hash); err == nil {
