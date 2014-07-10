@@ -11,10 +11,10 @@ RUN /bin/mkdir -p /usr/src/arvados && \
 ADD generated/doc.tar.gz /usr/src/arvados/
 
 # Build static site
-RUN bundle install --gemfile=/usr/src/arvados/doc/Gemfile && \
+RUN /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/doc/Gemfile && \
     /bin/sed -ri 's/^baseurl: .*$/baseurl: /' /usr/src/arvados/doc/_config.yml && \
     cd /usr/src/arvados/doc && \
-    LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" rake
+    LANG="en_US.UTF-8" LC_ALL="en_US.UTF-8" /usr/local/rvm/bin/rvm-exec default bundle exec rake
 
 # Configure Apache
 ADD apache2_vhost /etc/apache2/sites-available/doc

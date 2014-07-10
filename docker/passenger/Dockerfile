@@ -8,5 +8,7 @@ RUN apt-get update && \
     apt-get install -q -y apt-utils git curl procps apache2-mpm-worker \
                           libcurl4-openssl-dev apache2-threaded-dev \
                           libapr1-dev libaprutil1-dev && \
-    passenger-install-apache2-module --auto
+    /usr/local/rvm/bin/rvm-exec default passenger-install-apache2-module --auto
+
+RUN /usr/local/rvm/bin/rvm-exec default passenger-install-apache2-module --snippet > /etc/apache2/conf.d/passenger
 
