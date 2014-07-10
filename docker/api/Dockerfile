@@ -9,9 +9,23 @@ MAINTAINER Tim Pierce <twp@curoverse.com>
 # check a git repo for crunch scripts.
 #
 RUN apt-get update && \
-    apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 \
+    apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 slurm-llnl munge \
                           supervisor && \
     git clone --bare git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
+
+# For crunch-dispatch
+#ADD apt.arvados.org.list /etc/apt/sources.list.d/
+
+#RUN apt-key adv --keyserver pgp.mit.edu --recv 1078ECD7 && apt-get update && \
+#RUN apt-get -q -y install libjson-perl libwww-perl libio-socket-ssl-perl libipc-system-simple-perl slurm-llnl munge
+#    apt-get -q -y install arvados-src libjson-perl libwww-perl libio-socket-ssl-perl libipc-system-simple-perl slurm-llnl munge
+
+ADD munge.key /etc/munge/
+RUN chown munge:munge /etc/munge/munge.key
+ADD generated/slurm.conf /etc/slurm-llnl/
+
+RUN /usr/local/rvm/bin/rvm-exec default gem install arvados-cli arvados
+# /for crunch-dispatch
 
 RUN /bin/mkdir -p /usr/src/arvados/services
 ADD generated/api.tar.gz /usr/src/arvados/services/
@@ -50,6 +64,7 @@ RUN a2dissite default && \
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
 ADD ssh.sh /usr/local/bin/ssh.sh
+ADD crunch-dispatch-run.sh /usr/local/bin/crunch-dispatch-run.sh
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
 # Start the supervisor.

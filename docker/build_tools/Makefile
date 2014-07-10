@@ -1,4 +1,4 @@
-all: api-image doc-image workbench-image keep-image sso-image
+all: api-image compute-image doc-image workbench-image keep-image sso-image
 
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
@@ -24,11 +24,15 @@ BUILD = build/.buildstamp
 
 BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
 
+SLURM_DEPS = slurm/Dockerfile $(SLURM_GENERATED)
+
 JOBS_DEPS = jobs/Dockerfile
 
 JAVA_BWA_SAMTOOLS_DEPS = java-bwa-samtools/Dockerfile
 
-API_DEPS = api/Dockerfile $(API_GENERATED)
+API_DEPS = api/* $(API_GENERATED)
+
+COMPUTE_DEPS = compute/* $(COMPUTE_GENERATED)
 
 DOC_DEPS = doc/Dockerfile doc/apache2_vhost
 
@@ -43,12 +47,15 @@ BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
 
 BASE_GENERATED = base/generated/arvados.tar.gz
 
+SLURM_GENERATED = slurm/generated/*
+
 API_GENERATED = \
         api/generated/apache2_vhost \
         api/generated/config_databases.sh \
         api/generated/database.yml \
         api/generated/omniauth.rb \
         api/generated/application.yml \
+        api/generated/slurm.conf \
         api/generated/superuser_token
 
 API_GENERATED_IN = \
@@ -57,7 +64,14 @@ API_GENERATED_IN = \
         api/database.yml.in \
         api/omniauth.rb.in \
         api/application.yml.in \
+        api/slurm.conf.in \
         api/superuser_token.in
+
+SLURM_GENERATED = \
+        slurm/generated/slurm.conf
+
+SLURM_GENERATED_IN = \
+        slurm/slurm.conf.in
 
 WORKBENCH_GENERATED = \
         workbench/generated/apache2_vhost \
@@ -87,6 +101,10 @@ $(BUILD):
 	cd build/sdk/cli && gem build arvados-cli.gemspec
 	cd build/sdk/ruby && gem build arvados.gemspec
 	touch build/.buildstamp
+
+$(SLURM_GENERATED): config.yml $(BUILD)
+	$(CONFIG_RB)
+	mkdir -p slurm/generated
 
 $(BASE_GENERATED): config.yml $(BUILD)
 	$(CONFIG_RB)
@@ -118,6 +136,12 @@ api-image: passenger-image $(BUILD) $(API_DEPS)
 	tar -czf api/generated/api.tar.gz -C build/services api
 	$(DOCKER_BUILD) -t arvados/api api
 	date >api-image
+
+slurm-image: base-image $(SLURM_DEPS)
+
+compute-image: slurm-image $(BUILD) $(COMPUTE_DEPS)
+	$(DOCKER_BUILD) -t arvados/compute compute
+	date >compute-image
 
 doc-image: base-image $(BUILD) $(DOC_DEPS)
 	mkdir -p doc/generated
@@ -164,6 +188,10 @@ sso-image: passenger-image $(SSO_DEPS)
 passenger-image: base-image
 	$(DOCKER_BUILD) -t arvados/passenger passenger
 	date >passenger-image
+
+slurm-image: base-image $(SLURM_DEPS)
+	$(DOCKER_BUILD) -t arvados/slurm slurm
+	date >slurm-image
 
 base-image: debian-image $(BASE_DEPS)
 	$(DOCKER_BUILD) -t arvados/base base
