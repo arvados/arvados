@@ -572,12 +572,13 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 
 func GetBlock(hash string) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
+	error_to_caller := NotFoundError
+
 	for _, vol := range KeepVM.Volumes() {
 		if buf, err := vol.Get(hash); err != nil {
 			// IsNotExist is an expected error and may be ignored.
 			// (If all volumes report IsNotExist, we return a NotFoundError)
-			// A CorruptError should be returned immediately.
-			// Any other errors should be logged but we continue trying to
+			// All other errors should be logged but we continue trying to
 			// read.
 			switch {
 			case os.IsNotExist(err):
@@ -597,14 +598,15 @@ func GetBlock(hash string) ([]byte, error) {
 				//
 				log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
 					vol, hash, filehash)
-				return buf, CorruptError
+				error_to_caller := DiskHashError
+			} else {
+				// Success!
+				return buf, nil
 			}
-			// Success!
-			return buf, nil
 		}
 	}
 
-	return nil, NotFoundError
+	return nil, error_to_caller
 }
 
 /* PutBlock(block, hash)
