@@ -29,7 +29,7 @@
       <col width="40%" />
       <col width="60%" />
     </colgroup>
-    <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: "#{page_offset}", filters: "#{filters}") if page_offset %>">
+    <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: page_offset, filters: "#{filters}") if page_offset %>">
       <%= render partial: 'show_contents_rows', locals: {project: @object, objects_and_names: objects_and_names} %>
     </tbody>
     <thead>
