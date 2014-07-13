@@ -132,12 +132,15 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :next_page_offset
-  def next_page_offset
-    if @objects.respond_to?(:result_offset) and
-        @objects.respond_to?(:result_limit) and
-        @objects.respond_to?(:items_available)
-      next_offset = @objects.result_offset + @objects.result_limit
-      if next_offset < @objects.items_available
+  def next_page_offset objects=nil
+    if !objects
+      objects = @objects
+    end
+    if objects.respond_to?(:result_offset) and
+        objects.respond_to?(:result_limit) and
+        objects.respond_to?(:items_available)
+      next_offset = objects.result_offset + objects.result_limit
+      if next_offset < objects.items_available
         next_offset
       else
         nil

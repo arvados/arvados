@@ -24,25 +24,13 @@
     </div>
   </div>
 
-  <%
-    selected_objects_and_names = []
-    specific_data_kinds = ['arvados#collection', 'arvados#group', 'arvados#job', 'arvados#pipelineInstance', 'arvados#pipelineTemplate']
-    @objects_and_names.each do |object, name_link|
-      if !data_kind.any? && !specific_data_kinds.include?(object.kind)
-        selected_objects_and_names << [object, name_link]
-      elsif data_kind.include?(object.kind)
-        selected_objects_and_names << [object, name_link]
-      end
-    end
-  %>
-
   <table class="table table-condensed table-fixedlayout arv-index arv-project-contents" style="overflow-x: hidden">
     <colgroup>
       <col width="40%" />
       <col width="60%" />
     </colgroup>
-    <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: next_page_offset) if next_page_offset %>">
-      <%= render partial: 'show_contents_rows', locals: {project: @object, objects_and_names: selected_objects_and_names} %>
+    <tbody data-infinite-scroller="#Contents-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: "#{page_offset}", filters: "#{filters}") if page_offset %>">
+      <%= render partial: 'show_contents_rows', locals: {project: @object, objects_and_names: objects_and_names} %>
     </tbody>
     <thead>
       <tr>
