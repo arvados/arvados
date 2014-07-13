@@ -53,8 +53,8 @@ PartitionName=DEFAULT MaxTime=INFINITE State=UP
 PartitionName=compute Default=YES Shared=yes
 #PartitionName=sysadmin Hidden=YES Shared=yes
 
-NodeName=compute[0-63]
+NodeName=compute[0-1]
 #NodeName=compute0 RealMemory=6967 Weight=6967
 
-PartitionName=compute Nodes=compute[0-63]
-PartitionName=crypto Nodes=compute[0-63]
+PartitionName=compute Nodes=compute[0-1]
+PartitionName=crypto Nodes=compute[0-1]

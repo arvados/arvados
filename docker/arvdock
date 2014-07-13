@@ -19,9 +19,10 @@ function usage {
     echo >&2 "  -s[port], --sso[=port]        SSO server (default port 9901)"
     echo >&2 "  -a[port], --api[=port]        API server (default port 9900)"
     echo >&2 "  -c[count], --compute[=count]  Compute nodes (default starts 2)"
-    echo >&2 "  -k, --keep                     Keep servers"
-    echo >&2 "  --ssh                          Enable SSH access to server containers"
-    echo >&2 "  -h, --help                     Display this help and exit"
+    echo >&2 "  -n, --nameserver              Nameserver"
+    echo >&2 "  -k, --keep                    Keep servers"
+    echo >&2 "  --ssh                         Enable SSH access to server containers"
+    echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
     echo >&2 "  If no options are given, the action is applied to all servers."
     echo >&2
@@ -43,10 +44,10 @@ function start_container {
     if [[ "$2" != '' ]]; then
       local name="$2"
       if [[ "$name" == "api_server" ]]; then
-        args="$args --hostname api --name $name"
+        args="$args --hostname api -P --name $name"
       elif [[ "$name" == "compute" ]]; then
         name=$name$COMPUTE_COUNTER
-        args="$args --hostname compute$COMPUTE_COUNTER --name $name"
+        args="$args --hostname compute$COMPUTE_COUNTER -P --name $name"
         let COMPUTE_COUNTER=$(($COMPUTE_COUNTER + 1))
       else
         args="$args --name $name"
@@ -77,8 +78,9 @@ function start_container {
     $DOCKER rm "$name" 2>/dev/null
 
     echo "Starting container:"
+    #echo "  $DOCKER run --dns=127.0.0.1 $args $image"
     echo "  $DOCKER run $args $image"
-    container=`$DOCKER run $args $image`
+    container=`$DOCKER run --dns=172.17.42.1 --dns-search=compute.dev.arvados $args $image`
     if [[ "$?" != "0" ]]; then
       echo "Unable to start container"
       exit 1
@@ -143,11 +145,12 @@ function do_start {
     local start_api=false
     local start_compute=false
     local start_workbench=false
+    local start_nameserver=false
     local start_keep=false
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o d::s::a::c::w::kh \
-                  --long doc::,sso::,api::,compute::,workbench::,keep,help,ssh \
+    local TEMP=`getopt -o d::s::a::c::w::nkh \
+                  --long doc::,sso::,api::,compute::,workbench::,nameserver,keep,help,ssh \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -188,6 +191,10 @@ function do_start {
                     *)  start_workbench=$2; shift 2 ;;
                 esac
                 ;;
+            -n | --nameserver)
+                start_nameserver=true
+                shift
+                ;;
             -k | --keep)
                 start_keep=true
                 shift
@@ -214,6 +221,7 @@ function do_start {
           $start_api == false &&
           $start_compute == false &&
           $start_workbench == false &&
+          $start_nameserver == false &&
           $start_keep == false ]]
     then
         start_doc=9898
@@ -221,7 +229,36 @@ function do_start {
         start_api=9900
         start_compute=2
         start_workbench=9899
+        start_nameserver=true
         start_keep=true
+    fi
+
+    if [[ $start_nameserver != false ]]
+    then
+      # We rely on skydock and skydns for dns discovery between the slurm controller and compute nodes,
+      # so make sure they are running
+      $DOCKER images | grep skydns >/dev/null
+      if [[ "$?" != "0" ]]; then
+        echo "Downloading crosbymichael/skydns..."
+        $DOCKER pull crosbymichael/skydns
+      fi
+      $DOCKER ps | grep skydns >/dev/null
+      if [[ "$?" != "0" ]]; then
+        echo "Starting crosbymichael/skydns container..."
+        $DOCKER rm "skydns" 2>/dev/null
+        $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -nameserver 8.8.4.4 -domain arvados
+      fi
+      $DOCKER images | grep skydock >/dev/null
+      if [[ "$?" != "0" ]]; then
+        echo "Downloading crosbymichael/skydock..."
+        $DOCKER pull crosbymichael/skydock
+      fi
+      $DOCKER ps | grep skydock >/dev/null
+      if [[ "$?" != "0" ]]; then
+        echo "Starting crosbymichael/skydock container..."
+        $DOCKER rm "skydock" 2>/dev/null
+        $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
+      fi
     fi
 
     if [[ $start_sso != false ]]
@@ -287,11 +324,12 @@ function do_stop {
     local stop_api=""
     local stop_compute=""
     local stop_workbench=""
+    local stop_nameserver=""
     local stop_keep=""
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o dsacwkh \
-                  --long doc,sso,api,compute,workbench,keep,help \
+    local TEMP=`getopt -o dsacwnkh \
+                  --long doc,sso,api,compute,workbench,nameserver,keep,help \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -312,6 +350,8 @@ function do_stop {
                 stop_compute=`$DOCKER ps |grep -P "compute\d+" |grep -v api_server |cut -f1 -d ' '` ; shift ;;
             -w | --workbench)
                 stop_workbench=workbench_server ; shift ;;
+            -n | --nameserver )
+                stop_keep="skydock skydns" ; shift ;;
             -k | --keep )
                 stop_keep="keep_server_0 keep_server_1" ; shift ;;
             --)
@@ -331,6 +371,7 @@ function do_stop {
           $stop_api == "" &&
           $stop_compute == "" &&
           $stop_workbench == "" &&
+          $stop_nameserver == "" &&
           $stop_keep == "" ]]
     then
         stop_doc=doc_server
@@ -338,10 +379,11 @@ function do_stop {
         stop_api=api_server
         stop_compute=`$DOCKER ps |grep -P "compute\d+" |grep -v api_server |cut -f1 -d ' '`
         stop_workbench=workbench_server
+        stop_nameserver="skydock skydns"
         stop_keep="keep_server_0 keep_server_1"
     fi
 
-    $DOCKER stop $stop_doc $stop_sso $stop_api $stop_compute $stop_workbench $stop_keep \
+    $DOCKER stop $stop_doc $stop_sso $stop_api $stop_compute $stop_workbench $stop_nameserver $stop_keep \
         2>/dev/null
 }
 
