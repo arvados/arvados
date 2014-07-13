@@ -1,6 +1,6 @@
 An example arv command to get a <%= object.class.to_s.underscore %> using its uuid:
 <pre>
-arv --pretty <%= object.class.to_s.underscore %> get \
+arv <%= object.class.to_s.underscore %> get \
  --uuid <%= object.uuid %>
 </pre>
 
