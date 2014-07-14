@@ -10,7 +10,7 @@ class JobTaskTest < ActiveSupport::TestCase
 
   test "assigned qsequence is not overwritten" do
     set_user_from_auth :active
-    task = JobTask.create(qsequence: 99)
+    task = JobTask.create!(qsequence: 99)
     assert_equal(99, task.qsequence)
   end
 end
