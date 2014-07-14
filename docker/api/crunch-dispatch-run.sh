@@ -14,6 +14,9 @@ export CRUNCH_JOB_BIN=/usr/src/arvados/services/crunch/crunch-job
 export HOME=`pwd`
 fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
 
+# Give the compute nodes some time to start up
+sleep 5
+
 cd /usr/src/arvados/services/api
 export RAILS_ENV=production
 /usr/local/rvm/bin/rvm-exec default bundle install

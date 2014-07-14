@@ -3,6 +3,9 @@
 FROM arvados/passenger
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
+# We need graphviz for the provenance graphs
+RUN apt-get update && apt-get install graphviz
+
 # Update Arvados source
 RUN /bin/mkdir -p /usr/src/arvados/apps
 ADD generated/workbench.tar.gz /usr/src/arvados/apps/

@@ -3,10 +3,7 @@
 FROM arvados/slurm
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
-ADD apt.arvados.org.list /etc/apt/sources.list.d/
-RUN apt-key adv --keyserver pgp.mit.edu --recv 1078ECD7
-
-RUN apt-get update && apt-get -qqy install supervisor python-pip python-pyvcf python-gflags python-google-api-python-client python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse fuse crunchstat python-arvados-python-client python-arvados-fuse cron
+RUN apt-get update && apt-get -qqy install supervisor python-pip python-pyvcf python-gflags python-google-api-python-client python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse fuse crunchstat python-arvados-fuse cron
 
 ADD fuse.conf /etc/fuse.conf
 
@@ -19,9 +16,6 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D78692
 RUN apt-get update -qq && apt-get install -qqy lxc-docker
 
 RUN addgroup --gid 4005 crunch && mkdir /home/crunch && useradd --uid 4005 --gid 4005 crunch && usermod crunch -G fuse,docker && chown crunch:crunch /home/crunch
-
-# Fix /dev/fuse permissions/ownership
-RUN chmod 1660 /dev/fuse && chgrp fuse /dev/fuse
 
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf

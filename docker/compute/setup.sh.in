@@ -16,3 +16,5 @@ echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/
 # Send a ping now
 /usr/bin/curl -k -d ping_secret=$PING_SECRET https://api/arvados/v1/nodes/$UUID/ping?ping_secret=$PING_SECRET
 
+# Just make sure /dev/fuse permissions are correct (the device appears after fuse is loaded)
+chmod 1660 /dev/fuse && chgrp fuse /dev/fuse
