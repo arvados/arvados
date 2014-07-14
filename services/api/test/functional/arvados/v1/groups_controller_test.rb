@@ -83,20 +83,37 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     check_project_contents_response
   end
 
-  # Even though the next two tests go through other controllers, I'm
-  # putting them here so they're easy to find alongside the other
+  # Even though the project_viewer tests go through other controllers,
+  # I'm putting them here so they're easy to find alongside the other
   # project tests.
-  test "user with project read permission can't add users to it" do
+  def check_new_project_link_fails(link_attrs)
     @controller = Arvados::V1::LinksController.new
-    authorize_with :project_viewer
     post :create, link: {
-      tail_uuid: users(:spectator).uuid,
       link_class: "permission",
       name: "can_read",
       head_uuid: groups(:aproject).uuid,
-    }
-    # 404 seems like the best error, but that's not nailed down yet.
+    }.merge(link_attrs)
     assert_includes(403..422, response.status)
+  end
+
+  test "user with project read permission can't add users to it" do
+    authorize_with :project_viewer
+    check_new_project_link_fails(tail_uuid: users(:spectator).uuid)
+  end
+
+  test "user with project read permission can't add items to it" do
+    authorize_with :project_viewer
+    check_new_project_link_fails(tail_uuid: collections(:baz_file).uuid)
+  end
+
+  test "user with project read permission can't rename items in it" do
+    authorize_with :project_viewer
+    @controller = Arvados::V1::LinksController.new
+    post :update, {
+      id: links(:job_name_in_aproject).uuid,
+      link: {name: "Denied test name"},
+    }
+    assert_includes(403..404, response.status)
   end
 
   test "user with project read permission can't remove items from it" do
@@ -108,6 +125,12 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         owner_uuid: users(:project_viewer).uuid,
       }
     }
+    assert_response 403
+  end
+
+  test "user with project read permission can't delete it" do
+    authorize_with :project_viewer
+    post :destroy, {id: groups(:aproject).uuid}
     assert_response 403
   end
 
