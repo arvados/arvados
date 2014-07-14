@@ -158,4 +158,19 @@ module CurrentApiClient
     $anonymous_user
   end
 
+  def empty_collection_uuid
+    'd41d8cd98f00b204e9800998ecf8427e+0'
+  end
+
+  def empty_collection
+    if not $empty_collection
+      act_as_system_user do
+        $empty_collection = Collection.
+          where(uuid: empty_collection_uuid).
+          first_or_create!(owner_uuid: anonymous_group_uuid,
+                           manifest_text: '')
+      end
+    end
+    $empty_collection
+  end
 end
