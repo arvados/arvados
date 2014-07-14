@@ -49,12 +49,17 @@ BASE_GENERATED = base/generated/arvados.tar.gz
 
 SLURM_GENERATED = slurm/generated/*
 
+COMPUTE_GENERATED = compute/generated/setup.sh
+
+COMPUTE_GENERATED_IN = compute/setup.sh.in
+
 API_GENERATED = \
         api/generated/apache2_vhost \
         api/generated/config_databases.sh \
         api/generated/database.yml \
         api/generated/omniauth.rb \
         api/generated/application.yml \
+        api/generated/setup.sh \
         api/generated/slurm.conf \
         api/generated/superuser_token
 
@@ -64,6 +69,7 @@ API_GENERATED_IN = \
         api/database.yml.in \
         api/omniauth.rb.in \
         api/application.yml.in \
+        api/setup.sh.in \
         api/slurm.conf.in \
         api/superuser_token.in
 
@@ -117,6 +123,8 @@ $(API_GENERATED): config.yml $(API_GENERATED_IN)
 $(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
 	$(CONFIG_RB)
 
+$(COMPUTE_GENERATED): config.yml $(COMPUTE_GENERATED_IN)
+
 $(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
 	$(CONFIG_RB)
 
@@ -134,12 +142,14 @@ DOCKER_BUILD = $(DOCKER) build -q --rm=true
 api-image: passenger-image $(BUILD) $(API_DEPS)
 	mkdir -p api/generated
 	tar -czf api/generated/api.tar.gz -C build/services api
+	chmod 755 api/generated/setup.sh
 	$(DOCKER_BUILD) -t arvados/api api
 	date >api-image
 
 slurm-image: base-image $(SLURM_DEPS)
 
 compute-image: slurm-image $(BUILD) $(COMPUTE_DEPS)
+	chmod 755 compute/generated/setup.sh
 	$(DOCKER_BUILD) -t arvados/compute compute
 	date >compute-image
 

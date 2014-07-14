@@ -1,15 +1,16 @@
 #!/bin/bash
 set -e
-export PATH="$PATH":/usr/local/arvados/src/services/crunch
-export PERLLIB=/usr/local/arvados/src/sdk/perl/lib
-export ARVADOS_API_HOST=qr1hi.arvadosapi.com
+export PATH="$PATH":/usr/src/arvados/services/crunch
+export PERLLIB=/usr/src/arvados/sdk/perl/lib
+export ARVADOS_API_HOST=api
+export ARVADOS_API_HOST_INSECURE=yes
 export CRUNCH_DISPATCH_LOCKFILE=/var/lock/crunch-dispatch
 
 if [[ ! -e $CRUNCH_DISPATCH_LOCKFILE ]]; then
   touch $CRUNCH_DISPATCH_LOCKFILE
 fi
 
-export CRUNCH_JOB_BIN=/usr/local/arvados/src/services/crunch/crunch-job
+export CRUNCH_JOB_BIN=/usr/src/arvados/services/crunch/crunch-job
 export HOME=`pwd`
 fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
 

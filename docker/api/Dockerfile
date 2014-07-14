@@ -7,21 +7,14 @@ MAINTAINER Tim Pierce <twp@curoverse.com>
 # Clone a git repository of Arvados source -- not used to build, but
 # will be used by the Commit model and anything else that needs to
 # check a git repo for crunch scripts.
-#
 RUN apt-get update && \
     apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 slurm-llnl munge \
-                          supervisor && \
+                          supervisor sudo libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
+                          libjson-perl && \
     git clone --bare git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
 
-# For crunch-dispatch
-#ADD apt.arvados.org.list /etc/apt/sources.list.d/
-
-#RUN apt-key adv --keyserver pgp.mit.edu --recv 1078ECD7 && apt-get update && \
-#RUN apt-get -q -y install libjson-perl libwww-perl libio-socket-ssl-perl libipc-system-simple-perl slurm-llnl munge
-#    apt-get -q -y install arvados-src libjson-perl libwww-perl libio-socket-ssl-perl libipc-system-simple-perl slurm-llnl munge
-
 ADD munge.key /etc/munge/
-RUN chown munge:munge /etc/munge/munge.key
+RUN chown munge:munge /etc/munge/munge.key && chmod 600 /etc/munge/munge.key
 ADD generated/slurm.conf /etc/slurm-llnl/
 
 RUN /usr/local/rvm/bin/rvm-exec default gem install arvados-cli arvados
@@ -61,9 +54,22 @@ RUN a2dissite default && \
     a2enmod ssl && \
     /bin/mkdir /var/run/apache2
 
+# Install a token for root
+RUN mkdir -p /root/.config/arvados; echo "ARVADOS_API_HOST=api" >> /root/.config/arvados/settings.conf && echo "ARVADOS_API_HOST_INSECURE=yes" >> /root/.config/arvados/settings.conf && echo "ARVADOS_API_TOKEN=$(cat /tmp/superuser_token)" >> /root/.config/arvados/settings.conf && chmod 600 /root/.config/arvados/settings.conf
+
+# Set up directory for job commit repo
+RUN mkdir -p /var/lib/arvados
+# Add crunch user
+RUN addgroup --gid 4005 crunch && mkdir /home/crunch && useradd --uid 4005 --gid 4005 crunch && chown crunch:crunch /home/crunch
+
+# Create keep and compute node objects
+ADD keep_server_0.json /root/
+ADD keep_server_1.json /root/
+
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
 ADD ssh.sh /usr/local/bin/ssh.sh
+ADD generated/setup.sh /usr/local/bin/setup.sh
 ADD crunch-dispatch-run.sh /usr/local/bin/crunch-dispatch-run.sh
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 

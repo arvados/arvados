@@ -47,7 +47,8 @@ function start_container {
         args="$args --hostname api -P --name $name"
       elif [[ "$name" == "compute" ]]; then
         name=$name$COMPUTE_COUNTER
-        args="$args --hostname compute$COMPUTE_COUNTER -P --name $name"
+        # We need --privileged because we run docker-inside-docker on the compute nodes
+        args="$args --hostname compute$COMPUTE_COUNTER -P --privileged --name $name"
         let COMPUTE_COUNTER=$(($COMPUTE_COUNTER + 1))
       else
         args="$args --name $name"
@@ -233,6 +234,16 @@ function do_start {
         start_keep=true
     fi
 
+    if [[ $start_sso != false ]]
+    then
+        start_container "$start_sso:443" "sso_server" '' '' "arvados/sso"
+    fi
+
+    if [[ $start_api != false ]]
+    then
+        start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
+    fi
+
     if [[ $start_nameserver != false ]]
     then
       # We rely on skydock and skydns for dns discovery between the slurm controller and compute nodes,
@@ -246,7 +257,7 @@ function do_start {
       if [[ "$?" != "0" ]]; then
         echo "Starting crosbymichael/skydns container..."
         $DOCKER rm "skydns" 2>/dev/null
-        $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -nameserver 8.8.4.4 -domain arvados
+        $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
       fi
       $DOCKER images | grep skydock >/dev/null
       if [[ "$?" != "0" ]]; then
@@ -259,16 +270,6 @@ function do_start {
         $DOCKER rm "skydock" 2>/dev/null
         $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
       fi
-    fi
-
-    if [[ $start_sso != false ]]
-    then
-        start_container "$start_sso:443" "sso_server" '' '' "arvados/sso"
-    fi
-
-    if [[ $start_api != false ]]
-    then
-        start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
     fi
 
     if [[ $start_compute != false ]]
