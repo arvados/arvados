@@ -61,4 +61,29 @@ class LinkTest < ActiveSupport::TestCase
       ob.destroy
     end
   end
+
+  def make_active_perm(perm_attrs)
+    set_user_from_auth :active
+    Link.create({link_class: "permission",
+                 name: "can_read",
+                 head_uuid: groups(:aproject).uuid,
+                }.merge(perm_attrs))
+  end
+
+  test "link granting permission to nonexistent user is invalid" do
+    link = make_active_perm(tail_uuid:
+                            users(:active).uuid.sub(/-\w+$/, "-#{'z' * 15}"))
+    refute link.valid?
+  end
+
+  test "link granting non-project permission to unreadable user is invalid" do
+    link = make_active_perm(tail_uuid: users(:admin).uuid,
+                            head_uuid: collections(:bar_file).uuid)
+    refute link.valid?
+  end
+
+  test "link granting project permissions to unreadable user is valid" do
+    link = make_active_perm(tail_uuid: users(:admin).uuid)
+    assert link.valid?
+  end
 end
