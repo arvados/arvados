@@ -5,7 +5,7 @@ class SelectTest < ActionDispatch::IntegrationTest
     get "/arvados/v1/links", {:format => :json, :select => ['uuid', 'link_class']}, auth(:active)
     assert_response :success
     assert_equal json_response['items'].count, json_response['items'].select { |i|
-      i.count == 2 and i['uuid'] != nil and i['link_class'] != nil
+      i.count == 3 and i['uuid'] != nil and i['link_class'] != nil
     }.count
   end
 
