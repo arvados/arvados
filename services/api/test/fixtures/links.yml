@@ -166,6 +166,20 @@ foo_file_readable_by_active_redundant_permission_via_private_group:
   head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   properties: {}
 
+foo_file_readable_by_aproject:
+  uuid: zzzzz-o0j2j-fp1d8395ldqw22p
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  link_class: permission
+  name: can_read
+  head_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  properties: {}
+
 bar_file_readable_by_active:
   uuid: zzzzz-o0j2j-8hppiuduf8eqdng
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -302,6 +316,20 @@ test_timestamps:
   updated_at: 2014-04-15 13:17:14 -0400
   link_class: test
   name: test
+  properties: {}
+
+project_viewer_can_read_project:
+  uuid: zzzzz-o0j2j-projviewerreadp
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-tpzed-projectviewer1a
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   properties: {}
 
 specimen_is_in_two_projects:

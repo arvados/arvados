@@ -52,13 +52,16 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.searchable_columns operator
     textonly_operator = !operator.match(/[<=>]/)
-    self.columns.collect do |col|
-      if [:string, :text].index(col.type)
-        col.name
-      elsif !textonly_operator and [:datetime, :integer].index(col.type)
-        col.name
+    self.columns.select do |col|
+      case col.type
+      when :string, :text
+        true
+      when :datetime, :integer, :boolean
+        !textonly_operator
+      else
+        false
       end
-    end.compact
+    end.map(&:name)
   end
 
   def self.attribute_column attr

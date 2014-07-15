@@ -50,6 +50,26 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
   end
 
+  test "reuse job with symbolic script_version" do
+    post :create, {
+      job: {
+        script: "hash",
+        script_version: "tag1",
+        repository: "foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
+      },
+      find_or_create: true
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_job = JSON.parse(@response.body)
+    assert_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
+    assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
+  end
+
   test "do not reuse job because no_reuse=true" do
     post :create, {
       job: {
@@ -550,5 +570,76 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
                     jobs(:previous_job_run).uuid)
     refute_includes(assigns(:objects).map { |job| job.uuid },
                     jobs(:previous_docker_job_run).uuid)
+  end
+
+  def create_foo_hash_job_params(params)
+    if not params.has_key?(:find_or_create)
+      params[:find_or_create] = true
+    end
+    job_attrs = params.delete(:job) || {}
+    params[:job] = {
+      script: "hash",
+      script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+      repository: "foo",
+      script_parameters: {
+        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+        an_integer: '1',
+      },
+    }.merge(job_attrs)
+    params
+  end
+
+  def check_new_job_created_from(params)
+    start_time = Time.now
+    post(:create, create_foo_hash_job_params(params))
+    assert_response :success
+    new_job = assigns(:object)
+    assert_not_nil new_job
+    assert_operator(start_time, :<=, new_job.created_at)
+    new_job
+  end
+
+  def check_errors_from(params)
+    post(:create, create_foo_hash_job_params(params))
+    assert_includes(405..499, @response.code.to_i)
+    errors = json_response.fetch("errors", [])
+    assert(errors.any?, "no errors assigned from #{params}")
+    refute(errors.any? { |msg| msg =~ /^#<[A-Za-z]+: / },
+           "errors include raw exception")
+    errors
+  end
+
+  # 1de84a8 is on the b1 branch, after master's tip.
+  test "new job created from unsatisfiable minimum version filter" do
+    filter_h = BASE_FILTERS.merge("script_version" => ["in git", "1de84a8"])
+    check_new_job_created_from(filters: filters_from_hash(filter_h))
+  end
+
+  test "new job created from unsatisfiable minimum version parameter" do
+    check_new_job_created_from(minimum_script_version: "1de84a8")
+  end
+
+  test "new job created from unsatisfiable minimum version attribute" do
+    check_new_job_created_from(job: {minimum_script_version: "1de84a8"})
+  end
+
+  test "graceful error from nonexistent minimum version filter" do
+    filter_h = BASE_FILTERS.merge("script_version" =>
+                                  ["in git", "__nosuchbranch__"])
+    errors = check_errors_from(filters: filters_from_hash(filter_h))
+    assert(errors.any? { |msg| msg.include? "__nosuchbranch__" },
+           "bad refspec not mentioned in error message")
+  end
+
+  test "graceful error from nonexistent minimum version parameter" do
+    errors = check_errors_from(minimum_script_version: "__nosuchbranch__")
+    assert(errors.any? { |msg| msg.include? "__nosuchbranch__" },
+           "bad refspec not mentioned in error message")
+  end
+
+  test "graceful error from nonexistent minimum version attribute" do
+    errors = check_errors_from(job: {minimum_script_version: "__nosuchbranch__"})
+    assert(errors.any? { |msg| msg.include? "__nosuchbranch__" },
+           "bad refspec not mentioned in error message")
   end
 end
