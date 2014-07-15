@@ -69,7 +69,7 @@ $(document).on('click', '.selectable', function() {
 $(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
     window.location.reload();
 }).on('tab-refresh', function(event, data, status, jqxhr, action_data) {
-    tab_name = $('.tab-pane.active')[0].id;
+    var tab_name = $('.tab-pane.active')[0].id;
     tab_pane_valid_state[tab_name] = false;
     ajaxRefreshTabPane(tab_name);
     $('body > .modal-container .modal').modal('hide');

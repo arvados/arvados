@@ -92,11 +92,11 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   def add_share_and_check(share_type, name)
+    assert(page.has_no_text?(name), "project is already shared with #{name}")
     start_share_count = count_shares
     click_on("Share with #{share_type}")
     find(".selectable", text: name).click
     find(".modal-footer a,button", text: "Add").click
-    # click_on "Sharing"; puts "FIXME: Manually re-clicking the Sharing tab shouldn't be necessary"
     assert(page.has_link?(name),
            "new share was not added to sharing table")
     assert_equal(start_share_count + 1, count_shares,
@@ -125,7 +125,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     show_project_using("project_viewer")
     click_on "Sharing"
     assert(page.has_text?("Project Viewer"), "did not find self on sharing tab")
-    assert(page.has_no_link?(/add a (user|group)/i),
+    assert(page.has_no_link?("Share with users"),
            "read-only project user given option to add permissions")
     assert_empty(all("#project_sharing a").
                  reject { |a| a[:href] =~ %r{/(users|groups)/[-0-9a-z]+$} },
@@ -138,8 +138,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     show_project_using("active")
     click_on "Sharing"
-    assert(page.has_no_text?(new_name),
-           "project is already shared with user to add")
     add_share_and_check("users", new_name)
     modify_share_and_check(new_name)
   end
@@ -149,8 +147,6 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     show_project_using("active")
     click_on "Sharing"
-    assert(page.has_no_text?(new_name),
-           "project is already shared with group to add")
     add_share_and_check("groups", new_name)
     modify_share_and_check(new_name)
   end

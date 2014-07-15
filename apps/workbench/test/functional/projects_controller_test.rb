@@ -15,8 +15,8 @@ class ProjectsControllerTest < ActionController::TestCase
                  api_fixture("users")["future_project_user"]["uuid"]]
     post(:share_with, {
            id: api_fixture("groups")["asubproject"]["uuid"],
-           format: "json",
-           uuids: uuid_list},
+           uuids: uuid_list,
+           format: "json"},
          session_for(:active))
     assert_response :success
     json_response = Oj.load(@response.body)
