@@ -598,14 +598,21 @@ func GetBlock(hash string) ([]byte, error) {
 				//
 				log.Printf("%s: checksum mismatch for request %s (actual %s)\n",
 					vol, hash, filehash)
-				error_to_caller := DiskHashError
+				error_to_caller = DiskHashError
 			} else {
 				// Success!
+				if error_to_caller != NotFoundError {
+						log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned\n",
+							vol, hash)
+				}
 				return buf, nil
 			}
 		}
 	}
 
+  if error_to_caller != NotFoundError {
+    log.Printf("%s: checksum mismatch, no good copy found\n", hash)
+  }
 	return nil, error_to_caller
 }
 
@@ -640,7 +647,7 @@ func PutBlock(block []byte, hash string) error {
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
 		log.Printf("%s: MD5 checksum %s did not match request", hash, blockhash)
-		return MD5Error
+		return RequestHashError
 	}
 
 	// If we already have a block on disk under this identifier, return
