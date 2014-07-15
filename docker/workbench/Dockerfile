@@ -8,15 +8,13 @@ RUN /bin/mkdir -p /usr/src/arvados/apps
 ADD generated/workbench.tar.gz /usr/src/arvados/apps/
 RUN /bin/cp /usr/src/arvados/apps/workbench/config/environments/production.rb.example /usr/src/arvados/apps/workbench/config/environments/production.rb
 ADD generated/application.yml /usr/src/arvados/apps/workbench/config/application.yml
-ADD passenger.conf /etc/apache2/conf.d/passenger
 
-
-RUN bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
+RUN /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/apps/workbench/Gemfile && \
     touch /usr/src/arvados/apps/workbench/log/production.log && \
     chmod 666 /usr/src/arvados/apps/workbench/log/production.log && \
     touch /usr/src/arvados/apps/workbench/db/production.sqlite3 && \
     cd /usr/src/arvados/apps/workbench && \
-    rake assets:precompile && \
+    /usr/local/rvm/bin/rvm-exec default bundle exec rake assets:precompile && \
     chown -R www-data:www-data /usr/src/arvados/apps/workbench
 
 # Configure Apache

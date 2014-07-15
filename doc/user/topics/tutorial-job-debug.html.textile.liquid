@@ -20,6 +20,7 @@ Change to your Git working directory and create a new script in @crunch_scripts/
 #!/usr/bin/env python
 
 print "hello world"
+print "this script will fail, and that is expected!"
 EOF</span>
 ~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hello-world.py</span>
 </code></pre>
@@ -58,6 +59,7 @@ Your shell should fill in values for @$HOME@ and @$USER@ so that the saved JSON 
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 child 29834 started on localhost.1
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  status: 0 done, 1 running, 0 todo
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr this script will fail, and that is expected!
 2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 child 29834 on localhost.1 exit 0 signal 0 success=
 2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 failure (#1, permanent) after 0 seconds
 2013-12-12_21:36:43 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 output
@@ -71,9 +73,10 @@ Your shell should fill in values for @$HOME@ and @$USER@ so that the saved JSON 
 </code></pre>
 </notextile>
 
-This is the line of interest:
+These are the lines of interest:
 
 bc. 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr this script will fail, and that is expected!
 
 The script's output is captured in the log, which is useful for print statement debugging. However, although this script returned a status code of 0 (success), the job failed.  Why?  For a job to complete successfully scripts must explicitly add their output to Keep, and then tell Arvados about it.  Here is a second try:
 

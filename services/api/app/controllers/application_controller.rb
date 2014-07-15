@@ -351,6 +351,14 @@ class ApplicationController < ActionController::Base
   accept_param_as_json :reader_tokens, Array
 
   def render_list
+    if @select
+      # This information helps clients understand what they're seeing
+      # (Workbench always expects it), but they can't select it explicitly
+      # because it's not an SQL column.  Always add it.
+      # I believe this is safe because clients can always deduce what they're
+      # looking at by the returned UUID anyway.
+      @select |= ["kind"]
+    end
     @object_list = {
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",

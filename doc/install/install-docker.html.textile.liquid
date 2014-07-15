@@ -80,6 +80,20 @@ arvados/debian      latest              6e32119ffcd0        8 minutes ago       
 arvados/debian      wheezy              6e32119ffcd0        8 minutes ago        116.8 MB
 </code></pre></notextile>
 
+h2. Updating the Arvados Docker containers
+
+If there has been an update to the Arvados Docker building code, it is safest to rebuild the Arvados Docker images from scratch. All build information can be cleared with the '--clean' option to build.sh:
+
+<notextile>
+<pre><code>~$ <span class="userinput">./build.sh --clean</span></code></pre>
+</notextile>
+
+You can also use '--realclean', which does what '--clean' does and in addition removes all Arvados Docker containers and images from your system.
+
+<notextile>
+<pre><code>~$ <span class="userinput">./build.sh --realclean</span></code></pre>
+</notextile>
+
 h2. Running the Arvados Docker containers
 
 The @arvdock@ command can be used to start and stop the docker containers. It has a number of options:

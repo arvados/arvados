@@ -27,21 +27,20 @@ ADD generated/apache2_vhost /etc/apache2/sites-available/arvados
 ENV RAILS_ENV production
 ADD generated/config_databases.sh /tmp/config_databases.sh
 ADD generated/superuser_token /tmp/superuser_token
-RUN bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
+RUN /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvados/services/api/Gemfile && \
     sh /tmp/config_databases.sh && \
     rm /tmp/config_databases.sh && \
     /etc/init.d/postgresql start && \
     cd /usr/src/arvados/services/api && \
-    rake db:setup && \
-    rake assets:precompile && \
-    ./script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
+    /usr/local/rvm/bin/rvm-exec default bundle exec rake db:setup && \
+    /usr/local/rvm/bin/rvm-exec default bundle exec rake assets:precompile && \
+    /usr/local/rvm/bin/rvm-exec default ./script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
     chown www-data:www-data config.ru && \
     chown www-data:www-data log -R && \
     mkdir -p tmp && \
     chown www-data:www-data tmp -R
 
 # Configure Apache and Passenger.
-ADD passenger.conf /etc/apache2/conf.d/passenger
 RUN a2dissite default && \
     a2ensite arvados && \
     a2enmod rewrite && \
@@ -50,6 +49,7 @@ RUN a2dissite default && \
 
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
+ADD ssh.sh /usr/local/bin/ssh.sh
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
 # Start the supervisor.

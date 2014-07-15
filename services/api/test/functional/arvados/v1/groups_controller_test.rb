@@ -54,6 +54,15 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items_available']
   end
 
+  def check_project_contents_response
+    assert_response :success
+    assert_operator 2, :<=, json_response['items_available']
+    assert_operator 2, :<=, json_response['items'].count
+    kinds = json_response['items'].collect { |i| i['kind'] }.uniq
+    expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
+    assert_equal expect_kinds, (expect_kinds & kinds)
+  end
+
   test 'get group-owned objects' do
     authorize_with :active
     get :contents, {
@@ -61,12 +70,68 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json,
       include_linked: true,
     }
-    assert_response :success
-    assert_operator 2, :<=, json_response['items_available']
-    assert_operator 2, :<=, json_response['items'].count
-    kinds = json_response['items'].collect { |i| i['kind'] }.uniq
-    expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
-    assert_equal expect_kinds, (expect_kinds & kinds)
+    check_project_contents_response
+  end
+
+  test "user with project read permission can see project objects" do
+    authorize_with :project_viewer
+    get :contents, {
+      id: groups(:aproject).uuid,
+      format: :json,
+      include_linked: true,
+    }
+    check_project_contents_response
+  end
+
+  # Even though the project_viewer tests go through other controllers,
+  # I'm putting them here so they're easy to find alongside the other
+  # project tests.
+  def check_new_project_link_fails(link_attrs)
+    @controller = Arvados::V1::LinksController.new
+    post :create, link: {
+      link_class: "permission",
+      name: "can_read",
+      head_uuid: groups(:aproject).uuid,
+    }.merge(link_attrs)
+    assert_includes(403..422, response.status)
+  end
+
+  test "user with project read permission can't add users to it" do
+    authorize_with :project_viewer
+    check_new_project_link_fails(tail_uuid: users(:spectator).uuid)
+  end
+
+  test "user with project read permission can't add items to it" do
+    authorize_with :project_viewer
+    check_new_project_link_fails(tail_uuid: collections(:baz_file).uuid)
+  end
+
+  test "user with project read permission can't rename items in it" do
+    authorize_with :project_viewer
+    @controller = Arvados::V1::LinksController.new
+    post :update, {
+      id: links(:job_name_in_aproject).uuid,
+      link: {name: "Denied test name"},
+    }
+    assert_includes(403..404, response.status)
+  end
+
+  test "user with project read permission can't remove items from it" do
+    @controller = Arvados::V1::PipelineTemplatesController.new
+    authorize_with :project_viewer
+    post :update, {
+      id: links(:template_name_in_aproject).head_uuid,
+      pipeline_template: {
+        owner_uuid: users(:project_viewer).uuid,
+      }
+    }
+    assert_response 403
+  end
+
+  test "user with project read permission can't delete it" do
+    authorize_with :project_viewer
+    post :destroy, {id: groups(:aproject).uuid}
+    assert_response 403
   end
 
   test 'get group-owned objects with limit' do
