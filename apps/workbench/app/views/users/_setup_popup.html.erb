@@ -1,4 +1,4 @@
-<div class="modal-dialog">
+<div class="modal-dialog modal-with-loading-spinner">
   <div class="modal-content">
 
     <%= form_tag setup_user_path, {id: 'setup_form', name: 'setup_form', method: 'get',
@@ -6,7 +6,11 @@
 
     <div class="modal-header">
       <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-      <h4 class="modal-title">Setup User</h4>
+      <div>
+        <div class="col-sm-6"> <h4 class="modal-title">Setup User</h4> </div>
+        <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
+      </div>
+      <br/>
     </div>
 
     <div class="modal-body">

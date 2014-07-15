@@ -29,6 +29,13 @@ jQuery(function($){
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         }
     });
+
+    $(document).ajaxStart(function(){
+      $('.modal-with-loading-spinner .spinner').show();
+    }).ajaxStop(function(){
+      $('.modal-with-loading-spinner .spinner').hide();
+    });
+
     $('[data-toggle=tooltip]').tooltip();
 
     $('.expand-collapse-row').on('click', function(event) {
