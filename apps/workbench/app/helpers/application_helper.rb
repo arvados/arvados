@@ -393,38 +393,39 @@ module ApplicationHelper
     end
   end
 
-  def fa_icon_class_for_object object
-    case object.class.to_s.to_sym
-    when :User
-      'fa-user'
-    when :Group
+  RESOURCE_CLASS_ICONS = {
+    "Collection" => "fa-archive",
+    "Group" => "fa-users",
+    "Human" => "fa-male",  # FIXME: Use a more inclusive icon.
+    "Job" => "fa-gears",
+    "KeepDisk" => "fa-hdd-o",
+    "KeepService" => "fa-exchange",
+    "Link" => "fa-arrows-h",
+    "Node" => "fa-cloud",
+    "PipelineInstance" => "fa-gears",
+    "PipelineTemplate" => "fa-gears",
+    "Repository" => "fa-code-fork",
+    "Specimen" => "fa-flask",
+    "Trait" => "fa-clipboard",
+    "User" => "fa-user",
+    "VirtualMachine" => "fa-terminal",
+  }
+  DEFAULT_ICON_CLASS = "fa-cube"
+
+  def fa_icon_class_for_class(resource_class, default=DEFAULT_ICON_CLASS)
+    RESOURCE_CLASS_ICONS.fetch(resource_class.to_s, default)
+  end
+
+  def fa_icon_class_for_uuid(uuid, default=DEFAULT_ICON_CLASS)
+    fa_icon_class_for_class(resource_class_for_uuid(uuid), default)
+  end
+
+  def fa_icon_class_for_object(object, default=DEFAULT_ICON_CLASS)
+    case class_name = object.class.to_s
+    when "Group"
       object.group_class ? 'fa-folder' : 'fa-users'
-    when :Job, :PipelineInstance, :PipelineTemplate
-      'fa-gears'
-    when :Collection
-      'fa-archive'
-    when :Specimen
-      'fa-flask'
-    when :Trait
-      'fa-clipboard'
-    when :Human
-      'fa-male'
-    when :VirtualMachine
-      'fa-terminal'
-    when :Repository
-      'fa-code-fork'
-    when :Link
-      'fa-arrows-h'
-    when :User
-      'fa-user'
-    when :Node
-      'fa-cloud'
-    when :KeepService
-      'fa-exchange'
-    when :KeepDisk
-      'fa-hdd-o'
     else
-      'fa-cube'
+      RESOURCE_CLASS_ICONS.fetch(class_name, default)
     end
   end
 end
