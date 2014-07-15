@@ -50,6 +50,26 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
   end
 
+  test "reuse job with symbolic script_version" do
+    post :create, {
+      job: {
+        script: "hash",
+        script_version: "tag1",
+        repository: "foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
+      },
+      find_or_create: true
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_job = JSON.parse(@response.body)
+    assert_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
+    assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
+  end
+
   test "do not reuse job because no_reuse=true" do
     post :create, {
       job: {
