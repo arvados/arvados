@@ -24,6 +24,7 @@ ArvadosWorkbench::Application.routes.draw do
   match '/logout' => 'sessions#destroy', via: [:get, :post]
   get '/logged_out' => 'sessions#index'
   resources :users do
+    get 'choose', :on => :collection
     get 'home', :on => :member
     get 'welcome', :on => :collection
     get 'activity', :on => :collection
@@ -35,7 +36,9 @@ ArvadosWorkbench::Application.routes.draw do
   resources :logs
   resources :factory_jobs
   resources :uploaded_datasets
-  resources :groups
+  resources :groups do
+    get 'choose', on: :collection
+  end
   resources :specimens
   resources :pipeline_templates do
     get 'choose', on: :collection

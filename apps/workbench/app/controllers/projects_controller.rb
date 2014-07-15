@@ -8,7 +8,7 @@ class ProjectsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Contents Permissions Advanced)
+    %w(Contents Sharing Advanced)
   end
 
   def remove_item
@@ -83,6 +83,11 @@ class ProjectsController < ApplicationController
     @share_links = Link.filter([['head_uuid', '=', @object.uuid],
                                 ['link_class', '=', 'permission']])
     @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
+    @users = User.limit(10000).
+      select(["uuid", "is_active", "first_name", "last_name"]).
+      filter([['is_active', '=', 'true']])
+    @groups = Group.limit(10000).
+      select(["uuid", "name", "description"])
 
     @objects_and_names = []
     @objects.each do |object|
@@ -118,6 +123,20 @@ class ProjectsController < ApplicationController
       end
     else
       super
+    end
+  end
+
+  helper_method :managed_by_user?
+  def managed_by_user?(user=nil)
+    user ||= current_user
+    if user.nil?
+      false
+    else
+      user_uuid = user.uuid
+      user.is_admin or (user_uuid == @object.owner_uuid) or
+        @share_links.any? { |link|
+          (link.tail_uuid == user_uuid) and (link.name == "can_manage")
+        }
     end
   end
 
