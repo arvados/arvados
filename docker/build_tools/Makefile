@@ -54,6 +54,7 @@ COMPUTE_GENERATED = compute/generated/setup.sh
 COMPUTE_GENERATED_IN = compute/setup.sh.in
 
 API_GENERATED = \
+        api/generated/arvados-clients.yml \
         api/generated/apache2_vhost \
         api/generated/config_databases.sh \
         api/generated/database.yml \
@@ -64,6 +65,7 @@ API_GENERATED = \
         api/generated/superuser_token
 
 API_GENERATED_IN = \
+        api/arvados-clients.yml.in \
         api/apache2_vhost.in \
         api/config_databases.sh.in \
         api/database.yml.in \

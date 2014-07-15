@@ -9,7 +9,6 @@ export ARVADOS_API_HOST_INSECURE=yes
 export ARVADOS_API_TOKEN=@@API_SUPERUSER_SECRET@@
 
 # All users group
-
 prefix=`arv --format=uuid user current | cut -d- -f1`
 read -rd $'\000' newgroup <<EOF; arv group create --group "$newgroup"
 {
@@ -44,4 +43,3 @@ grep -q keep_server_1 /tmp/keep_service.list
 if [[ "$?" != "0" ]]; then
   arv keep_service create --keep-service "$(cat /root/keep_server_1.json)"
 fi
-

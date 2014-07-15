@@ -10,7 +10,7 @@ MAINTAINER Tim Pierce <twp@curoverse.com>
 RUN apt-get update && \
     apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 slurm-llnl munge \
                           supervisor sudo libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
-                          libjson-perl && \
+                          libjson-perl cron && \
     git clone --bare git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
 
 ADD munge.key /etc/munge/
@@ -66,10 +66,16 @@ RUN addgroup --gid 4005 crunch && mkdir /home/crunch && useradd --uid 4005 --gid
 ADD keep_server_0.json /root/
 ADD keep_server_1.json /root/
 
+# Set up update-gitolite.rb
+RUN mkdir /usr/local/arvados/config -p
+ADD generated/arvados-clients.yml /usr/local/arvados/config/
+ADD update-gitolite.rb /usr/local/arvados/
+
 # Supervisor.
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
 ADD ssh.sh /usr/local/bin/ssh.sh
 ADD generated/setup.sh /usr/local/bin/setup.sh
+ADD setup-gitolite.sh /usr/local/bin/setup-gitolite.sh
 ADD crunch-dispatch-run.sh /usr/local/bin/crunch-dispatch-run.sh
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 
