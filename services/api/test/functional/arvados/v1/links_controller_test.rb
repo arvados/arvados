@@ -283,4 +283,15 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     }
     assert_response 422
   end
+
+  test "project owner sees project's permission links" do
+    authorize_with :active
+    get :index, filters: [['head_uuid', '=', groups(:aproject).uuid]]
+    uuid_list = assigns(:objects).andand.map(&:uuid)
+    assert_not_nil(uuid_list, "no index objects assigned")
+    [:admin_can_write_aproject, :project_viewer_can_read_project].each do |lsym|
+      assert_includes(uuid_list, links(lsym).uuid,
+                      "#{lsym} missing from project permission index")
+    end
+  end
 end
