@@ -9,4 +9,17 @@ class ProjectsControllerTest < ActionController::TestCase
     assert_template 'user_agreements/index',
     "Inactive user was not presented with a user agreement at the front page"
   end
+
+  test "sharing a project with a user and group" do
+    uuid_list = [api_fixture("groups")["future_project_viewing_group"]["uuid"],
+                 api_fixture("users")["future_project_user"]["uuid"]]
+    post(:share_with, {
+           id: api_fixture("groups")["asubproject"]["uuid"],
+           format: "json",
+           uuids: uuid_list},
+         session_for(:active))
+    assert_response :success
+    json_response = Oj.load(@response.body)
+    assert_equal(uuid_list, json_response["success"])
+  end
 end
