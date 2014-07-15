@@ -20,16 +20,16 @@
       </div>
     </div>
     <div class="col-sm-4 pull-right">
-      <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-contents tbody"/>
+      <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-<%= tab_name %> tbody"/>
     </div>
   </div>
 
-  <table class="table table-condensed table-fixedlayout arv-index arv-project-contents" style="overflow-x: hidden">
+  <table class="table table-condensed table-fixedlayout arv-index arv-project-<%= tab_name %>" style="overflow-x: hidden">
     <colgroup>
       <col width="40%" />
       <col width="60%" />
     </colgroup>
-    <tbody data-infinite-scroller="#<%=scroller%>-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: page_offset, filters: "#{filters}") if page_offset %>">
+    <tbody data-infinite-scroller="#<%= tab_name %>-scroll" data-infinite-content-href="<%= url_for(format: :json, partial: :contents_rows, offset: page_offset, filters: "#{filters}") if page_offset %>">
       <%= render partial: 'show_contents_rows', locals: {project: @object, objects_and_names: objects_and_names} %>
     </tbody>
     <thead>
