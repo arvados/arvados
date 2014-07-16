@@ -1,9 +1,5 @@
 #!/usr/bin/env ruby
 
-###################################################################
-#  THIS FILE IS MANAGED BY PUPPET -- CHANGES WILL BE OVERWRITTEN  #
-###################################################################
-
 require 'rubygems'
 require 'pp'
 require 'arvados'
@@ -143,12 +139,12 @@ begin
   Dir.glob(gitolite_admin + '/keydir/arvados/*.pub') do |key_file|
     next if key_file =~ /arvados_git_user.pub$/
     next if @seen.has_key?(key_file)
-    puts "Extra file #{key_file}" 
+    puts "Extra file #{key_file}"
     @commit = true
     Dir.chdir(gitolite_admin)
     key_file.gsub!(/^#{gitolite_admin}\//,'')
     `git rm #{key_file}`
-  end 
+  end
 
   if @commit then
     message = "#{Time.now().to_s}: update from API"

@@ -22,13 +22,13 @@ all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
 repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api:arvados.git","push_url":"git@api:arvados.git"}'`
 echo "Arvados repository uuid is $repo_uuid"
 
-read -rd $'\000' newlink <<EOF; arv link create --link "$newlink" 
+read -rd $'\000' newlink <<EOF; arv link create --link "$newlink"
 {
  "tail_uuid":"$all_users_group_uuid",
  "head_uuid":"$repo_uuid",
  "link_class":"permission",
- "name":"can_read" 
-}                                         
+ "name":"can_read"
+}
 EOF
 
 # Make sure the necessary keep_service objects exist
