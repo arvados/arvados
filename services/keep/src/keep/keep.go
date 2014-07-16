@@ -602,17 +602,17 @@ func GetBlock(hash string) ([]byte, error) {
 			} else {
 				// Success!
 				if error_to_caller != NotFoundError {
-						log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned\n",
-							vol, hash)
+					log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned\n",
+						vol, hash)
 				}
 				return buf, nil
 			}
 		}
 	}
 
-  if error_to_caller != NotFoundError {
-    log.Printf("%s: checksum mismatch, no good copy found\n", hash)
-  }
+	if error_to_caller != NotFoundError {
+		log.Printf("%s: checksum mismatch, no good copy found\n", hash)
+	}
 	return nil, error_to_caller
 }
 
