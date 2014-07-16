@@ -100,8 +100,8 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 	// Check that GetBlock returns failure.
 	result, err := GetBlock(TEST_HASH)
-	if err != CorruptError {
-		t.Errorf("Expected CorruptError, got %v (buf: %v)", err, result)
+	if err != DiskHashError {
+		t.Errorf("Expected DiskHashError, got %v (buf: %v)", err, result)
 	}
 }
 
@@ -178,8 +178,8 @@ func TestPutBlockMD5Fail(t *testing.T) {
 
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
-	if err := PutBlock(BAD_BLOCK, TEST_HASH); err != MD5Error {
-		t.Error("Expected MD5Error, got %v", err)
+	if err := PutBlock(BAD_BLOCK, TEST_HASH); err != RequestHashError {
+		t.Error("Expected RequestHashError, got %v", err)
 	}
 
 	// Confirm that GetBlock fails to return anything.
