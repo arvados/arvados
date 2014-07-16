@@ -82,6 +82,30 @@ class LinkTest < ActiveSupport::TestCase
     refute link.valid?
   end
 
+  test "user can't add a Collection to a Project without permission" do
+    link = make_active_perm(link_class: "name",
+                            name: "Permission denied test name",
+                            tail_uuid: collections(:bar_file).uuid)
+    begin
+      refute link.valid?
+    rescue ArvadosModel::PermissionDeniedError
+      # That's good enough.
+    end
+  end
+
+  test "user can't add a User to a Project" do
+    # Users *can* give other users permissions to projects.
+    # This test helps ensure that that exception is specific to permissions.
+    link = make_active_perm(link_class: "name",
+                            name: "Permission denied test name",
+                            tail_uuid: users(:admin).uuid)
+    begin
+      refute link.valid?
+    rescue ArvadosModel::PermissionDeniedError => e
+      # That's good enough.
+    end
+  end
+
   test "link granting project permissions to unreadable user is valid" do
     link = make_active_perm(tail_uuid: users(:admin).uuid)
     assert link.valid?

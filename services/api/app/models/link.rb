@@ -108,7 +108,8 @@ class Link < ArvadosModel
   # A user can give all other users permissions on folders.
   def skip_uuid_read_permission_check
     skipped_attrs = super
-    if (ArvadosModel.resource_class_for_uuid(head_uuid) == Group) and
+    if link_class == "permission" and
+        (ArvadosModel.resource_class_for_uuid(head_uuid) == Group) and
         (ArvadosModel.resource_class_for_uuid(tail_uuid) == User)
       skipped_attrs << "tail_uuid"
     end
