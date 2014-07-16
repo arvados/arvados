@@ -19,7 +19,7 @@ EOF
 
 # Arvados repository object
 all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
-repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados"}'`
+repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados","fetch_url":"git@api:arvados.git","push_url":"git@api:arvados.git"}'`
 echo "Arvados repository uuid is $repo_uuid"
 
 read -rd $'\000' newlink <<EOF; arv link create --link "$newlink" 

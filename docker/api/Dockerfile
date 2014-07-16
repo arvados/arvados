@@ -4,14 +4,10 @@ FROM arvados/passenger
 MAINTAINER Tim Pierce <twp@curoverse.com>
 
 # Install postgres and apache.
-# Clone a git repository of Arvados source -- not used to build, but
-# will be used by the Commit model and anything else that needs to
-# check a git repo for crunch scripts.
 RUN apt-get update && \
     apt-get -q -y install procps postgresql postgresql-server-dev-9.1 apache2 slurm-llnl munge \
                           supervisor sudo libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
-                          libjson-perl cron && \
-    git clone --bare git://github.com/curoverse/arvados.git /var/cache/git/arvados.git
+                          libjson-perl cron
 
 ADD munge.key /etc/munge/
 RUN chown munge:munge /etc/munge/munge.key && chmod 600 /etc/munge/munge.key
@@ -75,7 +71,7 @@ ADD update-gitolite.rb /usr/local/arvados/
 ADD supervisor.conf /etc/supervisor/conf.d/arvados.conf
 ADD ssh.sh /usr/local/bin/ssh.sh
 ADD generated/setup.sh /usr/local/bin/setup.sh
-ADD setup-gitolite.sh /usr/local/bin/setup-gitolite.sh
+ADD generated/setup-gitolite.sh /usr/local/bin/setup-gitolite.sh
 ADD crunch-dispatch-run.sh /usr/local/bin/crunch-dispatch-run.sh
 ADD apache2_foreground.sh /etc/apache2/foreground.sh
 

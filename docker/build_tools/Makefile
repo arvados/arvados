@@ -61,6 +61,7 @@ API_GENERATED = \
         api/generated/omniauth.rb \
         api/generated/application.yml \
         api/generated/setup.sh \
+        api/generated/setup-gitolite.sh \
         api/generated/slurm.conf \
         api/generated/superuser_token
 
@@ -72,6 +73,7 @@ API_GENERATED_IN = \
         api/omniauth.rb.in \
         api/application.yml.in \
         api/setup.sh.in \
+        api/setup-gitolite.sh.in \
         api/slurm.conf.in \
         api/superuser_token.in
 
@@ -145,6 +147,7 @@ api-image: passenger-image $(BUILD) $(API_DEPS)
 	mkdir -p api/generated
 	tar -czf api/generated/api.tar.gz -C build/services api
 	chmod 755 api/generated/setup.sh
+	chmod 755 api/generated/setup-gitolite.sh
 	$(DOCKER_BUILD) -t arvados/api api
 	date >api-image
 
