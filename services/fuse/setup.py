@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+import os
+
+from setuptools import setup, find_packages
+
+README = os.path.join(os.path.dirname(__file__), 'README.rst')
 
 setup(name='arvados_fuse',
       version='0.1',
       description='Arvados FUSE driver',
+      long_description=open(README).read(),
       author='Arvados',
       author_email='info@arvados.org',
       url="https://arvados.org",
