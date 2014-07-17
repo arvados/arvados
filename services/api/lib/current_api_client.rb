@@ -165,10 +165,15 @@ module CurrentApiClient
   def empty_collection
     if not $empty_collection
       act_as_system_user do
-        $empty_collection = Collection.
-          where(uuid: empty_collection_uuid).
-          first_or_create!(owner_uuid: anonymous_group_uuid,
-                           manifest_text: '')
+        ActiveRecord::Base.transaction do
+          $empty_collection = Collection.
+            where(uuid: empty_collection_uuid).
+            first_or_create!(manifest_text: '')
+          Link.where(tail_uuid: anonymous_group_uuid,
+                     head_uuid: empty_collection_uuid,
+                     link_class: 'permission',
+                     name: 'can_read').first_or_create!
+        end
       end
     end
     $empty_collection
