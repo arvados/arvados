@@ -150,13 +150,13 @@ class ProjectsController < ApplicationController
       @errors = ["No user/group UUIDs specified to share with."]
       return render_error(status: 422)
     end
-    results = {"success" => [], "failure" => []}
+    results = {"success" => [], "failure" => {}}
     params[:uuids].each do |shared_uuid|
       begin
         Link.create(tail_uuid: shared_uuid, link_class: "permission",
                     name: "can_read", head_uuid: @object.uuid)
       rescue ArvadosApiClient::ApiError => error
-        results["failure"] << shared_uuid
+        results["failure"][shared_uuid] = error.api_response.andand[:errors]
       else
         results["success"] << shared_uuid
       end
