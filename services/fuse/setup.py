@@ -19,4 +19,6 @@ setup(name='arvados_fuse',
         'llfuse',
         'python-daemon'
         ],
+      test_suite='tests',
+      tests_require=['PyYAML'],
       zip_safe=False)

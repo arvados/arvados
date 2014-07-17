@@ -24,4 +24,6 @@ setup(name='arvados-python-client',
         'urllib3',
         'ws4py'
         ],
+      test_suite='tests',
+      tests_require=['PyYAML'],
       zip_safe=False)
