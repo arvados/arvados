@@ -98,7 +98,7 @@ class ProjectsController < ApplicationController
                                         project: @object
                                       }),
             next_page_href: (next_page_offset and
-                             url_for(offset: next_page_offset, partial: true))
+                             url_for(offset: next_page_offset, filters: params[:filters], partial: true))
           }
         }
       end
