@@ -5,15 +5,15 @@ function maybe_load_more_content() {
     var scrollHeight;
     var spinner, colspan;
     scrollHeight = scroller.scrollHeight || $('body')[0].scrollHeight;
-        var num_scrollers = $(window).data("arv-num-scrollers");
+    var num_scrollers = $(window).data("arv-num-scrollers");
     if ($(scroller).scrollTop() + $(scroller).height()
         >
-        scrollHeight - 50) {
-
-        for (var i = 0; i < num_scrollers; i++) {
+        scrollHeight - 50)
+    {
+      for (var i = 0; i < num_scrollers; i++) {
         $container = $($(this).data('infinite-container'+i));
         src = $container.attr('data-infinite-content-href');
-        if (!src)
+        if (!src || !$container.is(':visible'))
           continue;
 
         // Don't start another request until this one finishes
@@ -56,9 +56,10 @@ function maybe_load_more_content() {
                 $(this.container).attr('data-infinite-content-href', data.next_page_href);
             });
         break;
-        }
-    }
+     }
+   }
 }
+
 $(document).
     on('ready ajax:complete', function() {
         var num_scrollers = 0;
