@@ -80,14 +80,22 @@ class ProjectsController < ApplicationController
     @objects = @object.contents(limit: 50,
                                 include_linked: true,
                                 offset: params[:offset] || 0)
-    @share_links = Link.filter([['head_uuid', '=', @object.uuid],
-                                ['link_class', '=', 'permission']])
     @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
     @users = User.limit(10000).
       select(["uuid", "is_active", "first_name", "last_name"]).
       filter([['is_active', '=', 'true']])
     @groups = Group.limit(10000).
       select(["uuid", "name", "description"])
+
+    begin
+      @share_links = Link.permissions_for(@object)
+      @user_is_manager = true
+    rescue ArvadosApiClient::AccessForbiddenException,
+           ArvadosApiClient::NotFoundException
+      @share_links = Link.filter([['head_uuid', '=', @object.uuid],
+                                  ['link_class', '=', 'permission']])
+      @user_is_manager = false
+    end
 
     @objects_and_names = []
     @objects.each do |object|
@@ -123,20 +131,6 @@ class ProjectsController < ApplicationController
       end
     else
       super
-    end
-  end
-
-  helper_method :managed_by_user?
-  def managed_by_user?(user=nil)
-    user ||= current_user
-    if user.nil?
-      false
-    else
-      user_uuid = user.uuid
-      user.is_admin or (user_uuid == @object.owner_uuid) or
-        @share_links.any? { |link|
-          (link.tail_uuid == user_uuid) and (link.name == "can_manage")
-        }
     end
   end
 

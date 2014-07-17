@@ -13,7 +13,6 @@
      perms_json << {value: link_name, text: link_desc}
    end
    perms_json = perms_json.to_json
-   manager = managed_by_user?
    owner_icon = fa_icon_class_for_uuid(@object.owner_uuid)
    if owner_icon == "fa-users"
      owner_icon = "fa-folder"
@@ -23,7 +22,7 @@
    end
 %>
 
-<% if manager %>
+<% if @user_is_manager %>
 <div class="pull-right">
   <% ["users", "groups"].each do |share_class| %>
 
@@ -52,7 +51,7 @@
 <table id="project_sharing" class="topalign table" style="clear: both; margin-top: 1em;">
   <tr>
     <th>User/Group Name</th>
-    <th<%= raw(' colspan="2"') if manager %>>Project Access</th>
+    <th<%= raw(' colspan="2"') if @user_is_manager %>>Project Access</th>
   </tr>
 
   <% @share_links.andand.each do |link|
@@ -69,7 +68,7 @@
       <i class="fa fa-fw <%= fa_icon_class_for_uuid(link.tail_uuid) %>"></i>
       <%= link_to_if_arvados_object(link.tail_uuid, link_text: link_name) %>
     </td>
-    <% if manager %>
+    <% if @user_is_manager %>
     <td><%= link_to perm_name_desc_map[link.name], '#', {
       "data-emptytext" => "Read",
       "data-placement" => "bottom",

@@ -31,4 +31,30 @@ class ProjectsControllerTest < ActionController::TestCase
          session_for(:project_viewer))
     assert_response 422
   end
+
+  def user_can_manage(user_sym, group_key)
+    get(:show, {id: api_fixture("groups")[group_key]["uuid"]},
+        session_for(user_sym))
+    assigns(:user_is_manager)
+  end
+
+  test "admin can_manage aproject" do
+    assert user_can_manage(:admin, "aproject")
+  end
+
+  test "owner can_manage aproject" do
+    assert user_can_manage(:active, "aproject")
+  end
+
+  test "owner can_manage asubproject" do
+    assert user_can_manage(:active, "asubproject")
+  end
+
+  test "viewer can't manage aproject" do
+    refute user_can_manage(:project_viewer, "aproject")
+  end
+
+  test "viewer can't manage asubproject" do
+    refute user_can_manage(:project_viewer, "asubproject")
+  end
 end
