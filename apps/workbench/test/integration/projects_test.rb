@@ -29,6 +29,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     project_uuid = api_fixture('groups')['aproject']['uuid']
     specimen_uuid = api_fixture('specimens')['owned_by_aproject_with_no_name_link']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
+    click_link 'Other objects'
     within(".selection-action-container") do
       within (first('tr', text: 'Specimen')) do
         find(".fa-pencil").click
@@ -43,6 +44,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('.editable', text: 'Now I have a new name.')
     end
     visit current_path
+    click_link 'Other objects'
     within '.selection-action-container' do
       find '.editable', text: 'Now I have a new name.'
       page.assert_no_selector '.editable', text: 'Now I have a name.'
