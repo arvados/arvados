@@ -283,4 +283,71 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     }
     assert_response 422
   end
+
+  test "project owner can show a project permission" do
+    uuid = links(:project_viewer_can_read_project).uuid
+    authorize_with :active
+    get :show, id: uuid
+    assert_response :success
+    assert_equal(uuid, assigns(:object).andand.uuid)
+  end
+
+  test "admin can show a project permission" do
+    uuid = links(:project_viewer_can_read_project).uuid
+    authorize_with :admin
+    get :show, id: uuid
+    assert_response :success
+    assert_equal(uuid, assigns(:object).andand.uuid)
+  end
+
+  test "project viewer can't show others' project permissions" do
+    authorize_with :project_viewer
+    get :show, id: links(:admin_can_write_aproject).uuid
+    assert_response 404
+  end
+
+  test "requesting a nonexistent link returns 404" do
+    authorize_with :active
+    get :show, id: 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
+    assert_response 404
+  end
+
+  test "project owner can index project permissions" do
+    skip "Test tickles known bug"
+    # readable_by only lets users see permission links that relate to them
+    # directly.  It does not allow users to see permission links for groups
+    # they manage.
+    # We'd like to fix this general issue, but we haven't settled on a general
+    # way to do it that doesn't involve making readable_by ridiculously hairy.
+    # This test demonstrates the desired behavior once we're ready to tackle
+    # it.  In the meantime, clients should use /permissions to get this
+    # information.
+    authorize_with :active
+    get :index, filters: [['link_class', '=', 'permission'],
+                          ['head_uuid', '=', groups(:aproject).uuid]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map(&:uuid),
+                    links(:project_viewer_can_read_project).uuid)
+  end
+
+  test "admin can index project permissions" do
+    authorize_with :admin
+    get :index, filters: [['link_class', '=', 'permission'],
+                          ['head_uuid', '=', groups(:aproject).uuid]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_includes(assigns(:objects).map(&:uuid),
+                    links(:project_viewer_can_read_project).uuid)
+  end
+
+  test "project viewer can't index others' project permissions" do
+    authorize_with :project_viewer
+    get :index, filters: [['link_class', '=', 'permission'],
+                          ['head_uuid', '=', groups(:aproject).uuid],
+                          ['tail_uuid', '!=', users(:project_viewer).uuid]]
+    assert_response :success
+    assert_not_nil assigns(:objects)
+    assert_empty assigns(:objects)
+  end
 end
