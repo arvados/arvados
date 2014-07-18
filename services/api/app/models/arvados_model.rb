@@ -206,29 +206,23 @@ class ArvadosModel < ActiveRecord::Base
 
   def ensure_owner_uuid_is_permitted
     raise PermissionDeniedError if !current_user
-    if respond_to? :owner_uuid=
+    if new_record? and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
     end
-    if self.owner_uuid_changed?
-      if new_record?
-        return true
-      elsif current_user.uuid == self.owner_uuid or
-          current_user.can? write: self.owner_uuid
-        # current_user is, or has :write permission on, the new owner
-      else
-        logger.warn "User #{current_user.uuid} tried to change owner_uuid of #{self.class.to_s} #{self.uuid} to #{self.owner_uuid} but does not have permission to write to #{self.owner_uuid}"
+    if owner_uuid_changed? and owner_uuid_was
+      # Verify permission to write to existing owner
+      unless current_user.uuid == self.owner_uuid_was or
+          current_user.uuid == self.uuid or
+          current_user.can? write: self.owner_uuid_was
+        logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write existing owner_uuid #{owner_uuid_was}"
+        errors.add :owner_uuid, "cannot be changed without write permission on existing owner"
         raise PermissionDeniedError
       end
     end
-    if new_record?
-      return true
-    elsif current_user.uuid == self.owner_uuid_was or
-        current_user.uuid == self.uuid or
-        current_user.can? write: self.owner_uuid_was
-      # current user is, or has :write permission on, the previous owner
-      return true
-    else
-      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} but does not have permission to write #{self.owner_uuid_was}"
+    # Verify permission to write to new owner
+    unless current_user == self or current_user.can? write: owner_uuid
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
+      errors.add :owner_uuid, "cannot be changed without write permission on new owner"
       raise PermissionDeniedError
     end
   end
