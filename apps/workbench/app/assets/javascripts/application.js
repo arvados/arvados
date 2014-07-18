@@ -21,6 +21,7 @@
 //= require bootstrap/modal
 //= require bootstrap/button
 //= require bootstrap3-editable/bootstrap-editable
+//= require wiselinks
 //= require_tree .
 
 jQuery(function($){
@@ -177,4 +178,9 @@ jQuery(function($){
         fixer.duplicateTheadTr();
         fixer.fixThead();
     });
+
+    $(document).ready(function() {
+        window.wiselinks = new Wiselinks($('#top-nav-wrapper'));
+    });
+
 });
