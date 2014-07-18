@@ -130,11 +130,11 @@ class ArvadosModel < ActiveRecord::Base
       sql_params += [uuid_list, user_uuids]
 
       if sql_table == "links" and users_list.any?
-        # This row is a 'permission' or 'resources' link class that
-        # references a member of users_list or a group readable by
-        # those users.
+        # This row is a 'permission' or 'resources' link class
+        # The uuid for a member of users_list is referenced in either the head
+        # or tail of the link
         sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
-        sql_params += [uuid_list, uuid_list]
+        sql_params += [user_uuids, user_uuids]
       end
 
       if sql_table == "logs" and users_list.any?
