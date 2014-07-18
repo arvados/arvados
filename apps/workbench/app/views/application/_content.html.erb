@@ -44,8 +44,8 @@
         <% if i == 0 %>
           <%= render(partial: 'show_' + pane.downcase,
                      locals: { comparable: comparable, objects: @objects }) %>
-          <% else %>
-            <div class="spinner spinner-32px spinner-h-center"></div>
+        <% else %>
+          <div class="spinner spinner-32px spinner-h-center"></div>
         <% end %>
       </div>
     </div>

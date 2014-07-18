@@ -46,10 +46,4 @@
   <% end %>
 <% end %>
 
-<% if @object.state.in? %w(RunningOnServer RunningOnClient) %>
-  <% content_for :js do %>
-    setInterval(function(){$('a.refresh').click()}, 15000);
-  <% end %>
-<% end %>
-
 <%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.show_pane_list }%>
