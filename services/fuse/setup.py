@@ -4,7 +4,7 @@ import os
 
 from setuptools import setup, find_packages
 
-README = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'README.rst')
+README = os.path.join(os.path.dirname(__file__), 'README.rst')
 
 setup(name='arvados_fuse',
       version='0.1',
