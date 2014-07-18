@@ -160,7 +160,7 @@ if [[ "$ECODE" != "0" ]]; then
   EXITCODE=$(($EXITCODE + $ECODE))
 fi
 
-"$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1
+"$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
 "$VENVDIR/bin/pip" install dist/arvados-python-client-0.1.*.tar.gz
 
 ECODE=$?
@@ -183,7 +183,7 @@ if [[ "$ECODE" != "0" ]]; then
   EXITCODE=$(($EXITCODE + $ECODE))
 fi
 
-"$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1
+"$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
 "$VENVDIR/bin/pip" install dist/arvados_fuse-0.1.*.tar.gz
 
 ECODE=$?
