@@ -209,15 +209,17 @@ class ArvadosModel < ActiveRecord::Base
     if new_record? and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
     end
-    if owner_uuid_changed? and owner_uuid_was
-      # Verify permission to write to existing owner
-      unless current_user.uuid == self.owner_uuid_was or
-          current_user.uuid == self.uuid or
-          current_user.can? write: self.owner_uuid_was
-        logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write existing owner_uuid #{owner_uuid_was}"
-        errors.add :owner_uuid, "cannot be changed without write permission on existing owner"
-        raise PermissionDeniedError
-      end
+    # Verify permission to write to old owner (unless owner_uuid was
+    # nil -- or hasn't changed, in which case the following
+    # "permission to write to new owner" block will take care of us)
+    unless !owner_uuid_changed? or
+        owner_uuid_was.nil? or
+        current_user.uuid == self.owner_uuid_was or
+        current_user.uuid == self.uuid or
+        current_user.can? write: self.owner_uuid_was
+      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write old owner_uuid #{owner_uuid_was}"
+      errors.add :owner_uuid, "cannot be changed without write permission on old owner"
+      raise PermissionDeniedError
     end
     # Verify permission to write to new owner
     unless current_user == self or current_user.can? write: owner_uuid
