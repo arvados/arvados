@@ -258,7 +258,11 @@ class ApplicationController < ActionController::Base
       if @object.name and @object.name != ''
         @object.name = "Copy of #{@object.name}"
       else
-        @object.name = "Copy of unnamed #{@object.class_for_display.downcase}"
+        if @object.class.name == 'PipelineInstance'
+          @object.name = ""
+        else
+          @object.name = "Copy of unnamed #{@object.class_for_display.downcase}"
+        end
       end
     end
     @object.save!
