@@ -103,7 +103,7 @@ fi
 
 title "API server tests complete"
 
-# Keep 
+# Keep
 title "Starting Keep tests"
 cd "$WORKSPACE"
 cd services/keep/src/keep
@@ -150,9 +150,8 @@ cd "$WORKSPACE"
 cd sdk/python
 
 VENVDIR=$(mktemp -d)
-virtualenv --setuptools --system-site-packages "$VENVDIR"
-"$VENVDIR/bin/pip" install -e .
-GOPATH="$HOME/gocode" "$VENVDIR/bin/python" -m unittest discover tests
+virtualenv --setuptools "$VENVDIR"
+GOPATH="$HOME/gocode" "$VENVDIR/bin/python" setup.py test
 
 ECODE=$?
 
@@ -175,8 +174,7 @@ cd "$WORKSPACE"
 cd services/fuse
 
 # We reuse $VENVDIR from the Python SDK tests above
-"$VENVDIR/bin/pip" install -e .
-GOPATH="$HOME/gocode" "$VENVDIR/bin/python" -m unittest discover tests
+GOPATH="$HOME/gocode" "$VENVDIR/bin/python" setup.py test
 
 ECODE=$?
 
