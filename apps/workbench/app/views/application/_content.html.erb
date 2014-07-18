@@ -19,65 +19,25 @@
   <% end %>
 <% end %>
 
-<% content_for :js do %>
-  tab_pane_valid_state = {};
-
-  function ajaxRefreshTabPane(pane) {
-    if (!tab_pane_valid_state[pane]) {
-      tab_pane_valid_state[pane] = true;
-      $.ajax('<%=j url_for() %>?<%= raw(controller.request.query_string) %>&tab_pane='+pane, {dataType: 'html', type: 'GET'}).
-        done(function(data, status, jqxhr) {
-          $('#' + pane + ' > div > div').html(data);
-          ajaxRefreshTabPane(pane);
-        });
-    }
-  }
-
-  $(window).on('load', smart_scroll_fixup);
-  $(document).on('shown.bs.tab', 'ul.nav-tabs > li > a', smart_scroll_fixup);
-
-  $(document).on('shown.bs.tab', function(e) {
-    ajaxRefreshTabPane(e.target.id.slice(0, -4));
-  });
-
-  $(document).on('arv-log-event', function() {
-    <% pane_list.each do |pane| %>
-    tab_pane_valid_state['<%=j pane %>'] = false;
-    <% end %>
-    ajaxRefreshTabPane($('.tab-pane.active')[0].id);
-  });
-<% end %>
-
 <% content_for :tab_panes do %>
 
 <% comparable = controller.respond_to? :compare %>
 
 <ul class="nav nav-tabs">
   <% pane_list.each_with_index do |pane, i| %>
-    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab"> <%= pane.gsub('_', ' ') %></a></li>
+    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab" data-pane-content-url="<%= url_for(tab_pane: pane) %>"> <%= pane.gsub('_', ' ') %></a></li>
   <% end %>
 </ul>
 <div class="tab-content">
 <% pane_list.each_with_index do |pane, i| %>
   <div id="<%= pane %>"
-       class="tab-pane fade <%= 'in active' if i==0 %> arv-log-event-listener"
+       class="tab-pane fade <%= 'in active loaded' if i==0 %> arv-log-event-listener"
 <% if controller.action_name == "index" %>
        data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
 <% else %>
        data-object-uuid="<%= @object.uuid %>"
 <% end %>
   >
-
-<% content_for :js do %>
-  <% if i == 0 %>
-    tab_pane_valid_state['<%=j pane %>'] = true;
-  <% else %>
-    tab_pane_valid_state['<%=j pane %>'] = false;
-    $(document).on('ready', function() {
-      ajaxRefreshTabPane('<%=j pane %>');
-    });
-  <% end %>
-<% end %>
 
     <div id="<%= pane %>-scroll" style="margin-top:0.5em;">
       <div class="pane-content">
