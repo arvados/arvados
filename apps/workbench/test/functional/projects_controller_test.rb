@@ -35,7 +35,13 @@ class ProjectsControllerTest < ActionController::TestCase
   def user_can_manage(user_sym, group_key)
     get(:show, {id: api_fixture("groups")[group_key]["uuid"]},
         session_for(user_sym))
-    assigns(:user_is_manager)
+    is_manager = assigns(:user_is_manager)
+    assert_not_nil(is_manager, "user_is_manager flag not set")
+    if not is_manager
+      assert_empty(assigns(:share_links),
+                   "non-manager has share links set")
+    end
+    is_manager
   end
 
   test "admin can_manage aproject" do

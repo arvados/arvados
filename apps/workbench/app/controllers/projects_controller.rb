@@ -8,7 +8,11 @@ class ProjectsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Contents Sharing Advanced)
+    if @user_is_manager
+      %w(Contents Sharing Advanced)
+    else
+      %w(Contents Advanced)
+    end
   end
 
   def remove_item
@@ -92,8 +96,7 @@ class ProjectsController < ApplicationController
       @user_is_manager = true
     rescue ArvadosApiClient::AccessForbiddenException,
            ArvadosApiClient::NotFoundException
-      @share_links = Link.filter([['head_uuid', '=', @object.uuid],
-                                  ['link_class', '=', 'permission']])
+      @share_links = []
       @user_is_manager = false
     end
 

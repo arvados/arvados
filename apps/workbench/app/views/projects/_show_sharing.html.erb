@@ -22,7 +22,6 @@
    end
 %>
 
-<% if @user_is_manager %>
 <div class="pull-right">
   <% ["users", "groups"].each do |share_class| %>
 
@@ -41,7 +40,6 @@
 
   <% end %>
 </div>
-<% end %>
 
 <p>Permissions for this project are inherited from the <%= owner_type %>
   <i class="fa fa-fw <%= owner_icon %>"></i>
@@ -51,7 +49,7 @@
 <table id="project_sharing" class="topalign table" style="clear: both; margin-top: 1em;">
   <tr>
     <th>User/Group Name</th>
-    <th<%= raw(' colspan="2"') if @user_is_manager %>>Project Access</th>
+    <th colspan="2">Project Access</th>
   </tr>
 
   <% @share_links.andand.each do |link|
@@ -68,7 +66,6 @@
       <i class="fa fa-fw <%= fa_icon_class_for_uuid(link.tail_uuid) %>"></i>
       <%= link_to_if_arvados_object(link.tail_uuid, link_text: link_name) %>
     </td>
-    <% if @user_is_manager %>
     <td><%= link_to perm_name_desc_map[link.name], '#', {
       "data-emptytext" => "Read",
       "data-placement" => "bottom",
@@ -93,11 +90,6 @@
       <i class="fa fa-fw fa-trash-o"></i>
       <% end %>
     </td>
-    <% else %>
-    <td>
-      <%= perm_name_desc_map[link.name] %>
-    </td>
-    <% end %>
   </tr>
   <% end %>
 </table>

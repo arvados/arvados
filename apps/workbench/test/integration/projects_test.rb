@@ -121,15 +121,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
                  "revoking share did not remove row from sharing table")
   end
 
-  test "project viewer can see project sharing, but not change it" do
+  test "project viewer can't see project sharing tab" do
     show_project_using("project_viewer")
-    click_on "Sharing"
-    assert(page.has_text?("Project Viewer"), "did not find self on sharing tab")
-    assert(page.has_no_link?("Share with users"),
-           "read-only project user given option to add permissions")
-    assert_empty(all("#project_sharing a").
-                 reject { |a| a[:href] =~ %r{/(users|groups)/[-0-9a-z]+$} },
-                 "read-only project user given option to modify permissions")
+    assert(page.has_no_link?("Sharing"),
+           "read-only project user sees sharing tab")
   end
 
   test "project owner can manage sharing for another user" do
