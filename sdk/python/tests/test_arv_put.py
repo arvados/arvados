@@ -442,29 +442,6 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
 
-    def test_short_put_from_stdin(self):
-        # Have to run this separately since arv-put can't read from the
-        # tests' stdin.
-        # arv-put usually can't stat(os.path.realpath('/dev/stdin')) in this
-        # case, because the /proc entry is already gone by the time it tries.
-        pipe = subprocess.Popen(
-            [sys.executable, arv_put.__file__, '--stream'],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
-        pipe.stdin.write('stdin test\n')
-        pipe.stdin.close()
-        deadline = time.time() + 5
-        while (pipe.poll() is None) and (time.time() < deadline):
-            time.sleep(.1)
-        returncode = pipe.poll()
-        if returncode is None:
-            pipe.terminate()
-            self.fail("arv-put did not PUT from stdin within 5 seconds")
-        elif returncode != 0:
-            sys.stdout.write(pipe.stdout.read())
-            self.fail("arv-put returned exit code {}".format(returncode))
-        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
-
     def test_link_without_project_uuid_aborts(self):
         self.assertRaises(SystemExit, self.call_main_with_args,
                           ['--name', 'test without project UUID', '/dev/null'])
@@ -476,6 +453,8 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
 
 class ArvPutIntegrationTest(unittest.TestCase):
     PROJECT_UUID = run_test_server.fixture('groups')['aproject']['uuid']
+    ENVIRON = os.environ
+    ENVIRON['PYTHONPATH'] = ':'.join(sys.path)
 
     @classmethod
     def setUpClass(cls):
@@ -524,6 +503,29 @@ class ArvPutIntegrationTest(unittest.TestCase):
         else:
             self.assertFalse(result, "incorrectly found nonexistent project")
 
+    def test_short_put_from_stdin(self):
+        # Have to run this as an integration test since arv-put can't
+        # read from the tests' stdin.
+        # arv-put usually can't stat(os.path.realpath('/dev/stdin')) in this
+        # case, because the /proc entry is already gone by the time it tries.
+        pipe = subprocess.Popen(
+            [sys.executable, arv_put.__file__, '--stream'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT, env=self.ENVIRON)
+        pipe.stdin.write('stdin test\n')
+        pipe.stdin.close()
+        deadline = time.time() + 5
+        while (pipe.poll() is None) and (time.time() < deadline):
+            time.sleep(.1)
+        returncode = pipe.poll()
+        if returncode is None:
+            pipe.terminate()
+            self.fail("arv-put did not PUT from stdin within 5 seconds")
+        elif returncode != 0:
+            sys.stdout.write(pipe.stdout.read())
+            self.fail("arv-put returned exit code {}".format(returncode))
+        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
+
     def test_ArvPutSignedManifest(self):
         # ArvPutSignedManifest runs "arv-put foo" and then attempts to get
         # the newly created manifest from the API server, testing to confirm
@@ -541,7 +543,7 @@ class ArvPutIntegrationTest(unittest.TestCase):
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
         p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
-                             stdout=subprocess.PIPE)
+                             stdout=subprocess.PIPE, env=self.ENVIRON)
         (arvout, arverr) = p.communicate()
         self.assertEqual(p.returncode, 0)
         self.assertEqual(arverr, None)
@@ -562,8 +564,8 @@ class ArvPutIntegrationTest(unittest.TestCase):
         pipe = subprocess.Popen(
             [sys.executable, arv_put.__file__,
              '--project-uuid', self.PROJECT_UUID] + extra_args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
         link_list = arvados.api('v1', cache=False).links().list(
             filters=[['head_uuid', '=', stdout.strip()],
