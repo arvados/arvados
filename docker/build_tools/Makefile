@@ -1,15 +1,26 @@
-all: api-image compute-image doc-image workbench-image keep-image sso-image
+all: api-image compute-image doc-image workbench-image keep-image sso-image shell-image
 
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
 clean:
 	-rm -rf build
-	-rm *-image */generated/*
+	-rm `ls *-image |grep -v debian-arvados-image` */generated/*
 	-@rmdir */generated
 
-# `make realclean' will also remove the docker images and force
-# subsequent makes to build the entire chain from the ground up
+DEBIAN_IMAGE := $(shell $(DOCKER) images -q arvados/debian |head -n1)
+
+# `make realclean' will also remove the Arvados docker images (but not the
+# arvados/debian image) and force subsequent makes to build the entire chain
+# from the ground up
 realclean: clean
+	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
+	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
+	-$(DOCKER) rmi `$(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE)`
+
+# `make mrproper' will remove all Arvados docker images and force
+# subsequent makes to build the entire chain from the ground up
+mrproper: clean
+	-rm debian-arvados-image
 	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
 	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
 	-$(DOCKER) rmi `$(DOCKER) images -q arvados/*`
@@ -31,6 +42,8 @@ JOBS_DEPS = jobs/Dockerfile
 JAVA_BWA_SAMTOOLS_DEPS = java-bwa-samtools/Dockerfile
 
 API_DEPS = api/* $(API_GENERATED)
+
+SHELL_DEPS = shell/* $(SHELL_GENERATED)
 
 COMPUTE_DEPS = compute/* $(COMPUTE_GENERATED)
 
@@ -76,6 +89,14 @@ API_GENERATED_IN = \
         api/setup-gitolite.sh.in \
         api/slurm.conf.in \
         api/superuser_token.in
+
+SHELL_GENERATED = \
+        shell/generated/setup.sh \
+        shell/generated/superuser_token
+
+SHELL_GENERATED_IN = \
+        shell/setup.sh.in \
+        shell/superuser_token.in
 
 SLURM_GENERATED = \
         slurm/generated/slurm.conf
@@ -124,6 +145,9 @@ $(BASE_GENERATED): config.yml $(BUILD)
 $(API_GENERATED): config.yml $(API_GENERATED_IN)
 	$(CONFIG_RB)
 
+$(SHELL_GENERATED): config.yml $(SHELL_GENERATED_IN)
+	$(CONFIG_RB)
+
 $(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
 	$(CONFIG_RB)
 
@@ -144,6 +168,7 @@ DOCKER_BUILD = $(DOCKER) build -q --rm=true
 # The main Arvados servers: api, doc, workbench, warehouse
 
 api-image: passenger-image $(BUILD) $(API_DEPS)
+	@echo "Building api-image"
 	mkdir -p api/generated
 	tar -czf api/generated/api.tar.gz -C build/services api
 	chmod 755 api/generated/setup.sh
@@ -151,7 +176,11 @@ api-image: passenger-image $(BUILD) $(API_DEPS)
 	$(DOCKER_BUILD) -t arvados/api api
 	date >api-image
 
-slurm-image: base-image $(SLURM_DEPS)
+shell-image: base-image $(BUILD) $(SHELL_DEPS)
+	mkdir -p shell/generated
+	chmod 755 shell/generated/setup.sh
+	$(DOCKER_BUILD) -t arvados/shell shell
+	date >shell-image
 
 compute-image: slurm-image $(BUILD) $(COMPUTE_DEPS)
 	chmod 755 compute/generated/setup.sh
@@ -164,7 +193,7 @@ doc-image: base-image $(BUILD) $(DOC_DEPS)
 	$(DOCKER_BUILD) -t arvados/doc doc
 	date >doc-image
 
-keep-image: debian-image $(BUILD) $(KEEP_DEPS)
+keep-image: debian-arvados-image $(BUILD) $(KEEP_DEPS)
 	$(DOCKER_BUILD) -t arvados/keep keep
 	date >keep-image
 
@@ -208,10 +237,11 @@ slurm-image: base-image $(SLURM_DEPS)
 	$(DOCKER_BUILD) -t arvados/slurm slurm
 	date >slurm-image
 
-base-image: debian-image $(BASE_DEPS)
+base-image: debian-arvados-image $(BASE_DEPS)
+	@echo "Building base-image"
 	$(DOCKER_BUILD) -t arvados/base base
 	date >base-image
 
-debian-image:
+debian-arvados-image:
 	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
-	date >debian-image
+	date >debian-arvados-image
