@@ -30,7 +30,7 @@ class ApiClientAuthorization < ArvadosModel
     self.user.andand.uuid
   end
   def owner_uuid_was
-    self.user_id_changed? ? User.find(self.user_id_was).andand.uuid : self.user.andand.uuid
+    self.user_id_changed? ? User.where(id: self.user_id_was).first.andand.uuid : self.user.andand.uuid
   end
   def owner_uuid_changed?
     self.user_id_changed?
