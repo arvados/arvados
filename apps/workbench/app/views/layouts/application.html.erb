@@ -74,6 +74,18 @@
           </li>
           -->
 
+          <li>
+            <%= link_to(choose_collections_path(
+                       title: 'Search',
+                       action_name: 'Show',
+                       action_href: url_for(controller: :actions, action: :show),
+                       action_method: 'get',
+                       action_data: {selection_param: 'uuid', success: 'redirect-to-created-object'}.to_json),
+                      { class: "", remote: true, method: 'get' }) do %>
+              <i class="fa fa-fw fa-search"></i> Search
+            <% end %>
+          </li>
+
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>

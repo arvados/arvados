@@ -64,6 +64,7 @@ ArvadosWorkbench::Application.routes.draw do
   end
 
   post 'actions' => 'actions#post'
+  get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'
 
   root :to => 'projects#index'
