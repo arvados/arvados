@@ -86,3 +86,9 @@ var showhide_compare = function() {
 };
 $('[data-object-uuid*=-d1hrv-] input[name="uuids[]"]').on('click', showhide_compare);
 showhide_compare();
+
+setInterval(function(){
+    if ($('[data-pipeline-state=RunningOnServer],[data-pipeline-state=RunningOnClient]').length > 0) {
+        $('#Components.tab-pane,#Graph.tab-pane').trigger('arv:pane:reload');
+    }
+}, 15000);
