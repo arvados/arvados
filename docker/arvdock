@@ -18,7 +18,7 @@ function usage {
     echo >&2 "  -w[port], --workbench[=port]  Workbench server (default port 9899)"
     echo >&2 "  -s[port], --sso[=port]        SSO server (default port 9901)"
     echo >&2 "  -a[port], --api[=port]        API server (default port 9900)"
-    echo >&2 "  -c[count], --compute[=count]  Compute nodes (default starts 2)"
+    echo >&2 "  -c, --compute                 Compute nodes (starts 2)"
     echo >&2 "  -v, --vm                      Shell server"
     echo >&2 "  -n, --nameserver              Nameserver"
     echo >&2 "  -k, --keep                    Keep servers"
@@ -152,8 +152,8 @@ function do_start {
     local start_keep=false
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o d::s::a::c::w::nkvh \
-                  --long doc::,sso::,api::,compute::,workbench::,nameserver,keep,vm,help,ssh \
+    local TEMP=`getopt -o d::s::a::cw::nkvh \
+                  --long doc::,sso::,api::,compute,workbench::,nameserver,keep,vm,help,ssh \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -183,10 +183,8 @@ function do_start {
                 esac
                 ;;
             -c | --compute)
-                case "$2" in
-                    "") start_compute=2; shift 2 ;;
-                    *)  start_compute=$2; shift 2 ;;
-                esac
+                start_compute=2
+                shift
                 ;;
             -w | --workbench)
                 case "$2" in
