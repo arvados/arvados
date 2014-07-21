@@ -175,7 +175,7 @@
                     link_to(project_path(pnode[:object].uuid), data: {object_uuid: pnode[:object].uuid, name: 'name'}, &block)
                   end,
                   :top_button => Proc.new do %>
-                    <% link_to projects_path('project[owner_uuid]' => current_project_uuid), method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
+                    <% link_to projects_path, method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
                       <i class="fa fa-plus"></i> New project
                     <% end %>
                   <% end %>
