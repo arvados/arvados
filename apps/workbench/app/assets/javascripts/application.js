@@ -180,7 +180,7 @@ jQuery(function($){
     });
 
     $(document).ready(function() {
-        window.wiselinks = new Wiselinks($('#top-nav-wrapper'));
+        window.wiselinks = new Wiselinks();
     });
 
 });
