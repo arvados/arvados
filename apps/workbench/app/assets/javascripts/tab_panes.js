@@ -1,3 +1,8 @@
+// Load tab panes on demand. See app/views/application/_content.html.erb
+
+// Fire when a tab is selected/clicked. Check whether the content in
+// the corresponding pane is loaded (or is being loaded). If not,
+// start an AJAX request to load the content.
 $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(e) {
     var content_url = $(e.target).attr('data-pane-content-url');
     var $pane = $($(e.target).attr('href'));
@@ -10,6 +15,10 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(e) {
         });
 });
 
+// Fire when the content in a tab pane becomes stale/dirty. If the
+// pane is visible now, reload it right away. Otherwise, just replace
+// the current content with a spinner for now: there's no need to load
+// the new content unless/until the user clicks the corresponding tab.
 $(document).on('arv:pane:reload', '.tab-pane', function() {
     // Unload a single pane. Reload it if it's active.
     $(this).removeClass('loaded');
@@ -23,7 +32,7 @@ $(document).on('arv:pane:reload', '.tab-pane', function() {
     }
 });
 
+// Mark all panes as stale/dirty. Refresh the active pane.
 $(document).on('arv-log-event arv:pane:reload:all', function() {
-    // Reload all panes (except ones that haven't even loaded yet).
     $('.tab-pane.loaded').trigger('arv:pane:reload');
 });
