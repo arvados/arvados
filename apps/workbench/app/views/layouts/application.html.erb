@@ -182,6 +182,11 @@
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
           <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="projects-menu">
+              <i class="fa fa-lg fa-fw fa-home"></i>
+              Projects
+              <span class="caret"></span>
+            </a>
             <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
                     link_to(project_path(pnode[:object].uuid), data: {object_uuid: pnode[:object].uuid, name: 'name'}, &block)
