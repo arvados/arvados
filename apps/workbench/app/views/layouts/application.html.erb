@@ -52,7 +52,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" data-push="true" data-target="#page-wrapper" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %></a>
+        <a class="navbar-brand" data-push="true" data-target="#body-wrapper" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %></a>
       </div>
 
       <div class="collapse navbar-collapse">
@@ -166,6 +166,7 @@
       </div><!-- /.navbar-collapse -->
     </nav>
 
+    <div id="body-wrapper">
     <% if current_user.andand.is_active %>
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
@@ -195,6 +196,7 @@
 
     <div id="page-wrapper">
       <%= yield %>
+    </div>
     </div>
   </div>
 
