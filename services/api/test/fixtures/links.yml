@@ -617,3 +617,19 @@ ancient_docker_image_collection_hash:
   head_uuid: b519d9cb706a29fc7ea24dbea2f05851+249025
   properties:
     image_timestamp: "2010-06-10T14:30:00.184019565Z"
+
+anonymous_group_can_read_empty_collection:
+  # Permission link giving anonymous_group permission to read the
+  # empty collection. This link is added in production by the
+  # empty_collection helper.
+  uuid: zzzzz-o0j2j-emptycollection
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-06-13 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-tpzed-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-13 20:42:26 -0800
+  updated_at: 2014-06-13 20:42:26 -0800
+  link_class: permission
+  name: can_read
+  tail_uuid: zzzzz-j7d0g-anonymouspublic
+  head_uuid: d41d8cd98f00b204e9800998ecf8427e+0

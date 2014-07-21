@@ -51,9 +51,13 @@ class User < ArvadosModel
   def can?(actions)
     return true if is_admin
     actions.each do |action, target|
-      target_uuid = target
-      if target.respond_to? :uuid
-        target_uuid = target.uuid
+      unless target.nil?
+        if target.respond_to? :uuid
+          target_uuid = target.uuid
+        else
+          target_uuid = target
+          target = ArvadosModel.find_by_uuid(target_uuid)
+        end
       end
       next if target_uuid == self.uuid
       next if (group_permissions[target_uuid] and
