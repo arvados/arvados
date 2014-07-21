@@ -90,10 +90,6 @@ module ApplicationHelper
       if !link_name
         link_name = object.andand.default_name || resource_class.default_name
 
-        if resource_class == Collection && Collection.is_empty_blob_locator?(link_uuid)
-          link_name = "Empty Collection"
-        end
-
         if opts[:friendly_name]
           if attrvalue.respond_to? :friendly_link_name
             link_name = attrvalue.friendly_link_name
