@@ -131,4 +131,35 @@ class PermissionTest < ActiveSupport::TestCase
       perm_link.save
     end
   end
+
+  test "cannot create with owner = unwritable user" do
+    set_user_from_auth :rominiadmin
+    assert_raises ArvadosModel::PermissionDeniedError, "created with owner = unwritable user" do
+      Specimen.create!(owner_uuid: users(:active).uuid)
+    end
+  end
+
+  test "cannot change owner to unwritable user" do
+    set_user_from_auth :rominiadmin
+    ob = Specimen.create!
+    assert_raises ArvadosModel::PermissionDeniedError, "changed owner to unwritable user" do
+      ob.update_attributes!(owner_uuid: users(:active).uuid)
+    end
+  end
+
+  test "cannot create with owner = unwritable group" do
+    set_user_from_auth :rominiadmin
+    assert_raises ArvadosModel::PermissionDeniedError, "created with owner = unwritable group" do
+      Specimen.create!(owner_uuid: groups(:aproject).uuid)
+    end
+  end
+
+  test "cannot change owner to unwritable group" do
+    set_user_from_auth :rominiadmin
+    ob = Specimen.create!
+    assert_raises ArvadosModel::PermissionDeniedError, "changed owner to unwritable group" do
+      ob.update_attributes!(owner_uuid: groups(:aproject).uuid)
+    end
+  end
+
 end
