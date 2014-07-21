@@ -1,6 +1,7 @@
 # Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/Fixtures.html
 
 admin:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-d9tiejq69daie8f
   email: admin@arvados.local
   first_name: TestCase
@@ -11,6 +12,7 @@ admin:
   prefs: {}
 
 miniadmin:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-2bg9x0oeydcw5hm
   email: miniadmin@arvados.local
   first_name: TestCase
@@ -21,6 +23,7 @@ miniadmin:
   prefs: {}
 
 rominiadmin:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-4hvxm4n25emegis
   email: rominiadmin@arvados.local
   first_name: TestCase
@@ -31,6 +34,7 @@ rominiadmin:
   prefs: {}
 
 active:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-xurymjxw79nv3jz
   email: active-user@arvados.local
   first_name: Active
@@ -41,6 +45,7 @@ active:
   prefs: {}
 
 project_viewer:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-projectviewer1a
   email: project-viewer@arvados.local
   first_name: Project
@@ -50,7 +55,19 @@ project_viewer:
   is_admin: false
   prefs: {}
 
+future_project_user:
+  # Workbench tests give this user permission on aproject.
+  uuid: zzzzz-tpzed-futureprojview2
+  email: future-project-user@arvados.local
+  first_name: Future Project
+  last_name: User
+  identity_url: https://future-project-user.openid.local
+  is_active: true
+  is_admin: false
+  prefs: {}
+
 spectator:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   email: spectator@arvados.local
   first_name: Spect
@@ -61,6 +78,7 @@ spectator:
   prefs: {}
 
 inactive_uninvited:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-rf2ec3ryh4vb5ma
   email: inactive-uninvited-user@arvados.local
   first_name: Inactive and Uninvited
@@ -71,6 +89,7 @@ inactive_uninvited:
   prefs: {}
 
 inactive:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-x9kqpd79egh49c7
   email: inactive-user@arvados.local
   first_name: Inactive
@@ -81,6 +100,7 @@ inactive:
   prefs: {}
 
 inactive_but_signed_user_agreement:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-7sg468ezxwnodxs
   email: inactive-user-signed-ua@arvados.local
   first_name: Inactive But Agreeable
@@ -91,6 +111,7 @@ inactive_but_signed_user_agreement:
   prefs: {}
 
 anonymous:
+  owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-anonymouspublic
   email: anonymouspublic
   first_name: anonymouspublic

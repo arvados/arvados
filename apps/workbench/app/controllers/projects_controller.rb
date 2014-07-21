@@ -8,7 +8,11 @@ class ProjectsController < ApplicationController
   end
 
   def show_pane_list
-    %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Permissions Advanced)
+    if @user_is_manager
+      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Sharing Advanced)
+    else
+      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Advanced)
+    end
   end
 
   def remove_item
@@ -81,9 +85,21 @@ class ProjectsController < ApplicationController
                                 include_linked: true,
                                 filters: params[:filters],
                                 offset: params[:offset] || 0)
-    @share_links = Link.filter([['head_uuid', '=', @object.uuid],
-                                ['link_class', '=', 'permission']])
     @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
+    @users = User.limit(10000).
+      select(["uuid", "is_active", "first_name", "last_name"]).
+      filter([['is_active', '=', 'true']])
+    @groups = Group.limit(10000).
+      select(["uuid", "name", "description"])
+
+    begin
+      @share_links = Link.permissions_for(@object)
+      @user_is_manager = true
+    rescue ArvadosApiClient::AccessForbiddenException,
+           ArvadosApiClient::NotFoundException
+      @share_links = []
+      @user_is_manager = false
+    end
 
     @objects_and_names = get_objects_and_names @objects
 
@@ -140,4 +156,25 @@ class ProjectsController < ApplicationController
     objects_and_names
   end
 
+  def share_with
+    if not params[:uuids].andand.any?
+      @errors = ["No user/group UUIDs specified to share with."]
+      return render_error(status: 422)
+    end
+    results = {"success" => [], "failure" => {}}
+    params[:uuids].each do |shared_uuid|
+      begin
+        Link.create(tail_uuid: shared_uuid, link_class: "permission",
+                    name: "can_read", head_uuid: @object.uuid)
+      rescue ArvadosApiClient::ApiError => error
+        results["failure"][shared_uuid] = error.api_response.andand[:errors]
+      else
+        results["success"] << shared_uuid
+      end
+    end
+    status = (results["failure"].empty?) ? 200 : 422
+    respond_to do |f|
+      f.json { render(json: results, status: status) }
+    end
+  end
 end
