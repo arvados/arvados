@@ -52,7 +52,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %></a>
+        <a class="navbar-brand" data-push="true" data-target="#top-nav-wrapper" href="/"><%= Rails.configuration.site_name.downcase rescue Rails.application.class.parent_name %></a>
       </div>
 
       <div class="collapse navbar-collapse">
@@ -149,7 +149,7 @@
             </li>
           <% end %>
           <% else %>
-            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>" data-push="true" data-target="#top-nav-wrapper">Log in</a></li>
+            <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
           <% end %>
 
           <li class="dropdown help-menu">

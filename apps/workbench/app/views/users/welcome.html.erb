@@ -28,7 +28,7 @@
 
       </p>
       <p>
-	<%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "pull-right btn btn-primary", :'data-push' => true, :'data-target' => '#top-nav-wrapper' do %>
+	<%= link_to arvados_api_client.arvados_login_url(return_to: request.url), class: "pull-right btn btn-primary" do %>
           Log in to <%= Rails.configuration.site_name %>
           <i class="fa fa-fw fa-arrow-circle-right"></i>
         <% end %>
