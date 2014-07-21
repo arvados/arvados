@@ -1,14 +1,9 @@
 <div class="modal arv-choose modal-with-loading-spinner">
   <div class="modal-dialog" style="width:80%">
     <div class="modal-content">
-
       <div class="modal-header">
         <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <div>
-          <div class="col-sm-6"> <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.andand.class_for_display}" %></h4> </div>
-          <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
-        </div>
-        <br/>
+        <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.andand.class_for_display}" %></h4>
       </div>
 
       <div class="modal-body">
@@ -46,6 +41,7 @@
 	  </div>
           <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
           </div>
+          <% end %>
         </div>
 
         <div class="modal-footer">

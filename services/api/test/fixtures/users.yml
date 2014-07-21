@@ -55,6 +55,17 @@ project_viewer:
   is_admin: false
   prefs: {}
 
+future_project_user:
+  # Workbench tests give this user permission on aproject.
+  uuid: zzzzz-tpzed-futureprojview2
+  email: future-project-user@arvados.local
+  first_name: Future Project
+  last_name: User
+  identity_url: https://future-project-user.openid.local
+  is_active: true
+  is_admin: false
+  prefs: {}
+
 spectator:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-l1s2piq4t4mps8r

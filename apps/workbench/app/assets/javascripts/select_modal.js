@@ -68,6 +68,9 @@ $(document).on('click', '.selectable', function() {
 });
 $(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
     window.location.reload();
+}).on('tab-refresh', function(event, data, status, jqxhr, action_data) {
+    $(document).trigger('arv:pane:reload:all');
+    $('body > .modal-container .modal').modal('hide');
 }).on('redirect-to-created-object', function(event, data, status, jqxhr, action_data) {
     window.location.href = data.href.replace(/^[^\/]*\/\/[^\/]*/, '');
 });
