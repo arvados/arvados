@@ -61,6 +61,7 @@ ArvadosWorkbench::Application.routes.draw do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
     match 'remove_items', on: :member, via: :delete, action: :remove_items
     get 'choose', on: :collection
+    post 'share_with', on: :member
   end
 
   post 'actions' => 'actions#post'

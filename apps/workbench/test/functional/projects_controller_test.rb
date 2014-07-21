@@ -28,4 +28,26 @@ class ProjectsControllerTest < ActionController::TestCase
       end
     end
   end
+
+  test "sharing a project with a user and group" do
+    uuid_list = [api_fixture("groups")["future_project_viewing_group"]["uuid"],
+                 api_fixture("users")["future_project_user"]["uuid"]]
+    post(:share_with, {
+           id: api_fixture("groups")["asubproject"]["uuid"],
+           format: "json",
+           uuids: uuid_list},
+         session_for(:active))
+    assert_response :success
+    json_response = Oj.load(@response.body)
+    assert_equal(uuid_list, json_response["success"])
+  end
+
+  test "user with project read permission can't add permissions" do
+    post(:share_with, {
+           id: api_fixture("groups")["aproject"]["uuid"],
+           uuids: [api_fixture("users")["spectator"]["uuid"]],
+           format: "json"},
+         session_for(:project_viewer))
+    assert_response 422
+  end
 end
