@@ -58,10 +58,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Add a new user'
 
-    sleep(0.1)
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
-      assert has_text? 'Virtual Machine'
+    within '.modal-content' do
+      find 'label', text: 'Virtual Machine'
       fill_in "email", :with => "foo@example.com"
       fill_in "repo_name", :with => "test_repo"
       click_button "Submit"
@@ -115,11 +113,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Setup Active User'
 
-    sleep(0.1)
-
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
-      assert has_text? 'Virtual Machine'
+    within '.modal-content' do
+      find 'label', text: 'Virtual Machine'
       fill_in "repo_name", :with => "test_repo"
       click_button "Submit"
     end
@@ -135,15 +130,13 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Admin'
     click_link 'Setup Active User'
 
-    sleep(0.1)
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
+    within '.modal-content' do
       fill_in "repo_name", :with => "second_test_repo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
     end
 
-    assert page.has_text? 'modified_by_client_uuid'
+    find '#Attributes', text: 'modified_by_client_uuid'
 
     click_link 'Advanced'
     click_link 'Metadata'
@@ -187,6 +180,7 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     # Should now be back in the Attributes tab for the user
     page.driver.browser.switch_to.alert.accept
+
     assert page.has_text? 'modified_by_user_uuid'
     page.within(:xpath, '//span[@data-name="is_active"]') do
       assert_equal "false", text, "Expected user's is_active to be false after unsetup"
@@ -202,9 +196,7 @@ class UsersTest < ActionDispatch::IntegrationTest
     click_link 'Admin'
     click_link 'Setup Active User'
 
-    sleep(0.1)
-    popup = page.driver.browser.window_handles.last
-    page.within_window popup do
+    within '.modal-content' do
       fill_in "repo_name", :with => "second_test_repo"
       select("testvm.shell", :from => 'vm_uuid')
       click_button "Submit"
