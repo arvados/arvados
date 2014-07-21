@@ -3,7 +3,7 @@
   <% pipeline_job_uuids = [] %>
 
   <div class="pull-right">
-    Current state: <span class="badge badge-info"><%= @object.state.sub('OnServer', '') %></span>&nbsp;
+    Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>"><%= @object.state.sub('OnServer', '') %></span>&nbsp;
   </div>
 
   <table class="table pipeline-components-table">

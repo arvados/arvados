@@ -28,3 +28,4 @@ function smart_scroll_fixup(s) {
 }
 
 $(window).on('load ready resize scroll ajax:complete', smart_scroll_fixup);
+$(document).on('shown.bs.tab', 'ul.nav-tabs > li > a', smart_scroll_fixup);
