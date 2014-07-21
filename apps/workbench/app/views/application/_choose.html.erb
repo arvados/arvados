@@ -12,41 +12,38 @@
       </div>
 
       <div class="modal-body">
-	<% if params[:by_project] %>
-	<div class="btn-group">
-	  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-	    Projects <span class="caret"></span>
-	  </button>
-            <%= render partial: "projects_tree_menu", locals: {
-                  :project_link_to => Proc.new do |pnode, &block|
-                    link_to "#", {"class" => "chooser-show-project", "data-project-uuid" => pnode[:object].uuid }, &block
-                   end,
-                  :top_button => Proc.new do %>
-                    <% link_to "#", {"class" => "chooser-show-project btn btn-xs btn-default pull-right" } do %>
-                      All <%= controller.model_class.class_for_display.pluralize.downcase %>
-                    <% end %>
-                  <% end %>
-             <% } %>
-            </li>
-            <li class="nav-separator">
-              <i class="fa fa-lg fa-angle-double-right"></i>
-            </li>
-            <li><p class="navbar-text" id="chooser-breadcrumb">All <%= controller.model_class.class_for_display.pluralize.downcase %></span></li>
-          </ul>
-          <div class="navbar-form navbar-right">
-            <input type="text" class="form-control filterable-control" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
-          </div>
+        <div class="input-group">
+          <% if params[:by_project] %>
+            <div class="input-group-btn">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                Projects <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                <%= render partial: "projects_tree_menu", locals: {
+                      :project_link_to => Proc.new do |pnode, &block|
+                        link_to "#", {"class" => "chooser-show-project", "data-project-uuid" => pnode[:object].uuid }, &block
+                       end,
+                      :top_button => Proc.new do %>
+                        <% link_to "#", {"class" => "chooser-show-project btn btn-xs btn-default pull-right" } do %>
+                          All <%= controller.model_class.class_for_display.pluralize.downcase %>
+                        <% end %>
+                      <% end %>
+                <% } %>
+                <li class="divider" />
+                <li><span class="navbar-text" id="chooser-breadcrumb">All <%= controller.model_class.class_for_display.pluralize.downcase %></span></li>
+              </ul>
+            </div>
+          <% end %>
+          <input type="text" class="form-control filterable-control" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
         </div>
-        <% end %>
-
         <div class="row" style="height: 20em">
-          <div class="col-sm-6 container-fluid arv-filterable-list selectable-container"
-               style="height: 100%; overflow-y: scroll"
-               data-infinite-scroller="#choose-scroll"
-               id="choose-scroll"
-               data-infinite-content-href="<%= @next_page_href %>">
-            <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
-          </div>
+	  <div class="col-sm-6 container arv-filterable-list selectable-container"
+	       style="height: 100%; overflow-y: scroll"
+	       data-infinite-scroller="#choose-scroll"
+	       id="choose-scroll"
+	       data-infinite-content-href="<%= @next_page_href %>">
+	    <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
+	  </div>
           <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
           </div>
         </div>
