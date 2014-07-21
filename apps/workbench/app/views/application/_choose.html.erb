@@ -36,16 +36,20 @@
           </div>
         </nav>
 
+        <% preview_pane = (params[:preview_pane] != "false")
+           pane_col_class = preview_pane ? "col-sm-6" : "" %>
         <div class="row" style="height: 20em">
-          <div class="col-sm-6 container-fluid arv-filterable-list selectable-container"
+          <div class="<%= pane_col_class %> container-fluid arv-filterable-list selectable-container"
                style="height: 100%; overflow-y: scroll"
                data-infinite-scroller="#choose-scroll"
                id="choose-scroll"
                data-infinite-content-href="<%= @next_page_href %>">
             <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
           </div>
-          <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
+          <% if preview_pane %>
+          <div class="<%= pane_col_class %> modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
           </div>
+          <% end %>
         </div>
 
         <div class="modal-footer">
