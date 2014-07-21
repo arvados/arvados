@@ -88,7 +88,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   def count_shares
-    page.all("#project_sharing tr").size
+    find('#project_sharing').all('tr').size
   end
 
   def add_share_and_check(share_type, name)
