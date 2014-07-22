@@ -1,6 +1,7 @@
 require 'test_helper'
 
 class PermissionsTest < ActionDispatch::IntegrationTest
+  include CurrentApiClient  # for empty_collection
   fixtures :users, :groups, :api_client_authorizations, :collections
 
   test "adding and removing direct can_read links" do
@@ -359,5 +360,15 @@ class PermissionsTest < ActionDispatch::IntegrationTest
 
     get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
     assert_response 403
+  end
+
+  test "active user can read the empty collection" do
+    # The active user should be able to read the empty collection.
+
+    get("/arvados/v1/collections/#{empty_collection_uuid}",
+        { :format => :json },
+        auth(:active))
+    assert_response :success
+    assert_empty json_response['manifest_text'], "empty collection manifest_text is not empty"
   end
 end
