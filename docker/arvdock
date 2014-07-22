@@ -254,21 +254,11 @@ function do_start {
     then
       # We rely on skydock and skydns for dns discovery between the slurm controller and compute nodes,
       # so make sure they are running
-      $DOCKER images | grep skydns >/dev/null
-      if [[ "$?" != "0" ]]; then
-        echo "Downloading crosbymichael/skydns..."
-        $DOCKER pull crosbymichael/skydns
-      fi
       $DOCKER ps | grep skydns >/dev/null
       if [[ "$?" != "0" ]]; then
         echo "Starting crosbymichael/skydns container..."
         $DOCKER rm "skydns" 2>/dev/null
         $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
-      fi
-      $DOCKER images | grep skydock >/dev/null
-      if [[ "$?" != "0" ]]; then
-        echo "Downloading crosbymichael/skydock..."
-        $DOCKER pull crosbymichael/skydock
       fi
       $DOCKER ps | grep skydock >/dev/null
       if [[ "$?" != "0" ]]; then

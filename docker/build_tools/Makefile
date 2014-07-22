@@ -1,4 +1,4 @@
-all: api-image compute-image doc-image workbench-image keep-image sso-image shell-image
+all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
 
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
@@ -177,23 +177,27 @@ api-image: passenger-image $(BUILD) $(API_DEPS)
 	date >api-image
 
 shell-image: base-image $(BUILD) $(SHELL_DEPS)
+	@echo "Building shell-image"
 	mkdir -p shell/generated
 	chmod 755 shell/generated/setup.sh
 	$(DOCKER_BUILD) -t arvados/shell shell
 	date >shell-image
 
 compute-image: slurm-image $(BUILD) $(COMPUTE_DEPS)
+	@echo "Building compute-image"
 	chmod 755 compute/generated/setup.sh
 	$(DOCKER_BUILD) -t arvados/compute compute
 	date >compute-image
 
 doc-image: base-image $(BUILD) $(DOC_DEPS)
+	@echo "Building doc-image"
 	mkdir -p doc/generated
 	tar -czf doc/generated/doc.tar.gz -C build doc
 	$(DOCKER_BUILD) -t arvados/doc doc
 	date >doc-image
 
 keep-image: debian-arvados-image $(BUILD) $(KEEP_DEPS)
+	@echo "Building keep-image"
 	$(DOCKER_BUILD) -t arvados/keep keep
 	date >keep-image
 
@@ -212,6 +216,7 @@ bcbio-nextgen-image: $(BUILD) $(BASE_GENERATED) $(BCBIO_NEXTGEN_DEPS)
 	date >bcbio-nextgen-image
 
 workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
+	@echo "Building workbench-image"
 	mkdir -p workbench/generated
 	tar -czf workbench/generated/workbench.tar.gz -C build/apps workbench
 	$(DOCKER_BUILD) -t arvados/workbench workbench
@@ -222,6 +227,7 @@ warehouse-image: base-image $(WAREHOUSE_DEPS)
 	date >warehouse-image
 
 sso-image: passenger-image $(SSO_DEPS)
+	@echo "Building sso-image"
 	$(DOCKER_BUILD) -t arvados/sso sso
 	date >sso-image
 
@@ -230,10 +236,12 @@ sso-image: passenger-image $(SSO_DEPS)
 # that are dependencies for every Arvados service.
 
 passenger-image: base-image
+	@echo "Building passenger-image"
 	$(DOCKER_BUILD) -t arvados/passenger passenger
 	date >passenger-image
 
 slurm-image: base-image $(SLURM_DEPS)
+	@echo "Building slurm-image"
 	$(DOCKER_BUILD) -t arvados/slurm slurm
 	date >slurm-image
 
@@ -243,5 +251,16 @@ base-image: debian-arvados-image $(BASE_DEPS)
 	date >base-image
 
 debian-arvados-image:
+	@echo "Building debian-arvados-image"
 	./mkimage-debootstrap.sh arvados/debian wheezy ftp://ftp.us.debian.org/debian/
 	date >debian-arvados-image
+
+skydns-image:
+	@echo "Downloading skydns-image"
+	$(DOCKER) pull crosbymichael/skydns
+	date >skydns-image
+
+skydock-image:
+	@echo "Downloading skydock-image"
+	$(DOCKER) pull crosbymichael/skydock
+	date >skydock-image
