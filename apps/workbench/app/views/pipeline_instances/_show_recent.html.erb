@@ -57,7 +57,7 @@
         <%= render partial: 'delete_object_button', locals: {object:ob} %>
       </td>
     </tr>
-    <tr>
+    <tr data-object-uuid="<%= ob.uuid %>">
       <td style="border-top: 0;" colspan="2">
       </td>
       <td style="border-top: 0; opacity: 0.5;" colspan="6">

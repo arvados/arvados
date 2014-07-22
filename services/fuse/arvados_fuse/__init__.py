@@ -416,12 +416,8 @@ class Operations(llfuse.Operations):
     so request handlers do not run concurrently unless the lock is explicitly released
     with llfuse.lock_released.'''
 
-    def __init__(self, uid, gid, debug=False):
+    def __init__(self, uid, gid):
         super(Operations, self).__init__()
-
-        if debug:
-            logging.basicConfig(level=logging.DEBUG)
-            logging.info("arv-mount debug enabled")
 
         self.inodes = Inodes()
         self.uid = uid

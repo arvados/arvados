@@ -25,4 +25,13 @@ class GroupTest < ActiveSupport::TestCase
     assert_equal(expect_name, oi.name_for(expect_uuid),
                  "Expected name_for '#{expect_uuid}' to be '#{expect_name}'")
   end
+
+  test "can select specific group columns" do
+    use_token :admin
+    Group.select(["uuid", "name"]).limit(5).each do |user|
+      assert_not_nil user.uuid
+      assert_not_nil user.name
+      assert_nil user.owner_uuid
+    end
+  end
 end

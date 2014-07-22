@@ -28,4 +28,58 @@ class ProjectsControllerTest < ActionController::TestCase
       end
     end
   end
+
+  test "sharing a project with a user and group" do
+    uuid_list = [api_fixture("groups")["future_project_viewing_group"]["uuid"],
+                 api_fixture("users")["future_project_user"]["uuid"]]
+    post(:share_with, {
+           id: api_fixture("groups")["asubproject"]["uuid"],
+           uuids: uuid_list,
+           format: "json"},
+         session_for(:active))
+    assert_response :success
+    json_response = Oj.load(@response.body)
+    assert_equal(uuid_list, json_response["success"])
+  end
+
+  test "user with project read permission can't add permissions" do
+    post(:share_with, {
+           id: api_fixture("groups")["aproject"]["uuid"],
+           uuids: [api_fixture("users")["spectator"]["uuid"]],
+           format: "json"},
+         session_for(:project_viewer))
+    assert_response 422
+  end
+
+  def user_can_manage(user_sym, group_key)
+    get(:show, {id: api_fixture("groups")[group_key]["uuid"]},
+        session_for(user_sym))
+    is_manager = assigns(:user_is_manager)
+    assert_not_nil(is_manager, "user_is_manager flag not set")
+    if not is_manager
+      assert_empty(assigns(:share_links),
+                   "non-manager has share links set")
+    end
+    is_manager
+  end
+
+  test "admin can_manage aproject" do
+    assert user_can_manage(:admin, "aproject")
+  end
+
+  test "owner can_manage aproject" do
+    assert user_can_manage(:active, "aproject")
+  end
+
+  test "owner can_manage asubproject" do
+    assert user_can_manage(:active, "asubproject")
+  end
+
+  test "viewer can't manage aproject" do
+    refute user_can_manage(:project_viewer, "aproject")
+  end
+
+  test "viewer can't manage asubproject" do
+    refute user_can_manage(:project_viewer, "asubproject")
+  end
 end

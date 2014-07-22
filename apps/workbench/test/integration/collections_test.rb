@@ -74,4 +74,10 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert_equal(['foo'], hrefs.compact.sort,
                  "download page did provide strictly file links")
   end
+
+  test "can view empty collection" do
+    uuid = 'd41d8cd98f00b204e9800998ecf8427e+0'
+    visit page_with_token('active', "/collections/#{uuid}")
+    assert page.has_text?('This collection is empty')
+  end
 end

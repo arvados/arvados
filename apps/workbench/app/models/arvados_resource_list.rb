@@ -26,6 +26,17 @@ class ArvadosResourceList
     self
   end
 
+  def select(columns=nil)
+    # If no column arguments were given, invoke Enumerable#select.
+    if columns.nil?
+      super()
+    else
+      @select ||= []
+      @select += columns
+      self
+    end
+  end
+
   def filter _filters
     @filters ||= []
     @filters += _filters
@@ -64,6 +75,7 @@ class ArvadosResourceList
     api_params[:eager] = '1' if @eager
     api_params[:limit] = @limit if @limit
     api_params[:offset] = @offset if @offset
+    api_params[:select] = @select if @select
     api_params[:order] = @orderby_spec if @orderby_spec
     api_params[:filters] = @filters if @filters
     res = arvados_api_client.api @resource_class, '', api_params
