@@ -17,9 +17,9 @@ realclean: clean
 	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
 	-$(DOCKER) rmi `$(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE)`
 
-# `make mrproper' will remove all Arvados docker images and force
+# `make deepclean' will remove all Arvados docker images and force
 # subsequent makes to build the entire chain from the ground up
-mrproper: clean
+deepclean: clean
 	-rm debian-arvados-image
 	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
 	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
