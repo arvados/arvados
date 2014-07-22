@@ -17,13 +17,15 @@ realclean: clean
 	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
 	-$(DOCKER) rmi `$(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE)`
 
-# `make deepclean' will remove all Arvados docker images and force
-# subsequent makes to build the entire chain from the ground up
+# `make deepclean' will remove all Arvados docker images and the skydns/skydock
+# images and force subsequent makes to build the entire chain from the ground up
 deepclean: clean
 	-rm debian-arvados-image
 	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
 	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
 	-$(DOCKER) rmi `$(DOCKER) images -q arvados/*`
+	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e crosbymichael/skydns -e crosbymichael/skydock |cut -f 1 -d' '`
+	-$(DOCKER) rmi `$(DOCKER) images -q crosbymichael/skyd*`
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites
