@@ -32,7 +32,7 @@ cd /usr/local/arvados/gitolite-tmp/gitolite-admin
 mkdir keydir/arvados
 mkdir conf/admin
 mkdir conf/auto
-echo " 
+echo "
 
 @arvados_git_user = arvados_git_user
 
