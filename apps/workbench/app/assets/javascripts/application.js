@@ -181,6 +181,10 @@ jQuery(function($){
 
     $(document).ready(function() {
         window.wiselinks = new Wiselinks();
+
+        $(document).off('page:loading').on('page:loading', function(event, url, target, render) {
+            $("#page-wrapper").hide().fadeIn(200);
+        });
     });
 
 });
