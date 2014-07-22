@@ -64,9 +64,22 @@ def main options
       end
     end
 
+    print "Arvados needs to know the shell login name for the administrative user.\n"
+    print "This will also be used as the name for your git repository.\n"
+    print "\n"
+    user_name = ""
+    until is_valid_user_name? user_name
+      print "Enter a shell login name here: "
+      user_name = gets.strip
+      if not is_valid_user_name? user_name
+        print "That doesn't look like a valid shell login name. Please try again.\n"
+      end
+    end
+
     File.open 'config.yml', 'w' do |config_out|
       config = YAML.load_file 'config.yml.example'
       config['API_AUTO_ADMIN_USER'] = admin_email_address
+      config['ARVADOS_USER_NAME'] = user_name
       config['API_HOSTNAME'] = generate_api_hostname
       config['PUBLIC_KEY_PATH'] = find_or_create_ssh_key(config['API_HOSTNAME'])
       config.each_key do |var|
@@ -112,6 +125,15 @@ end
 #
 def is_valid_email? str
   str.match /^\S+@\S+\.\S+$/
+end
+
+# is_valid_user_name?
+#   Returns true if its arg looks like a valid unix username.
+#   This is a very very loose sanity check.
+#
+def is_valid_user_name? str
+  # borrowed from Debian's adduser (version 3.110)
+  str.match /^[_.A-Za-z0-9][-\@_.A-Za-z0-9]*\$?$/
 end
 
 # generate_api_hostname
