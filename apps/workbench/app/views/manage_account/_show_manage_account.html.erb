@@ -1,0 +1,51 @@
+<div class="col-sm-6">
+  <div class="panel-group" id="arv-adv-accordion">
+    <% ['Virtual Machines',
+       'Repositories',
+       'Current Token'].each do |section| %>
+      <% section_id = section.gsub(" ","_").downcase %>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a data-parent="#arv-adv-accordion" href="#manage_<%=section_id%>">
+              <%= section %>
+            </a>
+          </h4>
+        </div>
+        <div id="manage_<%=section_id%>">
+          <div class="panel-body">
+            <%= render partial: "show_manage_#{section_id}", locals: {repositories: @repositories, virtual_machines: @virtual_machines, vm_logins: @vm_logins, ssh_keys: @ssh_keys} %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+<div class="col-sm-6">
+  <div class="panel-group" id="arv-adv-accordion">
+    <% ['SSH Keys'].each do |section| %>
+      <% section_id = section.gsub(" ","_").downcase %>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <div class="pull-right">
+            <%= button_to projects_path(method: 'post'), class: 'btn btn-xs btn-primary' do %>
+              <i class="fa fa-fw fa-plus"></i>
+              Add new SSH key
+            <% end %>
+
+          </div>
+          <h4 class="panel-title">
+            <a data-parent="#arv-adv-accordion" href="#manage_<%=section_id%>">
+              <%= section %>
+            </a>
+          </h4>
+        </div>
+        <div id="manage_<%=section_id%>">
+          <div class="panel-body">
+            <%= render partial: "show_manage_#{section_id}", locals: {repositories: @repositories, virtual_machines: @virtual_machines, ssh_keys: @ssh_keys} %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

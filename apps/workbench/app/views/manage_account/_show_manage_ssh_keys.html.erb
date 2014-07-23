@@ -1,0 +1,55 @@
+<div>
+<h4>Add / Delete SSH Keys</h4>
+  <table class="table virtual-machines-table">
+    <colgroup>
+      <col style="width: 95%" />
+      <col style="width: 5%" />
+    </colgroup>
+    <tbody>
+      <% @ssh_keys.andand.each do |key| %>
+        <tr>
+          <td>
+            <%= key[:uuid] %>
+          </td>
+          <td>
+    <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key"}) do %>
+      <i class="fa fa-fw fa-trash-o"></i>
+    <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<div>
+<h4>Setting up SSH keys</h4>
+<p>
+Sample <code>~/.ssh/config</code>:
+</p>
+
+<pre>
+Host *.arvados
+  ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
+<% if @vm_logins.andand.first %>
+  User <%= @vm_logins[@vm_logins.andand.keys.first].andand.first %>
+<% end %>
+</pre>
+
+<p>
+Sample login command:
+</p>
+
+<pre>
+ssh <%= @virtual_machines.first.andand.hostname.andand.sub('.'+current_api_host,'') or 'vm-hostname' %>.arvados
+</pre>
+
+<p>
+  See also:
+  <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),
+  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
+  target: "_blank"%>.
+</p>
+</div>

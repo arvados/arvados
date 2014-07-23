@@ -66,6 +66,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', on: :collection
     post 'share_with', on: :member
   end
+  get '/manage_account' => 'manage_account#index'
 
   post 'actions' => 'actions#post'
   get 'websockets' => 'websocket#index'

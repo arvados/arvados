@@ -1,0 +1,36 @@
+<div>
+  <p>
+    For more information see <%= link_to raw('setting up SSH access'),
+    "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", target: "_blank"%>
+  </p>
+
+  <table class="table repositories-table">
+    <colgroup>
+      <col style="width: 30%" />
+      <col style="width: 15%" />
+      <col style="width: 55%" />
+    </colgroup>
+    <thead>
+      <tr>
+        <th> Name </th>
+        <th> Writable </th>
+        <th> URL </th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @repositories.andand.each do |repo| %>
+        <tr>
+          <td>
+            <%= repo[:name] %>
+          </td>
+          <td>
+            <%= repo[:push_url] != nil %>
+          </td>
+          <td>
+            <%= repo[:fetch_url] %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
