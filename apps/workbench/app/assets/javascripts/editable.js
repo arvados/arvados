@@ -58,7 +58,16 @@ $(document).
                     return;
                 },
                 error: function(response, newValue) {
-                    return response.responseJSON.errors.join();
+                    var errlist = response.responseJSON.errors;
+                    var errmsg;
+                    if (Array.isArray(errlist)) {
+                        errmsg = errlist.join();
+                    } else {
+                        errmsg = ("The server returned an error when making " +
+                                  "this update (status " + response.status +
+                                  ": " + errlist + ").");
+                    }
+                    return errmsg;
                 }
             }).
             on('hidden', function(e, reason) {
