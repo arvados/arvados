@@ -96,8 +96,9 @@ def main options
       docker_ok? docker_path and
       debootstrap_ok? and
       File.exists? 'config.yml'
-    warn "Building Arvados."
-    system({"DOCKER" => docker_path}, '/usr/bin/make', '-f', options[:makefile], *ARGV)
+    exit 0
+  else
+    exit 6
   end
 end
 
@@ -243,6 +244,5 @@ if __FILE__ == $PROGRAM_NAME
       options[:makefile] = mk
     end
   end
-
   main options
 end

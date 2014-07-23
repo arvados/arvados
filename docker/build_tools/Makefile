@@ -1,31 +1,50 @@
+# This is the 'shell hack'. Call make with DUMP=1 to see the effect.
+ifdef DUMP
+OLD_SHELL := $(SHELL)
+SHELL = $(warning [$@])$(OLD_SHELL) -x
+endif
+
 all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
+
+IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v debian-arvados-image)
+GENERATED_FILES := $(shell ls */generated/* 2>/dev/null)
+GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 
 # `make clean' removes the files generated in the build directory
 # but does not remove any docker images generated in previous builds
 clean:
-	-rm -rf build
-	-rm `ls *-image |grep -v debian-arvados-image` */generated/*
-	-@rmdir */generated
+	@echo "make clean"
+	-@rm -rf build
+	+@[ "$(IMAGE_FILES)$(GENERATED_FILES)" = "" ] || rm $(IMAGE_FILES) $(GENERATED_FILES) 2>/dev/null
+	+@[ "$(GENERATED_DIRS)" = "" ] || rmdir */generated 2>/dev/null
 
 DEBIAN_IMAGE := $(shell $(DOCKER) images -q arvados/debian |head -n1)
+
+REALCLEAN_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' ')
+REALCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE) 2>/dev/null)
+DEEPCLEAN_IMAGES := $(shell $(DOCKER) images -q arvados/*)
+SKYDNS_CONTAINERS := $(shell $(DOCKER) ps -a |grep -e crosbymichael/skydns -e crosbymichael/skydock |cut -f 1 -d' ')
+SKYDNS_IMAGES := $(shell $(DOCKER) images -q crosbymichael/skyd*)
 
 # `make realclean' will also remove the Arvados docker images (but not the
 # arvados/debian image) and force subsequent makes to build the entire chain
 # from the ground up
 realclean: clean
-	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
-	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
-	-$(DOCKER) rmi `$(DOCKER) images -q arvados/* |grep -v $(DEBIAN_IMAGE)`
+	@echo "make realclean"
+	+@[ "`$(DOCKER) ps -q`" = '' ] || $(DOCKER) stop `$(DOCKER) ps -q`
+	+@[ "$(REALCLEAN_CONTAINERS)" = '' ] || $(DOCKER) rm $(REALCLEAN_CONTAINERS)
+	+@[ "$(REALCLEAN_IMAGES)" = '' ] || $(DOCKER) rmi $(REALCLEAN_IMAGES)
 
 # `make deepclean' will remove all Arvados docker images and the skydns/skydock
 # images and force subsequent makes to build the entire chain from the ground up
 deepclean: clean
-	-rm debian-arvados-image
-	-[ -n "`$(DOCKER) ps -q`" ] && $(DOCKER) stop `$(DOCKER) ps -q`
-	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e arvados -e api_server -e keep_server -e doc_server -e workbench_server |cut -f 1 -d' '`
-	-$(DOCKER) rmi `$(DOCKER) images -q arvados/*`
-	-$(DOCKER) rm `$(DOCKER) ps -a |grep -e crosbymichael/skydns -e crosbymichael/skydock |cut -f 1 -d' '`
-	-$(DOCKER) rmi `$(DOCKER) images -q crosbymichael/skyd*`
+	@echo "make deepclean"
+	-@rm -f debian-arvados-image 2>/dev/null
+	+@[ "`$(DOCKER) ps -q`" = '' ] || $(DOCKER) stop `$(DOCKER) ps -q`
+	+@[ "$(REALCLEAN_CONTAINERS)" = '' ] || $(DOCKER) rm $(REALCLEAN_CONTAINERS)
+	+@[ "$(DEEPCLEAN_IMAGES)" = '' ] || $(DOCKER) rmi $(DEEPCLEAN_IMAGES)
+	+@[ "$(SKYDNS_CONTAINERS)" = '' ] || $(DOCKER) rm $(SKYDNS_CONTAINERS)
+	+@[ "$(SKYDNS_IMAGES)" = '' ] || $(DOCKER) rmi $(SKYDNS_IMAGES)
 
 # ============================================================
 # Dependencies for */generated files which are prerequisites

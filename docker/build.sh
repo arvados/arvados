@@ -11,4 +11,14 @@ then
     sudo apt-get -y install ruby1.9.3
 fi
 
-build_tools/build.rb $*
+build_tools/build.rb
+
+if [[ "$?" == "0" ]]; then
+    DOCKER=`which docker.io`
+
+    if [[ "$DOCKER" == "" ]]; then
+      DOCKER=`which docker`
+    fi
+
+    DOCKER=$DOCKER /usr/bin/make -f build_tools/Makefile $*
+fi
