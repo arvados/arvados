@@ -84,22 +84,22 @@ crosbymichael/skydns    latest              1923ce648d4c        5 months ago    
 
 h2. Updating the Arvados Docker containers
 
-If there has been an update to the Arvados Docker building code, it is safest to rebuild the Arvados Docker images from scratch. All build information can be cleared with the '--clean' option to build.sh:
+If there has been an update to the Arvados Docker building code, it is safest to rebuild the Arvados Docker images from scratch. All build information can be cleared with the 'clean' option to build.sh:
 
 <notextile>
-<pre><code>~$ <span class="userinput">./build.sh --clean</span></code></pre>
+<pre><code>~$ <span class="userinput">./build.sh clean</span></code></pre>
 </notextile>
 
-You can also use '--realclean', which does what '--clean' does and in addition removes all Arvados Docker containers and images from your system, with the exception of the arvados/debian image.
+You can also use 'realclean', which does what 'clean' does and in addition removes all Arvados Docker containers and images from your system, with the exception of the arvados/debian image.
 
 <notextile>
-<pre><code>~$ <span class="userinput">./build.sh --realclean</span></code></pre>
+<pre><code>~$ <span class="userinput">./build.sh realclean</span></code></pre>
 </notextile>
 
-Finally, the '--deepclean' option does what '--realclean' does, and also removes the arvados/debian, crosbymichael/skydns and crosbymichael/skydock images.
+Finally, the 'deepclean' option does what 'realclean' does, and also removes the arvados/debian, crosbymichael/skydns and crosbymichael/skydock images.
 
 <notextile>
-<pre><code>~$ <span class="userinput">./build.sh --deepclean</span></code></pre>
+<pre><code>~$ <span class="userinput">./build.sh deepclean</span></code></pre>
 </notextile>
 
 h2. Running the Arvados Docker containers
