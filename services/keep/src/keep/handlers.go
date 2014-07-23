@@ -39,6 +39,7 @@ func MakeRESTRouter() *mux.Router {
 		GetBlockHandler).Methods("GET", "HEAD")
 
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
 
 	// For IndexHandler we support:
 	//   /index           - returns all locators
@@ -315,6 +316,61 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 	return &VolumeStatus{volume, devnum, free, used}
 }
 
+// DeleteHandler processes DELETE requests.
+//
+// DELETE /{hash:[0-9a-f]{32} will delete the block with the specified hash
+// from all connected volumes.
+//
+// Only the Data Manager, or an Arvados admin with scope "all", are
+// allowed to issue DELETE requests.  If a DELETE request is not
+// authenticated or is issued by a non-admin user, the server returns
+// a PermissionError.
+//
+// Upon completion, DELETE returns HTTP 200 OK with a JSON message body
+// in the format
+//
+//    {"copies_deleted":d,"copies_failed":f}
+//
+// where d and f are integers representing the number of blocks that
+// were successfully and unsuccessfully deleted.
+//
+func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
+	hash := mux.Vars(req)["hash"]
+
+	// Confirm that this user is an admin and has a token with unlimited scope.
+	var tok = GetApiToken(req)
+	if tok == "" || !CanDelete(tok) {
+		http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
+		return
+	}
+
+	// Delete copies of this block from all available volumes.  Report
+	// how many blocks were successfully and unsuccessfully
+	// deleted.
+	var result struct {
+		Deleted int `json:"copies_deleted"`
+		Failed  int `json:"copies_failed"`
+	}
+	for _, vol := range KeepVM.Volumes() {
+		if err := vol.Delete(hash); err == nil {
+			result.Deleted++
+		} else if os.IsNotExist(err) {
+			continue
+		} else {
+			result.Failed++
+			log.Println("DeleteHandler:", err)
+		}
+	}
+
+	if j, err := json.Marshal(result); err == nil {
+		resp.Write(j)
+	} else {
+		log.Printf("json.Marshal: %s\n", err)
+		log.Printf("result = %v\n", result)
+		http.Error(resp, err.Error(), 500)
+	}
+}
+
 func GetBlock(hash string) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
 	error_to_caller := NotFoundError
@@ -476,4 +532,24 @@ func IsExpired(timestamp_hex string) bool {
 		return true
 	}
 	return time.Unix(ts, 0).Before(time.Now())
+}
+
+// CanDelete returns true if the user identified by api_token is
+// allowed to delete blocks.
+func CanDelete(api_token string) bool {
+	if api_token == "" {
+		return false
+	}
+	// Blocks may be deleted only when Keep has been configured with a
+	// data manager.
+	if data_manager_token == "" {
+		return false
+	}
+	if api_token == data_manager_token {
+		return true
+	}
+	// TODO(twp): look up api_token with the API server
+	// return true if is_admin is true and if the token
+	// has unlimited scope
+	return false
 }
