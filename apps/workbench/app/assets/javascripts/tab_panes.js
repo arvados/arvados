@@ -23,17 +23,16 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(e) {
                     errhtml = jqxhr.responseText;
                 }
             } else {
-                errhtml = (jqxhr.responseText ||
-                           'The server returned an error when loading this tab.').
+                errhtml = (jqxhr.responseText || status).
                     replace(/&/g, '&amp;').
                     replace(/</g, '&lt;').
                     replace(/>/g, '&gt;');
             }
             $('> div > div', this).html(
-                '<div><iframe></iframe>' +
-                    '<p><a href="#" class="btn btn-primary tab_reload">' +
+                '<div><p>An error occurred when this information was requested. ' +
+                    '<a href="#" class="btn btn-primary tab_reload">' +
                     '<i class="fa fa-fw fa-refresh"></i> ' +
-                    'Reload tab</a></p></div>');
+                    'Reload tab</a></p><iframe></iframe></div>');
             $('.tab_reload', this).click(function() {
                 $('> div > div', $pane).html(
                     '<div class="spinner spinner-32px spinner-h-center"></div>');
