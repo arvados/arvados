@@ -235,3 +235,8 @@ div#wrapper {
 svg text {
     font-size: 6pt;
 }
+
+div.pane-content iframe {
+  width: 100%;
+  border: none;
+}
