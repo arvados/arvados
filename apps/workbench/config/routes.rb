@@ -66,7 +66,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', on: :collection
     post 'share_with', on: :member
   end
-
+  match '/move_selections_into_project' => 'actions#move_selections_into_project', via: :patch
   post 'actions' => 'actions#post'
   get 'websockets' => 'websocket#index'
 

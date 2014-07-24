@@ -21,12 +21,13 @@
                                    title: 'Move to...',
                                    editable: true,
                                    action_name: 'Move',
-                                   action_href: url_for(action: :update),
+                                   action_href: url_for(action: :move_selections_into_project,
+                                                        controller: 'actions'),
                                    action_method: 'patch',
-                                   action_data: {selection_param: @object.resource_param_name+'[owner_uuid]',
+                                   action_data: {selection_param: 'selection[]',
                                                  success: 'page-refresh'}.to_json),
                   'data-remote' => true,
-                  'data-selection-param-name' => 'uuids[]',
+                  'data-selection-param-name' => 'selection[]',
 		  'data-selection-action' => 'move'
             %></li>
         </ul>
