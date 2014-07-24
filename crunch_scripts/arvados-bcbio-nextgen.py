@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/share/bcbio-nextgen/anaconda/bin/python
 
 import arvados
 import subprocess
@@ -7,10 +7,8 @@ import shutil
 import os
 import sys
 
-if len(arvados.current_task()['parameters']) > 0:
-    p = arvados.current_task()['parameters']
-else:
-    p = arvados.current_job()['script_parameters']
+p = arvados.current_job()['script_parameters']
+taskp = arvados.current_task()['parameters']
 
 t = arvados.current_task().tmpdir
 
@@ -99,15 +97,36 @@ os.symlink(arvados.get_job_param_mount("gemini_data"), "/usr/local/share/bcbio-n
 
 os.chdir(arvados.current_task().tmpdir)
 
-rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "/tmp/crunch-job/freebayes-variant.yaml", "project1",
+os.mkdirs("/tmp/crunch-job/project1/work")
+os.mkdirs("/tmp/crunch-job/project1/final")
+
+if "runfn" in taskp:
+    with open("/tmp/crunch-job/project1/work/task", "w") as f:
+        yaml.dump_safe(taskp['item'], f)
+    os.chdir("/tmp/crunch-job/project1/work")
+    rcode = subprocess.call(["bcbio_nextgen.py", "runfn", "task"), ])
+elif "runfn" in p:
+    for i in taskp['items']:
+        arvados.api().job_tasks().create(body={
+            'job_uuid': arvados.current_job()['uuid'],
+                'created_by_job_task_uuid': arvados.current_task()['uuid'],
+                'sequence': 1,
+                'parameters': {
+                    'runfn':p['runfn'],
+                    'item':i
+                    }
+        }).execute()
+    sys.exit(0)
+else:
+    rcode = subprocess.call(["bcbio_nextgen.py", "--workflow", "template", "/tmp/crunch-job/freebayes-variant.yaml", "project1",
                          subst.do_substitution(p, "$(file $(R1))"),
                          subst.do_substitution(p, "$(file $(R2))")])
 
-os.chdir("project1/work")
+    os.chdir("/tmp/crunch-job/project1/work")
 
-os.symlink("/usr/local/share/bcbio-nextgen/galaxy/tool-data", "tool-data")
+    os.symlink("/usr/local/share/bcbio-nextgen/galaxy/tool-data", "tool-data")
 
-rcode = subprocess.call(["bcbio_nextgen.py", "../config/project1.yaml", "-n", os.environ['CRUNCH_NODE_SLOTS']])
+    rcode = subprocess.call(["bcbio_nextgen.py", "../config/project1.yaml", "-n", os.environ['CRUNCH_NODE_SLOTS']])
 
 print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
