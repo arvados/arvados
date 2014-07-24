@@ -71,4 +71,11 @@ class PipelineInstancesControllerTest < ActionController::TestCase
       end
     end
   end
+
+  test "component rendering copes with unexpeceted components format" do
+    get(:show,
+        {id: api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]},
+        session_for(:active))
+    assert_response :success
+  end
 end
