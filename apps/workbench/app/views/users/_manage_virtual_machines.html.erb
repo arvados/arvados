@@ -18,10 +18,10 @@
     <tbody>
       <% @my_virtual_machines.andand.each do |vm| %>
         <tr>
-          <td>
+          <td style="word-break:break-all;">
             <%= vm[:hostname] %>
           </td>
-          <td>
+          <td style="word-break:break-all;">
             <%= @my_vm_logins[vm[:uuid]].andand.compact || [] %>
           </td>
         </tr>

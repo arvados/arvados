@@ -7,8 +7,8 @@
   <table class="table repositories-table">
     <colgroup>
       <col style="width: 30%" />
-      <col style="width: 15%" />
-      <col style="width: 55%" />
+      <col style="width: 10%" />
+      <col style="width: 60%" />
     </colgroup>
     <thead>
       <tr>
@@ -20,13 +20,13 @@
     <tbody>
       <% @my_repositories.andand.each do |repo| %>
         <tr>
-          <td>
+          <td style="word-break:break-all;">
             <%= repo[:name] %>
           </td>
           <td>
             <%= repo[:push_url] != nil %>
           </td>
-          <td>
+          <td style="word-break:break-all;">
             <%= repo[:fetch_url] %>
           </td>
         </tr>

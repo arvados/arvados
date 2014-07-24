@@ -8,13 +8,13 @@
     <tbody>
       <% @my_ssh_keys.andand.each do |key| %>
         <tr>
-          <td>
-            <%= key[:uuid] %>
+          <td style="word-break:break-all;">
+            <%= key[:public_key] %>
           </td>
           <td>
-    <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key"}) do %>
-      <i class="fa fa-fw fa-trash-o"></i>
-    <% end %>
+            <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key"}) do %>
+                <i class="fa fa-fw fa-trash-o"></i>
+            <% end %>
           </td>
         </tr>
       <% end %>
