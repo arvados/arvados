@@ -6,15 +6,13 @@
 
   <table class="table virtual-machines-table">
     <colgroup>
-      <col style="width: 35%" />
-      <col style="width: 35%" />
-      <col style="width: 30%" />
+      <col style="width: 50%" />
+      <col style="width: 50%" />
     </colgroup>
     <thead>
       <tr>
         <th> Host name </th>
         <th> Login name </th>
-        <th> Last login </th>
       </tr>
     </thead>
     <tbody>
@@ -25,8 +23,6 @@
           </td>
           <td>
             <%= @my_vm_logins[vm[:uuid]].andand.compact || [] %>
-          </td>
-          <td>
           </td>
         </tr>
       <% end %>
