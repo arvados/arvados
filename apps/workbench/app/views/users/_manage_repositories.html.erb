@@ -4,29 +4,30 @@
     "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", target: "_blank"%>
   </p>
 
-  <table class="table virtual-machines-table">
+  <table class="table repositories-table">
     <colgroup>
-      <col style="width: 35%" />
-      <col style="width: 35%" />
       <col style="width: 30%" />
+      <col style="width: 15%" />
+      <col style="width: 55%" />
     </colgroup>
     <thead>
       <tr>
-        <th> Host name </th>
-        <th> Login name </th>
-        <th> Last login </th>
+        <th> Name </th>
+        <th> Writable </th>
+        <th> URL </th>
       </tr>
     </thead>
     <tbody>
-      <% @virtual_machines.andand.each do |vm| %>
+      <% @my_repositories.andand.each do |repo| %>
         <tr>
           <td>
-            <%= vm[:hostname] %>
+            <%= repo[:name] %>
           </td>
           <td>
-            <%= @vm_logins[vm[:uuid]].andand.compact || [] %>
+            <%= repo[:push_url] != nil %>
           </td>
           <td>
+            <%= repo[:fetch_url] %>
           </td>
         </tr>
       <% end %>

@@ -6,7 +6,7 @@
       <col style="width: 5%" />
     </colgroup>
     <tbody>
-      <% @ssh_keys.andand.each do |key| %>
+      <% @my_ssh_keys.andand.each do |key| %>
         <tr>
           <td>
             <%= key[:uuid] %>
@@ -33,8 +33,8 @@ Sample <code>~/.ssh/config</code>:
 <pre>
 Host *.arvados
   ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
-<% if @vm_logins.andand.first %>
-  User <%= @vm_logins[@vm_logins.andand.keys.first].andand.first %>
+<% if @my_vm_logins.andand.first %>
+  User <%= @my_vm_logins[@my_vm_logins.andand.keys.first].andand.first %>
 <% end %>
 </pre>
 
@@ -43,7 +43,7 @@ Sample login command:
 </p>
 
 <pre>
-ssh <%= @virtual_machines.first.andand.hostname.andand.sub('.'+current_api_host,'') or 'vm-hostname' %>.arvados
+ssh <%= @my_virtual_machines.first.andand.hostname.andand.sub('.'+current_api_host,'') or 'vm-hostname' %>.arvados
 </pre>
 
 <p>

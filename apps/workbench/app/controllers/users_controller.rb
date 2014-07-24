@@ -210,6 +210,39 @@ class UsersController < ApplicationController
     end
   end
 
+  def manage_account
+    # repositories current user can read / write
+    repo_links = []
+    Link.where(tail_uuid: current_user.uuid,
+               link_class: 'permission',
+               name: ['can_write', 'can_read']).
+          each do |perm_link|
+            repo_links << perm_link[:head_uuid]
+          end
+    @my_repositories = Repository.where(uuid: repo_links)
+
+    # virtual machines the current user can login into
+    @my_vm_logins = {}
+    Link.where(tail_uuid: current_user.uuid,
+               link_class: 'permission',
+               name: 'can_login').
+          each do |perm_link|
+            if perm_link.properties.andand[:username]
+              @my_vm_logins[perm_link.head_uuid] ||= []
+              @my_vm_logins[perm_link.head_uuid] << perm_link.properties[:username]
+            end
+          end
+    @my_virtual_machines = VirtualMachine.where(uuid: @my_vm_logins.keys)
+
+    # current user's ssh keys
+    @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
+
+    respond_to do |f|
+#      f.js { render template: 'users/manage_account.js' }
+      f.html { render template: 'users/manage_account' }
+    end
+  end
+
   protected
 
   def find_current_links user

@@ -14,7 +14,7 @@
         </div>
         <div id="manage_<%=section_id%>">
           <div class="panel-body">
-            <%= render partial: "show_manage_#{section_id}", locals: {repositories: @repositories, virtual_machines: @virtual_machines, vm_logins: @vm_logins, ssh_keys: @ssh_keys} %>
+            <%= render partial: "manage_#{section_id}" %>
           </div>
         </div>
       </div>
@@ -42,7 +42,7 @@
         </div>
         <div id="manage_<%=section_id%>">
           <div class="panel-body">
-            <%= render partial: "show_manage_#{section_id}", locals: {repositories: @repositories, virtual_machines: @virtual_machines, ssh_keys: @ssh_keys} %>
+            <%= render partial: "manage_#{section_id}" %>
           </div>
         </div>
       </div>
