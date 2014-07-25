@@ -1,7 +1,7 @@
 <div class="modal-dialog modal-with-loading-spinner">
   <div class="modal-content">
 
-    <%= form_tag add_ssh_key_path, {method: 'get', class: 'form-search, new_authorized_key', remote: true} do %>
+    <%= form_tag add_ssh_key_path, {method: 'get', id: 'add_new_key_form', name: 'add_new_key_form', class: 'form-search, new_authorized_key', remote: true} do %>
 
       <div class="modal-header">
         <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
