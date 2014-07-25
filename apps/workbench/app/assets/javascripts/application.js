@@ -180,10 +180,26 @@ jQuery(function($){
     });
 
     $(document).ready(function() {
-        window.wiselinks = new Wiselinks();
+        /* When wiselinks is initialized, selection.js is not working. Since we want to stop
+           using selection.js in the near future, let's not initialize wiselinks for now. */
 
-        $(document).off('page:loading').on('page:loading', function(event, url, target, render) {
-            $("#page-wrapper").hide().fadeIn(200);
+        // window.wiselinks = new Wiselinks();
+
+        $(document).off('page:loading').on('page:loading', function(event, $target, render, url){
+            $("#page-wrapper").fadeOut(200);
+        });
+
+        $(document).off('page:redirected').on('page:redirected', function(event, $target, render, url){
+        });
+
+        $(document).off('page:always').on('page:always', function(event, xhr, settings){
+            $("#page-wrapper").fadeIn(200);
+        });
+
+        $(document).off('page:done').on('page:done', function(event, $target, status, url, data){
+        });
+
+        $(document).off('page:fail').on('page:fail', function(event, $target, status, url, error, code){
         });
     });
 
