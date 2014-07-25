@@ -215,7 +215,7 @@ for s,f,outfilename in todo:
             sys.stderr.write("%s  %s/%s\n"
                              % (digestor.hexdigest(), s.name(), f.name()))
     except KeyboardInterrupt:
-        if outfile:
+        if outfile and outfile != '/dev/stdout':
             os.unlink(outfilename)
         break
 

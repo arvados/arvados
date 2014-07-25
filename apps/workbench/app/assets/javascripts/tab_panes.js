@@ -12,6 +12,44 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(e) {
         done(function(data, status, jqxhr) {
             $('> div > div', this).html(data);
             $(this).addClass('loaded');
+        }).fail(function(jqxhr, status, error) {
+            var errhtml;
+            if (jqxhr.getResponseHeader('Content-Type').match(/\btext\/html\b/)) {
+                var $response = $(jqxhr.responseText);
+                var $wrapper = $('div#page-wrapper', $response);
+                if ($wrapper.length) {
+                    errhtml = $wrapper.html();
+                } else {
+                    errhtml = jqxhr.responseText;
+                }
+            } else {
+                errhtml = ("An error occurred: " +
+                           (jqxhr.responseText || status)).
+                    replace(/&/g, '&amp;').
+                    replace(/</g, '&lt;').
+                    replace(/>/g, '&gt;');
+            }
+            $('> div > div', this).html(
+                '<div><p>' +
+                    '<a href="#" class="btn btn-primary tab_reload">' +
+                    '<i class="fa fa-fw fa-refresh"></i> ' +
+                    'Reload tab</a></p><iframe></iframe></div>');
+            $('.tab_reload', this).click(function() {
+                $('> div > div', $pane).html(
+                    '<div class="spinner spinner-32px spinner-h-center"></div>');
+                $pane.trigger('arv:pane:reload');
+            });
+            // We want to render the error in an iframe, in order to
+            // avoid conflicts with the main page's element ids, etc.
+            // In order to do that dynamically, we have to set a
+            // timeout on the iframe window to load our HTML *after*
+            // the default source (e.g., about:blank) has loaded.
+            var iframe = $('iframe', this)[0];
+            iframe.contentWindow.setTimeout(function() {
+                $('body', iframe.contentDocument).html(errhtml);
+                iframe.height = iframe.contentDocument.body.scrollHeight + "px";
+            }, 1);
+            $(this).addClass('loaded');
         });
 });
 

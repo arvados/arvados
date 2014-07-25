@@ -43,12 +43,17 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "user with project read permission can't add permissions" do
+    share_uuid = api_fixture("users")["spectator"]["uuid"]
     post(:share_with, {
            id: api_fixture("groups")["aproject"]["uuid"],
-           uuids: [api_fixture("users")["spectator"]["uuid"]],
+           uuids: [share_uuid],
            format: "json"},
          session_for(:project_viewer))
     assert_response 422
+    json_response = Oj.load(@response.body)
+    assert(json_response["errors"].andand.
+             any? { |msg| msg.start_with?("#{share_uuid}: ") },
+           "JSON response missing properly formatted sharing error")
   end
 
   def user_can_manage(user_sym, group_key)
