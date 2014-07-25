@@ -169,7 +169,21 @@
     <% if current_user.andand.is_active %>
       <nav class="navbar navbar-default breadcrumbs" role="navigation">
         <ul class="nav navbar-nav navbar-left">
+          <li>
+            <a href="/">
+              <i class="fa fa-lg fa-fw fa-home"></i>
+              Home
+            </a>
+          </li>
+          <li class="nav-separator">
+            <i class="fa fa-lg fa-angle-double-right"></i>
+          </li>
           <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="projects-menu">
+              Projects
+              <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
             <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
                     link_to(project_path(pnode[:object].uuid), data: {object_uuid: pnode[:object].uuid, name: 'name'}, &block)
@@ -180,6 +194,7 @@
                     <% end %>
                   <% end %>
             <% } %>
+            </ul>
           </li>
           <% project_breadcrumbs.each do |p| %>
             <li class="nav-separator">
