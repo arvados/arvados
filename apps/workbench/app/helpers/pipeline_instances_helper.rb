@@ -52,6 +52,10 @@ module PipelineInstancesHelper
     object.components.each do |cname, c|
       i += 1
       pj = {index: i, name: cname}
+      if not c.is_a?(Hash)
+        ret << pj
+        next
+      end
       pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
       pj[:percent_done] = 0
       pj[:percent_running] = 0
