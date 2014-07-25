@@ -139,6 +139,12 @@ common:
   # address of the dedicated websocket server:
   #websocket_address: wss://127.0.0.1:3333/websocket
 
+  # blob_signing_key is a string of alphanumeric characters used to
+  # generate permission signatures for Keep locators. It must be
+  # identical to the permission key given to Keep. IMPORTANT: This is
+  # a site secret. It should be at least 50 characters.
+  blob_signing_key: ~
+
   # Amount of time (in seconds) for which a blob permission signature
   # remains valid.  Default: 2 weeks (1209600 seconds)
   blob_signing_ttl: 1209600
@@ -153,3 +159,8 @@ common:
   # do not turn this on if your users expect to keep data private from
   # one another!
   permit_create_collection_with_unsigned_manifest: false
+
+  # secret_token is a string of alphanumeric characters used by Rails
+  # to sign session tokens. IMPORTANT: This is a site secret. It
+  # should be at least 50 characters.
+  secret_token: ~
