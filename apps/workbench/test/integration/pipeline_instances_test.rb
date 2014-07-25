@@ -103,7 +103,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find('.btn', text: 'Run a pipeline').click
     within('.modal-dialog') do
       assert page.has_text? 'Two Part Pipeline Template'
-      find('.fa-gear').click
+      find('.selectable', text: 'Two Part Pipeline Template').click
       find('.btn', text: 'Next: choose inputs').click
     end
 
@@ -146,4 +146,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'script_version'
   end
 
+  test "JSON popup available for strange components" do
+    uuid = api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]
+    visit page_with_token("active", "/pipeline_instances/#{uuid}")
+    click_on "Components"
+    assert(page.has_no_text?("script_parameters"),
+           "components JSON visible without popup")
+    click_on "Show components JSON"
+    assert(page.has_text?("script_parameters"),
+           "components JSON not found")
+  end
 end

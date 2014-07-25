@@ -1,5 +1,6 @@
 class PipelineTemplatesController < ApplicationController
-  
+  include PipelineComponentsHelper
+
   def show
     @objects = PipelineInstance.where(pipeline_template_uuid: @object.uuid)
     super
