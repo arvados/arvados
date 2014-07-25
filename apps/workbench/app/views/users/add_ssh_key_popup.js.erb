@@ -1,0 +1,34 @@
+$("#add-ssh-key-modal-window").html("<%= escape_javascript(render partial: 'add_ssh_key_popup') %>");
+
+// disable the submit button on load
+var $input = $('input:text'),
+$register = $('#register');
+
+var name_value = document.forms["add_new_key_form"]["name"].value;
+var public_key_value = document.forms["add_new_key_form"]["public_key"].value;
+if ((name_value == null || name_value == "" ||
+     public_key_value == null || public_key_value == "")) {
+  $register.attr('disabled', true);
+}
+
+// capture events to enable submit button when applicable
+$input.on('keyup paste mouseleave', function() {
+  var trigger = false;
+
+  var name_value = document.forms["add_new_key_form"]["name"].value;
+  var public_key_value = document.forms["add_new_key_form"]["public_key"].value;
+
+  if ((name_value == null || name_value == "" ||
+       public_key_value == null || public_key_value == "")){
+    trigger = true;
+  }
+
+  trigger ? $register.attr('disabled', true) : $register.removeAttr('disabled');
+});
+
+// reset form input fields, for the next time around
+function reset_form() {
+  $('#name').val("");
+  $('#public_key').val("");
+  $('select').val('')
+}

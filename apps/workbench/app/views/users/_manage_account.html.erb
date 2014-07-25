@@ -28,11 +28,9 @@
       <div class="panel panel-default">
         <div class="panel-heading">
           <div class="pull-right">
-            <%= button_to projects_path(method: 'post'), class: 'btn btn-xs btn-primary' do %>
-              <i class="fa fa-fw fa-plus"></i>
-              Add new SSH key
-            <% end %>
-
+            <%= link_to "Add new SSH key", add_ssh_key_popup_url,
+                         {class: 'btn btn-xs btn-primary', :remote => true, 'data-toggle' =>  "modal",
+                          'data-target' => '#add-ssh-key-modal-window'}  %>
           </div>
           <h4 class="panel-title">
             <a data-parent="#arv-adv-accordion" href="#manage_<%=section_id%>">
@@ -48,4 +46,5 @@
       </div>
     <% end %>
   </div>
+  <div id="add-ssh-key-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
 </div>

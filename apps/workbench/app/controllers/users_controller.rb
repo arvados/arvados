@@ -238,8 +238,35 @@ class UsersController < ApplicationController
     @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
 
     respond_to do |f|
-#      f.js { render template: 'users/manage_account.js' }
       f.html { render template: 'users/manage_account' }
+    end
+  end
+
+  def add_ssh_key_popup
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
+  def add_ssh_key
+    respond_to do |format|
+      key_params = {'key_type' => 'SSH'}
+      key_params['authorized_user_uuid'] = current_user.uuid
+
+      if params['name'] && params['name'].size>0
+        key_params['name'] = params['name']
+      end
+      if params['public_key'] && params['public_key'].size>0
+        key_params['public_key'] = params['public_key']
+      end
+
+      new_key = AuthorizedKey.create! key_params
+      if new_key
+        format.js
+      else
+        self.render_error status: 422
+      end
     end
   end
 
