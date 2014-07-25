@@ -22,11 +22,13 @@ class Arvados::V1::GroupsController < ApplicationController
     # Set @objects:
     load_searchable_objects(owner_uuid: @object.andand.uuid, include_linked: params[:include_linked])
 
-    @links = Link.where('link_class=? and tail_uuid=?'\
-                        ' and head_uuid in (?)',
-                        'name',
-                        @object.uuid,
-                        @objects.collect(&:uuid))
+    sql = 'link_class=? and head_uuid in (?)'
+    sql_params = ['name', @objects.collect(&:uuid)]
+    if @object
+      sql += ' and tail_uuid=?'
+      sql_params << @object.uuid
+    end
+    @links = Link.where sql, *sql_params
     @object_list = {
       :kind  => "arvados#objectList",
       :etag => "",
