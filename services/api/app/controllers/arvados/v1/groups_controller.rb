@@ -65,9 +65,10 @@ class Arvados::V1::GroupsController < ApplicationController
         cond_params << opts[:owner_uuid]
       end
       if opts[:include_linked]
-        conds << " OR #{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
+        conds << "#{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
       end
       if conds.any?
+        cond_sql = '(' + conds.join(') OR (') + ')'
         @objects = @objects.where(cond_sql, *cond_params)
       end
       @objects = @objects.order("#{klass.table_name}.uuid")
