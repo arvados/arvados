@@ -1,5 +1,14 @@
 <div>
 <h4>Add / Delete SSH Keys</h4>
+  <% if !@my_ssh_keys.any? %>
+     <p> You have not yet set up an SSH public key for use with Arvados. </p>
+     <p>  <%= link_to "Click here to learn about SSH keys in Arvados.",
+	          "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", 
+	          style: "font-weight: bold",
+	          target: "_blank" %>       </p>
+     <p> When you have an SSH key you would like to use, add it using the <b>Add</b> button. </p>
+  <% end %>
+
   <table class="table virtual-machines-table">
     <colgroup>
       <col style="width: 95%" />
