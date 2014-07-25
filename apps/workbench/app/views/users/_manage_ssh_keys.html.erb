@@ -9,26 +9,39 @@
      <p> When you have an SSH key you would like to use, add it using the <b>Add</b> button. </p>
   <% end %>
 
-  <table class="table virtual-machines-table">
-    <colgroup>
-      <col style="width: 95%" />
-      <col style="width: 5%" />
-    </colgroup>
-    <tbody>
-      <% @my_ssh_keys.andand.each do |key| %>
+  <% if @my_ssh_keys.andand.any? %>
+    <table class="table virtual-machines-table">
+      <colgroup>
+        <col style="width: 15%" />
+        <col style="width: 80%" />
+        <col style="width: 5%" />
+      </colgroup>
+      <thead>
         <tr>
-          <td style="word-break:break-all;">
-            <%= key[:public_key] %>
-          </td>
-          <td>
-            <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key"}) do %>
-                <i class="fa fa-fw fa-trash-o"></i>
-            <% end %>
-          </td>
+          <th> Name </th>
+          <th> Public Key </th>
+          <th> </th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% @my_ssh_keys.andand.each do |key| %>
+          <tr>
+            <td style="word-break:break-all;">
+              <%= key[:name] %>
+            </td>
+            <td style="word-break:break-all;">
+              <%= key[:public_key] %>
+            </td>
+            <td>
+              <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key"}) do %>
+                  <i class="fa fa-fw fa-trash-o"></i>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
 </div>
 
 <hr>
