@@ -1,0 +1,47 @@
+---
+layout: default
+navsection: userguide
+title: "Getting data from Keep"
+...
+
+This tutorial covers using @arv-ls@ and @arv-get@ to access Keep from the command line.  It is also possible to download a file from a collection from the Workbench page for the collection.
+
+{% include 'tutorial_expectations' %}
+
+You can view the contents of a collection using @arv-ls@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-ls c1bad4b39ca5a924e481008009d94e32+210</span>
+var-GS000016015-ASM.tsv.bz2
+</code></pre>
+
+<pre><code>~$ <span class="userinput">arv-ls 887cd41e9c613463eab2f0d885c6dd96+83</span>
+alice.txt
+bob.txt
+carol.txt
+</code></pre>
+</notextile>
+
+Use @-s@ to print file sizes rounded up to the nearest kilobyte:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-ls -s c1bad4b39ca5a924e481008009d94e32+210</span>
+221887 var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+Use @arv-get@ to download the contents of a collection and place it in the directory specified in the second argument (in this example, @.@ for the current directory):
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-get c1bad4b39ca5a924e481008009d94e32+210/ .</span>
+~$ <span class="userinput">ls var-GS000016015-ASM.tsv.bz2</span>
+var-GS000016015-ASM.tsv.bz2
+</code></pre>
+</notextile>
+
+You can also download individual files:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-get 887cd41e9c613463eab2f0d885c6dd96+83/alice.txt .</span>
+</code></pre>
+</notextile>
