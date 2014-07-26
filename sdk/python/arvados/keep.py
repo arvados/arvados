@@ -19,6 +19,7 @@ import time
 import threading
 import timer
 import datetime
+import ssl
 
 global_client_object = None
 
@@ -244,7 +245,7 @@ class KeepClient(object):
 
                     logging.warning("Request fail: PUT %s => %s %s" %
                                     (url, resp['status'], content))
-                except (httplib2.HttpLib2Error, httplib.HTTPException) as e:
+                except (httplib2.HttpLib2Error, httplib.HTTPException, ssl.SSLError) as e:
                     logging.warning("Request fail: PUT %s => %s: %s" %
                                     (url, type(e), str(e)))
 
