@@ -16,14 +16,19 @@ $(document).on('click', '.selectable', function() {
         prop('disabled', !any);
 
     if ($this.hasClass('active')) {
+        var no_preview_available = '<div class="spinner-h-center spinner-v-center"><center>(No preview available)</center></div>';
+        if (!$this.attr('data-preview-href')) {
+            $(".modal-dialog-preview-pane").html(no_preview_available);
+            return;
+        }
         $(".modal-dialog-preview-pane").html('<div class="spinner spinner-32px spinner-h-center spinner-v-center"></div>');
         $.ajax($this.attr('data-preview-href'),
                {dataType: "html"}).
-           done(function(data, status, jqxhr) {
+            done(function(data, status, jqxhr) {
                 $(".modal-dialog-preview-pane").html(data);
             }).
             fail(function(data, status, jqxhr) {
-                $(".modal-dialog-preview-pane").text('Preview load failed.');
+                $(".modal-dialog-preview-pane").html(no_preview_available);
             });
     }
 

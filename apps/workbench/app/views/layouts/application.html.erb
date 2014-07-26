@@ -75,7 +75,9 @@
           -->
 
           <li>
-            <%= link_to(choose_collections_path(
+            <%= link_to(url_for(
+                       action: 'choose',
+                       controller: 'search',
                        title: 'Search',
                        action_name: 'Show',
                        action_href: url_for(controller: :actions, action: :show),

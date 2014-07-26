@@ -14,6 +14,7 @@ class ApplicationController < ActionController::Base
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
+  before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
@@ -86,7 +87,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def find_objects_for_index
+  def load_filters_and_paging_params
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
@@ -105,7 +106,9 @@ class ApplicationController < ActionController::Base
       end
       @filters += filters
     end
+  end
 
+  def find_objects_for_index
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
   end

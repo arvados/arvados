@@ -1,0 +1,22 @@
+<% current_class = nil %>
+<% @objects.each do |object| %>
+  <% icon_class = fa_icon_class_for_class(object.class) %>
+  <% if object.class != current_class %>
+    <% current_class = object.class %>
+    <div class="row class-separator">
+      <div class="col-sm-12">
+        <%= object.class_for_display.pluralize.downcase %>
+      </div>
+    </div>
+  <% end %>
+  <div class="row filterable selectable <%= 'multiple' if multiple %>" data-object-uuid="<%= object.uuid %>" data-preview-href="<%= chooser_preview_url_for object %>">
+    <div class="col-sm-12" style="overflow-x:hidden; white-space: nowrap">
+      <i class="fa fa-fw <%= icon_class %>"></i>
+      <% if object.respond_to?(:name) and object.name and object.name.length > 0 %>
+        <%= object.name %>
+      <% else %>
+        unnamed - <span class="arvados-uuid"><%= object.uuid %></span>
+      <% end %>
+    </div>
+  </div>
+<% end %>

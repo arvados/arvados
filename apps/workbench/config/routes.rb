@@ -66,6 +66,9 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', on: :collection
     post 'share_with', on: :member
   end
+  resources :search do
+    get 'choose', :on => :collection
+  end
 
   post 'actions' => 'actions#post'
   get 'actions' => 'actions#show'
