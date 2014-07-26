@@ -251,6 +251,8 @@ class KeepClient(object):
             except (httplib2.HttpLib2Error,
                     httplib.HTTPException,
                     ssl.SSLError) as e:
+                # When using https, timeouts look like ssl.SSLError from here.
+                # "SSLError: The write operation timed out"
                 logging.warning("Request fail: PUT %s => %s: %s" %
                                 (url, type(e), str(e)))
 
