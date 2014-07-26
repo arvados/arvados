@@ -45,7 +45,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       find('.btn', text: 'Add').click
     end
 
+    click_link 'Pipeline templates'
+    wait_for_ajax
     click_link 'Jobs and pipelines'
+    wait_for_ajax
     find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
       find('a', text: 'Show').
       click
