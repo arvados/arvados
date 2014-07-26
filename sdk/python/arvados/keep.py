@@ -185,6 +185,10 @@ class KeepClient(object):
         def __init__(self, **kwargs):
             super(KeepClient.KeepWriterThread, self).__init__()
             self.args = kwargs
+            self._success = False
+
+        def success(self):
+            return self._success
 
         def run(self):
             with self.args['thread_limiter'] as limiter:
@@ -221,6 +225,7 @@ class KeepClient(object):
                                                   headers=headers,
                                                   body=body)
                     if re.match(r'^2\d\d$', resp['status']):
+                        self._success = True
                         logging.debug("KeepWriterThread %s succeeded %s %s" %
                                       (str(threading.current_thread()),
                                        self.args['data_hash'],
@@ -243,7 +248,7 @@ class KeepClient(object):
                     logging.warning("Request fail: PUT %s => %s: %s" %
                                     (url, type(e), str(e)))
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.lock = threading.Lock()
         self.service_roots = None
         self._cache_lock = threading.Lock()
@@ -251,6 +256,7 @@ class KeepClient(object):
         # default 256 megabyte cache
         self.cache_max = 256 * 1024 * 1024
         self.using_proxy = False
+        self.timeout = kwargs.get('timeout', 60)
 
     def shuffled_service_roots(self, hash):
         if self.service_roots == None:
@@ -466,16 +472,33 @@ class KeepClient(object):
         threads = []
         thread_limiter = KeepClient.ThreadLimiter(want_copies)
         for service_root in self.shuffled_service_roots(data_hash):
-            t = KeepClient.KeepWriterThread(data=data,
-                                            data_hash=data_hash,
-                                            service_root=service_root,
-                                            thread_limiter=thread_limiter,
-                                            using_proxy=self.using_proxy,
-                                            want_copies=(want_copies if self.using_proxy else 1))
+            t = KeepClient.KeepWriterThread(
+                data=data,
+                data_hash=data_hash,
+                service_root=service_root,
+                thread_limiter=thread_limiter,
+                timeout=self.timeout,
+                using_proxy=self.using_proxy,
+                want_copies=(want_copies if self.using_proxy else 1))
             t.start()
             threads += [t]
         for t in threads:
             t.join()
+        if thread_limiter.done() < want_copies:
+            # Retry the threads (i.e., services) that failed the first
+            # time around.
+            threads_retry = []
+            for t in threads:
+                if not t.success():
+                    logging.warning("Retrying: PUT %s %s" % (
+                        t.args['service_root'],
+                        t.args['data_hash']))
+                    retry_with_args = t.args.copy()
+                    t_retry = KeepClient.KeepWriterThread(**retry_with_args)
+                    t_retry.start()
+                    threads_retry += [t_retry]
+            for t in threads_retry:
+                t.join()
         have_copies = thread_limiter.done()
         # If we're done, return the response from Keep
         if have_copies >= want_copies:
