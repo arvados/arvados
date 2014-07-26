@@ -872,4 +872,7 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
+  def wiselinks_layout
+    'body'
+  end
 end
