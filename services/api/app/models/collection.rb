@@ -49,6 +49,20 @@ class Collection < ArvadosModel
     true
   end
 
+  # TODO (#3036/tom) replace above assign_uuid method with below assign_uuid and self.generate_uuid
+  # def assign_uuid
+  #   # Even admins cannot assign collection uuids.
+  #   self.uuid = self.class.generate_uuid
+  # end
+  # def self.generate_uuid
+  #   # The last 10 characters of a collection uuid are the last 10
+  #   # characters of the base-36 SHA256 digest of manifest_text.
+  #   [Server::Application.config.uuid_prefix,
+  #    self.uuid_prefix,
+  #    rand(2**256).to_s(36)[-5..-1] + Digest::SHA256.hexdigest(self.manifest_text).to_i(16).to_s(36)[-10..-1],
+  #   ].join '-'
+  # end
+
   def data_size
     inspect_manifest_text if @data_size.nil? or manifest_text_changed?
     @data_size
