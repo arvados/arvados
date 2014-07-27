@@ -135,11 +135,13 @@ jQuery(function($){
         on('ajax:complete ready', function() {
             // See http://getbootstrap.com/javascript/#buttons
             $('.btn').button();
-        });
-
-    $(document).
+        }).
         on('ready ajax:complete', function() {
             $('[data-toggle~=tooltip]').tooltip({container:'body'});
+        }).
+        on('ready ajax:complete', function() {
+            // This makes the dialog close on Esc key, obviously.
+            $('.modal').attr('tabindex', '-1')
         });
 
     HeaderRowFixer = function(selector) {
