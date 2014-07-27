@@ -43,9 +43,6 @@ class CollectionsController < ApplicationController
   end
 
   def choose
-    # Always offer a Projects dropdown when choosing collections.
-    params[:by_project] = true
-
     params[:limit] ||= 40
 
     @filters += [['link_class','=','name'],
