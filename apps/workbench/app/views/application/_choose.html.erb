@@ -36,7 +36,7 @@
 	       style="height: 100%; overflow-y: scroll"
 	       data-infinite-scroller="#choose-scroll"
 	       id="choose-scroll"
-	       data-infinite-content-href="<%= @next_page_href %>">
+	       data-infinite-content-href="<%= next_page_href partial: true %>">
 	    <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
 	  </div>
           <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">

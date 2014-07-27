@@ -1,8 +1,8 @@
-<% current_class = nil %>
+<% current_class = params[:last_object_class] %>
 <% @objects.each do |object| %>
   <% icon_class = fa_icon_class_for_class(object.class) %>
-  <% if object.class != current_class %>
-    <% current_class = object.class %>
+  <% if object.class.to_s != current_class %>
+    <% current_class = object.class.to_s %>
     <div class="row class-separator">
       <div class="col-sm-12">
         <%= object.class_for_display.pluralize.downcase %>

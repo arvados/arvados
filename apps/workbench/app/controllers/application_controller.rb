@@ -148,6 +148,13 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  helper_method :next_page_href
+  def next_page_href with_params={}
+    if next_page_offset
+      url_for with_params.merge(offset: next_page_offset)
+    end
+  end
+
   def show
     if !@object
       return render_not_found("object not found")
@@ -190,7 +197,7 @@ class ApplicationController < ActionController::Base
                                       locals: {
                                         multiple: params[:multiple]
                                       }),
-            next_page_href: @next_page_href
+            next_page_href: next_page_href(partial: params[:partial])
           }
         }
       end
