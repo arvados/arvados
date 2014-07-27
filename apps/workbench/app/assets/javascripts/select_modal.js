@@ -70,6 +70,12 @@ $(document).on('click', '.selectable', function() {
             $(document).trigger(event_name!=null ? event_name : 'page-refresh',
                                 [data, status, jqxhr, this.action_data]);
         });
+}).on('click', '.chooser-show-project', function() {
+    $(this).attr('href', '#');
+    $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
+        data('infinite-content-params',
+             {'filters[]': JSON.stringify(['owner_uuid', '=', $(this).attr('data-project-uuid')])}).
+        trigger('refresh-content');
 });
 $(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
     window.location.reload();

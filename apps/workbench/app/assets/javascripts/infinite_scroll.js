@@ -4,11 +4,18 @@ function maybe_load_more_content() {
     var src;                    // url for retrieving content
     var scrollHeight;
     var spinner, colspan;
+    var serial = Date.now();
     scrollHeight = scroller.scrollHeight || $('body')[0].scrollHeight;
     if ($(scroller).scrollTop() + $(scroller).height()
         >
         scrollHeight - 50) {
         container = $(this).data('infinite-container');
+        if (!$(container).attr('data-infinite-content-href0')) {
+            // Remember the first page source url, so we can refresh
+            // from page 1 later.
+            $(container).attr('data-infinite-content-href0',
+                              $(container).attr('data-infinite-content-href'));
+        }
         src = $(container).attr('data-infinite-content-href');
         if (!src)
             // Finished
@@ -29,15 +36,18 @@ function maybe_load_more_content() {
         }
         $(container).find(".spinner").detach();
         $(container).append(spinner);
+        $(container).attr('data-infinite-serial', serial);
         $.ajax(src,
                {dataType: 'json',
                 type: 'GET',
-                data: {},
-                context: {container: container, src: src}}).
-            always(function() {
-            }).
+                data: ($(container).data('infinite-content-params') || {}),
+                context: {container: container, src: src, serial: serial}}).
             fail(function(jqxhr, status, error) {
                 var $faildiv;
+                if ($(this.container).attr('data-infinite-serial') != this.serial) {
+                    // A newer request is already in progress.
+                    return;
+                }
                 if (jqxhr.readyState == 0 || jqxhr.status == 0) {
                     message = "Cancelled."
                 } else if (jqxhr.responseJSON && jqxhr.responseJSON.errors) {
@@ -54,6 +64,10 @@ function maybe_load_more_content() {
                 $(this.container).find('div.spinner').replaceWith($faildiv);
             }).
             done(function(data, status, jqxhr) {
+                if ($(this.container).attr('data-infinite-serial') != this.serial) {
+                    // A newer request is already in progress.
+                    return;
+                }
                 $(this.container).find(".spinner").detach();
                 $(this.container).append(data.content);
                 $(this.container).attr('data-infinite-content-href', data.next_page_href);
@@ -68,6 +82,18 @@ $(document).
                        $retry_div.attr('data-infinite-content-href'));
         $retry_div.replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
         $scroller.trigger('scroll');
+    }).
+    on('refresh-content', '[data-infinite-scroller]', function() {
+        // Clear all rows, reset source href to initial state, and
+        // (if the container is visible) start loading content.
+        var first_page_href = $(this).attr('data-infinite-content-href0');
+        if (!first_page_href)
+            first_page_href = $(this).attr('data-infinite-content-href');
+        $(this).
+            html('').
+            attr('data-infinite-content-href', first_page_href);
+        $('.infinite-scroller').
+            trigger('scroll');
     }).
     on('ready ajax:complete', function() {
         $('[data-infinite-scroller]').each(function() {

@@ -103,6 +103,16 @@ class ApplicationController < ActionController::Base
       filters = params[:filters]
       if filters.is_a? String
         filters = Oj.load filters
+      elsif filters.is_a? Array
+        filters = filters.collect do |filter|
+          if filter.is_a? String
+            # Accept filters[]=["foo","=","bar"]
+            Oj.load filter
+          else
+            # Accept filters=[["foo","=","bar"]]
+            filter
+          end
+        end
       end
       @filters += filters
     end
@@ -178,16 +188,7 @@ class ApplicationController < ActionController::Base
 
   def choose
     params[:limit] ||= 40
-    if !@objects
-      if params[:project_uuid] and !params[:project_uuid].empty?
-        # We want the chooser to show objects of the controllers's model_class
-        # type within a specific project specified by project_uuid, so fetch the
-        # project and request the contents of the project filtered on the
-        # controllers's model_class kind.
-        @objects = Group.find(params[:project_uuid]).contents({:filters => [['uuid', 'is_a', "arvados\##{ArvadosApiClient.class_kind(model_class)}"]]})
-      end
-      find_objects_for_index if !@objects
-    end
+    find_objects_for_index if !@objects
     respond_to do |f|
       if params[:partial]
         f.json {
