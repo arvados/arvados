@@ -30,23 +30,23 @@ class Collection < ArvadosModel
 
   def assign_uuid
     if self.manifest_text.nil? and self.uuid.nil?
-      super
-    elsif self.manifest_text and self.uuid
-      self.uuid.gsub! /\+.*/, ''
-      if self.uuid == Digest::MD5.hexdigest(self.manifest_text)
-        self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
-        true
-      else
-        errors.add :uuid, 'does not match checksum of manifest_text'
-        false
-      end
-    elsif self.manifest_text
-      errors.add :uuid, 'not supplied (must match checksum of manifest_text)'
-      false
-    else
+      return super
+    elsif not self.manifest_text
       errors.add :manifest_text, 'not supplied'
-      false
+      return false
     end
+    expect_uuid = Digest::MD5.hexdigest(self.manifest_text)
+    if self.uuid
+      self.uuid.gsub! /\+.*/, ''
+      if self.uuid != expect_uuid
+        errors.add :uuid, 'must match checksum of manifest_text'
+        return false
+      end
+    else
+      self.uuid = expect_uuid
+    end
+    self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
+    true
   end
 
   def data_size
@@ -65,15 +65,6 @@ class Collection < ArvadosModel
       @files = []
       return
     end
-
-    #normalized_manifest = ""
-    #IO.popen(['arv-normalize'], 'w+b') do |io|
-    #  io.write manifest_text
-    #  io.close_write
-    #  while buf = io.read(2**20)
-    #    normalized_manifest += buf
-    #  end
-    #end
 
     @data_size = 0
     tmp = {}

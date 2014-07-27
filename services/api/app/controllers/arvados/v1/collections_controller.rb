@@ -63,11 +63,11 @@ class Arvados::V1::CollectionsController < ApplicationController
         @object.save!
       rescue ActiveRecord::RecordNotUnique
         logger.debug resource_attrs.inspect
-        if resource_attrs[:manifest_text] and resource_attrs[:uuid]
+        if @object.manifest_text and @object.uuid
           @existing_object = model_class.
             where('uuid=? and manifest_text=?',
-                  resource_attrs[:uuid],
-                  resource_attrs[:manifest_text]).
+                  @object.uuid,
+                  @object.manifest_text).
             first
           @object = @existing_object || @object
         end
