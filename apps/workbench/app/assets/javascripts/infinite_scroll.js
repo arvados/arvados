@@ -27,6 +27,7 @@ function maybe_load_more_content() {
                        spinner +
                        '</td></tr>');
         }
+        $(container).find(".spinner").detach();
         $(container).append(spinner);
         $.ajax(src,
                {dataType: 'json',
@@ -34,9 +35,9 @@ function maybe_load_more_content() {
                 data: {},
                 context: {container: container, src: src}}).
             always(function() {
-                $(this.container).find(".spinner").detach();
             }).
             fail(function(jqxhr, status, error) {
+                var $faildiv;
                 if (jqxhr.readyState == 0 || jqxhr.status == 0) {
                     message = "Cancelled."
                 } else if (jqxhr.responseJSON && jqxhr.responseJSON.errors) {
@@ -44,17 +45,30 @@ function maybe_load_more_content() {
                 } else {
                     message = "Request failed.";
                 }
-                // TODO: report this to the user.
+                // TODO: report the message to the user.
                 console.log(message);
-                $(this.container).attr('data-infinite-content-href', this.src);
+                $faildiv = $('<div />').
+                    attr('data-infinite-content-href', this.src).
+                    addClass('infinite-retry').
+                    append('<span class="fa fa-warning" /> Oops, request failed. <button class="btn btn-xs btn-primary">Retry</button>');
+                $(this.container).find('div.spinner').replaceWith($faildiv);
             }).
             done(function(data, status, jqxhr) {
+                $(this.container).find(".spinner").detach();
                 $(this.container).append(data.content);
                 $(this.container).attr('data-infinite-content-href', data.next_page_href);
             });
     }
 }
 $(document).
+    on('click', 'div.infinite-retry button', function() {
+        var $retry_div = $(this).closest('.infinite-retry');
+        var $scroller = $(this).closest('.infinite-scroller')
+        $scroller.attr('data-infinite-content-href',
+                       $retry_div.attr('data-infinite-content-href'));
+        $retry_div.replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
+        $scroller.trigger('scroll');
+    }).
     on('ready ajax:complete', function() {
         $('[data-infinite-scroller]').each(function() {
             var $scroller = $($(this).attr('data-infinite-scroller'));
