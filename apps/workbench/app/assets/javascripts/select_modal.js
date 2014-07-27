@@ -71,10 +71,15 @@ $(document).on('click', '.selectable', function() {
                                 [data, status, jqxhr, this.action_data]);
         });
 }).on('click', '.chooser-show-project', function() {
-    $(this).attr('href', '#');
+    var params = {};
+    $(this).attr('href', '#');  // Skip normal click handler
+    if ($(this).attr('data-project-uuid')) {
+        params = {'filters[]': JSON.stringify(['owner_uuid',
+                                               '=',
+                                               $(this).attr('data-project-uuid')])};
+    }
     $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
-        data('infinite-content-params',
-             {'filters[]': JSON.stringify(['owner_uuid', '=', $(this).attr('data-project-uuid')])}).
+        data('infinite-content-params', params).
         trigger('refresh-content');
 });
 $(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
