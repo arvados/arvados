@@ -9,7 +9,7 @@
       </div>
     </div>
   <% end %>
-  <div class="row filterable selectable <%= 'multiple' if multiple %>" data-section-name="<%= object.class.to_s %>" data-object-uuid="<%= object.uuid %>" data-preview-href="<%= chooser_preview_url_for object %>">
+  <div class="row filterable selectable" data-section-name="<%= object.class.to_s %>" data-object-uuid="<%= object.uuid %>" data-preview-href="<%= chooser_preview_url_for object %>">
     <div class="col-sm-12" style="overflow-x:hidden; white-space: nowrap">
       <i class="fa fa-fw <%= icon_class %>"></i>
       <% if object.respond_to?(:name) and object.name and object.name.length > 0 %>

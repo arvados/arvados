@@ -1,14 +1,14 @@
 $(document).on('click', '.selectable', function() {
     var any;
     var $this = $(this);
-    if (!$this.hasClass('multiple')) {
-        $this.closest('.selectable-container').
+    var $container = $(this).closest('.selectable-container');
+    if (!$container.hasClass('multiple')) {
+        $container.
             find('.selectable').
             removeClass('active');
     }
     $this.toggleClass('active');
-    any = ($this.
-           closest('.selectable-container').
+    any = ($container.
            find('.selectable.active').length > 0)
     $this.
         closest('.modal').

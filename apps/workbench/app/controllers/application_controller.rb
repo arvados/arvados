@@ -194,10 +194,7 @@ class ApplicationController < ActionController::Base
         f.json {
           render json: {
             content: render_to_string(partial: "choose_rows.html",
-                                      formats: [:html],
-                                      locals: {
-                                        multiple: params[:multiple]
-                                      }),
+                                      formats: [:html]),
             next_page_href: next_page_href(partial: params[:partial])
           }
         }
