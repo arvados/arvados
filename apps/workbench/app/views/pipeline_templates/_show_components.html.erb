@@ -11,8 +11,8 @@
                                                   }.to_json),
                 { class: "btn btn-primary btn-sm", remote: true, method: 'get' }
                ) do %>
-                   Run this pipeline 
+                   Run this pipeline
                  <% end %>
 <% end %>
 
-<%= render partial: 'pipeline_instances/show_components_editable', locals: {editable: false} %>
+<%= render_pipeline_components("editable", :json, editable: false) %>
