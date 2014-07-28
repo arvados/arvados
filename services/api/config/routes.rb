@@ -15,6 +15,7 @@ Server::Application.routes.draw do
         get 'used_by', on: :member
       end
       resources :groups do
+        get 'contents', on: :collection
         get 'contents', on: :member
       end
       resources :humans
