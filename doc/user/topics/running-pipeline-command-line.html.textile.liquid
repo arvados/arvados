@@ -6,7 +6,7 @@ title: "Running a pipeline on the command line"
 
 {% include 'tutorial_expectations' %}
 
-In this tutorial, we will run a pipeline to take a small data set of paired-end reads from an sample "exome":https://en.wikipedia.org/wiki/Exome in "FASTQ":https://en.wikipedia.org/wiki/FASTQ_format format and align them to "Chromosome 19":https://en.wikipedia.org/wiki/Chromosome_19_%28human%29 using the "bwa mem":http://bio-bwa.sourceforge.net/ tool, producing a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file.
+This tutorial demonstrates how to use the command line to run the same pipeline as described in "running a pipeline using Workbench.":{{site.baseurl}}/user/tutorials/tutorial-pipeline-workbench.html
 
 When you use the command line, you must use Arvados unique identifiers to refer to objects.  The identifiers in this example correspond to the following Arvados objects:
 
@@ -34,7 +34,7 @@ This instantiates your pipeline and displays a live feed of its status.  The new
 
 Arvados adds each pipeline component to the job queue as its dependencies are satisfied (or immediately if it has no dependencies) and finishes when all components are completed or failed and there is no more work left to do.
 
-The Keep locators of the output of of the @bwa-mem@ components are available from the output log shown above:
+The Keep locators of the output of of the @bwa-mem@ components are available from the status feed shown above:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv keep ls -s 49bae1066f4ebce72e2587a3efa61c7d+88</span>

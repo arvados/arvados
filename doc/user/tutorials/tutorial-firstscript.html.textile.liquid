@@ -5,7 +5,7 @@ navmenu: Tutorials
 title: "Writing a script"
 ...
 
-This tutorial demonstrates how to write crunch script using the Arvados Python SDK.  The Arvados SDK supports access to advanced features not available using the @run-command@ wrapper, such as scheduling parallel tasks across nodes.
+This tutorial demonstrates how to create a new Arvados pipeline using the Arvados Python SDK.  The Arvados SDK supports access to advanced features not available using the @run-command@ wrapper, such as scheduling parallel tasks across nodes.
 
 {% include 'tutorial_expectations' %}
 
@@ -64,7 +64,7 @@ Make the file executable:
 notextile. <pre><code>~/$USER/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
 
 {% include 'notebox_begin' %}
-The steps below describe how to execute the script after committing changes to Git. To run a script locally for testing, please see "debugging a crunch script":{{site.baseurl}}/user/topics/tutorial-job-debug.html.
+The steps below describe how to execute the script after committing changes to Git. To run a single script locally for testing (bypassing the job queue) please see "debugging a crunch script":{{site.baseurl}}/user/topics/tutorial-job-debug.html.
 
 {% include 'notebox_end' %}
 
@@ -101,7 +101,7 @@ Next, create a file that contains the pipeline definition:
 <pre><code>~/$USER/crunch_scripts$ <span class="userinput">cd ~</span>
 ~$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
 {
-  "name":"My first pipeline",
+  "name":"My md5 pipeline",
   "components":{
     "do_hash":{
       "script":"hash.py",
@@ -135,6 +135,8 @@ Now, use @arv pipeline_template create@ to register your pipeline template in Ar
 </code></pre>
 </notextile>
 
-Your new pipeline template will appear on the Workbench "Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.
+h2. Running your pipeline
+
+Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
 
 For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html

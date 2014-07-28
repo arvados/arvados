@@ -8,20 +8,21 @@ This tutorial demonstrates how to construct a two stage pipeline template that u
 
 {% include 'tutorial_expectations' %}
 
-First, use @arv pipeline_template create@ to create a new empty template.  The @--format=uuid@ option will print out the unique identifier for the new template:
+Use the following command to create a new empty template using @arv pipeline_template create@ and then open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@) using @arv edit@.
 
 <notextile>
-<pre><code>~$ <span class="userinput">arv --format=uuid pipeline_template create --pipeline-template '{}'</span>
-qr1hi-p5p6p-wt1vdhkezgx7g2k
-</span></code></pre>
+<pre><code>~$ <span class="userinput">arv edit $(arv --format=uuid pipeline_template create --pipeline-template '{}') name components </span></code></pre>
 </notextile>
 
-Next, use @arv edit@ to edit the template.  This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@).  Replace the empty fields with the following content:
+* @--format=uuid@ option prints out just the unique identifier for the new template, instead of the entire template record (default)
+
+Next, in the text editor opened by @arv edit@ replace the empty fields with the following content:
 
 <notextile>{% code 'tutorial_bwa_sortsam_pipeline' as javascript %}</notextile>
 
 * @"name"@ is a human-readable name for the pipeline.
 * @"components"@ is a set of scripts or commands that make up the pipeline.  Each component is given an identifier (@"bwa-mem"@ and @"SortSam"@) in this example).
+** Each entry in components @"components"@ is an Arvados job submission.  For more information about individual jobs, see the "job object reference":{{site.baseurl}}/api/schema/Job.html and "job create method.":{{site.baseurl}}/api/methods/jobs.html#create
 * @"repository"@, @"script_version"@, and @"script"@ indicate that we intend to use the external @"run-command"@ tool wrapper that is part of the Arvados.  These parameters are described in more detail in "Writing a script":tutorial-firstscript.html
 * @"output_is_persistent"@ indicates whether the output of the component is considered valuable. If this value is false (or not given), the output will be treated as intermediate data which may be eventually deleted to reclaim disk space.
 * @"runtime_constraints"@ describes runtime resource requirements for the component.
@@ -40,6 +41,8 @@ Next, use @arv edit@ to edit the template.  This will open the template record i
 
 When using @run-command@, the tool should write its output to the current working directory.  The output will be automatically uploaded to Keep when the job completes.
 
-Your new pipeline template will appear on the Workbench "Pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run the "pipeline using Workbench":tutorial-pipeline-workbench.html.
+h2. Running your pipeline
+
+Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
 
 For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html

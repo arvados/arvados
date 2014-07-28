@@ -4,12 +4,12 @@ navsection: userguide
 title: "Running a pipeline using Workbench"
 ...
 
-
-In this tutorial, we will run a pipeline to take a small data set of paired-end reads from an sample "exome":https://en.wikipedia.org/wiki/Exome in "FASTQ":https://en.wikipedia.org/wiki/FASTQ_format format and align them to "Chromosome 19":https://en.wikipedia.org/wiki/Chromosome_19_%28human%29 using the "bwa mem":http://bio-bwa.sourceforge.net/ tool, producing a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file.  This will introduce the following Arvados features:
+A "pipeline" (sometimes called a "workflow" in other systems) is sequence of steps that apply various programs or tools to transform input data to output data.  Pipelines are the principal means of performing computation with Arvados.  This tutorial demonstrates how to run a single-stage pipeline to take a small data set of paired-end reads from an sample "exome":https://en.wikipedia.org/wiki/Exome in "FASTQ":https://en.wikipedia.org/wiki/FASTQ_format format and align them to "Chromosome 19":https://en.wikipedia.org/wiki/Chromosome_19_%28human%29 using the "bwa mem":http://bio-bwa.sourceforge.net/ tool, producing a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file.  This will introduce the following Arvados features:
 
 <div class="inside-list">
 * How to create a project.
-* How to submit a pipeline to run on the Arvados cluster.
+* How to browse available pipeline templates and create a new pipeline from an existing template.
+* How to browse and select input data for the pipeline and submit the pipeline to run on the Arvados cluster.
 * How to access your pipeline results.
 </div>
 
