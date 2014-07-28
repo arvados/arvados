@@ -60,6 +60,9 @@ class Arvados::V1::GroupsController < ApplicationController
      Collection,
      Human, Specimen, Trait].each do |klass|
       @objects = klass.readable_by(*@read_users)
+      if klass == Group
+        @objects = @objects.where('group_class = ?', 'project')
+      end
       conds = []
       cond_params = []
       if opts[:owner_uuid]
