@@ -62,9 +62,9 @@ class ProjectsController < ApplicationController
       each do |resource_class|
       resource_class.filter([['uuid','in',uuids_to_add]]).each do |dst|
         if resource_class == Collection
-          dst = Link.new(owner_uuid: target_object.uuid,
-                         tail_uuid: target_object.uuid,
-                         head_uuid: target_uuid,
+          dst = Link.new(owner_uuid: target_uuid,
+                         tail_uuid: target_uuid,
+                         head_uuid: dst.uuid,
                          link_class: 'name',
                          name: target_uuid)
         else
