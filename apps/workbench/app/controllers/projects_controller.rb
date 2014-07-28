@@ -80,7 +80,7 @@ class ProjectsController < ApplicationController
       end
     end
     session[:selected_move_items] = nil
-    redirect_to controller: 'projects', action: :show, id: target_uuid
+    redirect_to @object
   end
 
   def destroy
