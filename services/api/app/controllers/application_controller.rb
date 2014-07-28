@@ -35,7 +35,7 @@ class ApplicationController < ActionController::Base
                 except: [:index, :create] + ERROR_ACTIONS)
   before_filter :load_limit_offset_order_params, only: [:index, :contents]
   before_filter :load_where_param, only: [:index, :contents]
-  before_filter :load_filters_param, only: [:index, :contents, :choose]
+  before_filter :load_filters_param, only: [:index, :contents]
   before_filter :find_objects_for_index, :only => :index
   before_filter :reload_object_before_update, :only => :update
   before_filter(:render_404_if_no_object,
