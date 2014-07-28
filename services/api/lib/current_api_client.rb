@@ -158,4 +158,24 @@ module CurrentApiClient
     $anonymous_user
   end
 
+  def empty_collection_uuid
+    'd41d8cd98f00b204e9800998ecf8427e+0'
+  end
+
+  def empty_collection
+    if not $empty_collection
+      act_as_system_user do
+        ActiveRecord::Base.transaction do
+          $empty_collection = Collection.
+            where(uuid: empty_collection_uuid).
+            first_or_create!(manifest_text: '')
+          Link.where(tail_uuid: anonymous_group_uuid,
+                     head_uuid: empty_collection_uuid,
+                     link_class: 'permission',
+                     name: 'can_read').first_or_create!
+        end
+      end
+    end
+    $empty_collection
+  end
 end

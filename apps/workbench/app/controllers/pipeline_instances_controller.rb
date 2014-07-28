@@ -2,6 +2,7 @@ class PipelineInstancesController < ApplicationController
   skip_before_filter :find_object_by_uuid, only: :compare
   before_filter :find_objects_by_uuid, only: :compare
   include PipelineInstancesHelper
+  include PipelineComponentsHelper
 
   def copy
     @object = @object.dup
@@ -196,7 +197,7 @@ class PipelineInstancesController < ApplicationController
     if @object and @object.state.in? ['New', 'Ready']
       panes = %w(Inputs) + panes
     end
-    if not @object.components.values.collect { |x| x[:job] }.compact.any?
+    if not @object.components.values.any? { |x| x[:job] rescue false }
       panes -= ['Graph']
     end
     panes

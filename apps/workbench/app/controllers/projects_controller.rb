@@ -9,9 +9,9 @@ class ProjectsController < ApplicationController
 
   def show_pane_list
     if @user_is_manager
-      %w(Contents Sharing Advanced)
+      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Sharing Advanced)
     else
-      %w(Contents Advanced)
+      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Advanced)
     end
   end
 
@@ -83,6 +83,7 @@ class ProjectsController < ApplicationController
     end
     @objects = @object.contents(limit: 50,
                                 include_linked: true,
+                                filters: params[:filters],
                                 offset: params[:offset] || 0)
     @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
     @users = User.limit(10000).
@@ -100,23 +101,8 @@ class ProjectsController < ApplicationController
       @user_is_manager = false
     end
 
-    @objects_and_names = []
-    @objects.each do |object|
-      if !(name_links = @objects.links_for(object, 'name')).empty?
-        name_links.each do |name_link|
-          @objects_and_names << [object, name_link]
-        end
-      elsif object.respond_to? :name
-        @objects_and_names << [object, object]
-      else
-        @objects_and_names << [object,
-                               Link.new(owner_uuid: @object.uuid,
-                                        tail_uuid: @object.uuid,
-                                        head_uuid: object.uuid,
-                                        link_class: "name",
-                                        name: "")]
-      end
-    end
+    @objects_and_names = get_objects_and_names @objects
+
     if params[:partial]
       respond_to do |f|
         f.json {
@@ -128,7 +114,7 @@ class ProjectsController < ApplicationController
                                         project: @object
                                       }),
             next_page_href: (next_page_offset and
-                             url_for(offset: next_page_offset, partial: true))
+                             url_for(offset: next_page_offset, filters: params[:filters], partial: true))
           }
         }
       end
@@ -148,23 +134,56 @@ class ProjectsController < ApplicationController
     super
   end
 
+  helper_method :get_objects_and_names
+  def get_objects_and_names(objects)
+    objects_and_names = []
+    objects.each do |object|
+      if !(name_links = objects.links_for(object, 'name')).empty?
+        name_links.each do |name_link|
+          objects_and_names << [object, name_link]
+        end
+      elsif object.respond_to? :name
+        objects_and_names << [object, object]
+      else
+        objects_and_names << [object,
+                               Link.new(owner_uuid: @object.uuid,
+                                        tail_uuid: @object.uuid,
+                                        head_uuid: object.uuid,
+                                        link_class: "name",
+                                        name: "")]
+      end
+    end
+    objects_and_names
+  end
+
   def share_with
     if not params[:uuids].andand.any?
       @errors = ["No user/group UUIDs specified to share with."]
       return render_error(status: 422)
     end
-    results = {"success" => [], "failure" => {}}
+    results = {"success" => [], "errors" => []}
     params[:uuids].each do |shared_uuid|
       begin
         Link.create(tail_uuid: shared_uuid, link_class: "permission",
                     name: "can_read", head_uuid: @object.uuid)
       rescue ArvadosApiClient::ApiError => error
-        results["failure"][shared_uuid] = error.api_response.andand[:errors]
+        error_list = error.api_response.andand[:errors]
+        if error_list.andand.any?
+          results["errors"] += error_list.map { |e| "#{shared_uuid}: #{e}" }
+        else
+          error_code = error.api_status || "Bad status"
+          results["errors"] << "#{shared_uuid}: #{error_code} response"
+        end
       else
         results["success"] << shared_uuid
       end
     end
-    status = (results["failure"].empty?) ? 200 : 422
+    if results["errors"].empty?
+      results.delete("errors")
+      status = 200
+    else
+      status = 422
+    end
     respond_to do |f|
       f.json { render(json: results, status: status) }
     end

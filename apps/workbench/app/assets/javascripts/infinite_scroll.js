@@ -6,10 +6,13 @@ function maybe_load_more_content() {
     var spinner, colspan;
     var serial = Date.now();
     scrollHeight = scroller.scrollHeight || $('body')[0].scrollHeight;
+    var num_scrollers = $(window).data("arv-num-scrollers");
     if ($(scroller).scrollTop() + $(scroller).height()
         >
-        scrollHeight - 50) {
-        container = $(this).data('infinite-container');
+        scrollHeight - 50)
+    {
+      for (var i = 0; i < num_scrollers; i++) {
+        $container = $($(this).data('infinite-container'+i));
         if (!$(container).attr('data-infinite-content-href0')) {
             // Remember the first page source url, so we can refresh
             // from page 1 later.
@@ -17,16 +20,17 @@ function maybe_load_more_content() {
                               $(container).attr('data-infinite-content-href'));
         }
         src = $(container).attr('data-infinite-content-href');
-        if (!src)
+        if (!src || !$container.is(':visible'))
             // Finished
             return;
+
         // Don't start another request until this one finishes
-        $(container).attr('data-infinite-content-href', null);
+        $container.attr('data-infinite-content-href', null);
         spinner = '<div class="spinner spinner-32px spinner-h-center"></div>';
         if ($(container).is('table,tbody,thead,tfoot')) {
             // Hack to determine how many columns a new tr should have
             // in order to reach full width.
-            colspan = $(container).closest('table').
+            colspan = $container.closest('table').
                 find('tr').eq(0).find('td,th').length;
             if (colspan == 0)
                 colspan = '*';
@@ -72,8 +76,11 @@ function maybe_load_more_content() {
                 $(this.container).append(data.content);
                 $(this.container).attr('data-infinite-content-href', data.next_page_href);
             });
-    }
+        break;
+     }
+   }
 }
+
 $(document).
     on('click', 'div.infinite-retry button', function() {
         var $retry_div = $(this).closest('.infinite-retry');
@@ -96,6 +103,7 @@ $(document).
             trigger('scroll');
     }).
     on('ready ajax:complete', function() {
+        var num_scrollers = 0;
         $('[data-infinite-scroller]').each(function() {
             var $scroller = $($(this).attr('data-infinite-scroller'));
             if (!$scroller.hasClass('smart-scroll') &&
@@ -103,7 +111,9 @@ $(document).
                 $scroller = $(window);
             $scroller.
                 addClass('infinite-scroller').
-                data('infinite-container', this).
+                data('infinite-container'+num_scrollers, this).
                 on('scroll', maybe_load_more_content);
+            num_scrollers++;
         });
+        $(window).data("arv-num-scrollers", num_scrollers);
     });

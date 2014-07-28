@@ -26,10 +26,15 @@ class ArvadosResourceList
     self
   end
 
-  def select(columns)
-    @select ||= []
-    @select += columns
-    self
+  def select(columns=nil)
+    # If no column arguments were given, invoke Enumerable#select.
+    if columns.nil?
+      super()
+    else
+      @select ||= []
+      @select += columns
+      self
+    end
   end
 
   def filter _filters

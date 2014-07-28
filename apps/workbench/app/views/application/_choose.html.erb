@@ -32,6 +32,9 @@
           <% end %>
         </div>
         <div style="height: 1em" />
+
+        <% preview_pane = (params[:preview_pane] != "false")
+           pane_col_class = preview_pane ? "col-sm-6" : "" %>
         <div class="row" style="height: 20em">
 	  <div class="col-sm-6 container arv-filterable-list selectable-container <%= 'multiple' if multiple %>"
 	       style="height: 100%; overflow-y: scroll"

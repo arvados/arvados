@@ -29,6 +29,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     project_uuid = api_fixture('groups')['aproject']['uuid']
     specimen_uuid = api_fixture('specimens')['owned_by_aproject_with_no_name_link']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
+    click_link 'Other objects'
     within(".selection-action-container") do
       within (first('tr', text: 'Specimen')) do
         find(".fa-pencil").click
@@ -43,6 +44,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('.editable', text: 'Now I have a new name.')
     end
     visit current_path
+    click_link 'Other objects'
     within '.selection-action-container' do
       find '.editable', text: 'Now I have a new name.'
       page.assert_no_selector '.editable', text: 'Now I have a name.'
@@ -87,25 +89,27 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?("A Project"), "not on expected project page")
   end
 
-  def count_shares
-    find('#project_sharing').all('tr').size
+  def share_rows
+    find('#project_sharing').all('tr')
   end
 
   def add_share_and_check(share_type, name)
     assert(page.has_no_text?(name), "project is already shared with #{name}")
-    start_share_count = count_shares
+    start_share_count = share_rows.size
     click_on("Share with #{share_type}")
     find(".selectable", text: name).click
     find(".modal-footer a,button", text: "Add").click
-    assert(page.has_link?(name),
-           "new share was not added to sharing table")
-    assert_equal(start_share_count + 1, count_shares,
-                 "new share did not add row to sharing table")
+    using_wait_time(Capybara.default_wait_time * 3) do
+      assert(page.has_link?(name),
+             "new share was not added to sharing table")
+      assert_equal(start_share_count + 1, share_rows.size,
+                   "new share did not add row to sharing table")
+    end
   end
 
   def modify_share_and_check(name)
-    start_share_count = count_shares
-    link_row = all("#project_sharing tr").select { |row| row.has_text?(name) }
+    start_rows = share_rows
+    link_row = start_rows.select { |row| row.has_text?(name) }
     assert_equal(1, link_row.size, "row with new permission not found")
     within(link_row.first) do
       click_on("Read")
@@ -115,10 +119,12 @@ class ProjectsTest < ActionDispatch::IntegrationTest
              "failed to change access level on new share")
       click_on "Revoke"
     end
-    assert(page.has_no_text?(name),
-           "new share row still exists after being revoked")
-    assert_equal(start_share_count - 1, count_shares,
-                 "revoking share did not remove row from sharing table")
+    using_wait_time(Capybara.default_wait_time * 3) do
+      assert(page.has_no_text?(name),
+             "new share row still exists after being revoked")
+      assert_equal(start_rows.size - 1, share_rows.size,
+                   "revoking share did not remove row from sharing table")
+    end
   end
 
   test "project viewer can't see project sharing tab" do
