@@ -16,19 +16,18 @@
                   'data-remote' => true,
                   'method' => 'delete'
             %></li>
-	  <li><%= link_to "Move selected", '#',
-		  'data-href' => choose_projects_path(
+	          <li><%= link_to "Move selected", '#',
+            		  'data-href' => choose_projects_path(
                                    title: 'Move to...',
                                    editable: true,
                                    action_name: 'Move',
-                                   action_href: url_for(action: :move_selections_into_project,
-                                                        controller: 'actions'),
-                                   action_method: 'patch',
-                                   action_data: {selection_param: 'selection[]',
+                                   action_href: move_items_project_path,
+                                   action_method: 'get',
+                                   action_data: {selection_param: 'target',
                                                  success: 'page-refresh'}.to_json),
                   'data-remote' => true,
-                  'data-selection-param-name' => 'selection[]',
-		  'data-selection-action' => 'move'
+                  'data-selection-param-name' => 'move_items[]',
+		              'data-selection-action' => 'move'
             %></li>
         </ul>
       </div>

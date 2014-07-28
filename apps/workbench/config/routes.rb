@@ -63,10 +63,10 @@ ArvadosWorkbench::Application.routes.draw do
   resources :projects do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
     match 'remove_items', on: :member, via: :delete, action: :remove_items
+    get 'move_items', on: :member, action: :move_items
     get 'choose', on: :collection
     post 'share_with', on: :member
   end
-  match '/move_selections_into_project' => 'actions#move_selections_into_project', via: :patch
   post 'actions' => 'actions#post'
   get 'websockets' => 'websocket#index'
 

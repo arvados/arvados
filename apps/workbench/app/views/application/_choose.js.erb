@@ -1,3 +1,4 @@
+<% session[:selected_move_items] = params['move_items'] %>
 $('body > .modal-container').html("<%= escape_javascript(render partial: 'choose.html', locals: {multiple: multiple}) %>");
 $('body > .modal-container .modal').modal('show');
 $('body > .modal-container .modal .modal-footer .btn-primary').
