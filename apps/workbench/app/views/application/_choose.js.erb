@@ -5,24 +5,4 @@ $('body > .modal-container .modal .modal-footer .btn-primary').
     attr('data-action-href', '<%= j params[:action_href] %>').
     attr('data-method', '<%= j params[:action_method] %>').
     data('action-data', <%= raw params[:action_data] %>);
-$(".chooser-show-project").on("click", function() {
-  $("#choose-scroll").html("<div class=\"spinner spinner-32px spinner-h-center\"></div>");
-  $(".modal-dialog-preview-pane").html('');
-  var t = $(this);
-  var d = {
-      partial: true,
-      multiple: <%= multiple || "false" %>
-    };
-  if (t.attr("data-project-uuid") != null) {
-    d.project_uuid = t.attr("data-project-uuid");
-  }
-  $.ajax('<%=j url_for %>', {
-    dataType: "json",
-    type: "GET",
-    data: d
-  }).done(function(data, status, jqxhr) {
-    $("#chooser-breadcrumb").text(t.text());
-    $("#choose-scroll").html(data.content);
-    $("#choose-scroll").prop("data-infinite-content-href", "next_page_href");
-  });
-});
+$('body > .modal-container .modal .focus-on-display').focus();

@@ -29,6 +29,20 @@
           </li>
           -->
 
+          <li>
+            <%= link_to(url_for(
+                       action: 'choose',
+                       controller: 'search',
+                       title: 'Search',
+                       action_name: 'Show',
+                       action_href: url_for(controller: :actions, action: :show),
+                       action_method: 'get',
+                       action_data: {selection_param: 'uuid', success: 'redirect-to-created-object'}.to_json),
+                      { class: "", remote: true, method: 'get' }) do %>
+              <i class="fa fa-fw fa-search"></i> Search
+            <% end %>
+          </li>
+
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
               <span class="badge badge-alert notification-count"><%= @notification_count %></span>
@@ -141,7 +155,10 @@
             <ul class="dropdown-menu" role="menu">
             <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
-                    link_to(project_path(pnode[:object].uuid), data: {object_uuid: pnode[:object].uuid, name: 'name'}, &block)
+                    link_to(project_path(pnode[:object].uuid),
+                      data_object_uuid: pnode[:object].uuid,
+                      data_name: 'name',
+                      &block)
                   end,
                   :top_button => Proc.new do %>
                     <% link_to projects_path, method: 'post', class: 'btn btn-xs btn-default pull-right' do %>
