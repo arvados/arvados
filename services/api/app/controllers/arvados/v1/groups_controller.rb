@@ -3,6 +3,9 @@ class Arvados::V1::GroupsController < ApplicationController
   def self._contents_requires_parameters
     _index_requires_parameters.
       merge({
+              uuid: {
+                type: 'string', required: false, default: nil
+              },
               include_linked: {
                 type: 'boolean', required: false, default: false
               },
