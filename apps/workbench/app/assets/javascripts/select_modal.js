@@ -78,6 +78,12 @@ $(document).on('click', '.selectable', function() {
                                                '=',
                                                $(this).attr('data-project-uuid')])};
     }
+    // Use current selection as dropdown button label
+    $(this).
+        closest('.dropdown-menu').
+        prev('button').
+        html($(this).html() + ' <span class="caret"></span>');
+    // Set (or unset) filter params and refresh filterable rows
     $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
         data('infinite-content-params', params).
         trigger('refresh-content');

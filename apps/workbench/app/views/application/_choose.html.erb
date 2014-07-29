@@ -11,12 +11,12 @@
           <% if params[:by_project] != false %>
             <div class="input-group-btn" data-filterable-target=".modal.arv-choose .selectable-container">
               <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                Filter by project <span class="caret"></span>
+                All projects <span class="caret"></span>
               </button>
               <ul class="dropdown-menu" role="menu">
                 <li>
                   <%= link_to '#', class: 'chooser-show-project' do %>
-                    Remove filter (search all projects)
+                    All projects
                   <% end %>
                 </li>
                 <li class="divider" />
