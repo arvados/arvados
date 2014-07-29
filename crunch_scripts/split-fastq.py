@@ -72,4 +72,6 @@ if manifest_text == "":
                     manifest_text += "_" + str(piece) + m0
                     piece += 1
 
+print manifest_text
+
 arvados.current_task().set_output(put_manifest(manifest_text, [arvados.getjobparam('reads')]))
