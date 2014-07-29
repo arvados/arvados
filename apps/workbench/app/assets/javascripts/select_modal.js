@@ -1,14 +1,14 @@
 $(document).on('click', '.selectable', function() {
     var any;
     var $this = $(this);
-    if (!$this.hasClass('multiple')) {
-        $this.closest('.selectable-container').
+    var $container = $(this).closest('.selectable-container');
+    if (!$container.hasClass('multiple')) {
+        $container.
             find('.selectable').
             removeClass('active');
     }
     $this.toggleClass('active');
-    any = ($this.
-           closest('.selectable-container').
+    any = ($container.
            find('.selectable.active').length > 0)
     $this.
         closest('.modal').
@@ -16,14 +16,19 @@ $(document).on('click', '.selectable', function() {
         prop('disabled', !any);
 
     if ($this.hasClass('active')) {
+        var no_preview_available = '<div class="spinner-h-center spinner-v-center"><center>(No preview available)</center></div>';
+        if (!$this.attr('data-preview-href')) {
+            $(".modal-dialog-preview-pane").html(no_preview_available);
+            return;
+        }
         $(".modal-dialog-preview-pane").html('<div class="spinner spinner-32px spinner-h-center spinner-v-center"></div>');
         $.ajax($this.attr('data-preview-href'),
                {dataType: "html"}).
-           done(function(data, status, jqxhr) {
+            done(function(data, status, jqxhr) {
                 $(".modal-dialog-preview-pane").html(data);
             }).
             fail(function(data, status, jqxhr) {
-                $(".modal-dialog-preview-pane").text('Preview load failed.');
+                $(".modal-dialog-preview-pane").html(no_preview_available);
             });
     }
 
@@ -65,6 +70,23 @@ $(document).on('click', '.selectable', function() {
             $(document).trigger(event_name!=null ? event_name : 'page-refresh',
                                 [data, status, jqxhr, this.action_data]);
         });
+}).on('click', '.chooser-show-project', function() {
+    var params = {};
+    $(this).attr('href', '#');  // Skip normal click handler
+    if ($(this).attr('data-project-uuid')) {
+        params = {'filters[]': JSON.stringify(['owner_uuid',
+                                               '=',
+                                               $(this).attr('data-project-uuid')])};
+    }
+    // Use current selection as dropdown button label
+    $(this).
+        closest('.dropdown-menu').
+        prev('button').
+        html($(this).text() + ' <span class="caret"></span>');
+    // Set (or unset) filter params and refresh filterable rows
+    $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
+        data('infinite-content-params', params).
+        trigger('refresh-content');
 });
 $(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
     window.location.reload();

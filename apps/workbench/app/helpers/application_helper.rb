@@ -428,4 +428,13 @@ module ApplicationHelper
       RESOURCE_CLASS_ICONS.fetch(class_name, default)
     end
   end
+
+  def chooser_preview_url_for object
+    case object.class.to_s
+    when 'Collection'
+      polymorphic_path(object, tab_pane: 'chooser_preview')
+    else
+      nil
+    end
+  end
 end
