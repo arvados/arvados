@@ -213,9 +213,11 @@ class UsersController < ApplicationController
   def manage_account
     # repositories current user can read / write
     repo_links = []
-    Link.where(tail_uuid: current_user.uuid,
-               link_class: 'permission',
-               name: ['can_write', 'can_read']).
+    Link.filter([['head_uuid', 'is_a', 'arvados#repository'],
+                 ['tail_uuid', '=', current_user.uuid],
+                 ['link_class', '=', 'permission'],
+                 ['name', 'in', ['can_write', 'can_read']],
+               ]).
           each do |perm_link|
             repo_links << perm_link[:head_uuid]
           end
