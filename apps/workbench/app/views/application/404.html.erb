@@ -14,7 +14,7 @@
 
 <% if class_name %>
 Perhaps you'd like to
-<%= link_to("browse all #{class_name.pluralize}", action: :index) %>?
+<%= link_to("browse all #{class_name.pluralize}", action: :index, controller: class_name.tableize) %>?
 <% end %>
 
 </p>
