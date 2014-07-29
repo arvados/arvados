@@ -40,9 +40,6 @@ def put_manifest(manifest_text, sources=[]):
 
 inp = arvados.CollectionReader(arvados.getjobparam('reads'))
 
-with open("/home/peter/manifest") as f:
-    inp = arvados.CollectionReader(f.read())
-
 prog = re.compile("(.*?)_1.fastq(.gz)?$")
 
 manifest_text = ""
