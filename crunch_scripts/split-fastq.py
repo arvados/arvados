@@ -75,4 +75,4 @@ if manifest_text == "":
                     manifest_text += "_" + str(piece) + m0
                     piece += 1
 
-arvados.current_task().set_output(put_manifest(manifest_text, [arvados.get_job_param('input')]))
+arvados.current_task().set_output(put_manifest(manifest_text, [arvados.getjobparam('reads')]))
