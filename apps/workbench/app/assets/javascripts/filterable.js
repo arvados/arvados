@@ -1,5 +1,5 @@
 $(document).
-    on('paste keyup change', 'input[type=text].filterable-control', function() {
+    on('paste keyup input', 'input[type=text].filterable-control', function() {
         var q = new RegExp($(this).val(), 'i');
         $($(this).attr('data-filterable-target')).
             addClass('filterable-container').
