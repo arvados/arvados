@@ -87,12 +87,47 @@ $(document).on('click', '.selectable', function() {
     $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
         data('infinite-content-params', params).
         trigger('refresh-content');
-});
-$(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
+}).on('ready', function() {
+    $('form[data-search-modal] *').on('click keyup paste', function() {
+        // When user types, pastes, or clicks the top nav Search
+        // input, ask the server for a Search modal. When it arrives,
+        // copy the search string from the top nav input into the
+        // modal's search query field.
+        var $form = $(this).closest('form');
+        var $a;
+        if ($form.find('a[data-remote]').length > 0) {
+            // A search dialog is already loading.
+            return;
+        }
+        $a = $('<a />').
+            attr('href', $form.attr('data-search-modal')).
+            attr('data-remote', 'true').
+            attr('data-method', 'GET').
+            hide().
+            appendTo($form).
+            on('ajax:success', function(data, status, xhr) {
+                // Move the dialog to the top of the window to prevent
+                // a well timed click on the top nav search box from
+                // closing the dialog as soon as it opens.
+                $('body > .modal-container .modal-dialog').
+                    css('margin-top', '0');
+                $('body > .modal-container input[type=text]').
+                    val($form.find('input').val()).
+                    focus();
+                $form.find('input').val('');
+            }).on('ajax:complete', function() {
+                $(this).detach();
+            }).
+            click();
+        return false;
+    });
+}).on('page-refresh', function(event, data, status, jqxhr, action_data) {
     window.location.reload();
 }).on('tab-refresh', function(event, data, status, jqxhr, action_data) {
     $(document).trigger('arv:pane:reload:all');
     $('body > .modal-container .modal').modal('hide');
 }).on('redirect-to-created-object', function(event, data, status, jqxhr, action_data) {
     window.location.href = data.href.replace(/^[^\/]*\/\/[^\/]*/, '');
+}).on('shown.bs.modal', 'body > .modal-container .modal', function() {
+    $('.focus-on-display', this).focus();
 });

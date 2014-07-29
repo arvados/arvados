@@ -18,29 +18,23 @@
           </li>
 
           <% if current_user %>
-          <!-- XXX placeholder for this when search is implemented
           <li>
-            <form class="navbar-form" role="search">
+            <form class="navbar-form" role="search"
+                       data-search-modal=
+                       "<%= url_for(
+                        action: 'choose',
+                        controller: 'search',
+                        title: 'Search',
+                        action_name: 'Show',
+                        action_href: url_for(controller: :actions, action: :show),
+                        action_method: 'get',
+                        action_data: {selection_param: 'uuid', success: 'redirect-to-created-object', copy_from_search_box: true}.to_json)
+                       %>">
               <div class="input-group" style="width: 220px">
                 <input type="text" class="form-control" placeholder="search">
                 <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
               </div>
             </form>
-          </li>
-          -->
-
-          <li>
-            <%= link_to(url_for(
-                       action: 'choose',
-                       controller: 'search',
-                       title: 'Search',
-                       action_name: 'Show',
-                       action_href: url_for(controller: :actions, action: :show),
-                       action_method: 'get',
-                       action_data: {selection_param: 'uuid', success: 'redirect-to-created-object'}.to_json),
-                      { class: "", remote: true, method: 'get' }) do %>
-              <i class="fa fa-fw fa-search"></i> Search
-            <% end %>
           </li>
 
           <li class="dropdown notification-menu">
