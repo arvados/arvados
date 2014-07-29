@@ -12,7 +12,7 @@ if ((name_value == null || name_value == "" ||
 }
 
 // capture events to enable submit button when applicable
-$input.on('keyup paste mouseleave', function() {
+$input.on('keyup paste mouseleave onblur', function() {
   var trigger = false;
 
   var name_value = document.forms["add_new_key_form"]["name"].value;

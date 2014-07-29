@@ -23,15 +23,18 @@
 </div>
 <div class="col-sm-6">
   <div class="panel-group" id="arv-adv-accordion">
-    <% ['SSH Keys'].each do |section| %>
+    <% ['SSH Keys',
+       'Setting up SSH access'].each do |section| %>
       <% section_id = section.gsub(" ","_").downcase %>
       <div class="panel panel-default">
         <div class="panel-heading">
-          <div class="pull-right">
-            <%= link_to "Add new SSH key", add_ssh_key_popup_url,
-                         {class: 'btn btn-xs btn-primary', :remote => true, 'data-toggle' =>  "modal",
-                          'data-target' => '#add-ssh-key-modal-window'}  %>
-          </div>
+          <% if section_id == 'ssh_keys' %>
+            <div class="pull-right">
+              <%= link_to "Add new SSH key", add_ssh_key_popup_url,
+                           {class: 'btn btn-xs btn-primary', :remote => true, 'data-toggle' =>  "modal",
+                            'data-target' => '#add-ssh-key-modal-window'}  %>
+            </div>
+          <% end %>
           <h4 class="panel-title">
             <a data-parent="#arv-adv-accordion" href="#manage_<%=section_id%>">
               <%= section %>
