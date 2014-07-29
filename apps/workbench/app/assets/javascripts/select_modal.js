@@ -88,29 +88,34 @@ $(document).on('click', '.selectable', function() {
         data('infinite-content-params', params).
         trigger('refresh-content');
 }).on('ready', function() {
-    $('form[data-search-modal] *').on('click keyup paste', function() {
-        // When user types, pastes, or clicks the top nav Search
-        // input, ask the server for a Search modal. When it arrives,
-        // copy the search string from the top nav input into the
-        // modal's search query field.
-        var $form = $(this).closest('form');
-        var $a;
+    $('form[data-search-modal] a').on('click', function() {
+        $(this).closest('form').submit();
+        return false;
+    });
+    $('form[data-search-modal]').on('submit', function() {
+        // Ask the server for a Search modal. When it arrives, copy
+        // the search string from the top nav input into the modal's
+        // search query field.
+        var $form = $(this);
+        var searchq = $form.find('input').val();
+        var is_a_uuid = /^([0-9a-f]{32}(\+\S+)?|[0-9a-z]{5}-[0-9a-z]{5}-[0-9a-z]{15})$/;
+        if (searchq.trim().match(is_a_uuid)) {
+            window.location = '/actions?uuid=' + encodeURIComponent(searchq.trim());
+            // Show the "loading" indicator. TODO: better page transition hook
+            $(document).trigger('ajax:send');
+            return false;
+        }
         if ($form.find('a[data-remote]').length > 0) {
             // A search dialog is already loading.
-            return;
+            return false;
         }
-        $a = $('<a />').
+        $('<a />').
             attr('href', $form.attr('data-search-modal')).
             attr('data-remote', 'true').
             attr('data-method', 'GET').
             hide().
             appendTo($form).
             on('ajax:success', function(data, status, xhr) {
-                // Move the dialog to the top of the window to prevent
-                // a well timed click on the top nav search box from
-                // closing the dialog as soon as it opens.
-                $('body > .modal-container .modal-dialog').
-                    css('margin-top', '0');
                 $('body > .modal-container input[type=text]').
                     val($form.find('input').val()).
                     focus();
