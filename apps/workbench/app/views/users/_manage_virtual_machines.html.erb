@@ -1,7 +1,7 @@
 <div>
   <p>
     For more information see <%= link_to raw('Setting up SSH access'),
-    "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", target: "_blank"%>
+    "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", target: "_blank"%>.
   </p>
 
   <table class="table virtual-machines-table">
@@ -22,10 +22,22 @@
             <%= vm[:hostname] %>
           </td>
           <td style="word-break:break-all;">
-            <%= @my_vm_logins[vm[:uuid]].andand.compact || [] %>
+            <%= @my_vm_logins[vm[:uuid]].andand.compact.andand.join(", ") %>
           </td>
         </tr>
       <% end %>
     </tbody>
   </table>
+
+  <%
+    login_name = @my_vm_logins[@my_vm_logins.andand.keys.first].andand.first
+    api_host = @my_virtual_machines.first.andand.hostname.andand.sub('.'+current_api_host,'')
+    if (login_name && api_host)
+  %>
+    <p>
+      To log in to <b><%=api_host%></b> using the login name <b><%=login_name%></b>, use <b><%=login_name%>@<%=api_host%>.arvados</b>.
+      Please see the <b>Setting up SSH access</b> section to the right for more detail.
+    </p>
+  <% end %>
+
 </div>
