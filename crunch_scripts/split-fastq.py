@@ -17,6 +17,8 @@ def put_manifest(manifest_text, sources=[]):
     m = hashlib.new('md5')
     m.update(combined)
 
+    print combined
+
     uuid = "{}+{}".format(m.hexdigest(), len(combined))
 
     collection = arvados.api().collections().create(
@@ -54,8 +56,8 @@ for s in inp.all_streams():
                 p[1]["reader"] = s.files()[result.group(1) + "_2.fastq" + result.group(2)]
                 m0 = p[0]["reader"].as_manifest()[1:]
                 m1 = p[1]["reader"].as_manifest()[1:]
-                manifest_text += "_" + str(piece) + m0
-                manifest_text += "_" + str(piece) + m1
+                manifest_text += "./_" + str(piece) + m0
+                manifest_text += "./_" + str(piece) + m1
                 piece += 1
 
 # No pairs found so just put each fastq file into a separate directory
@@ -69,7 +71,7 @@ if manifest_text == "":
                     p = [{}]
                     p[0]["reader"] = s.files()[result.group(0)]
                     m0 = p[0]["reader"].as_manifest()[1:]
-                    manifest_text += "_" + str(piece) + m0
+                    manifest_text += "./_" + str(piece) + m0
                     piece += 1
 
 print manifest_text
