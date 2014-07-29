@@ -22,9 +22,10 @@ def put_manifest(manifest_text, sources=[]):
     uuid = "{}+{}".format(m.hexdigest(), len(combined))
 
     collection = arvados.api().collections().create(
-        body={
+        body={'collection':{
             'uuid': uuid,
-            'manifest_text': crm.manifest_text(),
+            'manifest_text': crm.manifest_text()
+        }
         }).execute()
 
     for s in sources:
