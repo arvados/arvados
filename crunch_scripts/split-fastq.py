@@ -38,7 +38,7 @@ def put_manifest(manifest_text, sources=[]):
 
 # Look for paired reads
 
-inp = arvados.CollectionReader(arvados.get_job_param('input'))
+inp = arvados.CollectionReader(arvados.getjobparam('input'))
 
 with open("/home/peter/manifest") as f:
     inp = arvados.CollectionReader(f.read())
