@@ -33,7 +33,7 @@
               <%= key[:public_key] %>
             </td>
             <td>
-              <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key"}) do %>
+              <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key?"}) do %>
                   <i class="fa fa-fw fa-trash-o"></i>
               <% end %>
             </td>
