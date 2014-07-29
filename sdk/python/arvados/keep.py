@@ -204,7 +204,7 @@ class KeepClient(object):
                           (str(threading.current_thread()),
                            self.args['data_hash'],
                            self.args['service_root']))
-            h = httplib2.Http(timeout=60)
+            h = httplib2.Http(timeout=self.args.get('timeout', None))
             url = self.args['service_root'] + self.args['data_hash']
             api_token = config.get('ARVADOS_API_TOKEN')
             headers = {'Authorization': "OAuth2 %s" % api_token}
@@ -224,7 +224,7 @@ class KeepClient(object):
                     body = KeepClient.sign_for_old_server(
                         self.args['data_hash'],
                         self.args['data'])
-                    h = httplib2.Http()
+                    h = httplib2.Http(timeout=self.args.get('timeout', None))
                     resp, content = h.request(url.encode('utf-8'), 'PUT',
                                               headers=headers,
                                               body=body)
