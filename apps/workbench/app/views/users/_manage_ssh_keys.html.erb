@@ -10,7 +10,7 @@
   <% end %>
 
   <% if @my_ssh_keys.andand.any? %>
-    <table class="table virtual-machines-table">
+    <table class="table virtual-machines-table" style="table-layout:fixed; overflow:hidden; white-space: nowrap;">
       <colgroup>
         <col style="width: 15%" />
         <col style="width: 80%" />
@@ -26,14 +26,14 @@
       <tbody>
         <% @my_ssh_keys.andand.each do |key| %>
           <tr>
-            <td style="word-break:break-all;">
+            <td style="width:50px; overflow:hidden;">
               <%= key[:name] %>
             </td>
-            <td style="word-break:break-all;">
+            <td style="width:100px; overflow:hidden;">
               <%= key[:public_key] %>
             </td>
             <td>
-              <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key?"}) do %>
+              <%= link_to(authorized_key_path(id: key[:uuid]), method: 'delete', class: 'btn btn-sm', data: {confirm: "Really delete key"}) do %>
                   <i class="fa fa-fw fa-trash-o"></i>
               <% end %>
             </td>
