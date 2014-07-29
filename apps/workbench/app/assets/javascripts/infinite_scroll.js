@@ -1,25 +1,31 @@
-function maybe_load_more_content() {
+function maybe_load_more_content(event) {
     var scroller = this;        // element with scroll bars
-    var container;              // element that receives new content
+    var $container;             // element that receives new content
     var src;                    // url for retrieving content
     var scrollHeight;
     var spinner, colspan;
+    var serial = Date.now();
     scrollHeight = scroller.scrollHeight || $('body')[0].scrollHeight;
-    var num_scrollers = $(window).data("arv-num-scrollers");
     if ($(scroller).scrollTop() + $(scroller).height()
         >
         scrollHeight - 50)
     {
-      for (var i = 0; i < num_scrollers; i++) {
-        $container = $($(this).data('infinite-container'+i));
+        $container = $(event.data.container);
+        if (!$container.attr('data-infinite-content-href0')) {
+            // Remember the first page source url, so we can refresh
+            // from page 1 later.
+            $container.attr('data-infinite-content-href0',
+                            $container.attr('data-infinite-content-href'));
+        }
         src = $container.attr('data-infinite-content-href');
         if (!src || !$container.is(':visible'))
-          continue;
+            // Finished
+            return;
 
         // Don't start another request until this one finishes
         $container.attr('data-infinite-content-href', null);
         spinner = '<div class="spinner spinner-32px spinner-h-center"></div>';
-        if ($(container).is('table,tbody,thead,tfoot')) {
+        if ($container.is('table,tbody,thead,tfoot')) {
             // Hack to determine how many columns a new tr should have
             // in order to reach full width.
             colspan = $container.closest('table').
@@ -30,16 +36,21 @@ function maybe_load_more_content() {
                        spinner +
                        '</td></tr>');
         }
+        $container.find(".spinner").detach();
         $container.append(spinner);
+        $container.attr('data-infinite-serial', serial);
         $.ajax(src,
                {dataType: 'json',
                 type: 'GET',
-                data: {},
-                context: {container: $container, src: src}}).
-            always(function() {
-                $(this.container).find(".spinner").detach();
-            }).
+                data: ($container.data('infinite-content-params') || {}),
+                context: {container: $container, src: src, serial: serial}}).
             fail(function(jqxhr, status, error) {
+                var $faildiv;
+                var $container = this.container;
+                if ($container.attr('data-infinite-serial') != this.serial) {
+                    // A newer request is already in progress.
+                    return;
+                }
                 if (jqxhr.readyState == 0 || jqxhr.status == 0) {
                     message = "Cancelled."
                 } else if (jqxhr.responseJSON && jqxhr.responseJSON.errors) {
@@ -47,32 +58,59 @@ function maybe_load_more_content() {
                 } else {
                     message = "Request failed.";
                 }
-                // TODO: report this to the user.
+                // TODO: report the message to the user.
                 console.log(message);
-                $(this.container).attr('data-infinite-content-href', this.src);
+                $faildiv = $('<div />').
+                    attr('data-infinite-content-href', this.src).
+                    addClass('infinite-retry').
+                    append('<span class="fa fa-warning" /> Oops, request failed. <button class="btn btn-xs btn-primary">Retry</button>');
+                $container.find('div.spinner').replaceWith($faildiv);
             }).
             done(function(data, status, jqxhr) {
-                $(this.container).append(data.content);
-                $(this.container).attr('data-infinite-content-href', data.next_page_href);
+                if ($container.attr('data-infinite-serial') != this.serial) {
+                    // A newer request is already in progress.
+                    return;
+                }
+                $container.find(".spinner").detach();
+                $container.append(data.content);
+                $container.attr('data-infinite-content-href', data.next_page_href);
             });
-        break;
      }
-   }
 }
 
 $(document).
+    on('click', 'div.infinite-retry button', function() {
+        var $retry_div = $(this).closest('.infinite-retry');
+        var $scroller = $(this).closest('.infinite-scroller')
+        $scroller.attr('data-infinite-content-href',
+                       $retry_div.attr('data-infinite-content-href'));
+        $retry_div.replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
+        $scroller.trigger('scroll');
+    }).
+    on('refresh-content', '[data-infinite-scroller]', function() {
+        // Clear all rows, reset source href to initial state, and
+        // (if the container is visible) start loading content.
+        var first_page_href = $(this).attr('data-infinite-content-href0');
+        if (!first_page_href)
+            first_page_href = $(this).attr('data-infinite-content-href');
+        $(this).
+            html('').
+            attr('data-infinite-content-href', first_page_href);
+        $('.infinite-scroller').
+            trigger('scroll');
+    }).
     on('ready ajax:complete', function() {
-        var num_scrollers = 0;
         $('[data-infinite-scroller]').each(function() {
+            if ($(this).hasClass('infinite-scroller-ready'))
+                return;
+            $(this).addClass('infinite-scroller-ready');
+
             var $scroller = $($(this).attr('data-infinite-scroller'));
             if (!$scroller.hasClass('smart-scroll') &&
                 'scroll' != $scroller.css('overflow-y'))
                 $scroller = $(window);
             $scroller.
                 addClass('infinite-scroller').
-                data('infinite-container'+num_scrollers, this).
-                on('scroll', maybe_load_more_content);
-            num_scrollers++;
+                on('scroll', { container: this }, maybe_load_more_content);
         });
-        $(window).data("arv-num-scrollers", num_scrollers);
     });

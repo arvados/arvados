@@ -218,7 +218,7 @@ class User < ArvadosModel
 
   def check_auto_admin
     if User.where("uuid not like '%-000000000000000'").where(:is_admin => true).count == 0 and Rails.configuration.auto_admin_user
-      if current_user.email == Rails.configuration.auto_admin_user
+      if self.email == Rails.configuration.auto_admin_user
         self.is_admin = true
         self.is_active = true
       end

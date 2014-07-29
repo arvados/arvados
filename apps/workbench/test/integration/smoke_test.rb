@@ -16,6 +16,9 @@ class SmokeTest < ActionDispatch::IntegrationTest
     all(find_spec + ' a').collect { |tag|
       if tag[:href].nil? or tag[:href].empty? or (tag.text !~ text_regexp)
         nil
+      elsif tag[:'data-remote']
+        # these don't necessarily work with format=html
+        nil
       else
         url = URI(tag[:href])
         url.host.nil? ? url.path : nil

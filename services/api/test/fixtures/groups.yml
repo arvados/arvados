@@ -66,7 +66,7 @@ asubproject:
   updated_at: 2014-04-21 15:37:48 -0400
   name: A Subproject
   description: "Test project belonging to active user's first test project"
-  group_class: folder
+  group_class: project
 
 future_project_viewing_group:
   uuid: zzzzz-j7d0g-futrprojviewgrp
