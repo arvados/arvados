@@ -305,7 +305,8 @@ class GroupsDirectory(Directory):
                 self._entries[a].invalidate()
 
     def update(self):
-        groups = self.api.groups().list().execute()
+        groups = self.api.groups().list(
+            filters=[['group_class','=','project']]).execute()
         self.merge(groups['items'],
                    lambda i: i['uuid'],
                    lambda a, i: a.uuid == i['uuid'],
