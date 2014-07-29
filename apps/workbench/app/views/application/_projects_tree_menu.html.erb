@@ -4,9 +4,9 @@
               </li>
               <% my_project_tree.each do |pnode| %>
                 <% next if pnode[:object].class != Group %>
-                <li style="padding-left: <%= pnode[:depth]-1 %>em">
+                <li>
                   <%= project_link_to.call pnode do %>
-                    <%= pnode[:object].name %>
+                    <span style="padding-left: <%= pnode[:depth]-1 %>em"></span><%= pnode[:object].name %>
                   <% end %>
                 </li>
               <% end %>
@@ -16,9 +16,9 @@
               </li>
               <% shared_project_tree.each do |pnode| %>
                 <% next if pnode[:object].class != Group %>
-                <li style="padding-left: <%= pnode[:depth]-1 %>em">
+                <li>
                   <%= project_link_to.call pnode do %>
-                    <i class="fa fa-fw fa-share-alt" style="color:#aaa"></i> <%= pnode[:object].name %>
+                    <span style="padding-left: <%= pnode[:depth]-1 %>em"></span><i class="fa fa-fw fa-share-alt" style="color:#aaa"></i> <%= pnode[:object].name %>
                   <% end %>
                 </li>
               <% end %>

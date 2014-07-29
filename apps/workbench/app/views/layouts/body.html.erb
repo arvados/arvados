@@ -155,7 +155,10 @@
             <ul class="dropdown-menu" role="menu">
             <%= render partial: "projects_tree_menu", locals: {
                   :project_link_to => Proc.new do |pnode, &block|
-                    link_to(project_path(pnode[:object].uuid), data: {object_uuid: pnode[:object].uuid, name: 'name'}, &block)
+                    link_to(project_path(pnode[:object].uuid),
+                      data_object_uuid: pnode[:object].uuid,
+                      data_name: 'name',
+                      &block)
                   end,
                   :top_button => Proc.new do %>
                     <% link_to projects_path, method: 'post', class: 'btn btn-xs btn-default pull-right' do %>

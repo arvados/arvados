@@ -82,7 +82,7 @@ $(document).on('click', '.selectable', function() {
     $(this).
         closest('.dropdown-menu').
         prev('button').
-        html($(this).html() + ' <span class="caret"></span>');
+        html($(this).text() + ' <span class="caret"></span>');
     // Set (or unset) filter params and refresh filterable rows
     $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
         data('infinite-content-params', params).

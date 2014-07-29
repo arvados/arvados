@@ -22,8 +22,11 @@
                 <li class="divider" />
                 <%= render partial: "projects_tree_menu", locals: {
                       :project_link_to => Proc.new do |pnode, &block|
-                        link_to "#", {"class" => "chooser-show-project", "data-project-uuid" => pnode[:object].uuid }, &block
-                       end,
+                        link_to "#", {
+                          class: "chooser-show-project",
+                          data_project_uuid: pnode[:object].uuid,
+                        }, &block
+                      end,
                       :top_button => nil
                     } %>
               </ul>
