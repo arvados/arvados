@@ -70,9 +70,8 @@ class SigHandler(object):
 
 if "foreach" in jobp:
     if arvados.current_task()['sequence'] == 0:
-        var = jobp["foreach"]["var"]
-        values = jobp["foreach"]["values"]
-        fn = subst.do_substitution(jobp, values)
+        var = jobp["foreach"]
+        fn = subst.do_substitution(jobp, jobp[var])
         mode = os.stat(fn)
         prefix = fn[len(os.environ['TASK_KEEPMOUNT'])+1:]
         if mode != None:
