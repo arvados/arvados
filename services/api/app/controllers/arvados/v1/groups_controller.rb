@@ -3,6 +3,9 @@ class Arvados::V1::GroupsController < ApplicationController
   def self._contents_requires_parameters
     _index_requires_parameters.
       merge({
+              uuid: {
+                type: 'string', required: false, default: nil
+              },
               include_linked: {
                 type: 'boolean', required: false, default: false
               },
@@ -60,6 +63,9 @@ class Arvados::V1::GroupsController < ApplicationController
      Collection,
      Human, Specimen, Trait].each do |klass|
       @objects = klass.readable_by(*@read_users)
+      if klass == Group
+        @objects = @objects.where('group_class = ?', 'project')
+      end
       conds = []
       cond_params = []
       if opts[:owner_uuid]

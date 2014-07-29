@@ -24,7 +24,7 @@
                       :project_link_to => Proc.new do |pnode, &block|
                         link_to "#", {
                           class: "chooser-show-project",
-                          data_project_uuid: pnode[:object].uuid,
+                          data: {'project_uuid' => pnode[:object].uuid},
                         }, &block
                       end,
                       :top_button => nil
