@@ -61,6 +61,13 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     kinds = json_response['items'].collect { |i| i['kind'] }.uniq
     expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
     assert_equal expect_kinds, (expect_kinds & kinds)
+
+    json_response['items'].each do |i|
+      if i['kind'] == 'arvados#group'
+        assert(i['group_class'] == 'project',
+               "group#contents returned a non-project group")
+      end
+    end
   end
 
   test 'get group-owned objects' do

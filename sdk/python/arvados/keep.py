@@ -19,6 +19,7 @@ import time
 import threading
 import timer
 import datetime
+import ssl
 
 global_client_object = None
 
@@ -185,6 +186,10 @@ class KeepClient(object):
         def __init__(self, **kwargs):
             super(KeepClient.KeepWriterThread, self).__init__()
             self.args = kwargs
+            self._success = False
+
+        def success(self):
+            return self._success
 
         def run(self):
             with self.args['thread_limiter'] as limiter:
@@ -192,58 +197,66 @@ class KeepClient(object):
                     # My turn arrived, but the job has been done without
                     # me.
                     return
-                logging.debug("KeepWriterThread %s proceeding %s %s" %
-                              (str(threading.current_thread()),
-                               self.args['data_hash'],
-                               self.args['service_root']))
-                h = httplib2.Http()
-                url = self.args['service_root'] + self.args['data_hash']
-                api_token = config.get('ARVADOS_API_TOKEN')
-                headers = {'Authorization': "OAuth2 %s" % api_token}
+                self.run_with_limiter(limiter)
 
-                if self.args['using_proxy']:
-                    # We're using a proxy, so tell the proxy how many copies we
-                    # want it to store
-                    headers['X-Keep-Desired-Replication'] = str(self.args['want_copies'])
+        def run_with_limiter(self, limiter):
+            logging.debug("KeepWriterThread %s proceeding %s %s" %
+                          (str(threading.current_thread()),
+                           self.args['data_hash'],
+                           self.args['service_root']))
+            h = httplib2.Http(timeout=self.args.get('timeout', None))
+            url = self.args['service_root'] + self.args['data_hash']
+            api_token = config.get('ARVADOS_API_TOKEN')
+            headers = {'Authorization': "OAuth2 %s" % api_token}
 
-                try:
-                    logging.debug("Uploading to {}".format(url))
+            if self.args['using_proxy']:
+                # We're using a proxy, so tell the proxy how many copies we
+                # want it to store
+                headers['X-Keep-Desired-Replication'] = str(self.args['want_copies'])
+
+            try:
+                logging.debug("Uploading to {}".format(url))
+                resp, content = h.request(url.encode('utf-8'), 'PUT',
+                                          headers=headers,
+                                          body=self.args['data'])
+                if (resp['status'] == '401' and
+                    re.match(r'Timestamp verification failed', content)):
+                    body = KeepClient.sign_for_old_server(
+                        self.args['data_hash'],
+                        self.args['data'])
+                    h = httplib2.Http(timeout=self.args.get('timeout', None))
                     resp, content = h.request(url.encode('utf-8'), 'PUT',
                                               headers=headers,
-                                              body=self.args['data'])
-                    if (resp['status'] == '401' and
-                        re.match(r'Timestamp verification failed', content)):
-                        body = KeepClient.sign_for_old_server(
-                            self.args['data_hash'],
-                            self.args['data'])
-                        h = httplib2.Http()
-                        resp, content = h.request(url.encode('utf-8'), 'PUT',
-                                                  headers=headers,
-                                                  body=body)
-                    if re.match(r'^2\d\d$', resp['status']):
-                        logging.debug("KeepWriterThread %s succeeded %s %s" %
-                                      (str(threading.current_thread()),
-                                       self.args['data_hash'],
-                                       self.args['service_root']))
-                        replicas_stored = 1
-                        if 'x-keep-replicas-stored' in resp:
-                            # Tick the 'done' counter for the number of replica
-                            # reported stored by the server, for the case that
-                            # we're talking to a proxy or other backend that
-                            # stores to multiple copies for us.
-                            try:
-                                replicas_stored = int(resp['x-keep-replicas-stored'])
-                            except ValueError:
-                                pass
-                        return limiter.save_response(content.strip(), replicas_stored)
-
+                                              body=body)
+                if re.match(r'^2\d\d$', resp['status']):
+                    self._success = True
+                    logging.debug("KeepWriterThread %s succeeded %s %s" %
+                                  (str(threading.current_thread()),
+                                   self.args['data_hash'],
+                                   self.args['service_root']))
+                    replicas_stored = 1
+                    if 'x-keep-replicas-stored' in resp:
+                        # Tick the 'done' counter for the number of replica
+                        # reported stored by the server, for the case that
+                        # we're talking to a proxy or other backend that
+                        # stores to multiple copies for us.
+                        try:
+                            replicas_stored = int(resp['x-keep-replicas-stored'])
+                        except ValueError:
+                            pass
+                    limiter.save_response(content.strip(), replicas_stored)
+                else:
                     logging.warning("Request fail: PUT %s => %s %s" %
                                     (url, resp['status'], content))
-                except (httplib2.HttpLib2Error, httplib.HTTPException) as e:
-                    logging.warning("Request fail: PUT %s => %s: %s" %
-                                    (url, type(e), str(e)))
+            except (httplib2.HttpLib2Error,
+                    httplib.HTTPException,
+                    ssl.SSLError) as e:
+                # When using https, timeouts look like ssl.SSLError from here.
+                # "SSLError: The write operation timed out"
+                logging.warning("Request fail: PUT %s => %s: %s" %
+                                (url, type(e), str(e)))
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.lock = threading.Lock()
         self.service_roots = None
         self._cache_lock = threading.Lock()
@@ -251,6 +264,7 @@ class KeepClient(object):
         # default 256 megabyte cache
         self.cache_max = 256 * 1024 * 1024
         self.using_proxy = False
+        self.timeout = kwargs.get('timeout', 60)
 
     def shuffled_service_roots(self, hash):
         if self.service_roots == None:
@@ -466,16 +480,33 @@ class KeepClient(object):
         threads = []
         thread_limiter = KeepClient.ThreadLimiter(want_copies)
         for service_root in self.shuffled_service_roots(data_hash):
-            t = KeepClient.KeepWriterThread(data=data,
-                                            data_hash=data_hash,
-                                            service_root=service_root,
-                                            thread_limiter=thread_limiter,
-                                            using_proxy=self.using_proxy,
-                                            want_copies=(want_copies if self.using_proxy else 1))
+            t = KeepClient.KeepWriterThread(
+                data=data,
+                data_hash=data_hash,
+                service_root=service_root,
+                thread_limiter=thread_limiter,
+                timeout=self.timeout,
+                using_proxy=self.using_proxy,
+                want_copies=(want_copies if self.using_proxy else 1))
             t.start()
             threads += [t]
         for t in threads:
             t.join()
+        if thread_limiter.done() < want_copies:
+            # Retry the threads (i.e., services) that failed the first
+            # time around.
+            threads_retry = []
+            for t in threads:
+                if not t.success():
+                    logging.warning("Retrying: PUT %s %s" % (
+                        t.args['service_root'],
+                        t.args['data_hash']))
+                    retry_with_args = t.args.copy()
+                    t_retry = KeepClient.KeepWriterThread(**retry_with_args)
+                    t_retry.start()
+                    threads_retry += [t_retry]
+            for t in threads_retry:
+                t.join()
         have_copies = thread_limiter.done()
         # If we're done, return the response from Keep
         if have_copies >= want_copies:

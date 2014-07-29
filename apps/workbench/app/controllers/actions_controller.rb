@@ -10,6 +10,17 @@ class ActionsController < ApplicationController
     ArvadosBase::resource_class_for_uuid(params[:uuid])
   end
 
+  def show
+    @object = model_class.find(params[:uuid])
+    if @object.is_a? Link and
+        @object.link_class == 'name' and
+        ArvadosBase::resource_class_for_uuid(@object.head_uuid) == Collection
+      redirect_to collection_path(id: @object.uuid)
+    else
+      redirect_to @object
+    end
+  end
+
   def post
     params.keys.collect(&:to_sym).each do |param|
       if @@exposed_actions[param]
