@@ -1182,7 +1182,7 @@ sub fetch_block
   $output_block = '';
   while (1) {
     my $buf;
-    my $bytes = sysread($keep, $buf, 64 * 1024 * 1024);
+    my $bytes = sysread($keep, $buf, 1024 * 1024);
     if (!defined $bytes) {
       die "reading from arv-get: $!";
     } elsif ($bytes == 0) {
