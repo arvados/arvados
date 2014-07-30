@@ -85,7 +85,7 @@ def expand_item(p, c):
             return r
     elif isinstance(c, list):
         return expand_list(p, c)
-    elif isinstance(c, str):
+    elif isinstance(c, str) or isinstance(c, unicode):
         return [subst.do_substitution(p, c)]
 
     return []
