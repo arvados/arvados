@@ -90,22 +90,24 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     check_project_contents_response
   end
 
-  test 'list objects across multiple projects' do
-    authorize_with :project_viewer
-    get :contents, {
-      format: :json,
-      include_linked: false,
-      filters: [['uuid', 'is_a', 'arvados#specimen']]
-    }
-    assert_response :success
-    found_uuids = json_response['items'].collect { |i| i['uuid'] }
-    [[:in_aproject, true],
-     [:in_asubproject, true],
-     [:owned_by_private_group, false]].each do |specimen_fixture, should_find|
-      if should_find
-        assert_includes found_uuids, specimens(specimen_fixture).uuid, "did not find specimen fixture '#{specimen_fixture}'"
-      else
-        refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
+  [false, true].each do |include_linked|
+    test 'list objects across multiple projects' do
+      authorize_with :project_viewer
+      get :contents, {
+        format: :json,
+        include_linked: include_linked,
+        filters: [['uuid', 'is_a', 'arvados#specimen']]
+      }
+      assert_response :success
+      found_uuids = json_response['items'].collect { |i| i['uuid'] }
+      [[:in_aproject, true],
+       [:in_asubproject, true],
+       [:owned_by_private_group, false]].each do |specimen_fixture, should_find|
+        if should_find
+          assert_includes found_uuids, specimens(specimen_fixture).uuid, "did not find specimen fixture '#{specimen_fixture}'"
+        else
+          refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
+        end
       end
     end
   end

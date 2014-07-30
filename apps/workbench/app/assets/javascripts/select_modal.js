@@ -72,11 +72,14 @@ $(document).on('click', '.selectable', function() {
         });
 }).on('click', '.chooser-show-project', function() {
     var params = {};
+    var project_uuid = $(this).attr('data-project-uuid');
     $(this).attr('href', '#');  // Skip normal click handler
-    if ($(this).attr('data-project-uuid')) {
+    if (project_uuid) {
         params = {'filters[]': JSON.stringify(['owner_uuid',
                                                '=',
-                                               $(this).attr('data-project-uuid')])};
+                                               project_uuid]),
+                  project_uuid: project_uuid
+                 };
     }
     // Use current selection as dropdown button label
     $(this).
