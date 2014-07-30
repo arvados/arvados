@@ -40,6 +40,8 @@ test:
   active_support.deprecation: :stderr
   active_record.mass_assignment_sanitizer: :strict
   uuid_prefix: zzzzz
+  secret_token: <%= rand(2**512).to_s(36) %>
+  blob_signing_key: <%= rand(2**512).to_s(36) %>
 
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
@@ -91,6 +93,15 @@ common:
   compute_node_nameservers:
     - 192.168.1.1
   compute_node_ec2_tag_enable: false
+
+  # The version below is suitable for AWS.
+  # To use it, copy it to your application.yml, uncomment, and change <%# to <%=
+  # compute_node_nameservers: <%#
+  #   require 'net/http'
+  #   ['local', 'public'].collect do |iface|
+  #     Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
+  #   end << '172.16.0.23'
+  # %>
 
   accept_api_token: {}
 
