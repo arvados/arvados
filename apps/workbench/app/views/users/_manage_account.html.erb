@@ -1,8 +1,7 @@
 <div class="col-sm-6">
   <div class="panel-group" id="arv-adv-accordion">
     <% ['Virtual Machines',
-       'Repositories',
-       'Current Token'].each do |section| %>
+       'Repositories'].each do |section| %>
       <% section_id = section.gsub(" ","_").downcase %>
       <div class="panel panel-default">
         <div class="panel-heading">
@@ -24,7 +23,7 @@
 <div class="col-sm-6">
   <div class="panel-group" id="arv-adv-accordion">
     <% ['SSH Keys',
-       'Setting up SSH access'].each do |section| %>
+      'Current Token'].each do |section| %>
       <% section_id = section.gsub(" ","_").downcase %>
       <div class="panel panel-default">
         <div class="panel-heading">
