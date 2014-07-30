@@ -95,7 +95,7 @@ def get_items(p, value):
         return expand_list(p, value)
 
     fn = subst.do_substitution(p, value)
-    mode = os.stat(fn)
+    mode = os.stat(fn).st_mode
     prefix = fn[len(os.environ['TASK_KEEPMOUNT'])+1:]
     if mode != None:
         if stat.S_ISDIR(mode):
