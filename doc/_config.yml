@@ -121,6 +121,7 @@ navbar:
     - Docker:
       - install/install-docker.html.textile.liquid
     - Manual installation:
+      - install/install-keep.html.textile.liquid
       - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid

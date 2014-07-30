@@ -7,6 +7,10 @@
 # true when starting the container.
 PUBLIC_KEY_PATH:
 
+# Username for your Arvados user. This will be used as your shell login name
+# as well as the name for your git repository.
+ARVADOS_USER_NAME:
+
 # ARVADOS_DOMAIN: the Internet domain of this installation.
 # ARVADOS_DNS_SERVER: the authoritative nameserver for ARVADOS_DOMAIN.
 ARVADOS_DOMAIN:         # e.g. arvados.internal
