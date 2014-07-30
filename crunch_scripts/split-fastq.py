@@ -9,36 +9,6 @@ api = arvados.api('v1')
 piece = 0
 manifest_text = ""
 
-def put_manifest(manifest_text, sources=[]):
-    crm = arvados.CollectionReader(manifest_text)
-
-    combined = crm.manifest_text(strip=True)
-
-    m = hashlib.new('md5')
-    m.update(combined)
-
-    print combined
-
-    uuid = "{}+{}".format(m.hexdigest(), len(combined))
-
-    collection = arvados.api().collections().create(
-        body={'collection':{
-            'uuid': uuid,
-            'manifest_text': crm.manifest_text()
-        }
-        }).execute()
-
-    for s in sources:
-        l = arvados.api().links().create(body={
-            "link": {
-                "tail_uuid": s,
-                "head_uuid": uuid,
-                "link_class": "provenance",
-                "name": "provided"
-            }}).execute()
-
-    return uuid
-
 # Look for paired reads
 
 inp = arvados.CollectionReader(arvados.getjobparam('reads'))
@@ -75,6 +45,4 @@ if manifest_text == "":
                     manifest_text += "./_" + str(piece) + m0
                     piece += 1
 
-print manifest_text
-
-arvados.current_task().set_output(put_manifest(manifest_text, [arvados.getjobparam('reads')]))
+arvados.current_task().set_output(manifest_text)
