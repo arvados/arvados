@@ -44,7 +44,11 @@ def sub_basename(v):
     return os.path.splitext(os.path.basename(v))[0]
 
 def sub_glob(v):
-    return glob.glob(v)[0]
+    l = glob.glob(v)
+    if len(l) == 0:
+        raise Exception("$(glob): No match on '%s'" % v)
+    else:
+        return l[0]
 
 default_subs = {"file ": sub_file,
                 "dir ": sub_dir,
