@@ -125,6 +125,7 @@ if "task.foreach" in jobp:
                     'parameters': params
                     }
                 ).execute()
+            arvados.current_task().set_output(None)
             sys.exit(0)
         else:
             sys.exit(1)
