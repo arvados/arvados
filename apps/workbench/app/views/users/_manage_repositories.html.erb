@@ -13,7 +13,7 @@
     <thead>
       <tr>
         <th> Name </th>
-        <th> Writable </th>
+        <th> Read/Write </th>
         <th> URL </th>
       </tr>
     </thead>
@@ -24,7 +24,7 @@
             <%= repo[:name] %>
           </td>
           <td>
-            <%= repo[:push_url] != nil %>
+            <%= repo[:push_url] ? 'writable' : 'read-only' %>
           </td>
           <td style="word-break:break-all;">
             <code><%= repo[:fetch_url] %></code>
