@@ -109,33 +109,39 @@ def get_items(p, value):
     else:
         return None
 
-if "task.foreach" in jobp:
-    if arvados.current_task()['sequence'] == 0:
-        var = jobp["task.foreach"]
-        items = get_items(jobp, jobp[var])
-        if items != None:
-            print("run-command: parallelizing on %s with items %s" % (var, items))
-
-            for i in items:
-                params = copy.copy(jobp)
-                params[var] = i
-                arvados.api().job_tasks().create(body={
-                    'job_uuid': arvados.current_job()['uuid'],
-                    'created_by_job_task_uuid': arvados.current_task()['uuid'],
-                    'sequence': 1,
-                    'parameters': params
-                    }
-                ).execute()
-            arvados.current_task().set_output(None)
-            sys.exit(0)
-        else:
-            sys.exit(1)
-else:
-    p = jobp
-
 try:
+    if "task.foreach" in jobp:
+        if arvados.current_task()['sequence'] == 0:
+            var = jobp["task.foreach"]
+            items = get_items(jobp, jobp[var])
+            print("run-command: parallelizing on %s with items %s" % (var, items))
+            if items != None:
+                for i in items:
+                    params = copy.copy(jobp)
+                    params[var] = i
+                    arvados.api().job_tasks().create(body={
+                        'job_uuid': arvados.current_job()['uuid'],
+                        'created_by_job_task_uuid': arvados.current_task()['uuid'],
+                        'sequence': 1,
+                        'parameters': params
+                        }
+                    ).execute()
+                arvados.current_task().set_output(None)
+                sys.exit(0)
+            else:
+                sys.exit(1)
+    else:
+        p = jobp
+
     cmd = expand_list(p, p["command"])
 
+except Exception as e:
+    print("run-command: caught exception:")
+    traceback.print_exc(file=sys.stdout)
+    print("run-command: parameters is %s" % p)
+    sys.exit(1)
+
+try:
     stdoutname = None
     stdoutfile = None
     if "save.stdout" in p:
