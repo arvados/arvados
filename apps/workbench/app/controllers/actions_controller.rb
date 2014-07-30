@@ -70,7 +70,12 @@ class ActionsController < ApplicationController
           dst.owner_uuid = @object.uuid
           dst.tail_uuid = @object.uuid if dst.class == Link
         end
-        dst.save!
+        begin
+          dst.save!
+        rescue
+          dst.name += " (#{Time.now.localtime})" if dst.respond_to? :name=
+          dst.save!
+        end
       end
     end
     redirect_to @object

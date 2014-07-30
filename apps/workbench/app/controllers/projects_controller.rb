@@ -71,12 +71,7 @@ class ProjectsController < ApplicationController
           dst.owner_uuid = target_uuid
           dst.tail_uuid = target_uuid if dst.class == Link
         end
-        begin
-          dst.save!
-        rescue
-          dst.name += " (#{Time.now.localtime})" if dst.respond_to? :name=
-          dst.save!
-        end
+        dst.save!
       end
     end
     session[:selected_move_items] = nil
