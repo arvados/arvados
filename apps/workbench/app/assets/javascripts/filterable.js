@@ -49,5 +49,5 @@ $(document).
             data('filters', filters).
             trigger('refresh');
     }).on('ajax:complete', function() {
-        $('.filterable-control').trigger('change');
+        $('.filterable-control').trigger('input');
     });
