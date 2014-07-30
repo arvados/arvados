@@ -10,6 +10,7 @@ import subst
 import time
 import arvados.commands.put as put
 import signal
+import stat
 
 os.umask(0077)
 
