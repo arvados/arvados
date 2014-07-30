@@ -109,6 +109,9 @@ def get_items(p, value):
     else:
         return None
 
+stdoutname = None
+stdoutfile = None
+
 try:
     if "task.foreach" in jobp:
         if arvados.current_task()['sequence'] == 0:
@@ -135,6 +138,12 @@ try:
 
     cmd = expand_list(p, p["command"])
 
+    if "save.stdout" in p:
+        stdoutname = subst.do_substitution(p, p["save.stdout"])
+        stdoutfile = open(stdoutname, "wb")
+
+    print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+
 except Exception as e:
     print("run-command: caught exception:")
     traceback.print_exc(file=sys.stdout)
@@ -142,14 +151,6 @@ except Exception as e:
     sys.exit(1)
 
 try:
-    stdoutname = None
-    stdoutfile = None
-    if "save.stdout" in p:
-        stdoutname = subst.do_substitution(p, p["save.stdout"])
-        stdoutfile = open(stdoutname, "wb")
-
-    print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
-
     sp = subprocess.Popen(cmd, shell=False, stdout=stdoutfile)
     sig = SigHandler()
 
