@@ -13,6 +13,7 @@ import signal
 import stat
 import copy
 import traceback
+import pprint
 
 os.umask(0077)
 
@@ -147,7 +148,8 @@ try:
 except Exception as e:
     print("run-command: caught exception:")
     traceback.print_exc(file=sys.stdout)
-    print("run-command: parameters is %s" % p)
+    print("run-command: task parameters was:")
+    pprint.pprint(p)
     sys.exit(1)
 
 try:
