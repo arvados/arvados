@@ -263,6 +263,11 @@ class UsersController < ApplicationController
         key_params['public_key'] = params['public_key']
       end
 
+      if !key_params['name']
+        split_key = key_params['public_key'].split
+        key_params['name'] = split_key[-1] if (split_key.size == 3)
+      end
+
       new_key = AuthorizedKey.create! key_params
       if new_key
         format.js

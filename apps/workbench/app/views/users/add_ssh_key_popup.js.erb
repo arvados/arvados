@@ -6,8 +6,7 @@ $register = $('#register');
 
 var name_value = document.forms["add_new_key_form"]["name"].value;
 var public_key_value = document.forms["add_new_key_form"]["public_key"].value;
-if ((name_value == null || name_value == "" ||
-     public_key_value == null || public_key_value == "")) {
+if (public_key_value == null || public_key_value == "") {
   $register.attr('disabled', true);
 }
 
@@ -18,8 +17,14 @@ $input.on('keyup paste mouseleave onblur', function() {
   var name_value = document.forms["add_new_key_form"]["name"].value;
   var public_key_value = document.forms["add_new_key_form"]["public_key"].value;
 
-  if ((name_value == null || name_value == "" ||
-       public_key_value == null || public_key_value == "")){
+  var publicKeyRegExp = /^ssh-(rsa|dss) [A-Za-z0-9+\/=\+]+\b/;
+  var validKey = false;
+ 
+  if (publicKeyRegExp.test(public_key_value )) {
+    validKey = true;
+  }
+
+  if (public_key_value == null || public_key_value == "" || !validKey){
     trigger = true;
   }
 
