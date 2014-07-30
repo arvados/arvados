@@ -10,7 +10,7 @@
 # 4. Section in application.default.yml corresponding to RAILS_ENV
 # 5. Section in application.default.yml called "common"
 
-common:
+development:
   # At minimum, you need a nice long randomly generated secret_token here.
   secret_token: ~
 
