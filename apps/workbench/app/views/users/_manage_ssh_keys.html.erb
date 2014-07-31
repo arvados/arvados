@@ -9,7 +9,7 @@
   <% end %>
 
   <% if @my_ssh_keys.andand.any? %>
-    <table class="table manage-ssh-keys-table" style="table-layout:fixed; overflow:hidden; white-space: nowrap;">
+    <table class="table manage-ssh-keys-table">
       <colgroup>
         <col style="width: 45%" />
         <col style="width: 45%" />
@@ -18,20 +18,20 @@
       <thead>
         <tr>
           <th> Name </th>
-          <th> Public Key </th>
+          <th> Key Finger Print </th>
           <th> </th>
         </tr>
       </thead>
       <tbody>
         <% @my_ssh_keys.andand.each do |key| %>
-          <tr>
-            <td style="width:50px; overflow:hidden;">
+          <tr style="word-break:break-all;">
+            <td>
               <%= key[:name] %>
             </td>
-            <td>
+            <td style="word-break:break-all;">
               <% if key[:public_key] && key[:public_key].size > 0 %>
                 <div>
-                  <pre style="margin:0; overflow-y:scroll; max-height:7em"><%= key[:public_key] %></pre>
+                  <%= SSHKey.fingerprint key[:public_key] %>
                 </div>
               <% else %>
                   <%= key[:public_key] %>

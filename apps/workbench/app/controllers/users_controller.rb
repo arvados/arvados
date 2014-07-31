@@ -257,10 +257,10 @@ class UsersController < ApplicationController
       key_params['authorized_user_uuid'] = current_user.uuid
 
       if params['name'] && params['name'].size>0
-        key_params['name'] = params['name']
+        key_params['name'] = params['name'].strip
       end
       if params['public_key'] && params['public_key'].size>0
-        key_params['public_key'] = params['public_key']
+        key_params['public_key'] = params['public_key'].strip
       end
 
       if !key_params['name'] && params['public_key'].andand.size>0

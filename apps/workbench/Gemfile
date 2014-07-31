@@ -50,6 +50,7 @@ gem 'bootstrap-x-editable-rails'
 gem 'less'
 gem 'less-rails'
 gem 'wiselinks'
+gem 'sshkey'
 
 # To use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.0.0'
