@@ -3,7 +3,7 @@
 pkf="/etc/keep_signing_secret"
 if [ -s "$pkf" ]
 then
-    permisson_key_arg="-permission-key-file=$f"
+    permisson_key_arg="-permission-key-file=$pkf"
 else
     permisson_key_arg=""
 fi
