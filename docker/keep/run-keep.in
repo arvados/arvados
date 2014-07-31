@@ -3,9 +3,9 @@
 pkf="/etc/keep_signing_secret"
 if [ -s "$pkf" ]
 then
-    permisson_key_arg="-permission-key-file=$pkf"
+    permission_key_arg="-permission-key-file=$pkf"
 else
-    permisson_key_arg=""
+    permission_key_arg=""
 fi
 
 exec keep $permission_key_arg -listen=":25107" -volumes="/keep-data"
