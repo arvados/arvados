@@ -76,3 +76,4 @@ gem 'arvados-cli', '>= 0.1.20140708213257'
 gem 'pg_power'
 
 gem 'puma'
+gem 'sshkey'

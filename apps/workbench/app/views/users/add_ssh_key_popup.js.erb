@@ -1,0 +1,8 @@
+$("#add-ssh-key-modal-window").html("<%= escape_javascript(render partial: 'add_ssh_key_popup') %>");
+
+// reset form input fields, for the next time around
+function reset_form() {
+  $('#name').val("");
+  $('#public_key').val("");
+  $('select').val('')
+}

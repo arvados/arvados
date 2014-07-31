@@ -13,6 +13,8 @@
         <i class="fa fa-fw fa-plus"></i> Add a new user
       <% end %>
       <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
+    <% elsif controller.controller_name == 'manage_account' %>
+      <%# No add button is needed %>
     <% else %>
       <%= button_to({action: 'create'}, {class: 'btn btn-sm btn-primary'}) do %>
         <i class="fa fa-fw fa-plus"></i>
