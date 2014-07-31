@@ -5,7 +5,7 @@
   </p>
 
   <% if !@my_repositories.any? %>
-    You do not seem to have access to any repositories. If you would like to request access, please contact your system admin at <b><%= "#{Rails.configuration.activation_contact_link}".split(':')[-1] %></b>
+    You do not seem to have access to any repositories. If you would like to request access, please contact your system admin.
   <% else %>
     <table class="table repositories-table">
       <colgroup>
