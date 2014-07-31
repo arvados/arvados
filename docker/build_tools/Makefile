@@ -73,7 +73,7 @@ DOC_DEPS = doc/Dockerfile doc/apache2_vhost
 WORKBENCH_DEPS = workbench/Dockerfile \
                  $(WORKBENCH_GENERATED)
 
-KEEP_DEPS = keep/Dockerfile
+KEEP_DEPS = keep/Dockerfile $(KEEP_GENERATED)
 
 SSO_DEPS = $(SSO_GENERATED)
 
@@ -86,6 +86,10 @@ SLURM_GENERATED = slurm/generated/*
 COMPUTE_GENERATED = compute/generated/setup.sh
 
 COMPUTE_GENERATED_IN = compute/setup.sh.in
+
+KEEP_GENERATED_IN := $(shell ls keep/*.in)
+
+KEEP_GENERATED := $(shell ls -1 $(KEEP_GENERATED_IN) | perl -pe 's:^keep:keep/generated:')
 
 API_GENERATED = \
         api/generated/arvados-clients.yml \
@@ -173,11 +177,15 @@ $(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
 	$(CONFIG_RB)
 
 $(COMPUTE_GENERATED): config.yml $(COMPUTE_GENERATED_IN)
+	$(CONFIG_RB)
 
 $(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
 	$(CONFIG_RB)
 
 $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
+	$(CONFIG_RB)
+
+$(KEEP_GENERATED): config.yml $(KEEP_GENERATED_IN)
 	$(CONFIG_RB)
 
 # The docker build -q option suppresses verbose build output.

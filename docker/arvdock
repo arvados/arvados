@@ -285,11 +285,11 @@ function do_start {
             [ -f $v/keep/.metadata.yml ] && sudo rm $v/keep/.metadata.yml
         done
         start_container "25107:25107" "keep_server_0" \
-            "${keep_volumes[0]}:/dev/keep-0" \
+            "${keep_volumes[0]}:/keep-data" \
             "api_server:api" \
             "arvados/keep"
         start_container "25108:25107" "keep_server_1" \
-            "${keep_volumes[1]}:/dev/keep-0" \
+            "${keep_volumes[1]}:/keep-data" \
             "api_server:api" \
             "arvados/keep"
     fi

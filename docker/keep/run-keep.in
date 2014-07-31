@@ -1,0 +1,11 @@
+#!/bin/sh
+
+pkf="/etc/keep_signing_secret"
+if [ -z "$pkf" ]
+then
+    permisson_key_arg=""
+else
+    permisson_key_arg="-permission-key-file=$f"
+fi
+
+exec keep $permission_key_arg -listen=":25107" -volumes="/keep-data"
