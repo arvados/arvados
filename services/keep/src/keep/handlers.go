@@ -336,6 +336,7 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 //
 func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
+	log.Printf("%s %s", req.Method, hash)
 
 	// Confirm that this user is an admin and has a token with unlimited scope.
 	var tok = GetApiToken(req)

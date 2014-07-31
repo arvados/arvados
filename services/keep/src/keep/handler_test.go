@@ -431,8 +431,13 @@ func TestIndexHandler(t *testing.T) {
 //
 //   TODO(twp):
 //
-//   * Delete block on read-only volume
-//     (test for 200 OK, response counts, confirm block not deleted)
+//   * Delete block on read-only and read-write volume
+//     (test for 200 OK, response with copies_deleted=1,
+//     copies_failed=1, confirm block deleted only on r/w volume)
+//
+//   * Delete block on read-only volume only
+//     (test for 200 OK, response with copies_deleted=0, copies_failed=1,
+//     confirm block not deleted)
 //
 func TestDeleteHandler(t *testing.T) {
 	defer teardown()
