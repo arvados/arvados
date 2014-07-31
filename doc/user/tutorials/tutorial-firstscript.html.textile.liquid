@@ -108,7 +108,8 @@ Next, create a file that contains the pipeline definition:
       "script_parameters":{
         "input":{
           "required": true,
-          "dataclass": "Collection"
+          "dataclass": "Collection",
+          "search_for": ".fastq.gz"
         }
       },
       "repository":"$USER",
@@ -130,7 +131,7 @@ EOF
 * @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  Your shell should automatically fill in @$USER@ with your login name, so that the final JSON has @"repository"@ pointed at your personal Git repository.
 * @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit Git revision hash, a tag, or a branch (in which case it will use the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
 * @"script"@ specifies the filename of the script to run.  Crunch expects to find this in the @crunch_scripts/@ subdirectory of the Git repository.
-* @"script_parameters"@ describes the parameters for the script.  In this example, there is one parameter called @input@ which is @required@ and is a @Collection@.
+* @"script_parameters"@ describes the parameters for the script. In this example, there is one parameter called @input@ which is @required@ and is a @Collection@. You can also specify a @search_for@ string for this @input@ parameter. When configured, the @search_for@ string will be preloaded into the input data chooser dialog in Workbench when choosing inputs for this @input@ parameter. The @search_for@ string is meaningful only when input @dataclass@ of type @Collection@ or @File@ is used. In this example @.fastq.gz@ is used as the @search_for@ string. This can come handy if you know what types of input you will be searching for when running this pipeline. For example, if your input @dataclass@ is a @File@ and you are interested in a certain filename extention, you can preconfigure it as the @search_for@ string.
 * @"output_is_persistent"@ indicates whether the output of the job is considered valuable. If this value is false (or not given), the output will be treated as intermediate data and eventually deleted to reclaim disk space.
 
 Now, use @arv pipeline_template create@ to register your pipeline template in Arvados:
