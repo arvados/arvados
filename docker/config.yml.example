@@ -66,8 +66,9 @@ API_SUPERUSER_SECRET:
 # change it and don't be dumb.
 POSTGRES_ROOT_PW: dummy_pw
 
-# The URL of the SSO server that you want your API server to use.
-OMNIAUTH_URL: https://@@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@
+# The URL of the SSO server that you want your API server to use. If
+# blank, use the sso docker container.
+OMNIAUTH_URL:
 
 # ==============================
 # Workbench settings
