@@ -11,9 +11,9 @@
   <% if @my_ssh_keys.andand.any? %>
     <table class="table manage-ssh-keys-table" style="table-layout:fixed; overflow:hidden; white-space: nowrap;">
       <colgroup>
-        <col style="width: 40%" />
-        <col style="width: 55%" />
-        <col style="width: 5%" />
+        <col style="width: 45%" />
+        <col style="width: 45%" />
+        <col style="width: 10%" />
       </colgroup>
       <thead>
         <tr>
@@ -31,7 +31,7 @@
             <td>
               <% if key[:public_key] && key[:public_key].size > 0 %>
                 <div>
-                  <pre style="margin:0; overflow-x:scroll"> <%= key[:public_key] %> </pre>
+                  <pre style="margin:0; overflow-y:scroll; max-height:7em"><%= key[:public_key] %></pre>
                 </div>
               <% else %>
                   <%= key[:public_key] %>
