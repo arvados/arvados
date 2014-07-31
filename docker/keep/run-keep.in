@@ -1,7 +1,7 @@
 #!/bin/sh
 
 pkf="/etc/keep_signing_secret"
-if [ -z "$pkf" ]
+if [ -s "$pkf" ]
 then
     permisson_key_arg=""
 else
