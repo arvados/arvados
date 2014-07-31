@@ -52,6 +52,8 @@ deepclean: clean
 
 CONFIG_RB = build_tools/config.rb
 
+LIST_GENERATED_FILES = build_tools/list_generated_files
+
 BUILD = build/.buildstamp
 
 BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
@@ -81,73 +83,26 @@ BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
 
 BASE_GENERATED = base/generated/arvados.tar.gz
 
-SLURM_GENERATED = slurm/generated/*
+COMPUTE_GENERATED_IN   = $(shell ls compute/*.in)
+COMPUTE_GENERATED      = $(shell $(LIST_GENERATED_FILES) $(COMPUTE_GENERATED_IN))
 
-COMPUTE_GENERATED = compute/generated/setup.sh
+KEEP_GENERATED_IN      = $(shell ls keep/*.in)
+KEEP_GENERATED         = $(shell $(LIST_GENERATED_FILES) $(KEEP_GENERATED_IN))
 
-COMPUTE_GENERATED_IN = compute/setup.sh.in
+API_GENERATED_IN       = $(shell ls api/*.in)
+API_GENERATED          = $(shell $(LIST_GENERATED_FILES) $(API_GENERATED_IN))
 
-KEEP_GENERATED_IN := $(shell ls keep/*.in)
+SHELL_GENERATED_IN     = $(shell ls shell/*.in)
+SHELL_GENERATED        = $(shell $(LIST_GENERATED_FILES) $(SHELL_GENERATED_IN))
 
-KEEP_GENERATED := $(shell ls -1 $(KEEP_GENERATED_IN) | perl -pe 's:^keep:keep/generated:; s:\.in$::')
+SLURM_GENERATED_IN     = $(shell ls slurm/*.in)
+SLURM_GENERATED        = $(shell $(LIST_GENERATED_FILES) $(SLURM_GENERATED_IN))
 
-API_GENERATED = \
-        api/generated/arvados-clients.yml \
-        api/generated/apache2_vhost \
-        api/generated/config_databases.sh \
-        api/generated/database.yml \
-        api/generated/omniauth.rb \
-        api/generated/application.yml \
-        api/generated/setup.sh \
-        api/generated/setup-gitolite.sh \
-        api/generated/slurm.conf \
-        api/generated/superuser_token
+WORKBENCH_GENERATED_IN = $(shell ls workbench/*.in)
+WORKBENCH_GENERATED    = $(shell $(LIST_GENERATED_FILES) $(WORKBENCH_GENERATED_IN))
 
-API_GENERATED_IN = \
-        api/arvados-clients.yml.in \
-        api/apache2_vhost.in \
-        api/config_databases.sh.in \
-        api/database.yml.in \
-        api/omniauth.rb.in \
-        api/application.yml.in \
-        api/setup.sh.in \
-        api/setup-gitolite.sh.in \
-        api/slurm.conf.in \
-        api/superuser_token.in
-
-SHELL_GENERATED = \
-        shell/generated/setup.sh \
-        shell/generated/superuser_token
-
-SHELL_GENERATED_IN = \
-        shell/setup.sh.in \
-        shell/superuser_token.in
-
-SLURM_GENERATED = \
-        slurm/generated/slurm.conf
-
-SLURM_GENERATED_IN = \
-        slurm/slurm.conf.in
-
-WORKBENCH_GENERATED = \
-        workbench/generated/workbench_rails_env \
-        workbench/generated/apache2_vhost \
-        workbench/generated/application.yml
-
-WORKBENCH_GENERATED_IN = \
-        workbench/workbench_rails_env.in \
-        workbench/apache2_vhost.in \
-        workbench/application.yml.in
-
-SSO_GENERATED = \
-        sso/generated/apache2_vhost \
-        sso/generated/seeds.rb \
-        sso/generated/secret_token.rb
-
-SSO_GENERATED_IN = \
-        sso/apache2_vhost.in \
-        sso/seeds.rb.in \
-        sso/secret_token.rb.in
+SSO_GENERATED_IN       = $(shell ls sso/*.in)
+SSO_GENERATED          = $(shell $(LIST_GENERATED_FILES) $(SSO_GENERATED_IN))
 
 $(BUILD):
 	mkdir -p build
