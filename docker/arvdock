@@ -87,7 +87,7 @@ function start_container {
       echo "Unable to start container"
       exit 1
     fi
-    if [[ "$name" == "compute" || $ENABLE_SSH ]];
+    if [[ "$name" == "compute" || "$ENABLE_SSH" != "false" ]];
     then
       ip=$(ip_address $container )
       echo
