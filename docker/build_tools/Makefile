@@ -89,7 +89,7 @@ COMPUTE_GENERATED_IN = compute/setup.sh.in
 
 KEEP_GENERATED_IN := $(shell ls keep/*.in)
 
-KEEP_GENERATED := $(shell ls -1 $(KEEP_GENERATED_IN) | perl -pe 's:^keep:keep/generated:')
+KEEP_GENERATED := $(shell ls -1 $(KEEP_GENERATED_IN) | perl -pe 's:^keep:keep/generated:; s:\.in$::')
 
 API_GENERATED = \
         api/generated/arvados-clients.yml \
