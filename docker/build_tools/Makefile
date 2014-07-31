@@ -130,10 +130,12 @@ SLURM_GENERATED_IN = \
         slurm/slurm.conf.in
 
 WORKBENCH_GENERATED = \
+        workbench/generated/workbench_rails_env \
         workbench/generated/apache2_vhost \
         workbench/generated/application.yml
 
 WORKBENCH_GENERATED_IN = \
+        workbench/workbench_rails_env.in \
         workbench/apache2_vhost.in \
         workbench/application.yml.in
 
