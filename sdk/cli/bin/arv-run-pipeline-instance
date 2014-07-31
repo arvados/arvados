@@ -243,7 +243,7 @@ class PipelineInstance
   end
   def self.create(attributes)
     result = $client.execute(:api_method => $arvados.pipeline_instances.create,
-                             :body => {
+                             :body_object => {
                                :pipeline_instance => attributes.to_json
                              },
                              :authenticated => false,
@@ -262,7 +262,7 @@ class PipelineInstance
                              :parameters => {
                                :uuid => @pi[:uuid]
                              },
-                             :body => {
+                             :body_object => {
                                :pipeline_instance => @attributes_to_update.to_json
                              },
                              :authenticated => false,
@@ -328,7 +328,7 @@ class JobCache
     body = {job: no_nil_values(job)}.merge(no_nil_values(create_params))
 
     result = $client.execute(:api_method => $arvados.jobs.create,
-                             :body => body,
+                             :body_object => body,
                              :authenticated => false,
                              :headers => {
                                authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
@@ -346,7 +346,7 @@ class JobCache
       msg += "Job submission was: #{body.to_json}"
 
       $client.execute(:api_method => $arvados.logs.create,
-                      :body => {
+                      :body_object => {
                         :log => {
                           :object_uuid => pipeline[:uuid],
                           :event_type => 'stderr',
