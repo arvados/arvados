@@ -1,36 +1,40 @@
 <div>
   <p>
     For more information see <%= link_to raw('Writing a pipeline'),
-    "#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-firstscript.html", target: "_blank"%>
+    "#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-firstscript.html", target: "_blank"%>.
   </p>
 
-  <table class="table repositories-table">
-    <colgroup>
-      <col style="width: 30%" />
-      <col style="width: 10%" />
-      <col style="width: 60%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th> Name </th>
-        <th> Read/Write </th>
-        <th> URL </th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @my_repositories.andand.each do |repo| %>
+  <% if !@my_repositories.any? %>
+    You do not seem to have access to any repositories. If you would like to request access, please contact your system admin at <b><%= "#{Rails.configuration.activation_contact_link}".split(':')[-1] %></b>
+  <% else %>
+    <table class="table repositories-table">
+      <colgroup>
+        <col style="width: 30%" />
+        <col style="width: 10%" />
+        <col style="width: 60%" />
+      </colgroup>
+      <thead>
         <tr>
-          <td style="word-break:break-all;">
-            <%= repo[:name] %>
-          </td>
-          <td>
-            <%= repo[:push_url] ? 'writable' : 'read-only' %>
-          </td>
-          <td style="word-break:break-all;">
-            <code><%= repo[:fetch_url] %></code>
-          </td>
+          <th> Name </th>
+          <th> Read/Write </th>
+          <th> URL </th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% @my_repositories.andand.each do |repo| %>
+          <tr>
+            <td style="word-break:break-all;">
+              <%= repo[:name] %>
+            </td>
+            <td>
+              <%= repo[:push_url] ? 'writable' : 'read-only' %>
+            </td>
+            <td style="word-break:break-all;">
+              <code><%= repo[:fetch_url] %></code>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
 </div>

@@ -1,14 +1,13 @@
 <div>
   <% if !@my_ssh_keys.any? %>
      <p> You have not yet set up an SSH public key for use with Arvados. </p>
-     <p>  <%= link_to "Click here to learn about SSH keys in Arvados.",
+     <p>  <%= link_to "Click here",
 	          "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html", 
 	          style: "font-weight: bold",
-	          target: "_blank" %>       </p>
+	          target: "_blank" %>  to learn about SSH keys in Arvados.
+     </p>
      <p> When you have an SSH key you would like to use, add it using the <b>Add</b> button. </p>
-  <% end %>
-
-  <% if @my_ssh_keys.andand.any? %>
+  <% else %>
     <table class="table manage-ssh-keys-table">
       <colgroup>
         <col style="width: 45%" />
