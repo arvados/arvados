@@ -83,11 +83,11 @@ function start_container {
     #echo "  $DOCKER run --dns=127.0.0.1 $args $image"
     echo "  $DOCKER run $args $image"
     container=`$DOCKER run $args $image`
-    if [[ "$?" != "0" ]]; then
+    if [ "$?" != "0" -o "$container" = "" ]; then
       echo "Unable to start container"
       exit 1
     fi
-    if [[ "$name" == "compute" || "$ENABLE_SSH" != "false" ]];
+    if [ "$name" == "compute" -o "$ENABLE_SSH" != "false" ];
     then
       ip=$(ip_address $container )
       echo
@@ -95,6 +95,8 @@ function start_container {
       echo
       echo "    ssh root@$ip"
       echo
+    else
+      echo "Started container: $container"
     fi
 
     if [[ "$name" == "doc_server" ]]; then
