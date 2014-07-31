@@ -15,5 +15,7 @@ RUN chmod +x /usr/local/bin/run-keep
 
 ADD generated/keep_signing_secret /etc/
 
+RUN /bin/chmod a+x /usr/local/bin/run-keep
+
 # Start keep
 CMD ["/usr/local/bin/run-keep"]
