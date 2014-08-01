@@ -90,6 +90,17 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     check_project_contents_response
   end
 
+  test "user with project read permission can see project collections" do
+    authorize_with :project_viewer
+    get :contents, {
+      id: groups(:asubproject).uuid,
+      format: :json,
+      include_linked: true,
+    }
+    ids = json_response['items'].map { |item| item["uuid"] }
+    assert_includes ids, collections(:baz_file).uuid
+  end
+
   test 'list objects across multiple projects' do
     authorize_with :project_viewer
     get :contents, {
