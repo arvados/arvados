@@ -56,3 +56,31 @@ read -rd $'\000' keepdisk <<EOF; arv keep_disk create --keep-disk "$keepdisk"
 }
 EOF
 </pre>
+
+h3. User Agreements
+
+If your user agreement is a file called "agreement.html" the following script will add it and create the necessary objects,
+in a new project called "User Documents":
+
+<pre>
+prefix=`arv --format=uuid user current | cut -d- -f1`
+anon_group_uuid="$prefix-j7d0g-anonymouspublic"
+project_uuid=`arv --format=uuid group create --group '{"group_class":"project","name":"User Documents"}'`
+agreement_uuid=`arv --format=uuid keep put hi_there.html --project-uuid=$project_uuid`
+read -rd $'\000' permission <<EOF; arv link create --link "$permission"
+{
+ "tail_uuid":"$anon_group_uuid",
+ "head_uuid":"$agreement_uuid",
+ "link_class":"permission",
+ "name":"can_read"
+}
+EOF
+read -rd $'\000' require <<EOF; arv link create --link "$require"
+{
+ "tail_uuid":"$prefix-tpzed-000000000000000",
+ "head_uuid":"$agreement_uuid",
+ "link_class":"signature",
+ "name":"require"
+}
+EOF
+</pre>
