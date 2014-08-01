@@ -11,13 +11,15 @@ class ActionsController < ApplicationController
   end
 
   def show
-    @object = model_class.find(params[:uuid])
+    @object = model_class.andand.find(params[:uuid])
     if @object.is_a? Link and
         @object.link_class == 'name' and
         ArvadosBase::resource_class_for_uuid(@object.head_uuid) == Collection
       redirect_to collection_path(id: @object.uuid)
-    else
+    elsif @object
       redirect_to @object
+    else
+      raise ActiveRecord::RecordNotFound
     end
   end
 
