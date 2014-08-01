@@ -2,6 +2,22 @@ class UserAgreementsController < ApplicationController
   skip_before_filter :check_user_agreements
   skip_before_filter :find_object_by_uuid
 
+  def index
+    @required_user_agreements = []
+    @signed_user_agreements = []
+    signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
+    UserAgreement.all.each do |ua|
+      ua_collection = Collection.find(ua.uuid)
+      if signed_ua_uuids.index(ua.uuid)
+        @signed_user_agreements << ua_collection
+      else
+        @required_user_agreements << ua_collection
+      end
+    end
+
+    super
+  end
+
   def model_class
     Collection
   end

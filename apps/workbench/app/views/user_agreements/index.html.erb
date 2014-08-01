@@ -1,11 +1,13 @@
 <% content_for :breadcrumbs do raw '<!-- -->' end %>
 
+<% if @required_user_agreements && @required_user_agreements.any? %>
+
 <% n_files = @required_user_agreements.collect(&:files).flatten(1).count %>
 <% content_for :page_title do %>
 <% if n_files == 1 %>
 <%= @required_user_agreements.first.files.first[1].sub(/\.[a-z]{3,4}$/,'') %>
 <% else %>
-User agreements
+  <h2>User agreements</h2>
 <% end %>
 <% end %>
 
@@ -37,6 +39,23 @@ User agreements
   </div>
 </div>
 <% end %>
+
+<% end %>
+
+<% if @signed_user_agreements && @signed_user_agreements.any? %>
+  <h2>Accepted User Agreements</h2>
+  <ul>
+    <% @signed_user_agreements.each do |ua| %>
+      <% ua.files.each do |file| %>
+        <li>
+          <%= file[1].sub(/\.[a-z]{3,4}$/,'') %>
+          <%= link_to 'View agreement', {controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}"}, {target: '_blank', class: 'btn btn-mini btn-primary'} %>
+        </li>
+      <% end %>
+    <% end %>
+  </ul>
+<% end %>
+
 
 <% content_for :footer_js do %>
 $('#open_user_agreement input[name="checked[]"]').on('click', function() {
