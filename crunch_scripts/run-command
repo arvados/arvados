@@ -28,6 +28,8 @@ os.mkdir("output")
 
 os.chdir("output")
 
+outdir = os.getcwd()
+
 taskp = None
 jobp = arvados.current_job()['script_parameters']
 if len(arvados.current_task()['parameters']) > 0:
@@ -44,6 +46,9 @@ def sub_link(v):
 def sub_tmpdir(v):
     return os.path.join(arvados.current_task().tmpdir, 'tmpdir')
 
+def sub_outdir(v):
+    return outdir
+
 def sub_cores(v):
      return str(multiprocessing.cpu_count())
 
@@ -53,10 +58,15 @@ def sub_jobid(v):
 def sub_taskid(v):
      return os.environ['TASK_UUID']
 
+def sub_jobsrc(v):
+     return os.environ['CRUNCH_SRC']
+
 subst.default_subs["link "] = sub_link
 subst.default_subs["task.tmpdir"] = sub_tmpdir
+subst.default_subs["task.outdir"] = sub_outdir
 subst.default_subs["node.cores"] = sub_cores
 subst.default_subs["job.id"] = sub_jobid
+subst.default_subs["job.src"] = sub_jobsrc
 subst.default_subs["task.id"] = sub_taskid
 
 rcode = 1
