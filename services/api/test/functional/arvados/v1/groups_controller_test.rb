@@ -91,7 +91,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   [false, true].each do |include_linked|
-    test 'list objects across multiple projects' do
+    test "list objects across projects, include_linked=#{include_linked}" do
       authorize_with :project_viewer
       get :contents, {
         format: :json,
