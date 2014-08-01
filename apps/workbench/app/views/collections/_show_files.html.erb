@@ -1,6 +1,28 @@
+<% content_for :css do %>
+.file_buttons form {
+  display: inline-block;
+}
+<% end %>
+
 <% content_for :tab_line_buttons do %>
+<span class="file_buttons">
+
+        <%= button_to(choose_projects_path(
+                   title: Add to...',
+                   editable: true,
+                   action_name: Add',
+c                   action_href: url_for(action: :update),
+                   action_method: 'patch',
+                   action_data: {selection_param: @object.resource_param_name+'[owner_uuid]', success: 'page-refresh'}.to_json),
+                  { class: "btn btn-primary btn-sm",
+                    remote: true, method: 'get' }) do %>
+          <i class="fa fa-fw fa-folder"></i> Add to project...
+        <% end %>
+
 <span style="padding-left: 1em">Collection storage status:</span>
 <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
+
+</span>
 <% end %>
 
 <% file_tree = @object.andand.files_tree %>
