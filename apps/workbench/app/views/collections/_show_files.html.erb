@@ -8,10 +8,10 @@
 <span class="file_buttons">
 
         <%= button_to(choose_projects_path(
-                   title: Add to...',
+                   title: 'Add to...',
                    editable: true,
-                   action_name: Add',
-c                   action_href: url_for(action: :update),
+                   action_name: 'Add',
+                   action_href: url_for(action: :update),
                    action_method: 'patch',
                    action_data: {selection_param: @object.resource_param_name+'[owner_uuid]', success: 'page-refresh'}.to_json),
                   { class: "btn btn-primary btn-sm",
