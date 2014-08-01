@@ -1,7 +1,8 @@
 <%
    if (controller.andand.action_name == 'show') and params[:uuid]
-     class_name = controller.model_class.to_s.underscore.humanize(capitalize: false)
-     req_item = safe_join([class_name, " with UUID ",
+     class_name = controller.model_class.to_s.underscore
+     class_name_h = class_name.humanize(capitalize: false)
+     req_item = safe_join([class_name_h, " with UUID ",
                            raw("<code>"), params[:uuid], raw("</code>")], "")
    else
      req_item = "page you requested"
@@ -14,7 +15,7 @@
 
 <% if class_name %>
 Perhaps you'd like to
-<%= link_to("browse all #{class_name.pluralize}", action: :index, controller: class_name.tableize) %>?
+<%= link_to("browse all #{class_name_h.pluralize}", action: :index, controller: class_name.tableize) %>?
 <% end %>
 
 </p>
