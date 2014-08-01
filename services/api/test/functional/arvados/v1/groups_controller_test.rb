@@ -108,6 +108,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         else
           refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
         end
+      end
     end
   end
 
