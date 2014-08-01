@@ -32,7 +32,7 @@
               </ul>
             </div>
           <% end %>
-          <input type="text" class="form-control filterable-control focus-on-display" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
+          <input type="text" value="<%=params[:preconfigured_search_str] || ''%>" class="form-control filterable-control focus-on-display" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
         </div>
         <div style="height: 1em" />
 

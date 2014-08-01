@@ -210,6 +210,73 @@ class UsersController < ApplicationController
     end
   end
 
+  def manage_account
+    # repositories current user can read / write
+    repo_links = []
+    Link.filter([['head_uuid', 'is_a', 'arvados#repository'],
+                 ['tail_uuid', '=', current_user.uuid],
+                 ['link_class', '=', 'permission'],
+                 ['name', 'in', ['can_write', 'can_read']],
+               ]).
+          each do |perm_link|
+            repo_links << perm_link[:head_uuid]
+          end
+    @my_repositories = Repository.where(uuid: repo_links)
+
+    # virtual machines the current user can login into
+    @my_vm_logins = {}
+    Link.where(tail_uuid: current_user.uuid,
+               link_class: 'permission',
+               name: 'can_login').
+          each do |perm_link|
+            if perm_link.properties.andand[:username]
+              @my_vm_logins[perm_link.head_uuid] ||= []
+              @my_vm_logins[perm_link.head_uuid] << perm_link.properties[:username]
+            end
+          end
+    @my_virtual_machines = VirtualMachine.where(uuid: @my_vm_logins.keys)
+
+    # current user's ssh keys
+    @my_ssh_keys = AuthorizedKey.where(key_type: 'SSH', owner_uuid: current_user.uuid)
+
+    respond_to do |f|
+      f.html { render template: 'users/manage_account' }
+    end
+  end
+
+  def add_ssh_key_popup
+    respond_to do |format|
+      format.html
+      format.js
+    end
+  end
+
+  def add_ssh_key
+    respond_to do |format|
+      key_params = {'key_type' => 'SSH'}
+      key_params['authorized_user_uuid'] = current_user.uuid
+
+      if params['name'] && params['name'].size>0
+        key_params['name'] = params['name'].strip
+      end
+      if params['public_key'] && params['public_key'].size>0
+        key_params['public_key'] = params['public_key'].strip
+      end
+
+      if !key_params['name'] && params['public_key'].andand.size>0
+        split_key = key_params['public_key'].split
+        key_params['name'] = split_key[-1] if (split_key.size == 3)
+      end
+
+      new_key = AuthorizedKey.create! key_params
+      if new_key
+        format.js
+      else
+        self.render_error status: 422
+      end
+    end
+  end
+
   protected
 
   def find_current_links user

@@ -266,6 +266,7 @@ module ApplicationHelper
          action_name: 'OK',
          action_href: pipeline_instance_path(id: object.uuid),
          action_method: 'patch',
+         preconfigured_search_str: "#{value_info[:search_for]}",
          action_data: {
            merge: true,
            selection_param: selection_param,
