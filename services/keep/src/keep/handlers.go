@@ -326,13 +326,28 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 // authenticated or is issued by a non-admin user, the server returns
 // a PermissionError.
 //
-// Upon completion, DELETE returns HTTP 200 OK with a JSON message body
-// in the format
+// Upon receiving a valid request from an authorized user,
+// DeleteHandler deletes all copies of the specified block on local
+// volumes.
+//
+// Response format:
+//
+// The response body consists of the JSON message
 //
 //    {"copies_deleted":d,"copies_failed":f}
 //
 // where d and f are integers representing the number of blocks that
 // were successfully and unsuccessfully deleted.
+//
+//   * If any blocks were successfully deleted (copies_deleted > 0), the
+//     HTTP response code is 200 OK.
+//
+//   * If no blocks were found at all (copies_deleted == copies_failed
+//     == 0), the response code is 404 Not Found.
+//
+//   * If blocks were found but none could be deleted (copies_deleted
+//     == 0 and copies_failed > 0), the response code is 405 Method Not
+//     Allowed.
 //
 func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
@@ -364,6 +379,15 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	if j, err := json.Marshal(result); err == nil {
+		if result.Deleted == 0 && result.Failed == 0 {
+			// If no blocks were found, HTTP 404
+			resp.WriteHeader(http.StatusNotFound)
+		} else if result.Deleted == 0 && result.Failed > 0 {
+			// If all delete attempts failed, HTTP 405
+			resp.WriteHeader(http.StatusMethodNotAllowed)
+		} else {
+			resp.WriteHeader(http.StatusOK)
+		}
 		resp.Write(j)
 	} else {
 		log.Printf("json.Marshal: %s\n", err)
