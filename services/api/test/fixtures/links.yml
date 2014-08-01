@@ -649,9 +649,9 @@ job_reader_can_read_previous_job_run:
   tail_uuid: zzzzz-tpzed-905b42d1dd4a354
   head_uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
 
-foo_repo_readable_by_job_reader:
+job_reader_can_read_foo_repo:
   # Permission link giving job_reader permission
-  # to read previous_job_run
+  # to read foo_repo
   uuid: zzzzz-o0j2j-072ec05dc9487f8
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-06-13 20:42:26 -0800
