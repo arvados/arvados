@@ -266,6 +266,7 @@ module ApplicationHelper
          action_name: 'OK',
          action_href: pipeline_instance_path(id: object.uuid),
          action_method: 'patch',
+         preconfigured_search_str: "#{value_info[:search_for]}",
          action_data: {
            merge: true,
            selection_param: selection_param,
@@ -426,6 +427,15 @@ module ApplicationHelper
       object.group_class ? 'fa-folder' : 'fa-users'
     else
       RESOURCE_CLASS_ICONS.fetch(class_name, default)
+    end
+  end
+
+  def chooser_preview_url_for object
+    case object.class.to_s
+    when 'Collection'
+      polymorphic_path(object, tab_pane: 'chooser_preview')
+    else
+      nil
     end
   end
 end

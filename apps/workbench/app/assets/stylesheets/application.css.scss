@@ -146,6 +146,10 @@ nav.navbar-fixed-top .navbar-nav.navbar-right > li > a:hover {
     margin-bottom: -15px;
 }
 
+.infinite-scroller .fa-warning {
+    color: #800;
+}
+
 .inline-progress-container div.progress {
     margin-bottom: 0;
 }
@@ -234,4 +238,9 @@ div#wrapper {
 }
 svg text {
     font-size: 6pt;
+}
+
+div.pane-content iframe {
+  width: 100%;
+  border: none;
 }

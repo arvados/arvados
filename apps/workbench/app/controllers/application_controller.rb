@@ -14,6 +14,7 @@ class ApplicationController < ActionController::Base
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
+  before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
@@ -86,7 +87,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def find_objects_for_index
+  def load_filters_and_paging_params
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
@@ -102,10 +103,22 @@ class ApplicationController < ActionController::Base
       filters = params[:filters]
       if filters.is_a? String
         filters = Oj.load filters
+      elsif filters.is_a? Array
+        filters = filters.collect do |filter|
+          if filter.is_a? String
+            # Accept filters[]=["foo","=","bar"]
+            Oj.load filter
+          else
+            # Accept filters=[["foo","=","bar"]]
+            filter
+          end
+        end
       end
       @filters += filters
     end
+  end
 
+  def find_objects_for_index
     @objects ||= model_class
     @objects = @objects.filter(@filters).limit(@limit).offset(@offset)
   end
@@ -148,6 +161,13 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  helper_method :next_page_href
+  def next_page_href with_params={}
+    if next_page_offset
+      url_for with_params.merge(offset: next_page_offset)
+    end
+  end
+
   def show
     if !@object
       return render_not_found("object not found")
@@ -171,26 +191,14 @@ class ApplicationController < ActionController::Base
 
   def choose
     params[:limit] ||= 40
-    if !@objects
-      if params[:project_uuid] and !params[:project_uuid].empty?
-        # We want the chooser to show objects of the controllers's model_class
-        # type within a specific project specified by project_uuid, so fetch the
-        # project and request the contents of the project filtered on the
-        # controllers's model_class kind.
-        @objects = Group.find(params[:project_uuid]).contents({:filters => [['uuid', 'is_a', "arvados\##{ArvadosApiClient.class_kind(model_class)}"]]})
-      end
-      find_objects_for_index if !@objects
-    end
+    find_objects_for_index if !@objects
     respond_to do |f|
       if params[:partial]
         f.json {
           render json: {
             content: render_to_string(partial: "choose_rows.html",
-                                      formats: [:html],
-                                      locals: {
-                                        multiple: params[:multiple]
-                                      }),
-            next_page_href: @next_page_href
+                                      formats: [:html]),
+            next_page_href: next_page_href(partial: params[:partial])
           }
         }
       end
@@ -609,8 +617,8 @@ class ApplicationController < ActionController::Base
     (Job.limit(10) |
      PipelineInstance.limit(10)).
       sort_by do |x|
-      x.finished_at || x.started_at || x.created_at rescue x.created_at
-    end
+      (x.finished_at || x.started_at rescue nil) || x.modified_at || x.created_at
+    end.reverse
   end
 
   helper_method :my_project_tree
@@ -872,4 +880,7 @@ class ApplicationController < ActionController::Base
     @objects_for
   end
 
+  def wiselinks_layout
+    'body'
+  end
 end

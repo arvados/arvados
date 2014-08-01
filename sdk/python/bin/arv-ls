@@ -24,7 +24,7 @@ args = parser.parse_args()
 
 import arvados
 
-cr = arvados.CollectionReader(arvados.Keep.get(args.locator))
+cr = arvados.CollectionReader(args.locator)
 
 for f in cr.all_files():
     if args.s:

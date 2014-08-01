@@ -62,10 +62,10 @@
       </td>
       <td style="border-top: 0; opacity: 0.5;" colspan="6">
         <% ob.components.each do |cname, c| %>
-          <% if c[:job] %>
+          <% if c.is_a?(Hash) and c[:job] %>
             <%= render partial: "job_status_label", locals: {:j => c[:job], :title => cname.to_s } %>
           <% else %>
-            <span class="label label-default"><%= cname.to_s %></span>            
+            <span class="label label-default"><%= cname.to_s %></span>
           <% end %>
         <% end %>
       </td>

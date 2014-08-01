@@ -8,6 +8,10 @@ class ArvadosApiClient
     def initialize(request_url, errmsg)
       @request_url = request_url
       @api_response ||= {}
+      errors = @api_response[:errors]
+      if not errors.is_a?(Array)
+        @api_response[:errors] = [errors || errmsg]
+      end
       super(errmsg)
     end
   end
@@ -138,7 +142,8 @@ class ArvadosApiClient
     if not resp.is_a? Hash
       raise InvalidApiResponseException.new(url, msg)
     elsif msg.status_code != 200
-      error_class = ERROR_CODE_CLASSES.fetch(msg.status_code, ApiError)
+      error_class = ERROR_CODE_CLASSES.fetch(msg.status_code,
+                                             ApiErrorResponseException)
       raise error_class.new(url, msg)
     end
 

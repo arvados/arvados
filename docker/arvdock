@@ -7,18 +7,23 @@ if [[ "$DOCKER" == "" ]]; then
     DOCKER=`which docker`
 fi
 
+COMPUTE_COUNTER=0
+
 function usage {
     echo >&2
     echo >&2 "usage: $0 (start|stop|restart|test) [options]"
     echo >&2
     echo >&2 "$0 start/stop/restart options:"
-    echo >&2 "  -d [port], --doc[=port]        Documentation server (default port 9898)"
-    echo >&2 "  -w [port], --workbench[=port]  Workbench server (default port 9899)"
-    echo >&2 "  -s [port], --sso[=port]        SSO server (default port 9901)"
-    echo >&2 "  -a [port], --api[=port]        API server (default port 9900)"
-    echo >&2 "  -k, --keep                     Keep servers"
-    echo >&2 "  --ssh                          Enable SSH access to server containers"
-    echo >&2 "  -h, --help                     Display this help and exit"
+    echo >&2 "  -d[port], --doc[=port]        Documentation server (default port 9898)"
+    echo >&2 "  -w[port], --workbench[=port]  Workbench server (default port 9899)"
+    echo >&2 "  -s[port], --sso[=port]        SSO server (default port 9901)"
+    echo >&2 "  -a[port], --api[=port]        API server (default port 9900)"
+    echo >&2 "  -c, --compute                 Compute nodes (starts 2)"
+    echo >&2 "  -v, --vm                      Shell server"
+    echo >&2 "  -n, --nameserver              Nameserver"
+    echo >&2 "  -k, --keep                    Keep servers"
+    echo >&2 "  --ssh                         Enable SSH access to server containers"
+    echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
     echo >&2 "  If no options are given, the action is applied to all servers."
     echo >&2
@@ -39,7 +44,16 @@ function start_container {
     fi
     if [[ "$2" != '' ]]; then
       local name="$2"
-      args="$args --name $name"
+      if [[ "$name" == "api_server" ]]; then
+        args="$args --dns=172.17.42.1 --dns-search=compute.dev.arvados --hostname api -P --name $name"
+      elif [[ "$name" == "compute" ]]; then
+        name=$name$COMPUTE_COUNTER
+        # We need --privileged because we run docker-inside-docker on the compute nodes
+        args="$args --dns=172.17.42.1 --dns-search=compute.dev.arvados --hostname compute$COMPUTE_COUNTER -P --privileged --name $name"
+        let COMPUTE_COUNTER=$(($COMPUTE_COUNTER + 1))
+      else
+        args="$args --dns=172.17.42.1 --dns-search=dev.arvados --hostname ${name#_server} --name $name"
+      fi
     fi
     if [[ "$3" != '' ]]; then
       local volume="$3"
@@ -66,13 +80,14 @@ function start_container {
     $DOCKER rm "$name" 2>/dev/null
 
     echo "Starting container:"
+    #echo "  $DOCKER run --dns=127.0.0.1 $args $image"
     echo "  $DOCKER run $args $image"
     container=`$DOCKER run $args $image`
     if [[ "$?" != "0" ]]; then
       echo "Unable to start container"
       exit 1
     fi
-    if $ENABLE_SSH
+    if [[ "$name" == "compute" || $ENABLE_SSH ]];
     then
       ip=$(ip_address $container )
       echo
@@ -130,12 +145,15 @@ function do_start {
     local start_doc=false
     local start_sso=false
     local start_api=false
+    local start_compute=false
     local start_workbench=false
+    local start_vm=false
+    local start_nameserver=false
     local start_keep=false
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o d::s::a::w::kh \
-                  --long doc::,sso::,api::,workbench::,keep,help,ssh \
+    local TEMP=`getopt -o d::s::a::cw::nkvh \
+                  --long doc::,sso::,api::,compute,workbench::,nameserver,keep,vm,help,ssh \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -164,11 +182,23 @@ function do_start {
                     *)  start_api=$2; shift 2 ;;
                 esac
                 ;;
+            -c | --compute)
+                start_compute=2
+                shift
+                ;;
             -w | --workbench)
                 case "$2" in
                     "") start_workbench=9899; shift 2 ;;
                     *)  start_workbench=$2; shift 2 ;;
                 esac
+                ;;
+            -v | --vm)
+                start_vm=true
+                shift
+                ;;
+            -n | --nameserver)
+                start_nameserver=true
+                shift
                 ;;
             -k | --keep)
                 start_keep=true
@@ -194,13 +224,19 @@ function do_start {
     if [[ $start_doc == false &&
           $start_sso == false &&
           $start_api == false &&
+          $start_compute == false &&
           $start_workbench == false &&
+          $start_vm == false &&
+          $start_nameserver == false &&
           $start_keep == false ]]
     then
         start_doc=9898
         start_sso=9901
         start_api=9900
+        start_compute=2
         start_workbench=9899
+        start_vm=true
+        start_nameserver=true
         start_keep=true
     fi
 
@@ -212,6 +248,31 @@ function do_start {
     if [[ $start_api != false ]]
     then
         start_container "$start_api:443" "api_server" '' "sso_server:sso" "arvados/api"
+    fi
+
+    if [[ $start_nameserver != false ]]
+    then
+      # We rely on skydock and skydns for dns discovery between the slurm controller and compute nodes,
+      # so make sure they are running
+      $DOCKER ps | grep skydns >/dev/null
+      if [[ "$?" != "0" ]]; then
+        echo "Starting crosbymichael/skydns container..."
+        $DOCKER rm "skydns" 2>/dev/null
+        $DOCKER run -d -p 172.17.42.1:53:53/udp --name skydns crosbymichael/skydns -nameserver 8.8.8.8:53 -domain arvados
+      fi
+      $DOCKER ps | grep skydock >/dev/null
+      if [[ "$?" != "0" ]]; then
+        echo "Starting crosbymichael/skydock container..."
+        $DOCKER rm "skydock" 2>/dev/null
+        $DOCKER run -d -v /var/run/docker.sock:/docker.sock --name skydock crosbymichael/skydock -ttl 30 -environment dev -s /docker.sock -domain arvados -name skydns
+      fi
+    fi
+
+    if [[ $start_compute != false ]]
+    then
+        for i in `seq 0 $(($start_compute - 1))`; do
+          start_container "" "compute" '' "api_server:api" "arvados/compute"
+        done
     fi
 
     if [[ $start_keep != false ]]
@@ -238,6 +299,11 @@ function do_start {
         start_container "$start_doc:80" "doc_server" '' '' "arvados/doc"
     fi
 
+    if [[ $start_vm != false ]]
+    then
+        start_container "" "shell" '' "api_server:api" "arvados/shell"
+    fi
+
     if [[ $start_workbench != false ]]
     then
         start_container "$start_workbench:80" "workbench_server" '' "api_server:api" "arvados/workbench"
@@ -258,12 +324,15 @@ function do_stop {
     local stop_doc=""
     local stop_sso=""
     local stop_api=""
+    local stop_compute=""
     local stop_workbench=""
+    local stop_nameserver=""
+    local stop_vm=""
     local stop_keep=""
 
     # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-    local TEMP=`getopt -o d::s::a::w::kh \
-                  --long doc::,sso::,api::,workbench::,keep,help,ssh \
+    local TEMP=`getopt -o dsacwnkvh \
+                  --long doc,sso,api,compute,workbench,nameserver,keep,vm,help \
                   -n "$0" -- "$@"`
 
     if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -275,18 +344,21 @@ function do_stop {
     do
         case $1 in
             -d | --doc)
-                stop_doc=doc_server ; shift 2 ;;
+                stop_doc=doc_server ; shift ;;
             -s | --sso)
-                stop_sso=sso_server ; shift 2 ;;
+                stop_sso=sso_server ; shift ;;
             -a | --api)
-                stop_api=api_server ; shift 2 ;;
+                stop_api=api_server ; shift ;;
+            -c | --compute)
+                stop_compute=`$DOCKER ps |grep -P "compute\d+" |grep -v api_server |cut -f1 -d ' '` ; shift ;;
             -w | --workbench)
-                stop_workbench=workbench_server ; shift 2 ;;
+                stop_workbench=workbench_server ; shift ;;
+            -n | --nameserver )
+                stop_nameserver="skydock skydns" ; shift ;;
+            -v | --vm )
+                stop_vm="shell" ; shift ;;
             -k | --keep )
                 stop_keep="keep_server_0 keep_server_1" ; shift ;;
-            --ssh)
-                shift
-                ;;
             --)
                 shift
                 break
@@ -302,17 +374,23 @@ function do_stop {
     if [[ $stop_doc == "" &&
           $stop_sso == "" &&
           $stop_api == "" &&
+          $stop_compute == "" &&
           $stop_workbench == "" &&
+          $stop_vm == "" &&
+          $stop_nameserver == "" &&
           $stop_keep == "" ]]
     then
         stop_doc=doc_server
         stop_sso=sso_server
         stop_api=api_server
+        stop_compute=`$DOCKER ps |grep -P "compute\d+" |grep -v api_server |cut -f1 -d ' '`
         stop_workbench=workbench_server
+        stop_vm=shell
+        stop_nameserver="skydock skydns"
         stop_keep="keep_server_0 keep_server_1"
     fi
 
-    $DOCKER stop $stop_doc $stop_sso $stop_api $stop_workbench $stop_keep \
+    $DOCKER stop $stop_doc $stop_sso $stop_api $stop_compute $stop_workbench $stop_nameserver $stop_keep $stop_vm \
         2>/dev/null
 }
 
