@@ -633,3 +633,33 @@ anonymous_group_can_read_empty_collection:
   name: can_read
   tail_uuid: zzzzz-j7d0g-anonymouspublic
   head_uuid: d41d8cd98f00b204e9800998ecf8427e+0
+
+job_reader_can_read_previous_job_run:
+  # Permission link giving job_reader permission
+  # to read previous_job_run
+  uuid: zzzzz-o0j2j-8bbd851795ebafd
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-06-13 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-tpzed-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-13 20:42:26 -0800
+  updated_at: 2014-06-13 20:42:26 -0800
+  link_class: permission
+  name: can_read
+  tail_uuid: zzzzz-tpzed-905b42d1dd4a354
+  head_uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+
+job_reader_can_read_foo_repo:
+  # Permission link giving job_reader permission
+  # to read foo_repo
+  uuid: zzzzz-o0j2j-072ec05dc9487f8
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-06-13 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-tpzed-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-13 20:42:26 -0800
+  updated_at: 2014-06-13 20:42:26 -0800
+  link_class: permission
+  name: can_read
+  tail_uuid: zzzzz-tpzed-905b42d1dd4a354
+  head_uuid: zzzzz-s0uqq-382brsig8rp3666
