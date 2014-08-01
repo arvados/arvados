@@ -119,3 +119,14 @@ anonymous:
   is_active: false
   is_admin: false
   prefs: {}
+
+job_reader:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-905b42d1dd4a354
+  email: jobber@arvados.local
+  first_name: Job
+  last_name: Er
+  identity_url: https://spectator.openid.local
+  is_active: true
+  is_admin: false
+  prefs: {}

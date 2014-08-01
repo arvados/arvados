@@ -67,18 +67,20 @@ class Arvados::V1::JobsController < ApplicationController
         if j.nondeterministic != true and
             ((j.success == true and j.output != nil) or j.running == true) and
             j.script_parameters == resource_attrs[:script_parameters]
-          if j.running
+          if j.running && j.owner_uuid == current_user.uuid
             # We'll use this if we don't find a job that has completed
             incomplete_job ||= j
           else
-            # Record the first job in the list
-            if !@object
-              @object = j
-            end
-            # Ensure that all candidate jobs actually did produce the same output
-            if @object.output != j.output
-              @object = nil
-              break
+            if Collection.readable_by(current_user).find_by_uuid(j.output)
+              # Record the first job in the list
+              if !@object
+                @object = j
+              end
+              # Ensure that all candidate jobs actually did produce the same output
+              if @object.output != j.output
+                @object = nil
+                break
+              end
             end
           end
         end
