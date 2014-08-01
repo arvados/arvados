@@ -1,14 +1,14 @@
 ---
 layout: default
 navsection: userguide
-title: "Writing a pipeline"
+title: "Writing a pipeline template"
 ...
 
 This tutorial demonstrates how to construct a two stage pipeline template that uses the "bwa mem":http://bio-bwa.sourceforge.net/ tool to produce a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file, then uses the "Picard SortSam tool":http://picard.sourceforge.net/command-line-overview.shtml#SortSam to produce a BAM (Binary Alignment/Map) file.
 
 {% include 'tutorial_expectations' %}
 
-Use the following command to create a new empty template using @arv pipeline_template create@ and then open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@) using @arv edit@.
+Use the following command to create a new empty template using @arv pipeline_template create@, then open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@) using @arv edit@.
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv edit $(arv --format=uuid pipeline_template create --pipeline-template '{}') name components </span></code></pre>

@@ -4,7 +4,11 @@ navsection: userguide
 title: "Mounting Keep as a filesystem"
 ...
 
-This tutoral describes how to use @arv-mount@ to mount Keep as a read-only file system access it using traditional filesystem tools.
+This tutoral describes how to access Arvados collections using traditional filesystem tools by mounting Keep as a read-only file system using @arv-mount@.
+
+{% include 'tutorial_expectations' %}
+
+h2. Arv-mount
 
 @arv-mount@ provides several features:
 
@@ -12,9 +16,7 @@ This tutoral describes how to use @arv-mount@ to mount Keep as a read-only file 
 * It is easy for existing tools to access files in Keep.
 * Data is downloaded on demand.  It is not necessary to download an entire file or collection to start processing.
 
-{% include 'tutorial_expectations' %}
-
-The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially very large list of all collections, collection directories only come into existence when explicitly accessed by their keep locator.
+The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially large list of all collections, collection directories only come into existence when explicitly accessed by their keep locator.
 
 <notextile>
 <pre><code>~$ <span class="userinput">mkdir -p keep</span>

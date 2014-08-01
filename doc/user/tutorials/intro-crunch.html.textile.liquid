@@ -4,8 +4,6 @@ navsection: userguide
 title: Introduction to Crunch
 ...
 
-h2. Prerequisites
-
 The Arvados "Crunch" framework is designed to support processing very large data batches (gigabytes to terabytes) efficiently, and provides the following benefits:
 * Increase concurrency by running tasks asynchronously, using many CPUs and network interfaces at once (especially beneficial for CPU-bound and I/O-bound tasks respectively).
 * Track inputs, outputs, and settings so you can verify that the inputs, settings, and sequence of programs you used to arrive at an output is really what you think it was.
@@ -13,7 +11,9 @@ The Arvados "Crunch" framework is designed to support processing very large data
 * Interrupt and resume long-running jobs consisting of many short tasks.
 * Maintain timing statistics automatically, so they're there when you want them.
 
-To get the most value out of this guide, you should be comfortable with the following:
+h2. Prerequisites
+
+To get the most value out of this section, you should be comfortable with the following:
 
 # Using a secure shell client such as SSH or PuTTY to log on to a remote server
 # Using the Unix command line shell, Bash

@@ -1,23 +1,16 @@
 ---
 layout: default
 navsection: userguide
-title: "Putting data into Keep"
+title: "Uploading data"
 ...
 
-This tutorial describes how to upload data to the Arvados file storage system, Keep.  This example uses a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905":https://my.personalgenomes.org/profile/hu599905 and demonstrates how to use @arv-put@ to add it to Keep.
+This tutorial describes how to to upload new Arvados data collections using the command line tool @arv-put@.  This example uses a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905.":https://my.personalgenomes.org/profile/hu599905
 
 notextile. <div class="spaced-out">
 
-# Begin by installing the "Arvados Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html on the system from which you will upload the data (such as your workstation, or a server containing data from your sequencer).  This will install the Arvados file upload tool, @arv-put@.  Alternately, you can log into an Arvados VM (instructions for "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html#login or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html#login) and skip to step 4).
-# On system from which you will upload data, configure the environment with the Arvados instance host name and authentication token as decribed in "Getting an API token.":{{site.baseurl}}/user/reference/api-tokens.html
-# Check to see if @arv-put@ is installed correctly by putting an empty file.  If you receive an error such as "ARVADOS_API_HOST is not set", your environment is not properly configured.
-<notextile>
-<pre><code>~$ <span class="userinput">arv-put < /dev/null</span>
-0
-4c62f0a0d2344608e5f197894beb6fb5+47
-</code></pre>
-</notextile>
-# Download the following example file.  (If you are uploading your own data, you can skip this step)
+# Begin by installing the "Arvados Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html on the system from which you will upload the data (such as your workstation, or a server containing data from your sequencer).  This will install the Arvados file upload tool, @arv-put@.  Alternately, you can log into an Arvados VM (instructions for "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html#login or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html#login).
+# On system from which you will upload data, configure the environment with the Arvados instance host name and authentication token as decribed in "Getting an API token.":{{site.baseurl}}/user/reference/api-tokens.html  (If you are logged into an Arvados VM, you can skip this step.)
+# Download the following example file.  (If you are uploading your own data, you can skip this step.)
 <notextile>
 <pre><code>~$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.personalgenomes.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
@@ -25,7 +18,7 @@ notextile. <div class="spaced-out">
 100  216M  100  216M    0     0  10.0M      0  0:00:21  0:00:21 --:--:-- 9361k
 </code></pre>
 </notextile>
-# Use @arv-put@ actually add the file to Keep:
+# Now upload the file to Keep using @arv-put@:
 <notextile>
 <pre><code>~$ <span class="userinput">arv-put var-GS000016015-ASM.tsv.bz2</span>
 216M / 216M 100.0%
@@ -33,7 +26,11 @@ c1bad4b39ca5a924e481008009d94e32+210
 </code></pre>
 </notextile>
 
-The output value @c1bad4b39ca5a924e481008009d94e32+210@ is the Arvados collection locator that uniquely describes this file.  In order to place your newly uploaded file into a Project, visit the workbench page for your new collection: <a href="https://{{ site.arvados_workbench_host }}/collections/c1bad4b39ca5a924e481008009d94e32+210" target="_blank">https://{{ site.arvados_workbench_host }}/collections/c1bad4b39ca5a924e481008009d94e32+210</a>.  On that page, click on <span class="btn btn-xs btn-primary" ><i class="fa fa-fw fa-folder"></i> Choose a project...</span> to open a modal dialog allowing you to select a destination project for your collection.
+* The output value @c1bad4b39ca5a924e481008009d94e32+210@ is the Arvados collection locator that uniquely describes this file.
+
+Now go to the workbench collections page: <a href="https://{{ site.arvados_workbench_host }}/collections" target="_blank">https://{{ site.arvados_workbench_host }}/collections</a>.  Your newly uploaded collection should appear near the top, with the value in the *uuid* column matching the Arvados collection locator that was printed by @arv-put@.  Click on the *<i class="fa fa-fw fa-archive"></i> Show* button to go to the workbench page for your collection.  Alternately, you can paste the Arvados collection locator into the *Search* box of the collections page to find your collection.
+
+The show collection page allows you to view the contents of the collection, download files from the collection, and set sharing options.  To put your collection into a project, click on  <span class="btn btn-xs btn-primary" ><i class="fa fa-fw fa-folder"></i> Choose a project...</span>.  This will open a modal dialog allowing you to select a destination project for your collection.
 
 notextile. </div>
 
