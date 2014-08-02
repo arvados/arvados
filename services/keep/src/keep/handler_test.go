@@ -500,20 +500,13 @@ func TestDeleteHandler(t *testing.T) {
 		Deleted int `json:"copies_deleted"`
 		Failed  int `json:"copies_failed"`
 	}
-	var dc, expected_dc deletecounter
+	var response_dc, expected_dc deletecounter
 
 	response = IssueRequest(rest, superuser_nonexistent_block_req)
 	ExpectStatusCode(t,
 		"data manager request, nonexistent block",
 		http.StatusNotFound,
 		response)
-	// Expect response {"copies_deleted":0,"copies_failed":0}
-	expected_dc = deletecounter{0, 0}
-	json.NewDecoder(response.Body).Decode(&dc)
-	if dc != expected_dc {
-		t.Errorf("superuser_nonexistent_block_req\nexpected: %+v\nreceived: %+v",
-			expected_dc, dc)
-	}
 
 	// Authenticated admin request for existing block.
 	response = IssueRequest(rest, superuser_existing_block_req)
@@ -523,14 +516,15 @@ func TestDeleteHandler(t *testing.T) {
 		response)
 	// Expect response {"copies_deleted":1,"copies_failed":0}
 	expected_dc = deletecounter{1, 0}
-	json.NewDecoder(response.Body).Decode(&dc)
-	if dc != expected_dc {
+	json.NewDecoder(response.Body).Decode(&response_dc)
+	if response_dc != expected_dc {
 		t.Errorf("superuser_existing_block_req\nexpected: %+v\nreceived: %+v",
-			expected_dc, dc)
+			expected_dc, response_dc)
 	}
 	// Confirm the block has been deleted
 	_, err := vols[0].Get(TEST_HASH)
-	if !os.IsNotExist(err) {
+	var block_deleted = os.IsNotExist(err)
+	if !block_deleted {
 		t.Error("superuser_existing_block_req: block not deleted")
 	}
 }

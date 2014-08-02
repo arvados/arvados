@@ -328,26 +328,20 @@ func GetVolumeStatus(volume string) *VolumeStatus {
 //
 // Upon receiving a valid request from an authorized user,
 // DeleteHandler deletes all copies of the specified block on local
-// volumes.
+// writable volumes.
 //
 // Response format:
 //
-// The response body consists of the JSON message
+// If the requested blocks was not found on any volume, the response
+// code is HTTP 404 Not Found.
+//
+// Otherwise, the response code is 200 OK, with a response body
+// consisting of the JSON message
 //
 //    {"copies_deleted":d,"copies_failed":f}
 //
 // where d and f are integers representing the number of blocks that
 // were successfully and unsuccessfully deleted.
-//
-//   * If any blocks were successfully deleted (copies_deleted > 0), the
-//     HTTP response code is 200 OK.
-//
-//   * If no blocks were found at all (copies_deleted == copies_failed
-//     == 0), the response code is 404 Not Found.
-//
-//   * If blocks were found but none could be deleted (copies_deleted
-//     == 0 and copies_failed > 0), the response code is 405 Method Not
-//     Allowed.
 //
 func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
@@ -378,21 +372,23 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	if j, err := json.Marshal(result); err == nil {
-		if result.Deleted == 0 && result.Failed == 0 {
-			// If no blocks were found, HTTP 404
-			resp.WriteHeader(http.StatusNotFound)
-		} else if result.Deleted == 0 && result.Failed > 0 {
-			// If all delete attempts failed, HTTP 405
-			resp.WriteHeader(http.StatusMethodNotAllowed)
-		} else {
-			resp.WriteHeader(http.StatusOK)
-		}
-		resp.Write(j)
+	var st int
+
+	if result.Deleted == 0 && result.Failed == 0 {
+		st = http.StatusNotFound
 	} else {
-		log.Printf("json.Marshal: %s\n", err)
-		log.Printf("result = %v\n", result)
-		http.Error(resp, err.Error(), 500)
+		st = http.StatusOK
+	}
+
+	resp.WriteHeader(st)
+
+	if st == http.StatusOK {
+		if body, err := json.Marshal(result); err == nil {
+			resp.Write(body)
+		} else {
+			log.Printf("json.Marshal: %s (result = %v)\n", err, result)
+			http.Error(resp, err.Error(), 500)
+		}
 	}
 }
 
