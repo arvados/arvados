@@ -18,7 +18,7 @@ config = YAML.load_file('config.yml')
 # doesn't change if config.yml doesn't change. Otherwise, keys won't
 # match any more if (say) keep's files get regenerated but apiserver's
 # don't.
-config.each_key do |var|
+config.sort.map do |var,val|
   if (var.end_with?('_PW') || var.end_with?('_SECRET')) && (config[var].nil? || config[var].empty?)
     config[var] = Digest::SHA1.hexdigest(`hostname` + var + config.to_yaml)
   end

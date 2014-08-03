@@ -14,7 +14,7 @@ def main options
   # Check that:
   #   * Docker is installed and can be found in the user's path
   #   * Docker can be run as a non-root user
-  #      - TODO: put the user is in the docker group if necessary
+  #      - TODO: put the user in the docker group if necessary
   #      - TODO: mount cgroup automatically
   #      - TODO: start the docker service if not started
 
@@ -77,15 +77,15 @@ def main options
     end
 
     File.open 'config.yml', 'w' do |config_out|
+      config_out.write "# If a _PW or _SECRET variable is set to an empty string, a password\n"
+      config_out.write "# will be chosen randomly at build time. This is the\n"
+      config_out.write "# recommended setting.\n\n"
       config = YAML.load_file 'config.yml.example'
       config['API_AUTO_ADMIN_USER'] = admin_email_address
       config['ARVADOS_USER_NAME'] = user_name
       config['API_HOSTNAME'] = generate_api_hostname
       config['PUBLIC_KEY_PATH'] = find_or_create_ssh_key(config['API_HOSTNAME'])
       config.each_key do |var|
-        if var.end_with?('_PW') or var.end_with?('_SECRET')
-          config[var] = rand(2**256).to_s(36)
-        end
         config_out.write "#{var}: #{config[var]}\n"
       end
     end
