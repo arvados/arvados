@@ -24,7 +24,9 @@ See also: "Downloading the source code":https://arvados.org/projects/arvados/wik
 
 h2. Building the Arvados Docker containers
 
-First of all, a suitable @config.yml@ file is needed. The easiest way to generate one based on the provided @config.yml.example@ file is to run the @build.sh@ script which will prompt for a few inputs and then build all the Docker containers (this will take a while): 
+First of all, a suitable @config.yml@ file is needed. The easiest way to generate one based on the provided @config.yml.example@ file is to run the @build.sh@ script. If no @config.yml@ file exists, it will will prompt for a few inputs, write the @config.yml@ file, and then proceed to build all the Docker containers. If @config.yml@ exists, invoking @build.sh@ will simply build all Docker containers or update those that need to be updated.
+
+Run @build.sh@ without arguments to generate @config.yml@ and build all Docker containers (this will take a while!):
 
 <notextile>
 <pre><code>
@@ -73,6 +75,24 @@ crosbymichael/skydns    latest              1923ce648d4c        5 months ago    
 </code></pre></notextile>
 
 h2. Updating the Arvados Docker containers
+
+@build.sh@ takes a few optional arguments:
+
+<notextile>
+<pre><code>
+~$ <span class="userinput"> ./build.sh --help</span>
+
+usage: ./build.sh [options]
+
+Calling ./build.sh without arguments will build all Arvados docker images
+
+./build.sh options:
+  -h, --help   Print this help text
+  clean        Clear all build information
+  realclean    clean and remove all Arvados Docker images except arvados/debian
+  deepclean    realclean and remove arvados/debian, crosbymichael/skydns and
+               crosbymichael/skydns Docker images
+</code></pre></notextile>
 
 If there has been an update to the Arvados Docker building code, it is safest to rebuild the Arvados Docker images from scratch. All build information can be cleared with the 'clean' option to build.sh:
 
