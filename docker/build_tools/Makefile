@@ -52,8 +52,6 @@ deepclean: clean
 
 CONFIG_RB = build_tools/config.rb
 
-LIST_GENERATED_FILES = build_tools/list_generated_files
-
 BUILD = build/.buildstamp
 
 BASE_DEPS = base/Dockerfile config.yml $(BASE_GENERATED)
@@ -84,26 +82,26 @@ BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
 
 BASE_GENERATED = base/generated/arvados.tar.gz
 
-COMPUTE_GENERATED_IN   = $(shell ls compute/*.in)
-COMPUTE_GENERATED      = $(shell $(LIST_GENERATED_FILES) $(COMPUTE_GENERATED_IN))
+COMPUTE_GENERATED_IN   = compute/*.in
+COMPUTE_GENERATED      = compute/generated/*
 
-KEEP_GENERATED_IN      = $(shell ls keep/*.in)
-KEEP_GENERATED         = $(shell $(LIST_GENERATED_FILES) $(KEEP_GENERATED_IN))
+KEEP_GENERATED_IN      = keep/*.in
+KEEP_GENERATED         = keep/generated/*
 
-API_GENERATED_IN       = $(shell ls api/*.in)
-API_GENERATED          = $(shell $(LIST_GENERATED_FILES) $(API_GENERATED_IN))
+API_GENERATED_IN       = api/*.in
+API_GENERATED          = api/generated/*
 
-SHELL_GENERATED_IN     = $(shell ls shell/*.in)
-SHELL_GENERATED        = $(shell $(LIST_GENERATED_FILES) $(SHELL_GENERATED_IN))
+SHELL_GENERATED_IN     = shell/*.in
+SHELL_GENERATED        = shell/generated/*
 
-SLURM_GENERATED_IN     = $(shell ls slurm/*.in)
-SLURM_GENERATED        = $(shell $(LIST_GENERATED_FILES) $(SLURM_GENERATED_IN))
+SLURM_GENERATED_IN     = slurm/*.in
+SLURM_GENERATED        = slurm/generated/*
 
-WORKBENCH_GENERATED_IN = $(shell ls workbench/*.in)
-WORKBENCH_GENERATED    = $(shell $(LIST_GENERATED_FILES) $(WORKBENCH_GENERATED_IN))
+WORKBENCH_GENERATED_IN = workbench/*.in
+WORKBENCH_GENERATED    = workbench/generated/*
 
-SSO_GENERATED_IN       = $(shell ls sso/*.in)
-SSO_GENERATED          = $(shell $(LIST_GENERATED_FILES) $(SSO_GENERATED_IN))
+SSO_GENERATED_IN       = sso/*.in
+SSO_GENERATED          = sso/generated/*
 
 $(BUILD):
 	mkdir -p build
