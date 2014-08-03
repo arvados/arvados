@@ -90,5 +90,11 @@ WORKBENCH_SECRET:
 SSO_HOSTNAME: sso
 SSO_SECRET:
 SSO_CLIENT_NAME: devsandbox
-SSO_CLIENT_APP_ID: devsandbox
-SSO_CLIENT_SECRET:
+# ==============================
+# Default to using auth.curoverse.com as SSO server
+# To use your a local Docker SSO server, set OMNIAUTH_URL and SSO_CLIENT_SECRET
+# to the empty string
+# ==============================
+OMNIAUTH_URL: https://auth.curoverse.com
+SSO_CLIENT_APP_ID: local_docker_installation
+SSO_CLIENT_SECRET: yohbai4eecohshoo1Yoot7tea9zoca9Eiz3Tajahweo9eePaeshaegh9meiye2ph
