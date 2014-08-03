@@ -24,29 +24,20 @@ See also: "Downloading the source code":https://arvados.org/projects/arvados/wik
 
 h2. Building the Arvados Docker containers
 
-First of all, a suitable @config.yml@ file is needed.
-
-<notextile>
-<pre><code>~$ <span class="userinput">cd arvados/docker</span>
-~$ <span class="userinput">cp config.yml.example config.yml</span>
-</code></pre></notextile>
-
-Edit the @config.yml@ file and fill in values for at a minimum these
-parameters:
-
-<pre>
-PUBLIC_KEY_PATH
-ARVADOS_USER_NAME
-API_HOSTNAME
-API_AUTO_ADMIN_USER
-</pre>
-
-Then build the docker containers (this will take a while):
+First of all, a suitable @config.yml@ file is needed. The easiest way to generate one based on the provided @config.yml.example@ file is to run the @build.sh@ script which will prompt for a few inputs and then build all the Docker containers (this will take a while): 
 
 <notextile>
 <pre><code>
 ~$ <span class="userinput">./build.sh</span>
+Generating config.yml.
+Arvados needs to know the email address of the administrative user,
+so that when that user logs in they are automatically made an admin.
+This should be an email address associated with a Google account.
+
+Enter your Google ID email address here:
+
 ...
+
 Step 7 : ADD generated/setup.sh /usr/local/bin/setup.sh
  ---> d7c0e7fdf7ab
 Removing intermediate container f3d81180795d
@@ -176,6 +167,8 @@ Point your browser to the Dockerized workbench:
 </code></pre>
 </notextile>
 
-Now use the google account you specified as @API_AUTO_ADMIN_USER@ in @config.yml@ to log in. You will be prompted *twice* by your browser that you are accessing a site with an untrusted SSL certificate. This is normal; by default the Arvados Docker installation uses self-signed SSL certificates for the SSO and API servers, respectively.
+Now use the google account you specified as @API_AUTO_ADMIN_USER@ in @config.yml@ to log in.
+
+You will be prompted by your browser that you are accessing a site with an untrusted SSL certificate. This is normal; by default the Arvados Docker installation uses self-signed SSL certificates for the SSO and API servers, respectively. If you use a local SSO server in a Docker container, you will be prompted *twice*. The default is to use the Curoverse SSO server.
 
 
