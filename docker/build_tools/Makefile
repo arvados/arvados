@@ -6,7 +6,7 @@ endif
 
 all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
 
-IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v debian-arvados-image)
+IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
 GENERATED_FILES := $(shell ls */generated/* 2>/dev/null)
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 
@@ -40,6 +40,7 @@ realclean: clean
 deepclean: clean
 	@echo "make deepclean"
 	-@rm -f debian-arvados-image 2>/dev/null
+	-@rm -f skydns-image skydock-image 2>/dev/null
 	+@[ "`$(DOCKER) ps -q`" = '' ] || $(DOCKER) stop `$(DOCKER) ps -q`
 	+@[ "$(REALCLEAN_CONTAINERS)" = '' ] || $(DOCKER) rm $(REALCLEAN_CONTAINERS)
 	+@[ "$(DEEPCLEAN_IMAGES)" = '' ] || $(DOCKER) rmi $(DEEPCLEAN_IMAGES)
