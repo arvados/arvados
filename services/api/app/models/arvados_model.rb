@@ -146,6 +146,12 @@ class ArvadosModel < ActiveRecord::Base
         sql_params += [uuid_list]
       end
 
+      if sql_table == "collections" and users_list.any?
+        # There is a 'name' link going from a readable group to the collection.
+        name_links = "(SELECT head_uuid FROM links WHERE link_class='name' AND tail_uuid IN (#{sanitized_uuid_list}))"
+        sql_conds += ["#{sql_table}.uuid IN #{name_links}"]
+      end
+
       # Link head points to this row, or to the owner of this row (the thing to be read)
       #
       # Link tail originates from this user, or a group that is readable by this

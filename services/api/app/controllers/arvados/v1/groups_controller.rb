@@ -23,8 +23,8 @@ class Arvados::V1::GroupsController < ApplicationController
 
   def contents
     # Set @objects:
-    load_searchable_objects(owner_uuid: @object.andand.uuid, include_linked: params[:include_linked])
-
+    load_searchable_objects(owner_uuid: @object.andand.uuid,
+                            include_linked: params[:include_linked])
     sql = 'link_class=? and head_uuid in (?)'
     sql_params = ['name', @objects.collect(&:uuid)]
     if @object
@@ -64,21 +64,25 @@ class Arvados::V1::GroupsController < ApplicationController
      Human, Specimen, Trait].each do |klass|
       @objects = klass.readable_by(*@read_users)
       if klass == Group
-        @objects = @objects.where('group_class = ?', 'project')
+        @objects = @objects.where('group_class in (?)', ['project', 'folder'])
       end
-      conds = []
-      cond_params = []
       if opts[:owner_uuid]
+        conds = []
+        cond_params = []
         conds << "#{klass.table_name}.owner_uuid = ?"
         cond_params << opts[:owner_uuid]
+        if opts[:include_linked]
+          haslink = "#{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'}"
+          haslink += " AND links.tail_uuid=#{klass.sanitize opts[:owner_uuid]}"
+          haslink += ")"
+          conds << haslink
+        end
+        if conds.any?
+          cond_sql = '(' + conds.join(') OR (') + ')'
+          @objects = @objects.where(cond_sql, *cond_params)
+        end
       end
-      if opts[:include_linked]
-        conds << "#{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'} AND links.tail_uuid=#{klass.sanitize @object.uuid})"
-      end
-      if conds.any?
-        cond_sql = '(' + conds.join(') OR (') + ')'
-        @objects = @objects.where(cond_sql, *cond_params)
-      end
+
       @objects = @objects.order("#{klass.table_name}.uuid")
       @limit = limit_all - all_objects.count
       apply_where_limit_order_params

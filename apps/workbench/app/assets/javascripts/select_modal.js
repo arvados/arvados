@@ -72,11 +72,14 @@ $(document).on('click', '.selectable', function() {
         });
 }).on('click', '.chooser-show-project', function() {
     var params = {};
+    var project_uuid = $(this).attr('data-project-uuid');
     $(this).attr('href', '#');  // Skip normal click handler
-    if ($(this).attr('data-project-uuid')) {
+    if (project_uuid) {
         params = {'filters[]': JSON.stringify(['owner_uuid',
                                                '=',
-                                               $(this).attr('data-project-uuid')])};
+                                               project_uuid]),
+                  project_uuid: project_uuid
+                 };
     }
     // Use current selection as dropdown button label
     $(this).
@@ -87,12 +90,52 @@ $(document).on('click', '.selectable', function() {
     $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
         data('infinite-content-params', params).
         trigger('refresh-content');
-});
-$(document).on('page-refresh', function(event, data, status, jqxhr, action_data) {
+}).on('ready', function() {
+    $('form[data-search-modal] a').on('click', function() {
+        $(this).closest('form').submit();
+        return false;
+    });
+    $('form[data-search-modal]').on('submit', function() {
+        // Ask the server for a Search modal. When it arrives, copy
+        // the search string from the top nav input into the modal's
+        // search query field.
+        var $form = $(this);
+        var searchq = $form.find('input').val();
+        var is_a_uuid = /^([0-9a-f]{32}(\+\S+)?|[0-9a-z]{5}-[0-9a-z]{5}-[0-9a-z]{15})$/;
+        if (searchq.trim().match(is_a_uuid)) {
+            window.location = '/actions?uuid=' + encodeURIComponent(searchq.trim());
+            // Show the "loading" indicator. TODO: better page transition hook
+            $(document).trigger('ajax:send');
+            return false;
+        }
+        if ($form.find('a[data-remote]').length > 0) {
+            // A search dialog is already loading.
+            return false;
+        }
+        $('<a />').
+            attr('href', $form.attr('data-search-modal')).
+            attr('data-remote', 'true').
+            attr('data-method', 'GET').
+            hide().
+            appendTo($form).
+            on('ajax:success', function(data, status, xhr) {
+                $('body > .modal-container input[type=text]').
+                    val($form.find('input').val()).
+                    focus();
+                $form.find('input').val('');
+            }).on('ajax:complete', function() {
+                $(this).detach();
+            }).
+            click();
+        return false;
+    });
+}).on('page-refresh', function(event, data, status, jqxhr, action_data) {
     window.location.reload();
 }).on('tab-refresh', function(event, data, status, jqxhr, action_data) {
     $(document).trigger('arv:pane:reload:all');
     $('body > .modal-container .modal').modal('hide');
 }).on('redirect-to-created-object', function(event, data, status, jqxhr, action_data) {
     window.location.href = data.href.replace(/^[^\/]*\/\/[^\/]*/, '');
+}).on('shown.bs.modal', 'body > .modal-container .modal', function() {
+    $('.focus-on-display', this).focus();
 });

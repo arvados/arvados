@@ -2,9 +2,7 @@ class EmptyCollection < ActiveRecord::Migration
   include CurrentApiClient
 
   def up
-    act_as_system_user do
-      empty_collection
-    end
+    empty_collection
   end
 
   def down

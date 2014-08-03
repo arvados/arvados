@@ -110,6 +110,27 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
   end
 
+  test "do not reuse job because output is not readable by user" do
+    authorize_with :job_reader
+    post :create, {
+      job: {
+        script: "hash",
+        script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
+        repository: "foo",
+        script_parameters: {
+          input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+          an_integer: '1'
+        }
+      },
+      find_or_create: true
+    }
+    assert_response :success
+    assert_not_nil assigns(:object)
+    new_job = JSON.parse(@response.body)
+    assert_not_equal 'zzzzz-8i9sb-cjs4pklxxjykqqq', new_job['uuid']
+    assert_equal '4fe459abe02d9b365932b8f5dc419439ab4e2577', new_job['script_version']
+  end
+
   test "test_cannot_reuse_job_no_output" do
     post :create, job: {
       no_reuse: false,
