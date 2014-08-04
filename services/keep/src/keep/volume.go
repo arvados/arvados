@@ -7,14 +7,15 @@ package main
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"os"
+	"strings"
 )
 
 type Volume interface {
 	Get(loc string) ([]byte, error)
 	Put(loc string, block []byte) error
 	Index(prefix string) string
+	Delete(loc string) error
 	Status() *VolumeStatus
 	String() string
 }
@@ -59,6 +60,14 @@ func (v *MockVolume) Index(prefix string) string {
 		}
 	}
 	return result
+}
+
+func (v *MockVolume) Delete(loc string) error {
+	if _, ok := v.Store[loc]; ok {
+		delete(v.Store, loc)
+		return nil
+	}
+	return os.ErrNotExist
 }
 
 func (v *MockVolume) Status() *VolumeStatus {
