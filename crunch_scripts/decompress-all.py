@@ -16,6 +16,7 @@
 import arvados
 import re
 import subprocess
+import os
 
 arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True,
                                           input_as_path=True)
@@ -24,30 +25,27 @@ task = arvados.current_task()
 
 input_file = task['parameters']['input']
 
-result = re.match(r"(^[a-f0-9]{32}\+\d+)(\+\S+)*(/.*)(/.*)?$", input_file)
+result = re.match(r"(^[a-f0-9]{32}\+\d+)(\+\S+)*(/.*)(/[^/]+)$", input_file)
 
 outdir = os.path.join(task.tmpdir, "output")
-os.mkdirs(outdir)
+os.makedirs(outdir)
 os.chdir(outdir)
 
 if result != None:
-    cr = arvados.CollectionReader(re.group(1))
-    streamname = '.'
-    if re.group(3) != None:
-        streamname += re.group(2)
-        filename = re.group(3)[1:]
-    else:
-        filename = re.group(2)[1:]
+    cr = arvados.CollectionReader(result.group(1))
+    streamname = result.group(3)[1:]
+    filename = result.group(4)[1:]
 
-    os.mkdirs(streamname)
+    subprocess.call(["mkdir", "-p", streamname])
     os.chdir(streamname)
     streamreader = filter(lambda s: s.name() == streamname, cr.all_streams())[0]
-    filereader = stream.files()[filename]
-    rc = subprocess.call("dtrx", "-r", "-n", arvados.get_task_param_mount('input'))
+    filereader = streamreader.files()[filename]
+    rc = subprocess.call(["dtrx", "-r", "-n", "-q", arvados.get_task_param_mount('input')])
     if rc == 0:
+        out = arvados.CollectionWriter()
         out.write_directory_tree(outdir, max_manifest_depth=0)
-        arvados.task_set_output(out.finish())
+        task.set_output(out.finish())
     else:
-        arvados.task_set_output(streamname + filereader.as_manifest()[1:])
+        task.set_output(streamname + filereader.as_manifest()[1:])
 else:
     sys.exit(1)
