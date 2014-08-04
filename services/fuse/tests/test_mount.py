@@ -325,6 +325,7 @@ class FuseGroupsTest(MountTestBase):
         d3 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', 'zzzzz-j7d0g-axqo7eu9pwvna1x'))
         d3.sort()
         self.assertEqual(["I'm in a subproject, too",
+                          "ea10d51bcf88862dbcc36eb292017dfd+45 added sometime",
                           "zzzzz-j58dm-c40lddwcqqr1ffs"
                       ], d3)
 

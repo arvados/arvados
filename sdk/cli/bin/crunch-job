@@ -1179,7 +1179,20 @@ sub fetch_block
 
   my $cmd = "arv-get \Q$hash\E";
   open($keep, '-|', $cmd) or die "fetch_block: $cmd: $!";
-  sysread($keep, $output_block, 64 * 1024 * 1024);
+  $output_block = '';
+  while (1) {
+    my $buf;
+    my $bytes = sysread($keep, $buf, 1024 * 1024);
+    if (!defined $bytes) {
+      die "reading from arv-get: $!";
+    } elsif ($bytes == 0) {
+      # sysread returns 0 at the end of the pipe.
+      last;
+    } else {
+      # some bytes were read into buf.
+      $output_block .= $buf;
+    }
+  }
   close $keep;
   return $output_block;
 }

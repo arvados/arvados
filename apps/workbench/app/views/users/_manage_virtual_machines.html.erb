@@ -1,0 +1,50 @@
+<div>
+  <p>
+    For more information see <%= link_to raw('Arvados Docs &rarr; User Guide &rarr; SSH access'),
+  "#{Rails.configuration.arvados_docsite}/user/getting_started/ssh-access-unix.html",
+  target: "_blank"%>.  A sample <i>~/.ssh/config</i> entry is provided below.
+  </p>
+
+  <% if !@my_virtual_machines.any? %>
+    You do not seem to have access to any virtual machines. If you would like to request access, please contact your system admin.
+  <% else %>
+    <table class="table virtual-machines-table">
+      <colgroup>
+        <col style="width: 25%" />
+        <col style="width: 25%" />
+        <col style="width: 50%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th> Host name </th>
+          <th> Login name </th>
+          <th> Command line </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @my_virtual_machines.andand.each do |vm| %>
+          <tr>
+            <td style="word-break:break-all;">
+              <%= vm[:hostname] %>
+            </td>
+            <td style="word-break:break-all;">
+              <%= @my_vm_logins[vm[:uuid]].andand.compact.andand.join(", ") %>
+            </td>
+            <td style="word-break:break-all;">
+              <% if @my_vm_logins[vm[:uuid]] %>
+                <% @my_vm_logins[vm[:uuid]].each do |login| %>
+                  <code>ssh&nbsp;<%= login %>@<%= vm[:hostname] %>.arvados</code>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+
+    <p><i>~/.ssh/config:</i></p>
+    <pre>Host *.arvados
+      ProxyCommand ssh -p2222 turnout@switchyard.<%= current_api_host || 'xyzzy.arvadosapi.com' %> -x -a $SSH_PROXY_FLAGS %h
+    </pre>
+  <% end %>
+</div>

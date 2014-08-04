@@ -617,8 +617,8 @@ class ApplicationController < ActionController::Base
     (Job.limit(10) |
      PipelineInstance.limit(10)).
       sort_by do |x|
-      x.finished_at || x.started_at || x.created_at rescue x.created_at
-    end
+      (x.finished_at || x.started_at rescue nil) || x.modified_at || x.created_at
+    end.reverse
   end
 
   helper_method :my_project_tree

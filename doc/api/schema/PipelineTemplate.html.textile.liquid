@@ -21,11 +21,14 @@ table(table table-bordered table-condensed).
 |default         |any     |any                                              |The default value for this parameter.|
 |required        |boolean |true or false                                    |Specifies whether the parameter is required to have a value or not.|
 |dataclass       |string  |One of 'Collection', 'File' [1], 'number', or 'text' |Data type of this parameter.|
+|search_for      |string  |any string                                       |Substring to use as a default search string when choosing inputs.|
 |output_of       |string  |the name of another component in the pipeline    |Specifies that the value of this parameter should be set to the 'output' attribute of the job that corresponds to the specified component.|
 
 The 'output_of' parameter is especially important, as this is how components are actually linked together to form a pipeline.  Component jobs that depend on the output of other components do not run until the parent job completes and has produced output.  If the parent job fails, the entire pipeline fails.
 
 fn1. The 'File' type refers to a specific file within a Keep collection in the form 'collection_hash/filename', for example '887cd41e9c613463eab2f0d885c6dd96+83/bob.txt'.
+
+The 'search_for' parameter is meaningful only when input dataclass of type Collection or File is used. If a value is provided, this will be preloaded into the input data chooser dialog in Workbench. For example, if your input dataclass is a File and you are interested in a certain filename extention, you can preconfigure it in this attribute.
 
 h3. Examples
 
@@ -42,7 +45,8 @@ This is a pipeline named "Filter MD5 hash values" with two components, "do_hash"
       "script_parameters": {
         "input": {
           "required": true,
-          "dataclass": "Collection"
+          "dataclass": "Collection",
+          "search_for": ".fastq.gz"
         }
       },
     },

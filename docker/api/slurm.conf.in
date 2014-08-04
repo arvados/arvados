@@ -1,0 +1,60 @@
+
+ControlMachine=api
+#SlurmUser=slurmd
+SlurmctldPort=6817
+SlurmdPort=6818
+AuthType=auth/munge
+#JobCredentialPrivateKey=/etc/slurm-llnl/slurm-key.pem
+#JobCredentialPublicCertificate=/etc/slurm-llnl/slurm-cert.pem
+StateSaveLocation=/tmp
+SlurmdSpoolDir=/tmp/slurmd
+SwitchType=switch/none
+MpiDefault=none
+SlurmctldPidFile=/var/run/slurmctld.pid
+SlurmdPidFile=/var/run/slurmd.pid
+ProctrackType=proctrack/pgid
+CacheGroups=0
+ReturnToService=2
+TaskPlugin=task/affinity
+#
+# TIMERS
+SlurmctldTimeout=300
+SlurmdTimeout=300
+InactiveLimit=0
+MinJobAge=300
+KillWait=30
+Waittime=0
+#
+# SCHEDULING
+SchedulerType=sched/backfill
+#SchedulerType=sched/builtin
+SchedulerPort=7321
+#SchedulerRootFilter=
+#SelectType=select/linear
+SelectType=select/cons_res
+SelectTypeParameters=CR_CPU_Memory
+FastSchedule=1
+#
+# LOGGING
+SlurmctldDebug=3
+#SlurmctldLogFile=
+SlurmdDebug=3
+#SlurmdLogFile=
+JobCompType=jobcomp/none
+#JobCompLoc=
+JobAcctGatherType=jobacct_gather/none
+#JobAcctLogfile=
+#JobAcctFrequency=
+#
+# COMPUTE NODES
+NodeName=DEFAULT
+# CPUs=8 State=UNKNOWN RealMemory=6967 Weight=6967
+PartitionName=DEFAULT MaxTime=INFINITE State=UP
+PartitionName=compute Default=YES Shared=yes
+#PartitionName=sysadmin Hidden=YES Shared=yes
+
+NodeName=compute[0-1]
+#NodeName=compute0 RealMemory=6967 Weight=6967
+
+PartitionName=compute Nodes=compute[0-1]
+PartitionName=crypto Nodes=compute[0-1]
