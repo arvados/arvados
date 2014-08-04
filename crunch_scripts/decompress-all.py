@@ -1,5 +1,18 @@
 #!/usr/bin/env python
 
+#
+# decompress-all.py
+#
+# Decompress all compressed files in the collection using the "dtrx" tool and
+# produce a new collection with the contents.  Uncompressed files
+# are passed through.
+#
+# input:
+# A collection at script_parameters["input"]
+#
+# output:
+# A manifest of the uncompressed contents of the input collection.
+
 import arvados
 import re
 import subprocess
