@@ -137,7 +137,7 @@ class StreamFileReader(object):
         data = ''
         for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.segments, self._filepos, size):
             data += self._stream.readfrom(locator+segmentoffset, segmentsize)
-            self._filepos += len(data)
+        self._filepos += len(data)
         return data
 
     def readfrom(self, start, size):
