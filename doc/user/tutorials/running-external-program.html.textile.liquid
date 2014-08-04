@@ -8,7 +8,7 @@ This tutorial demonstrates how to construct a two stage pipeline template that u
 
 {% include 'tutorial_expectations' %}
 
-Use the following command to create a new empty template using @arv pipeline_template create@, then open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@) using @arv edit@.
+Use the following command to create a new empty template using @arv pipeline_template create@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv edit $(arv --format=uuid pipeline_template create --pipeline-template '{}') name components </span></code></pre>
@@ -16,7 +16,7 @@ Use the following command to create a new empty template using @arv pipeline_tem
 
 * @--format=uuid@ option prints out just the unique identifier for the new template, instead of the entire template record (default)
 
-Next, in the text editor opened by @arv edit@ replace the empty fields with the following content:
+This will open the template record in an interactive text editor (as specified by $EDITOR or $VISUAL, otherwise defaults to @nano@) using @arv edit@.  Now add the following content:
 
 <notextile>{% code 'tutorial_bwa_sortsam_pipeline' as javascript %}</notextile>
 
@@ -43,6 +43,6 @@ When using @run-command@, the tool should write its output to the current workin
 
 h2. Running your pipeline
 
-Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
+Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html  Test data is available in the "Arvados Tutorial":https://{{ site.arvados_workbench_host }}/projects/qr1hi-j7d0g-u7zg1qdaowykd8d project.
 
 For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html
