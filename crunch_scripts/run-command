@@ -38,8 +38,8 @@ if len(arvados.current_task()['parameters']) > 0:
 links = []
 
 def sub_link(v):
-    r = os.path.basename(v)
-    os.symlink(os.path.join(os.environ['TASK_KEEPMOUNT'], v) , r)
+    r = os.path.join(outdir, os.path.basename(v))
+    os.symlink(v, r)
     links.append(r)
     return r
 
