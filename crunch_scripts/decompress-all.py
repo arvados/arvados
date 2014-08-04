@@ -9,7 +9,7 @@ arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True,
 
 task = arvados.current_task()
 
-input_file = arvados.gettaskparam('input')
+input_file = task['parameters']['input']
 
 result = re.match(r"(^[a-f0-9]{32}\+\d+)(\+\S+)*(/.*)(/.*)?$", input_file)
 
