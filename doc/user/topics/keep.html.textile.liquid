@@ -4,11 +4,17 @@ navsection: userguide
 title: "How Keep works"
 ...
 
+The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file (specifically, the MD5 hash), rather than human-assigned file names.  This has a number of advantages:
+* Files can be stored and replicated across a cluster of servers without requiring a central name server.
+* Both the server and client systematically validate data integrity because the checksum is built into the identifier.
+* Data duplication is minimized—two files with the same contents will have in the same identifier, and will not be stored twice.
+* It avoids data race conditions, since an identifier always points to the same data.
+
 In Keep, information is stored in *data blocks*.  Data blocks are normally between 1 byte and 64 megabytes in size.  If a file exceeds the maximum size of a single data block, the file will be split across multiple data blocks until the entire file can be stored.  These data blocks may be stored and replicated across multiple disks, servers, or clusters.  Each data block has its own identifier for the contents of that specific data block.
 
 In order to reassemble the file, Keep stores a *collection* data block which lists in sequence the data blocks that make up the original file.  A collection data block may store the information for multiple files, including a directory structure.
 
-In this example we will use @c1bad4b39ca5a924e481008009d94e32+210@ which we added to Keep in "the first Keep tutorial":{{ site.baseurl }}/user/tutorials/tutorial-keep.html.  First let us examine the contents of this collection using @arv keep get@:
+In this example we will use @c1bad4b39ca5a924e481008009d94e32+210@, which we added to Keep in "how to upload data":{{ site.baseurl }}/user/tutorials/tutorial-keep.html.  First let us examine the contents of this collection using @arv keep get@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv keep get c1bad4b39ca5a924e481008009d94e32+210</span>
