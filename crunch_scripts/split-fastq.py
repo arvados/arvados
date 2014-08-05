@@ -13,7 +13,7 @@ manifest_text = ""
 
 inp = arvados.CollectionReader(arvados.getjobparam('reads'))
 
-prog = re.compile("(.*?)_1.fastq(.gz)?$")
+prog = re.compile(r'(.*?)_1.fastq(.gz)?$')
 
 manifest_text = ""
 
@@ -72,7 +72,10 @@ for s in inp.all_streams():
             if result != None:
                 p = [{}, {}]
                 p[0]["reader"] = s.files()[result.group(0)]
-                p[1]["reader"] = s.files()[result.group(1) + "_2.fastq" + result.group(2)]
+                if result.group(2) != None:
+                    p[1]["reader"] = s.files()[result.group(1) + "_2.fastq" + result.group(2)]
+                else:
+                    p[1]["reader"] = s.files()[result.group(1) + "_2.fastq"
                 splitfastq(p)
                 #m0 = p[0]["reader"].as_manifest()[1:]
                 #m1 = p[1]["reader"].as_manifest()[1:]
