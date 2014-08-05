@@ -512,12 +512,13 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_profile
-    @profile_config = Rails.configuration.user_profile_form_fields    
-    user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
-    @current_user_profile = user_prefs[:profile] if user_prefs
+    @profile_config = Rails.configuration.user_profile_form_fields
 
     if current_user && @profile_config
       missing_required_profile = false
+
+      user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
+      @current_user_profile = user_prefs[:profile] if user_prefs
 
       @profile_config.andand.each do |entry|
         if entry['required']
@@ -529,7 +530,6 @@ class ApplicationController < ActionController::Base
       end
 
       if missing_required_profile
-        #redirect_to_profile
         render 'users/profile'
       end
     end

@@ -83,7 +83,7 @@ common:
   # This sample configures two fields as represented by the attribute "key".
   # You can specify "type" as "text" or "select".
   # Specify "options" when using the type "select".
-  # Set "required" as "true" for any of the fields to make them required. 
+  # Set "required" as "true" for any of the fields to make them required.
   # If any of the required fields are missing in the user's profile, the user will be
   # redirected to the "/profile" page before they can access any Workbench features.
   #user_profile_form_fields:

@@ -7,14 +7,14 @@
         </div>
         <div class="panel-body">
           <div>
-            <p>You can manage your profile using this page. 
-               Any feilds in <font style="color:red">red</font> are required and missing. 
+            <p>You can manage your profile using this page.
+               Any feilds in <font style="color:red">red</font> are required and missing.
                Please fill in those fields before you can accesse Arvados Workbench.</p><br/>
           </div>
           <div>
             <%= form_tag update_profile_path, {method: 'get', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal', remote: true} do %>
             <% @profile_config.andand.each do |entry| %>
-              <% 
+              <%
                   label = entry['required'] ? '* ' : ''
                   label += entry['form_field_title']
                   value = @current_user_profile[entry['key'].to_sym] if @current_user_profile
@@ -51,4 +51,3 @@
         </div>
       </div>
 </div>
-

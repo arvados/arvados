@@ -278,7 +278,7 @@ class UsersController < ApplicationController
   end
 
   def manage_profile
-    @profile_config = Rails.configuration.user_profile_form_fields    
+    @profile_config = Rails.configuration.user_profile_form_fields
     user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
     @current_user_profile = user_prefs[:profile] if user_prefs
 
@@ -293,7 +293,7 @@ class UsersController < ApplicationController
     @current_user_profile ||= {}
 
     profile_keys = []
-    @profile_config = Rails.configuration.user_profile_form_fields    
+    @profile_config = Rails.configuration.user_profile_form_fields
     @profile_config.andand.each do |entry|
       profile_keys << entry['key']
     end
