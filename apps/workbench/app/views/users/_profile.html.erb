@@ -7,6 +7,11 @@
         </div>
         <div class="panel-body">
           <div>
+            <p>You can manage your profile using this page. 
+               Any feilds in <font style="color:red">red</font> are required and missing. 
+               Please fill in those fields before you can accesse Arvados Workbench.</p><br/>
+          </div>
+          <div>
             <%= form_tag update_profile_path, {method: 'get', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal', remote: true} do %>
             <% @profile_config.andand.each do |entry| %>
               <% 
@@ -16,11 +21,11 @@
               %>
                 <div class="form-group">
                   <label for="<%=entry['key']%>"
-                         class="col-sm-2 control-label"
+                         class="col-sm-3 control-label"
                          style=<%="color:red" if entry['required']&&!value%>> <%=label%>
                   </label>
                   <% if entry['type'] == 'select' %>
-                    <div class="col-sm-10">
+                    <div class="col-sm-9">
                       <select class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>">
                         <% entry['options'].each do |option| %>
                           <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
@@ -28,7 +33,7 @@
                       </select>
                     </div>
                   <% else %>
-                    <div class="col-sm-10">
+                    <div class="col-sm-9">
                       <input type="text" class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
                     </div>
                   <% end %>
@@ -37,7 +42,7 @@
 
                 <div class="form-group">
                   <div class="col-sm-offset-2 col-sm-10">
-                    <button type="submit" class="btn btn-default">Save profile</button>
+                    <button type="submit" class="btn btn-primary">Save profile</button>
                   </div>
                 </div>
 
