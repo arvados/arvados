@@ -307,11 +307,9 @@ class UsersController < ApplicationController
       end
     end
 
-    # current_user.update_attributes! prefs: @current_user_profile
     current_user.update_profile updated_profile
-
-    respond_to do |f|
-      f.html { render template: 'users/profile' }
+    respond_to do |format|
+      format.js {render inline: "location.reload();"}
     end
   end
 
