@@ -569,8 +569,10 @@ func CanDelete(api_token string) bool {
 	if api_token == data_manager_token {
 		return true
 	}
-	// TODO(twp): look up api_token with the API server
-	// return true if is_admin is true and if the token
-	// has unlimited scope
+	// Tokens belonging to an Arvados administrator with unlimited
+	// scope may also delete blocks.
+	if IsAdmin(api_token) && HasUnlimitedScope(api_token) {
+		return true
+	}
 	return false
 }
