@@ -1,3 +1,25 @@
+<div class="dropdown">
+  <button class="btn btn-default dropdown-toggle" id="copy2project-btn" type="button" data-toggle="dropdown">
+    Copy this collection to project...
+    <span class="caret"></span>
+  </button>
+  <ul class="dropdown-menu" role="menu" aria-labelledby="copy2project-btn">
+    <%= render partial: "projects_tree_menu", locals: {
+          :project_link_to => Proc.new do |pnode, &block|
+            link_to( actions_path(id: pnode[:object].uuid,
+                                  selection: [ @object.uuid ],
+                                  selection_param: 'selection[]',
+                                  copy_selections_into_project: pnode[:object].uuid,
+                                  success: 'redirect-to-created-object'),
+                      method: :post,
+                      &block)
+          end,
+          :top_button => nil
+         } %>
+  </ul>
+</div>
+
+
 <div class="row row-fill-height">
   <div class="col-md-6">
     <div class="panel panel-info">
