@@ -117,7 +117,16 @@ class Arvados::V1::UsersController < ApplicationController
   # update profile for the user
   def profile
     reload_object_before_update
+
+    # update profile
     @object.profile params
+
+    # profile update succeeded. send email if requested by the client
+    profile_notification_address = params[:send_profile_notification_email]
+    if profile_notification_address
+      ProfileNotifier.profile_created(@object, profile_notification_address).deliver
+    end
+
     show
   end
 
