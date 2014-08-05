@@ -18,7 +18,7 @@ prog = re.compile(r'(.*?)_1.fastq(.gz)?$')
 
 manifest_list = []
 
-chunking = arvados.getjobparam('chunking')
+chunking = False #arvados.getjobparam('chunking')
 
 def nextline(reader, start):
     n = -1
