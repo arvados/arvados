@@ -7,6 +7,7 @@ import types
 
 import apiclient
 import apiclient.discovery
+import apiclient.errors
 import config
 import errors
 import util
@@ -50,6 +51,15 @@ def _cast_objects_too(value, schema_type):
     else:
         return _cast_orig(value, schema_type)
 apiclient.discovery._cast = _cast_objects_too
+
+# Convert apiclient's HttpErrors into our own API error subclass for better
+# error reporting.
+# Reassigning apiclient.errors.HttpError is not sufficient because most of the
+# apiclient submodules import the class into their own namespace.
+def _new_http_error(cls, *args, **kwargs):
+    return super(apiclient.errors.HttpError, cls).__new__(
+        errors.ApiError, *args, **kwargs)
+apiclient.errors.HttpError.__new__ = staticmethod(_new_http_error)
 
 def http_cache(data_type):
     path = os.environ['HOME'] + '/.cache/arvados/' + data_type
