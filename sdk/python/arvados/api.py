@@ -59,37 +59,57 @@ def http_cache(data_type):
         path = None
     return path
 
-def api(version=None, cache=True):
-    global services
+def api(version=None, cache=True, **kwargs):
+    """Return an apiclient Resources object for an Arvados instance.
 
-    if 'ARVADOS_DEBUG' in config.settings():
+    Arguments:
+    * version: A string naming the version of the Arvados API to use (for
+      example, 'v1').
+    * cache: If True (default), return an existing resources object, or use
+      a cached discovery document to build one.
+
+    Additional keyword arguments will be passed directly to
+    `apiclient.discovery.build`.  If the `discoveryServiceUrl` or `http`
+    keyword arguments are missing, this function will set default values for
+    them, based on the current Arvados configuration settings."""
+    if config.get('ARVADOS_DEBUG'):
         logging.basicConfig(level=logging.DEBUG)
 
     if not cache or not services.get(version):
-        apiVersion = version
         if not version:
-            apiVersion = 'v1'
+            version = 'v1'
             logging.info("Using default API version. " +
                          "Call arvados.api('%s') instead." %
-                         apiVersion)
-        if 'ARVADOS_API_HOST' not in config.settings():
-            raise Exception("ARVADOS_API_HOST is not set. Aborting.")
-        url = ('https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' %
-               config.get('ARVADOS_API_HOST'))
-        credentials = CredentialsFromEnv()
+                         version)
 
-        # Use system's CA certificates (if we find them) instead of httplib2's
-        ca_certs = '/etc/ssl/certs/ca-certificates.crt'
-        if not os.path.exists(ca_certs):
-            ca_certs = None             # use httplib2 default
+        if 'discoveryServiceUrl' not in kwargs:
+            api_host = config.get('ARVADOS_API_HOST')
+            if not api_host:
+                raise ValueError(
+                    "No discoveryServiceUrl or ARVADOS_API_HOST set.")
+            kwargs['discoveryServiceUrl'] = (
+                'https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' %
+                (api_host,))
 
-        http = httplib2.Http(ca_certs=ca_certs,
-                             cache=(http_cache('discovery') if cache else None))
-        http = credentials.authorize(http)
-        if re.match(r'(?i)^(true|1|yes)$',
-                    config.get('ARVADOS_API_HOST_INSECURE', 'no')):
-            http.disable_ssl_certificate_validation=True
-        services[version] = apiclient.discovery.build(
-            'arvados', apiVersion, http=http, discoveryServiceUrl=url)
-        http.cache = None
+        if 'http' not in kwargs:
+            http_kwargs = {}
+            # Prefer system's CA certificates (if available) over httplib2's.
+            certs_path = '/etc/ssl/certs/ca-certificates.crt'
+            if os.path.exists(certs_path):
+                http_kwargs['ca_certs'] = certs_path
+            if cache:
+                http_kwargs['cache'] = http_cache('discovery')
+            if (config.get('ARVADOS_API_HOST_INSECURE', '').lower() in
+                  ('yes', 'true', '1')):
+                http_kwargs['disable_ssl_certificate_validation'] = True
+            kwargs['http'] = httplib2.Http(**http_kwargs)
+
+        kwargs['http'] = CredentialsFromEnv().authorize(kwargs['http'])
+        services[version] = apiclient.discovery.build('arvados', version,
+                                                      **kwargs)
+        kwargs['http'].cache = None
     return services[version]
+
+def uncache_api(version):
+    if version in services:
+        del services[version]
