@@ -13,12 +13,37 @@
           </div>
           <div>
             <%= form_tag update_profile_path, {method: 'get', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal', remote: true} do %>
-            <% @profile_config.andand.each do |entry| %>
-              <%
-                  label = entry['required'] ? '* ' : ''
-                  label += entry['form_field_title']
-                  value = @current_user_profile[entry['key'].to_sym] if @current_user_profile
-              %>
+              <div class="form-group">
+                  <label for="email" class="col-sm-3 control-label"> Email </label>
+                  <div class="col-sm-9">
+                    <input type="text" class="form-control" id="email" name="email" placeholder="Email" value="<%=current_user.email%>" disabled></input>
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label for="first_name" class="col-sm-3 control-label"> First name </label>
+                  <div class="col-sm-9">
+                    <input type="text" class="form-control" id="first_name" name="first_name" placeholder="First name" value="<%=current_user.first_name%>" disabled></input>
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label for="last_name" class="col-sm-3 control-label"> Last name </label>
+                  <div class="col-sm-9">
+                    <input type="text" class="form-control" id="last_name" name="last_name" placeholder="Last name" value="<%=current_user.last_name%>" disabled></input>
+                  </div>
+              </div>
+              <div class="form-group">
+                  <label for="identity_url" class="col-sm-3 control-label"> Identity URL </label>
+                  <div class="col-sm-9">
+                    <input type="text" class="form-control" id="identity_url" name="identity_url" placeholder="Identity URL" value="<%=@this_user.identity_url%>" disabled></input>
+                  </div>
+              </div>
+
+              <% @profile_config.andand.each do |entry| %>
+                <%
+                    label = entry['required'] ? '* ' : ''
+                    label += entry['form_field_title']
+                    value = @current_user_profile[entry['key'].to_sym] if @current_user_profile
+                %>
                 <div class="form-group">
                   <label for="<%=entry['key']%>"
                          class="col-sm-3 control-label"
@@ -40,13 +65,12 @@
                 </div>
               <% end %>
 
-                <div class="form-group">
-                  <div class="col-sm-offset-2 col-sm-10">
-                    <button type="submit" class="btn btn-primary">Save profile</button>
-                  </div>
+              <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-10">
+                  <button type="submit" class="btn btn-primary">Save profile</button>
                 </div>
-
-              <% end %>
+              </div>
+            <% end %>
           </div>
         </div>
       </div>

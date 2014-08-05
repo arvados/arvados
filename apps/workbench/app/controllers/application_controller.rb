@@ -517,7 +517,8 @@ class ApplicationController < ActionController::Base
     if current_user && @profile_config
       missing_required_profile = false
 
-      user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
+      @this_user = User.limit(1).where(uuid: current_user.uuid).first
+      user_prefs = @this_user.prefs
       @current_user_profile = user_prefs[:profile] if user_prefs
 
       @profile_config.andand.each do |entry|
