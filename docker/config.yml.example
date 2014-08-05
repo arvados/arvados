@@ -66,8 +66,9 @@ API_SUPERUSER_SECRET:
 # change it and don't be dumb.
 POSTGRES_ROOT_PW: dummy_pw
 
-# The URL for this installation's Omniauth server.
-OMNIAUTH_URL: https://@@SSO_HOSTNAME@@.@@ARVADOS_DOMAIN@@
+# The URL of the SSO server that you want your API server to use. If
+# blank, use the sso docker container.
+OMNIAUTH_URL:
 
 # ==============================
 # Workbench settings
@@ -89,5 +90,11 @@ WORKBENCH_SECRET:
 SSO_HOSTNAME: sso
 SSO_SECRET:
 SSO_CLIENT_NAME: devsandbox
-SSO_CLIENT_APP_ID: devsandbox
-SSO_CLIENT_SECRET:
+# ==============================
+# Default to using auth.curoverse.com as SSO server
+# To use your a local Docker SSO server, set OMNIAUTH_URL and SSO_CLIENT_SECRET
+# to the empty string
+# ==============================
+OMNIAUTH_URL: https://auth.curoverse.com
+SSO_CLIENT_APP_ID: local_docker_installation
+SSO_CLIENT_SECRET: yohbai4eecohshoo1Yoot7tea9zoca9Eiz3Tajahweo9eePaeshaegh9meiye2ph

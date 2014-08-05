@@ -6,7 +6,7 @@ endif
 
 all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
 
-IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v debian-arvados-image)
+IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
 GENERATED_FILES := $(shell ls */generated/* 2>/dev/null)
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 
@@ -40,6 +40,7 @@ realclean: clean
 deepclean: clean
 	@echo "make deepclean"
 	-@rm -f debian-arvados-image 2>/dev/null
+	-@rm -f skydns-image skydock-image 2>/dev/null
 	+@[ "`$(DOCKER) ps -q`" = '' ] || $(DOCKER) stop `$(DOCKER) ps -q`
 	+@[ "$(REALCLEAN_CONTAINERS)" = '' ] || $(DOCKER) rm $(REALCLEAN_CONTAINERS)
 	+@[ "$(DEEPCLEAN_IMAGES)" = '' ] || $(DOCKER) rmi $(DEEPCLEAN_IMAGES)
@@ -54,94 +55,54 @@ CONFIG_RB = build_tools/config.rb
 
 BUILD = build/.buildstamp
 
-BASE_DEPS = base/Dockerfile $(BASE_GENERATED)
+BASE_DEPS = base/Dockerfile config.yml $(BASE_GENERATED)
 
-SLURM_DEPS = slurm/Dockerfile $(SLURM_GENERATED)
+SLURM_DEPS = slurm/Dockerfile config.yml $(SLURM_GENERATED)
 
 JOBS_DEPS = jobs/Dockerfile
 
 JAVA_BWA_SAMTOOLS_DEPS = java-bwa-samtools/Dockerfile
 
-API_DEPS = api/* $(API_GENERATED)
+API_DEPS = api/* config.yml $(API_GENERATED)
 
-SHELL_DEPS = shell/* $(SHELL_GENERATED)
+SHELL_DEPS = shell/* config.yml $(SHELL_GENERATED)
 
-COMPUTE_DEPS = compute/* $(COMPUTE_GENERATED)
+COMPUTE_DEPS = compute/* config.yml $(COMPUTE_GENERATED)
 
 DOC_DEPS = doc/Dockerfile doc/apache2_vhost
 
 WORKBENCH_DEPS = workbench/Dockerfile \
+                 config.yml \
                  $(WORKBENCH_GENERATED)
 
-KEEP_DEPS = keep/Dockerfile
+KEEP_DEPS = keep/Dockerfile config.yml $(KEEP_GENERATED)
 
-SSO_DEPS = $(SSO_GENERATED)
+SSO_DEPS = config.yml $(SSO_GENERATED)
 
 BCBIO_NEXTGEN_DEPS = bcbio-nextgen/Dockerfile
 
 BASE_GENERATED = base/generated/arvados.tar.gz
 
-SLURM_GENERATED = slurm/generated/*
+COMPUTE_GENERATED_IN   = compute/*.in
+COMPUTE_GENERATED      = compute/generated/*
 
-COMPUTE_GENERATED = compute/generated/setup.sh
+KEEP_GENERATED_IN      = keep/*.in
+KEEP_GENERATED         = keep/generated/*
 
-COMPUTE_GENERATED_IN = compute/setup.sh.in
+API_GENERATED_IN       = api/*.in
+API_GENERATED          = api/generated/*
 
-API_GENERATED = \
-        api/generated/arvados-clients.yml \
-        api/generated/apache2_vhost \
-        api/generated/config_databases.sh \
-        api/generated/database.yml \
-        api/generated/omniauth.rb \
-        api/generated/application.yml \
-        api/generated/setup.sh \
-        api/generated/setup-gitolite.sh \
-        api/generated/slurm.conf \
-        api/generated/superuser_token
+SHELL_GENERATED_IN     = shell/*.in
+SHELL_GENERATED        = shell/generated/*
 
-API_GENERATED_IN = \
-        api/arvados-clients.yml.in \
-        api/apache2_vhost.in \
-        api/config_databases.sh.in \
-        api/database.yml.in \
-        api/omniauth.rb.in \
-        api/application.yml.in \
-        api/setup.sh.in \
-        api/setup-gitolite.sh.in \
-        api/slurm.conf.in \
-        api/superuser_token.in
+SLURM_GENERATED_IN     = slurm/*.in
+SLURM_GENERATED        = slurm/generated/*
 
-SHELL_GENERATED = \
-        shell/generated/setup.sh \
-        shell/generated/superuser_token
+WORKBENCH_GENERATED_IN = workbench/*.in
+WORKBENCH_GENERATED    = workbench/generated/*
 
-SHELL_GENERATED_IN = \
-        shell/setup.sh.in \
-        shell/superuser_token.in
-
-SLURM_GENERATED = \
-        slurm/generated/slurm.conf
-
-SLURM_GENERATED_IN = \
-        slurm/slurm.conf.in
-
-WORKBENCH_GENERATED = \
-        workbench/generated/apache2_vhost \
-        workbench/generated/application.yml
-
-WORKBENCH_GENERATED_IN = \
-        workbench/apache2_vhost.in \
-        workbench/application.yml.in
-
-SSO_GENERATED = \
-        sso/generated/apache2_vhost \
-        sso/generated/seeds.rb \
-        sso/generated/secret_token.rb
-
-SSO_GENERATED_IN = \
-        sso/apache2_vhost.in \
-        sso/seeds.rb.in \
-        sso/secret_token.rb.in
+SSO_GENERATED_IN       = sso/*.in
+SSO_GENERATED          = sso/generated/*
 
 $(BUILD):
 	mkdir -p build
@@ -154,31 +115,32 @@ $(BUILD):
 	cd build/sdk/ruby && gem build arvados.gemspec
 	touch build/.buildstamp
 
-$(SLURM_GENERATED): config.yml $(BUILD)
-	$(CONFIG_RB)
+$(SLURM_GENERATED): $(BUILD)
+	$(CONFIG_RB) slurm
 	mkdir -p slurm/generated
 
-$(BASE_GENERATED): config.yml $(BUILD)
-	$(CONFIG_RB)
+$(BASE_GENERATED): $(BUILD)
+	$(CONFIG_RB) base
 	mkdir -p base/generated
 	tar -czf base/generated/arvados.tar.gz -C build .
 
-$(API_GENERATED): config.yml $(API_GENERATED_IN)
-	$(CONFIG_RB)
+$(API_GENERATED): $(API_GENERATED_IN)
+	$(CONFIG_RB) api
 
-$(SHELL_GENERATED): config.yml $(SHELL_GENERATED_IN)
-	$(CONFIG_RB)
+$(SHELL_GENERATED): $(SHELL_GENERATED_IN)
+	$(CONFIG_RB) shell
 
-$(WORKBENCH_GENERATED): config.yml $(WORKBENCH_GENERATED_IN)
-	$(CONFIG_RB)
+$(WORKBENCH_GENERATED): $(WORKBENCH_GENERATED_IN)
+	$(CONFIG_RB) workbench
 
-$(COMPUTE_GENERATED): config.yml $(COMPUTE_GENERATED_IN)
+$(COMPUTE_GENERATED): $(COMPUTE_GENERATED_IN)
+	$(CONFIG_RB) compute
 
-$(WAREHOUSE_GENERATED): config.yml $(WAREHOUSE_GENERATED_IN)
-	$(CONFIG_RB)
+$(SSO_GENERATED): $(SSO_GENERATED_IN)
+	$(CONFIG_RB) sso
 
-$(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
-	$(CONFIG_RB)
+$(KEEP_GENERATED): $(KEEP_GENERATED_IN)
+	$(CONFIG_RB) keep
 
 # The docker build -q option suppresses verbose build output.
 # Necessary to prevent failure on building warehouse; see
@@ -186,7 +148,7 @@ $(SSO_GENERATED): config.yml $(SSO_GENERATED_IN)
 DOCKER_BUILD = $(DOCKER) build -q --rm=true
 
 # ============================================================
-# The main Arvados servers: api, doc, workbench, warehouse
+# The main Arvados servers: api, doc, workbench, compute
 
 api-image: passenger-image $(BUILD) $(API_DEPS)
 	@echo "Building api-image"
@@ -242,10 +204,6 @@ workbench-image: passenger-image $(BUILD) $(WORKBENCH_DEPS)
 	tar -czf workbench/generated/workbench.tar.gz -C build/apps workbench
 	$(DOCKER_BUILD) -t arvados/workbench workbench
 	date >workbench-image
-
-warehouse-image: base-image $(WAREHOUSE_DEPS)
-	$(DOCKER_BUILD) -t arvados/warehouse warehouse
-	date >warehouse-image
 
 sso-image: passenger-image $(SSO_DEPS)
 	@echo "Building sso-image"

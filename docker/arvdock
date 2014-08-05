@@ -83,11 +83,11 @@ function start_container {
     #echo "  $DOCKER run --dns=127.0.0.1 $args $image"
     echo "  $DOCKER run $args $image"
     container=`$DOCKER run $args $image`
-    if [[ "$?" != "0" ]]; then
+    if [ "$?" != "0" -o "$container" = "" ]; then
       echo "Unable to start container"
       exit 1
     fi
-    if [[ "$name" == "compute" || $ENABLE_SSH ]];
+    if [ "$name" == "compute" -o "$ENABLE_SSH" != "false" ];
     then
       ip=$(ip_address $container )
       echo
@@ -95,6 +95,8 @@ function start_container {
       echo
       echo "    ssh root@$ip"
       echo
+    else
+      echo "Started container: $container"
     fi
 
     if [[ "$name" == "doc_server" ]]; then
@@ -285,11 +287,11 @@ function do_start {
             [ -f $v/keep/.metadata.yml ] && sudo rm $v/keep/.metadata.yml
         done
         start_container "25107:25107" "keep_server_0" \
-            "${keep_volumes[0]}:/dev/keep-0" \
+            "${keep_volumes[0]}:/keep-data" \
             "api_server:api" \
             "arvados/keep"
         start_container "25108:25107" "keep_server_1" \
-            "${keep_volumes[1]}:/dev/keep-0" \
+            "${keep_volumes[1]}:/keep-data" \
             "api_server:api" \
             "arvados/keep"
     fi

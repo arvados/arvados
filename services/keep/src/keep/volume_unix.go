@@ -109,8 +109,7 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 // corrupted data block.
 //
 func (v *UnixVolume) Read(loc string) ([]byte, error) {
-	blockFilename := filepath.Join(v.root, loc[0:3], loc)
-	buf, err := ioutil.ReadFile(blockFilename)
+	buf, err := ioutil.ReadFile(v.blockPath(loc))
 	return buf, err
 }
 
@@ -123,22 +122,22 @@ func (v *UnixVolume) Write(loc string, block []byte) error {
 	if v.IsFull() {
 		return FullError
 	}
-	blockDir := filepath.Join(v.root, loc[0:3])
-	if err := os.MkdirAll(blockDir, 0755); err != nil {
+	bdir := v.blockDir(loc)
+	if err := os.MkdirAll(bdir, 0755); err != nil {
 		log.Printf("%s: could not create directory %s: %s",
-			loc, blockDir, err)
+			loc, bdir, err)
 		return err
 	}
 
-	tmpfile, tmperr := ioutil.TempFile(blockDir, "tmp"+loc)
+	tmpfile, tmperr := ioutil.TempFile(bdir, "tmp"+loc)
 	if tmperr != nil {
-		log.Printf("ioutil.TempFile(%s, tmp%s): %s", blockDir, loc, tmperr)
+		log.Printf("ioutil.TempFile(%s, tmp%s): %s", bdir, loc, tmperr)
 		return tmperr
 	}
-	blockFilename := filepath.Join(blockDir, loc)
+	bpath := v.blockPath(loc)
 
 	if _, err := tmpfile.Write(block); err != nil {
-		log.Printf("%s: writing to %s: %s\n", v, blockFilename, err)
+		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
 		return err
 	}
 	if err := tmpfile.Close(); err != nil {
@@ -146,8 +145,8 @@ func (v *UnixVolume) Write(loc string, block []byte) error {
 		os.Remove(tmpfile.Name())
 		return err
 	}
-	if err := os.Rename(tmpfile.Name(), blockFilename); err != nil {
-		log.Printf("rename %s %s: %s\n", tmpfile.Name(), blockFilename, err)
+	if err := os.Rename(tmpfile.Name(), bpath); err != nil {
+		log.Printf("rename %s %s: %s\n", tmpfile.Name(), bpath, err)
 		os.Remove(tmpfile.Name())
 		return err
 	}
@@ -228,6 +227,22 @@ func (v *UnixVolume) Index(prefix string) (output string) {
 		})
 
 	return
+}
+
+func (v *UnixVolume) Delete(loc string) error {
+	return os.Remove(v.blockPath(loc))
+}
+
+// blockDir returns the fully qualified directory name for the directory
+// where loc is (or would be) stored on this volume.
+func (v *UnixVolume) blockDir(loc string) string {
+	return filepath.Join(v.root, loc[0:3])
+}
+
+// blockPath returns the fully qualified pathname for the path to loc
+// on this volume.
+func (v *UnixVolume) blockPath(loc string) string {
+	return filepath.Join(v.blockDir(loc), loc)
 }
 
 // IsFull returns true if the free space on the volume is less than
