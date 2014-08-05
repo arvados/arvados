@@ -64,10 +64,10 @@ def sub_jobsrc(v):
 subst.default_subs["link "] = sub_link
 subst.default_subs["task.tmpdir"] = sub_tmpdir
 subst.default_subs["task.outdir"] = sub_outdir
+subst.default_subs["job.srcdir"] = sub_jobsrc
 subst.default_subs["node.cores"] = sub_cores
-subst.default_subs["job.id"] = sub_jobid
-subst.default_subs["job.src"] = sub_jobsrc
-subst.default_subs["task.id"] = sub_taskid
+subst.default_subs["job.uuid"] = sub_jobid
+subst.default_subs["task.uuid"] = sub_taskid
 
 rcode = 1
 
