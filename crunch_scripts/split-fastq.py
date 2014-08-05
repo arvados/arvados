@@ -57,8 +57,8 @@ def splitfastq(p):
                 global manifest_text
                 manifest = []
                 manifest.extend("./_" + str(piece))
-                manifest.extend([d[LOCATOR] for d in p["reader"]._stream._data_locators])
-                manifest.extend(["{}:{}:{}".format(seg[LOCATOR], seg[BLOCKSIZE], self.name().replace(' ', '\\040')) for seg in arvados.locators_and_ranges(p[i]["reader"].segments, p[i]["start"], p[i]["end"] - p[i]["start"])])
+                manifest.extend([d[arvados.LOCATOR] for d in p["reader"]._stream._data_locators])
+                manifest.extend(["{}:{}:{}".format(seg[arvados.LOCATOR], seg[arvados.BLOCKSIZE], self.name().replace(' ', '\\040')) for seg in arvados.locators_and_ranges(p[i]["reader"].segments, p[i]["start"], p[i]["end"] - p[i]["start"])])
                 manifest_text += manifest.join(" ") + "\n"
                 p[i]["start"] = p[i]["end"]
         else:
