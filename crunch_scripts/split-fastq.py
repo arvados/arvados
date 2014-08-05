@@ -3,6 +3,7 @@
 import arvados
 import re
 import hashlib
+import string
 
 api = arvados.api('v1')
 
