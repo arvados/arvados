@@ -418,6 +418,8 @@ class ApplicationController < ActionController::Base
         is_admin: user.is_admin,
         prefs: user.prefs
       }
+      session[:skip_profile] = params[:skip_profile]
+
       if !request.format.json? and request.method.in? ['GET', 'HEAD']
         # Repeat this request with api_token in the (new) session
         # cookie instead of the query string.  This prevents API
@@ -513,6 +515,10 @@ class ApplicationController < ActionController::Base
 
   def check_user_profile
     @profile_config = Rails.configuration.user_profile_form_fields
+
+    if params[:skip_profile] || session[:skip_profile]
+      return true
+    end
 
     if current_user && @profile_config
       missing_required_profile = false
