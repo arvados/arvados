@@ -13,6 +13,7 @@ class ApplicationController < ActionController::Base
   #   skip_around_filter :require_thread_api_token
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
+  before_filter :check_user_profile, except: [:update_profile] + ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -505,6 +506,31 @@ class ApplicationController < ActionController::Base
       end
       if !current_user.is_active
         render 'user_agreements/index'
+      end
+    end
+    true
+  end
+
+  def check_user_profile
+    @profile_config = Rails.configuration.user_profile_form_fields    
+    user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
+    @current_user_profile = user_prefs[:profile] if user_prefs
+
+    if current_user && @profile_config
+      missing_required_profile = false
+
+      @profile_config.andand.each do |entry|
+        if entry['required']
+          if !@current_user_profile || !@current_user_profile[entry['key'].to_sym]
+            missing_required_profile = true
+            break
+          end
+        end
+      end
+
+      if missing_required_profile
+        #redirect_to_profile
+        render 'users/profile'
       end
     end
     true

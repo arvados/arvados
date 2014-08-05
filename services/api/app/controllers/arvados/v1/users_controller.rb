@@ -114,6 +114,13 @@ class Arvados::V1::UsersController < ApplicationController
     show
   end
 
+  # update profile for the user
+  def profile
+    reload_object_before_update
+    @object.profile params
+    show
+  end
+
   protected
 
   def self._setup_requires_parameters

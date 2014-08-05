@@ -74,3 +74,5 @@ common:
   secret_key_base: false
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
+
+  user_profile_form_fields: false

@@ -277,6 +277,44 @@ class UsersController < ApplicationController
     end
   end
 
+  def manage_profile
+    @profile_config = Rails.configuration.user_profile_form_fields    
+    user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
+    @current_user_profile = user_prefs[:profile] if user_prefs
+
+    respond_to do |f|
+      f.html { render template: 'users/profile' }
+    end
+  end
+
+  def update_profile
+    user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
+    @current_user_profile = user_prefs[:profile] if user_prefs
+    @current_user_profile ||= {}
+
+    profile_keys = []
+    @profile_config = Rails.configuration.user_profile_form_fields    
+    @profile_config.andand.each do |entry|
+      profile_keys << entry['key']
+    end
+
+    updated_profile = {}
+    params.andand.each do |param|
+      if profile_keys.include? param[0]
+        if param[1].andand.size>0
+          updated_profile['profile_'+param[0]] = param[1]
+        end
+      end
+    end
+
+    # current_user.update_attributes! prefs: @current_user_profile
+    current_user.update_profile updated_profile
+
+    respond_to do |f|
+      f.html { render template: 'users/profile' }
+    end
+  end
+
   protected
 
   def find_current_links user

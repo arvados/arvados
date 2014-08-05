@@ -10,6 +10,7 @@ ArvadosWorkbench::Application.routes.draw do
   get '/user_agreements/signatures' => 'user_agreements#signatures'
   get "users/setup_popup" => 'users#setup_popup', :as => :setup_user_popup
   get "users/setup" => 'users#setup', :as => :setup_user
+  get "users/update_profile" => 'users#update_profile', :as => :update_profile
   resources :nodes
   resources :humans
   resources :traits
@@ -36,6 +37,7 @@ ArvadosWorkbench::Application.routes.draw do
   get '/manage_account' => 'users#manage_account'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
   get "/add_ssh_key" => 'users#add_ssh_key', :as => :add_ssh_key
+  get '/profile' => 'users#manage_profile'
   resources :logs
   resources :factory_jobs
   resources :uploaded_datasets

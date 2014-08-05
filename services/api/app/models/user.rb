@@ -198,6 +198,19 @@ class User < ArvadosModel
     self.save!
   end
 
+  # update current user profile
+  def profile updated_profile
+    user_profile = self.prefs['profile']
+    user_profile ||= {}
+    updated_profile.each do |entry|
+      if entry[0].starts_with? 'profile_'
+        user_profile[entry[0].partition('_').last] = entry[1]
+      end
+    end
+    self.prefs['profile'] = user_profile
+    self.save!
+  end
+
   protected
 
   def ensure_ownership_path_leads_to_user
