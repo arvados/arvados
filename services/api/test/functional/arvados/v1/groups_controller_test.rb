@@ -112,6 +112,24 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
   end
 
+  [false, true].each do |include_linked|
+    test "list objects in home project, include_linked=#{include_linked}" do
+      authorize_with :active
+      get :contents, {
+        format: :json,
+        id: users(:active).uuid,
+        include_linked: include_linked,
+      }
+      assert_response :success
+      found_uuids = json_response['items'].collect { |i| i['uuid'] }
+      if include_linked
+        assert_includes found_uuids, collections(:empty).uuid, "empty collection did not appear in home project"
+      end
+      assert_includes found_uuids, specimens(:owned_by_active_user).uuid, "specimen did not appear in home project"
+      refute_includes found_uuids, specimens(:in_asubproject).uuid, "specimen appeared unexpectedly in home project"
+    end
+  end
+
   test "user with project read permission can see project collections" do
     authorize_with :project_viewer
     get :contents, {
