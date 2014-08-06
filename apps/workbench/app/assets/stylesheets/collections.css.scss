@@ -18,7 +18,7 @@ ul.collection_files li {
   padding: 1px;  /* Replaced by border for :hover */
 }
 
-.collection_files_row:hover {
+.hover-highlight .collection_files_row:hover {
   background-color: #D9EDF7;
   padding: 0px;
   border: 1px solid #BCE8F1;
@@ -44,6 +44,11 @@ ul.collection_files li {
 
 .collection_files_name i.fa-fw:first-child {
   width: 1.6em;
+}
+
+/* indent less inside preview pane */
+.modal-dialog-preview-pane ul.collection_files {
+    padding-left: 0.5em;
 }
 
 /*

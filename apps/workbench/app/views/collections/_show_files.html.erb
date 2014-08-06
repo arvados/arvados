@@ -1,3 +1,5 @@
+<% if !defined? no_checkboxes then no_checkboxes = false end %>
+
 <% content_for :tab_line_buttons do %>
 <span style="padding-left: 1em">Collection storage status:</span>
 <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
@@ -7,7 +9,8 @@
 <% if file_tree.nil? or file_tree.empty? %>
   <p>This collection is empty.</p>
 <% else %>
-  <ul id="collection_files" class="collection_files">
+  <ul id="collection_files"
+      class="collection_files <%= 'hover-highlight' unless no_checkboxes %>">
   <% dirstack = [file_tree.first.first] %>
   <% file_tree.each_with_index do |(dirname, filename, size), index| %>
     <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
@@ -27,7 +30,7 @@
        <div class="collection_files_row">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
-          <% if !defined? no_checkboxes or !no_checkboxes %>
+          <% unless no_checkboxes %>
           <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
                 :class => 'persistent-selection',
                 :friendly_type => "File",
