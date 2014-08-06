@@ -1,0 +1,65 @@
+{
+    "name": "Tutorial align using bwa mem and SortSam",
+    "components": {
+        "bwa-mem": {
+            "script": "run-command",
+            "script_version": "master",
+            "repository": "arvados",
+            "script_parameters": {
+                "command": [
+                    "bwa",
+                    "mem",
+                    "-t",
+                    "$(node.cores)",
+                    "-R",
+                    "@RG\\tID:group_id\\tPL:illumina\\tSM:sample_id",
+                    "$(glob $(dir $(reference_collection))/*.fasta)",
+                    "$(glob $(dir $(sample))/*_1.fastq)",
+                    "$(glob $(dir $(sample))/*_2.fastq)"
+                ],
+                "reference_collection": {
+                    "required": true,
+                    "dataclass": "Collection"
+                },
+                "sample": {
+                    "required": true,
+                    "dataclass": "Collection"
+                },
+                "stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam"
+            },
+            "runtime_constraints": {
+                "docker_image": "arvados/jobs-java-bwa-samtools"
+            }
+        },
+        "SortSam": {
+            "script": "run-command",
+            "script_version": "847459b3c257aba65df3e0cbf6777f7148542af2",
+            "repository": "arvados",
+            "script_parameters": {
+                "command": [
+                    "java",
+                    "-Xmx4g",
+                    "-Djava.io.tmpdir=$(tmpdir)",
+                    "-jar",
+                    "$(dir $(picard))/SortSam.jar",
+                    "CREATE_INDEX=True",
+                    "SORT_ORDER=coordinate",
+                    "VALIDATION_STRINGENCY=LENIENT",
+                    "INPUT=$(glob $(dir $(input))/*.sam)",
+                    "OUTPUT=$(basename $(glob $(dir $(input))/*.sam)).sort.bam"
+                ],
+                "input": {
+                    "output_of": "bwa-mem"
+                },
+                "picard": {
+                    "required": true,
+                    "dataclass": "Collection",
+                    "default": "88447c464574ad7f79e551070043f9a9+1970"
+                }
+            },
+            "runtime_constraints": {
+                "docker_image": "arvados/jobs-java-bwa-samtools"
+            }
+        }
+    }
+}

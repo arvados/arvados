@@ -8,21 +8,21 @@ To test changes to a script by running a job, the change must be pushed to your 
 
 {% include 'tutorial_expectations' %}
 
-This tutorial uses *@you@* to denote your username.  Replace *@you@* with your user name in all the following examples.
+This tutorial uses @$USER@ to denote your username.  Replace @$USER@ with your user name in all the following examples.
 
 h2. Create a new script
 
 Change to your Git working directory and create a new script in @crunch_scripts/@.
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd <b>you</b>/crunch_scripts</span>
-~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
+<pre><code>~$ <span class="userinput">cd $USER/crunch_scripts</span>
+~/$USER/crunch_scripts$ <span class="userinput">cat &gt;hello-world.py &lt;&lt;EOF
 #!/usr/bin/env python
 
 print "hello world"
 print "this script will fail, and that is expected!"
 EOF</span>
-~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hello-world.py</span>
+~/$USER/crunch_scripts$ <span class="userinput">chmod +x hello-world.py</span>
 </code></pre>
 </notextile>
 
@@ -31,7 +31,7 @@ h2. Using arv-crunch-job to run the job in your VM
 Instead of a Git commit hash, we provide the path to the directory in the "script_version" parameter.  The script specified in "script" is expected to be in the @crunch_scripts/@ subdirectory of the directory specified "script_version".  Although we are running the script locally, the script still requires access to the Arvados API server and Keep storage service. The job will be recorded in the Arvados job history, and visible in Workbench.
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
+<pre><code>~/$USER/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
  "repository":"",
  "script":"hello-world.py",
@@ -45,12 +45,12 @@ EOF</span>
 Your shell should fill in values for @$HOME@ and @$USER@ so that the saved JSON points "script_version" at the directory with your checkout.  Now you can run that job:
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts</span>$ <span class="userinput">arv-crunch-job --job "$(cat ~/the_job)"</span>
+<pre><code>~/$USER/crunch_scripts</span>$ <span class="userinput">arv-crunch-job --job "$(cat ~/the_job)"</span>
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  check slurm allocation
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  node localhost - 1 slots
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  start
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  script hello-world.py
-2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  script_version /home/<b>you</b>/<b>you</b>
+2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  script_version /home/$USER/$USER
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  script_parameters {}
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  runtime_constraints {"max_tasks_per_node":0}
 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827  start level 0
@@ -81,7 +81,7 @@ bc. 2013-12-12_21:36:42 qr1hi-8i9sb-okzukfzkpbrnhst 29827 0 stderr hello world
 The script's output is captured in the log, which is useful for print statement debugging. However, although this script returned a status code of 0 (success), the job failed.  Why?  For a job to complete successfully scripts must explicitly add their output to Keep, and then tell Arvados about it.  Here is a second try:
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;hello-world-fixed.py &lt;&lt;EOF
+<pre><code>~/$USER/crunch_scripts$ <span class="userinput">cat &gt;hello-world-fixed.py &lt;&lt;EOF
 #!/usr/bin/env python
 
 import arvados
@@ -103,8 +103,8 @@ arvados.current_task().set_output(out_collection)
 
 # Done!
 EOF</span>
-~/<b>you</b>/crunch_scripts$ <span class="userinput">chmod +x hello-world-fixed.py</span>
-~/<b>you</b>/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
+~/$USER/crunch_scripts$ <span class="userinput">chmod +x hello-world-fixed.py</span>
+~/$USER/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
  "repository":"",
  "script":"hello-world-fixed.py",
@@ -112,12 +112,12 @@ EOF</span>
  "script_parameters":{}
 }
 EOF</span>
-~/<b>you</b>/crunch_scripts$ <span class="userinput">arv-crunch-job --job "$(cat ~/the_job)"</span>
+~/$USER/crunch_scripts$ <span class="userinput">arv-crunch-job --job "$(cat ~/the_job)"</span>
 2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  check slurm allocation
 2013-12-12_21:56:59 qr1hi-8i9sb-79260ykfew5trzl 31578  node localhost - 1 slots
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  start
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script hello-world-fixed.py
-2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script_version /home/<b>you</b>/<b>you</b>
+2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script_version /home/$USER/$USER
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  script_parameters {}
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  runtime_constraints {"max_tasks_per_node":0}
 2013-12-12_21:57:00 qr1hi-8i9sb-79260ykfew5trzl 31578  start level 0
@@ -143,7 +143,7 @@ WARNING:root:API lookup failed for collection 576c44d762ba241b0a674aa43152b52a+5
 The job succeeded, with output in Keep object @576c44d762ba241b0a674aa43152b52a+53@.  Let's look at our output:
 
 <notextile>
-<pre><code>~/<b>you</b>/crunch_scripts$ <span class="userinput">arv keep get 576c44d762ba241b0a674aa43152b52a+53/hello.txt</span>
+<pre><code>~/$USER/crunch_scripts$ <span class="userinput">arv keep get 576c44d762ba241b0a674aa43152b52a+53/hello.txt</span>
 hello world
 </code></pre>
 </notextile>
@@ -161,4 +161,3 @@ h3. Testing job scripts without SDKs and Keep access
 Read and write data to @/tmp/@ instead of Keep. This only works with the Python SDK.
 
 notextile. <pre><code>~$ <span class="userinput">export KEEP_LOCAL_STORE=/tmp</span></code></pre>
-

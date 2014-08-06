@@ -11,10 +11,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -42,7 +44,7 @@ func TestGetHandler(t *testing.T) {
 
 	// Prepare two test Keep volumes. Our block is stored on the second volume.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Quit()
 
 	vols := KeepVM.Volumes()
 	if err := vols[0].Put(TEST_HASH, TEST_BLOCK); err != nil {
@@ -59,11 +61,11 @@ func TestGetHandler(t *testing.T) {
 	permission_ttl = time.Duration(300) * time.Second
 
 	var (
-		unsigned_locator  = "http://localhost:25107/" + TEST_HASH
+		unsigned_locator  = "/" + TEST_HASH
 		valid_timestamp   = time.Now().Add(permission_ttl)
 		expired_timestamp = time.Now().Add(-time.Hour)
-		signed_locator    = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, valid_timestamp)
-		expired_locator   = "http://localhost:25107/" + SignLocator(TEST_HASH, known_token, expired_timestamp)
+		signed_locator    = "/" + SignLocator(TEST_HASH, known_token, valid_timestamp)
+		expired_locator   = "/" + SignLocator(TEST_HASH, known_token, expired_timestamp)
 	)
 
 	// -----------------
@@ -151,7 +153,7 @@ func TestPutHandler(t *testing.T) {
 
 	// Prepare two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Quit()
 
 	// Set up a REST router for testing the handlers.
 	rest := MakeRESTRouter()
@@ -161,7 +163,7 @@ func TestPutHandler(t *testing.T) {
 
 	// Unauthenticated request, no server key
 	// => OK (unsigned response)
-	unsigned_locator := "http://localhost:25107/" + TEST_HASH
+	unsigned_locator := "/" + TEST_HASH
 	response := IssueRequest(rest,
 		&RequestTester{
 			method:       "PUT",
@@ -245,7 +247,7 @@ func TestIndexHandler(t *testing.T) {
 	// Include multiple blocks on different volumes, and
 	// some metadata files (which should be omitted from index listings)
 	KeepVM = MakeTestVolumeManager(2)
-	defer func() { KeepVM.Quit() }()
+	defer KeepVM.Quit()
 
 	vols := KeepVM.Volumes()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
@@ -260,30 +262,30 @@ func TestIndexHandler(t *testing.T) {
 
 	unauthenticated_req := &RequestTester{
 		method: "GET",
-		uri:    "http://localhost:25107/index",
+		uri:    "/index",
 	}
 	authenticated_req := &RequestTester{
 		method:    "GET",
-		uri:       "http://localhost:25107/index",
+		uri:       "/index",
 		api_token: known_token,
 	}
 	superuser_req := &RequestTester{
 		method:    "GET",
-		uri:       "http://localhost:25107/index",
+		uri:       "/index",
 		api_token: data_manager_token,
 	}
 	unauth_prefix_req := &RequestTester{
 		method: "GET",
-		uri:    "http://localhost:25107/index/" + TEST_HASH[0:3],
+		uri:    "/index/" + TEST_HASH[0:3],
 	}
 	auth_prefix_req := &RequestTester{
 		method:    "GET",
-		uri:       "http://localhost:25107/index/" + TEST_HASH[0:3],
+		uri:       "/index/" + TEST_HASH[0:3],
 		api_token: known_token,
 	}
 	superuser_prefix_req := &RequestTester{
 		method:    "GET",
-		uri:       "http://localhost:25107/index/" + TEST_HASH[0:3],
+		uri:       "/index/" + TEST_HASH[0:3],
 		api_token: data_manager_token,
 	}
 
@@ -408,6 +410,122 @@ func TestIndexHandler(t *testing.T) {
 		t.Errorf(
 			"permissions on, superuser /index/prefix request: expected %s, got:\n%s",
 			expected, response.Body.String())
+	}
+}
+
+// TestDeleteHandler
+//
+// Cases tested:
+//
+//   With no token and with a non-data-manager token:
+//   * Delete existing block
+//     (test for 403 Forbidden, confirm block not deleted)
+//
+//   With data manager token:
+//
+//   * Delete existing block
+//     (test for 200 OK, response counts, confirm block deleted)
+//
+//   * Delete nonexistent block
+//     (test for 200 OK, response counts)
+//
+//   TODO(twp):
+//
+//   * Delete block on read-only and read-write volume
+//     (test for 200 OK, response with copies_deleted=1,
+//     copies_failed=1, confirm block deleted only on r/w volume)
+//
+//   * Delete block on read-only volume only
+//     (test for 200 OK, response with copies_deleted=0, copies_failed=1,
+//     confirm block not deleted)
+//
+func TestDeleteHandler(t *testing.T) {
+	defer teardown()
+
+	// Set up Keep volumes and populate them.
+	// Include multiple blocks on different volumes, and
+	// some metadata files (which should be omitted from index listings)
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Quit()
+
+	vols := KeepVM.Volumes()
+	vols[0].Put(TEST_HASH, TEST_BLOCK)
+
+	// Set up a REST router for testing the handlers.
+	rest := MakeRESTRouter()
+
+	var user_token = "NOT DATA MANAGER TOKEN"
+	data_manager_token = "DATA MANAGER TOKEN"
+
+	unauth_req := &RequestTester{
+		method: "DELETE",
+		uri:    "/" + TEST_HASH,
+	}
+
+	user_req := &RequestTester{
+		method:    "DELETE",
+		uri:       "/" + TEST_HASH,
+		api_token: user_token,
+	}
+
+	superuser_existing_block_req := &RequestTester{
+		method:    "DELETE",
+		uri:       "/" + TEST_HASH,
+		api_token: data_manager_token,
+	}
+
+	superuser_nonexistent_block_req := &RequestTester{
+		method:    "DELETE",
+		uri:       "/" + TEST_HASH_2,
+		api_token: data_manager_token,
+	}
+
+	// Unauthenticated request returns PermissionError.
+	var response *httptest.ResponseRecorder
+	response = IssueRequest(rest, unauth_req)
+	ExpectStatusCode(t,
+		"unauthenticated request",
+		PermissionError.HTTPCode,
+		response)
+
+	// Authenticated non-admin request returns PermissionError.
+	response = IssueRequest(rest, user_req)
+	ExpectStatusCode(t,
+		"authenticated non-admin request",
+		PermissionError.HTTPCode,
+		response)
+
+	// Authenticated admin request for nonexistent block.
+	type deletecounter struct {
+		Deleted int `json:"copies_deleted"`
+		Failed  int `json:"copies_failed"`
+	}
+	var response_dc, expected_dc deletecounter
+
+	response = IssueRequest(rest, superuser_nonexistent_block_req)
+	ExpectStatusCode(t,
+		"data manager request, nonexistent block",
+		http.StatusNotFound,
+		response)
+
+	// Authenticated admin request for existing block.
+	response = IssueRequest(rest, superuser_existing_block_req)
+	ExpectStatusCode(t,
+		"data manager request, existing block",
+		http.StatusOK,
+		response)
+	// Expect response {"copies_deleted":1,"copies_failed":0}
+	expected_dc = deletecounter{1, 0}
+	json.NewDecoder(response.Body).Decode(&response_dc)
+	if response_dc != expected_dc {
+		t.Errorf("superuser_existing_block_req\nexpected: %+v\nreceived: %+v",
+			expected_dc, response_dc)
+	}
+	// Confirm the block has been deleted
+	_, err := vols[0].Get(TEST_HASH)
+	var block_deleted = os.IsNotExist(err)
+	if !block_deleted {
+		t.Error("superuser_existing_block_req: block not deleted")
 	}
 }
 
