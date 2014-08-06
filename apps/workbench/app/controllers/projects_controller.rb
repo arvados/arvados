@@ -3,6 +3,31 @@ class ProjectsController < ApplicationController
     Group
   end
 
+  def find_object_by_uuid
+    if current_user and params[:uuid] == current_user.uuid
+      @object = current_user.dup
+      @object.uuid = current_user.uuid
+      class << @object
+        def name
+          'Home'
+        end
+        def description
+          ''
+        end
+        def attribute_editable? attr, *args
+          case attr
+          when 'description', 'name'
+            false
+          else
+            super
+          end
+        end
+      end
+    else
+      super
+    end
+  end
+
   def index_pane_list
     %w(Projects)
   end

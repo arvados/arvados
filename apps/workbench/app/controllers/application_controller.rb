@@ -12,6 +12,7 @@ class ApplicationController < ActionController::Base
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
+  before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
@@ -349,10 +350,14 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def find_object_by_uuid
+
+  def accept_uuid_as_id_param
     if params[:id] and params[:id].match /\D/
       params[:uuid] = params.delete :id
     end
+  end
+
+  def find_object_by_uuid
     begin
       if not model_class
         @object = nil
