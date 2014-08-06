@@ -12,7 +12,7 @@
                Please fill in those fields before you can accesse Arvados Workbench.</p><br/>
           </div>
           <div>
-            <%= form_tag update_profile_path, {method: 'get', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal', remote: true} do %>
+            <%= form_tag update_profile_path, {method: 'put', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal', remote: true} do %>
               <div class="form-group">
                   <label for="email" class="col-sm-3 control-label"> Email </label>
                   <div class="col-sm-9">

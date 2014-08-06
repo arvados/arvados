@@ -277,17 +277,6 @@ class UsersController < ApplicationController
     end
   end
 
-  def manage_profile
-    @profile_config = Rails.configuration.user_profile_form_fields
-    @this_user = User.limit(1).where(uuid: current_user.uuid).first
-    user_prefs = @this_user.prefs
-    @current_user_profile = user_prefs[:profile] if user_prefs
-
-    respond_to do |f|
-      f.html { render template: 'users/profile' }
-    end
-  end
-
   def update_profile
     user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
 
