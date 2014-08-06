@@ -151,4 +151,16 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     add_share_and_check("groups", new_name)
     modify_share_and_check(new_name)
   end
+
+  test "'share with group' listing does not offer projects" do
+    show_project_using("active")
+    click_on "Sharing"
+    click_on "Share with groups"
+    good_uuid = api_fixture("groups")["private"]["uuid"]
+    assert(page.has_selector?(".selectable[data-object-uuid=\"#{good_uuid}\"]"),
+           "'share with groups' listing missing owned user group")
+    bad_uuid = api_fixture("groups")["asubproject"]["uuid"]
+    assert(page.has_no_selector?(".selectable[data-object-uuid=\"#{bad_uuid}\"]"),
+           "'share with groups' listing includes project")
+  end
 end
