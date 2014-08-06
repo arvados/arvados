@@ -513,22 +513,21 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_profile
-    @profile_config = Rails.configuration.user_profile_form_fields
+    profile_config = Rails.configuration.user_profile_form_fields
 
     if request.method.downcase != 'get' || params[:partials]
       return true
     end
 
-    if current_user && @profile_config
+    if current_user && profile_config
       missing_required_profile = false
 
-      @this_user = User.limit(1).where(uuid: current_user.uuid).first
-      user_prefs = @this_user.prefs
-      @current_user_profile = user_prefs[:profile] if user_prefs
+      user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
+      current_user_profile = user_prefs[:profile] if user_prefs
 
-      @profile_config.andand.each do |entry|
+      profile_config.andand.each do |entry|
         if entry['required']
-          if !@current_user_profile || !@current_user_profile[entry['key'].to_sym]
+          if !current_user_profile || !current_user_profile[entry['key'].to_sym]
             missing_required_profile = true
             break
           end

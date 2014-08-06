@@ -281,8 +281,8 @@ class UsersController < ApplicationController
     user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
 
     profile_keys = []
-    @profile_config = Rails.configuration.user_profile_form_fields
-    @profile_config.andand.each do |entry|
+    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config.andand.each do |entry|
       profile_keys << entry['key']
     end
 
@@ -297,8 +297,8 @@ class UsersController < ApplicationController
 
     # Inform server to send mail if this is the first time profile is being created and notification is configured
     profile_notification_address = Rails.configuration.user_profile_notification_address
-    @current_user_profile = user_prefs[:profile] if user_prefs
-    if !@current_user_profile && profile_notification_address
+    current_user_profile = user_prefs[:profile] if user_prefs
+    if !current_user_profile && profile_notification_address
       updated_profile[:send_profile_notification_email] = profile_notification_address
     end
 
