@@ -418,7 +418,6 @@ class ApplicationController < ActionController::Base
         is_admin: user.is_admin,
         prefs: user.prefs
       }
-      session[:skip_profile] = params[:skip_profile]
 
       if !request.format.json? and request.method.in? ['GET', 'HEAD']
         # Repeat this request with api_token in the (new) session
@@ -516,7 +515,7 @@ class ApplicationController < ActionController::Base
   def check_user_profile
     @profile_config = Rails.configuration.user_profile_form_fields
 
-    if params[:skip_profile] || session[:skip_profile] || request.method.downcase != 'get'
+    if request.method.downcase != 'get' || params[:partials]
       return true
     end
 

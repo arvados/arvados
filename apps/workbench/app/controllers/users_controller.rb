@@ -111,7 +111,7 @@ class UsersController < ApplicationController
                                       owner_uuid: @object.uuid
                                     }
                                   })
-    redirect_to root_url(api_token: resp[:api_token], skip_profile: true)
+    redirect_to root_url(api_token: resp[:api_token])
   end
 
   def home
