@@ -412,7 +412,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if resume_cache is None:
         writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
     else:
-        resume_cache.restart()
         writer = ArvPutCollectionWriter.from_cache(
             resume_cache, reporter, bytes_expected)
 
