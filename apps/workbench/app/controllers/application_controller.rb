@@ -516,7 +516,7 @@ class ApplicationController < ActionController::Base
   def check_user_profile
     @profile_config = Rails.configuration.user_profile_form_fields
 
-    if params[:skip_profile] || session[:skip_profile]
+    if params[:skip_profile] || session[:skip_profile] || request.method.downcase != 'get'
       return true
     end
 
