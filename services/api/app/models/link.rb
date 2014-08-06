@@ -105,7 +105,7 @@ class Link < ArvadosModel
     end
   end
 
-  # A user can give all other users permissions on folders.
+  # A user can give all other users permissions on projects.
   def skip_uuid_read_permission_check
     skipped_attrs = super
     if link_class == "permission" and
