@@ -346,6 +346,7 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
 
     def check_link(self, link, project_uuid, link_name=None):
         self.assertEqual(project_uuid, link.get('tail_uuid'))
+        self.assertEqual(project_uuid, link.get('owner_uuid'))
         self.assertEqual('name', link.get('link_class'))
         if link_name is None:
             self.assertNotIn('name', link)
@@ -376,6 +377,7 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
         else:
             self.fail("no warning emitted about the lack of collection name")
 
+    @unittest.skip("prep_project_link needs an API lookup for this case")
     def test_collection_without_project_defaults_to_home(self):
         link = self.prep_link_from_arguments(['--name', 'test link BBB'])
         self.check_link(link, self.Z_UUID)
@@ -443,10 +445,6 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
 
-    def test_link_without_project_uuid_aborts(self):
-        self.assertRaises(SystemExit, self.call_main_with_args,
-                          ['--name', 'test without project UUID', '/dev/null'])
-
     def test_link_without_collection_aborts(self):
         self.assertRaises(SystemExit, self.call_main_with_args,
                           ['--name', 'test without Collection',
@@ -496,6 +494,9 @@ class ArvPutIntegrationTest(unittest.TestCase):
                   "ARVADOS_API_HOST_INSECURE",
                   "ARVADOS_API_TOKEN"]:
             os.environ[v] = arvados.config.settings()[v]
+
+    def current_user(self):
+        return arvados.api('v1').users().current().execute()
 
     def test_check_real_project_found(self):
         self.assertTrue(arv_put.check_project_exists(self.PROJECT_UUID),
@@ -569,29 +570,38 @@ class ArvPutIntegrationTest(unittest.TestCase):
     def run_and_find_link(self, text, extra_args=[]):
         self.authorize_with('active')
         pipe = subprocess.Popen(
-            [sys.executable, arv_put.__file__,
-             '--project-uuid', self.PROJECT_UUID] + extra_args,
+            [sys.executable, arv_put.__file__] + extra_args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
         link_list = arvados.api('v1', cache=False).links().list(
             filters=[['head_uuid', '=', stdout.strip()],
-                     ['tail_uuid', '=', self.PROJECT_UUID],
                      ['link_class', '=', 'name']]).execute().get('items', [])
         self.assertEqual(1, len(link_list))
         return link_list[0]
 
     def test_put_collection_with_unnamed_project_link(self):
-        link = self.run_and_find_link("Test unnamed collection")
+        link = self.run_and_find_link("Test unnamed collection",
+                                      ['--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
         self.assertRegexpMatches(
             link['name'],
             r'^Saved at .* by {}@'.format(re.escape(username)))
 
+    def test_put_collection_with_name_and_no_project(self):
+        link_name = 'Test Collection Link in home project'
+        link = self.run_and_find_link("Test named collection in home project",
+                                      ['--name', link_name])
+        self.assertEqual(link_name, link['name'])
+        my_user_uuid = self.current_user()['uuid']
+        self.assertEqual(my_user_uuid, link['tail_uuid'])
+        self.assertEqual(my_user_uuid, link['owner_uuid'])
+
     def test_put_collection_with_named_project_link(self):
         link_name = 'Test auto Collection Link'
         link = self.run_and_find_link("Test named collection",
-                                      ['--name', link_name])
+                                      ['--name', link_name,
+                                       '--project-uuid', self.PROJECT_UUID])
         self.assertEqual(link_name, link['name'])
 
 
