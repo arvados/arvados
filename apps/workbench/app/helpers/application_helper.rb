@@ -260,8 +260,13 @@ module ApplicationHelper
           display_value = value_info[:link_name]
         end
       end
+      if (attr == :components) and (subattr.size > 2)
+        chooser_title = "Choose a dataset for #{object.component_input_title(subattr[0], subattr[2])}:"
+      else
+        chooser_title = "Choose a dataset:"
+      end
       modal_path = choose_collections_path \
-      ({ title: 'Choose a dataset:',
+      ({ title: chooser_title,
          filters: [['tail_uuid', '=', object.owner_uuid]].to_json,
          action_name: 'OK',
          action_href: pipeline_instance_path(id: object.uuid),

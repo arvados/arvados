@@ -28,7 +28,7 @@ class PipelineInstance < ArvadosBase
       end
     end
   end
-  
+
   def attribute_editable? attr, *args
     super && (attr.to_sym == :name ||
               (attr.to_sym == :components and
@@ -41,5 +41,12 @@ class PipelineInstance < ArvadosBase
 
   def self.creatable?
     false
+  end
+
+  def component_input_title(component_name, input_name)
+    component = components[component_name]
+    return nil if component.nil?
+    component[:script_parameters].andand[input_name.to_sym].andand[:title] ||
+      "\"#{input_name.to_s}\" parameter for #{component[:script]} script in #{component_name} component"
   end
 end
