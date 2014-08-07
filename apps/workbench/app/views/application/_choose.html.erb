@@ -8,7 +8,7 @@
 
       <div class="modal-body">
         <div class="input-group">
-          <% if params[:by_project] != false %>
+          <% if params[:by_project].to_s != "false" %>
             <div class="input-group-btn" data-filterable-target=".modal.arv-choose .selectable-container">
               <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
                 All projects <span class="caret"></span>

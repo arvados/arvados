@@ -97,6 +97,12 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert(page.has_no_text?(name), "project is already shared with #{name}")
     start_share_count = share_rows.size
     click_on("Share with #{share_type}")
+    within("div.modal-container") do
+      assert_raises(Capybara::ElementNotFound,
+                    "Projects pulldown available from sharing dialog") do
+        click_on "All projects"
+      end
+    end
     find(".selectable", text: name).click
     find(".modal-footer a,button", text: "Add").click
     using_wait_time(Capybara.default_wait_time * 3) do
