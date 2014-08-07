@@ -158,7 +158,9 @@ module ApplicationHelper
       input_type = 'text'
     end
 
+    is_textile = object.textile_attributes.andand.include?(attr)
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
+    rendervalue = is_textile ? raw( RedCloth.new(attrvalue.to_s).to_html ) : attrvalue
 
     ajax_options = {
       "data-pk" => {
@@ -176,7 +178,7 @@ module ApplicationHelper
     @unique_id ||= (Time.now.to_f*1000000).to_i
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
-    span_tag = content_tag 'span', attrvalue.to_s, {
+    span_tag = content_tag 'span', rendervalue, {
       "data-emptytext" => (object.andand.default_name || 'none'),
       "data-placement" => "bottom",
       "data-type" => input_type,
@@ -184,8 +186,9 @@ module ApplicationHelper
       "data-name" => attr,
       "data-object-uuid" => object.uuid,
       "data-toggle" => "manual",
+      "data-value" => attrvalue,
       "id" => span_id,
-      :class => "editable"
+      :class => "editable #{is_textile ? 'editable-textile' : ''}"
     }.merge(htmloptions).merge(ajax_options)
     edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || 'edit') + '"><i class="fa fa-fw fa-pencil"></i></a>')
     if htmloptions[:btnplacement] == :left

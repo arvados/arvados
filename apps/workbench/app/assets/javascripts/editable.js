@@ -55,6 +55,12 @@ $(document).
                     if (response.href) {
                         $(this).editable('option', 'url', response.href);
                     }
+                    if ($(this).attr('data-name')) {
+                        var textileAttr = $(this).attr('data-name') + 'Textile';
+                        if (response[textileAttr]) {
+                            $(this).html(response[textileAttr]);
+                        }
+                    }
                     return;
                 },
                 error: function(response, newValue) {

@@ -303,6 +303,11 @@ class ArvadosBase < ActiveRecord::Base
     self.to_s.underscore.humanize
   end
 
+  # Array of strings that are names of attributes that should be rendered as textile.
+  def textile_attributes
+    []
+  end
+
   def self.creatable?
     current_user
   end

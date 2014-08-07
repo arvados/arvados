@@ -30,4 +30,8 @@ class Group < ArvadosBase
       writable_by and
       writable_by.index(current_user.uuid)
   end
+
+  def textile_attributes
+    [ 'description' ]
+  end
 end
