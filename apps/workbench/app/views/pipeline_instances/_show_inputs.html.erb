@@ -12,8 +12,7 @@
                   not pvalue_spec[:value])) %>
             <% n_inputs += 1 %>
             <label for="<% "#{cname}-#{pname}" %>">
-              <%= pvalue_spec[:title] ||
-                  "\"#{pname.to_s}\" parameter for #{component[:script]} script in #{cname} component" %>
+              <%= @object.component_input_title(cname, pname) %>
             </label>
             <div>
               <p class="form-control-static">

@@ -64,7 +64,7 @@ class Arvados::V1::GroupsController < ApplicationController
      Human, Specimen, Trait].each do |klass|
       @objects = klass.readable_by(*@read_users)
       if klass == Group
-        @objects = @objects.where('group_class in (?)', ['project', 'folder'])
+        @objects = @objects.where(group_class: 'project')
       end
       if opts[:owner_uuid]
         conds = []

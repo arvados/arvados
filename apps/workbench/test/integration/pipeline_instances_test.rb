@@ -57,6 +57,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       click
 
     within('.modal-dialog') do
+      assert(has_text?("Foo/bar pair"),
+             "pipeline input picker missing name of input")
       first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end

@@ -23,6 +23,9 @@ table(table table-bordered table-condensed).
 |dataclass       |string  |One of 'Collection', 'File' [1], 'number', or 'text' |Data type of this parameter.|
 |search_for      |string  |any string                                       |Substring to use as a default search string when choosing inputs.|
 |output_of       |string  |the name of another component in the pipeline    |Specifies that the value of this parameter should be set to the 'output' attribute of the job that corresponds to the specified component.|
+|title           |string  |any string                                       |User friendly title to display when choosing parameter values|
+|description     |string  |any string                                       |Extended text description for describing expected/valid values for the script parameter|
+|link_name       |string  |any string                                       |User friendly name to display for the parameter value instead of the actual parameter value|
 
 The 'output_of' parameter is especially important, as this is how components are actually linked together to form a pipeline.  Component jobs that depend on the output of other components do not run until the parent job completes and has produced output.  If the parent job fails, the entire pipeline fails.
 
@@ -46,7 +49,8 @@ This is a pipeline named "Filter MD5 hash values" with two components, "do_hash"
         "input": {
           "required": true,
           "dataclass": "Collection",
-          "search_for": ".fastq.gz"
+          "search_for": ".fastq.gz",
+          "title":"Please select a fastq file"
         }
       },
     },

@@ -834,8 +834,10 @@ if ($job_has_uuid) {
                           'finished_at' => scalar gmtime)
 }
 
-if ($collated_output)
-{
+if (!$collated_output) {
+  Log(undef, "output undef");
+}
+else {
   eval {
     open(my $orig_manifest, '-|', 'arv-get', $collated_output)
         or die "failed to get collated manifest: $!";
@@ -858,7 +860,8 @@ if ($collated_output)
       'uuid' => md5_hex($stripped_manifest_text),
       'manifest_text' => $orig_manifest_text,
     });
-    $Job->update_attributes('output' => $output->{uuid});
+    Log(undef, "output " . $output->{uuid});
+    $Job->update_attributes('output' => $output->{uuid}) if $job_has_uuid;
     if ($Job->{'output_is_persistent'}) {
       $arv->{'links'}->{'create'}->execute('link' => {
         'tail_kind' => 'arvados#user',
@@ -1244,15 +1247,6 @@ sub collate_output
   }
   waitpid($pid, 0);
 
-  if ($joboutput)
-  {
-    Log (undef, "output $joboutput");
-    $Job->update_attributes('output' => $joboutput) if $job_has_uuid;
-  }
-  else
-  {
-    Log (undef, "output undef");
-  }
   return $joboutput;
 }
 

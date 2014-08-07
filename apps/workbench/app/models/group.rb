@@ -22,7 +22,7 @@ class Group < ArvadosBase
   end
 
   def class_for_display
-    group_class.in?(['folder', 'project']) ? 'Project' : super
+    group_class == 'project' ? 'Project' : super
   end
 
   def editable?
