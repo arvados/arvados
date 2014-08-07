@@ -363,17 +363,23 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
         self.check_stderr_empty()
 
     def test_project_link_without_name(self):
+        username = pwd.getpwuid(os.getuid()).pw_name
         link = self.prep_link_from_arguments(['--project-uuid', self.Z_UUID])
-        self.check_link(link, self.Z_UUID)
-        self.check_stderr_empty()
-
-    def test_collection_without_project_warned(self):
-        self.assertIsNone(self.prep_link_from_arguments([]))
+        self.assertIsNotNone(link.get('name', None))
+        self.assertRegexpMatches(
+            link['name'],
+            r'^Saved at .* by {}@'.format(re.escape(username)))
+        self.check_link(link, self.Z_UUID, link.get('name', None))
         for line in self.stderr:
-            if "--project-uuid or --name" in line:
+            if "No --name specified" in line:
                 break
         else:
-            self.fail("no warning emitted about the lack of project name")
+            self.fail("no warning emitted about the lack of collection name")
+
+    def test_collection_without_project_defaults_to_home(self):
+        link = self.prep_link_from_arguments(['--name', 'test link BBB'])
+        self.check_link(link, self.Z_UUID)
+        self.check_stderr_empty()
 
     def test_no_link_or_warning_with_no_collection(self):
         self.assertIsNone(self.prep_link_from_arguments(['--raw']))
@@ -383,11 +389,6 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
         self.assertRaises(ValueError,
                           self.prep_link_from_arguments,
                           ['--project-uuid', self.Z_UUID], False)
-
-    def test_name_without_project_is_error(self):
-        self.assertRaises(ValueError,
-                          self.prep_link_from_arguments,
-                          ['--name', 'test'])
 
     def test_link_without_collection_is_error(self):
         self.assertRaises(ValueError,
@@ -579,7 +580,7 @@ class ArvPutIntegrationTest(unittest.TestCase):
         username = pwd.getpwuid(os.getuid()).pw_name
         self.assertRegexpMatches(
             link['name'],
-            r'^Collection saved by {}@'.format(re.escape(username)))
+            r'^Saved at .* by {}@'.format(re.escape(username)))
 
     def test_put_collection_with_named_project_link(self):
         link_name = 'Test auto Collection Link'
