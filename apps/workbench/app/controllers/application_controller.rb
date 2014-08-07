@@ -515,7 +515,9 @@ class ApplicationController < ActionController::Base
   def check_user_profile
     profile_config = Rails.configuration.user_profile_form_fields
 
-    if request.method.downcase != 'get' || params[:partials]
+    if request.method.downcase != 'get' || params[:partial] ||
+       params[:tab_pane] || params[:action_method] ||
+       params[:action] == 'setup_popup'
       return true
     end
 
@@ -525,7 +527,7 @@ class ApplicationController < ActionController::Base
       user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
       current_user_profile = user_prefs[:profile] if user_prefs
 
-      profile_config.andand.each do |entry|
+      profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
         if entry['required']
           if !current_user_profile || !current_user_profile[entry['key'].to_sym]
             missing_required_profile = true

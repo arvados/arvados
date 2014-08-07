@@ -278,8 +278,6 @@ class UsersController < ApplicationController
   end
 
   def update_profile
-    user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
-
     profile_keys = []
     profile_config = Rails.configuration.user_profile_form_fields
     profile_config.andand.each do |entry|
@@ -295,14 +293,18 @@ class UsersController < ApplicationController
       end
     end
 
-    # Inform server to send mail if this is the first time profile is being created and notification is configured
-    profile_notification_address = Rails.configuration.user_profile_notification_address
-    current_user_profile = user_prefs[:profile] if user_prefs
-    if !current_user_profile && profile_notification_address
-      updated_profile[:send_profile_notification_email] = profile_notification_address
+    if updated_profile.size > 0
+      # Inform server to send mail if this is the first time profile is being created and notification is configured
+      profile_notification_address = Rails.configuration.user_profile_notification_address
+      user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
+      current_user_profile = user_prefs[:profile] if user_prefs
+      if !current_user_profile && profile_notification_address
+        updated_profile[:send_profile_notification_email] = profile_notification_address
+      end
+
+      current_user.update_profile updated_profile
     end
 
-    current_user.update_profile updated_profile
     respond_to do |format|
       format.js {render inline: "location.reload();"}
     end

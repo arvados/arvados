@@ -1,9 +1,11 @@
-<% 
+<%
     profile_config = Rails.configuration.user_profile_form_fields
     this_user = User.limit(1).where(uuid: current_user.uuid).first
     user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
     current_user_profile = user_prefs[:profile] if user_prefs
+    show_save_button = false
 %>
+
 <div>
     <div class="panel panel-default">
         <div class="panel-heading">
@@ -15,7 +17,7 @@
           <div>
             <% profile_message = 'You can manage your profile using this page. Any feilds in red are required and missing.
                   Please fill in those fields before you can accesse Arvados Workbench.'
-                profile_config.andand.each do |entry| 
+                  profile_config.kind_of?(Array) && profile_config.andand.each do |entry| 
                   if entry['message']
                     profile_message = entry['message']
                     break
@@ -50,9 +52,10 @@
                   </div>
               </div>
 
-              <% profile_config.andand.each do |entry| %>
+              <% profile_config.kind_of?(Array) && profile_config.andand.each do |entry| %>
                 <% if entry['key'] %>
                   <%
+                      show_save_button = true
                       label = entry['required'] ? '* ' : ''
                       label += entry['form_field_title']
                       value = current_user_profile[entry['key'].to_sym] if current_user_profile
@@ -79,11 +82,13 @@
                 <% end %>
               <% end %>
 
-              <div class="form-group">
-                <div class="col-sm-offset-3 col-sm-9">
-                  <button type="submit" class="btn btn-primary">Save profile</button>
+              <% if show_save_button %>
+                <div class="form-group">
+                  <div class="col-sm-offset-3 col-sm-9">
+                    <button type="submit" class="btn btn-primary">Save profile</button>
+                  </div>
                 </div>
-              </div>
+              <% end %>
             <% end %>
           </div>
         </div>
