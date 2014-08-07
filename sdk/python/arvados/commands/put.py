@@ -40,11 +40,13 @@ stream per filesystem directory that contains files.
 """)
 
 upload_opts.add_argument('--project-uuid', metavar='UUID', help="""
-When a Collection is made, make a Link to save it under the specified project.
+Store the collection in the specified project, instead of your Home
+project.
 """)
 
 upload_opts.add_argument('--name', help="""
-When a Collection is linked to a project, use the specified name.
+Save the collection with the specified name, rather than the default
+generic name "Saved at {time} by {username}@{host}".
 """)
 
 _group = upload_opts.add_mutually_exclusive_group()
