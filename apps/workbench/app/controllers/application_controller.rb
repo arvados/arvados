@@ -608,7 +608,7 @@ class ApplicationController < ActionController::Base
   helper_method :all_projects
   def all_projects
     @all_projects ||= Group.
-      filter([['group_class','in',['project','folder']]]).order('name')
+      filter([['group_class','=','project']]).order('name')
   end
 
   helper_method :my_projects
@@ -719,7 +719,7 @@ class ApplicationController < ActionController::Base
     crumbs = []
     current = @name_link || @object
     while current
-      if current.is_a?(Group) and current.group_class.in?(['project','folder'])
+      if current.is_a?(Group) and current.group_class == 'project'
         crumbs.prepend current
       end
       if current.is_a? Link
@@ -733,7 +733,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :current_project_uuid
   def current_project_uuid
-    if @object.is_a? Group and @object.group_class.in?(['project','folder'])
+    if @object.is_a? Group and @object.group_class == 'project'
       @object.uuid
     elsif @name_link.andand.tail_uuid
       @name_link.tail_uuid

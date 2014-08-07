@@ -16,11 +16,11 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "get list of projects" do
     authorize_with :active
-    get :index, filters: [['group_class', 'in', ['project', 'folder']]], format: :json
+    get :index, filters: [['group_class', '=', 'project']], format: :json
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
-      assert_includes ['folder', 'project'], group['group_class']
+      assert_equal 'project', group['group_class']
       group_uuids << group['uuid']
     end
     assert_includes group_uuids, groups(:aproject).uuid

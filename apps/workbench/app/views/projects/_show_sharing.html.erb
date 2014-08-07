@@ -13,6 +13,10 @@
      perms_json << {value: link_name, text: link_desc}
    end
    perms_json = perms_json.to_json
+   choose_filters = {
+     "groups" => [["group_class", "=", nil]],
+   }
+   choose_filters.default = []
    owner_icon = fa_icon_class_for_uuid(@object.owner_uuid)
    if owner_icon == "fa-users"
      owner_icon = "fa-folder"
@@ -30,6 +34,7 @@
       preview_pane: false,
       multiple: true,
       limit: 10000,
+      filters: choose_filters[share_class].to_json,
       action_method: 'post',
       action_href: share_with_project_path,
       action_name: 'Add',
