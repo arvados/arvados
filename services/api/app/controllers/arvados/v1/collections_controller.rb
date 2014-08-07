@@ -149,7 +149,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     logger.debug "visiting #{uuid}"
 
-    if m  
+    if m
       # uuid is a collection
       Collection.readable_by(current_user).where(uuid: uuid).each do |c|
         visited[uuid] = c.as_api_response
@@ -166,7 +166,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       Job.readable_by(current_user).where(log: uuid).each do |job|
         generate_provenance_edges(visited, job.uuid)
       end
-      
+
     else
       # uuid is something else
       rsc = ArvadosModel::resource_class_for_uuid uuid
@@ -208,7 +208,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     logger.debug "visiting #{uuid}"
 
-    if m  
+    if m
       # uuid is a collection
       Collection.readable_by(current_user).where(uuid: uuid).each do |c|
         visited[uuid] = c.as_api_response
@@ -226,7 +226,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       Job.readable_by(current_user).where(["jobs.script_parameters like ?", "%#{uuid}%"]).each do |job|
         generate_used_by_edges(visited, job.uuid)
       end
-      
+
     else
       # uuid is something else
       rsc = ArvadosModel::resource_class_for_uuid uuid
