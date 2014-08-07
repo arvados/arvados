@@ -45,16 +45,9 @@ class Arvados::V1::CollectionsController < ApplicationController
     end
 
     # Remove any permission signatures from the manifest.
-    resource_attrs[:manifest_text]
-      .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
-      word.strip!
-      loc = Locator.parse(word)
-      if loc
-        " " + loc.without_signature.to_s
-      else
-        " " + word
-      end
-    }
+    munge_manifest_locators(resource_attrs[:manifest_text]) do |loc|
+      loc.without_signature.to_s
+    end
 
     # Save the collection with the stripped manifest.
     act_as_system_user do
@@ -97,16 +90,9 @@ class Arvados::V1::CollectionsController < ApplicationController
         api_token: current_api_client_authorization.api_token,
         ttl: Rails.configuration.blob_signing_ttl,
       }
-      @object[:manifest_text]
-        .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
-        word.strip!
-        loc = Locator.parse(word)
-        if loc
-          " " + Blob.sign_locator(word, signing_opts)
-        else
-          " " + word
-        end
-      }
+      munge_manifest_locators(@object[:manifest_text]) do |loc|
+        Blob.sign_locator(loc.to_s, signing_opts)
+      end
     end
     render json: @object.as_api_response(:with_data)
   end
@@ -258,6 +244,18 @@ class Arvados::V1::CollectionsController < ApplicationController
     render json: visited
   end
 
+  def self.munge_manifest_locators(manifest)
+    # Given a manifest text and a block, yield each locator,
+    # and replace it with whatever the block returns.
+    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
+      if loc = Locator.parse(word.strip)
+        " " + yield(loc)
+      else
+        " " + word
+      end
+    end
+  end
+
   protected
   def find_object_by_uuid
     super
@@ -276,5 +274,9 @@ class Arvados::V1::CollectionsController < ApplicationController
         @object = @objects.first
       end
     end
+  end
+
+  def munge_manifest_locators(manifest, &block)
+    self.class.munge_manifest_locators(manifest, &block)
   end
 end
