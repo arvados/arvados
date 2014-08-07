@@ -29,9 +29,7 @@ class Collection < ArvadosModel
   end
 
   def assign_uuid
-    if self.manifest_text.nil? and self.uuid.nil?
-      return super
-    elsif not self.manifest_text
+    if not self.manifest_text
       errors.add :manifest_text, 'not supplied'
       return false
     end
