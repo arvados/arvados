@@ -466,18 +466,24 @@ class ArvPutIntegrationTest(unittest.TestCase):
 
         # Use the blob_signing_key from the Rails "test" configuration
         # to provision the Keep server.
-        with open(os.path.join(os.path.dirname(__file__),
-                               run_test_server.ARV_API_SERVER_DIR,
-                               "config",
-                               "application.yml")) as f:
-            rails_config = yaml.load(f.read())
-        try:
-            config_blob_signing_key = rails_config["test"]["blob_signing_key"]
-        except KeyError:
-            config_blob_signing_key = rails_config["common"]["blob_signing_key"]
+        config_blob_signing_key = None
+        for config_file in ['application.yml', 'application.default.yml']:
+            with open(os.path.join(os.path.dirname(__file__),
+                                   run_test_server.ARV_API_SERVER_DIR,
+                                   "config",
+                                   config_file)) as f:
+                rails_config = yaml.load(f.read())
+                for config_section in ['test', 'common']:
+                    try:
+                        config_blob_signing_key = rails_config[config_section]["blob_signing_key"]
+                        break
+                    except KeyError, AttributeError:
+                        pass
+            if config_blob_signing_key != None:
+                break
         run_test_server.run()
         run_test_server.run_keep(blob_signing_key=config_blob_signing_key,
-                                 enforce_permissions=True)
+                                 enforce_permissions=(config_blob_signing_key != None))
 
     @classmethod
     def tearDownClass(cls):
