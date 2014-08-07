@@ -97,14 +97,20 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert(page.has_no_text?(name), "project is already shared with #{name}")
     start_share_count = share_rows.size
     click_on("Share with #{share_type}")
-    within("div.modal-container") do
+    within(".modal-container") do
+      # Order is important here: we should find something that appears in the
+      # modal before we make any assertions about what's not in the modal.
+      # Otherwise, the not-included assertions might falsely pass because
+      # the modal hasn't loaded yet.
+      find(".selectable", text: name).click
+      assert(has_no_selector?(".modal-dialog-preview-pane"),
+             "preview pane available in sharing dialog")
       assert_raises(Capybara::ElementNotFound,
                     "Projects pulldown available from sharing dialog") do
         click_on "All projects"
       end
+      click_on "Add"
     end
-    find(".selectable", text: name).click
-    find(".modal-footer a,button", text: "Add").click
     using_wait_time(Capybara.default_wait_time * 3) do
       assert(page.has_link?(name),
              "new share was not added to sharing table")
