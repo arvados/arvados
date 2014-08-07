@@ -260,12 +260,18 @@ module ApplicationHelper
           display_value = value_info[:link_name]
         end
       end
+      if (attr == :components) and (subattr.size > 2)
+        chooser_title = "Choose a dataset for #{object.component_input_title(subattr[0], subattr[2])}:"
+      else
+        chooser_title = "Choose a dataset:"
+      end
       modal_path = choose_collections_path \
-      ({ title: 'Choose a dataset:',
+      ({ title: chooser_title,
          filters: [['tail_uuid', '=', object.owner_uuid]].to_json,
          action_name: 'OK',
          action_href: pipeline_instance_path(id: object.uuid),
          action_method: 'patch',
+         preconfigured_search_str: "#{value_info[:search_for]}",
          action_data: {
            merge: true,
            selection_param: selection_param,
@@ -426,6 +432,15 @@ module ApplicationHelper
       object.group_class ? 'fa-folder' : 'fa-users'
     else
       RESOURCE_CLASS_ICONS.fetch(class_name, default)
+    end
+  end
+
+  def chooser_preview_url_for object
+    case object.class.to_s
+    when 'Collection'
+      polymorphic_path(object, tab_pane: 'chooser_preview')
+    else
+      nil
     end
   end
 end

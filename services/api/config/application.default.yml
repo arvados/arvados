@@ -40,10 +40,10 @@ test:
   active_support.deprecation: :stderr
   active_record.mass_assignment_sanitizer: :strict
   uuid_prefix: zzzzz
+  secret_token: <%= rand(2**512).to_s(36) %>
+  blob_signing_key: <%= rand(2**512).to_s(36) %>
 
 common:
-  secret_token: ~
-  blob_signing_key: ~
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
 
   # Git repositories must be readable by api server, or you won't be
@@ -94,6 +94,15 @@ common:
     - 192.168.1.1
   compute_node_ec2_tag_enable: false
 
+  # The version below is suitable for AWS.
+  # To use it, copy it to your application.yml, uncomment, and change <%# to <%=
+  # compute_node_nameservers: <%#
+  #   require 'net/http'
+  #   ['local', 'public'].collect do |iface|
+  #     Net::HTTP.get(URI("http://169.254.169.254/latest/meta-data/#{iface}-ipv4")).match(/^[\d\.]+$/)[0]
+  #   end << '172.16.0.23'
+  # %>
+
   accept_api_token: {}
 
   new_users_are_active: false
@@ -139,6 +148,12 @@ common:
   # address of the dedicated websocket server:
   #websocket_address: wss://127.0.0.1:3333/websocket
 
+  # blob_signing_key is a string of alphanumeric characters used to
+  # generate permission signatures for Keep locators. It must be
+  # identical to the permission key given to Keep. IMPORTANT: This is
+  # a site secret. It should be at least 50 characters.
+  blob_signing_key: ~
+
   # Amount of time (in seconds) for which a blob permission signature
   # remains valid.  Default: 2 weeks (1209600 seconds)
   blob_signing_ttl: 1209600
@@ -153,3 +168,8 @@ common:
   # do not turn this on if your users expect to keep data private from
   # one another!
   permit_create_collection_with_unsigned_manifest: false
+
+  # secret_token is a string of alphanumeric characters used by Rails
+  # to sign session tokens. IMPORTANT: This is a site secret. It
+  # should be at least 50 characters.
+  secret_token: ~

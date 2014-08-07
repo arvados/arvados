@@ -33,6 +33,9 @@ ArvadosWorkbench::Application.routes.draw do
     post 'unsetup', :on => :member
     get 'setup_popup', :on => :member
   end
+  get '/manage_account' => 'users#manage_account'
+  get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup
+  get "/add_ssh_key" => 'users#add_ssh_key', :as => :add_ssh_key
   resources :logs
   resources :factory_jobs
   resources :uploaded_datasets
@@ -63,11 +66,16 @@ ArvadosWorkbench::Application.routes.draw do
   resources :projects do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
     match 'remove_items', on: :member, via: :delete, action: :remove_items
+    get 'move_items', on: :member, action: :move_items
     get 'choose', on: :collection
     post 'share_with', on: :member
   end
+  resources :search do
+    get 'choose', :on => :collection
+  end
 
   post 'actions' => 'actions#post'
+  get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'
 
   root :to => 'projects#index'

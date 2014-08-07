@@ -7,48 +7,48 @@
       </div>
 
       <div class="modal-body">
-        <nav class="navbar navbar-default breadcrumbs" role="navigation">
-          <ul class="nav navbar-nav navbar-left">
-            <li class="dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="projects-menu">
-              Projects
-              <span class="caret"></span>
-            </a>
-            <ul class="dropdown-menu" role="menu">
-            <%= render partial: "projects_tree_menu", locals: {
-                  :project_link_to => Proc.new do |pnode, &block|
-                    link_to "#", {"class" => "chooser-show-project", "data-project-uuid" => pnode[:object].uuid }, &block
-                   end,
-                  :top_button => Proc.new do %>
-                    <% link_to "#", {"class" => "chooser-show-project btn btn-xs btn-default pull-right" } do %>
-                      All <%= controller.model_class.class_for_display.pluralize.downcase %>
-                    <% end %>
+        <div class="input-group">
+          <% if params[:by_project].to_s != "false" %>
+            <div class="input-group-btn" data-filterable-target=".modal.arv-choose .selectable-container">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                All projects <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" role="menu">
+                <li>
+                  <%= link_to '#', class: 'chooser-show-project' do %>
+                    All projects
                   <% end %>
-            <% } %>
-            </ul>
-            </li>
-            <li class="nav-separator">
-              <i class="fa fa-lg fa-angle-double-right"></i>
-            </li>
-            <li><p class="navbar-text" id="chooser-breadcrumb">All <%= controller.model_class.class_for_display.pluralize.downcase %></span></li>
-          </ul>
-          <div class="navbar-form navbar-right">
-            <input type="text" class="form-control filterable-control" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
-          </div>
-        </nav>
+                </li>
+                <li class="divider" />
+                <%= render partial: "projects_tree_menu", locals: {
+                      :project_link_to => Proc.new do |pnode, &block|
+                        link_to "#", {
+                          class: "chooser-show-project",
+                          data: {'project_uuid' => pnode[:object].uuid},
+                        }, &block
+                      end,
+                      :top_button => nil
+                    } %>
+              </ul>
+            </div>
+          <% end %>
+          <input type="text" value="<%=params[:preconfigured_search_str] || ''%>" class="form-control filterable-control focus-on-display" placeholder="Search" data-filterable-target=".modal.arv-choose .selectable-container"/>
+        </div>
+        <div style="height: 1em" />
 
-        <% preview_pane = (params[:preview_pane] != "false")
+        <% preview_pane = (params[:preview_pane].to_s != "false")
            pane_col_class = preview_pane ? "col-sm-6" : "" %>
         <div class="row" style="height: 20em">
-          <div class="<%= pane_col_class %> container-fluid arv-filterable-list selectable-container"
-               style="height: 100%; overflow-y: scroll"
-               data-infinite-scroller="#choose-scroll"
-               id="choose-scroll"
-               data-infinite-content-href="<%= @next_page_href %>">
-            <%= render partial: 'choose_rows', locals: {multiple: multiple} %>
-          </div>
+	  <div class="<%= pane_col_class %> container arv-filterable-list selectable-container <%= 'multiple' if multiple %>"
+	       style="height: 100%; overflow-y: scroll"
+	       data-infinite-scroller="#choose-scroll"
+	       id="choose-scroll"
+	       data-infinite-content-href="<%= next_page_href partial: true %>"
+	       data-infinite-content-href0="<%= url_for partial: true %>">
+	    <%= render partial: 'choose_rows' %>
+	  </div>
           <% if preview_pane %>
-          <div class="<%= pane_col_class %> modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
+          <div class="col-sm-6 modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
           </div>
           <% end %>
         </div>

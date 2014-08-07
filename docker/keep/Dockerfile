@@ -10,5 +10,12 @@ RUN /usr/bin/apt-get update
 
 RUN /usr/bin/apt-get install keep
 
+ADD generated/run-keep /usr/local/bin/
+RUN chmod +x /usr/local/bin/run-keep
+
+ADD generated/keep_signing_secret /etc/
+
+RUN /bin/chmod a+x /usr/local/bin/run-keep
+
 # Start keep
-CMD ["/usr/bin/keep"]
+CMD ["/usr/local/bin/run-keep"]

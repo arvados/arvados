@@ -398,20 +398,20 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     bytes_expected = expected_bytes_for(args.paths)
 
     resume_cache = None
-    try:
-        resume_cache = ResumeCache(ResumeCache.make_path(args))
-    except (IOError, OSError, ValueError):
-        pass  # Couldn't open cache directory/file.  Continue without it.
-    except ResumeCacheConflict:
-        stdout.write(
-            "arv-put: Another process is already uploading this data.\n")
-        sys.exit(1)
+    if args.resume:
+        try:
+            resume_cache = ResumeCache(ResumeCache.make_path(args))
+        except (IOError, OSError, ValueError):
+            pass  # Couldn't open cache directory/file.  Continue without it.
+        except ResumeCacheConflict:
+            print >>stderr, "\n".join([
+                "arv-put: Another process is already uploading this data.",
+                "         Use --no-resume if this is really what you want."])
+            sys.exit(1)
 
     if resume_cache is None:
         writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
     else:
-        if not args.resume:
-            resume_cache.restart()
         writer = ArvPutCollectionWriter.from_cache(
             resume_cache, reporter, bytes_expected)
 

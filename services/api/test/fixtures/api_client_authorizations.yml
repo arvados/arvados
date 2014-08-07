@@ -156,3 +156,9 @@ anonymous:
   api_token: 4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi
   expires_at: 2038-01-01 00:00:00
   scopes: ["GET /"]
+
+job_reader:
+  api_client: untrusted
+  user: job_reader
+  api_token: e99512cdc0f3415c2428b9758f33bdfb07bc3561b00e86e7e6
+  expires_at: 2038-01-01 00:00:00

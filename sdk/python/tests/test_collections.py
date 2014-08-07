@@ -436,6 +436,26 @@ class ArvadosCollectionsTest(ArvadosKeepLocalStoreTestCase):
         self.assertEqual(sr.readfrom(25, 5), content[25:30])
         self.assertEqual(sr.readfrom(30, 5), '')
 
+    def test_file_reader(self):
+        keepblocks = {'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10': 'abcdefghij',
+                      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15': 'klmnopqrstuvwxy',
+                      'cccccccccccccccccccccccccccccccc+5': 'z0123'}
+        mk = self.MockKeep(keepblocks)
+
+        sr = arvados.StreamReader([".", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15", "cccccccccccccccccccccccccccccccc+5", "0:10:foo", "15:10:foo"], mk)
+
+        content = 'abcdefghijpqrstuvwxy'
+
+        f = sr.files()["foo"]
+
+        f.seek(0)
+        self.assertEqual(f.read(20), content[0:20])
+
+        f.seek(0)
+        self.assertEqual(f.read(6), content[0:6])
+        self.assertEqual(f.read(6), content[6:12])
+        self.assertEqual(f.read(6), content[12:18])
+
     def test_extract_file(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md6sum.txt

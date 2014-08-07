@@ -169,7 +169,7 @@ module CurrentApiClient
           $empty_collection = Collection.
             where(uuid: empty_collection_uuid).
             first_or_create!(manifest_text: '')
-          Link.where(tail_uuid: anonymous_group_uuid,
+          Link.where(tail_uuid: anonymous_group.uuid,
                      head_uuid: empty_collection_uuid,
                      link_class: 'permission',
                      name: 'can_read').first_or_create!

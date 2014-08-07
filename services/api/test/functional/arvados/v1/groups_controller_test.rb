@@ -16,11 +16,11 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "get list of projects" do
     authorize_with :active
-    get :index, filters: [['group_class', 'in', ['project', 'folder']]], format: :json
+    get :index, filters: [['group_class', '=', 'project']], format: :json
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
-      assert_includes ['folder', 'project'], group['group_class']
+      assert_equal 'project', group['group_class']
       group_uuids << group['uuid']
     end
     assert_includes group_uuids, groups(:aproject).uuid
@@ -61,6 +61,13 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     kinds = json_response['items'].collect { |i| i['kind'] }.uniq
     expect_kinds = %w'arvados#group arvados#specimen arvados#pipelineTemplate arvados#job'
     assert_equal expect_kinds, (expect_kinds & kinds)
+
+    json_response['items'].each do |i|
+      if i['kind'] == 'arvados#group'
+        assert(i['group_class'] == 'project',
+               "group#contents returned a non-project group")
+      end
+    end
   end
 
   test 'get group-owned objects' do
@@ -81,6 +88,59 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       include_linked: true,
     }
     check_project_contents_response
+  end
+
+  [false, true].each do |include_linked|
+    test "list objects across projects, include_linked=#{include_linked}" do
+      authorize_with :project_viewer
+      get :contents, {
+        format: :json,
+        include_linked: include_linked,
+        filters: [['uuid', 'is_a', 'arvados#specimen']]
+      }
+      assert_response :success
+      found_uuids = json_response['items'].collect { |i| i['uuid'] }
+      [[:in_aproject, true],
+       [:in_asubproject, true],
+       [:owned_by_private_group, false]].each do |specimen_fixture, should_find|
+        if should_find
+          assert_includes found_uuids, specimens(specimen_fixture).uuid, "did not find specimen fixture '#{specimen_fixture}'"
+        else
+          refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
+        end
+      end
+    end
+  end
+
+  test "user with project read permission can see project collections" do
+    authorize_with :project_viewer
+    get :contents, {
+      id: groups(:asubproject).uuid,
+      format: :json,
+      include_linked: true,
+    }
+    ids = json_response['items'].map { |item| item["uuid"] }
+    assert_includes ids, collections(:baz_file).uuid
+  end
+
+  test 'list objects across multiple projects' do
+    authorize_with :project_viewer
+    get :contents, {
+      format: :json,
+      include_linked: false,
+      filters: [['uuid', 'is_a', 'arvados#specimen']]
+    }
+    assert_response :success
+    found_uuids = json_response['items'].collect { |i| i['uuid'] }
+    [[:in_aproject, true],
+     [:in_asubproject, true],
+     [:owned_by_private_group, false]].each do |specimen_fixture, should_find|
+      if should_find
+        assert_includes found_uuids, specimens(specimen_fixture).uuid, "did not find specimen fixture '#{specimen_fixture}'"
+      else
+        refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
+      end
+    end
   end
 
   # Even though the project_viewer tests go through other controllers,

@@ -1,11 +1,12 @@
 $(document).
-    on('paste keyup change', 'input[type=text].filterable-control', function() {
+    on('paste keyup input', 'input[type=text].filterable-control', function() {
         var q = new RegExp($(this).val(), 'i');
         $($(this).attr('data-filterable-target')).
             addClass('filterable-container').
             data('q', q).
             trigger('refresh');
     }).on('refresh', '.filterable-container', function() {
+        var $container = $(this);
         var q = $(this).data('q');
         var filters = $(this).data('filters');
         $('.filterable', this).hide().filter(function() {
@@ -26,6 +27,16 @@ $(document).
             }
             return pass;
         }).show();
+
+        // Show/hide each section heading depending on whether any
+        // content rows are visible in that section.
+        $('.row[data-section-heading]', this).each(function(){
+            $(this).toggle($('.row.filterable[data-section-name="' +
+                             $(this).attr('data-section-name') +
+                             '"]:visible').length > 0);
+        });
+
+        // Load more content if the last result is showing.
         $('.infinite-scroller').add(window).trigger('scroll');
     }).on('change', 'select.filterable-control', function() {
         var val = $(this).val();
@@ -38,5 +49,5 @@ $(document).
             data('filters', filters).
             trigger('refresh');
     }).on('ajax:complete', function() {
-        $('.filterable-control').trigger('change');
+        $('.filterable-control').trigger('input');
     });
