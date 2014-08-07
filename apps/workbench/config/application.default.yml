@@ -80,13 +80,20 @@ common:
   user_profile_form_fields: false
 
   # Below is a sample setting of user_profile_form_fields.
-  # Use "message" to configure a message you want to display at the top of the profile page.
-  # This sample configures two fields as represented by the attribute "key". For these fields,
+  # This configuration parameter should be set to either false (to disable) or
+  # to an array as shown below. This parameter supports two types of fields,
+  # an optional "message" and an optional list of input fields.
+  # Use "message" to configure the message you want to display at the top of the
+  # profile page. If this is not provided, a default message will be displayed.
+  # Configure the list of input fields to be displayed in the profile page
+  # using the attribute "key" for each of the input fields.
+  # This sample shows configuration with message and two input fields.
+  # For each of these input fields:
   #   You can specify "type" as "text" or "select".
-  #   Specify "options" when using the type "select".
+  #   List the "options" to be displayed for each of the "select" menu.
   #   Set "required" as "true" for any of the fields to make them required.
-  #   If any of the required fields are missing in the user's profile, the user will be
-  #   redirected to the profile page before they can access any Workbench features.
+  # If any of the required fields are missing in the user's profile, the user will be
+  # redirected to the profile page before they can access any Workbench features.
   #user_profile_form_fields:
   #  - message: Welcome to Curoverse. Any fields in red are required and missing. Please fill in those fields before you can access Arvados Workbench.
   #  - key: organization
