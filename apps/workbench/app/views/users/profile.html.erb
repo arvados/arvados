@@ -4,8 +4,8 @@
     user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
     current_user_profile = user_prefs[:profile] if user_prefs
 %>
-  <div>
-      <div class="panel panel-default">
+<div>
+    <div class="panel panel-default">
         <div class="panel-heading">
           <h4 class="panel-title">
             Profile
@@ -13,9 +13,15 @@
         </div>
         <div class="panel-body">
           <div>
-            <p>You can manage your profile using this page.
-               Any feilds in <font style="color:red">red</font> are required and missing.
-               Please fill in those fields before you can accesse Arvados Workbench.</p><br/>
+            <% profile_message = 'You can manage your profile using this page. Any feilds in red are required and missing.
+                  Please fill in those fields before you can accesse Arvados Workbench.'
+                profile_config.andand.each do |entry| 
+                  if entry['message']
+                    profile_message = entry['message']
+                    break
+                  end
+                end %>
+            <p> <%=profile_message%> </p><br/>
           </div>
           <div>
             <%= form_tag update_profile_path, {method: 'put', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal', remote: true} do %>
@@ -45,30 +51,32 @@
               </div>
 
               <% profile_config.andand.each do |entry| %>
-                <%
-                    label = entry['required'] ? '* ' : ''
-                    label += entry['form_field_title']
-                    value = current_user_profile[entry['key'].to_sym] if current_user_profile
-                %>
-                <div class="form-group">
-                  <label for="<%=entry['key']%>"
-                         class="col-sm-3 control-label"
-                         style=<%="color:red" if entry['required']&&!value%>> <%=label%>
-                  </label>
-                  <% if entry['type'] == 'select' %>
-                    <div class="col-sm-9">
-                      <select class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>">
-                        <% entry['options'].each do |option| %>
-                          <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
-                        <% end %>
-                      </select>
-                    </div>
-                  <% else %>
-                    <div class="col-sm-9">
-                      <input type="text" class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
-                    </div>
-                  <% end %>
-                </div>
+                <% if entry['key'] %>
+                  <%
+                      label = entry['required'] ? '* ' : ''
+                      label += entry['form_field_title']
+                      value = current_user_profile[entry['key'].to_sym] if current_user_profile
+                  %>
+                  <div class="form-group">
+                    <label for="<%=entry['key']%>"
+                           class="col-sm-3 control-label"
+                           style=<%="color:red" if entry['required']&&!value%>> <%=label%>
+                    </label>
+                    <% if entry['type'] == 'select' %>
+                      <div class="col-sm-9">
+                        <select class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>">
+                          <% entry['options'].each do |option| %>
+                            <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
+                          <% end %>
+                        </select>
+                      </div>
+                    <% else %>
+                      <div class="col-sm-9">
+                        <input type="text" class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
               <% end %>
 
               <div class="form-group">
@@ -79,5 +87,5 @@
             <% end %>
           </div>
         </div>
-      </div>
+    </div>
 </div>
