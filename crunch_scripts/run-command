@@ -35,7 +35,7 @@ outdir = os.getcwd()
 taskp = None
 jobp = arvados.current_job()['script_parameters']
 if len(arvados.current_task()['parameters']) > 0:
-    p = arvados.current_task()['parameters']
+    taskp = arvados.current_task()['parameters']
 
 links = []
 
@@ -70,8 +70,6 @@ subst.default_subs["job.srcdir"] = sub_jobsrc
 subst.default_subs["node.cores"] = sub_cores
 subst.default_subs["job.uuid"] = sub_jobid
 subst.default_subs["task.uuid"] = sub_taskid
-
-rcode = 1
 
 def machine_progress(bytes_written, bytes_expected):
     return "run-command: wrote {} total {}\n".format(
@@ -125,13 +123,14 @@ def get_items(p, value):
 
 stdoutname = None
 stdoutfile = None
+rcode = 1
 
 try:
     if "task.foreach" in jobp:
         if arvados.current_task()['sequence'] == 0:
             var = jobp["task.foreach"]
             items = get_items(jobp, jobp[var])
-            logging.info("run-command: parallelizing on %s with items %s" % (var, items))
+            logging.info("parallelizing on %s with items %s" % (var, items))
             if items != None:
                 for i in items:
                     params = copy.copy(jobp)
@@ -148,21 +147,20 @@ try:
             else:
                 sys.exit(1)
     else:
-        p = jobp
+        taskp = jobp
 
-    cmd = expand_list(p, p["command"])
+    cmd = expand_list(taskp, taskp["command"])
 
-    if "save.stdout" in p:
-        stdoutname = subst.do_substitution(p, p["save.stdout"])
+    if "save.stdout" in taskp:
+        stdoutname = subst.do_substitution(taskp, taskp["save.stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    logging.info("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+    logging.info("{}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
 except Exception as e:
-    logging.info("run-command: caught exception:")
-    traceback.print_exc(file=sys.stdout)
-    logging.info("run-command: task parameters was:")
-    pprint.plogging.info(p)
+    logging.exception("caught exception")
+    logging.error("task parameters was:")
+    logging.error(pprint.pformat(taskp))
     sys.exit(1)
 
 try:
@@ -178,14 +176,13 @@ try:
     rcode = sp.wait()
 
     if sig.sig != None:
-        logging.warning("run-command: terminating on signal %s" % sig.sig)
+        logging.critical("terminating on signal %s" % sig.sig)
         sys.exit(2)
     else:
-        logging.info("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+        logging.info("completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
 except Exception as e:
-    logging.error("run-command: caught exception:")
-    traceback.print_exc(file=sys.stdout)
+    logging.exception("caught exception")
 
 # restore default signal handlers.
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -195,11 +192,11 @@ signal.signal(signal.SIGQUIT, signal.SIG_DFL)
 for l in links:
     os.unlink(l)
 
-logging.info("run-command: the following output files will be saved to keep:")
+logging.info("the following output files will be saved to keep:")
 
-subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"])
+subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"], stdout=sys.stderr)
 
-logging.info("run-command: start writing output to keep")
+logging.info("start writing output to keep")
 
 done = False
 resume_cache = put.ResumeCache(os.path.join(arvados.current_task().tmpdir, "upload-output-checkpoint"))
@@ -219,11 +216,10 @@ while not done:
                                              }).execute()
         done = True
     except KeyboardInterrupt:
-        logging.error("run-command: terminating on signal 2")
+        logging.critical("terminating on signal 2")
         sys.exit(2)
     except Exception as e:
-        logging.error("run-command: caught exception:")
-        traceback.print_exc(file=sys.stdout)
+        logging.exception("caught exception:")
         time.sleep(5)
 
 sys.exit(rcode)
