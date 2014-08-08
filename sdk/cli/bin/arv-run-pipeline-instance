@@ -244,7 +244,7 @@ class PipelineInstance
   def self.create(attributes)
     result = $client.execute(:api_method => $arvados.pipeline_instances.create,
                              :body_object => {
-                               :pipeline_instance => attributes.to_json
+                               :pipeline_instance => attributes
                              },
                              :authenticated => false,
                              :headers => {
@@ -263,7 +263,7 @@ class PipelineInstance
                                :uuid => @pi[:uuid]
                              },
                              :body_object => {
-                               :pipeline_instance => @attributes_to_update.to_json
+                               :pipeline_instance => @attributes_to_update
                              },
                              :authenticated => false,
                              :headers => {
