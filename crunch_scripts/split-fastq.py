@@ -88,7 +88,7 @@ def splitfastq(p):
             if count % 10000 == 0:
                 print >>sys.stderr, "Record %s at %s" % (count, p[i]["end"])
 
-prog = re.compile(r'(.*?)(_12)?\.fastq(\.gz)?$')
+prog = re.compile(r'(.*?)(_[12])?\.fastq(\.gz)?$')
 
 # Look for fastq files
 for s in inp.all_streams():
