@@ -52,7 +52,6 @@ Server::Application.routes.draw do
         post 'activate', on: :member
         post 'setup', on: :collection
         post 'unsetup', on: :member
-        post 'profile', on: :member
       end
       resources :virtual_machines do
         get 'logins', on: :member

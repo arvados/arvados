@@ -26,7 +26,8 @@
             <p> <%=profile_message%> </p><br/>
           </div>
           <div>
-            <%= form_tag update_profile_path, {method: 'put', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal', remote: true} do %>
+            <%= form_tag "/users/#{current_user.uuid}", {method: 'patch', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal'} do %>
+              <%= hidden_field_tag :return_to, request.url %>
               <div class="form-group">
                   <label for="email" class="col-sm-3 control-label"> Email </label>
                   <div class="col-sm-9">
@@ -67,7 +68,7 @@
                     </label>
                     <% if entry['type'] == 'select' %>
                       <div class="col-sm-9">
-                        <select class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>">
+                        <select class="form-control" id="user[prefs][:profile][:<%=entry['key']%>]" name="user[prefs][:profile][:<%=entry['key']%>]">
                           <% entry['options'].each do |option| %>
                             <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
                           <% end %>
@@ -75,7 +76,7 @@
                       </div>
                     <% else %>
                       <div class="col-sm-9">
-                        <input type="text" class="form-control" id="<%=entry['key']%>" name="<%=entry['key']%>" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
+                        <input type="text" class="form-control" id="user[prefs][:profile][:<%=entry['key']%>]" name="user[prefs][:profile][:<%=entry['key']%>]" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
                       </div>
                     <% end %>
                   </div>

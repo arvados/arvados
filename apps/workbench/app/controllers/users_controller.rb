@@ -277,39 +277,6 @@ class UsersController < ApplicationController
     end
   end
 
-  def update_profile
-    profile_keys = []
-    profile_config = Rails.configuration.user_profile_form_fields
-    profile_config.andand.each do |entry|
-      profile_keys << entry['key']
-    end
-
-    updated_profile = {}
-    params.andand.each do |param|
-      if profile_keys.include? param[0]
-        if param[1].andand.size>0
-          updated_profile['profile_'+param[0]] = param[1]
-        end
-      end
-    end
-
-    if updated_profile.size > 0
-      # Inform server to send mail if this is the first time profile is being created and notification is configured
-      profile_notification_address = Rails.configuration.user_profile_notification_address
-      user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
-      current_user_profile = user_prefs[:profile] if user_prefs
-      if !current_user_profile && profile_notification_address
-        updated_profile[:send_profile_notification_email] = profile_notification_address
-      end
-
-      current_user.update_profile updated_profile
-    end
-
-    respond_to do |format|
-      format.js {render inline: "location.reload();"}
-    end
-  end
-
   protected
 
   def find_current_links user
