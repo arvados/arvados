@@ -539,6 +539,20 @@ active_user_permission_to_docker_image_collection:
   head_uuid: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   properties: {}
 
+active_user_permission_to_unlinked_docker_image_collection:
+  uuid: zzzzz-o0j2j-g5i0sa8cr3b1psf
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_read
+  head_uuid: 9ae44d5792468c58bcf85ce7353c7027+124
+  properties: {}
+
 docker_image_collection_hash:
   uuid: zzzzz-o0j2j-dockercollhasha
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz

@@ -103,6 +103,13 @@ class JobTest < ActiveSupport::TestCase
     assert(job.invalid?, "non-Docker Collection constraint was valid")
   end
 
+  test "can create Job with Docker image Collection without Docker links" do
+    image_uuid = collections(:unlinked_docker_image).uuid
+    job = Job.new job_attrs(runtime_constraints: {"docker_image" => image_uuid})
+    assert(job.valid?, "Job created with unlinked Docker image was invalid")
+    assert_equal(image_uuid, job.docker_image_locator)
+  end
+
   test "can't create Job with Docker image locator" do
     begin
       job = Job.new job_attrs(docker_image_locator: BAD_COLLECTION)

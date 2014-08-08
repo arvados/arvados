@@ -159,12 +159,17 @@ class Collection < ArvadosModel
       joins("JOIN collections ON links.head_uuid = collections.uuid").
       order("links.created_at DESC")
 
-    # If the search term is a Collection locator with an associated
-    # Docker image hash link, return that Collection.
-    coll_matches = base_search.
-      where(link_class: "docker_image_hash", collections: {uuid: search_term})
-    if match = coll_matches.first
-      return [match.head_uuid]
+    # If the search term is a Collection locator that contains one file
+    # that looks like a Docker image, return it.
+    if loc = Locator.parse(search_term)
+      loc.strip_hints!
+      coll_match = readable_by(*readers).where(uuid: loc.to_s).first
+      if coll_match.andand.files.andand.size == 1
+        dirname, basename = coll_match.files.first[0, 2]
+        if (dirname == ".") and (basename =~ /^[0-9A-Fa-f]{64}\.tar$/)
+          return [loc.to_s]
+        end
+      end
     end
 
     # Find Collections with matching Docker image repository+tag pairs.

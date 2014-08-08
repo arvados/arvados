@@ -1467,16 +1467,15 @@ sub must_lock_now
 }
 
 sub find_docker_hash {
-  # Given a Keep locator, search for a matching link to find the Docker hash
-  # of the stored image.
+  # Given a Keep locator, return the hash of the image inside it.
   my $locator = shift;
-  my $links_result = $arv->{links}->{list}->execute(
-    filters => [["head_uuid", "=", $locator],
-                ["link_class", "=", "docker_image_hash"]],
-    limit => 1);
   my $docker_hash;
-  foreach my $link (@{$links_result->{items}}) {
-    $docker_hash = lc($link->{name});
+  if (my $image = $arv->{collections}->{get}->execute(uuid => $locator)) {
+    my @file_list = @{$image->{files}};
+    if ((scalar(@file_list) == 1) &&
+        ($file_list[0][1] =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
+      $docker_hash = $1;
+    }
   }
   return $docker_hash;
 }

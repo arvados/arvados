@@ -11,7 +11,7 @@
 #   hint-content ::= [A-Za-z0-9@_-]+
 #
 # Individual hints may have their own required format:
-# 
+#
 #   sign-hint      ::= "+A" <40 lowercase hex digits> "@" sign-timestamp
 #   sign-timestamp ::= <8 lowercase hex digits>
 
@@ -64,6 +64,15 @@ class Locator
   # Returns an unsigned Locator.
   def without_signature
     Locator.new(@hash, @size, @hints.reject { |o| o.start_with?("A") })
+  end
+
+  def strip_hints
+    Locator.new(@hash, @size, [])
+  end
+
+  def strip_hints!
+    @hints = []
+    self
   end
 
   def hash
