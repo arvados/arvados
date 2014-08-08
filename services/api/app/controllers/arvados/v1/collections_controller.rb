@@ -84,17 +84,13 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def show
-    if current_api_client_authorization
-      signing_opts = {
-        key: Rails.configuration.blob_signing_key,
-        api_token: current_api_client_authorization.api_token,
-        ttl: Rails.configuration.blob_signing_ttl,
-      }
-      munge_manifest_locators(@object[:manifest_text]) do |loc|
-        Blob.sign_locator(loc.to_s, signing_opts)
-      end
-    end
-    render json: @object.as_api_response(:with_data)
+    sign_manifests(@object[:manifest_text])
+    super
+  end
+
+  def index
+    sign_manifests(*@objects.map { |c| c[:manifest_text] })
+    super
   end
 
   def collection_uuid(uuid)
@@ -259,15 +255,18 @@ class Arvados::V1::CollectionsController < ApplicationController
   protected
 
   def find_objects_for_index
+    # Omit manifest_text from index results unless expressly selected.
     # If the user has selected fields that derive from manifest_text, we'll
-    # need to fetch that, even though we don't return it in the results.
-    orig_select = @select.andand.dup
-    if @select and (@select & ["data_size", "files"]).any? and
+    # need to fetch it during search, then hide it from the results.
+    @select ||= model_class.api_accessible_attributes(:user).
+      map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
+    render_select = @select.dup
+    if (@select & ["data_size", "files"]).any? and
         (not @select.include?("manifest_text"))
       @select << "manifest_text"
     end
     super
-    @select = orig_select
+    @select = render_select
   end
 
   def find_object_by_uuid
@@ -291,5 +290,20 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def munge_manifest_locators(manifest, &block)
     self.class.munge_manifest_locators(manifest, &block)
+  end
+
+  def sign_manifests(*manifests)
+    if current_api_client_authorization
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: current_api_client_authorization.api_token,
+        ttl: Rails.configuration.blob_signing_ttl,
+      }
+      manifests.each do |text|
+        munge_manifest_locators(text) do |loc|
+          Blob.sign_locator(loc.to_s, signing_opts)
+        end
+      end
+    end
   end
 end

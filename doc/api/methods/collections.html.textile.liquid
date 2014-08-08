@@ -53,6 +53,9 @@ table(table table-bordered table-condensed).
 |limit|integer (default 100)|Maximum number of collections to return.|query||
 |order|string|Order in which to return matching collections.|query||
 |filters|array|Conditions for filtering collections.|query||
+|select|array|Data fields to return in the result list.|query|@["uuid", "manifest_text"]@|
+
+N.B.: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in results by default.  If you need it, pass a @select@ parameter that includes @manifest_text@.
 
 h2. update
 

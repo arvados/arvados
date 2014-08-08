@@ -21,7 +21,9 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     authorize_with :active
     get :index
     assert_response :success
-    assert_not_nil assigns(:objects)
+    assert(assigns(:objects).andand.any?, "no Collections returned in index")
+    refute(json_response["items"].any? { |c| c.has_key?("manifest_text") },
+           "basic Collections index included manifest_text")
   end
 
   test "can get non-database fields via index select" do
@@ -44,6 +46,26 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
       assert_equal(coll["data_size"],
                    coll["files"].inject(0) { |size, fspec| size + fspec.last },
                    "mismatch between data size and file list")
+    end
+  end
+
+  test "index with manifest_text selected returns signed locators" do
+    columns = %w(uuid owner_uuid data_size files manifest_text)
+    authorize_with :active
+    get :index, select: columns
+    assert_response :success
+    assert(assigns(:objects).andand.any?,
+           "no Collections returned for index with columns selected")
+    json_response["items"].each do |coll|
+      assert_equal(columns, columns & coll.keys,
+                   "Collections index did not respect selected columns")
+      loc_regexp = / [[:xdigit:]]{32}\+\d+\S+/
+      pos = 0
+      while match = loc_regexp.match(coll["manifest_text"], pos)
+        assert_match(/\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/, match.to_s,
+                     "Locator in manifest_text was not signed")
+        pos = match.end(0)
+      end
     end
   end
 

@@ -6,9 +6,6 @@ class Collection < ArvadosModel
   api_accessible :user, extend: :common do |t|
     t.add :data_size
     t.add :files
-  end
-
-  api_accessible :with_data, extend: :user do |t|
     t.add :manifest_text
   end
 
