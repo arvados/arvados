@@ -679,3 +679,17 @@ baz_collection_name_in_asubproject:
   # Collection is added to a Project.
   name: "ea10d51bcf88862dbcc36eb292017dfd+45 added sometime"
   properties: {}
+
+empty_collection_name_in_active_user_home_project:
+  uuid: zzzzz-o0j2j-i3n6m552x6tmoi4
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: name
+  name: Empty collection
+  head_uuid: d41d8cd98f00b204e9800998ecf8427e+0
+  properties: {}
+  updated_at: 2014-08-06 22:11:51.242010312 Z

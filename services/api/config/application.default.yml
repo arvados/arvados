@@ -41,7 +41,7 @@ test:
   active_record.mass_assignment_sanitizer: :strict
   uuid_prefix: zzzzz
   secret_token: <%= rand(2**512).to_s(36) %>
-  blob_signing_key: <%= rand(2**512).to_s(36) %>
+  blob_signing_key: zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc
 
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>

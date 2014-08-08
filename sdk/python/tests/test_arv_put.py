@@ -346,6 +346,7 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
 
     def check_link(self, link, project_uuid, link_name=None):
         self.assertEqual(project_uuid, link.get('tail_uuid'))
+        self.assertEqual(project_uuid, link.get('owner_uuid'))
         self.assertEqual('name', link.get('link_class'))
         if link_name is None:
             self.assertNotIn('name', link)
@@ -363,17 +364,24 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
         self.check_stderr_empty()
 
     def test_project_link_without_name(self):
+        username = pwd.getpwuid(os.getuid()).pw_name
         link = self.prep_link_from_arguments(['--project-uuid', self.Z_UUID])
-        self.check_link(link, self.Z_UUID)
-        self.check_stderr_empty()
-
-    def test_collection_without_project_warned(self):
-        self.assertIsNone(self.prep_link_from_arguments([]))
+        self.assertIsNotNone(link.get('name', None))
+        self.assertRegexpMatches(
+            link['name'],
+            r'^Saved at .* by {}@'.format(re.escape(username)))
+        self.check_link(link, self.Z_UUID, link.get('name', None))
         for line in self.stderr:
-            if "--project-uuid or --name" in line:
+            if "No --name specified" in line:
                 break
         else:
-            self.fail("no warning emitted about the lack of project name")
+            self.fail("no warning emitted about the lack of collection name")
+
+    @unittest.skip("prep_project_link needs an API lookup for this case")
+    def test_collection_without_project_defaults_to_home(self):
+        link = self.prep_link_from_arguments(['--name', 'test link BBB'])
+        self.check_link(link, self.Z_UUID)
+        self.check_stderr_empty()
 
     def test_no_link_or_warning_with_no_collection(self):
         self.assertIsNone(self.prep_link_from_arguments(['--raw']))
@@ -383,11 +391,6 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
         self.assertRaises(ValueError,
                           self.prep_link_from_arguments,
                           ['--project-uuid', self.Z_UUID], False)
-
-    def test_name_without_project_is_error(self):
-        self.assertRaises(ValueError,
-                          self.prep_link_from_arguments,
-                          ['--name', 'test'])
 
     def test_link_without_collection_is_error(self):
         self.assertRaises(ValueError,
@@ -442,10 +445,6 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
 
-    def test_link_without_project_uuid_aborts(self):
-        self.assertRaises(SystemExit, self.call_main_with_args,
-                          ['--name', 'test without project UUID', '/dev/null'])
-
     def test_link_without_collection_aborts(self):
         self.assertRaises(SystemExit, self.call_main_with_args,
                           ['--name', 'test without Collection',
@@ -465,18 +464,24 @@ class ArvPutIntegrationTest(unittest.TestCase):
 
         # Use the blob_signing_key from the Rails "test" configuration
         # to provision the Keep server.
-        with open(os.path.join(os.path.dirname(__file__),
-                               run_test_server.ARV_API_SERVER_DIR,
-                               "config",
-                               "application.yml")) as f:
-            rails_config = yaml.load(f.read())
-        try:
-            config_blob_signing_key = rails_config["test"]["blob_signing_key"]
-        except KeyError:
-            config_blob_signing_key = rails_config["common"]["blob_signing_key"]
+        config_blob_signing_key = None
+        for config_file in ['application.yml', 'application.default.yml']:
+            with open(os.path.join(os.path.dirname(__file__),
+                                   run_test_server.ARV_API_SERVER_DIR,
+                                   "config",
+                                   config_file)) as f:
+                rails_config = yaml.load(f.read())
+                for config_section in ['test', 'common']:
+                    try:
+                        config_blob_signing_key = rails_config[config_section]["blob_signing_key"]
+                        break
+                    except KeyError, AttributeError:
+                        pass
+            if config_blob_signing_key != None:
+                break
         run_test_server.run()
         run_test_server.run_keep(blob_signing_key=config_blob_signing_key,
-                                 enforce_permissions=True)
+                                 enforce_permissions=(config_blob_signing_key != None))
 
     @classmethod
     def tearDownClass(cls):
@@ -489,6 +494,9 @@ class ArvPutIntegrationTest(unittest.TestCase):
                   "ARVADOS_API_HOST_INSECURE",
                   "ARVADOS_API_TOKEN"]:
             os.environ[v] = arvados.config.settings()[v]
+
+    def current_user(self):
+        return arvados.api('v1').users().current().execute()
 
     def test_check_real_project_found(self):
         self.assertTrue(arv_put.check_project_exists(self.PROJECT_UUID),
@@ -562,29 +570,38 @@ class ArvPutIntegrationTest(unittest.TestCase):
     def run_and_find_link(self, text, extra_args=[]):
         self.authorize_with('active')
         pipe = subprocess.Popen(
-            [sys.executable, arv_put.__file__,
-             '--project-uuid', self.PROJECT_UUID] + extra_args,
+            [sys.executable, arv_put.__file__] + extra_args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
         link_list = arvados.api('v1', cache=False).links().list(
             filters=[['head_uuid', '=', stdout.strip()],
-                     ['tail_uuid', '=', self.PROJECT_UUID],
                      ['link_class', '=', 'name']]).execute().get('items', [])
         self.assertEqual(1, len(link_list))
         return link_list[0]
 
     def test_put_collection_with_unnamed_project_link(self):
-        link = self.run_and_find_link("Test unnamed collection")
+        link = self.run_and_find_link("Test unnamed collection",
+                                      ['--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
         self.assertRegexpMatches(
             link['name'],
-            r'^Collection saved by {}@'.format(re.escape(username)))
+            r'^Saved at .* by {}@'.format(re.escape(username)))
+
+    def test_put_collection_with_name_and_no_project(self):
+        link_name = 'Test Collection Link in home project'
+        link = self.run_and_find_link("Test named collection in home project",
+                                      ['--name', link_name])
+        self.assertEqual(link_name, link['name'])
+        my_user_uuid = self.current_user()['uuid']
+        self.assertEqual(my_user_uuid, link['tail_uuid'])
+        self.assertEqual(my_user_uuid, link['owner_uuid'])
 
     def test_put_collection_with_named_project_link(self):
         link_name = 'Test auto Collection Link'
         link = self.run_and_find_link("Test named collection",
-                                      ['--name', link_name])
+                                      ['--name', link_name,
+                                       '--project-uuid', self.PROJECT_UUID])
         self.assertEqual(link_name, link['name'])
 
 
