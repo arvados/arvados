@@ -508,6 +508,15 @@ func TestDeleteHandler(t *testing.T) {
 		http.StatusNotFound,
 		response)
 
+	// Authenticated admin request for existing block while never_delete is set.
+	never_delete = true
+	response = IssueRequest(rest, superuser_existing_block_req)
+	ExpectStatusCode(t,
+		"authenticated request, existing block, method disabled",
+		MethodDisabledError.HTTPCode,
+		response)
+	never_delete = false
+
 	// Authenticated admin request for existing block.
 	response = IssueRequest(rest, superuser_existing_block_req)
 	ExpectStatusCode(t,

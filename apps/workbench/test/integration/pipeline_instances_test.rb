@@ -44,6 +44,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     within('.modal-dialog') do
       find('.btn', text: 'Add').click
     end
+    wait_for_ajax
 
     click_link 'Jobs and pipelines'
     find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
@@ -57,6 +58,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       click
 
     within('.modal-dialog') do
+      assert(has_text?("Foo/bar pair"),
+             "pipeline input picker missing name of input")
       first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end

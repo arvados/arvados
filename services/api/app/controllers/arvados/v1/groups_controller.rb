@@ -13,9 +13,20 @@ class Arvados::V1::GroupsController < ApplicationController
   end
 
   def render_404_if_no_object
-    if params[:action] == 'contents' and !params[:uuid]
-      # OK!
-      @object = nil
+    if params[:action] == 'contents'
+      if !params[:uuid]
+        # OK!
+        @object = nil
+        true
+      elsif @object
+        # Project group
+        true
+      elsif (@object = User.where(uuid: params[:uuid]).first)
+        # "Home" pseudo-project
+        true
+      else
+        super
+      end
     else
       super
     end

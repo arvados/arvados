@@ -53,6 +53,10 @@ var permission_ttl time.Duration
 // Initialized by the --data-manager-token-file flag.
 var data_manager_token string
 
+// never_delete can be used to prevent the DELETE handler from
+// actually deleting anything.
+var never_delete = false
+
 // ==========
 // Error types.
 //
@@ -62,16 +66,17 @@ type KeepError struct {
 }
 
 var (
-	BadRequestError  = &KeepError{400, "Bad Request"}
-	CollisionError   = &KeepError{500, "Collision"}
-	RequestHashError = &KeepError{422, "Hash mismatch in request"}
-	PermissionError  = &KeepError{403, "Forbidden"}
-	DiskHashError    = &KeepError{500, "Hash mismatch in stored data"}
-	ExpiredError     = &KeepError{401, "Expired permission signature"}
-	NotFoundError    = &KeepError{404, "Not Found"}
-	GenericError     = &KeepError{500, "Fail"}
-	FullError        = &KeepError{503, "Full"}
-	TooLongError     = &KeepError{504, "Timeout"}
+	BadRequestError     = &KeepError{400, "Bad Request"}
+	CollisionError      = &KeepError{500, "Collision"}
+	RequestHashError    = &KeepError{422, "Hash mismatch in request"}
+	PermissionError     = &KeepError{403, "Forbidden"}
+	DiskHashError       = &KeepError{500, "Hash mismatch in stored data"}
+	ExpiredError        = &KeepError{401, "Expired permission signature"}
+	NotFoundError       = &KeepError{404, "Not Found"}
+	GenericError        = &KeepError{500, "Fail"}
+	FullError           = &KeepError{503, "Full"}
+	TooLongError        = &KeepError{504, "Timeout"}
+	MethodDisabledError = &KeepError{405, "Method disabled"}
 )
 
 func (e *KeepError) Error() string {
@@ -132,6 +137,12 @@ func main() {
 		"Interface on which to listen for requests, in the format "+
 			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
 			"to listen on all network interfaces.")
+	flag.BoolVar(
+		&never_delete,
+		"never-delete",
+		false,
+		"If set, nothing will be deleted. HTTP 405 will be returned "+
+			"for valid DELETE requests.")
 	flag.StringVar(
 		&permission_key_file,
 		"permission-key-file",

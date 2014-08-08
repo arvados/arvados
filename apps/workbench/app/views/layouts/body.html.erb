@@ -147,12 +147,9 @@
         <ul class="nav navbar-nav navbar-left">
           <li>
             <a href="/">
-              <i class="fa fa-lg fa-fw fa-home"></i>
-              Home
+              <i class="fa fa-lg fa-fw fa-dashboard"></i>
+              Dashboard
             </a>
-          </li>
-          <li class="nav-separator">
-            <i class="fa fa-lg fa-angle-double-right"></i>
           </li>
           <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="projects-menu">
@@ -175,13 +172,23 @@
             <% } %>
             </ul>
           </li>
-          <% project_breadcrumbs.each do |p| %>
+          <% if @name_link or @object %>
             <li class="nav-separator">
               <i class="fa fa-lg fa-angle-double-right"></i>
             </li>
             <li>
-              <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
+              <%= link_to project_path(current_user.uuid) do %>
+                Home
+              <% end %>
             </li>
+            <% project_breadcrumbs.each do |p| %>
+              <li class="nav-separator">
+                <i class="fa fa-lg fa-angle-double-right"></i>
+              </li>
+              <li>
+                <%= link_to(p.name, project_path(p.uuid), data: {object_uuid: p.uuid, name: 'name'}) %>
+              </li>
+            <% end %>
           <% end %>
         </ul>
       </nav>

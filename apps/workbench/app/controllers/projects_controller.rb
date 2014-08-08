@@ -3,6 +3,31 @@ class ProjectsController < ApplicationController
     Group
   end
 
+  def find_object_by_uuid
+    if current_user and params[:uuid] == current_user.uuid
+      @object = current_user.dup
+      @object.uuid = current_user.uuid
+      class << @object
+        def name
+          'Home'
+        end
+        def description
+          ''
+        end
+        def attribute_editable? attr, *args
+          case attr
+          when 'description', 'name'
+            false
+          else
+            super
+          end
+        end
+      end
+    else
+      super
+    end
+  end
+
   def index_pane_list
     %w(Projects)
   end
@@ -118,13 +143,15 @@ class ProjectsController < ApplicationController
     @groups = Group.limit(10000).
       select(["uuid", "name", "description"])
 
-    begin
-      @share_links = Link.permissions_for(@object)
-      @user_is_manager = true
-    rescue ArvadosApiClient::AccessForbiddenException,
-           ArvadosApiClient::NotFoundException
-      @share_links = []
-      @user_is_manager = false
+    @user_is_manager = false
+    @share_links = []
+    if @object.uuid != current_user.uuid
+      begin
+        @share_links = Link.permissions_for(@object)
+        @user_is_manager = true
+      rescue ArvadosApiClient::AccessForbiddenException,
+        ArvadosApiClient::NotFoundException
+      end
     end
 
     @objects_and_names = get_objects_and_names @objects

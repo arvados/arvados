@@ -499,16 +499,17 @@ if (!$have_slurm)
 
 # If this job requires a Docker image, install that.
 my $docker_bin = "/usr/bin/docker.io";
-my ($docker_locator, $docker_hash);
+my ($docker_locator, $docker_stream, $docker_hash);
 if ($docker_locator = $Job->{docker_image_locator}) {
-  $docker_hash = find_docker_hash($docker_locator);
+  ($docker_stream, $docker_hash) = find_docker_image($docker_locator);
   if (!$docker_hash)
   {
     croak("No Docker image hash found from locator $docker_locator");
   }
+  $docker_stream =~ s/^\.//;
   my $docker_install_script = qq{
 if ! $docker_bin images -q --no-trunc | grep -qxF \Q$docker_hash\E; then
-    arv-get \Q$docker_locator/$docker_hash.tar\E | $docker_bin load
+    arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
 fi
 };
   my $docker_pid = fork();
@@ -834,8 +835,10 @@ if ($job_has_uuid) {
                           'finished_at' => scalar gmtime)
 }
 
-if ($collated_output)
-{
+if (!$collated_output) {
+  Log(undef, "output undef");
+}
+else {
   eval {
     open(my $orig_manifest, '-|', 'arv-get', $collated_output)
         or die "failed to get collated manifest: $!";
@@ -858,7 +861,8 @@ if ($collated_output)
       'uuid' => md5_hex($stripped_manifest_text),
       'manifest_text' => $orig_manifest_text,
     });
-    $Job->update_attributes('output' => $output->{uuid});
+    Log(undef, "output " . $output->{uuid});
+    $Job->update_attributes('output' => $output->{uuid}) if $job_has_uuid;
     if ($Job->{'output_is_persistent'}) {
       $arv->{'links'}->{'create'}->execute('link' => {
         'tail_kind' => 'arvados#user',
@@ -1244,15 +1248,6 @@ sub collate_output
   }
   waitpid($pid, 0);
 
-  if ($joboutput)
-  {
-    Log (undef, "output $joboutput");
-    $Job->update_attributes('output' => $joboutput) if $job_has_uuid;
-  }
-  else
-  {
-    Log (undef, "output undef");
-  }
   return $joboutput;
 }
 
@@ -1472,19 +1467,19 @@ sub must_lock_now
   }
 }
 
-sub find_docker_hash {
-  # Given a Keep locator, search for a matching link to find the Docker hash
-  # of the stored image.
+sub find_docker_image {
+  # Given a Keep locator, check to see if it contains a Docker image.
+  # If so, return its stream name and Docker hash.
+  # If not, return undef for both values.
   my $locator = shift;
-  my $links_result = $arv->{links}->{list}->execute(
-    filters => [["head_uuid", "=", $locator],
-                ["link_class", "=", "docker_image_hash"]],
-    limit => 1);
-  my $docker_hash;
-  foreach my $link (@{$links_result->{items}}) {
-    $docker_hash = lc($link->{name});
+  if (my $image = $arv->{collections}->{get}->execute(uuid => $locator)) {
+    my @file_list = @{$image->{files}};
+    if ((scalar(@file_list) == 1) &&
+        ($file_list[0][1] =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
+      return ($file_list[0][0], $1);
+    }
   }
-  return $docker_hash;
+  return (undef, undef);
 }
 
 __DATA__
