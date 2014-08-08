@@ -108,10 +108,7 @@ for s in inp.all_streams():
                 if name_pieces.group(2) == "_1":
                     p = [{}, {}]
                     p[0]["reader"] = s.files()[name_pieces.group(0)]
-                    if name_pieces.group(2) != None:
-                        p[1]["reader"] = s.files()[name_pieces.group(1) + "_2.fastq" + name_pieces.group(2)]
-                    else:
-                        p[1]["reader"] = s.files()[name_pieces.group(1) + "_2.fastq"]
+                    p[1]["reader"] = s.files()[name_pieces.group(1) + "_2.fastq" + (name_pieces.group(3) if name_pieces.group(3) else '')]
             else:
                 p = [{}]
                 p[0]["reader"] = s.files()[name_pieces.group(0)]
