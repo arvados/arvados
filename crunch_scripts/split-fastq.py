@@ -101,7 +101,7 @@ for s in inp.all_streams():
                 # directories in the input, the choice is either to forget
                 # there are directories (which might lead to name conflicts) or
                 # just fail.
-                print >>sys.stderr, "fastq must be at the root of the collection")
+                print >>sys.stderr, "fastq must be at the root of the collection"
                 sys.exit(1)
 
             if name_pieces.group(2) != None:
