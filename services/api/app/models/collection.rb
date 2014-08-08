@@ -164,11 +164,9 @@ class Collection < ArvadosModel
     if loc = Locator.parse(search_term)
       loc.strip_hints!
       coll_match = readable_by(*readers).where(uuid: loc.to_s).first
-      if coll_match.andand.files.andand.size == 1
-        dirname, basename = coll_match.files.first[0, 2]
-        if (dirname == ".") and (basename =~ /^[0-9A-Fa-f]{64}\.tar$/)
-          return [loc.to_s]
-        end
+      if coll_match and (coll_match.files.size == 1) and
+          (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
+        return [loc.to_s]
       end
     end
 
