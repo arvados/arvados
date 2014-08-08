@@ -312,7 +312,7 @@ class User < ArvadosModel
       repo_perms = Link.where(tail_uuid: self.uuid,
                               head_uuid: repo[:uuid],
                               link_class: 'permission',
-                              name: 'can_write')
+                              name: 'can_manage')
       if repo_perms.any?
         logger.warn "User already has repository access " +
             repo_perms.collect { |p| p[:uuid] }.inspect
