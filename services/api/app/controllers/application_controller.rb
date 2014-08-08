@@ -203,7 +203,11 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    @objects = @objects.select(@select.map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }.join ", ") if @select
+    # Find the real column names in @select, resolve those to fully-qualified
+    # SQL column names, and pass the resulting string to the select method.
+    @objects = @objects.select((@select & model_class.columns.map { |c| c.name.to_s })
+                                 .map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }
+                                 .join ", ") if @select
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)

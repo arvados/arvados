@@ -257,6 +257,19 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   protected
+
+  def find_objects_for_index
+    # If the user has selected fields that derive from manifest_text, we'll
+    # need to fetch that, even though we don't return it in the results.
+    orig_select = @select.andand.dup
+    if @select and (@select & ["data_size", "files"]).any? and
+        (not @select.include?("manifest_text"))
+      @select << "manifest_text"
+    end
+    super
+    @select = orig_select
+  end
+
   def find_object_by_uuid
     super
     if !@object and !params[:uuid].match(/^[0-9a-f]+\+\d+$/)

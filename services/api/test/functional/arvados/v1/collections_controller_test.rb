@@ -24,6 +24,29 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_not_nil assigns(:objects)
   end
 
+  test "can get non-database fields via index select" do
+    authorize_with :active
+    get(:index, filters: [["uuid", "=", collections(:foo_file).uuid]],
+        select: %w(uuid owner_uuid files))
+    assert_response :success
+    assert_equal(1, json_response["items"].andand.size,
+                 "wrong number of items returned for index")
+    assert_equal([[".", "foo", 3]], json_response["items"].first["files"],
+                 "wrong file list in index result")
+  end
+
+  test "can select only non-database fields for index" do
+    authorize_with :active
+    get(:index, select: %w(data_size files))
+    assert_response :success
+    assert(json_response["items"].andand.any?, "no items found in index")
+    json_response["items"].each do |coll|
+      assert_equal(coll["data_size"],
+                   coll["files"].inject(0) { |size, fspec| size + fspec.last },
+                   "mismatch between data size and file list")
+    end
+  end
+
   [0,1,2].each do |limit|
     test "get index with limit=#{limit}" do
       authorize_with :active
