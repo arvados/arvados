@@ -104,6 +104,7 @@ for s in inp.all_streams():
                 print >>sys.stderr, "fastq must be at the root of the collection"
                 sys.exit(1)
 
+            p = None
             if name_pieces.group(2) != None:
                 if name_pieces.group(2) == "_1":
                     p = [{}, {}]
@@ -113,13 +114,14 @@ for s in inp.all_streams():
                 p = [{}]
                 p[0]["reader"] = s.files()[name_pieces.group(0)]
 
-            if chunking:
-                splitfastq(p)
-            else:
-                for i in xrange(0, len(p)):
-                    m = p[i]["reader"].as_manifest()[1:]
-                    manifest_list.append(["./_" + str(piece), m[:-1]])
-                piece += 1
+            if p != None:
+                if chunking:
+                    splitfastq(p)
+                else:
+                    for i in xrange(0, len(p)):
+                        m = p[i]["reader"].as_manifest()[1:]
+                        manifest_list.append(["./_" + str(piece), m[:-1]])
+                    piece += 1
 
 manifest_text = "\n".join(" ".join(m) for m in manifest_list)
 
