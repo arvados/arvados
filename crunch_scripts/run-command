@@ -15,8 +15,10 @@ import copy
 import traceback
 import pprint
 import multiprocessing
+import logging
 
 os.umask(0077)
+logging.basicConfig(format="run-command: %(message)s")
 
 t = arvados.current_task().tmpdir
 
@@ -129,7 +131,7 @@ try:
         if arvados.current_task()['sequence'] == 0:
             var = jobp["task.foreach"]
             items = get_items(jobp, jobp[var])
-            print("run-command: parallelizing on %s with items %s" % (var, items))
+            logging.info("run-command: parallelizing on %s with items %s" % (var, items))
             if items != None:
                 for i in items:
                     params = copy.copy(jobp)
@@ -154,13 +156,13 @@ try:
         stdoutname = subst.do_substitution(p, p["save.stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+    logging.info("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
 except Exception as e:
-    print("run-command: caught exception:")
+    logging.info("run-command: caught exception:")
     traceback.print_exc(file=sys.stdout)
-    print("run-command: task parameters was:")
-    pprint.pprint(p)
+    logging.info("run-command: task parameters was:")
+    pprint.plogging.info(p)
     sys.exit(1)
 
 try:
@@ -176,13 +178,13 @@ try:
     rcode = sp.wait()
 
     if sig.sig != None:
-        print("run-command: terminating on signal %s" % sig.sig)
+        logging.warning("run-command: terminating on signal %s" % sig.sig)
         sys.exit(2)
     else:
-        print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+        logging.info("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
 except Exception as e:
-    print("run-command: caught exception:")
+    logging.error("run-command: caught exception:")
     traceback.print_exc(file=sys.stdout)
 
 # restore default signal handlers.
@@ -193,11 +195,11 @@ signal.signal(signal.SIGQUIT, signal.SIG_DFL)
 for l in links:
     os.unlink(l)
 
-print("run-command: the following output files will be saved to keep:")
+logging.info("run-command: the following output files will be saved to keep:")
 
 subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"])
 
-print("run-command: start writing output to keep")
+logging.info("run-command: start writing output to keep")
 
 done = False
 resume_cache = put.ResumeCache(os.path.join(arvados.current_task().tmpdir, "upload-output-checkpoint"))
@@ -217,10 +219,10 @@ while not done:
                                              }).execute()
         done = True
     except KeyboardInterrupt:
-        print("run-command: terminating on signal 2")
+        logging.error("run-command: terminating on signal 2")
         sys.exit(2)
     except Exception as e:
-        print("run-command: caught exception:")
+        logging.error("run-command: caught exception:")
         traceback.print_exc(file=sys.stdout)
         time.sleep(5)
 
