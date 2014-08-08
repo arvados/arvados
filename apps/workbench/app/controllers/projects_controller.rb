@@ -143,13 +143,15 @@ class ProjectsController < ApplicationController
     @groups = Group.limit(10000).
       select(["uuid", "name", "description"])
 
-    begin
-      @share_links = Link.permissions_for(@object)
-      @user_is_manager = true
-    rescue ArvadosApiClient::AccessForbiddenException,
-           ArvadosApiClient::NotFoundException
-      @share_links = []
-      @user_is_manager = false
+    @user_is_manager = false
+    @share_links = []
+    if @object.uuid != current_user.uuid
+      begin
+        @share_links = Link.permissions_for(@object)
+        @user_is_manager = true
+      rescue ArvadosApiClient::AccessForbiddenException,
+        ArvadosApiClient::NotFoundException
+      end
     end
 
     @objects_and_names = get_objects_and_names @objects
