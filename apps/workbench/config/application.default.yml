@@ -58,6 +58,26 @@ test:
 
   site_name: Workbench:test
 
+  # Enable user profile with one required field
+  user_profile_form_fields:
+    - message: Welcome to Curoverse.
+    - key: organization
+      type: text
+      form_field_title: Institution
+      form_field_description: Your organization
+      required: true
+    - key: role
+      type: select
+      form_field_title: Your role
+      form_field_description: Choose the category that best describes your role in your organization.
+      options:
+        - Bio-informatician
+        - Computational biologist
+        - Biologist or geneticist
+        - Software developer
+        - IT
+        - Other
+
 common:
   assets.js_compressor: false
   assets.css_compressor: false
@@ -76,7 +96,7 @@ common:
   send_user_setup_notification_email: true
 
   # Set user_profile_form_fields to enable and configure the user profile page.
-  # A commented setting with full description is provided below.
+  # Default is set to false. A commented setting with full description is provided below.
   user_profile_form_fields: false
 
   # Below is a sample setting of user_profile_form_fields.
@@ -91,7 +111,7 @@ common:
   # For each of these input fields:
   #   You can specify "type" as "text" or "select".
   #   List the "options" to be displayed for each of the "select" menu.
-  #   Set "required" as "true" for any of the fields to make them required.
+  #   Set "required" as "true" for any of these fields to make them required.
   # If any of the required fields are missing in the user's profile, the user will be
   # redirected to the profile page before they can access any Workbench features.
   #user_profile_form_fields:
@@ -104,7 +124,7 @@ common:
   #  - key: role
   #    type: select
   #    form_field_title: Your role
-  #    form_field_description: Choose the category that best describes your role in your lab.
+  #    form_field_description: Choose the category that best describes your role in your organization.
   #    options:
   #      - Bio-informatician
   #      - Computational biologist
