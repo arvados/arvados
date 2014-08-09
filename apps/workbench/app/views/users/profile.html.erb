@@ -62,7 +62,7 @@
                   <div class="form-group">
                     <label for="<%=entry['key']%>"
                            class="col-sm-3 control-label"
-                           style=<%="color:red" if entry['required']&&!value%>> <%=label%>
+                           style=<%="color:red" if entry['required']&&(!value||value.empty?)%>> <%=label%>
                     </label>
                     <% if entry['type'] == 'select' %>
                       <div class="col-sm-9">

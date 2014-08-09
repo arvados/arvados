@@ -536,7 +536,9 @@ class ApplicationController < ActionController::Base
 
       profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
         if entry['required']
-          if !current_user_profile || !current_user_profile[entry['key'].to_sym]
+          if !current_user_profile ||
+             !current_user_profile[entry['key'].to_sym] ||
+             current_user_profile[entry['key'].to_sym].empty?
             missing_required_profile = true
             break
           end

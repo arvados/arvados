@@ -170,7 +170,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'added_in_test'
   end
 
-  # check manage profile page and add missing profile to the user
+  # Check manage profile page and add missing profile to the user
   def add_profile user
     assert page.has_no_text? 'My projects'
     assert page.has_no_text? 'Projects shared with me'
@@ -182,7 +182,16 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Email'
     assert page.has_text? user['email']
 
-    # using the default profile which has message and one required field
+    # Using the default profile which has message and one required field
+
+    # Save profile without filling in the required field. Expect to be back in this profile page again
+    click_button "Save profile"
+    assert page.has_text? 'Profile'
+    assert page.has_text? 'First name'
+    assert page.has_text? 'Last name'
+    assert page.has_text? 'Save profile'
+
+    # This time fill in required field and then save. Expect to go to requested page after that.
     profile_config = Rails.configuration.user_profile_form_fields
     profile_message = ''
     required_field_title = ''
@@ -212,16 +221,30 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   # test the search box
   def check_search_box user
     if user
+      # let's search for a valid uuid
+      within('.navbar-fixed-top') do
+        page.find_field('search').set user['uuid']
+        page.find('.glyphicon-search').click
+      end
+
+      # we should now be in the user's page as a result of search
+      assert page.has_text? user['first_name']
+
+      # let's search again for an invalid valid uuid
+      within('.navbar-fixed-top') do
+        search_for = user['uuid']
+        search_for[0]='1'
+        page.find_field('search').set search_for
+        page.find('.glyphicon-search').click
+      end
+
+      # we should see 'not found' error page
+      assert page.has_text? 'Not Found'
+
       # let's search for the anonymously accessible project
       publicly_accessible_project = api_fixture('groups')['anonymously_accessible_project']
 
       within('.navbar-fixed-top') do
-        page.find_field('search').set user['uuid']
-        page.find('.glyphicon-search').click
-        
-        # we should now be in the user's page as a result of search
-        assert page.has_text? user['email']
-
         # search again for the anonymously accessible project
         page.find_field('search').set publicly_accessible_project['name'][0,10]
         page.find('.glyphicon-search').click
