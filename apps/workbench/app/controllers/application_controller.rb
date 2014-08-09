@@ -394,9 +394,6 @@ class ApplicationController < ActionController::Base
     Thread.current[:arvados_api_token] = new_token
     if new_token.nil?
       Thread.current[:user] = nil
-    elsif (new_token == session[:arvados_api_token]) and
-        session[:user].andand[:is_active]
-      Thread.current[:user] = User.new(session[:user])
     else
       Thread.current[:user] = User.current
     end
@@ -414,15 +411,6 @@ class ApplicationController < ActionController::Base
       false  # We may redirect to login, or not, based on the current action.
     else
       session[:arvados_api_token] = params[:api_token]
-      session[:user] = {
-        uuid: user.uuid,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        is_active: user.is_active,
-        is_admin: user.is_admin,
-        prefs: user.prefs
-      }
 
       if !request.format.json? and request.method.in? ['GET', 'HEAD']
         # Repeat this request with api_token in the (new) session
