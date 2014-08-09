@@ -136,10 +136,10 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     end
 
     # now in manage account page
-    assert page.has_link? 'Virtual Machines'
-    assert page.has_link? 'Repositories'
-    assert page.has_link? 'SSH Keys'
-    assert page.has_link? 'Current Token'
+    assert page.has_text? 'Virtual Machines'
+    assert page.has_text? 'Repositories'
+    assert page.has_text? 'SSH Keys'
+    assert page.has_text? 'Current Token'
 
     assert page.has_text? 'The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados'
 
@@ -232,7 +232,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       # let's search again for an invalid valid uuid
       within('.navbar-fixed-top') do
-        search_for = user['uuid']
+        search_for = String.new user['uuid']
         search_for[0]='1'
         page.find_field('search').set search_for
         page.find('.glyphicon-search').click
