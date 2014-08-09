@@ -3,6 +3,6 @@ class ProfileNotifier < ActionMailer::Base
 
   def profile_created(user, address)
     @user = user
-    mail(to: address, subject: 'Profile created')
+    mail(to: address, subject: "Profile created by #{@user.email}")
   end
 end

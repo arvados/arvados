@@ -13,6 +13,8 @@ class User < ArvadosModel
   before_create :check_auto_admin
   after_create :add_system_group_permission_link
   after_create :send_admin_notifications
+  after_update :send_profile_created_notification
+
 
   has_many :authorized_keys, :foreign_key => :authorized_user_uuid, :primary_key => :uuid
 
@@ -442,4 +444,15 @@ class User < ArvadosModel
       AdminNotifier.new_inactive_user(self).deliver
     end
   end
+
+  # Send notification if the user saved profile for the first time
+  def send_profile_created_notification
+    if self.changes.andand.include?(:prefs)
+      if !self.changes[:prefs][0].andand.keys.andand.any?
+        profile_notification_address = Rails.configuration.user_profile_notification_address
+        ProfileNotifier.profile_created(self, profile_notification_address).deliver if profile_notification_address
+      end
+    end
+  end
+
 end
