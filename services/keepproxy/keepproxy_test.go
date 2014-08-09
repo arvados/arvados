@@ -1,8 +1,8 @@
 package main
 
 import (
-	"arvados.org/keepclient"
-	"arvados.org/sdk"
+	keepclient "git.curoverse.com/arvados.git/sdk/go/keepclient"
+	arvadosclient "git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 	"time"
 )
@@ -31,8 +30,8 @@ var _ = Suite(&ServerRequiredSuite{})
 type ServerRequiredSuite struct{}
 
 func pythonDir() string {
-	gopath := os.Getenv("GOPATH")
-	return fmt.Sprintf("%s/../../sdk/python/tests", strings.Split(gopath, ":")[0])
+	cwd, _ := os.Getwd()
+	return fmt.Sprintf("%s/../../sdk/python/tests", cwd)
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
@@ -109,7 +108,7 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 
 	os.Setenv("ARVADOS_KEEP_PROXY", fmt.Sprintf("http://localhost:%v", port))
 	os.Setenv("ARVADOS_API_TOKEN", token)
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, err := keepclient.MakeKeepClient(&arv)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
@@ -131,7 +130,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	setupProxyService()
 
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, err := keepclient.MakeKeepClient(&arv)
 	c.Check(kc.Arvados.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)

@@ -2,7 +2,7 @@
 package keepclient
 
 import (
-	"arvados.org/streamer"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"errors"
 	"fmt"
 	"io"

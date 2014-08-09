@@ -60,6 +60,8 @@ navbar:
       - sdk/ruby/index.html.textile.liquid
     - Java:
       - sdk/java/index.html.textile.liquid
+    - Go:
+      - sdk/go/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
   api:

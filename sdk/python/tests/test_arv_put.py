@@ -466,10 +466,8 @@ class ArvPutIntegrationTest(unittest.TestCase):
         # to provision the Keep server.
         config_blob_signing_key = None
         for config_file in ['application.yml', 'application.default.yml']:
-            with open(os.path.join(os.path.dirname(__file__),
-                                   run_test_server.ARV_API_SERVER_DIR,
-                                   "config",
-                                   config_file)) as f:
+            with open(os.path.join(run_test_server.SERVICES_SRC_DIR,
+                                   "api", "config", config_file)) as f:
                 rails_config = yaml.load(f.read())
                 for config_section in ['test', 'common']:
                     try:
