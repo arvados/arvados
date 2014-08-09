@@ -155,7 +155,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		var rep int
 		var err error
 		hash2, rep, err = kc.PutB([]byte("foo"))
-		c.Check(hash2, Equals, fmt.Sprintf("%s+3", hash))
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 		log.Print("PutB")
@@ -237,7 +237,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 
 	{
 		hash2, rep, err := kc.PutB([]byte("baz"))
-		c.Check(hash2, Equals, fmt.Sprintf("%s+3", hash))
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 		log.Print("PutB")
