@@ -89,6 +89,9 @@ class ApplicationController < ActionController::Base
   end
 
   def load_filters_and_paging_params
+    @order = params[:order] || 'created_at desc'
+    @order = [@order] unless @order.is_a? Array
+
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
