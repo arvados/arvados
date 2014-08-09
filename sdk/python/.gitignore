@@ -2,4 +2,4 @@
 /dist/
 /*.egg
 /*.egg-info
-/tmp
+/tests/tmp
