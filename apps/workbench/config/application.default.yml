@@ -132,6 +132,3 @@ common:
   #      - Software developer
   #      - IT
   #      - Other
-
-  # email address to which mail should be sent when the user creates profile for the first time
-  user_profile_notification_address: false
