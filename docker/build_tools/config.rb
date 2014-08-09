@@ -49,7 +49,7 @@ Dir.glob(globdir + '/*.in') do |template_file|
   generated_dir = File.join(File.dirname(template_file), 'generated')
   Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
   output_path = File.join(generated_dir, File.basename(template_file, '.in'))
-  File.open(output_path, "w") do |output|
+  File.open(output_path, "w", File.stat(template_file).mode) do |output|
     File.open(template_file) do |input|
       input.each_line do |line|
 

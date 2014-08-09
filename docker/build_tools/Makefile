@@ -104,6 +104,13 @@ WORKBENCH_GENERATED    = workbench/generated/*
 SSO_GENERATED_IN       = sso/*.in
 SSO_GENERATED          = sso/generated/*
 
+KEEP_DEPS += keep/generated/bin/keepproxy
+KEEP_DEPS += keep/generated/bin/keepstore
+keep/generated/bin/%: $(wildcard build/services/%/*.go)
+	mkdir -p keep/generated/src/git.curoverse.com
+	ln -sfn ../../../../.. keep/generated/src/git.curoverse.com/arvados.git
+	GOPATH=$(shell pwd)/keep/generated go get $(@:keep/generated/bin/%=git.curoverse.com/arvados.git/services/%)
+
 $(BUILD):
 	mkdir -p build
 	rsync -rlp --exclude=docker/ --exclude='**/log/*' --exclude='**/tmp/*' \
