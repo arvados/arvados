@@ -529,8 +529,9 @@ class ApplicationController < ActionController::Base
     if current_user && profile_config
       missing_required_profile = false
 
-      user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
-      user_prefs = current_user.prefs if !user_prefs[:profile]
+      user_prefs = current_user.prefs
+      current_user.reload if !user_prefs[:profile]
+      user_prefs = current_user.prefs
       current_user_profile = user_prefs[:profile] if user_prefs
 
       profile_config.kind_of?(Array) && profile_config.andand.each do |entry|

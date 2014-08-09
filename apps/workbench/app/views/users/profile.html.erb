@@ -1,8 +1,6 @@
 <%
     profile_config = Rails.configuration.user_profile_form_fields
-    this_user = User.limit(1).where(uuid: current_user.uuid).first
-    user_prefs = User.limit(1).where(uuid: current_user.uuid).first.prefs
-    current_user_profile = user_prefs[:profile] if user_prefs
+    current_user_profile = current_user.prefs[:profile]
     show_save_button = false
 %>
 
@@ -49,7 +47,7 @@
               <div class="form-group">
                   <label for="identity_url" class="col-sm-3 control-label"> Identity URL </label>
                   <div class="col-sm-9">
-                    <p class="form-control-static" id="identity_url" name="identity_url"><%=this_user.andand.identity_url%></p>
+                    <p class="form-control-static" id="identity_url" name="identity_url"><%=current_user.andand.identity_url%></p>
                   </div>
               </div>
 
@@ -68,7 +66,7 @@
                     </label>
                     <% if entry['type'] == 'select' %>
                       <div class="col-sm-9">
-                        <select class="form-control" id="user[prefs][:profile][:<%=entry['key']%>]" name="user[prefs][:profile][:<%=entry['key']%>]">
+                        <select class="form-control" name="user[prefs][:profile][:<%=entry['key']%>]">
                           <% entry['options'].each do |option| %>
                             <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
                           <% end %>
@@ -76,7 +74,7 @@
                       </div>
                     <% else %>
                       <div class="col-sm-9">
-                        <input type="text" class="form-control" id="user[prefs][:profile][:<%=entry['key']%>]" name="user[prefs][:profile][:<%=entry['key']%>]" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
+                        <input type="text" class="form-control" name="user[prefs][:profile][:<%=entry['key']%>]" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
                       </div>
                     <% end %>
                   </div>

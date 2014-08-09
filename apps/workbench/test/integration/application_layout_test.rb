@@ -200,8 +200,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
     assert page.has_text? profile_message
     assert page.has_text? required_field_title
-
-    page.find_field(required_field_key).set 'value to fill required field'
+    page.find_field('user[prefs][:profile][:'+required_field_key+']').set 'value to fill required field'
 
     click_button "Save profile"
 
@@ -245,11 +244,11 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   [
-#    [nil, nil, false, false],
-#    ['inactive', api_fixture('users')['inactive'], true, false],
-#    ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false, false],
-#    ['active', api_fixture('users')['active'], true, true],
-#    ['admin', api_fixture('users')['admin'], true, true],
+    [nil, nil, false, false],
+    ['inactive', api_fixture('users')['inactive'], true, false],
+    ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false, false],
+    ['active', api_fixture('users')['active'], true, true],
+    ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
   ].each do |token, user, invited, has_profile|
       test "visit home page when profile is configured for user #{token}" do
@@ -263,7 +262,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       verify_homepage_with_profile user, invited, has_profile
     end
   end
-=begin
+
   [
     [nil, nil, false, false],
     ['inactive', api_fixture('users')['inactive'], true, false],
@@ -284,5 +283,5 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       verify_homepage_with_profile user, invited, has_profile
     end
   end
-=end
+
 end
