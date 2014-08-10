@@ -212,6 +212,9 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     page.find_field('user[prefs][:profile][:'+required_field_key+']').set 'value to fill required field'
 
     click_button "Save profile"
+    # profile saved and in profile page now with success
+    assert page.has_text? 'Thank you for filling in your profile'
+    click_button 'Take me to my page'
 
     # profile saved and in home page now
     assert page.has_text? 'My projects'

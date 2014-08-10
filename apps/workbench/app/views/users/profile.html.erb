@@ -2,6 +2,27 @@
     profile_config = Rails.configuration.user_profile_form_fields
     current_user_profile = current_user.prefs[:profile]
     show_save_button = false
+
+    profile_message = 'You can manage your profile using this page. Any feilds in red are required and missing.
+                       Please fill in those fields before you can accesse Arvados Workbench.'
+              
+    missing_required_profile = false
+    profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
+      if entry['message']
+        profile_message = entry['message']
+      else    # key
+        if !current_user_profile ||
+           !current_user_profile[entry['key'].to_sym] ||
+           current_user_profile[entry['key'].to_sym].empty?
+          missing_required_profile = true
+        end
+      end
+    end
+
+    profile_url = '/users/'+current_user.uuid+'/profile'
+    target = request.url.partition('?target=')[-1]
+    target = request.url if target.empty?
+    return_to_url = (request.url.ends_with? profile_url) ? profile_url : profile_url+'?target='+target
 %>
 
 <div>
@@ -12,20 +33,24 @@
           </h4>
         </div>
         <div class="panel-body">
-          <div>
-            <% profile_message = 'You can manage your profile using this page. Any feilds in red are required and missing.
-                  Please fill in those fields before you can accesse Arvados Workbench.'
-                  profile_config.kind_of?(Array) && profile_config.andand.each do |entry| 
-                  if entry['message']
-                    profile_message = entry['message']
-                    break
-                  end
-                end %>
-            <p> <%=profile_message%> </p><br/>
-          </div>
-          <div>
+          <% if !missing_required_profile && params.andand.keys.include?('target') %>
+            <div class="rounded" style="border-width: 1px; border-style: dotted; border-color: lightgray;">
+              <p style="margin: 8px;">Thank you for filling in your profile. If you are done updating your profile, 
+                 you can now access Arvados Workbench by clicking on this button.
+                  <form action="<%=target%>">
+                    <input style="margin-left: 8px;" class="btn btn-primary" type="submit" value="Take me to my page">
+                  </form>
+              </p>
+            </div>
+          <% else %>
+            <div class="rounded" style="border-width: 1px; border-style: dotted; border-color: lightgray;">
+              <p style="margin: 8px;"> <%=profile_message%> </p>
+            </div>
+          <% end %>
+
+          <div class="rounded" style="border-width: 1px; border-style: dotted; border-color: lightgray;">
             <%= form_tag "/users/#{current_user.uuid}", {method: 'patch', id: 'save_profile_form', name: 'save_profile_form', class: 'form-horizontal'} do %>
-              <%= hidden_field_tag :return_to, request.url %>
+              <%= hidden_field_tag :return_to, return_to_url %>
               <div class="form-group">
                   <label for="email" class="col-sm-3 control-label"> Email </label>
                   <div class="col-sm-9">
@@ -65,7 +90,7 @@
                            style=<%="color:red" if entry['required']&&(!value||value.empty?)%>> <%=label%>
                     </label>
                     <% if entry['type'] == 'select' %>
-                      <div class="col-sm-9">
+                      <div class="col-sm-8">
                         <select class="form-control" name="user[prefs][:profile][:<%=entry['key']%>]">
                           <% entry['options'].each do |option| %>
                             <option value="<%=option%>" <%='selected' if option==value%>><%=option%></option>
@@ -73,7 +98,7 @@
                         </select>
                       </div>
                     <% else %>
-                      <div class="col-sm-9">
+                      <div class="col-sm-8">
                         <input type="text" class="form-control" name="user[prefs][:profile][:<%=entry['key']%>]" placeholder="<%=entry['form_field_description']%>" value="<%=value%>" ></input>
                       </div>
                     <% end %>
