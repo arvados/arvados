@@ -108,17 +108,23 @@ class Arvados
   class Google::APIClient
     def discovery_document(api, version)
       api = api.to_s
-      return @discovery_documents["#{api}:#{version}"] ||=
+      discovery_uri = self.discovery_uri(api, version)
+      discovery_uri_hash = Digest::MD5.hexdigest(discovery_uri)
+      return @discovery_documents[discovery_uri_hash] ||=
         begin
           # fetch new API discovery doc if stale
-          cached_doc = File.expand_path '~/.cache/arvados/discovery_uri.json'
-          if not File.exist?(cached_doc) or (Time.now - File.mtime(cached_doc)) > 86400
+          cached_doc = File.expand_path "~/.cache/arvados/discovery-#{discovery_uri_hash}.json" rescue nil
+          if cached_doc.nil? or not File.exist?(cached_doc) or (Time.now - File.mtime(cached_doc)) > 86400
             response = self.execute!(:http_method => :get,
-                                     :uri => self.discovery_uri(api, version),
+                                     :uri => discovery_uri,
                                      :authenticated => false)
-            FileUtils.makedirs(File.dirname cached_doc)
-            File.open(cached_doc, 'w') do |f|
-              f.puts response.body
+            begin
+              FileUtils.makedirs(File.dirname cached_doc)
+              File.open(cached_doc, 'w') do |f|
+                f.puts response.body
+              end
+            rescue
+              return JSON.load response.body
             end
           end
 
