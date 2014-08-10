@@ -38,7 +38,6 @@ class ProjectsControllerTest < ActionController::TestCase
            format: "json"},
          session_for(:active))
     assert_response :success
-    json_response = Oj.load(@response.body)
     assert_equal(uuid_list, json_response["success"])
   end
 
@@ -50,7 +49,6 @@ class ProjectsControllerTest < ActionController::TestCase
            format: "json"},
          session_for(:project_viewer))
     assert_response 422
-    json_response = Oj.load(@response.body)
     assert(json_response["errors"].andand.
              any? { |msg| msg.start_with?("#{share_uuid}: ") },
            "JSON response missing properly formatted sharing error")
@@ -86,5 +84,60 @@ class ProjectsControllerTest < ActionController::TestCase
 
   test "viewer can't manage asubproject" do
     refute user_can_manage(:project_viewer, "asubproject")
+  end
+
+  test 'projects#show tab infinite scroll partial obeys limit' do
+    get_contents_rows(limit: 1, filters: [['uuid','is_a',['arvados#job']]])
+    assert_response :success
+    assert_equal(1, json_response['content'].scan('<tr').count,
+                 "Did not get exactly one row")
+  end
+
+  test 'projects#show tab infinite scroll partial does not group object types' do
+    get_contents_rows(limit: 100,
+                      filters: [['uuid','is_a',['arvados#job',
+                                                'arvados#pipelineInstance']]])
+    assert_response :success
+    not_grouped_by_kind = nil
+    last_timestamp = nil
+    last_kind = nil
+    found_kind = {}
+    json_response['content'].scan /<tr[^>]+>/ do |tr_tag|
+      assert_equal(1,
+                   (tr_tag.scan(/\ data-object-created-at=\"(.*?)\"/).each do |t,|
+                      if last_timestamp
+                        assert_operator(last_timestamp, :>=, t,
+                                        "Rows are not sorted by timestamp desc")
+                      end
+                      last_timestamp = t
+                    end).count,
+                   "Content row did not have exactly one timestamp")
+
+      tr_tag.scan /\ data-kind=\"(.*?)\"/ do |kind|
+        if last_kind and last_kind != kind and found_kind[kind]
+          # We saw this kind before, then a different kind, then
+          # this kind again. That means objects are not grouped by
+          # kind.
+          not_grouped_by_kind = true
+        end
+        found_kind[kind] ||= 0
+        found_kind[kind] += 1
+        last_kind = kind
+      end
+    end
+    assert_equal(true, not_grouped_by_kind,
+                 "Could not confirm that results are not grouped by kind")
+  end
+
+  def get_contents_rows params
+    params = {
+      id: api_fixture('users')['active']['uuid'],
+      partial: :contents_rows,
+      format: :json,
+    }.merge(params)
+    encoded_params = Hash[params.map { |k,v|
+                            [k, (v.is_a?(Array) || v.is_a?(Hash)) ? v.to_json : v]
+                          }]
+    get :show, encoded_params, session_for(:active)
   end
 end
