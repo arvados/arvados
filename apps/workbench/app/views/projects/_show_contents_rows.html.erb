@@ -5,7 +5,9 @@
       data-kind="<%= object.kind %>"
       >
     <td>
-      <%= render partial: 'selection_checkbox', locals: {object: name_object, friendly_name: ((name_object.name rescue '') || '')} %>
+      <div style="width:1em; display:inline-block;">
+        <%= render partial: 'selection_checkbox', locals: {object: name_object, friendly_name: ((name_object.name rescue '') || '')} %>
+      </div>
 
       <% if @object.editable? %>
         <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this project?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'remove') do %>
