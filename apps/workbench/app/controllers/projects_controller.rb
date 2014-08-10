@@ -139,13 +139,18 @@ class ProjectsController < ApplicationController
       # retrieving the next page. Ideally the API would do this for
       # us, but it doesn't (yet).
       @objects = []
+      @name_link_for = {}
       kind_filters.each do |attr,op,val|
         (val.is_a?(Array) ? val : [val]).each do |type|
-          @objects += @object.contents(order: @order,
-                                       limit: @limit,
-                                       include_linked: true,
-                                       filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
-                                       offset: @offset)
+          objects = @object.contents(order: @order,
+                                     limit: @limit,
+                                     include_linked: true,
+                                     filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
+                                     offset: @offset)
+          objects.each do |object|
+            @name_link_for[object.andand.uuid] = objects.links_for(object, 'name').first
+          end
+          @objects += objects
         end
       end
       @objects = @objects.to_a.sort_by(&:created_at).reverse[0..@limit-1]
@@ -223,6 +228,8 @@ class ProjectsController < ApplicationController
         name_links.each do |name_link|
           objects_and_names << [object, name_link]
         end
+      elsif @name_link_for.andand[object.uuid]
+        objects_and_names << [object, @name_link_for[object.uuid]]
       elsif object.respond_to? :name
         objects_and_names << [object, object]
       else
