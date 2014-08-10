@@ -517,7 +517,6 @@ class ApplicationController < ActionController::Base
     if current_user && profile_config
       missing_required_profile = false
 
-      current_user.reload
       user_prefs = current_user.prefs
       current_user_profile = user_prefs[:profile] if user_prefs
 
