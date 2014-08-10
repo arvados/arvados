@@ -129,7 +129,6 @@ class ProjectsController < ApplicationController
   end
 
   def load_contents_objects kinds=[]
-    @limit = 5
     kind_filters = @filters.select do |attr,op,val|
       op == 'is_a' and val.is_a? Array and val.count > 1
     end
