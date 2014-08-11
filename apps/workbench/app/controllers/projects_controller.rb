@@ -132,12 +132,13 @@ class ProjectsController < ApplicationController
     kind_filters = @filters.select do |attr,op,val|
       op == 'is_a' and val.is_a? Array and val.count > 1
     end
-    if /^created_at/ =~ @order[0] and kind_filters.count == 1
+    if /^created_at\b/ =~ @order[0] and kind_filters.count == 1
       # If filtering on multiple types and sorting by date: Get the
       # first page of each type, sort the entire set, truncate to one
       # page, and use the last item on this page as a filter for
       # retrieving the next page. Ideally the API would do this for
       # us, but it doesn't (yet).
+      nextpage_operator = /\bdesc/i =~ @order[0] ? '<' : '>'
       @objects = []
       @name_link_for = {}
       kind_filters.each do |attr,op,val|
@@ -155,10 +156,12 @@ class ProjectsController < ApplicationController
       end
       @objects = @objects.to_a.sort_by(&:created_at).reverse[0..@limit-1]
       @next_page_filters = @filters.reject do |attr,op,val|
-        attr == 'created_at' and op == '<'
+        attr == 'created_at' and op == nextpage_operator
       end
       if @objects.any?
-        @next_page_filters += [['created_at', '<', @objects.last.created_at]]
+        @next_page_filters += [['created_at',
+                                nextpage_operator,
+                                @objects.last.created_at]]
         @next_page_href = url_for(partial: :contents_rows,
                                   filters: @next_page_filters.to_json)
       else
