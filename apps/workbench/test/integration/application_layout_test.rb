@@ -61,20 +61,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         end
       end
     end
-
-    # check help menu
-    check_help_menu
-
-    if user && user['is_active']
-      # check system menu
-      check_system_menu user
-
-      # test manage account page
-      check_manage_account_page user
-
-      # check search box
-      check_search_box user
-    end
   end
 
   # test the help menu
@@ -89,8 +75,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     end
   end
 
-  # test the system menu
-  def check_system_menu user
+  def verify_system_menu user
     if user && user['is_active']
       look_for_add_new = nil
       within('.navbar-fixed-top') do
@@ -127,43 +112,45 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   # test manage_account page
-  def check_manage_account_page user
-    within('.navbar-fixed-top') do
-      find('a', text: "#{user['email']}").click
-      within('.dropdown-menu') do
-        find('a', text: 'Manage account').click
+  def verify_manage_account user
+    if user && user['is_active']
+      within('.navbar-fixed-top') do
+        find('a', text: "#{user['email']}").click
+        within('.dropdown-menu') do
+          find('a', text: 'Manage account').click
+        end
       end
-    end
 
-    # now in manage account page
-    assert page.has_text? 'Virtual Machines'
-    assert page.has_text? 'Repositories'
-    assert page.has_text? 'SSH Keys'
-    assert page.has_text? 'Current Token'
+      # now in manage account page
+      assert page.has_text? 'Virtual Machines'
+      assert page.has_text? 'Repositories'
+      assert page.has_text? 'SSH Keys'
+      assert page.has_text? 'Current Token'
 
-    assert page.has_text? 'The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados'
+      assert page.has_text? 'The Arvados API token is a secret key that enables the Arvados SDKs to access Arvados'
 
-    click_link 'Add new SSH key'
+      click_link 'Add new SSH key'
 
-    within '.modal-content' do
-      assert page.has_text? 'Public Key'
-      assert page.has_button? 'Cancel'
-      assert page.has_button? 'Submit'
+      within '.modal-content' do
+        assert page.has_text? 'Public Key'
+        assert page.has_button? 'Cancel'
+        assert page.has_button? 'Submit'
 
-      page.find_field('public_key').set 'first test with an incorrect ssh key value'
-      click_button 'Submit'
-      assert page.has_text? 'Public key does not appear to be a valid ssh-rsa or dsa public key'
+        page.find_field('public_key').set 'first test with an incorrect ssh key value'
+        click_button 'Submit'
+        assert page.has_text? 'Public key does not appear to be a valid ssh-rsa or dsa public key'
 
-      public_key_str = api_fixture('authorized_keys')['active']['public_key']
-      page.find_field('public_key').set public_key_str
-      page.find_field('name').set 'added_in_test'
-      click_button 'Submit'
-      assert page.has_text? 'Public key already exists in the database, use a different key.'
+        public_key_str = api_fixture('authorized_keys')['active']['public_key']
+        page.find_field('public_key').set public_key_str
+        page.find_field('name').set 'added_in_test'
+        click_button 'Submit'
+        assert page.has_text? 'Public key already exists in the database, use a different key.'
 
-      new_key = SSHKey.generate
-      page.find_field('public_key').set new_key.ssh_public_key
-      page.find_field('name').set 'added_in_test'
-      click_button 'Submit'
+        new_key = SSHKey.generate
+        page.find_field('public_key').set new_key.ssh_public_key
+        page.find_field('name').set 'added_in_test'
+        click_button 'Submit'
+      end
     end
 
     # key must be added. look for it in the refreshed page
@@ -218,8 +205,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   # test the search box
-  def check_search_box user
-    if user
+  def verify_search_box user
+    if user && user['is_active']
       # let's search for a valid uuid
       within('.navbar-fixed-top') do
         page.find_field('search').set user['uuid']
@@ -303,6 +290,57 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
 
       verify_homepage_with_profile user, invited, has_profile
+    end
+  end
+
+  [
+    [nil, nil, false, false],
+    ['inactive', api_fixture('users')['inactive'], true, false],
+    ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false, false],
+    ['active', api_fixture('users')['active'], true, true],
+    ['admin', api_fixture('users')['admin'], true, true],
+    ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
+  ].each do |token, user, invited, has_profile|
+    test "check help for user #{token}" do
+      Rails.configuration.user_profile_form_fields = false
+
+      if !token
+        visit ('/')
+      else
+        visit page_with_token(token)
+      end
+
+      check_help_menu
+    end
+  end
+
+  [
+    ['active', api_fixture('users')['active'], true, true],
+    ['admin', api_fixture('users')['admin'], true, true],
+  ].each do |token, user|
+    test "test system menu for user #{token}" do
+      visit page_with_token(token)
+      verify_system_menu user
+    end
+  end
+
+  [
+    ['active', api_fixture('users')['active'], true, true],
+    ['admin', api_fixture('users')['admin'], true, true],
+  ].each do |token, user|
+    test "test manage account for user #{token}" do
+      visit page_with_token(token)
+      verify_manage_account user
+    end
+  end
+
+  [
+    ['active', api_fixture('users')['active'], true, true],
+    ['admin', api_fixture('users')['admin'], true, true],
+  ].each do |token, user|
+    test "test search for user #{token}" do
+      visit page_with_token(token)
+      verify_search_box user
     end
   end
 
