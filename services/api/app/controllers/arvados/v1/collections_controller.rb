@@ -256,8 +256,6 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def find_objects_for_index
     # Omit manifest_text from index results unless expressly selected.
-    # If the user has selected fields that derive from manifest_text, we'll
-    # need to fetch it during search, then hide it from the results.
     @select ||= model_class.api_accessible_attributes(:user).
       map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
     super
