@@ -1,7 +1,6 @@
 class ApplicationController < ActionController::Base
   include ArvadosApiClientHelper
   include ApplicationHelper
-  include ActionView::Helpers::OutputSafetyHelper
 
   respond_to :html, :json, :js
   protect_from_forgery
@@ -178,7 +177,7 @@ class ApplicationController < ActionController::Base
       f.json do
         extra_attrs = { href: url_for(@object) }
         @object.textile_attributes.each do |textile_attr|
-          extra_attrs.merge!({ "#{textile_attr}Textile" => raw( RedCloth.new(@object.attributes[textile_attr].to_s).to_html ) })
+          extra_attrs.merge!({ "#{textile_attr}Textile" => view_context.render_content_from_database(@object.attributes[textile_attr]) })
         end
         render json: @object.attributes.merge(extra_attrs)
       end

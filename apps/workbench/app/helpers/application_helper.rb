@@ -12,7 +12,7 @@ module ApplicationHelper
   end
 
   def render_content_from_database(markup)
-    raw RedCloth.new(markup).to_html
+    raw RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile) if markup
   end
 
   def human_readable_bytes_html(n)
@@ -160,7 +160,7 @@ module ApplicationHelper
 
     is_textile = object.textile_attributes.andand.include?(attr)
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
-    rendervalue = is_textile ? raw( RedCloth.new(attrvalue.to_s).to_html ) : attrvalue
+    rendervalue = is_textile ? render_content_from_database(attrvalue) : attrvalue
 
     ajax_options = {
       "data-pk" => {
