@@ -121,7 +121,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
@@ -158,7 +158,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     # arvados#user, repo link and link add user to 'All users' group
     verify_num_links @all_links_at_start, 5
 
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
@@ -256,7 +256,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expecting inactive user email'
 
     # expect repo and vm links
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'test_repo', resp_obj['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
@@ -479,7 +479,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
@@ -539,7 +539,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
 
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
@@ -605,7 +605,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'arvados#repository', false, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
         'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
@@ -629,7 +629,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
@@ -657,7 +657,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
     # since no repo name in input, we won't get any; even though user has one
-    verify_link response_items, 'arvados#repository', false, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
         'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
@@ -689,7 +689,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_write',
+    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
         'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
     verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
@@ -963,8 +963,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
 
     repo_perms = Link.where(tail_uuid: uuid,
-                              link_class: 'permission',
-                              name: 'can_write').where("head_uuid like ?", Repository.uuid_like_pattern)
+                            link_class: 'permission',
+                            name: 'can_manage').where("head_uuid like ?", Repository.uuid_like_pattern)
     if expect_repo_perms
       assert repo_perms.any?, "expected repo_perms"
     else

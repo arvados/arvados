@@ -44,6 +44,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     within('.modal-dialog') do
       find('.btn', text: 'Add').click
     end
+    wait_for_ajax
 
     click_link 'Jobs and pipelines'
     find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').

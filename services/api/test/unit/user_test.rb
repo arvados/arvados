@@ -204,7 +204,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
-    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
+    verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
@@ -246,7 +246,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
-    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
+    verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
@@ -286,7 +286,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
-    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
+    verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
 
     # invoke setup again with a vm_uuid
     vm = VirtualMachine.create
@@ -301,7 +301,7 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     repo_perm = find_obj_in_resp response, 'Link', 'arvados#repository'
-    verify_link repo_perm, 'permission', 'can_write', resp_user[:uuid], nil
+    verify_link repo_perm, 'permission', 'can_manage', resp_user[:uuid], nil
 
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid

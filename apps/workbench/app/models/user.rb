@@ -27,11 +27,15 @@ class User < ArvadosBase
                                                {}))
   end
 
+  def contents params={}
+    Group.contents params.merge(uuid: self.uuid)
+  end
+
   def attributes_for_display
     super.reject { |k,v| %w(owner_uuid default_owner_uuid identity_url prefs).index k }
   end
 
- def attribute_editable? attr, *args
+  def attribute_editable? attr, *args
     (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super
   end
 

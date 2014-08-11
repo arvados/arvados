@@ -55,6 +55,7 @@ class CollectionsController < ApplicationController
 
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
+    preload_links_for_objects @objects.to_a
     super
   end
 

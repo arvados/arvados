@@ -3,11 +3,13 @@
     <div class="row filterable selectable" data-object-uuid="<%= name_link.uuid %>"
          data-preview-href="<%= chooser_preview_url_for object %>"
          style="margin-left: 1em; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: #DDDDDD">
-        <i class="fa fa-fw fa-archive"></i>
-        <%= name_link.name %>
-    <% Link.filter([['link_class','=','tag'],['head_uuid','=',object.uuid]]).collect(&:name).each do |tagname| %>
-      <span class="label label-info"><%= tagname %></span>
-    <% end %>
+      <i class="fa fa-fw fa-archive"></i>
+      <%= name_link.name %>
+      <% links_for_object(object).each do |tag| %>
+        <% if tag.link_class == 'tag' %>
+          <span class="label label-info"><%= tag.name %></span>
+        <% end %>
+      <% end %>
     </div>
   <% end %>
 <% end %>

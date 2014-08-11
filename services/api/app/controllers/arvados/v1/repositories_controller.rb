@@ -7,6 +7,7 @@ class Arvados::V1::RepositoriesController < ApplicationController
     User.includes(:authorized_keys).all.each do |u|
       @users[u.uuid] = u
     end
+    admins = @users.select { |k,v| v.is_admin }
     @user_aks = {}
     @repo_info = {}
     @repos = Repository.includes(:permissions).all
@@ -29,10 +30,8 @@ class Arvados::V1::RepositoriesController < ApplicationController
         end
       end
       # Owner of the repository, and all admins, can RW
-      ([repo.owner_uuid] + @users.keys).each do |user_uuid|
-        %w(can_read can_write).each do |name|
-          perms << {name: name, user_uuid: user_uuid}
-        end
+      ([repo.owner_uuid] + admins.keys).each do |user_uuid|
+        perms << {name: 'can_write', user_uuid: user_uuid}
       end
       perms.each do |perm|
         user_uuid = perm[:user_uuid]
