@@ -34,6 +34,9 @@ def search(c):
 def sub_file(v):
     return os.path.join(os.environ['TASK_KEEPMOUNT'], v)
 
+def sub_src(v):
+    return os.path.join(os.environ['CRUNCH_SRC'], v)
+
 def sub_dir(v):
     d = os.path.dirname(v)
     if d == '':
@@ -47,6 +50,7 @@ def sub_glob(v):
     return glob.glob(v)[0]
 
 default_subs = {"file ": sub_file,
+		"src ": sub_src,
                 "dir ": sub_dir,
                 "basename ": sub_basename,
                 "glob ": sub_glob}
