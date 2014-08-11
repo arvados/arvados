@@ -1,10 +1,10 @@
 ---
 layout: default
 navsection: userguide
-title: "Parallel Crunch tasks"
+title: "Concurrent Crunch tasks"
 ...
 
-In the previous tutorials, we used @arvados.job_setup.one_task_per_input_file()@ to automatically parallelize our jobs by creating a separate task per file.  For some types of jobs, you may need to split the work up differently, for example creating tasks to process different segments of a single large file.  In this this tutorial will demonstrate how to create Crunch tasks directly.
+In the previous tutorials, we used @arvados.job_setup.one_task_per_input_file()@ to automatically create concurrent jobs by creating a separate task per file.  For some types of jobs, you may need to split the work up differently, for example creating tasks to process different segments of a single large file.  In this this tutorial will demonstrate how to create Crunch tasks directly.
 
 Start by entering the @crunch_scripts@ directory of your Git repository:
 
@@ -13,33 +13,33 @@ Start by entering the @crunch_scripts@ directory of your Git repository:
 </code></pre>
 </notextile>
 
-Next, using @nano@ or your favorite Unix text editor, create a new file called @parallel-hash.py@ in the @crunch_scripts@ directory.
+Next, using @nano@ or your favorite Unix text editor, create a new file called @concurrent-hash.py@ in the @crunch_scripts@ directory.
 
-notextile. <pre>~/$USER/crunch_scripts$ <code class="userinput">nano parallel-hash.py</code></pre>
+notextile. <pre>~/$USER/crunch_scripts$ <code class="userinput">nano concurrent-hash.py</code></pre>
 
 Add the following code to compute the MD5 hash of each file in a collection:
 
-<notextile> {% code 'parallel_hash_script_py' as python %} </notextile>
+<notextile> {% code 'concurrent_hash_script_py' as python %} </notextile>
 
 Make the file executable:
 
-notextile. <pre><code>~/$USER/crunch_scripts$ <span class="userinput">chmod +x parallel-hash.py</span></code></pre>
+notextile. <pre><code>~/$USER/crunch_scripts$ <span class="userinput">chmod +x concurrent-hash.py</span></code></pre>
 
 Add the file to the Git staging area, commit, and push:
 
 <notextile>
-<pre><code>~/$USER/crunch_scripts$ <span class="userinput">git add parallel-hash.py</span>
-~/$USER/crunch_scripts$ <span class="userinput">git commit -m"parallel hash"</span>
+<pre><code>~/$USER/crunch_scripts$ <span class="userinput">git add concurrent-hash.py</span>
+~/$USER/crunch_scripts$ <span class="userinput">git commit -m"concurrent hash"</span>
 ~/$USER/crunch_scripts$ <span class="userinput">git push origin master</span>
 </code></pre>
 </notextile>
 
-You should now be able to run your new script using Crunch, with "script" referring to our new "parallel-hash.py" script.  We will use a different input from our previous examples.  We will use @887cd41e9c613463eab2f0d885c6dd96+83@ which consists of three files, "alice.txt", "bob.txt" and "carol.txt" (the example collection used previously in "fetching data from Arvados using Keep":{{site.baseurl}}/user/tutorials/tutorial-keep.html#dir).
+You should now be able to run your new script using Crunch, with "script" referring to our new "concurrent-hash.py" script.  We will use a different input from our previous examples.  We will use @887cd41e9c613463eab2f0d885c6dd96+83@ which consists of three files, "alice.txt", "bob.txt" and "carol.txt" (the example collection used previously in "fetching data from Arvados using Keep":{{site.baseurl}}/user/tutorials/tutorial-keep.html#dir).
 
 <notextile>
 <pre><code>~/$USER/crunch_scripts$ <span class="userinput">cat &gt;~/the_job &lt;&lt;EOF
 {
- "script": "parallel-hash.py",
+ "script": "concurrent-hash.py",
  "repository": "$USER",
  "script_version": "master",
  "script_parameters":
@@ -65,7 +65,7 @@ EOF</span>
 
 (Your shell should automatically fill in @$USER@ with your login name.  The job JSON that gets saved should have @"repository"@ pointed at your personal Git repository.)
 
-Because the job ran in parallel, each instance of parallel-hash creates a separate @md5sum.txt@ as output.  Arvados automatically collates theses files into a single collection, which is the output of the job:
+Because the job ran in concurrent, each instance of concurrent-hash creates a separate @md5sum.txt@ as output.  Arvados automatically collates theses files into a single collection, which is the output of the job:
 
 <notextile>
 <pre><code>~/$USER/crunch_scripts$ <span class="userinput">arv keep ls e2ccd204bca37c77c0ba59fc470cd0f7+162</span>
