@@ -12,6 +12,12 @@ class Collection < ArvadosModel
     t.add :manifest_text
   end
 
+  def self.attributes_required_columns
+    super.merge({ "data_size" => ["manifest_text"],
+                  "files" => ["manifest_text"],
+                })
+  end
+
   def redundancy_status
     if redundancy_confirmed_as.nil?
       'unconfirmed'
