@@ -454,16 +454,28 @@ class WhRunPipelineInstance
   end
 
   def setup_instance
-    if $options[:submit]
-      @instance ||= PipelineInstance.
-        create(:components => @components,
-              :pipeline_template_uuid => @template[:uuid],
-              :state => 'New')
+    if @instance
+      @instance[:properties][:run_options] ||= {}
+      if @options[:no_reuse]
+        # override properties of existing instance
+        @instance[:properties][:run_options][:enable_job_reuse] = false
+      else
+        # Default to "enable reuse" if not specified. (This code path
+        # can go away when old clients go away.)
+        if @instance[:properties][:run_options][:enable_job_reuse].nil?
+          @instance[:properties][:run_options][:enable_job_reuse] = true
+        end
+      end
     else
-      @instance ||= PipelineInstance.
-        create(:components => @components,
-             :pipeline_template_uuid => @template[:uuid],
-             :state => 'RunningOnClient')
+      @instance = PipelineInstance.
+        create(components: @components,
+               properties: {
+                 run_options: {
+                   enable_job_reuse: !@options[:no_reuse]
+                 }
+               },
+               pipeline_template_uuid: @template[:uuid],
+               state: ($options[:submit] ? 'New' : 'RunningOnClient'))
     end
     self
   end
@@ -503,7 +515,8 @@ class WhRunPipelineInstance
             # dealing with new API servers.
             :minimum_script_version => c[:minimum_script_version],
             :exclude_script_versions => c[:exclude_minimum_script_versions],
-            :find_or_create => !(@options[:no_reuse] || c[:nondeterministic]),
+            :find_or_create => (@instance[:properties][:run_options].andand[:enable_job_reuse] &&
+                                !c[:nondeterministic]),
             :filters => c[:filters]
           })
           if job
