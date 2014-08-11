@@ -161,7 +161,7 @@ class User < ArvadosModel
     # delete repo_perms for this user
     repo_perms = Link.where(tail_uuid: self.uuid,
                             link_class: 'permission',
-                            name: 'can_write')
+                            name: 'can_manage')
     repo_perms.each do |perm|
       Link.delete perm
     end
@@ -312,7 +312,7 @@ class User < ArvadosModel
       repo_perms = Link.where(tail_uuid: self.uuid,
                               head_uuid: repo[:uuid],
                               link_class: 'permission',
-                              name: 'can_write')
+                              name: 'can_manage')
       if repo_perms.any?
         logger.warn "User already has repository access " +
             repo_perms.collect { |p| p[:uuid] }.inspect
@@ -327,7 +327,7 @@ class User < ArvadosModel
     repo_perm = Link.create(tail_uuid: self.uuid,
                             head_uuid: repo[:uuid],
                             link_class: 'permission',
-                            name: 'can_write')
+                            name: 'can_manage')
     logger.info { "repo permission: " + repo_perm[:uuid] }
     return repo_perm
   end

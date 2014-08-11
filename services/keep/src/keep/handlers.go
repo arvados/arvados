@@ -354,6 +354,11 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if never_delete {
+		http.Error(resp, MethodDisabledError.Error(), MethodDisabledError.HTTPCode)
+		return
+	}
+
 	// Delete copies of this block from all available volumes.  Report
 	// how many blocks were successfully and unsuccessfully
 	// deleted.

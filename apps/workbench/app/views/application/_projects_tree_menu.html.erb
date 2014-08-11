@@ -1,12 +1,13 @@
-              <li role="presentation" class="dropdown-header">
-                <%= top_button.andand.call %>
-                My projects
+              <li>
+                <%= project_link_to.call({object: current_user, depth: 0}) do %>
+                  <span style="padding-left: 0"></span>Home
+                <% end %>
               </li>
               <% my_project_tree.each do |pnode| %>
                 <% next if pnode[:object].class != Group %>
                 <li>
                   <%= project_link_to.call pnode do %>
-                    <span style="padding-left: <%= pnode[:depth]-1 %>em"></span><%= pnode[:object].name %>
+                    <span style="padding-left: <%= pnode[:depth] %>em"></span><%= pnode[:object].name %>
                   <% end %>
                 </li>
               <% end %>

@@ -29,25 +29,37 @@ class Collection < ArvadosModel
   end
 
   def assign_uuid
-    if self.manifest_text.nil? and self.uuid.nil?
-      super
-    elsif self.manifest_text and self.uuid
-      self.uuid.gsub! /\+.*/, ''
-      if self.uuid == Digest::MD5.hexdigest(self.manifest_text)
-        self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
-        true
-      else
-        errors.add :uuid, 'does not match checksum of manifest_text'
-        false
-      end
-    elsif self.manifest_text
-      errors.add :uuid, 'not supplied (must match checksum of manifest_text)'
-      false
-    else
+    if not self.manifest_text
       errors.add :manifest_text, 'not supplied'
-      false
+      return false
     end
+    expect_uuid = Digest::MD5.hexdigest(self.manifest_text)
+    if self.uuid
+      self.uuid.gsub! /\+.*/, ''
+      if self.uuid != expect_uuid
+        errors.add :uuid, 'must match checksum of manifest_text'
+        return false
+      end
+    else
+      self.uuid = expect_uuid
+    end
+    self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
+    true
   end
+
+  # TODO (#3036/tom) replace above assign_uuid method with below assign_uuid and self.generate_uuid
+  # def assign_uuid
+  #   # Even admins cannot assign collection uuids.
+  #   self.uuid = self.class.generate_uuid
+  # end
+  # def self.generate_uuid
+  #   # The last 10 characters of a collection uuid are the last 10
+  #   # characters of the base-36 SHA256 digest of manifest_text.
+  #   [Server::Application.config.uuid_prefix,
+  #    self.uuid_prefix,
+  #    rand(2**256).to_s(36)[-5..-1] + Digest::SHA256.hexdigest(self.manifest_text).to_i(16).to_s(36)[-10..-1],
+  #   ].join '-'
+  # end
 
   def data_size
     inspect_manifest_text if @data_size.nil? or manifest_text_changed?
@@ -65,15 +77,6 @@ class Collection < ArvadosModel
       @files = []
       return
     end
-
-    #normalized_manifest = ""
-    #IO.popen(['arv-normalize'], 'w+b') do |io|
-    #  io.write manifest_text
-    #  io.close_write
-    #  while buf = io.read(2**20)
-    #    normalized_manifest += buf
-    #  end
-    #end
 
     @data_size = 0
     tmp = {}
@@ -156,12 +159,15 @@ class Collection < ArvadosModel
       joins("JOIN collections ON links.head_uuid = collections.uuid").
       order("links.created_at DESC")
 
-    # If the search term is a Collection locator with an associated
-    # Docker image hash link, return that Collection.
-    coll_matches = base_search.
-      where(link_class: "docker_image_hash", collections: {uuid: search_term})
-    if match = coll_matches.first
-      return [match.head_uuid]
+    # If the search term is a Collection locator that contains one file
+    # that looks like a Docker image, return it.
+    if loc = Locator.parse(search_term)
+      loc.strip_hints!
+      coll_match = readable_by(*readers).where(uuid: loc.to_s).first
+      if coll_match and (coll_match.files.size == 1) and
+          (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
+        return [loc.to_s]
+      end
     end
 
     # Find Collections with matching Docker image repository+tag pairs.

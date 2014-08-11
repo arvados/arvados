@@ -40,11 +40,13 @@ stream per filesystem directory that contains files.
 """)
 
 upload_opts.add_argument('--project-uuid', metavar='UUID', help="""
-When a Collection is made, make a Link to save it under the specified project.
+Store the collection in the specified project, instead of your Home
+project.
 """)
 
 upload_opts.add_argument('--name', help="""
-When a Collection is linked to a project, use the specified name.
+Save the collection with the specified name, rather than the default
+generic name "Saved at {time} by {username}@{host}".
 """)
 
 _group = upload_opts.add_mutually_exclusive_group()
@@ -352,31 +354,29 @@ def prep_project_link(args, stderr, project_exists=check_project_exists):
     # to create the desired project link for this Collection, or None.
     # Raises ValueError if the arguments request something impossible.
     making_collection = not (args.raw or args.stream)
-    any_link_spec = args.project_uuid or args.name
     if not making_collection:
-        if any_link_spec:
+        if args.name or args.project_uuid:
             raise ValueError("Requested a Link without creating a Collection")
         return None
-    elif not any_link_spec:
-        stderr.write(
-            "arv-put: No --project-uuid or --name specified.  This data will be cached\n"
-            "in Keep.  You will need to find this upload by its locator(s) later.\n")
-        return None
-    elif not args.project_uuid:
-        raise ValueError("--name requires --project-uuid")
-    elif not project_exists(args.project_uuid):
+    link = {'tail_uuid': args.project_uuid,
+            'link_class': 'name',
+            'name': args.name}
+    if not link['tail_uuid']:
+        link['tail_uuid'] = arvados.api('v1').users().current().execute()['uuid']
+    elif not project_exists(link['tail_uuid']):
         raise ValueError("Project {} not found".format(args.project_uuid))
-    link = {'tail_uuid': args.project_uuid, 'link_class': 'name'}
-    if args.name:
-        link['name'] = args.name
+    if not link['name']:
+        link['name'] = "Saved at {} by {}@{}".format(
+            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            pwd.getpwuid(os.getuid()).pw_name,
+            socket.gethostname())
+        stderr.write(
+            "arv-put: No --name specified. Saving as \"%s\"\n" % link['name'])
+    link['owner_uuid'] = link['tail_uuid']
     return link
 
 def create_project_link(locator, link):
     link['head_uuid'] = locator
-    link.setdefault('name', "Collection saved by {}@{} at {}".format(
-            pwd.getpwuid(os.getuid()).pw_name,
-            socket.gethostname(),
-            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")))
     return arvados.api('v1').links().create(body=link).execute()
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
@@ -412,7 +412,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if resume_cache is None:
         writer = ArvPutCollectionWriter(resume_cache, reporter, bytes_expected)
     else:
-        resume_cache.restart()
         writer = ArvPutCollectionWriter.from_cache(
             resume_cache, reporter, bytes_expected)
 

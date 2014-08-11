@@ -16,11 +16,11 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "get list of projects" do
     authorize_with :active
-    get :index, filters: [['group_class', 'in', ['project', 'folder']]], format: :json
+    get :index, filters: [['group_class', '=', 'project']], format: :json
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
-      assert_includes ['folder', 'project'], group['group_class']
+      assert_equal 'project', group['group_class']
       group_uuids << group['uuid']
     end
     assert_includes group_uuids, groups(:aproject).uuid
@@ -109,6 +109,24 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
           refute_includes found_uuids, specimens(specimen_fixture).uuid, "found specimen fixture '#{specimen_fixture}'"
         end
       end
+    end
+  end
+
+  [false, true].each do |include_linked|
+    test "list objects in home project, include_linked=#{include_linked}" do
+      authorize_with :active
+      get :contents, {
+        format: :json,
+        id: users(:active).uuid,
+        include_linked: include_linked,
+      }
+      assert_response :success
+      found_uuids = json_response['items'].collect { |i| i['uuid'] }
+      if include_linked
+        assert_includes found_uuids, collections(:empty).uuid, "empty collection did not appear in home project"
+      end
+      assert_includes found_uuids, specimens(:owned_by_active_user).uuid, "specimen did not appear in home project"
+      refute_includes found_uuids, specimens(:in_asubproject).uuid, "specimen appeared unexpectedly in home project"
     end
   end
 

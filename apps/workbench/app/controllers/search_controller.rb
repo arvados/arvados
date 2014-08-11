@@ -6,7 +6,12 @@ class SearchController < ApplicationController
       @filters = @filters.select do |attr, operator, operand|
         not (attr == 'owner_uuid' and operator == '=')
       end
-      search_what = Group.find(params[:project_uuid])
+      # Special case for project_uuid is a user uuid:
+      if ArvadosBase::resource_class_for_uuid(params[:project_uuid]) == User
+        search_what = User.find params[:project_uuid]
+      else
+        search_what = Group.find params[:project_uuid]
+      end
     end
     @objects = search_what.contents(limit: @limit,
                                     offset: @offset,
