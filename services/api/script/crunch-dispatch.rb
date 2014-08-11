@@ -71,6 +71,8 @@ class Dispatcher
           re = line.match /(\S+?):+(idle|alloc|down)/
           next if !re
 
+          has_no_job = ! ['alloc','comp'].index(re[2])
+
           # sinfo tells us about a node N times if it is shared by N partitions
           next if node_seen[re[1]]
           node_seen[re[1]] = true
@@ -82,6 +84,7 @@ class Dispatcher
             if node
               $stderr.puts "dispatch: update #{re[1]} state to #{re[2]}"
               node.info['slurm_state'] = re[2]
+              node.info['running_job_uuid'] = nil if has_no_job
               if not node.save
                 $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
               end
