@@ -57,26 +57,6 @@ class Arvados::V1::UsersController < ApplicationController
     show
   end
 
-  def _setup_requires_parameters
-    {
-      user: {
-        type: 'object', required: false
-      },
-      openid_prefix: {
-        type: 'string', required: false
-      },
-      repo_name: {
-        type: 'string', required: false
-      },
-      vm_uuid: {
-        type: 'string', required: false
-      },
-      send_notification_email: {
-        type: 'boolean', required: false, default: false
-      },
-    }
-  end
-
   # create user object and all the needed links
   def setup
     @object = nil
@@ -138,7 +118,21 @@ class Arvados::V1::UsersController < ApplicationController
 
   def self._setup_requires_parameters
     {
-      send_notification_email: { type: 'boolean', required: true },
+      user: {
+        type: 'object', required: false
+      },
+      openid_prefix: {
+        type: 'string', required: false
+      },
+      repo_name: {
+        type: 'string', required: false
+      },
+      vm_uuid: {
+        type: 'string', required: false
+      },
+      send_notification_email: {
+        type: 'boolean', required: false, default: false
+      },
     }
   end
 
