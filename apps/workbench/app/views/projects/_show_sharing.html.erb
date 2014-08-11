@@ -2,7 +2,9 @@
    uuid_map = {}
    if @share_links
      [User, Group].each do |type|
-       type.filter([['uuid','in',@share_links.collect(&:tail_uuid)]]).each do |o|
+       type.limit(10000)
+         .filter([['uuid','in',@share_links.collect(&:tail_uuid)]])
+         .each do |o|
          uuid_map[o.uuid] = o
        end
      end
