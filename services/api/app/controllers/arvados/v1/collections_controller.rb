@@ -84,17 +84,13 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def show
-    if current_api_client_authorization
-      signing_opts = {
-        key: Rails.configuration.blob_signing_key,
-        api_token: current_api_client_authorization.api_token,
-        ttl: Rails.configuration.blob_signing_ttl,
-      }
-      munge_manifest_locators(@object[:manifest_text]) do |loc|
-        Blob.sign_locator(loc.to_s, signing_opts)
-      end
-    end
-    render json: @object.as_api_response(:with_data)
+    sign_manifests(@object[:manifest_text])
+    super
+  end
+
+  def index
+    sign_manifests(*@objects.map { |c| c[:manifest_text] })
+    super
   end
 
   def collection_uuid(uuid)
@@ -257,6 +253,14 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   protected
+
+  def find_objects_for_index
+    # Omit manifest_text from index results unless expressly selected.
+    @select ||= model_class.api_accessible_attributes(:user).
+      map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
+    super
+  end
+
   def find_object_by_uuid
     super
     if !@object and !params[:uuid].match(/^[0-9a-f]+\+\d+$/)
@@ -278,5 +282,20 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def munge_manifest_locators(manifest, &block)
     self.class.munge_manifest_locators(manifest, &block)
+  end
+
+  def sign_manifests(*manifests)
+    if current_api_client_authorization
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: current_api_client_authorization.api_token,
+        ttl: Rails.configuration.blob_signing_ttl,
+      }
+      manifests.each do |text|
+        munge_manifest_locators(text) do |loc|
+          Blob.sign_locator(loc.to_s, signing_opts)
+        end
+      end
+    end
   end
 end
