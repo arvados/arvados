@@ -210,7 +210,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     click_button "Save profile"
     # profile saved and in profile page now with success
     assert page.has_text? 'Thank you for filling in your profile'
-    click_button 'Take me to my page'
+    click_button 'Access Arvados Workbench'
 
     # profile saved and in home page now
     assert page.has_text? 'My projects'
