@@ -58,7 +58,7 @@ $(document).
                     if ($(this).attr('data-name')) {
                         var textileAttr = $(this).attr('data-name') + 'Textile';
                         if (response[textileAttr]) {
-                            $(this).html(response[textileAttr]);
+                            $(this).attr('data-textile', response[textileAttr]);
                         }
                     }
                     return;
@@ -81,6 +81,10 @@ $(document).
                 // information if it appears elsewhere on the page.
                 if (reason != 'save') return;
                 var html = $(this).html();
+                if( $(this).attr('data-textile') ) {
+                    html = $(this).attr('data-textile');
+                    $(this).html(html);
+                }
                 var uuid = $(this).attr('data-object-uuid');
                 var attr = $(this).attr('data-name');
                 var edited = this;
