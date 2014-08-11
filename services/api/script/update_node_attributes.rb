@@ -51,8 +51,8 @@ while true
 
         puts "Node #{node.uuid} slot #{node.slot_number} name #{node.hostname} state #{nodestate}#{' (has_no_job)' if has_no_job}"
         node_info_was = node.info.dup
-        node.info[:slurm_state] = nodestate
-        node.info[:running_job_uuid] = nil if has_no_job
+        node.info['slurm_state'] = nodestate
+        node.info['running_job_uuid'] = nil if has_no_job
         if node_info_was != node.info and not node.save
           raise "Fail: update node #{node.uuid} state #{nodestate}"
         end
@@ -91,8 +91,8 @@ while true
           first
         raise "Fatal: Node does not exist: #{nodename}" if !node
         puts "Node #{node.uuid} slot #{node.slot_number} name #{node.hostname} running_job_uuid #{running_job_uuid}"
-        if node.info[:running_job_uuid] != running_job_uuid
-          node.info[:running_job_uuid] = running_job_uuid
+        if node.info['running_job_uuid'] != running_job_uuid
+          node.info['running_job_uuid'] = running_job_uuid
           if not node.save
             raise "Fail: update node #{node.uuid} running_job_uuid #{running_job_uuid}"
           end
