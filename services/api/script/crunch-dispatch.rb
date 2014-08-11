@@ -375,11 +375,11 @@ class Dispatcher
       $stderr.puts j_done[:stderr_buf] + "\n"
     end
 
-    # Wait the thread
-    j_done[:wait_thr].value
+    # Wait the thread (returns a Process::Status)
+    exit_status = j_done[:wait_thr].value
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if jobrecord.started_at
+    if exit_status.to_i != 111 and jobrecord.started_at
       # Clean up state fields in case crunch-job exited without
       # putting the job in a suitable "finished" state.
       jobrecord.running = false
