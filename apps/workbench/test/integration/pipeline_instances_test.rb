@@ -117,6 +117,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       click
 
     within('.modal-dialog') do
+      assert_selector 'button.dropdown-toggle', text: 'A Project'
       first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end
