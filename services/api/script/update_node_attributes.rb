@@ -47,7 +47,7 @@ while true
                 nodename.match(/(\d+)$/)[1].to_i,
                 nodename).
           first
-        raise "Fatal: Node does not exist: #{nodename}" if !node
+        next if !node
 
         puts "Node #{node.uuid} slot #{node.slot_number} name #{node.hostname} state #{nodestate}#{' (has_no_job)' if has_no_job}"
         node_info_was = node.info.dup
