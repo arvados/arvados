@@ -103,16 +103,23 @@ class ProjectsControllerTest < ActionController::TestCase
     last_kind = nil
     found_kind = {}
     json_response['content'].scan /<tr[^>]+>/ do |tr_tag|
-      assert_equal(1,
-                   (tr_tag.scan(/\ data-object-created-at=\"(.*?)\"/).each do |t,|
-                      if last_timestamp
-                        assert_operator(last_timestamp, :>=, t,
-                                        "Rows are not sorted by timestamp desc")
-                      end
-                      last_timestamp = t
-                    end).count,
+      found_timestamps = 0
+      tr_tag.scan(/\ data-object-created-at=\"(.*?)\"/).each do |t,|
+        if last_timestamp
+          assert_operator(last_timestamp, :>=, t,
+                          "Rows are not sorted by timestamp desc")
+        end
+        last_timestamp = t
+        found_timestamps += 1
+      end
+      assert_equal(1, found_timestamps,
                    "Content row did not have exactly one timestamp")
 
+      # Confirm that the test for timestamp ordering couldn't have
+      # passed merely because the test fixtures have convenient
+      # timestamps (e.g., there is only one pipeline and one job in
+      # the project being tested, or there are no pipelines at all in
+      # the project being tested):
       tr_tag.scan /\ data-kind=\"(.*?)\"/ do |kind|
         if last_kind and last_kind != kind and found_kind[kind]
           # We saw this kind before, then a different kind, then
