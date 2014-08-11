@@ -28,39 +28,6 @@ class Collection < ArvadosModel
     end
   end
 
-  def assign_uuid
-    if not self.manifest_text
-      errors.add :manifest_text, 'not supplied'
-      return false
-    end
-    expect_uuid = Digest::MD5.hexdigest(self.manifest_text)
-    if self.uuid
-      self.uuid.gsub! /\+.*/, ''
-      if self.uuid != expect_uuid
-        errors.add :uuid, 'must match checksum of manifest_text'
-        return false
-      end
-    else
-      self.uuid = expect_uuid
-    end
-    self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
-    true
-  end
-
-  # TODO (#3036/tom) replace above assign_uuid method with below assign_uuid and self.generate_uuid
-  # def assign_uuid
-  #   # Even admins cannot assign collection uuids.
-  #   self.uuid = self.class.generate_uuid
-  # end
-  # def self.generate_uuid
-  #   # The last 10 characters of a collection uuid are the last 10
-  #   # characters of the base-36 SHA256 digest of manifest_text.
-  #   [Server::Application.config.uuid_prefix,
-  #    self.uuid_prefix,
-  #    rand(2**256).to_s(36)[-5..-1] + Digest::SHA256.hexdigest(self.manifest_text).to_i(16).to_s(36)[-10..-1],
-  #   ].join '-'
-  # end
-
   def data_size
     inspect_manifest_text if @data_size.nil? or manifest_text_changed?
     @data_size
