@@ -260,13 +260,7 @@ class Arvados::V1::CollectionsController < ApplicationController
     # need to fetch it during search, then hide it from the results.
     @select ||= model_class.api_accessible_attributes(:user).
       map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
-    render_select = @select.dup
-    if (@select & ["data_size", "files"]).any? and
-        (not @select.include?("manifest_text"))
-      @select << "manifest_text"
-    end
     super
-    @select = render_select
   end
 
   def find_object_by_uuid
