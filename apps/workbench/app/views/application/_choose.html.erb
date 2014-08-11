@@ -15,7 +15,7 @@
                    if val == current_user.uuid
                      selected_project_name = "Home"
                    else
-                     selected_project_name = Group.find?(val).name
+                     selected_project_name = Group.find(val).name rescue val
                    end
                  end
                end
