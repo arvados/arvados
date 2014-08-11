@@ -33,16 +33,16 @@
       </div>
     </div>
     <div class="col-sm-4 pull-right">
-      <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-<%= tab_name %> tbody"/>
+      <input type="text" class="form-control filterable-control" placeholder="Search project contents" data-filterable-target="table.arv-index.arv-project-<%= tab_pane %> tbody"/>
     </div>
   </div>
 
-  <table class="table table-condensed table-fixedlayout arv-index arv-project-<%= tab_name %>" style="overflow-x: hidden">
+  <table class="table table-condensed table-fixedlayout arv-index arv-project-<%= tab_pane %>" style="overflow-x: hidden">
     <colgroup>
       <col width="40%" />
       <col width="60%" />
     </colgroup>
-    <tbody data-infinite-scroller="#<%= tab_name %>-scroll" data-infinite-content-href="<%= url_for partial: :contents_rows, filters: filters.to_json %>">
+    <tbody data-infinite-scroller="#<%= tab_pane %>-scroll" data-infinite-content-href="<%= url_for partial: :contents_rows, filters: filters.to_json %>">
     </tbody>
     <thead>
       <tr>
