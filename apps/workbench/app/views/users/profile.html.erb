@@ -3,21 +3,9 @@
     current_user_profile = current_user.prefs[:profile]
     show_save_button = false
 
-    profile_message = 'You can manage your profile using this page. Any feilds in red are required and missing.
-                       Please fill in those fields before you can accesse Arvados Workbench.'
-              
-    missing_required_profile = false
-    profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
-      if entry['message']
-        profile_message = entry['message']
-      else    # key
-        if !current_user_profile ||
-           !current_user_profile[entry['key'].to_sym] ||
-           current_user_profile[entry['key'].to_sym].empty?
-          missing_required_profile = true
-        end
-      end
-    end
+    profile_message = Rails.configuration.user_profile_form_message ? Rails.configuration.user_profile_form_message : 'You can manage your profile using this page. Any feilds in red are required and missing. Please fill in those fields before you can accesse Arvados Workbench.'
+
+    missing_required = missing_required_profile?
 
     profile_url = '/users/'+current_user.uuid+'/profile'
     target = request.url.partition('?target=')[-1]
@@ -33,9 +21,9 @@
           </h4>
         </div>
         <div class="panel-body">
-          <% if !missing_required_profile && params.andand.keys.include?('target') %>
+          <% if !missing_required && params.andand.keys.include?('target') %>
             <div class="rounded" style="border-width: 1px; border-style: dotted; border-color: lightgray;">
-              <p style="margin: 8px;">Thank you for filling in your profile. If you are done updating your profile, 
+              <p style="margin: 8px;">Thank you for filling in your profile. If you are done updating your profile,
                  you can now access Arvados Workbench by clicking on this button.
                   <form action="<%=target%>">
                     <input style="margin-left: 8px;" class="btn btn-primary" type="submit" value="Take me to my page">

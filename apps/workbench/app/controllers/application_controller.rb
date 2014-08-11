@@ -506,36 +506,38 @@ class ApplicationController < ActionController::Base
   end
 
   def check_user_profile
-    profile_config = Rails.configuration.user_profile_form_fields
-
     if request.method.downcase != 'get' || params[:partial] ||
        params[:tab_pane] || params[:action_method] ||
        params[:action] == 'setup_popup'
       return true
     end
 
+    if missing_required_profile?
+      render 'users/profile'
+    end
+    true
+  end
+
+  helper_method :missing_required_profile?
+  def missing_required_profile?
+    missing_required = false
+
+    profile_config = Rails.configuration.user_profile_form_fields
     if current_user && profile_config
-      missing_required_profile = false
-
-      user_prefs = current_user.prefs
-      current_user_profile = user_prefs[:profile] if user_prefs
-
+      current_user_profile = current_user.prefs[:profile]
       profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
         if entry['required']
           if !current_user_profile ||
              !current_user_profile[entry['key'].to_sym] ||
              current_user_profile[entry['key'].to_sym].empty?
-            missing_required_profile = true
+            missing_required = true
             break
           end
         end
       end
-
-      if missing_required_profile
-        render 'users/profile'
-      end
     end
-    true
+
+    missing_required
   end
 
   def select_theme

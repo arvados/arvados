@@ -192,18 +192,14 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Save profile'
 
     # This time fill in required field and then save. Expect to go to requested page after that.
-    profile_config = Rails.configuration.user_profile_form_fields
-    profile_message = ''
+    profile_message = Rails.configuration.user_profile_form_message
     required_field_title = ''
     required_field_key = ''
-    profile_config.andand.each do |entry| 
-      if entry['message']
-        profile_message = entry['message']
-      else
-        if entry['required']
-          required_field_key = entry['key']
-          required_field_title = entry['form_field_title']
-        end
+    profile_config = Rails.configuration.user_profile_form_fields
+    profile_config.andand.each do |entry|
+      if entry['required']
+        required_field_key = entry['key']
+        required_field_title = entry['form_field_title']
       end
     end
 
