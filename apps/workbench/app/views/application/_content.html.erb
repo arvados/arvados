@@ -21,8 +21,7 @@
     <div id="<%= pane %>-scroll" style="margin-top:0.5em;">
       <div class="pane-content">
         <% if i == 0 %>
-          <%= render(partial: 'show_' + pane.downcase,
-                     locals: { comparable: comparable, objects: @objects }) %>
+          <%= render_pane pane, to_string: true %>
         <% else %>
           <div class="spinner spinner-32px spinner-h-center"></div>
         <% end %>
