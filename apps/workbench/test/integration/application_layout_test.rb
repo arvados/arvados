@@ -45,19 +45,19 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link? "#{user['email']}"
         find('a', text: "#{user['email']}").click
         within('.dropdown-menu') do
-          if !invited
-            page.has_no_link? ('Not active')
-          else
-            page.has_no_link? ('Sign agreements')
-            page.has_link? ('Manage account')
+          if user['is_active']
+            assert page.has_no_link? ('Not active')
+            assert page.has_no_link? ('Sign agreements')
+
+            assert page.has_link? ('Manage account')
 
             if profile_config
-              page.has_link? ('Manage profile')
+              assert page.has_link? ('Manage profile')
             else
-              page.has_no_link? ('Manage profile')
+              assert page.has_no_link? ('Manage profile')
             end
           end
-          page.has_link? ('Log out')
+          assert page.has_link? ('Log out')
         end
       end
     end
@@ -261,7 +261,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
     ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
   ].each do |token, user, invited, has_profile|
-      test "visit home page when profile is configured for user #{token}" do
+    test "visit home page when profile is configured for user #{token}" do
       # Our test config enabled profile by default. So, no need to update config
       if !token
         visit ('/')
@@ -271,17 +271,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       verify_homepage_with_profile user, invited, has_profile
     end
-  end
 
-  [
-    [nil, nil, false, false],
-    ['inactive', api_fixture('users')['inactive'], true, false],
-    ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false, false],
-    ['active', api_fixture('users')['active'], true, true],
-    ['admin', api_fixture('users')['admin'], true, true],
-    ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
-  ].each do |token, user, invited, has_profile|
     test "visit home page when profile not configured for user #{token}" do
       Rails.configuration.user_profile_form_fields = false
 
@@ -293,20 +283,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       verify_homepage_with_profile user, invited, has_profile
     end
-  end
 
-  [
-    [nil, nil, false, false],
-    ['inactive', api_fixture('users')['inactive'], true, false],
-    ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false, false],
-    ['active', api_fixture('users')['active'], true, true],
-    ['admin', api_fixture('users')['admin'], true, true],
-    ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
-    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
-  ].each do |token, user, invited, has_profile|
     test "check help for user #{token}" do
-      Rails.configuration.user_profile_form_fields = false
-
       if !token
         visit ('/')
       else
@@ -325,26 +303,15 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       visit page_with_token(token)
       verify_system_menu user
     end
-  end
 
-  [
-    ['active', api_fixture('users')['active'], true, true],
-    ['admin', api_fixture('users')['admin'], true, true],
-  ].each do |token, user|
     test "test manage account for user #{token}" do
       visit page_with_token(token)
       verify_manage_account user
     end
-  end
 
-  [
-    ['active', api_fixture('users')['active'], true, true],
-    ['admin', api_fixture('users')['admin'], true, true],
-  ].each do |token, user|
     test "test search for user #{token}" do
       visit page_with_token(token)
       verify_search_box user
     end
   end
-
 end
