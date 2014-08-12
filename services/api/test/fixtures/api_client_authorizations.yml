@@ -162,3 +162,15 @@ job_reader:
   user: job_reader
   api_token: e99512cdc0f3415c2428b9758f33bdfb07bc3561b00e86e7e6
   expires_at: 2038-01-01 00:00:00
+
+active_no_prefs:
+  api_client: untrusted
+  user: active_no_prefs
+  api_token: 3kg612cdc0f3415c2428b9758f33bdfb07bc3561b00e86qdmi
+  expires_at: 2038-01-01 00:00:00
+
+active_no_prefs_profile:
+  api_client: untrusted
+  user: active_no_prefs_profile
+  api_token: 3kg612cdc0f3415c242856758f33bdfb07bc3561b00e86qdmi
+  expires_at: 2038-01-01 00:00:00
