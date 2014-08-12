@@ -131,8 +131,8 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render json: @objects }
       f.html {
-        if params['tab_pane']
-          render_pane params['tab_pane']
+        if params[:tab_pane]
+          render_pane params[:tab_pane]
         else
           render
         end
