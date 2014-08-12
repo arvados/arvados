@@ -724,7 +724,14 @@ class WhRunPipelineInstance
   end
 
   def abort(msg)
-    @instance.log_stderr(msg) if @instance
+    if @instance
+      if ["New", "Ready", "RunningOnClient",
+          "RunningOnServer"].include?(@instance[:state])
+        @instance[:state] = "Failed"
+        @instance.save
+      end
+      @instance.log_stderr(msg)
+    end
     Kernel::abort(msg)
   end
 end
