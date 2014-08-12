@@ -46,7 +46,7 @@ if streamname != None:
 else:
     streamname = '.'
 
-m = re.match(r'\.(gz|Z|bz2|tgz|tbz|zip|rar|7z|cab|deb|rpm|cpio|gem)$', arvados.get_task_param_mount('input'), re.IGNORECASE)
+m = re.match(r'.*\.(gz|Z|bz2|tgz|tbz|zip|rar|7z|cab|deb|rpm|cpio|gem)$', arvados.get_task_param_mount('input'), re.IGNORECASE)
 
 if m != None:
     rc = subprocess.call(["dtrx", "-r", "-n", "-q", arvados.get_task_param_mount('input')])
