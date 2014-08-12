@@ -84,6 +84,8 @@ use File::Temp;
 use Fcntl ':flock';
 use File::Path qw( make_path );
 
+use constant EX_TEMPFAIL => 75;
+
 $ENV{"TMPDIR"} ||= "/tmp";
 unless (defined $ENV{"CRUNCH_TMP"}) {
   $ENV{"CRUNCH_TMP"} = $ENV{"TMPDIR"} . "/crunch-job";
@@ -151,24 +153,24 @@ if ($job_has_uuid)
   $Job = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
   if (!$force_unlock) {
     # If some other crunch-job process has grabbed this job (or we see
-    # other evidence that the job is already underway) we exit 111 so
-    # crunch-dispatch (our parent process) doesn't mark the job as
-    # failed.
+    # other evidence that the job is already underway) we exit
+    # EX_TEMPFAIL so crunch-dispatch (our parent process) doesn't
+    # mark the job as failed.
     if ($Job->{'is_locked_by_uuid'}) {
-      Log(undef, "Job is locked by " . $Job->{'is_locked_by_uuid'} . ", exiting 111");
-      exit(111);
+      Log(undef, "Job is locked by " . $Job->{'is_locked_by_uuid'});
+      exit EX_TEMPFAIL;
     }
     if ($Job->{'success'} ne undef) {
       Log(undef, "Job 'success' flag (" . $Job->{'success'} . ") is not null");
-      exit(111);
+      exit EX_TEMPFAIL;
     }
     if ($Job->{'running'}) {
       Log(undef, "Job 'running' flag is already set");
-      exit(111);
+      exit EX_TEMPFAIL;
     }
     if ($Job->{'started_at'}) {
       Log(undef, "Job 'started_at' time is already set (" . $Job->{'started_at'} . ")");
-      exit(111);
+      exit EX_TEMPFAIL;
     }
   }
 }
@@ -281,8 +283,8 @@ if ($job_has_uuid)
   # Claim this job, and make sure nobody else does
   unless ($Job->update_attributes('is_locked_by_uuid' => $User->{'uuid'}) &&
           $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
-    Log(undef, "Error while updating / locking job, exiting 111");
-    exit(111);
+    Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
+    exit EX_TEMPFAIL;
   }
   $Job->update_attributes('started_at' => scalar gmtime,
                           'running' => 1,
@@ -893,7 +895,7 @@ else {
 Log (undef, "finish");
 
 save_meta();
-exit 0;
+exit ($Job->{'success'} ? 1 : 0);
 
 
 

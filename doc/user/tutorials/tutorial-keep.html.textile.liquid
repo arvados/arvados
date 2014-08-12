@@ -4,7 +4,7 @@ navsection: userguide
 title: "Uploading data"
 ...
 
-This tutorial describes how to to upload new Arvados data collections using the command line tool @arv-put@.  This example uses a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.personalgenomes.org subject "hu599905.":https://my.personalgenomes.org/profile/hu599905
+This tutorial describes how to to upload new Arvados data collections using the command line tool @arv-put@.  This example uses a freely available TSV file containing variant annotations from "Personal Genome Project (PGP)":http://www.pgp-hms.org participant "hu599905.":https://my.pgp-hms.org/profile/hu599905
 
 notextile. <div class="spaced-out">
 
@@ -12,7 +12,7 @@ notextile. <div class="spaced-out">
 # On system from which you will upload data, configure the environment with the Arvados instance host name and authentication token as decribed in "Getting an API token.":{{site.baseurl}}/user/reference/api-tokens.html  (If you are logged into an Arvados VM, you can skip this step.)
 # Download the following example file.  (If you are uploading your own data, you can skip this step.)
 <notextile>
-<pre><code>~$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.personalgenomes.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
+<pre><code>~$ <span class="userinput">curl -o var-GS000016015-ASM.tsv.bz2 'https://warehouse.pgp-hms.org/warehouse/f815ec01d5d2f11cb12874ab2ed50daa+234+K@ant/var-GS000016015-ASM.tsv.bz2'</span>
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100  216M  100  216M    0     0  10.0M      0  0:00:21  0:00:21 --:--:-- 9361k
