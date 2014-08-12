@@ -90,6 +90,9 @@ class ApplicationController < ActionController::Base
   end
 
   def load_filters_and_paging_params
+    @order = params[:order] || 'created_at desc'
+    @order = [@order] unless @order.is_a? Array
+
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
@@ -129,15 +132,30 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render json: @objects }
       f.html {
-        if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
+        if params[:tab_pane]
+          render_pane params[:tab_pane]
         else
           render
         end
       }
       f.js { render }
+    end
+  end
+
+  helper_method :render_pane
+  def render_pane tab_pane, opts={}
+    render_opts = {
+      partial: 'show_' + tab_pane.downcase,
+      locals: {
+        comparable: self.respond_to?(:compare),
+        objects: @objects,
+        tab_pane: tab_pane
+      }.merge(opts[:locals] || {})
+    }
+    if opts[:to_string]
+      render_to_string render_opts
+    else
+      render render_opts
     end
   end
 
@@ -178,9 +196,7 @@ class ApplicationController < ActionController::Base
       f.json { render json: @object.attributes.merge(href: url_for(@object)) }
       f.html {
         if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
+          render_pane params['tab_pane']
         elsif request.method.in? ['GET', 'HEAD']
           render
         else
