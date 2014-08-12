@@ -154,7 +154,6 @@ ALTER SEQUENCE authorized_keys_id_seq OWNED BY authorized_keys.id;
 
 CREATE TABLE collections (
     id integer NOT NULL,
-    locator character varying(255),
     owner_uuid character varying(255),
     created_at timestamp without time zone NOT NULL,
     modified_by_client_uuid character varying(255),
@@ -167,7 +166,11 @@ CREATE TABLE collections (
     redundancy_confirmed_as integer,
     updated_at timestamp without time zone NOT NULL,
     uuid character varying(255),
-    manifest_text text
+    manifest_text text,
+    name character varying(255),
+    description character varying(255),
+    properties character varying(255),
+    expire_time date
 );
 
 
@@ -1977,3 +1980,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140627210837');
 INSERT INTO schema_migrations (version) VALUES ('20140709172343');
 
 INSERT INTO schema_migrations (version) VALUES ('20140714184006');
+
+INSERT INTO schema_migrations (version) VALUES ('20140811184643');
