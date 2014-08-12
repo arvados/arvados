@@ -259,6 +259,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
+    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
   ].each do |token, user, invited, has_profile|
       test "visit home page when profile is configured for user #{token}" do
       # Our test config enabled profile by default. So, no need to update config
@@ -279,6 +280,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
+    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
   ].each do |token, user, invited, has_profile|
     test "visit home page when profile not configured for user #{token}" do
       Rails.configuration.user_profile_form_fields = false
@@ -300,6 +302,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
+    ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
   ].each do |token, user, invited, has_profile|
     test "check help for user #{token}" do
       Rails.configuration.user_profile_form_fields = false

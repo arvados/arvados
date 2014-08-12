@@ -435,7 +435,7 @@ class User < ArvadosModel
   # Send notification if the user saved profile for the first time
   def send_profile_created_notification
     if self.prefs_changed?
-      if self.prefs_was.andand.empty?
+      if self.prefs_was.andand.empty? || !self.prefs_was.andand['profile']
         profile_notification_address = Rails.configuration.user_profile_notification_address
         ProfileNotifier.profile_created(self, profile_notification_address).deliver if profile_notification_address
       end

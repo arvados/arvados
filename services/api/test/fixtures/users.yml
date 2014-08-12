@@ -11,7 +11,7 @@ admin:
   is_admin: true
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: IT
 
 miniadmin:
@@ -25,7 +25,7 @@ miniadmin:
   is_admin: false
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: IT
 
 rominiadmin:
@@ -39,7 +39,7 @@ rominiadmin:
   is_admin: false
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: IT
 
 active:
@@ -53,7 +53,7 @@ active:
   is_admin: false
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: Computational biologist
 
 project_viewer:
@@ -67,7 +67,7 @@ project_viewer:
   is_admin: false
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: Computational biologist
 
 future_project_user:
@@ -81,7 +81,7 @@ future_project_user:
   is_admin: false
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: Computational biologist
 
 spectator:
@@ -95,7 +95,7 @@ spectator:
   is_admin: false
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: Computational biologist
 
 inactive_uninvited:
@@ -152,16 +152,28 @@ job_reader:
   is_admin: false
   prefs:
     profile:
-      organization: Curoverse
+      organization: example.com
       role: Computational biologist
 
 active_no_prefs:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-a46c42d1td4aoj4
-  email: active_no_profile@arvados.local
+  email: active_no_prefs@arvados.local
   first_name: NoPrefs
   last_name: NoProfile
   identity_url: https://active_no_prefs.openid.local
   is_active: true
   is_admin: false
   prefs: {}
+
+active_no_prefs_profile:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-a46c98d1td4aoj4
+  email: active_no_prefs_profile@arvados.local
+  first_name: HasPrefs
+  last_name: NoProfile
+  identity_url: https://active_no_prefs_profile.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    test: abc
