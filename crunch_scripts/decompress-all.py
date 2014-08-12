@@ -45,12 +45,18 @@ if streamname != None:
     os.chdir(streamname)
 else:
     streamname = '.'
-streamreader = filter(lambda s: s.name() == streamname, cr.all_streams())[0]
-filereader = streamreader.files()[filename]
-rc = subprocess.call(["dtrx", "-r", "-n", "-q", arvados.get_task_param_mount('input')])
-if rc == 0:
-    out = arvados.CollectionWriter()
-    out.write_directory_tree(outdir, max_manifest_depth=0)
-    task.set_output(out.finish())
+
+m = re.match(r'\.(gz|Z|bz2|tgz|tbz|zip|rar|7z|cab|deb|rpm|cpio|gem)$', arvados.get_task_param_mount('input'), re.IGNORECASE)
+
+if m != None:
+    rc = subprocess.call(["dtrx", "-r", "-n", "-q", arvados.get_task_param_mount('input')])
+    if rc == 0:
+        out = arvados.CollectionWriter()
+        out.write_directory_tree(outdir, max_manifest_depth=0)
+        task.set_output(out.finish())
+    else:
+        return rc
 else:
+    streamreader = filter(lambda s: s.name() == streamname, cr.all_streams())[0]
+    filereader = streamreader.files()[filename]
     task.set_output(streamname + filereader.as_manifest()[1:])
