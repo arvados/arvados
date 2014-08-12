@@ -332,32 +332,37 @@ class Arvados::V1::SchemaController < ApplicationController
           }.compact.first
           if httpMethod and
               route.defaults[:controller] == 'arvados/v1/' + k.to_s.underscore.pluralize and
-              !d_methods[action.to_sym] and
-              ctl_class.action_methods.include? action and
-              ![:show, :index, :destroy].include?(action.to_sym)
-            method = {
-              id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
-              path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
-              httpMethod: httpMethod,
-              description: "#{route.defaults[:action]} #{k.to_s.underscore.pluralize}",
-              parameters: {},
-              response: {
-                "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
-              },
-              scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
-                      ]
-            }
-            route.segment_keys.each do |key|
-              if key != :format
-                key = :uuid if key == :id
-                method[:parameters][key] = {
-                  type: "string",
-                  description: "",
-                  required: true,
-                  location: "path"
-                }
+              ctl_class.action_methods.include? action
+            if !d_methods[action.to_sym]
+              method = {
+                id: "arvados.#{k.to_s.underscore.pluralize}.#{action}",
+                path: route.path.spec.to_s.sub('/arvados/v1/','').sub('(.:format)','').sub(/:(uu)?id/,'{uuid}'),
+                httpMethod: httpMethod,
+                description: "#{action} #{k.to_s.underscore.pluralize}",
+                parameters: {},
+                response: {
+                  "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
+                },
+                scopes: [
+                         "https://api.clinicalfuture.com/auth/arvados"
+                        ]
+              }
+              route.segment_keys.each do |key|
+                if key != :format
+                  key = :uuid if key == :id
+                  method[:parameters][key] = {
+                    type: "string",
+                    description: "",
+                    required: true,
+                    location: "path"
+                  }
+                end
               end
+            else
+              # We already built a generic method description, but we
+              # might find some more required parameters through
+              # introspection.
+              method = d_methods[action.to_sym]
             end
             if ctl_class.respond_to? "_#{action}_requires_parameters".to_sym
               ctl_class.send("_#{action}_requires_parameters".to_sym).each do |k, v|
@@ -378,7 +383,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 end
               end
             end
-            d_methods[route.defaults[:action].to_sym] = method
+            d_methods[action.to_sym] = method
           end
         end
       end
