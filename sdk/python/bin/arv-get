@@ -8,6 +8,7 @@ import string
 import sys
 import logging
 
+logging.basicConfig()
 logger = logging.getLogger(os.path.basename(sys.argv[0]))
 
 parser = argparse.ArgumentParser(

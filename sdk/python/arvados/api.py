@@ -83,7 +83,8 @@ def api(version=None, cache=True, **kwargs):
     keyword arguments are missing, this function will set default values for
     them, based on the current Arvados configuration settings."""
     if config.get('ARVADOS_DEBUG'):
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig()
+        logging.getLogger().setLevel(logging.DEBUG)
 
     if not cache or not services.get(version):
         if not version:
