@@ -15,6 +15,7 @@ class Arvados::V1::SchemaController < ApplicationController
         name: "arvados",
         version: "v1",
         revision: "20131114",
+        source_version: (Rails.application.config.source_version ? Rails.application.config.source_version : "No version information available") + (Rails.application.config.local_modified ? Rails.application.config.local_modified.to_s : ''),
         generatedAt: Time.now.iso8601,
         title: "Arvados API",
         description: "The API to interact with Arvados.",
