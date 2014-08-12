@@ -68,10 +68,10 @@ class Dispatcher
       begin
         sinfo.split("\n").
           each do |line|
-          re = line.match /(\S+?):+(idle|alloc|down)/
+          re = line.match /(\S+?):+(idle|alloc|down|draining|drained|unknown)/
           next if !re
 
-          has_no_job = ! ['alloc','comp'].index(re[2])
+          has_no_job = ! ['alloc','comp','draining','unknown'].index(re[2])
 
           # sinfo tells us about a node N times if it is shared by N partitions
           next if node_seen[re[1]]
