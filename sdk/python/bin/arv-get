@@ -129,7 +129,7 @@ if not get_prefix:
                         uuid=collection).execute()
                     manifest = c['manifest_text']
                 except Exception as e:
-                    logging.warning(
+                    logger.warning(
                         "API lookup failed for collection %s (%s: %s)",
                         collection, type(e), str(e))
                     manifest = arvados.Keep.get(collection)
