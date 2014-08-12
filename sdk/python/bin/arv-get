@@ -8,7 +8,9 @@ import string
 import sys
 import logging
 
-logger = logging.getLogger(os.path.basename(sys.argv[0]))
+import arvados
+
+logger = logging.getLogger('arvados.arv-get')
 
 parser = argparse.ArgumentParser(
     description='Copy data from Keep to a local file or pipe.')
@@ -87,7 +89,7 @@ if not args.r and (os.path.isdir(args.destination) or
                    args.destination[-1] == os.path.sep):
     args.destination = os.path.join(args.destination,
                                     os.path.basename(args.locator))
-    logger.debug("Appended source file name to destination directory: %s" %
+    logger.debug("Appended source file name to destination directory: %s",
                  args.destination)
 
 # Turn on --progress by default if stderr is a tty and stdout isn't.
@@ -107,8 +109,6 @@ else:
     args.destination = args.destination.rstrip(os.sep)
 
 
-import arvados
-
 r = re.search(r'^(.*?)(/.*)?$', args.locator)
 collection = r.group(1)
 get_prefix = r.group(2)
@@ -121,7 +121,7 @@ if not get_prefix:
     try:
         if not args.n:
             if not args.f and os.path.exists(args.destination):
-                logger.error('Local file %s already exists' % args.destination)
+                logger.error('Local file %s already exists', args.destination)
                 sys.exit(1)
             with open(args.destination, 'wb') as f:
                 try:
@@ -129,9 +129,9 @@ if not get_prefix:
                         uuid=collection).execute()
                     manifest = c['manifest_text']
                 except Exception as e:
-                    logging.warning(
-                        "API lookup failed for collection %s (%s: %s)" %
-                        (collection, type(e), str(e)))
+                    logger.warning(
+                        "API lookup failed for collection %s (%s: %s)",
+                        collection, type(e), str(e))
                     manifest = arvados.Keep.get(collection)
                 f.write(manifest)
         sys.exit(0)
@@ -156,7 +156,7 @@ try:
                     os.path.join(s.name(), f.name())[len(get_prefix)+1:])
                 if (not (args.n or args.f or args.skip_existing) and
                     os.path.exists(dest_path)):
-                    logger.error('Local file %s already exists' % dest_path)
+                    logger.error('Local file %s already exists', dest_path)
                     sys.exit(1)
             else:
                 if os.path.join(s.name(), f.name()) != '.' + get_prefix:
@@ -176,20 +176,20 @@ for s,f,outfilename in todo:
     digestor = None
     if not args.n:
         if args.skip_existing and os.path.exists(outfilename):
-            logger.debug('Local file %s exists. Skipping.' % outfilename)
+            logger.debug('Local file %s exists. Skipping.', outfilename)
             continue
         elif not args.f and (os.path.isfile(outfilename) or
                            os.path.isdir(outfilename)):
             # Good thing we looked again: apparently this file wasn't
             # here yet when we checked earlier.
-            logger.error('Local file %s already exists' % outfilename)
+            logger.error('Local file %s already exists', outfilename)
             sys.exit(1)
         if args.r:
             arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
         try:
             outfile = open(outfilename, 'wb')
         except Exception as e:
-            logger.error('Open(%s) failed: %s' % (outfilename, e))
+            logger.error('Open(%s) failed: %s', outfilename, e)
             sys.exit(1)
     if args.hash:
         digestor = hashlib.new(args.hash)

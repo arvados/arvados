@@ -27,6 +27,8 @@ import config
 import errors
 import util
 
+_logger = logging.getLogger('arvados.collection')
+
 def normalize_stream(s, stream):
     stream_tokens = [s]
     sortedfiles = list(stream.keys())
@@ -117,8 +119,8 @@ class CollectionReader(object):
                     uuid=self._manifest_locator).execute()
                 self._manifest_text = c['manifest_text']
             except Exception as e:
-                logging.warning("API lookup failed for collection %s (%s: %s)" %
-                                (self._manifest_locator, type(e), str(e)))
+                _logger.warning("API lookup failed for collection %s (%s: %s)",
+                                self._manifest_locator, type(e), str(e))
                 self._manifest_text = Keep.get(self._manifest_locator)
         self._streams = []
         for stream_line in self._manifest_text.split("\n"):
