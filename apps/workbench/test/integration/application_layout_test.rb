@@ -151,10 +151,10 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         page.find_field('name').set 'added_in_test'
         click_button 'Submit'
       end
-    end
 
-    # key must be added. look for it in the refreshed page
-    assert page.has_text? 'added_in_test'
+      # key must be added. look for it in the refreshed page
+      assert page.has_text? 'added_in_test'
+    end
   end
 
   # Check manage profile page and add missing profile to the user
