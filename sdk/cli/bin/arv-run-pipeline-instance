@@ -475,7 +475,7 @@ class WhRunPipelineInstance
                  }
                },
                pipeline_template_uuid: @template[:uuid],
-               state: ($options[:submit] ? 'New' : 'RunningOnClient'))
+               state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
     end
     self
   end
