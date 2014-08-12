@@ -25,6 +25,18 @@ from stream import *
 import errors
 import util
 
+logger = logging.getLogger('arvados')
+if config.get('ARVADOS_DEBUG'):
+    logger.setLevel(logging.DEBUG)
+    log_handler = logging.StreamHandler()
+else:
+    log_handler = logging.NullHandler()
+log_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(name)s %(levelname)s: %(message)s',
+        '%Y-%m-%d %H:%M:%S'))
+log_handler.setLevel(logger.level)
+logger.addHandler(log_handler)
+
 def task_set_output(self,s):
     api('v1').job_tasks().update(uuid=self['uuid'],
                                  body={
