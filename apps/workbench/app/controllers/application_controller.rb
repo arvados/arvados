@@ -14,6 +14,7 @@ class ApplicationController < ActionController::Base
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
+  before_filter :check_user_profile, except: [:update_profile] + ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -409,9 +410,6 @@ class ApplicationController < ActionController::Base
     Thread.current[:arvados_api_token] = new_token
     if new_token.nil?
       Thread.current[:user] = nil
-    elsif (new_token == session[:arvados_api_token]) and
-        session[:user].andand[:is_active]
-      Thread.current[:user] = User.new(session[:user])
     else
       Thread.current[:user] = User.current
     end
@@ -429,15 +427,7 @@ class ApplicationController < ActionController::Base
       false  # We may redirect to login, or not, based on the current action.
     else
       session[:arvados_api_token] = params[:api_token]
-      session[:user] = {
-        uuid: user.uuid,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        is_active: user.is_active,
-        is_admin: user.is_admin,
-        prefs: user.prefs
-      }
+
       if !request.format.json? and request.method.in? ['GET', 'HEAD']
         # Repeat this request with api_token in the (new) session
         # cookie instead of the query string.  This prevents API
@@ -529,6 +519,41 @@ class ApplicationController < ActionController::Base
       end
     end
     true
+  end
+
+  def check_user_profile
+    if request.method.downcase != 'get' || params[:partial] ||
+       params[:tab_pane] || params[:action_method] ||
+       params[:action] == 'setup_popup'
+      return true
+    end
+
+    if missing_required_profile?
+      render 'users/profile'
+    end
+    true
+  end
+
+  helper_method :missing_required_profile?
+  def missing_required_profile?
+    missing_required = false
+
+    profile_config = Rails.configuration.user_profile_form_fields
+    if current_user && profile_config
+      current_user_profile = current_user.prefs[:profile]
+      profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
+        if entry['required']
+          if !current_user_profile ||
+             !current_user_profile[entry['key'].to_sym] ||
+             current_user_profile[entry['key'].to_sym].empty?
+            missing_required = true
+            break
+          end
+        end
+      end
+    end
+
+    missing_required
   end
 
   def select_theme
