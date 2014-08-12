@@ -55,7 +55,7 @@ if m != None:
         out.write_directory_tree(outdir, max_manifest_depth=0)
         task.set_output(out.finish())
     else:
-        return rc
+        sys.exit(rc)
 else:
     streamreader = filter(lambda s: s.name() == streamname, cr.all_streams())[0]
     filereader = streamreader.files()[filename]
