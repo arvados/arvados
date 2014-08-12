@@ -93,8 +93,15 @@ class ProjectsControllerTest < ActionController::TestCase
                  "Did not get exactly one row")
   end
 
-  test 'projects#show tab infinite scroll partial does not group object types' do
+  ['', ' asc', ' desc'].each do |direction|
+    test "projects#show tab partial orders correctly by #{direction}" do
+      _test_tab_content_order direction
+    end
+  end
+
+  def _test_tab_content_order direction
     get_contents_rows(limit: 100,
+                      order: "created_at#{direction}",
                       filters: [['uuid','is_a',['arvados#job',
                                                 'arvados#pipelineInstance']]])
     assert_response :success
@@ -106,8 +113,9 @@ class ProjectsControllerTest < ActionController::TestCase
       found_timestamps = 0
       tr_tag.scan(/\ data-object-created-at=\"(.*?)\"/).each do |t,|
         if last_timestamp
-          assert_operator(last_timestamp, :>=, t,
-                          "Rows are not sorted by timestamp desc")
+          correct_operator = / desc$/ =~ direction ? :>= : :<=
+          assert_operator(last_timestamp, correct_operator, t,
+                          "Rows are not sorted by created_at#{direction}")
         end
         last_timestamp = t
         found_timestamps += 1

@@ -138,7 +138,7 @@ class ProjectsController < ApplicationController
       # page, and use the last item on this page as a filter for
       # retrieving the next page. Ideally the API would do this for
       # us, but it doesn't (yet).
-      nextpage_operator = /\bdesc/i =~ @order[0] ? '<' : '>'
+      nextpage_operator = /\bdesc$/i =~ @order[0] ? '<' : '>'
       @objects = []
       @name_link_for = {}
       kind_filters.each do |attr,op,val|
@@ -154,7 +154,9 @@ class ProjectsController < ApplicationController
           @objects += objects
         end
       end
-      @objects = @objects.to_a.sort_by(&:created_at).reverse[0..@limit-1]
+      @objects = @objects.to_a.sort_by(&:created_at)
+      @objects.reverse! if nextpage_operator == '<'
+      @objects = @objects[0..@limit-1]
       @next_page_filters = @filters.reject do |attr,op,val|
         attr == 'created_at' and op == nextpage_operator
       end
