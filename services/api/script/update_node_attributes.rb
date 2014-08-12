@@ -41,7 +41,8 @@ while true
 
     nodenames.each do |nodename|
       if @slurm_state[nodename] != nodestate
-        has_no_job = ! ['alloc','comp'].index(nodestate)
+        has_no_job = ! ['alloc','comp','draining','unknown'].index(nodestate)
+
         node = Node.
           where('slot_number=? and hostname=?',
                 nodename.match(/(\d+)$/)[1].to_i,
