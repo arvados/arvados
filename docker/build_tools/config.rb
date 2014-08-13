@@ -49,7 +49,10 @@ Dir.glob(globdir + '/*.in') do |template_file|
   generated_dir = File.join(File.dirname(template_file), 'generated')
   Dir.mkdir(generated_dir) unless Dir.exists? generated_dir
   output_path = File.join(generated_dir, File.basename(template_file, '.in'))
-  File.open(output_path, "w", File.stat(template_file).mode) do |output|
+  output_mode = (File.stat(template_file).mode & 0100) ? 0755 : 0644
+  File.open(output_path, "w", output_mode) do |output|
+    # Set the mode again after opening, to thwart any prevailing umask:
+    output.chmod output_mode
     File.open(template_file) do |input|
       input.each_line do |line|
 
