@@ -12,6 +12,10 @@ import arvados
 
 logger = logging.getLogger('arvados.arv-get')
 
+def abort(msg, code=1):
+    print >>sys.stderr, "arv-get:", msg
+    exit(code)
+
 parser = argparse.ArgumentParser(
     description='Copy data from Keep to a local file or pipe.')
 parser.add_argument('locator', type=str,
@@ -121,8 +125,7 @@ if not get_prefix:
     try:
         if not args.n:
             if not args.f and os.path.exists(args.destination):
-                logger.error('Local file %s already exists', args.destination)
-                sys.exit(1)
+                abort('Local file %s already exists.' % (args.destination,))
             with open(args.destination, 'wb') as f:
                 try:
                     c = arvados.api('v1').collections().get(
@@ -130,14 +133,14 @@ if not get_prefix:
                     manifest = c['manifest_text']
                 except Exception as e:
                     logger.warning(
-                        "API lookup failed for collection %s (%s: %s)",
-                        collection, type(e), str(e))
+                        "Collection %s not found. " +
+                        "Trying to fetch directly from Keep (deprecated).",
+                        collection)
                     manifest = arvados.Keep.get(collection)
                 f.write(manifest)
         sys.exit(0)
     except arvados.errors.NotFoundError as e:
-        logger.error(e)
-        sys.exit(1)
+        abort(e)
 
 reader = arvados.CollectionReader(collection)
 
@@ -156,8 +159,7 @@ try:
                     os.path.join(s.name(), f.name())[len(get_prefix)+1:])
                 if (not (args.n or args.f or args.skip_existing) and
                     os.path.exists(dest_path)):
-                    logger.error('Local file %s already exists', dest_path)
-                    sys.exit(1)
+                    abort('Local file %s already exists.' % (dest_path,))
             else:
                 if os.path.join(s.name(), f.name()) != '.' + get_prefix:
                     continue
@@ -165,8 +167,7 @@ try:
             todo += [(s, f, dest_path)]
             todo_bytes += f.size()
 except arvados.errors.NotFoundError as e:
-    logger.error(e)
-    sys.exit(1)
+    abort(e)
 
 # Read data, and (if not -n) write to local file(s) or pipe.
 
@@ -182,15 +183,13 @@ for s,f,outfilename in todo:
                            os.path.isdir(outfilename)):
             # Good thing we looked again: apparently this file wasn't
             # here yet when we checked earlier.
-            logger.error('Local file %s already exists', outfilename)
-            sys.exit(1)
+            abort('Local file %s already exists.' % (outfilename,))
         if args.r:
             arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
         try:
             outfile = open(outfilename, 'wb')
         except Exception as e:
-            logger.error('Open(%s) failed: %s', outfilename, e)
-            sys.exit(1)
+            abort('Open(%s) failed: %s' % (outfilename, e))
     if args.hash:
         digestor = hashlib.new(args.hash)
     try:
