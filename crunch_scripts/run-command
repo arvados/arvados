@@ -145,18 +145,18 @@ try:
     else:
         taskp = jobp
 
-    cmd = expand_list(taskp, taskp["command"])
-
     if "task.vwd" in taskp:
         # Populate output directory with symlinks to files in collection
         vwd.checkout(subst.do_substitution(taskp, taskp["task.vwd"]), outdir)
 
+    if "task.cwd" in taskp:
+        os.chdir(subst.do_substitution(taskp, taskp["task.cwd"]))
+
+    cmd = expand_list(taskp, taskp["command"])
+
     if "save.stdout" in taskp:
         stdoutname = subst.do_substitution(taskp, taskp["save.stdout"])
         stdoutfile = open(stdoutname, "wb")
-
-    if "task.cwd" in taskp:
-        os.chdir(subst.do_substitution(taskp, taskp["task.cwd"]))
 
     logging.info("{}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
