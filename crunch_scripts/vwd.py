@@ -20,8 +20,9 @@ def checkout(source_collection, target_dir, keepmount=None):
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
 
-    if os.listdir(target_dir) > 0:
-        raise Exception("target_dir must be empty before checkout")
+    l = os.listdir(target_dir)
+    if len(l) > 0:
+        raise Exception("target_dir must be empty before checkout, contains %s" % l)
 
     stem = os.path.join(keepmount, source_collection)
     for root, dirs, files in os.walk(os.path.join(keepmount, source_collection), topdown=True):
