@@ -10,8 +10,15 @@ import subst
 import time
 import arvados.commands.put as put
 import signal
+import stat
+import copy
+import traceback
+import pprint
+import multiprocessing
+import logging
 
 os.umask(0077)
+logging.basicConfig(format="run-command: %(message)s")
 
 t = arvados.current_task().tmpdir
 
@@ -23,30 +30,46 @@ os.mkdir("output")
 
 os.chdir("output")
 
+outdir = os.getcwd()
+
+taskp = None
+jobp = arvados.current_job()['script_parameters']
 if len(arvados.current_task()['parameters']) > 0:
-    p = arvados.current_task()['parameters']
-else:
-    p = arvados.current_job()['script_parameters']
+    taskp = arvados.current_task()['parameters']
 
 links = []
 
 def sub_link(v):
-    r = os.path.basename(v)
-    os.symlink(os.path.join(os.environ['TASK_KEEPMOUNT'], v) , r)
+    r = os.path.join(outdir, os.path.basename(v))
+    os.symlink(v, r)
     links.append(r)
     return r
 
 def sub_tmpdir(v):
     return os.path.join(arvados.current_task().tmpdir, 'tmpdir')
 
+def sub_outdir(v):
+    return outdir
+
 def sub_cores(v):
-     return os.environ['CRUNCH_NODE_SLOTS']
+     return str(multiprocessing.cpu_count())
+
+def sub_jobid(v):
+     return os.environ['JOB_UUID']
+
+def sub_taskid(v):
+     return os.environ['TASK_UUID']
+
+def sub_jobsrc(v):
+     return os.environ['CRUNCH_SRC']
 
 subst.default_subs["link "] = sub_link
-subst.default_subs["tmpdir"] = sub_tmpdir
+subst.default_subs["task.tmpdir"] = sub_tmpdir
+subst.default_subs["task.outdir"] = sub_outdir
+subst.default_subs["job.srcdir"] = sub_jobsrc
 subst.default_subs["node.cores"] = sub_cores
-
-rcode = 1
+subst.default_subs["job.uuid"] = sub_jobid
+subst.default_subs["task.uuid"] = sub_taskid
 
 def machine_progress(bytes_written, bytes_expected):
     return "run-command: wrote {} total {}\n".format(
@@ -60,19 +83,87 @@ class SigHandler(object):
         sp.send_signal(signum)
         self.sig = signum
 
-try:
-    cmd = []
-    for c in p["command"]:
-        cmd.append(subst.do_substitution(p, c))
+def expand_item(p, c):
+    if isinstance(c, dict):
+        if "foreach" in c and "command" in c:
+            var = c["foreach"]
+            items = get_items(p, p[var])
+            r = []
+            for i in items:
+                params = copy.copy(p)
+                params[var] = i
+                r.extend(expand_list(params, c["command"]))
+            return r
+    elif isinstance(c, list):
+        return expand_list(p, c)
+    elif isinstance(c, str) or isinstance(c, unicode):
+        return [subst.do_substitution(p, c)]
 
-    stdoutname = None
-    stdoutfile = None
-    if "stdout" in p:
-        stdoutname = subst.do_substitution(p, p["stdout"])
+    return []
+
+def expand_list(p, l):
+    return [exp for arg in l for exp in expand_item(p, arg)]
+
+def get_items(p, value):
+    if isinstance(value, list):
+        return expand_list(p, value)
+
+    fn = subst.do_substitution(p, value)
+    mode = os.stat(fn).st_mode
+    prefix = fn[len(os.environ['TASK_KEEPMOUNT'])+1:]
+    if mode != None:
+        if stat.S_ISDIR(mode):
+            items = ["$(dir %s/%s/)" % (prefix, l) for l in os.listdir(fn)]
+        elif stat.S_ISREG(mode):
+            with open(fn) as f:
+                items = [line for line in f]
+        return items
+    else:
+        return None
+
+stdoutname = None
+stdoutfile = None
+rcode = 1
+
+try:
+    if "task.foreach" in jobp:
+        if arvados.current_task()['sequence'] == 0:
+            var = jobp["task.foreach"]
+            items = get_items(jobp, jobp[var])
+            logging.info("parallelizing on %s with items %s" % (var, items))
+            if items != None:
+                for i in items:
+                    params = copy.copy(jobp)
+                    params[var] = i
+                    arvados.api().job_tasks().create(body={
+                        'job_uuid': arvados.current_job()['uuid'],
+                        'created_by_job_task_uuid': arvados.current_task()['uuid'],
+                        'sequence': 1,
+                        'parameters': params
+                        }
+                    ).execute()
+                arvados.current_task().set_output(None)
+                sys.exit(0)
+            else:
+                sys.exit(1)
+    else:
+        taskp = jobp
+
+    cmd = expand_list(taskp, taskp["command"])
+
+    if "save.stdout" in taskp:
+        stdoutname = subst.do_substitution(taskp, taskp["save.stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    print("run-command: {}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+    logging.info("{}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
 
+except Exception as e:
+    logging.exception("caught exception")
+    logging.error("task parameters was:")
+    logging.error(pprint.pformat(taskp))
+    sys.exit(1)
+
+try:
     sp = subprocess.Popen(cmd, shell=False, stdout=stdoutfile)
     sig = SigHandler()
 
@@ -85,13 +176,13 @@ try:
     rcode = sp.wait()
 
     if sig.sig != None:
-        print("run-command: terminating on signal %s" % sig.sig)
+        logging.critical("terminating on signal %s" % sig.sig)
         sys.exit(2)
     else:
-        print("run-command: completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+        logging.info("completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
 except Exception as e:
-    print("run-command: caught exception: {}".format(e))
+    logging.exception("caught exception")
 
 # restore default signal handlers.
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -101,11 +192,11 @@ signal.signal(signal.SIGQUIT, signal.SIG_DFL)
 for l in links:
     os.unlink(l)
 
-print("run-command: the follow output files will be saved to keep:")
+logging.info("the following output files will be saved to keep:")
 
-subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"])
+subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"], stdout=sys.stderr)
 
-print("run-command: start writing output to keep")
+logging.info("start writing output to keep")
 
 done = False
 resume_cache = put.ResumeCache(os.path.join(arvados.current_task().tmpdir, "upload-output-checkpoint"))
@@ -125,10 +216,10 @@ while not done:
                                              }).execute()
         done = True
     except KeyboardInterrupt:
-        print("run-command: terminating on signal 2")
+        logging.critical("terminating on signal 2")
         sys.exit(2)
     except Exception as e:
-        print("run-command: caught exception: {}".format(e))
+        logging.exception("caught exception:")
         time.sleep(5)
 
 sys.exit(rcode)

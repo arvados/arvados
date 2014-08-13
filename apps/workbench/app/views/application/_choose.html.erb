@@ -9,9 +9,20 @@
       <div class="modal-body">
         <div class="input-group">
           <% if params[:by_project].to_s != "false" %>
+            <% selected_project_name = 'All projects'
+               @filters.andand.each do |attr, op, val|
+                 if attr == 'owner_uuid' and op == '='
+                   if val == current_user.uuid
+                     selected_project_name = "Home"
+                   else
+                     selected_project_name = Group.find(val).name rescue val
+                   end
+                 end
+               end
+               %>
             <div class="input-group-btn" data-filterable-target=".modal.arv-choose .selectable-container">
               <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                All projects <span class="caret"></span>
+                <%= selected_project_name %> <span class="caret"></span>
               </button>
               <ul class="dropdown-menu" role="menu">
                 <li>

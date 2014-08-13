@@ -111,6 +111,7 @@ $(document).
                 $scroller = $(window);
             $scroller.
                 addClass('infinite-scroller').
-                on('scroll', { container: this }, maybe_load_more_content);
+                on('scroll resize', { container: this }, maybe_load_more_content).
+                trigger('scroll');
         });
     });

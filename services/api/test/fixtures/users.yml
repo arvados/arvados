@@ -9,7 +9,10 @@ admin:
   identity_url: https://admin.openid.local
   is_active: true
   is_admin: true
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: IT
 
 miniadmin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -20,7 +23,10 @@ miniadmin:
   identity_url: https://miniadmin.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: IT
 
 rominiadmin:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -31,7 +37,10 @@ rominiadmin:
   identity_url: https://rominiadmin.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: IT
 
 active:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -42,7 +51,10 @@ active:
   identity_url: https://active-user.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 project_viewer:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -53,7 +65,10 @@ project_viewer:
   identity_url: https://project-viewer.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 future_project_user:
   # Workbench tests give this user permission on aproject.
@@ -64,7 +79,10 @@ future_project_user:
   identity_url: https://future-project-user.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 spectator:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -75,7 +93,10 @@ spectator:
   identity_url: https://spectator.openid.local
   is_active: true
   is_admin: false
-  prefs: {}
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
 
 inactive_uninvited:
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -129,4 +150,30 @@ job_reader:
   identity_url: https://spectator.openid.local
   is_active: true
   is_admin: false
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+
+active_no_prefs:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-a46c42d1td4aoj4
+  email: active_no_prefs@arvados.local
+  first_name: NoPrefs
+  last_name: NoProfile
+  identity_url: https://active_no_prefs.openid.local
+  is_active: true
+  is_admin: false
   prefs: {}
+
+active_no_prefs_profile:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-a46c98d1td4aoj4
+  email: active_no_prefs_profile@arvados.local
+  first_name: HasPrefs
+  last_name: NoProfile
+  identity_url: https://active_no_prefs_profile.openid.local
+  is_active: true
+  is_admin: false
+  prefs:
+    test: abc

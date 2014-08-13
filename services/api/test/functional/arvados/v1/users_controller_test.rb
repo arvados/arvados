@@ -842,6 +842,71 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     check_active_users_index
   end
 
+  test "update active_no_prefs user profile and expect notification email" do
+    authorize_with :admin
+
+    put :update, {
+      id: users(:active_no_prefs).uuid,
+      user: {
+        prefs: {:profile => {'organization' => 'example.com'}}
+      }
+    }
+    assert_response :success
+
+    found_email = false
+    ActionMailer::Base.deliveries.andand.each do |email|
+      if email.subject == "Profile created by #{users(:active_no_prefs).email}"
+        found_email = true
+        break
+      end
+    end
+    assert_equal true, found_email, 'Expected email after creating profile'
+  end
+
+  test "update active_no_prefs_profile user profile and expect notification email" do
+    authorize_with :admin
+
+    user = {}
+    user[:prefs] = users(:active_no_prefs_profile).prefs
+    user[:prefs][:profile] = {:profile => {'organization' => 'example.com'}}
+    put :update, {
+      id: users(:active_no_prefs_profile).uuid,
+      user: user
+    }
+    assert_response :success
+
+    found_email = false
+    ActionMailer::Base.deliveries.andand.each do |email|
+      if email.subject == "Profile created by #{users(:active_no_prefs_profile).email}"
+        found_email = true
+        break
+      end
+    end
+    assert_equal true, found_email, 'Expected email after creating profile'
+  end
+
+  test "update active user profile and expect no notification email" do
+    authorize_with :admin
+
+    put :update, {
+      id: users(:active).uuid,
+      user: {
+        prefs: {:profile => {'organization' => 'anotherexample.com'}}
+      }
+    }
+    assert_response :success
+
+    found_email = false
+    ActionMailer::Base.deliveries.andand.each do |email|
+      if email.subject == "Profile created by #{users(:active).email}"
+        found_email = true
+        break
+      end
+    end
+    assert_equal false, found_email, 'Expected no email after updating profile'
+  end
+
+
   NON_ADMIN_USER_DATA = ["uuid", "kind", "is_active", "email", "first_name",
                          "last_name"].sort
 

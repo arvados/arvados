@@ -43,8 +43,14 @@
               <%= current_user.email %>
             </a>
             <ul class="dropdown-menu" role="menu">
+              <li role="presentation" class="dropdown-header">
+                My account
+              </li>
               <% if current_user.is_active %>
               <li role="presentation"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
+              <% if Rails.configuration.user_profile_form_fields %>
+                <li role="presentation"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
+              <% end %>
               <li role="presentation" class="divider"></li>
               <% end %>
               <li role="presentation"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>

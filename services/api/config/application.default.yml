@@ -43,6 +43,9 @@ test:
   secret_token: <%= rand(2**512).to_s(36) %>
   blob_signing_key: zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc
 
+  # email address to which mail should be sent when the user creates profile for the first time
+  user_profile_notification_address: arvados@example.com
+
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
 
@@ -173,3 +176,6 @@ common:
   # to sign session tokens. IMPORTANT: This is a site secret. It
   # should be at least 50 characters.
   secret_token: ~
+
+  # email address to which mail should be sent when the user creates profile for the first time
+  user_profile_notification_address: false

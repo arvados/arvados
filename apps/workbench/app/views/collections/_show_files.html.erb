@@ -1,8 +1,3 @@
-<% content_for :tab_line_buttons do %>
-<span style="padding-left: 1em">Collection storage status:</span>
-<%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
-<% end %>
-
 <% file_tree = @object.andand.files_tree %>
 <% if file_tree.nil? or file_tree.empty? %>
   <p>This collection is empty.</p>
