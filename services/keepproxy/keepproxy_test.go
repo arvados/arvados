@@ -39,12 +39,27 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	defer os.Chdir(cwd)
 
 	os.Chdir(pythonDir())
-
-	if err := exec.Command("python", "run_test_server.py", "start").Run(); err != nil {
-		panic("'python run_test_server.py start' returned error")
+	{
+		cmd := exec.Command("python", "run_test_server.py", "start")
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			log.Fatalf("Setting up stderr pipe: %s", err)
+		}
+		go io.Copy(os.Stderr, stderr)
+		if err := cmd.Run(); err != nil {
+			panic(fmt.Sprintf("'python run_test_server.py start' returned error %s", err))
+		}
 	}
-	if err := exec.Command("python", "run_test_server.py", "start_keep").Run(); err != nil {
-		panic("'python run_test_server.py start_keep' returned error")
+	{
+		cmd := exec.Command("python", "run_test_server.py", "start_keep")
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			log.Fatalf("Setting up stderr pipe: %s", err)
+		}
+		go io.Copy(os.Stderr, stderr)
+		if err := cmd.Run(); err != nil {
+			panic(fmt.Sprintf("'python run_test_server.py start_keep' returned error %s", err))
+		}
 	}
 
 	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
