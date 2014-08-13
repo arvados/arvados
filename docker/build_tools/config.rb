@@ -40,9 +40,7 @@ else
   globdir = '*'
 end
 
-Dir.glob(globdir + '/generated/*') do |stale_file|
-  File.delete(stale_file)
-end
+FileUtils.rm_r Dir.glob(globdir + '/generated/*')
 
 File.umask(022)
 Dir.glob(globdir + '/*.in') do |template_file|
