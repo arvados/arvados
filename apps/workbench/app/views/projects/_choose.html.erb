@@ -42,7 +42,7 @@
 
       <div class="modal-footer">
         <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Cancel</button>
-        <button class="btn btn-primary" aria-hidden="true"><%= params[:action_name] || 'Select' %></button>
+        <button class="btn btn-primary" aria-hidden="true" data-enable-if-selection disabled><%= params[:action_name] || 'Select' %></button>
         <div class="modal-error hide" style="text-align: left; margin-top: 1em;">
         </div>
       </div>
