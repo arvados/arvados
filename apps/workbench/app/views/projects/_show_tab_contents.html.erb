@@ -37,20 +37,23 @@
     </div>
   </div>
 
-  <table class="table table-condensed table-fixedlayout arv-index arv-project-<%= tab_pane %>" style="overflow-x: hidden">
+  <table class="table table-condensed arv-index arv-project-<%= tab_pane %>">
     <colgroup>
-      <col width="40%" />
-      <col width="60%" />
+      <col width="0*" style="max-width: fit-content;" />
+      <col width="0*" style="max-width: fit-content;" />
+      <col width="0*" style="max-width: fit-content;" />
+      <col width="60%" style="width: 60%;" />
+      <col width="40%" style="width: 40%;" />
     </colgroup>
     <tbody data-infinite-scroller="#<%= tab_pane %>-scroll" data-infinite-content-href="<%= url_for partial: :contents_rows, filters: filters.to_json %>">
     </tbody>
     <thead>
       <tr>
-        <th>
-        </th>
-        <th>
-          description
-        </th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th>name</th>
+        <th>description</th>
       </tr>
     </thead>
   </table>

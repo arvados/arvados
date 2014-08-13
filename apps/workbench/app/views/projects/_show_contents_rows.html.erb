@@ -9,7 +9,9 @@
       <div style="width:1em; display:inline-block;">
         <%= render partial: 'selection_checkbox', locals: {object: name_object, friendly_name: ((name_object.name rescue '') || '')} %>
       </div>
+    </td>
 
+    <td>
       <% if @object.editable? %>
         <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this project?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'remove') do %>
           <i class="fa fa-fw fa-trash-o"></i>
@@ -17,11 +19,16 @@
       <% else %>
         <i class="fa fa-fw"></i><%# placeholder %>
       <% end %>
+    </td>
 
+    <td>
       <%= render :partial => "show_object_button", :locals => {object: object, size: 'sm', name_link: name_link} %>
+    </td>
 
+    <td>
       <%= render_editable_attribute (name_link || object), 'name', nil, {tiptitle: 'rename'} %>
     </td>
+
     <td class="arv-description-in-table">
       <%= render_controller_partial(
           'show_object_description_cell.html',
