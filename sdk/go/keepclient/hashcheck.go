@@ -30,9 +30,10 @@ type HashCheckingReader struct {
 // the checksum doesn't match.
 func (this HashCheckingReader) Read(p []byte) (n int, err error) {
 	n, err = this.Reader.Read(p)
-	if err == nil {
+	if n > 0 {
 		this.Hash.Write(p[:n])
-	} else if err == io.EOF {
+	}
+	if err == io.EOF {
 		sum := this.Hash.Sum(make([]byte, 0, this.Hash.Size()))
 		if fmt.Sprintf("%x", sum) != this.Check {
 			err = BadChecksum
