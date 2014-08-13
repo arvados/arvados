@@ -23,7 +23,10 @@ import arvados.config
 SERVICES_SRC_DIR = os.path.join(MY_DIRNAME, '../../../services')
 SERVER_PID_PATH = 'tmp/pids/webrick-test.pid'
 WEBSOCKETS_SERVER_PID_PATH = 'tmp/pids/passenger-test.pid'
-os.environ['PATH'] = os.environ['GOPATH'] + '/bin:' + os.environ['PATH']
+if 'GOPATH' in os.environ:
+    gopaths = os.environ['GOPATH'].split(':')
+    gobins = [os.path.join(path, 'bin') for path in gopaths]
+    os.environ['PATH'] = ':'.join(gobins) + ':' + os.environ['PATH']
 
 logfile = None
 
