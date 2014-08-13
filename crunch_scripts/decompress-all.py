@@ -18,6 +18,7 @@ import re
 import subprocess
 import os
 import sys
+import robust_put
 
 arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True,
                                           input_as_path=True)
@@ -51,9 +52,7 @@ m = re.match(r'.*\.(gz|Z|bz2|tgz|tbz|zip|rar|7z|cab|deb|rpm|cpio|gem)$', arvados
 if m != None:
     rc = subprocess.call(["dtrx", "-r", "-n", "-q", arvados.get_task_param_mount('input')])
     if rc == 0:
-        out = arvados.CollectionWriter()
-        out.write_directory_tree(outdir, max_manifest_depth=0)
-        task.set_output(out.finish())
+        task.set_output(robust_put.upload(outdir))
     else:
         sys.exit(rc)
 else:
