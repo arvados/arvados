@@ -1,6 +1,6 @@
 /* Simple Arvados Go SDK for communicating with API server. */
 
-package sdk
+package arvadosclient
 
 import (
 	"bytes"

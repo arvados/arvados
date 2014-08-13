@@ -1,8 +1,8 @@
 package keepclient
 
 import (
-	"arvados.org/sdk"
-	"arvados.org/streamer"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"crypto/md5"
 	"flag"
 	"fmt"
@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 )
 
@@ -36,8 +35,8 @@ type ServerRequiredSuite struct{}
 type StandaloneSuite struct{}
 
 func pythonDir() string {
-	gopath := os.Getenv("GOPATH")
-	return fmt.Sprintf("%s/../python/tests", strings.Split(gopath, ":")[0])
+	cwd, _ := os.Getwd()
+	return fmt.Sprintf("%s/../../python/tests", cwd)
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
@@ -65,7 +64,7 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
 
 	kc, err := MakeKeepClient(&arv)
@@ -126,7 +125,7 @@ func UploadToStubHelper(c *C, st http.Handler, f func(KeepClient, string,
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	arv, _ := sdk.MakeArvadosClient()
+	arv, _ := arvadosclient.MakeArvadosClient()
 	arv.ApiToken = "abc123"
 
 	kc, _ := MakeKeepClient(&arv)
@@ -260,7 +259,7 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		"foo",
 		make(chan string, 2)}
 
-	arv, _ := sdk.MakeArvadosClient()
+	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
@@ -302,7 +301,7 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		"foo",
 		make(chan string, 2)}
 
-	arv, _ := sdk.MakeArvadosClient()
+	arv, _ := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
@@ -356,7 +355,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 	fh := FailHandler{
 		make(chan string, 1)}
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
@@ -405,7 +404,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	fh := FailHandler{
 		make(chan string, 4)}
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
@@ -465,7 +464,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots([]string{url})
@@ -491,7 +490,7 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots([]string{url})
@@ -521,7 +520,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	listener, url := RunBogusKeepServer(st, 2990)
 	defer listener.Close()
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots([]string{url})
@@ -554,7 +553,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 		"abc123",
 		[]byte("foo")}
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
 	service_roots := make([]string, 5)
@@ -589,7 +588,7 @@ func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, err := MakeKeepClient(&arv)
 	c.Assert(err, Equals, nil)
 
@@ -638,7 +637,7 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 
 	st := StubProxyHandler{make(chan string, 1)}
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
@@ -669,7 +668,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 
 	st := StubProxyHandler{make(chan string, 1)}
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 3

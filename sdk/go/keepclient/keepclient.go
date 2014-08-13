@@ -2,8 +2,8 @@
 package keepclient
 
 import (
-	streamer "git.curoverse.com/arvados.git/sdk/go/streamer"
-	arvadosclient "git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"crypto/md5"
 	"errors"
 	"fmt"

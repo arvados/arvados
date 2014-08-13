@@ -1,8 +1,8 @@
 package main
 
 import (
-	keepclient "git.curoverse.com/arvados.git/sdk/go/keepclient"
-	arvadosclient "git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"

@@ -1,4 +1,4 @@
-package sdk
+package arvadosclient
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 )
 
@@ -21,8 +20,8 @@ var _ = Suite(&ServerRequiredSuite{})
 type ServerRequiredSuite struct{}
 
 func pythonDir() string {
-	gopath := os.Getenv("GOPATH")
-	return fmt.Sprintf("%s/../python/tests", strings.Split(gopath, ":")[0])
+	cwd, _ := os.Getwd()
+	return fmt.Sprintf("%s/../../python/tests", cwd)
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
