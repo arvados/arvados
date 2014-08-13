@@ -53,15 +53,29 @@ collections on the server.""")
     else:
         daemon_ctx = None
 
-    # Set up logging.
-    arv_logger = logging.getLogger('arvados')
+    # Configure a logger based on command-line switches.
+    # If we're using a contemporary Python SDK (mid-August 2014),
+    # configure the arvados hierarchy logger.
+    # Otherwise, configure the program root logger.
+    base_logger = getattr(arvados, 'logger', None)
+
     if args.logfile:
-        if hasattr(arvados, 'log_handler'):
-            arv_logger.removeHandler(arvados.log_handler)
-        arv_logger.addHandler(logging.FileHandler(args.logfile))
+        log_handler = logging.FileHandler(args.logfile)
+    elif daemon_ctx:
+        log_handler = logging.NullHandler()
+    elif base_logger:
+        log_handler = arvados.log_handler
+    else:
+        log_handler = logging.StreamHandler()
+
+    if base_logger is None:
+        base_logger = logging.getLogger()
+    else:
+        base_logger.removeHandler(arvados.log_handler)
+    base_logger.addHandler(log_handler)
 
     if args.debug:
-        arv_logger.setLevel(logging.DEBUG)
+        base_logger.setLevel(logging.DEBUG)
         logger.debug("arv-mount debugging enabled")
 
     try:

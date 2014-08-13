@@ -25,17 +25,16 @@ from stream import *
 import errors
 import util
 
-logger = logging.getLogger('arvados')
-if config.get('ARVADOS_DEBUG'):
-    logger.setLevel(logging.DEBUG)
-    log_handler = logging.StreamHandler()
-else:
-    log_handler = logging.NullHandler()
+# Set up Arvados logging based on the user's configuration.
+# All Arvados code should log under the arvados hierarchy.
+log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(name)s %(levelname)s: %(message)s',
+        '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
         '%Y-%m-%d %H:%M:%S'))
-log_handler.setLevel(logger.level)
+logger = logging.getLogger('arvados')
 logger.addHandler(log_handler)
+logger.setLevel(logging.DEBUG if config.get('ARVADOS_DEBUG')
+                else logging.WARNING)
 
 def task_set_output(self,s):
     api('v1').job_tasks().update(uuid=self['uuid'],
