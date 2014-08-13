@@ -2,6 +2,14 @@ class UsersController < ApplicationController
   skip_before_filter :find_object_by_uuid, :only => [:welcome, :activity, :storage]
   before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
+  def show
+    if params[:uuid] == current_user.uuid
+      redirect_to project_path(params[:uuid])
+    else
+      super
+    end
+  end
+
   def welcome
     if current_user
       params[:action] = 'home'
