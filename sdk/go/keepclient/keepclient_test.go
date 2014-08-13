@@ -42,13 +42,29 @@ func pythonDir() string {
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	if *no_server {
 		c.Skip("Skipping tests that require server")
-	} else {
-		os.Chdir(pythonDir())
-		if err := exec.Command("python", "run_test_server.py", "start").Run(); err != nil {
-			panic("'python run_test_server.py start' returned error")
+		return
+	}
+	os.Chdir(pythonDir())
+	{
+		cmd := exec.Command("python", "run_test_server.py", "start")
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			log.Fatalf("Setting up stderr pipe: %s", err)
 		}
-		if err := exec.Command("python", "run_test_server.py", "start_keep").Run(); err != nil {
-			panic("'python run_test_server.py start_keep' returned error")
+		go io.Copy(os.Stderr, stderr)
+		if err := cmd.Run(); err != nil {
+			panic(fmt.Sprintf("'python run_test_server.py start' returned error %s", err))
+		}
+	}
+	{
+		cmd := exec.Command("python", "run_test_server.py", "start_keep")
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			log.Fatalf("Setting up stderr pipe: %s", err)
+		}
+		go io.Copy(os.Stderr, stderr)
+		if err := cmd.Run(); err != nil {
+			panic(fmt.Sprintf("'python run_test_server.py start_keep' returned error %s", err))
 		}
 	}
 }
