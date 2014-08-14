@@ -2,7 +2,7 @@
 
 import arvados
 import subprocess
-import subst
+import crunchutil.subst as subst
 import shutil
 import os
 import sys

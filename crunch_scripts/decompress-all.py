@@ -18,6 +18,7 @@ import re
 import subprocess
 import os
 import sys
+import crunchutil.robust_put as robust_put
 
 arvados.job_setup.one_task_per_input_file(if_sequence=0, and_end_task=True,
                                           input_as_path=True)
@@ -32,7 +33,7 @@ outdir = os.path.join(task.tmpdir, "output")
 os.makedirs(outdir)
 os.chdir(outdir)
 
-if infile_parts == None:
+if infile_parts is None:
     print >>sys.stderr, "Failed to parse input filename '%s' as a Keep file\n" % input_file
     sys.exit(1)
 
@@ -40,7 +41,7 @@ cr = arvados.CollectionReader(infile_parts.group(1))
 streamname = infile_parts.group(3)[1:]
 filename = infile_parts.group(4)[1:]
 
-if streamname != None:
+if streamname is not None:
     subprocess.call(["mkdir", "-p", streamname])
     os.chdir(streamname)
 else:
@@ -48,12 +49,10 @@ else:
 
 m = re.match(r'.*\.(gz|Z|bz2|tgz|tbz|zip|rar|7z|cab|deb|rpm|cpio|gem)$', arvados.get_task_param_mount('input'), re.IGNORECASE)
 
-if m != None:
+if m is not None:
     rc = subprocess.call(["dtrx", "-r", "-n", "-q", arvados.get_task_param_mount('input')])
     if rc == 0:
-        out = arvados.CollectionWriter()
-        out.write_directory_tree(outdir, max_manifest_depth=0)
-        task.set_output(out.finish())
+        task.set_output(robust_put.upload(outdir))
     else:
         sys.exit(rc)
 else:

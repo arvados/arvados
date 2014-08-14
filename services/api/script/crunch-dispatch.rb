@@ -68,25 +68,28 @@ class Dispatcher
       begin
         sinfo.split("\n").
           each do |line|
-          re = line.match /(\S+?):+(idle|alloc|down)/
+          re = line.match /(\S+?):+(idle|alloc|down)?/
           next if !re
 
+          _, node_name, node_state = *re
+          node_state = 'down' unless %w(idle alloc down).include? node_state
+
           # sinfo tells us about a node N times if it is shared by N partitions
-          next if node_seen[re[1]]
-          node_seen[re[1]] = true
+          next if node_seen[node_name]
+          node_seen[node_name] = true
 
           # update our database (and cache) when a node's state changes
-          if @node_state[re[1]] != re[2]
-            @node_state[re[1]] = re[2]
-            node = Node.where('hostname=?', re[1]).order(:last_ping_at).last
+          if @node_state[node_name] != node_state
+            @node_state[node_name] = node_state
+            node = Node.where('hostname=?', node_name).order(:last_ping_at).last
             if node
-              $stderr.puts "dispatch: update #{re[1]} state to #{re[2]}"
-              node.info['slurm_state'] = re[2]
+              $stderr.puts "dispatch: update #{node_name} state to #{node_state}"
+              node.info['slurm_state'] = node_state
               if not node.save
                 $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
               end
-            elsif re[2] != 'down'
-              $stderr.puts "dispatch: sinfo reports '#{re[1]}' is not down, but no node has that name"
+            elsif node_state != 'down'
+              $stderr.puts "dispatch: sinfo reports '#{node_name}' is not down, but no node has that name"
             end
           end
         end
