@@ -57,36 +57,8 @@ class Arvados::V1::CollectionsController < ApplicationController
     }
 
     # Save the collection with the stripped manifest.
-    act_as_system_user do
-      @object = model_class.new resource_attrs.reject { |k,v| k == :owner_uuid }
-      begin
-        @object.save!
-      rescue ActiveRecord::RecordNotUnique
-        logger.debug resource_attrs.inspect
-        if @object.manifest_text and @object.uuid
-          @existing_object = model_class.
-            where('uuid=? and manifest_text=?',
-                  @object.uuid,
-                  @object.manifest_text).
-            first
-          @object = @existing_object || @object
-        end
-      end
-      if @object
-        link_attrs = {
-          owner_uuid: owner_uuid,
-          link_class: 'permission',
-          name: 'can_read',
-          head_uuid: @object.uuid,
-          tail_uuid: owner_uuid
-        }
-        ActiveRecord::Base.transaction do
-          if Link.where(link_attrs).empty?
-            Link.create! link_attrs
-          end
-        end
-      end
-    end
+    @object = model_class.new resource_attrs
+    @object.save!
     show
   end
 
@@ -149,7 +121,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     logger.debug "visiting #{uuid}"
 
-    if m  
+    if m
       # uuid is a collection
       Collection.readable_by(current_user).where(uuid: uuid).each do |c|
         visited[uuid] = c.as_api_response
@@ -166,7 +138,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       Job.readable_by(current_user).where(log: uuid).each do |job|
         generate_provenance_edges(visited, job.uuid)
       end
-      
+
     else
       # uuid is something else
       rsc = ArvadosModel::resource_class_for_uuid uuid
@@ -208,7 +180,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
     logger.debug "visiting #{uuid}"
 
-    if m  
+    if m
       # uuid is a collection
       Collection.readable_by(current_user).where(uuid: uuid).each do |c|
         visited[uuid] = c.as_api_response
@@ -226,7 +198,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       Job.readable_by(current_user).where(["jobs.script_parameters like ?", "%#{uuid}%"]).each do |job|
         generate_used_by_edges(visited, job.uuid)
       end
-      
+
     else
       # uuid is something else
       rsc = ArvadosModel::resource_class_for_uuid uuid
