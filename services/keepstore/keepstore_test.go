@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sort"
+	"strings"
 	"testing"
 )
 
@@ -342,11 +344,14 @@ func TestIndex(t *testing.T) {
 	vols[1].Put(TEST_HASH_2+".meta", []byte("metadata"))
 
 	index := vols[0].Index("") + vols[1].Index("")
-	expected := `^` + TEST_HASH + `\+\d+ \d+\n` +
+	index_rows := strings.Split(index, "\n")
+	sort.Strings(index_rows)
+	sorted_index := strings.Join(index_rows, "\n")
+	expected := `^\n` + TEST_HASH + `\+\d+ \d+\n` +
 		TEST_HASH_3 + `\+\d+ \d+\n` +
-		TEST_HASH_2 + `\+\d+ \d+\n$`
+		TEST_HASH_2 + `\+\d+ \d+$`
 
-	match, err := regexp.MatchString(expected, index)
+	match, err := regexp.MatchString(expected, sorted_index)
 	if err == nil {
 		if !match {
 			t.Errorf("IndexLocators returned:\n%s", index)

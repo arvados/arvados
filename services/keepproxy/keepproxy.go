@@ -1,8 +1,8 @@
 package main
 
 import (
-	"arvados.org/keepclient"
-	"arvados.org/sdk"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -68,7 +68,7 @@ func main() {
 
 	flagset.Parse(os.Args[1:])
 
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
 	}
