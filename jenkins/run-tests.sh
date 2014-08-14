@@ -13,6 +13,10 @@ title () {
 source /etc/profile.d/rvm.sh
 echo $WORKSPACE
 
+export GOPATH="$HOME/gocode"
+mkdir -p "$GOPATH/src/git.curoverse.com"
+ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+
 # DOCS
 title "Starting DOC build"
 cd "$WORKSPACE"
@@ -103,20 +107,25 @@ fi
 
 title "API server tests complete"
 
-# Keep
-title "Starting Keep tests"
-cd "$WORKSPACE"
-cd services/keep/src/keep
-GOPATH=$HOME/gocode go test
+# Install and test Go bits. keepstore must come before keepproxy and keepclient.
+for dir in services/keepstore services/keepproxy sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer
+do
+  title "Starting $dir tests"
+  cd "$WORKSPACE"
 
-ECODE=$?
+  go get -t "git.curoverse.com/arvados.git/$dir" \
+  && go test "git.curoverse.com/arvados.git/$dir"
 
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Keep TESTS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+  ECODE=$?
 
-title "Keep tests complete"
+  if [[ "$ECODE" != "0" ]]; then
+    title "!!!!!! Keep TESTS FAILED !!!!!!"
+    EXITCODE=$(($EXITCODE + $ECODE))
+  fi
+
+  title "$dir tests complete"
+done
+
 
 # WORKBENCH
 title "Starting workbench tests"
@@ -151,7 +160,7 @@ cd sdk/python
 
 VENVDIR=$(mktemp -d)
 virtualenv --setuptools "$VENVDIR"
-GOPATH="$HOME/gocode" "$VENVDIR/bin/python" setup.py test
+"$VENVDIR/bin/python" setup.py test
 
 ECODE=$?
 
@@ -174,7 +183,7 @@ cd "$WORKSPACE"
 cd services/fuse
 
 # We reuse $VENVDIR from the Python SDK tests above
-GOPATH="$HOME/gocode" "$VENVDIR/bin/python" setup.py test
+"$VENVDIR/bin/python" setup.py test
 
 ECODE=$?
 
