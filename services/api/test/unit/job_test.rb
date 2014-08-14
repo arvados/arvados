@@ -27,14 +27,14 @@ class JobTest < ActiveSupport::TestCase
 
   { 'name' => [:links, :docker_image_collection_repository, :name],
     'hash' => [:links, :docker_image_collection_hash, :name],
-    'locator' => [:collections, :docker_image, :uuid],
+    'locator' => [:collections, :docker_image, :portable_data_hash],
   }.each_pair do |spec_type, (fixture_type, fixture_name, fixture_attr)|
     test "Job initialized with Docker image #{spec_type} gets locator" do
       image_spec = send(fixture_type, fixture_name).send(fixture_attr)
       job = Job.new job_attrs(runtime_constraints:
                               {'docker_image' => image_spec})
       assert job.valid?, job.errors.full_messages.to_s
-      assert_equal(collections(:docker_image).uuid, job.docker_image_locator)
+      assert_equal(collections(:docker_image).portable_data_hash, job.docker_image_locator)
     end
 
     test "Job modified with Docker image #{spec_type} gets locator" do
@@ -44,12 +44,12 @@ class JobTest < ActiveSupport::TestCase
       image_spec = send(fixture_type, fixture_name).send(fixture_attr)
       job.runtime_constraints['docker_image'] = image_spec
       assert job.valid?, job.errors.full_messages.to_s
-      assert_equal(collections(:docker_image).uuid, job.docker_image_locator)
+      assert_equal(collections(:docker_image).portable_data_hash, job.docker_image_locator)
     end
   end
 
   test "removing a Docker runtime constraint removes the locator" do
-    image_locator = collections(:docker_image).uuid
+    image_locator = collections(:docker_image).portable_data_hash
     job = Job.new job_attrs(runtime_constraints:
                             {'docker_image' => image_locator})
     assert job.valid?, job.errors.full_messages.to_s
@@ -66,7 +66,7 @@ class JobTest < ActiveSupport::TestCase
                             {'docker_image' => image_repo,
                               'docker_image_tag' => image_tag})
     assert job.valid?, job.errors.full_messages.to_s
-    assert_equal(collections(:docker_image).uuid, job.docker_image_locator)
+    assert_equal(collections(:docker_image).portable_data_hash, job.docker_image_locator)
   end
 
   test "can't locate a Docker image with a nonexistent tag" do
@@ -83,7 +83,7 @@ class JobTest < ActiveSupport::TestCase
     job = Job.new job_attrs(runtime_constraints:
                             {'docker_image' => image_hash})
     assert job.valid?, job.errors.full_messages.to_s + " with partial hash #{image_hash}"
-    assert_equal(collections(:docker_image).uuid, job.docker_image_locator)
+    assert_equal(collections(:docker_image).portable_data_hash, job.docker_image_locator)
   end
 
   { 'name' => 'arvados_test_nonexistent',
@@ -104,7 +104,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "can create Job with Docker image Collection without Docker links" do
-    image_uuid = collections(:unlinked_docker_image).uuid
+    image_uuid = collections(:unlinked_docker_image).portable_data_hash
     job = Job.new job_attrs(runtime_constraints: {"docker_image" => image_uuid})
     assert(job.valid?, "Job created with unlinked Docker image was invalid")
     assert_equal(image_uuid, job.docker_image_locator)

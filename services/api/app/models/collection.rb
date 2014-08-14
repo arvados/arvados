@@ -129,10 +129,10 @@ class Collection < ArvadosModel
     # that looks like a Docker image, return it.
     if loc = Locator.parse(search_term)
       loc.strip_hints!
-      coll_match = readable_by(*readers).where(uuid: loc.to_s).first
+      coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).first
       if coll_match and (coll_match.files.size == 1) and
           (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
-        return [loc.to_s]
+        return [find_by_portable_data_hash(loc.to_s).uuid]
       end
     end
 
@@ -144,7 +144,7 @@ class Collection < ArvadosModel
     # If that didn't work, find Collections with matching Docker image hashes.
     if matches.empty?
       matches = base_search.
-        where("link_class = ? and name LIKE ?",
+        where("link_class = ? and links.name LIKE ?",
               "docker_image_hash", "#{search_term}%")
     end
 

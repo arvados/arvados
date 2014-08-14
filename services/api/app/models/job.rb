@@ -40,6 +40,7 @@ class Job < ArvadosModel
     t.add :repository
     t.add :supplied_script_version
     t.add :docker_image_locator
+    t.add :name
   end
 
   def assert_finished
@@ -118,7 +119,7 @@ class Job < ArvadosModel
       self.docker_image_locator = nil
       true
     elsif coll = Collection.for_latest_docker_image(image_search, image_tag)
-      self.docker_image_locator = coll.uuid
+      self.docker_image_locator = coll.portable_data_hash
       true
     else
       errors.add(:docker_image_locator, "not found for #{image_search}")

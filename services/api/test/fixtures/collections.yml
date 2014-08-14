@@ -21,7 +21,7 @@ foo_file:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
   name: foo_file
-z
+
 bar_file:
   uuid: 4n8aq-4zz18-ehbhgtheo8909or
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45

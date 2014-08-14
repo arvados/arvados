@@ -355,8 +355,6 @@ class ArvadosModel < ActiveRecord::Base
     []
   end
 
-  @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
-
   @@prefixes_hash = nil
   def self.uuid_prefixes
     unless @@prefixes_hash
@@ -424,7 +422,7 @@ class ArvadosModel < ActiveRecord::Base
     resource_class = nil
 
     Rails.application.eager_load!
-    uuid.match @@UUID_REGEX do |re|
+    uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
 

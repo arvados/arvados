@@ -1,7 +1,10 @@
 module HasUuid
 
+  UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
+
   def self.included(base)
     base.extend(ClassMethods)
+    base.validate :validate_uuid
     base.before_create :assign_uuid
     base.before_destroy :destroy_permission_links
     base.has_many :links_via_head, class_name: 'Link', foreign_key: :head_uuid, primary_key: :uuid, conditions: "not (link_class = 'permission')", dependent: :restrict
@@ -26,13 +29,41 @@ module HasUuid
     self.respond_to? :uuid
   end
 
-  def assign_uuid
-    return true if !self.respond_to_uuid?
-    if (uuid.is_a?(String) and uuid.length>0 and
-        current_user and current_user.is_admin)
-      return true
+  def validate_uuid
+    if self.respond_to_uuid? and self.uuid_changed?
+      if self.uuid_was.nil? or self.uuid_was == ""
+        if self.uuid.is_a?(String) and self.uuid.length > 0 and current_user.andand.is_admin
+          if (re = self.uuid.match HasUuid::UUID_REGEX)
+            if re[1] == self.class.uuid_prefix
+              return true
+            else
+              self.errors.add(:uuid, "Matched uuid type '#{re[1]}', expected '#{self.class.uuid_prefix}'")
+              return false
+            end
+          else
+            self.errors.add(:uuid, "'#{self.uuid}' is not a valid Arvados UUID")
+            return false
+          end
+        elsif self.uuid.nil? or self.uuid == ""
+          return true
+        else
+          self.errors.add(:uuid, "Not permitted to specify uuid")
+          return false
+        end
+      else
+        self.errors.add(:uuid, "Not permitted to change uuid")
+        return false
+      end
     end
-    self.uuid = self.class.generate_uuid
+
+    true
+  end
+
+  def assign_uuid
+    if self.respond_to_uuid? and self.uuid.nil? or self.uuid == ""
+      self.uuid = self.class.generate_uuid
+    end
+    true
   end
 
   def destroy_permission_links

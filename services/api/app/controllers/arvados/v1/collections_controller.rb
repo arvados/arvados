@@ -51,10 +51,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     }
 
-    # Save the collection with the stripped manifest.
-    @object = model_class.new resource_attrs
-    @object.save!
-    show
+    super
   end
 
   def show

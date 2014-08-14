@@ -12,8 +12,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
     set_user_from_auth :active_trustedclient
     want_uuid = Specimen.generate_uuid
     a = create_with_attrs(uuid: want_uuid)
-    assert_not_equal want_uuid, a.uuid, "Non-admin should not assign uuid."
-    assert a.uuid.length==27, "Auto assigned uuid length is wrong."
+    assert_nil a, "Non-admin should not assign uuid."
   end
 
   test 'admin can assign valid uuid' do

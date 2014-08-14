@@ -2,9 +2,10 @@ class CollectionUseRegularUuids < ActiveRecord::Migration
   def up
     add_column :collections, :name, :string
     add_column :collections, :description, :string
-    add_column :collections, :properties, :string
+    add_column :collections, :properties, :text
     add_column :collections, :expire_time, :date
     remove_column :collections, :locator
+    add_column :jobs, :name, :string
 
     say_with_time "Step 1. Move manifest hashes into portable_data_hash field" do
       ActiveRecord::Base.connection.execute("update collections set portable_data_hash=uuid, uuid=null")
@@ -89,7 +90,7 @@ where tail_uuid like '________________________________+%' and link_class='permis
 }
     end
 
-    say_with_time "Step 5. Migrate collection -> collection provenance links to jobs" do
+    say_with_time "Step 7. Migrate collection -> collection provenance links to jobs" do
       from_clause = %{
 from links
 where head_uuid like '________________________________+%' and tail_uuid like '________________________________+%' and links.link_class = 'provenance'
@@ -115,7 +116,7 @@ values (#{ActiveRecord::Base.connection.quote newuuid},
       ActiveRecord::Base.connection.execute "delete from links where links.uuid in (select links.uuid #{from_clause})"
     end
 
-    say_with_time "Step 7. Migrate remaining links with head_uuid pointing to collections" do
+    say_with_time "Step 8. Migrate remaining links with head_uuid pointing to collections" do
       from_clause = %{
 from links inner join collections on links.head_uuid=portable_data_hash
 where collections.uuid is not null
@@ -142,7 +143,11 @@ values (#{ActiveRecord::Base.connection.quote Link.generate_uuid},
       ActiveRecord::Base.connection.execute "delete from links where links.uuid in (select links.uuid #{from_clause})"
     end
 
-    say_with_time "Step 8. Validate links table" do
+    say_with_time "Step 9. Delete any remaining name links" do
+      ActiveRecord::Base.connection.execute("delete from links where link_class='name'")
+    end
+
+    say_with_time "Step 10. Validate links table" do
       links = ActiveRecord::Base.connection.select_all %{
 select links.uuid, head_uuid, tail_uuid, link_class, name
 from links
@@ -156,10 +161,6 @@ where head_uuid like '________________________________+%' or tail_uuid like '___
   end
 
   def down
-    #remove_column :collections, :name
-    #remove_column :collections, :description
-    #remove_column :collections, :properties
-    #remove_column :collections, :expire_time
-
+    # Not gonna happen.
   end
 end

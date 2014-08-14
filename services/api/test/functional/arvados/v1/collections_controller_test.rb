@@ -220,7 +220,7 @@ EOS
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal "d30fe8ae534397864cb96c544f4cf102+47", resp['uuid']
+    assert_equal "d30fe8ae534397864cb96c544f4cf102+47", resp['portable_data_hash']
   end
 
   test "get full provenance for baz file" do
@@ -311,7 +311,7 @@ EOS
       assert_response :success
       assert_not_nil assigns(:object)
       resp = JSON.parse(@response.body)
-      assert_equal manifest_uuid, resp['uuid']
+      assert_equal manifest_uuid, resp['portable_data_hash']
       assert_equal 48, resp['data_size']
       # All of the locators in the output must be signed.
       resp['manifest_text'].lines.each do |entry|
@@ -359,7 +359,7 @@ EOS
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['uuid']
+    assert_equal manifest_uuid, resp['portable_data_hash']
     assert_equal 48, resp['data_size']
     # All of the locators in the output must be signed.
     resp['manifest_text'].lines.each do |entry|
