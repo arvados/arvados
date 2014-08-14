@@ -6,6 +6,9 @@ class Collection < ArvadosModel
   api_accessible :user, extend: :common do |t|
     t.add :data_size
     t.add :files
+    t.add :name
+    t.add :description
+    t.add :properties
   end
 
   api_accessible :with_data, extend: :user do |t|
@@ -96,10 +99,6 @@ class Collection < ArvadosModel
       re = k.match(/^(.+)\/(.+)/)
       @files << [re[1], re[2], v]
     end
-  end
-
-  def self.uuid_like_pattern
-    "________________________________+%"
   end
 
   def self.normalize_uuid uuid

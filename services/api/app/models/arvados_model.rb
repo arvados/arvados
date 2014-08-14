@@ -396,7 +396,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def ensure_valid_uuids
-    specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
+    specials = [system_user_uuid]
 
     foreign_key_attributes.each do |attr|
       if new_record? or send (attr + "_changed?")
@@ -441,9 +441,6 @@ class ArvadosModel < ActiveRecord::Base
     end
     unless uuid.is_a? String
       return nil
-    end
-    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
-      return Collection
     end
     resource_class = nil
 
