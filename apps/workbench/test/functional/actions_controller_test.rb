@@ -8,7 +8,7 @@ class ActionsControllerTest < ActionController::TestCase
 
     found_email = false
     ActionMailer::Base.deliveries.andand.each do |email|
-      if email.subject == "Issue reported"
+      if email.subject.include? "Issue reported by admin"
         found_email = true
         break
       end

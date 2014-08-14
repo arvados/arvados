@@ -87,7 +87,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert page.has_text? 'Workbench version'
       assert page.has_text? 'Arvados base'
       assert page.has_text? 'Additional info'
-      assert page.has_no_text? 'Report text'
+      assert page.has_no_text? 'Found a problem?'
       assert page.has_button? 'Close'
       assert page.has_no_button? 'Report issue'
       click_button 'Close'
@@ -109,13 +109,13 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert page.has_text? 'Workbench version'
       assert page.has_text? 'Arvados base'
       assert page.has_text? 'Additional info'
-      assert page.has_text? 'Report text'
+      assert page.has_text? 'Found a problem?'
       assert page.has_no_button? 'Close'
       assert page.has_button? 'Report issue'
       assert page.has_button? 'Cancel'
 
       # enter a report text and click on report
-      page.find_field('report_text').set 'my test report text'
+      page.find_field('report_issue_text').set 'my test report text'
       click_button 'Report issue'
     end
 
@@ -280,12 +280,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_no_text? 'Version / debugging info'
         assert page.has_text? 'Server version'
         assert page.has_text? 'Server restarted at'
-        assert page.has_text? 'Report text'
+        assert page.has_text? 'Found a problem?'
         assert page.has_button? 'Report issue'
         assert page.has_button? 'Cancel'
 
         # enter a report text and click on report
-        page.find_field('report_text').set 'my test report text'
+        page.find_field('report_issue_text').set 'my test report text'
         click_button 'Report issue'
       end
 
