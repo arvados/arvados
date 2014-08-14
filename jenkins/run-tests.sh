@@ -17,6 +17,10 @@ export GOPATH=$(mktemp -d)
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 
+VENVDIR=$(mktemp -d)
+virtualenv --setuptools "$VENVDIR"
+PATH="$VENVDIR/bin:$PATH"
+
 # DOCS
 title "Starting DOC build"
 cd "$WORKSPACE"
@@ -33,6 +37,17 @@ checkexit() {
         title "!!!!!! $1 FAILED !!!!!!"
         EXITCODE=$(($EXITCODE + $ECODE))
     fi
+}
+
+gotest() {
+  title "Starting $1 tests"
+  cd "$WORKSPACE"
+
+  go get -t "git.curoverse.com/arvados.git/$1" \
+  && go test "git.curoverse.com/arvados.git/$1"
+
+  checkexit "$1 tests"
+  title "$1 tests complete"
 }
 
 checkexit "Doc build"
@@ -98,19 +113,51 @@ bundle exec rake test
 checkexit "API server tests"
 title "API server tests complete"
 
-# Install and test Go bits. keepstore must come before keepproxy and keepclient.
-for dir in services/keepstore services/keepproxy sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer
+# Keepstore. The keepstore binary is used by many other test suites,
+# so we test and install it early.
+
+gotest services/keepstore
+
+# Python SDK
+
+cd "$WORKSPACE"
+cd sdk/cli
+bundle install --deployment
+
+# Set up Python SDK and dependencies
+
+title "Starting Python SDK tests"
+cd "$WORKSPACE"
+cd sdk/python
+
+python setup.py test
+
+checkexit "Python SDK tests"
+
+python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
+pip install dist/arvados-python-client-0.1.*.tar.gz
+
+checkexit "Python SDK install"
+
+cd "$WORKSPACE"
+cd services/fuse
+
+# We reuse $VENVDIR from the Python SDK tests above
+python setup.py test
+
+checkexit "FUSE tests"
+
+python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
+pip install dist/arvados_fuse-0.1.*.tar.gz
+
+checkexit "FUSE install"
+
+title "Python SDK tests complete"
+
+for dir in services/keepproxy sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer
 do
-  title "Starting $dir tests"
-  cd "$WORKSPACE"
-
-  go get -t "git.curoverse.com/arvados.git/$dir" \
-  && go test "git.curoverse.com/arvados.git/$dir"
-
-  checkexit "$dir tests"
-  title "$dir tests complete"
-done
-
+  gotest "$dir"
+end
 
 # WORKBENCH
 title "Starting workbench tests"
@@ -120,51 +167,14 @@ bundle install --deployment
 
 echo $PATH
 
-
 bundle exec rake test
 
 checkexit "Workbench tests"
 title "Workbench tests complete"
 
-# Python SDK
-title "Starting Python SDK tests"
-cd "$WORKSPACE"
-cd sdk/cli
-bundle install --deployment
-
-# Set up Python SDK and dependencies
-
-cd "$WORKSPACE"
-cd sdk/python
-
-VENVDIR=$(mktemp -d)
-virtualenv --setuptools "$VENVDIR"
-"$VENVDIR/bin/python" setup.py test
-
-checkexit "Python SDK tests"
-
-"$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
-"$VENVDIR/bin/pip" install dist/arvados-python-client-0.1.*.tar.gz
-
-checkexit "Python SDK install"
-
-cd "$WORKSPACE"
-cd services/fuse
-
-# We reuse $VENVDIR from the Python SDK tests above
-"$VENVDIR/bin/python" setup.py test
-
-checkexit "FUSE tests"
-
-"$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
-"$VENVDIR/bin/pip" install dist/arvados_fuse-0.1.*.tar.gz
-
-checkexit "FUSE install"
-
-title "Python SDK tests complete"
-
-# Clean up $VENVDIR
+# Clean up temporary virtualenv and GOPATH
 rm -rf "$VENVDIR"
+rm -rf "$GOPATH"
 
 # The CLI SDK tests require a working API server, so let's skip those for now.
 exit $EXITCODE
