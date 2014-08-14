@@ -164,7 +164,7 @@ try:
         stdoutname = subst.do_substitution(taskp, taskp["task.stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    logging.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else ""), (" > " + stdoutname) if stdoutname is not None else ""))
+    logging.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
 
 except Exception as e:
     logging.exception("caught exception")
