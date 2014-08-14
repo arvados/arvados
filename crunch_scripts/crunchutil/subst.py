@@ -59,7 +59,7 @@ def do_substitution(p, c, subs=default_subs):
     while True:
         #print("c is", c)
         m = search(c)
-        if m != None:
+        if m is not None:
             v = do_substitution(p, c[m[0]+2 : m[1]])
             var = True
             for sub in subs:

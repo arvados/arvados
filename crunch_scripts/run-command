@@ -6,7 +6,7 @@ import os
 import subprocess
 import sys
 import shutil
-import subst
+import crunchutil.subst as subst
 import time
 import arvados.commands.put as put
 import signal
@@ -16,8 +16,8 @@ import traceback
 import pprint
 import multiprocessing
 import logging
-import robust_put
-import vwd
+import crunchutil.robust_put as robust_put
+import crunchutil.vwd as vwd
 
 os.umask(0077)
 logging.basicConfig(format="run-command: %(message)s")
@@ -102,7 +102,7 @@ def get_items(p, value):
     fn = subst.do_substitution(p, value)
     mode = os.stat(fn).st_mode
     prefix = fn[len(os.environ['TASK_KEEPMOUNT'])+1:]
-    if mode != None:
+    if mode is not None:
         if stat.S_ISDIR(mode):
             items = ["$(dir %s/%s/)" % (prefix, l) for l in os.listdir(fn)]
         elif stat.S_ISREG(mode):
@@ -114,6 +114,8 @@ def get_items(p, value):
 
 stdoutname = None
 stdoutfile = None
+stdinname = None
+stdinfile = None
 rcode = 1
 
 try:
@@ -122,7 +124,7 @@ try:
             var = jobp["task.foreach"]
             items = get_items(jobp, jobp[var])
             logging.info("parallelizing on %s with items %s" % (var, items))
-            if items != None:
+            if items is not None:
                 for i in items:
                     params = copy.copy(jobp)
                     params[var] = i
@@ -154,11 +156,15 @@ try:
 
     cmd = expand_list(taskp, taskp["command"])
 
-    if "save.stdout" in taskp:
-        stdoutname = subst.do_substitution(taskp, taskp["save.stdout"])
+    if "task.stdin" in taskp:
+        stdinname = subst.do_substitution(taskp, taskp["task.stdin"])
+        stdinfile = open(stdinname, "rb")
+
+    if "task.stdout" in taskp:
+        stdoutname = subst.do_substitution(taskp, taskp["task.stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    logging.info("{}{}".format(' '.join(cmd), (" > " + stdoutname) if stdoutname != None else ""))
+    logging.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else ""), (" > " + stdoutname) if stdoutname is not None else ""))
 
 except Exception as e:
     logging.exception("caught exception")
@@ -167,7 +173,7 @@ except Exception as e:
     sys.exit(1)
 
 try:
-    sp = subprocess.Popen(cmd, shell=False, stdout=stdoutfile)
+    sp = subprocess.Popen(cmd, shell=False, stdin=stdinfile, stdout=stdoutfile)
     sig = SigHandler()
 
     # forward signals to the process.
@@ -178,7 +184,7 @@ try:
     # wait for process to complete.
     rcode = sp.wait()
 
-    if sig.sig != None:
+    if sig.sig is not None:
         logging.critical("terminating on signal %s" % sig.sig)
         sys.exit(2)
     else:

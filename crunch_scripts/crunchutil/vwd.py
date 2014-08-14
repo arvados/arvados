@@ -14,7 +14,7 @@ import stat
 # doesn't exist.
 def checkout(source_collection, target_dir, keepmount=None):
     # create symlinks
-    if keepmount == None:
+    if keepmount is None:
         keepmount = os.environ['TASK_KEEPMOUNT']
 
     if not os.path.exists(target_dir):

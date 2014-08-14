@@ -1,6 +1,7 @@
 import arvados
 import arvados.commands.put as put
 import os
+import logging
 
 def machine_progress(bytes_written, bytes_expected):
     return "upload wrote {} total {}\n".format(

@@ -94,7 +94,7 @@ prog = re.compile(r'(.*?)(_[12])?\.fastq(\.gz)?$')
 for s in inp.all_streams():
     for f in s.all_files():
         name_pieces = prog.match(f.name())
-        if name_pieces != None:
+        if name_pieces is not None:
             if s.name() != ".":
                 # The downstream tool (run-command) only iterates over the top
                 # level of directories so if there are fastq files in
@@ -105,7 +105,7 @@ for s in inp.all_streams():
                 sys.exit(1)
 
             p = None
-            if name_pieces.group(2) != None:
+            if name_pieces.group(2) is not None:
                 if name_pieces.group(2) == "_1":
                     p = [{}, {}]
                     p[0]["reader"] = s.files()[name_pieces.group(0)]
@@ -114,7 +114,7 @@ for s in inp.all_streams():
                 p = [{}]
                 p[0]["reader"] = s.files()[name_pieces.group(0)]
 
-            if p != None:
+            if p is not None:
                 if chunking:
                     splitfastq(p)
                 else:
