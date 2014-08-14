@@ -64,15 +64,64 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   # test the help menu
-  def check_help_menu
+  def check_help_menu user
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
         assert page.has_link? 'Tutorials and User guide'
         assert page.has_link? 'API Reference'
         assert page.has_link? 'SDK Reference'
+        assert page.has_link? 'Show version / debugging info'
+        assert page.has_link? 'Report a problem'
+
+        # check show version info link      
+        click_link 'Show version / debugging info'
       end
     end
+
+    if user && user['is_active']  # TBD - no user as well as inactive user also should be able to report issue
+    within '.modal-content' do
+      assert page.has_text? 'Version / debugging info'
+      assert page.has_no_text? 'Report a problem'
+      assert page.has_text? 'Server version'
+      assert page.has_text? 'Server restarted at'
+      assert page.has_text? 'Workbench version'
+      assert page.has_text? 'Arvados base'
+      assert page.has_text? 'Additional info'
+      assert page.has_no_text? 'Report text'
+      assert page.has_button? 'Close'
+      assert page.has_no_button? 'Report issue'
+      click_button 'Close'
+    end
+
+    # check report issue link      
+    within('.navbar-fixed-top') do
+      page.find("#arv-help").click
+      within('.dropdown-menu') do
+        click_link 'Report a problem'
+      end
+    end
+
+    within '.modal-content' do
+      assert page.has_text? 'Report a problem'
+      assert page.has_no_text? 'Version / debugging info'
+      assert page.has_text? 'Server version'
+      assert page.has_text? 'Server restarted at'
+      assert page.has_text? 'Workbench version'
+      assert page.has_text? 'Arvados base'
+      assert page.has_text? 'Additional info'
+      assert page.has_text? 'Report text'
+      assert page.has_no_button? 'Close'
+      assert page.has_button? 'Report issue'
+      assert page.has_button? 'Cancel'
+
+      # enter a report text and click on report
+      page.find_field('report_text').set 'my test report text'
+      click_button 'Report issue'
+    end
+    end   # TBD - when no user and inactive user work, this should go away
+
+    assert page.has_no_text? 'Version / debugging info'
   end
 
   def verify_system_menu user
@@ -226,6 +275,21 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       # we should see 'not found' error page
       assert page.has_text? 'Not Found'
+      assert page.has_link? 'Report problem'
+      click_link 'Report problem'
+      within '.modal-content' do
+        assert page.has_text? 'Report a problem'
+        assert page.has_no_text? 'Version / debugging info'
+        assert page.has_text? 'Server version'
+        assert page.has_text? 'Server restarted at'
+        assert page.has_text? 'Report text'
+        assert page.has_button? 'Report issue'
+        assert page.has_button? 'Cancel'
+
+        # enter a report text and click on report
+        page.find_field('report_text').set 'my test report text'
+        click_button 'Report issue'
+      end
 
       # let's search for the anonymously accessible project
       publicly_accessible_project = api_fixture('groups')['anonymously_accessible_project']
@@ -261,6 +325,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
     ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile'], true, false],
   ].each do |token, user, invited, has_profile|
+
     test "visit home page when profile is configured for user #{token}" do
       # Our test config enabled profile by default. So, no need to update config
       if !token
@@ -291,14 +356,16 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         visit page_with_token(token)
       end
 
-      check_help_menu
+      check_help_menu user
     end
+
   end
 
   [
     ['active', api_fixture('users')['active'], true, true],
     ['admin', api_fixture('users')['admin'], true, true],
   ].each do |token, user|
+
     test "test system menu for user #{token}" do
       visit page_with_token(token)
       verify_system_menu user
@@ -313,5 +380,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       visit page_with_token(token)
       verify_search_box user
     end
+
   end
+
 end

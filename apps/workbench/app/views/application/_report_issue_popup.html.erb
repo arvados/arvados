@@ -1,7 +1,8 @@
 <%
   api_version = arvados_api_client.discovery[:source_version]
   generated_at = arvados_api_client.discovery[:generatedAt]
-  wb_version = Rails.configuration.source_version + ' ' + Rails.configuration.local_modified
+  wb_version = Rails.configuration.source_version
+  wb_version += Rails.configuration.source_version if Rails.configuration.local_modified
   arvados_base = Rails.configuration.arvados_v1_base
   support_email = Rails.configuration.support_email_address
 
@@ -17,7 +18,10 @@
   additional_info['arvados_base'] = arvados_base
   additional_info['support_email'] = support_email
   additional_info['error_message'] = @popup_params[:error_message] if @popup_params[:error_message]
+  additional_info['api_error_request_url'] = @popup_params[:api_error_request_url] if @popup_params[:api_error_request_url]
+  additional_info['api_error_response'] = @popup_params[:api_error_response] if @popup_params[:api_error_response]
 %>
+
 <div class="modal-dialog modal-with-loading-spinner">
   <div class="modal-content">
 
@@ -47,7 +51,7 @@
         </div>
 
         <div class="form-group">
-          <label for="server_version" class="col-sm-4 control-label"> Server Version </label>
+          <label for="server_version" class="col-sm-4 control-label"> Server version </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="server_version"><%=api_version%></p>
           </div>
@@ -76,7 +80,7 @@
 
         <% if @popup_params[:popup_type] == 'report' %>
           <div class="form-group">
-            <label for="report_text" class="col-sm-4 control-label"> Report text </label>
+            <label for="report_text_label" class="col-sm-4 control-label"> Report text </label>
             <div class="col-sm-8">
               <textarea class="form-control" rows="1" name="report_text" type="text"/>
             </div>

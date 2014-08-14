@@ -5,6 +5,8 @@ class IssueReporter < ActionMailer::Base
   def send_report(user, params)
     @user = user
     @params = params
-    mail(subject: 'Issue reported')
+    subject = 'Issue reported'
+    subject += " by #{@user.email}" if @user
+    mail(subject: subject)
   end
 end
