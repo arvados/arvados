@@ -64,7 +64,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   # test the help menu
-  def check_help_menu user
+  def check_help_menu
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
@@ -79,7 +79,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
     end
 
-    if user && user['is_active']  # TBD - no user as well as inactive user also should be able to report issue
     within '.modal-content' do
       assert page.has_text? 'Version / debugging info'
       assert page.has_no_text? 'Report a problem'
@@ -119,7 +118,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       page.find_field('report_text').set 'my test report text'
       click_button 'Report issue'
     end
-    end   # TBD - when no user and inactive user work, this should go away
 
     assert page.has_no_text? 'Version / debugging info'
   end
@@ -356,7 +354,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         visit page_with_token(token)
       end
 
-      check_help_menu user
+      check_help_menu
     end
 
   end

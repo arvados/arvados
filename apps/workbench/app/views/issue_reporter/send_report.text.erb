@@ -1,4 +1,8 @@
+<% if @user %>
 Issue reported by user <%=@user.full_name%> <%=@user.email%>
+<% else %>
+Issue reported
+<% end %>
 
 Details of the report:
 <% json_map = JSON.parse(@params['report_additional_info']).map %>
