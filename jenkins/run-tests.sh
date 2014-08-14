@@ -40,14 +40,14 @@ checkexit() {
 }
 
 gotest() {
-  title "Starting $1 tests"
-  cd "$WORKSPACE"
+    title "Starting $1 tests"
+    cd "$WORKSPACE"
 
-  go get -t "git.curoverse.com/arvados.git/$1" \
-  && go test "git.curoverse.com/arvados.git/$1"
+    go get -t "git.curoverse.com/arvados.git/$1" \
+        && go test "git.curoverse.com/arvados.git/$1"
 
-  checkexit "$1 tests"
-  title "$1 tests complete"
+    checkexit "$1 tests"
+    title "$1 tests complete"
 }
 
 checkexit "Doc build"
@@ -113,18 +113,30 @@ bundle exec rake test
 checkexit "API server tests"
 title "API server tests complete"
 
-# Keepstore. The keepstore binary is used by many other test suites,
-# so we test and install it early.
-
-gotest services/keepstore
-
-# Python SDK
+# Install CLI gem's dependencies.
 
 cd "$WORKSPACE"
 cd sdk/cli
 bundle install --deployment
 
-# Set up Python SDK and dependencies
+# Install the Python SDK early. Various other test suites (like
+# keepproxy) bring up run_test_server.py, which imports the arvados
+# module. We can't actually *test* the Python SDK yet though, because
+# its own test suite brings up some of those other programs (like
+# keepproxy).
+
+python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
+pip install dist/arvados-python-client-0.1.*.tar.gz
+
+checkexit "Python SDK install"
+
+# Keep daemons
+
+gotest services/keepstore
+
+gotest services/keepproxy
+
+# Python SDK (already installed, but we didn't run its tests yet)
 
 title "Starting Python SDK tests"
 cd "$WORKSPACE"
@@ -134,15 +146,11 @@ python setup.py test
 
 checkexit "Python SDK tests"
 
-python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
-pip install dist/arvados-python-client-0.1.*.tar.gz
-
-checkexit "Python SDK install"
+# FUSE driver
 
 cd "$WORKSPACE"
 cd services/fuse
 
-# We reuse $VENVDIR from the Python SDK tests above
 python setup.py test
 
 checkexit "FUSE tests"
@@ -154,10 +162,12 @@ checkexit "FUSE install"
 
 title "Python SDK tests complete"
 
-for dir in services/keepproxy sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer
+# Go SDK packages
+
+for dir in sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer
 do
   gotest "$dir"
-end
+done
 
 # WORKBENCH
 title "Starting workbench tests"
@@ -178,6 +188,8 @@ rm -rf "$GOPATH"
 
 # The CLI SDK tests require a working API server, so let's skip those for now.
 exit $EXITCODE
+
+########################################################################
 
 # CLI SDK
 title "Starting SDK CLI tests"
