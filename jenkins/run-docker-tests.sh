@@ -10,23 +10,24 @@ title () {
 
 echo $WORKSPACE
 
+# DOCKER
+title "Starting docker build"
+
 # clean up existing docker containers and images
 docker.io stop $(docker.io ps -a -q)
 docker.io rm $(docker.io ps -a -q)
 docker.io rmi $(docker.io images -q)
 
-# clean up build files so we can re-build
-rm -f $WORKSPACE/docker/*-image
-
-rm -f docker/config.yml
-
-# Get test config.yml file
-cp $HOME/docker/config.yml docker/
-
-# DOCS
-title "Starting docker build"
+# clean up the docker build environment
 cd "$WORKSPACE"
 cd docker
+./build.sh realclean
+
+rm -f config.yml
+
+# Get test config.yml file
+cp $HOME/docker/config.yml .
+
 ./build.sh
 
 ECODE=$?
