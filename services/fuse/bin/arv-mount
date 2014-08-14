@@ -7,9 +7,10 @@ import logging
 import os
 import signal
 import subprocess
-import traceback
 
 from arvados_fuse import *
+
+logger = logging.getLogger('arvados.arv-mount')
 
 if __name__ == '__main__':
     # Handle command line parameters
@@ -52,17 +53,30 @@ collections on the server.""")
     else:
         daemon_ctx = None
 
-    # Set up logging.
-    # If we're daemonized without a logfile, there's nowhere to log, so don't.
-    if args.logfile or (daemon_ctx is None):
-        log_conf = {}
-        if args.debug:
-            log_conf['level'] = logging.DEBUG
-            arvados.config.settings()['ARVADOS_DEBUG'] = 'true'
-        if args.logfile:
-            log_conf['filename'] = args.logfile
-        logging.basicConfig(**log_conf)
-        logging.debug("arv-mount debugging enabled")
+    # Configure a logger based on command-line switches.
+    # If we're using a contemporary Python SDK (mid-August 2014),
+    # configure the arvados hierarchy logger.
+    # Otherwise, configure the program root logger.
+    base_logger = getattr(arvados, 'logger', None)
+
+    if args.logfile:
+        log_handler = logging.FileHandler(args.logfile)
+    elif daemon_ctx:
+        log_handler = logging.NullHandler()
+    elif base_logger:
+        log_handler = arvados.log_handler
+    else:
+        log_handler = logging.StreamHandler()
+
+    if base_logger is None:
+        base_logger = logging.getLogger()
+    else:
+        base_logger.removeHandler(arvados.log_handler)
+    base_logger.addHandler(log_handler)
+
+    if args.debug:
+        base_logger.setLevel(logging.DEBUG)
+        logger.debug("arv-mount debugging enabled")
 
     try:
         # Create the request handler
@@ -79,9 +93,8 @@ collections on the server.""")
         else:
             # Set up the request handler with the 'magic directory' at the root
             operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
-    except Exception as ex:
-        logging.error("arv-mount: exception during API setup")
-        logging.error(traceback.format_exc())
+    except Exception:
+        logger.exception("arv-mount: exception during API setup")
         exit(1)
 
     # FUSE options, see mount.fuse(8)
@@ -115,8 +128,8 @@ collections on the server.""")
             signal.signal(signal.SIGTERM, signal.SIG_DFL)
             signal.signal(signal.SIGQUIT, signal.SIG_DFL)
         except Exception as e:
-            logging.error('arv-mount: exception during exec %s' % (args.exec_args,))
-            logging.error(traceback.format_exc())
+            logger.exception('arv-mount: exception during exec %s',
+                             args.exec_args)
             try:
                 rc = e.errno
             except AttributeError:
@@ -130,6 +143,5 @@ collections on the server.""")
             llfuse.init(operations, args.mountpoint, opts)
             llfuse.main()
         except Exception as e:
-            logging.error('arv-mount: exception during mount')
-            logging.error(traceback.format_exc())
+            logger.exception('arv-mount: exception during mount')
             exit(getattr(e, 'errno', 1))

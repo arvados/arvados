@@ -1,7 +1,13 @@
 <%
    uuid_map = {}
-   [@users, @groups].each do |obj_list|
-     obj_list.each { |o| uuid_map[o.uuid] = o }
+   if @share_links
+     [User, Group].each do |type|
+       type.limit(10000)
+         .filter([['uuid','in',@share_links.collect(&:tail_uuid)]])
+         .each do |o|
+         uuid_map[o.uuid] = o
+       end
+     end
    end
    perm_name_desc_map = {}
    perm_desc_name_map = {}

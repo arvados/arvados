@@ -4,6 +4,7 @@ running:
   cancelled_at: ~
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
+  created_at: <%= 3.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
@@ -26,6 +27,7 @@ running_cancelled:
   cancelled_at: <%= 1.minute.ago.to_s(:db) %>
   cancelled_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   cancelled_by_client_uuid: zzzzz-ozdt8-obw7foaks3qjyej
+  created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: ~
   script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
@@ -49,6 +51,7 @@ uses_nonexistent_script_version:
   cancelled_by_user_uuid: ~
   cancelled_by_client_uuid: ~
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  created_at: <%= 5.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
@@ -73,6 +76,7 @@ foobar:
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
+  created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
@@ -98,6 +102,7 @@ barbaz:
   script_parameters:
     input: fa7aeb5140e2848d39b416daeef4ffc5+45
     an_integer: 1
+  created_at: <%= 4.minute.ago.to_s(:db) %>
   started_at: <%= 3.minute.ago.to_s(:db) %>
   finished_at: <%= 2.minute.ago.to_s(:db) %>
   running: false
@@ -116,6 +121,7 @@ barbaz:
 
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash
@@ -128,6 +134,7 @@ previous_job_run:
 
 previous_docker_job_run:
   uuid: zzzzz-8i9sb-k6emstgk4kw4yhi
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash
@@ -141,6 +148,7 @@ previous_docker_job_run:
 
 previous_job_run_no_output:
   uuid: zzzzz-8i9sb-cjs4pklxxjykppp
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash
@@ -153,6 +161,7 @@ previous_job_run_no_output:
 
 nondeterminisic_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykyyy
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: foo
   script: hash2
@@ -165,6 +174,7 @@ nondeterminisic_job_run:
 
 nearly_finished_job:
   uuid: zzzzz-8i9sb-2gx6rz0pjl033w3
+  created_at: <%= 14.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   repository: arvados
   script: doesnotexist
@@ -184,6 +194,7 @@ nearly_finished_job:
 
 queued:
   uuid: zzzzz-8i9sb-grx15v5mjnsyxk7
+  created_at: <%= 1.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   cancelled_at: ~
   cancelled_by_user_uuid: ~
