@@ -174,7 +174,7 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object.attributes.merge(href: url_for(@object)) }
+      f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
       f.html {
         if params['tab_pane']
           comparable = self.respond_to? :compare
