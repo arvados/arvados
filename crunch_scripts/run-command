@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import logging
+logging.basicConfig(level=logging.INFO, format="run-command: %(message)s")
+
 import arvados
 import re
 import os
@@ -15,12 +18,10 @@ import copy
 import traceback
 import pprint
 import multiprocessing
-import logging
 import crunchutil.robust_put as robust_put
 import crunchutil.vwd as vwd
 
 os.umask(0077)
-logging.basicConfig(format="run-command: %(message)s")
 
 t = arvados.current_task().tmpdir
 
