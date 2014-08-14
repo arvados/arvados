@@ -4,6 +4,7 @@
      class_name_h = class_name.humanize(capitalize: false)
      req_item = safe_join([class_name_h, " with UUID ",
                            raw("<code>"), params[:uuid], raw("</code>")], "")
+     req_item_plain_text = safe_join([class_name_h, " with UUID ", params[:uuid]])
    else
      req_item = "page you requested"
    end
@@ -20,3 +21,12 @@ Perhaps you'd like to
 
 </p>
 
+<p>
+<br/>
+<% error_message = "The #{req_item_plain_text} was not found." %>
+Would you like to report this problem?
+<%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.fullpath, action_method: 'post', error_message: error_message),
+      {class: 'btn btn-primary report-issue-modal-window', 'data-toggle' =>  "modal", 'data-target' => '#report-issue-modal-window', :remote => true, return_to: request.url} do %>
+      <i class="fa fa-fw fa-support"></i> Report problem
+<% end %>
+</p>
