@@ -39,12 +39,16 @@ checkexit() {
     fi
 }
 
+goget() {
+    go get -t "git.curoverse.com/arvados.git/$1"
+    checkexit "$1 install"
+}
+
 gotest() {
     title "Starting $1 tests"
     cd "$WORKSPACE"
 
-    go get -t "git.curoverse.com/arvados.git/$1" \
-        && go test "git.curoverse.com/arvados.git/$1"
+    go test "git.curoverse.com/arvados.git/$1"
 
     checkexit "$1 tests"
     title "$1 tests complete"
@@ -115,9 +119,15 @@ title "API server tests complete"
 
 # Install CLI gem's dependencies.
 
-cd "$WORKSPACE"
-cd sdk/cli
+cd "$WORKSPACE/sdk/cli"
 bundle install --deployment
+
+cd "$WORKSPACE"
+gostuff="services/keepstore services/keepproxy sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer"
+for dir in $gostuff
+do
+  goget "$dir"
+done
 
 # Install the Python SDK early. Various other test suites (like
 # keepproxy) bring up run_test_server.py, which imports the arvados
@@ -125,51 +135,53 @@ bundle install --deployment
 # its own test suite brings up some of those other programs (like
 # keepproxy).
 
+cd "$WORKSPACE/sdk/python"
 python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
 pip install dist/arvados-python-client-0.1.*.tar.gz
 
 checkexit "Python SDK install"
 
-# Keep daemons
-
-gotest services/keepstore
-
-gotest services/keepproxy
-
-# Python SDK (already installed, but we didn't run its tests yet)
-
-title "Starting Python SDK tests"
-cd "$WORKSPACE"
-cd sdk/python
-
-python setup.py test
-
-checkexit "Python SDK tests"
-
-# FUSE driver
-
-cd "$WORKSPACE"
-cd services/fuse
-
-python setup.py test
-
-checkexit "FUSE tests"
-
+cd "$WORKSPACE/services/fuse"
 python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
 pip install dist/arvados_fuse-0.1.*.tar.gz
 
 checkexit "FUSE install"
 
-title "Python SDK tests complete"
+# Python SDK. We test this before testing keepproxy: keepproxy runs
+# run_test_server.py, which depends on the yaml package, which is in
+# tests_require but not install_requires, and therefore does not get
+# installed by setuptools until we run "setup.py test" *and* install
+# the .egg files that setup.py downloads.
+
+title "Starting Python SDK tests"
+cd "$WORKSPACE/sdk/python"
+
+python setup.py test
+checkexit "Python SDK tests"
+easy_install *.egg
+
+title "Python tests complete"
+
+# FUSE driver
+
+title "Starting FUSE tests"
+cd "$WORKSPACE/services/fuse"
+
+python setup.py test
+checkexit "FUSE tests"
+easy_install *.egg
+
+title "FUSE tests complete"
+
 
 # Go SDK packages
 
-for dir in sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer
+for dir in $gostuff
 do
   gotest "$dir"
 done
 
-# WORKBENCH
+# Workbench
 title "Starting workbench tests"
 cd "$WORKSPACE"
 cd apps/workbench
