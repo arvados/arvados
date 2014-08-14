@@ -22,7 +22,6 @@ class ArvadosModel < ActiveRecord::Base
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
   validate :ensure_serialized_attribute_type
-  validate :normalize_collection_uuids
   validate :ensure_valid_uuids
 
   # Note: This only returns permission links. It does not account for
@@ -144,12 +143,6 @@ class ArvadosModel < ActiveRecord::Base
         # This object described by this row is owned by this user, or owned by a group readable by this user
         sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
         sql_params += [uuid_list]
-      end
-
-      if sql_table == "collections" and users_list.any?
-        # There is a 'name' link going from a readable group to the collection.
-        name_links = "(SELECT head_uuid FROM links WHERE link_class='name' AND tail_uuid IN (#{sanitized_uuid_list}))"
-        sql_conds += ["#{sql_table}.uuid IN #{name_links}"]
       end
 
       # Link head points to this row, or to the owner of this row (the thing to be read)
@@ -360,20 +353,6 @@ class ArvadosModel < ActiveRecord::Base
 
   def skip_uuid_existence_check
     []
-  end
-
-  def normalize_collection_uuids
-    foreign_key_attributes.each do |attr|
-      attr_value = send attr
-      if attr_value.is_a? String and
-          attr_value.match /^[0-9a-f]{32,}(\+[@\w]+)*$/
-        begin
-          send "#{attr}=", Collection.normalize_uuid(attr_value)
-        rescue
-          # TODO: abort instead of silently accepting unnormalizable value?
-        end
-      end
-    end
   end
 
   @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/

@@ -71,7 +71,7 @@ class Arvados::V1::JobsController < ApplicationController
             # We'll use this if we don't find a job that has completed
             incomplete_job ||= j
           else
-            if Collection.readable_by(current_user).find_by_uuid(j.output)
+            if Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
               # Record the first job in the list
               if !@object
                 @object = j
