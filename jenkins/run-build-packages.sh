@@ -182,7 +182,6 @@ build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse,
 cd $WORKSPACE/services/fuse
 sed -i'' -e "s:version='0.1':version='0.1.$GIT_HASH':" setup.py
 
-
 cd $WORKSPACE/debs
 
 # Please seem comment about --no-python-fix-name above; we stay consistent and do
@@ -204,3 +203,5 @@ else
   echo "No new packages generated. No PRM run necessary."
 fi
 
+# clean up temporary GOPATH
+rm -rf "$GOPATH"
