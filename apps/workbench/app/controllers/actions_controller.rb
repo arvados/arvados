@@ -186,6 +186,9 @@ class ActionsController < ApplicationController
   end
 
   def report_issue
+    puts "Issue being reported with these parameters: #{params.inspect}"
+    logger.warn "Issue being reported with these parameters: #{params.inspect}"
+
     respond_to do |format|
       IssueReporter.send_report(current_user, params).deliver
       format.js
