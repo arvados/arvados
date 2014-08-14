@@ -177,4 +177,19 @@ class ActionsController < ApplicationController
     redirect_to controller: 'collections', action: :show, id: newc.uuid
   end
 
+  def report_issue_popup
+    @popup_params = params
+    respond_to do |format|
+      format.js
+      format.html
+    end
+  end
+
+  def report_issue
+    respond_to do |format|
+      IssueReporter.send_report(current_user, params).deliver
+      format.js
+    end
+  end
+
 end

@@ -182,5 +182,5 @@ common:
   user_profile_notification_address: false
 
   # source_version
-  source_version: <%= `git log -n 1 --format=%H` %>
+  source_version: <%= `git log -n 1 --format=%h` %>
   local_modified: false
