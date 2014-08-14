@@ -1,14 +1,7 @@
 Issue reported by user <%=@user.full_name%> <%=@user.email%>
 
 Details of the report:
-<% @params.each do |k, v| %>
-  <% if k.start_with? 'report_' %>
-    <% if k.start_with? 'report_additional_info' %>
-      <%  json_map = JSON.parse(v).map %>
-      <%  map_to_s = json_map.map {|k,v| "#{k}=#{v}"}.join("\n") %>
+<% json_map = JSON.parse(@params['report_additional_info']).map %>
+<%  map_to_s = json_map.map {|k,v| "#{k}=#{v}"}.join("\n") %>
 <%= map_to_s %>
-    <% else %>
-<%= k %>=<%= v %>
-    <% end %>
-  <% end %>
-<% end %>
+Report text=<%=@params['report_text'] %>
