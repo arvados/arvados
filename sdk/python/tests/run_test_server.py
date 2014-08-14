@@ -28,8 +28,6 @@ if 'GOPATH' in os.environ:
     gobins = [os.path.join(path, 'bin') for path in gopaths]
     os.environ['PATH'] = ':'.join(gobins) + ':' + os.environ['PATH']
 
-logfile = None
-
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
     timeout = now + wait
@@ -148,7 +146,7 @@ def _start_keep(n, keep_args):
     for arg, val in keep_args.iteritems():
         keep_cmd.append("{}={}".format(arg, val))
 
-    kp0 = subprocess.Popen(keep_cmd, stderr=log_stream())
+    kp0 = subprocess.Popen(keep_cmd)
     with open("tmp/keep{}.pid".format(n), 'w') as f:
         f.write(str(kp0.pid))
 
@@ -211,8 +209,7 @@ def run_keep_proxy(auth):
     os.environ["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[auth]["api_token"]
 
     kp0 = subprocess.Popen(["keepproxy",
-                            "-pid=tmp/keepproxy.pid", "-listen=:{}".format(25101)],
-                           stderr=log_stream())
+                            "-pid=tmp/keepproxy.pid", "-listen=:{}".format(25101)])
 
     authorize_with("admin")
     api = arvados.api('v1', cache=False)
@@ -222,16 +219,6 @@ def run_keep_proxy(auth):
 
 def stop_keep_proxy():
     kill_server_pid("tmp/keepproxy.pid", 0)
-
-def log_stream():
-    global logfile
-    if not os.path.exists("tmp"):
-        os.mkdir("tmp")
-    if not logfile:
-        logpath = os.path.join(os.getcwd(), 'tmp', 'run_test_server.log')
-        logfile = open(logpath, 'a')
-        print >>sys.stderr, "Saving Keep server log messages to %s" % (logpath,)
-    return logfile
 
 def fixture(fix):
     '''load a fixture yaml file'''
