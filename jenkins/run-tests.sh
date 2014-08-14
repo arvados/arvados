@@ -13,6 +13,10 @@ title () {
 source /etc/profile.d/rvm.sh
 echo $WORKSPACE
 
+export GOPATH="$HOME/gocode"
+mkdir -p "$GOPATH/src/git.curoverse.com"
+ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+
 # DOCS
 title "Starting DOC build"
 cd "$WORKSPACE"
@@ -22,13 +26,16 @@ rm -rf .site
 # Make sure python-epydoc is installed or the next line won't do much good!
 PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
 
-ECODE=$?
+checkexit() {
+    ECODE=$?
 
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! DOC BUILD FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+    if [[ "$ECODE" != "0" ]]; then
+        title "!!!!!! $1 FAILED !!!!!!"
+        EXITCODE=$(($EXITCODE + $ECODE))
+    fi
+}
 
+checkexit "Doc build"
 title "DOC build complete"
 
 # DOC linkchecker
@@ -37,13 +44,7 @@ cd "$WORKSPACE"
 cd doc
 bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! DOC LINKCHECKER FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
+checkexit "Doc linkchecker"
 title "DOC linkchecker complete"
 
 # API SERVER
@@ -94,29 +95,22 @@ bundle exec rake db:create
 bundle exec rake db:setup
 bundle exec rake test
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! API SERVER TESTS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
+checkexit "API server tests"
 title "API server tests complete"
 
-# Keep
-title "Starting Keep tests"
-cd "$WORKSPACE"
-cd services/keep/src/keep
-GOPATH=$HOME/gocode go test
+# Install and test Go bits. keepstore must come before keepproxy and keepclient.
+for dir in services/keepstore services/keepproxy sdk/go/arvadosclient sdk/go/keepclient sdk/go/streamer
+do
+  title "Starting $dir tests"
+  cd "$WORKSPACE"
 
-ECODE=$?
+  go get -t "git.curoverse.com/arvados.git/$dir" \
+  && go test "git.curoverse.com/arvados.git/$dir"
 
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Keep TESTS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+  checkexit "$dir tests"
+  title "$dir tests complete"
+done
 
-title "Keep tests complete"
 
 # WORKBENCH
 title "Starting workbench tests"
@@ -129,13 +123,7 @@ echo $PATH
 
 bundle exec rake test
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! WORKBENCH TESTS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
+checkexit "Workbench tests"
 title "Workbench tests complete"
 
 # Python SDK
@@ -151,47 +139,27 @@ cd sdk/python
 
 VENVDIR=$(mktemp -d)
 virtualenv --setuptools "$VENVDIR"
-GOPATH="$HOME/gocode" "$VENVDIR/bin/python" setup.py test
+"$VENVDIR/bin/python" setup.py test
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Python SDK TESTS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+checkexit "Python SDK tests"
 
 "$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
 "$VENVDIR/bin/pip" install dist/arvados-python-client-0.1.*.tar.gz
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Python SDK install FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+checkexit "Python SDK install"
 
 cd "$WORKSPACE"
 cd services/fuse
 
 # We reuse $VENVDIR from the Python SDK tests above
-GOPATH="$HOME/gocode" "$VENVDIR/bin/python" setup.py test
+"$VENVDIR/bin/python" setup.py test
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Fuse TESTS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+checkexit "FUSE tests"
 
 "$VENVDIR/bin/python" setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz
 "$VENVDIR/bin/pip" install dist/arvados_fuse-0.1.*.tar.gz
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! Fuse install FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
+checkexit "FUSE install"
 
 title "Python SDK tests complete"
 
@@ -219,13 +187,7 @@ mkdir -p /tmp/keep
 export KEEP_LOCAL_STORE=/tmp/keep
 PYTHONPATH="$HOME/lib/python" bundle exec rake test
 
-ECODE=$?
-
-if [[ "$ECODE" != "0" ]]; then
-  title "!!!!!! SDK CLI TESTS FAILED !!!!!!"
-  EXITCODE=$(($EXITCODE + $ECODE))
-fi
-
+checkexit "SDK CLI tests"
 title "SDK CLI tests complete"
 
 exit $EXITCODE
