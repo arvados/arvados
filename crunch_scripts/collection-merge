@@ -15,7 +15,7 @@
 
 import arvados
 import md5
-import subst
+import crunchutil.subst as subst
 import subprocess
 import os
 import hashlib
