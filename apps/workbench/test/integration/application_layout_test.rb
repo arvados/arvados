@@ -74,7 +74,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link? 'Show version / debugging info'
         assert page.has_link? 'Report a problem'
 
-        # check show version info link      
+        # check show version info link
         click_link 'Show version / debugging info'
       end
     end
@@ -93,7 +93,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       click_button 'Close'
     end
 
-    # check report issue link      
+    # check report issue link
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
