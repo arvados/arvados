@@ -143,28 +143,26 @@ cd "$WORKSPACE/src-build-dir"
 git checkout master
 
 # Keep
-cd $WORKSPACE/services/keep
-./go.sh install keep
+export GOPATH=$(mktemp -d)
+mkdir -p "$GOPATH/src/git.curoverse.com"
+ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+
+# Keep -> keepstore
+go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/services/keep/bin/keep=/usr/bin/keep keep 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keep keep 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
 
 # Keep proxy
 
-# First build the keepclient library
-cd $WORKSPACE/sdk/go
-./go.sh install arvados.org/keepclient
-
-# Then keepproxy
-cd $WORKSPACE/services/keep
-./go.sh install arvados.org/keepproxy
+# Keep -> keepproxy
+go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/services/keep/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
 
-# The crunchstat wrapper
-cd $WORKSPACE/services/crunch/crunchstat
-./go.sh install arvados.org/crunchstat
+# crunchstat
+go get "git.curoverse.com/arvados.git/services/crunchstat"
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/services/crunch/crunchstat/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
 
 # The Python SDK
 cd $WORKSPACE/sdk/python

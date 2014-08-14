@@ -13,7 +13,7 @@ title () {
 source /etc/profile.d/rvm.sh
 echo $WORKSPACE
 
-export GOPATH="$HOME/gocode"
+export GOPATH=$(mktemp -d)
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 
