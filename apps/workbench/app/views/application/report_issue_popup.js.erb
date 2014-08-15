@@ -5,3 +5,44 @@ function reset_form() {
   $('#report_issue_text').val("");
   $('#additional_info').val("");
 }
+
+// ajax handling for report-issue function
+$(document).
+  on('ajax:send', function() {
+    var sendButton = document.getElementById('report-issue-submit');
+    if (sendButton) {
+      var text = document.getElementById('report-issue-submit').firstChild;
+      text.data = "Sending...";
+      sendButton.disabled = true;
+    }
+    var cancelButton = document.getElementById('report-issue-cancel');
+    if (cancelButton) {
+      var text = document.getElementById('report-issue-cancel').firstChild;
+      text.data = "Close";
+    }
+    $('div').remove('.modal-footer-status');
+  }).
+  on('ajax:success', function() {
+    var sendButton = document.getElementById('report-issue-submit');
+    if (sendButton && sendButton.disabled) {
+      var text = document.getElementById('report-issue-submit').firstChild;
+      text.data = "Report sent";
+      $('div').remove('.modal-footer-status');
+      $('.modal-footer').append('<div class="modal-footer-status pull-left"><div><p>Thanks for reporting this issue!</p></div></div>');
+    }
+  }).
+  on('ajax:failure', function() {
+    var sendButton = document.getElementById('report-issue-submit');
+    if (sendButton && sendButton.disabled) {
+      $('div').remove('.modal-footer-status');
+      $('.modal-footer').append('<div class="modal-footer-status pull-left"></br><p>We are sorry. We could not submit your report! We really want this to work, though -- please try again.</p></div>');
+      var text = document.getElementById('report-issue-submit').firstChild;
+      text.data = "Report issue";
+      sendButton.disabled = false;
+    }
+    var cancelButton = document.getElementById('report-issue-cancel');
+    if (cancelButton) {
+      var text = document.getElementById('report-issue-cancel').firstChild;
+      text.data = "Cancel";
+    }
+  });

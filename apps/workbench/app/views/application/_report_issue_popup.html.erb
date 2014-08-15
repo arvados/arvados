@@ -7,7 +7,8 @@
   support_email = Rails.configuration.support_email_address
 
   additional_info = {}
-  additional_info['Current Location'] = @popup_params[:current_location]
+  additional_info['Current location'] = @popup_params[:current_location]
+  additional_info['User UUID'] = current_user.uuid if current_user
   additional_info['User email'] = current_user.email if current_user
 
   additional_info_str = additional_info.map {|k,v| "#{k}=#{v}"}.join("\n")
@@ -25,7 +26,7 @@
 <div class="modal-dialog modal-with-loading-spinner">
   <div class="modal-content">
 
-    <%= form_tag report_issue_path, {id: 'report-issue-form', name: 'report-issue-form', method: 'post',
+    <%= form_tag report_issue_path, {name: 'report-issue-form', method: 'post',
         class: 'form-horizontal', remote: true} do %>
 
       <%
@@ -97,8 +98,8 @@
 
       <div class="modal-footer">
         <% if @popup_params[:popup_type] == 'report' %>
-          <button type="submit" id="register" class="btn btn-primary" autofocus>Report issue</button>
-          <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+          <button type="submit" id="report-issue-submit" class="btn btn-primary report-issue-submit" autofocus>Report issue</button>
+          <button class="btn btn-default report-issue-cancel" id="report-issue-cancel" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
         <% else %>
           <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Close</button>
         <% end %>
