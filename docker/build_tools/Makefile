@@ -7,7 +7,6 @@ endif
 all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
 
 IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
-GENERATED_FILES := $(shell ls */generated/* 2>/dev/null)
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 
 # `make clean' removes the files generated in the build directory
@@ -15,8 +14,8 @@ GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 clean:
 	@echo "make clean"
 	-@rm -rf build
-	+@[ "$(IMAGE_FILES)$(GENERATED_FILES)" = "" ] || rm $(IMAGE_FILES) $(GENERATED_FILES) 2>/dev/null
-	+@[ "$(GENERATED_DIRS)" = "" ] || rmdir */generated 2>/dev/null
+	+@[ "$(IMAGE_FILES)" = "" ] || rm -f $(IMAGE_FILES) 2>/dev/null
+	+@[ "$(GENERATED_DIRS)" = "" ] || rm -rf */generated 2>/dev/null
 
 DEBIAN_IMAGE := $(shell $(DOCKER) images -q arvados/debian |head -n1)
 
