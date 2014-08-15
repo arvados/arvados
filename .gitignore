@@ -16,3 +16,4 @@ sdk/java/target
 apps/workbench/vendor/bundle
 services/api/vendor/bundle
 sdk/java/log
+sdk/cli/vendor
