@@ -13,11 +13,6 @@ echo $WORKSPACE
 # DOCKER
 title "Starting docker build"
 
-# clean up existing docker containers and images
-docker.io stop $(docker.io ps -a -q)
-docker.io rm $(docker.io ps -a -q)
-docker.io rmi $(docker.io images -q)
-
 # clean up the docker build environment
 cd "$WORKSPACE"
 cd docker
