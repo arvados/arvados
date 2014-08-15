@@ -3,7 +3,6 @@
 --
 
 SET statement_timeout = 0;
-SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -430,7 +429,9 @@ CREATE TABLE jobs (
     repository character varying(255),
     output_is_persistent boolean DEFAULT false NOT NULL,
     supplied_script_version character varying(255),
-    docker_image_locator character varying(255)
+    docker_image_locator character varying(255),
+    name character varying(255),
+    description text
 );
 
 
@@ -679,7 +680,8 @@ CREATE TABLE pipeline_instances (
     updated_at timestamp without time zone NOT NULL,
     properties text,
     state character varying(255),
-    components_summary text
+    components_summary text,
+    description text
 );
 
 
@@ -1982,3 +1984,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140709172343');
 INSERT INTO schema_migrations (version) VALUES ('20140714184006');
 
 INSERT INTO schema_migrations (version) VALUES ('20140811184643');
+
+INSERT INTO schema_migrations (version) VALUES ('20140815171049');

@@ -82,12 +82,6 @@ class Arvados::V1::GroupsController < ApplicationController
         cond_params = []
         conds << "#{klass.table_name}.owner_uuid = ?"
         cond_params << opts[:owner_uuid]
-        if opts[:include_linked]
-          haslink = "#{klass.table_name}.uuid IN (SELECT head_uuid FROM links WHERE link_class=#{klass.sanitize 'name'}"
-          haslink += " AND links.tail_uuid=#{klass.sanitize opts[:owner_uuid]}"
-          haslink += ")"
-          conds << haslink
-        end
         if conds.any?
           cond_sql = '(' + conds.join(') OR (') + ')'
           @objects = @objects.where(cond_sql, *cond_params)

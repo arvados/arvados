@@ -4,7 +4,7 @@ class Collection < ArvadosModel
   include CommonApiTemplate
 
   before_validation :set_portable_data_hash
-  validate :ensure_manifest_matches_hash
+  validate :ensure_hash_matches_manifest_text
 
   api_accessible :user, extend: :common do |t|
     t.add :data_size
@@ -12,6 +12,7 @@ class Collection < ArvadosModel
     t.add :name
     t.add :description
     t.add :properties
+    t.add :portable_data_hash
   end
 
   api_accessible :with_data, extend: :user do |t|
@@ -19,17 +20,29 @@ class Collection < ArvadosModel
   end
 
   def set_portable_data_hash
-    if portable_data_hash.nil? or portable_data_hash == "" or
-        (manifest_text_changed? and !portable_data_hash_changed?)
-      portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+    if (self.portable_data_hash.nil? or (self.portable_data_hash == "") or (manifest_text_changed? and !portable_data_hash_changed?))
+      self.portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+    elsif portable_data_hash_changed?
+      begin
+        loc = Locator.parse!(self.portable_data_hash)
+        loc.strip_hints!
+        self.portable_data_hash = loc.to_s
+      rescue ArgumentError => e
+        errors.add(:portable_data_hash, "#{e}")
+        return false
+      end
     end
     true
   end
 
-  def ensure_manifest_matches_hash
-    unless Digest::MD5.hexdigest(manifest_text) == portable_data_hash
-      errors.add(:portable_data_hash, "does not match hash of manifest_text")
-      return false
+  def ensure_hash_matches_manifest_text
+    if manifest_text_changed? or portable_data_hash_changed?
+      computed_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+      unless computed_hash == portable_data_hash
+        logger.debug "(computed) '#{computed_hash}' != '#{portable_data_hash}' (provided)"
+        errors.add(:portable_data_hash, "does not match hash of manifest_text")
+        return false
+      end
     end
     true
   end

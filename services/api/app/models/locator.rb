@@ -35,9 +35,16 @@ class Locator
   # Locator.parse! returns a Locator object parsed from the string tok,
   # raising an ArgumentError if tok cannot be parsed.
   def self.parse!(tok)
+    if tok.nil? or tok.empty?
+      raise ArgumentError.new "locator is nil or empty"
+    end
+
     m = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/.match(tok.strip)
     unless m
-      raise ArgumentError.new "could not parse #{tok}"
+      raise ArgumentError.new "not a valid locator #{tok}"
+    end
+    unless m[2]
+      raise ArgumentError.new "missing size hint on #{tok}"
     end
 
     tokhash, _, toksize, _, trailer = m[1..5]

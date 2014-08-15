@@ -1,9 +1,8 @@
 class Arvados::V1::CollectionsController < ApplicationController
   def create
-    owner_uuid = resource_attrs.delete(:owner_uuid) || current_user.uuid
-    unless current_user.can? write: owner_uuid
-      logger.warn "User #{current_user.andand.uuid} tried to set collection owner_uuid to #{owner_uuid}"
-      raise ArvadosModel::PermissionDeniedError
+    if !resource_attrs[:manifest_text]
+      return send_error("'manifest_text' attribute must be specified",
+                        status: :unprocessable_entity)
     end
 
     # Check permissions on the collection manifest.
@@ -54,6 +53,23 @@ class Arvados::V1::CollectionsController < ApplicationController
     super
   end
 
+  def find_object_by_uuid
+    if loc = Locator.parse(params[:id])
+      loc.strip_hints!
+      if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).limit(1).first
+        @object = {
+          portable_data_hash: c.portable_data_hash,
+          manifest_text: c.manifest_text,
+          files: c.files,
+          data_size: c.data_size
+        }
+      end
+    else
+      super
+    end
+    true
+  end
+
   def show
     if current_api_client_authorization
       signing_opts = {
@@ -72,7 +88,11 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
       }
     end
-    render json: @object.as_api_response(:with_data)
+    if @object.is_a? Collection
+      render json: @object.as_api_response(:with_data)
+    else
+      render json: @object
+    end
   end
 
   def script_param_edges(visited, sp)
@@ -87,48 +107,75 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     when String
       return if sp.empty?
-      m = stripped_portable_data_hash(sp)
-      if m
-        generate_provenance_edges(visited, m)
+      if loc = Locator.parse(sp)
+        search_edges(visited, loc.to_s, UP)
       end
     end
   end
 
-  def generate_provenance_edges(visited, uuid)
-    m = stripped_portable_data_hash(uuid)
-    uuid = m if m
+  UP = 1
+  DOWN = 2
 
-    if not uuid or uuid.empty? or visited[uuid]
-      return ""
+  def search_edges(visited, uuid, direction)
+    if uuid.nil? or uuid.empty? or visited[uuid]
+      return
+    end
+
+    if loc = Locator.parse(uuid)
+      loc.strip_hints!
+      return if visited[loc.to_s]
     end
 
     logger.debug "visiting #{uuid}"
 
-    if m
-      # uuid is a collection
-      Collection.readable_by(current_user).where(portable_data_hash: uuid).each do |c|
-        visited[uuid] = c.as_api_response
-        visited[uuid][:files] = []
-        c.files.each do |f|
-          visited[uuid][:files] << f
+    if loc
+      # uuid is a portable_data_hash
+      if c = Collection.readable_by(*@read_users).where(portable_data_hash: loc.to_s).limit(1).first
+        visited[loc.to_s] = {
+          portable_data_hash: c.portable_data_hash,
+          files: c.files,
+          data_size: c.data_size
+        }
+      end
+
+      if direction == UP
+        # Search upstream for jobs where this locator is the output of some job
+        Job.readable_by(*@read_users).where(output: loc.to_s).each do |job|
+          search_edges(visited, job.uuid, UP)
+        end
+
+        Job.readable_by(*@read_users).where(log: loc.to_s).each do |job|
+          search_edges(visited, job.uuid, UP)
+        end
+      elsif direction == DOWN
+        if loc.to_s == "d41d8cd98f00b204e9800998ecf8427e+0"
+          # Special case, don't follow the empty collection.
+          return
+        end
+
+        # Search downstream for jobs where this locator is in script_parameters
+        Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
+          search_edges(visited, job.uuid, DOWN)
         end
       end
-
-      Job.readable_by(current_user).where(output: uuid).each do |job|
-        generate_provenance_edges(visited, job.uuid)
-      end
-
-      Job.readable_by(current_user).where(log: uuid).each do |job|
-        generate_provenance_edges(visited, job.uuid)
-      end
-
     else
-      # uuid is something else
+      # uuid is a regular Arvados UUID
       rsc = ArvadosModel::resource_class_for_uuid uuid
       if rsc == Job
-        Job.readable_by(current_user).where(uuid: uuid).each do |job|
+        Job.readable_by(*@read_users).where(uuid: uuid).each do |job|
           visited[uuid] = job.as_api_response
-          script_param_edges(visited, job.script_parameters)
+          if direction == UP
+            # Follow upstream collections referenced in the script parameters
+            script_param_edges(visited, job.script_parameters)
+          elsif direction == DOWN
+            # Follow downstream job output
+            search_edges(visited, job.output, direction)
+          end
+        end
+      elsif rsc == Collection
+        if c = Collection.readable_by(*@read_users).where(uuid: uuid).limit(1).first
+          visited[uuid] = c.as_api_response
+          search_edges(visited, c.portable_data_hash, direction)
         end
       elsif rsc != nil
         rsc.where(uuid: uuid).each do |r|
@@ -137,75 +184,34 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     end
 
-    Link.readable_by(current_user).
-      where(head_uuid: uuid, link_class: "provenance").
-      each do |link|
-      visited[link.uuid] = link.as_api_response
-      generate_provenance_edges(visited, link.tail_uuid)
+    if direction == UP
+      # Search for provenance links pointing to the current uuid
+      Link.readable_by(*@read_users).
+        where(head_uuid: uuid, link_class: "provenance").
+        each do |link|
+        visited[link.uuid] = link.as_api_response
+        search_edges(visited, link.tail_uuid, direction)
+      end
+    elsif direction == DOWN
+      # Search for provenance links emanating from the current uuid
+      Link.readable_by(current_user).
+        where(tail_uuid: uuid, link_class: "provenance").
+        each do |link|
+        visited[link.uuid] = link.as_api_response
+        search_edges(visited, link.head_uuid, direction)
+      end
     end
   end
 
   def provenance
     visited = {}
-    generate_provenance_edges(visited, @object[:uuid])
+    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], UP)
     render json: visited
-  end
-
-  def generate_used_by_edges(visited, uuid)
-    m = stripped_portable_data_hash(uuid)
-    uuid = m if m
-
-    if not uuid or uuid.empty? or visited[uuid]
-      return ""
-    end
-
-    logger.debug "visiting #{uuid}"
-
-    if m
-      # uuid is a collection
-      Collection.readable_by(current_user).where(portable_data_hash: uuid).each do |c|
-        visited[uuid] = c.as_api_response
-        visited[uuid][:files] = []
-        c.files.each do |f|
-          visited[uuid][:files] << f
-        end
-      end
-
-      if uuid == "d41d8cd98f00b204e9800998ecf8427e+0"
-        # special case for empty collection
-        return
-      end
-
-      Job.readable_by(current_user).where(["jobs.script_parameters like ?", "%#{uuid}%"]).each do |job|
-        generate_used_by_edges(visited, job.uuid)
-      end
-
-    else
-      # uuid is something else
-      rsc = ArvadosModel::resource_class_for_uuid uuid
-      if rsc == Job
-        Job.readable_by(current_user).where(uuid: uuid).each do |job|
-          visited[uuid] = job.as_api_response
-          generate_used_by_edges(visited, job.output)
-        end
-      elsif rsc != nil
-        rsc.where(uuid: uuid).each do |r|
-          visited[uuid] = r.as_api_response
-        end
-      end
-    end
-
-    Link.readable_by(current_user).
-      where(tail_uuid: uuid, link_class: "provenance").
-      each do |link|
-      visited[link.uuid] = link.as_api_response
-      generate_used_by_edges(visited, link.head_uuid)
-    end
   end
 
   def used_by
     visited = {}
-    generate_used_by_edges(visited, @object[:uuid])
+    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], DOWN)
     render json: visited
   end
 

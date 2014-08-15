@@ -5,7 +5,6 @@ class CollectionUseRegularUuids < ActiveRecord::Migration
     add_column :collections, :properties, :text
     add_column :collections, :expire_time, :date
     remove_column :collections, :locator
-    add_column :jobs, :name, :string
 
     say_with_time "Step 1. Move manifest hashes into portable_data_hash field" do
       ActiveRecord::Base.connection.execute("update collections set portable_data_hash=uuid, uuid=null")

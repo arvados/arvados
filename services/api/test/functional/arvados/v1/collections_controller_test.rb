@@ -84,7 +84,7 @@ EOS
     assert_nil assigns(:objects)
 
     get :show, {
-      id: test_collection[:uuid]
+      id: test_collection[:portable_data_hash]
     }
     assert_response :success
     assert_not_nil assigns(:object)
@@ -128,12 +128,12 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-rew6elm53kancon',
         manifest_text: manifest_text,
-        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
     resp = JSON.parse(@response.body)
-    assert_equal 'zzzzz-tpzed-000000000000000', resp['owner_uuid']
+    assert_equal 'zzzzz-j7d0g-rew6elm53kancon', resp['owner_uuid']
   end
 
   test "create with owner_uuid set to group i can_manage" do
@@ -142,28 +142,42 @@ EOS
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
       collection: {
-        owner_uuid: 'zzzzz-j7d0g-8ulrifv67tve5sx',
+        owner_uuid: groups(:system_owned_group).uuid,
         manifest_text: manifest_text,
-        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
     resp = JSON.parse(@response.body)
-    assert_equal 'zzzzz-tpzed-000000000000000', resp['owner_uuid']
+    assert_equal 'zzzzz-j7d0g-8ulrifv67tve5sx', resp['owner_uuid']
   end
 
-  test "create with owner_uuid set to group with no can_manage permission" do
+  test "create with owner_uuid fails on group with can_read permission" do
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
       collection: {
-        owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
+        owner_uuid: groups(:all_users).uuid,
         manifest_text: manifest_text,
-        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response 403
+  end
+
+  test "create with owner_uuid fails on group with no permission" do
+    permit_unsigned_manifests
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        owner_uuid: groups(:public).uuid,
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
+      }
+    }
+    assert_response 422
   end
 
   test "admin create with owner_uuid set to group with no permission" do
@@ -174,7 +188,7 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
         manifest_text: manifest_text,
-        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
@@ -187,7 +201,7 @@ EOS
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",\
-        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102"\
+        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102+47"\
       }
       EOS
     }
@@ -201,7 +215,7 @@ EOS
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:bar.txt\n",\
-        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102"\
+        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102+47"\
       }
       EOS
     }
@@ -261,8 +275,8 @@ EOS
       where: { any: ['contains', '7f9102c395f4ffc5e3'] }
     }
     assert_response :success
-    found = assigns(:objects).collect(&:uuid)
-    assert_equal 1, found.count
+    found = assigns(:objects).collect(&:portable_data_hash)
+    assert_equal 2, found.count
     assert_equal true, !!found.index('1f4b0bc7583c2a7f9102c395f4ffc5e3+45')
   end
 

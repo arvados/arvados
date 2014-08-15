@@ -31,36 +31,33 @@ module HasUuid
 
   def validate_uuid
     if self.respond_to_uuid? and self.uuid_changed?
-      if self.uuid_was.nil? or self.uuid_was == ""
-        if self.uuid.is_a?(String) and self.uuid.length > 0 and current_user.andand.is_admin
-          if (re = self.uuid.match HasUuid::UUID_REGEX)
-            if re[1] == self.class.uuid_prefix
-              return true
-            else
-              self.errors.add(:uuid, "Matched uuid type '#{re[1]}', expected '#{self.class.uuid_prefix}'")
-              return false
-            end
+      if current_user.andand.is_admin and self.uuid.is_a?(String)
+        if (re = self.uuid.match HasUuid::UUID_REGEX)
+          if re[1] == self.class.uuid_prefix
+            return true
           else
-            self.errors.add(:uuid, "'#{self.uuid}' is not a valid Arvados UUID")
+            self.errors.add(:uuid, "Matched uuid type '#{re[1]}', expected '#{self.class.uuid_prefix}'")
             return false
           end
-        elsif self.uuid.nil? or self.uuid == ""
-          return true
         else
-          self.errors.add(:uuid, "Not permitted to specify uuid")
+          self.errors.add(:uuid, "'#{self.uuid}' is not a valid Arvados UUID")
           return false
         end
       else
-        self.errors.add(:uuid, "Not permitted to change uuid")
+        if self.new_record?
+          self.errors.add(:uuid, "Not permitted to specify uuid")
+        else
+          self.errors.add(:uuid, "Not permitted to change uuid")
+        end
         return false
       end
+    else
+      return true
     end
-
-    true
   end
 
   def assign_uuid
-    if self.respond_to_uuid? and self.uuid.nil? or self.uuid == ""
+    if self.respond_to_uuid? and self.uuid.nil? or self.uuid.empty?
       self.uuid = self.class.generate_uuid
     end
     true

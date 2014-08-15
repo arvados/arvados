@@ -104,7 +104,9 @@ class ApplicationController < ActionController::Base
     if e.respond_to? :backtrace and e.backtrace
       logger.error e.backtrace.collect { |x| x + "\n" }.join('')
     end
-    if @object and @object.errors and @object.errors.full_messages and not @object.errors.full_messages.empty?
+    if (@object and @object.respond_to? :errors and
+        @object.errors and @object.errors.full_messages and
+        not @object.errors.full_messages.empty?)
       errors = @object.errors.full_messages
       logger.error errors.inspect
     else

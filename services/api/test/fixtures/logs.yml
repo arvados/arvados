@@ -24,7 +24,7 @@ log4: # foo collection added, readable by active through link
   id: 4
   uuid: zzzzz-xxxxx-pshmckwoma00004
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
-  object_uuid: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45 # foo file
+  object_uuid: 4n8aq-4zz18-znfnqtbbv4spc3w # foo file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
   event_at: <%= 4.minute.ago.to_s(:db) %>
 
@@ -32,6 +32,6 @@ log5: # baz collection added, readable by active and spectator through group 'al
   id: 5
   uuid: zzzzz-xxxxx-pshmckwoma00005
   owner_uuid: zzzzz-tpzed-000000000000000 # system user
-  object_uuid: ea10d51bcf88862dbcc36eb292017dfd+45 # baz file
+  object_uuid: 4n8aq-4zz18-y9vne9npefyxh8g # baz file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
   event_at: <%= 5.minute.ago.to_s(:db) %>

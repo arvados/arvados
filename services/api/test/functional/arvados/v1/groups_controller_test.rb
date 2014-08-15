@@ -262,7 +262,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
   end
 
   test 'get group-owned objects with include_linked' do
-    expected_uuid = specimens(:in_aproject_linked_from_asubproject).uuid
+    expected_uuid = specimens(:in_asubproject).uuid
     authorize_with :active
     get :contents, {
       id: groups(:asubproject).uuid,
@@ -273,7 +273,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     uuids = json_response['items'].collect { |i| i['uuid'] }
     assert_includes uuids, expected_uuid, "Did not get #{expected_uuid}"
 
-    expected_name = links(:specimen_is_in_two_projects).name
+    expected_name = specimens(:in_asubproject).name
     found_specimen_name = false
     assert(json_response['links'].any?,
            "Expected a non-empty array of links in response")
