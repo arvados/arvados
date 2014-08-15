@@ -73,4 +73,26 @@ class ErrorsTest < ActionDispatch::IntegrationTest
     assert(page.has_no_text?(/fiddlesticks/i),
            "unrouted request returned a generic error page, not 404")
   end
+
+  test "API error page has Report problem button" do
+    visit page_with_token("active")
+
+    original_arvados_v1_base = Rails.configuration.arvados_v1_base
+
+    begin
+      # point to a bad api server url to generate fiddlesticks error
+      Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+
+      visit page_with_token("active")
+
+      assert(page.has_text?(/fiddlesticks/i),
+             "Not on an error page after making an SSH key out of scope")
+
+      # check the "Report problem" button
+      assert page.has_link? 'Report problem'
+    ensure
+      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+    end
+  end
+
 end
