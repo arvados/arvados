@@ -68,7 +68,7 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
 ./baz acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:bar.txt
 EOS
     }
-    test_collection[:uuid] =
+    test_collection[:portable_data_hash] =
       Digest::MD5.hexdigest(test_collection[:manifest_text]) +
       '+' +
       test_collection[:manifest_text].length.to_s
@@ -105,7 +105,7 @@ EOS
     authorize_with :active
     test_collection = {
       manifest_text: "",
-      uuid: "d41d8cd98f00b204e9800998ecf8427e+0"
+      portable_data_hash: "d41d8cd98f00b204e9800998ecf8427e+0"
     }
     post :create, {
       collection: test_collection
@@ -128,7 +128,7 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-rew6elm53kancon',
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
       }
     }
     assert_response :success
@@ -144,7 +144,7 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-8ulrifv67tve5sx',
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
       }
     }
     assert_response :success
@@ -160,7 +160,7 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
       }
     }
     assert_response 403
@@ -174,7 +174,7 @@ EOS
       collection: {
         owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
         manifest_text: manifest_text,
-        uuid: "d30fe8ae534397864cb96c544f4cf102"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102"
       }
     }
     assert_response :success
@@ -187,7 +187,7 @@ EOS
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",\
-        "uuid":"d30fe8ae534397864cb96c544f4cf102"\
+        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102"\
       }
       EOS
     }
@@ -201,7 +201,7 @@ EOS
       collection: <<-EOS
       {
         "manifest_text":". d41d8cd98f00b204e9800998ecf8427e 0:0:bar.txt\n",\
-        "uuid":"d30fe8ae534397864cb96c544f4cf102"\
+        "portable_data_hash":"d30fe8ae534397864cb96c544f4cf102"\
       }
       EOS
     }
@@ -214,7 +214,7 @@ EOS
     post :create, {
       collection: {
         manifest_text: ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n",
-        uuid: "d30fe8ae534397864cb96c544f4cf102+47+Khint+Xhint+Zhint"
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47+Khint+Xhint+Zhint"
       }
     }
     assert_response :success
@@ -305,7 +305,7 @@ EOS
       post :create, {
         collection: {
           manifest_text: signed_manifest,
-          uuid: manifest_uuid,
+          portable_data_hash: manifest_uuid,
         }
       }
       assert_response :success
@@ -353,7 +353,7 @@ EOS
     post :create, {
       collection: {
         manifest_text: signed_manifest,
-        uuid: manifest_uuid,
+        portable_data_hash: manifest_uuid,
       }
     }
     assert_response :success
@@ -393,7 +393,7 @@ EOS
     post :create, {
       collection: {
         manifest_text: bad_manifest,
-        uuid: manifest_uuid
+        portable_data_hash: manifest_uuid
       }
     }
 
@@ -417,7 +417,7 @@ EOS
     post :create, {
       collection: {
         manifest_text: signed_manifest,
-        uuid: manifest_uuid
+        portable_data_hash: manifest_uuid
       }
     }
 
@@ -439,7 +439,7 @@ EOS
 
     test_collection = {
       manifest_text: manifest_text,
-      uuid: manifest_uuid,
+      portable_data_hash: manifest_uuid,
     }
     post_collection = Marshal.load(Marshal.dump(test_collection))
     post :create, {
@@ -448,7 +448,7 @@ EOS
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['uuid']
+    assert_equal manifest_uuid, resp['portable_data_hash']
     assert_equal 48, resp['data_size']
 
     # The manifest in the response will have had permission hints added.
@@ -481,13 +481,13 @@ EOS
     post :create, {
       collection: {
         manifest_text: signed_manifest,
-        uuid: manifest_uuid,
+        portable_data_hash: manifest_uuid,
       }
     }
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal manifest_uuid, resp['uuid']
+    assert_equal manifest_uuid, resp['portable_data_hash']
     assert_equal 48, resp['data_size']
     # All of the locators in the output must be signed.
     # Each line is of the form "path locator locator ... 0:0:file.txt"
@@ -509,7 +509,7 @@ EOS
     post :create, {
       collection: {
         manifest_text: unsigned_manifest,
-        uuid: manifest_uuid,
+        portable_data_hash: manifest_uuid,
       }
     }
     assert_response 403,
