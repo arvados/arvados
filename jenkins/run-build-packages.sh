@@ -150,7 +150,7 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 # Keep -> keepstore
 go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keep keep 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
 
 # Keep proxy
 
