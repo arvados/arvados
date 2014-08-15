@@ -62,22 +62,31 @@ class ApplicationController < ActionController::Base
     else
       @errors = [e.to_s]
     end
-    # If the user has an active session, and the API server is available,
-    # make user information available on the error page.
+    # Make user information available on the error page, falling back to the
+    # session cache if the API server is unavailable.
     begin
       load_api_token(session[:arvados_api_token])
     rescue ArvadosApiClient::ApiError
-      load_api_token(nil)
+      unless session[:user].nil?
+        begin
+          Thread.current[:user] = User.new(session[:user])
+        rescue ArvadosApiClient::ApiError
+          # This can happen if User's columns are unavailable.  Nothing to do.
+        end
+      end
     end
-    # Preload projects trees for the template.  If that fails, set empty
+    # Preload projects trees for the template.  If that's not doable, set empty
     # trees so error page rendering can proceed.  (It's easier to rescue the
     # exception here than in a template.)
-    begin
-      build_project_trees
-    rescue ArvadosApiClient::ApiError
-      @my_project_tree ||= []
-      @shared_project_tree ||= []
+    unless current_user.nil?
+      begin
+        build_project_trees
+      rescue ArvadosApiClient::ApiError
+        # Fall back to the default-setting code later.
+      end
     end
+    @my_project_tree ||= []
+    @shared_project_tree ||= []
     render_error(err_opts)
   end
 
@@ -427,6 +436,15 @@ class ApplicationController < ActionController::Base
       false  # We may redirect to login, or not, based on the current action.
     else
       session[:arvados_api_token] = params[:api_token]
+      session[:user] = {
+        uuid: user.uuid,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        is_active: user.is_active,
+        is_admin: user.is_admin,
+        prefs: user.prefs
+      }
 
       if !request.format.json? and request.method.in? ['GET', 'HEAD']
         # Repeat this request with api_token in the (new) session
