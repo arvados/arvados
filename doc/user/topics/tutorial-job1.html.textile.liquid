@@ -88,11 +88,11 @@ The job is now queued and will start running as soon as it reaches the front of 
 
 h2. Monitor job progress
 
-Go to "*Recent jobs*":https://{{site.arvados_workbench_host}}/jobs in the Workbench.  Your job should be near the top of the table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
+Go to "*Recent jobs*":https://{{site.arvados_workbench_host}}/jobs in Workbench.  Your job should be near the top of the table.  This table refreshes automatically.  When the job has completed successfully, it will show <span class="label label-success">finished</span> in the *Status* column.
 
 h2. Inspect the job output
 
-On the "Workbench dashboard":https://{{site.arvados_workbench_host}}, look for the *Output* column of the *Recent jobs* table.  Click on the link under *Output* for your job to go to the files page with the job output.  The files page lists all the files that were output by the job.  Click on the link under the *file* column to view a file, or click on the download icon <span class="glyphicon glyphicon-download-alt"></span> to download the output file.
+On the "Workbench Dashboard":https://{{site.arvados_workbench_host}}, look for the *Output* column of the *Recent jobs* table.  Click on the link under *Output* for your job to go to the files page with the job output.  The files page lists all the files that were output by the job.  Click on the link under the *file* column to view a file, or click on the download button <span class="glyphicon glyphicon-download-alt"></span> to download the output file.
 
 On the command line, you can use @arv job get@ to access a JSON object describing the output:
 
