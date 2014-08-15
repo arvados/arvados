@@ -3,6 +3,9 @@ class Collection < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  before_validation :set_portable_data_hash
+  validate :ensure_manifest_matches_hash
+
   api_accessible :user, extend: :common do |t|
     t.add :data_size
     t.add :files
@@ -13,6 +16,22 @@ class Collection < ArvadosModel
 
   api_accessible :with_data, extend: :user do |t|
     t.add :manifest_text
+  end
+
+  def set_portable_data_hash
+    if portable_data_hash.nil? or portable_data_hash == "" or
+        (manifest_text_changed? and !portable_data_hash_changed?)
+      portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+    end
+    true
+  end
+
+  def ensure_manifest_matches_hash
+    unless Digest::MD5.hexdigest(manifest_text) == portable_data_hash
+      errors.add(:portable_data_hash, "does not match hash of manifest_text")
+      return false
+    end
+    true
   end
 
   def redundancy_status
