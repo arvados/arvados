@@ -28,9 +28,13 @@ c1bad4b39ca5a924e481008009d94e32+210
 
 * The output value @c1bad4b39ca5a924e481008009d94e32+210@ is the Arvados collection locator that uniquely describes this file.
 
-Now go to the workbench collections page: <a href="https://{{ site.arvados_workbench_host }}/collections" target="_blank">https://{{ site.arvados_workbench_host }}/collections</a>.  Your newly uploaded collection should appear near the top, with the value in the *uuid* column matching the Arvados collection locator that was printed by @arv-put@.  Click on the *<i class="fa fa-fw fa-archive"></i> Show* button to go to the workbench page for your collection.  Alternately, you can paste the Arvados collection locator into the *Search* box of the collections page to find your collection.
+Now visit the Workbench *Dashboard*.  In the *My projects* pane, select your *Home* project.  Your newly uploaded collection should appear near the top of the *Data collections* tab.  The collection locator printed by @arv-put@ will appear under the *name* column.  To move the collection to a different project, check the box at the left of the collection row.  Pull down the *Selection...* menu near the top of the page tab, and select *Move selected*.
 
-The show collection page allows you to view the contents of the collection, download files from the collection, and set sharing options.  To put your collection into a project, click on  <span class="btn btn-xs btn-primary" ><i class="fa fa-fw fa-folder"></i> Add to project...</span>.  This will open a modal dialog allowing you to select a destination project for your collection.
+!{{ site.baseurl }}/images/workbench-move-selected.png!
+
+This will open a dialog box where you can select a destination project for the collection.  Click a project, then finally the <span class="btn btn-sm btn-primary">Move</span> button.
+
+Click on the *<i class="fa fa-fw fa-archive"></i> Show* button next to the collection's listing on a project page to go to the Workbench page for your collection.  On this page, you can see the collection's contents, download individual files, and set sharing options.
 
 notextile. </div>
 
