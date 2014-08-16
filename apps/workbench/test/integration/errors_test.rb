@@ -114,6 +114,15 @@ class ErrorsTest < ActionDispatch::IntegrationTest
         # enter a report text and click on report
         page.find_field('report_issue_text').set 'my test report text'
         click_button 'Report issue'
+
+        # ajax success updated button texts and added footer message
+        assert page.has_no_button?('Report issue'), 'Found button - Report issue'
+        assert page.has_no_button?('Cancel'), 'Found button - Cancel'
+        assert page.has_text?('Report sent'), 'No text - Report sent'
+        assert page.has_button?('Close'), 'No button - Close'
+        assert page.has_text?('Thanks for reporting this issue'), 'No text - Thanks for reporting this issue'
+
+        click_button 'Close'
       end
 
       # out of the popup now and should be back in the error page
