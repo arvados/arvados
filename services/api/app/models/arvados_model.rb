@@ -22,6 +22,7 @@ class ArvadosModel < ActiveRecord::Base
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
   validate :ensure_serialized_attribute_type
+  validate :normalize_collection_uuids
   validate :ensure_valid_uuids
 
   # Note: This only returns permission links. It does not account for
@@ -371,6 +372,20 @@ class ArvadosModel < ActiveRecord::Base
 
   def skip_uuid_existence_check
     []
+  end
+
+  def normalize_collection_uuids
+    foreign_key_attributes.each do |attr|
+      attr_value = send attr
+      if attr_value.is_a? String and
+          attr_value.match /^[0-9a-f]{32,}(\+[@\w]+)*$/
+        begin
+          send "#{attr}=", Collection.normalize_uuid(attr_value)
+        rescue
+          # TODO: abort instead of silently accepting unnormalizable value?
+        end
+      end
+    end
   end
 
   @@prefixes_hash = nil
