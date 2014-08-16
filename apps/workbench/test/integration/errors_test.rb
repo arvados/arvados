@@ -1,6 +1,14 @@
 require 'integration_helper'
+require 'selenium-webdriver'
+require 'headless'
 
 class ErrorsTest < ActionDispatch::IntegrationTest
+  setup do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+  end
+
   BAD_UUID = "ffffffffffffffffffffffffffffffff+0"
 
   test "error page renders user navigation" do
@@ -85,11 +93,31 @@ class ErrorsTest < ActionDispatch::IntegrationTest
 
       visit page_with_token("active")
 
-      assert(page.has_text?(/fiddlesticks/i),
-             "Not on an error page after making an SSH key out of scope")
+      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page')
+
+      # reset api server base config to let the popup rendering to work
+      Rails.configuration.arvados_v1_base = original_arvados_v1_base
 
       # check the "Report problem" button
-      assert page.has_link? 'Report problem'
+      assert page.has_link? 'Report problem', 'Report problem link not found'
+
+      click_link 'Report problem'
+      within '.modal-content' do
+        assert page.has_text?('Report a problem'), 'Report a problem text not found'
+        assert page.has_no_text?('Version / debugging info'), 'Version / debugging info is not expected'
+        assert page.has_text?('Server version'), 'Server version  text not found'
+        assert page.has_text?('Server restarted at'), 'Server restarted at text not found'
+        assert page.has_text?('Found a problem?'), 'Found a problem text not found'
+        assert page.has_button?('Report issue'), 'Report issue button not found'
+        assert page.has_button?('Cancel'), 'Cancel button not found'
+
+        # enter a report text and click on report
+        page.find_field('report_issue_text').set 'my test report text'
+        click_button 'Report issue'
+      end
+
+      # out of the popup now and should be back in the error page
+      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page')
     ensure
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
     end
