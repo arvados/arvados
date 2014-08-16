@@ -161,10 +161,10 @@ class Collection < ArvadosModel
     # that looks like a Docker image, return it.
     if loc = Locator.parse(search_term)
       loc.strip_hints!
-      coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).first
+      coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
       if coll_match and (coll_match.files.size == 1) and
           (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
-        return [find_by_portable_data_hash(loc.to_s).uuid]
+        return [loc.to_s]
       end
     end
 
@@ -185,7 +185,8 @@ class Collection < ArvadosModel
     # anything without; then we use the link's created_at as a tiebreaker.
     uuid_timestamps = {}
     matches.find_each do |link|
-      uuid_timestamps[link.head_uuid] =
+      c = Collection.find_by_uuid(link.head_uuid)
+      uuid_timestamps[c.portable_data_hash] =
         [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
          -link.created_at.to_i]
     end
