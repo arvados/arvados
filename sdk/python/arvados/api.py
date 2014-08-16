@@ -103,27 +103,40 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
         logging.info("Using default API version. " +
                      "Call arvados.api('%s') instead." %
                      version)
-    if host and token:
-        apiinsecure = insecure
+    if 'discoveryServiceUrl' in kwargs:
+        if host:
+            raise ValueError("both discoveryServiceUrl and host provided")
+        # Here we can't use a token from environment, config file,
+        # etc. Those probably have nothing to do with the host
+        # provided by the caller.
+        if not token:
+            raise ValueError("discoveryServiceUrl provided, but token missing")
+    elif host and token:
+        pass
     elif not host and not token:
         # Load from user configuration or environment
         for x in ['ARVADOS_API_HOST', 'ARVADOS_API_TOKEN']:
             if x not in config.settings():
-                raise Exception("%s is not set. Aborting." % x)
+                raise ValueError("%s is not set. Aborting." % x)
         host = config.get('ARVADOS_API_HOST')
         token = config.get('ARVADOS_API_TOKEN')
-        apiinsecure = (config.get('ARVADOS_API_HOST_INSECURE', '').lower() in
+        insecure = (config.get('ARVADOS_API_HOST_INSECURE', '').lower() in
                        ('yes', 'true', '1'))
     else:
         # Caller provided one but not the other
         if not host:
-            raise Exception("token argument provided, but host missing.")
+            raise ValueError("token argument provided, but host missing.")
         else:
-            raise Exception("host argument provided, but token missing.")
+            raise ValueError("host argument provided, but token missing.")
+
+    if host:
+        # Caller wants us to build the discoveryServiceUrl
+        kwargs['discoveryServiceUrl'] = (
+            'https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' % (host,))
 
     if cache:
         connprofile = hashlib.sha1(' '.join([
-            version, host, token, ('y' if apiinsecure else 'n')
+            version, host, token, ('y' if insecure else 'n')
         ])).hexdigest()
         svc = conncache.get(connprofile)
         if svc:
@@ -137,23 +150,15 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
             http_kwargs['ca_certs'] = certs_path
         if cache:
             http_kwargs['cache'] = http_cache('discovery')
-        if apiinsecure:
+        if insecure:
             http_kwargs['disable_ssl_certificate_validation'] = True
         kwargs['http'] = httplib2.Http(**http_kwargs)
 
     credentials = CredentialsFromToken(api_token=token)
     kwargs['http'] = credentials.authorize(kwargs['http'])
 
-    if 'discoveryServiceUrl' not in kwargs:
-        kwargs['discoveryServiceUrl'] = (
-            'https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' % (host,))
-
     svc = apiclient.discovery.build('arvados', version, **kwargs)
     kwargs['http'].cache = None
     if cache:
         conncache[connprofile] = svc
     return svc
-
-def unload_connection_cache():
-    for connprofile in conncache:
-        del conncache[connprofile]
