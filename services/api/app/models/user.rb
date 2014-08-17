@@ -167,7 +167,7 @@ class User < ArvadosModel
                      link_class: 'permission',
                      name: 'can_login')
 
-    # delete "All users' group read permissions for this user
+    # delete "All users" group read permissions for this user
     group = Group.where(name: 'All users').select do |g|
       g[:uuid].match /-f+$/
     end.first
