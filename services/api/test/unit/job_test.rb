@@ -25,7 +25,7 @@ class JobTest < ActiveSupport::TestCase
     assert_nil job.docker_image_locator
   end
 
-  { 'name' => [:links, :docker_image_collection_repository, :name],
+  { 'name' => [:links, :docker_image_collection_tag, :name],
     'hash' => [:links, :docker_image_collection_hash, :name],
     'locator' => [:collections, :docker_image, :portable_data_hash],
   }.each_pair do |spec_type, (fixture_type, fixture_name, fixture_attr)|
@@ -70,7 +70,7 @@ class JobTest < ActiveSupport::TestCase
   end
 
   test "can't locate a Docker image with a nonexistent tag" do
-    image_repo = links(:docker_image_collection_repository).name
+    image_repo = links(:docker_image_collection_tag).name
     image_tag = '__nonexistent tag__'
     job = Job.new job_attrs(runtime_constraints:
                             {'docker_image' => image_repo,

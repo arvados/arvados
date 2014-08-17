@@ -164,8 +164,13 @@ class Collection < ArvadosModel
       coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
       if coll_match and (coll_match.files.size == 1) and
           (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
-        return [loc.to_s]
+        return [coll_match.uuid]
       end
+    end
+
+    if search_tag.nil? and (n = search_term.index(":"))
+      search_tag = search_term[n+1..-1]
+      search_term = search_term[0..n-1]
     end
 
     # Find Collections with matching Docker image repository+tag pairs.
@@ -186,7 +191,7 @@ class Collection < ArvadosModel
     uuid_timestamps = {}
     matches.find_each do |link|
       c = Collection.find_by_uuid(link.head_uuid)
-      uuid_timestamps[c.portable_data_hash] =
+      uuid_timestamps[c.uuid] =
         [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
          -link.created_at.to_i]
     end

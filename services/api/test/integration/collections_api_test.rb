@@ -80,9 +80,25 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
                                        signing_opts)
     post "/arvados/v1/collections", {
       format: :json,
-      collection: "{\"manifest_text\":\". #{signed_locator} 0:44:md5sum.txt\\n\",\"uuid\":\"ad02e37b6a7f45bbe2ead3c29a109b8a+54\"}"
+      collection: "{\"manifest_text\":\". #{signed_locator} 0:44:md5sum.txt\\n\",\"portable_data_hash\":\"ad02e37b6a7f45bbe2ead3c29a109b8a+54\"}"
     }, auth(:active)
     assert_response 200
-    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['uuid']
+    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['portable_data_hash']
   end
+
+  test "store collection with manifest_text only" do
+    signing_opts = {
+      key: Rails.configuration.blob_signing_key,
+      api_token: api_token(:active),
+    }
+    signed_locator = Blob.sign_locator('bad42fa702ae3ea7d888fef11b46f450+44',
+                                       signing_opts)
+    post "/arvados/v1/collections", {
+      format: :json,
+      collection: "{\"manifest_text\":\". #{signed_locator} 0:44:md5sum.txt\\n\"}"
+    }, auth(:active)
+    assert_response 200
+    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['portable_data_hash']
+  end
+
 end
