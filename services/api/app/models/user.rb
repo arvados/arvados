@@ -180,6 +180,9 @@ class User < ArvadosModel
     Link.destroy_all(link_class: 'signature',
                      tail_uuid: self.uuid)
 
+    # delete user preferences (including profile)
+    self.prefs = {}
+
     # mark the user as inactive
     self.is_active = false
     self.save!

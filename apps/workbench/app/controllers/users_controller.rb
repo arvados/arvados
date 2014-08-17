@@ -1,6 +1,7 @@
 class UsersController < ApplicationController
   skip_around_filter :require_thread_api_token, only: :welcome
-  skip_before_filter :check_user_agreements, only: :inactive
+  skip_before_filter :check_user_agreements, only: [:welcome, :inactive]
+  skip_before_filter :check_user_profile, only: [:welcome, :inactive, :profile]
   skip_before_filter :find_object_by_uuid, only: [:welcome, :activity, :storage]
   before_filter :ensure_current_user_is_admin, only: [:sudo, :unsetup, :setup]
 
@@ -14,6 +15,10 @@ class UsersController < ApplicationController
     if current_user.andand.is_invited
       redirect_to (params[:return_to] || '/')
     end
+  end
+
+  def profile
+    params[:offer_return_to] ||= params[:return_to]
   end
 
   def activity

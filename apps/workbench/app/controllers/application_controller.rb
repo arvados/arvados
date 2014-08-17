@@ -14,7 +14,7 @@ class ApplicationController < ActionController::Base
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
-  before_filter :check_user_profile, except: [:update_profile] + ERROR_ACTIONS
+  before_filter :check_user_profile, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -501,7 +501,7 @@ class ApplicationController < ActionController::Base
       session.delete :arvados_api_token
       redirect_to_login
     else
-      redirect_to welcome_users_path, return_to: request.fullpath
+      redirect_to welcome_users_path(return_to: request.fullpath)
     end
   end
 
@@ -525,7 +525,7 @@ class ApplicationController < ActionController::Base
   def check_user_agreements
     if current_user && !current_user.is_active
       if not current_user.is_invited
-        return redirect_to inactive_users_path, return_to: request.fullpath
+        return redirect_to inactive_users_path(return_to: request.fullpath)
       end
       if unsigned_user_agreements.empty?
         # No agreements to sign. Perhaps we just need to ask?
@@ -536,7 +536,7 @@ class ApplicationController < ActionController::Base
         end
       end
       if !current_user.is_active
-        redirect_to user_agreements_path, return_to: request.fullpath
+        redirect_to user_agreements_path(return_to: request.fullpath)
       end
     end
     true
@@ -550,7 +550,7 @@ class ApplicationController < ActionController::Base
     end
 
     if missing_required_profile?
-      render 'users/profile'
+      redirect_to profile_user_path(current_user.uuid, return_to: request.fullpath)
     end
     true
   end
