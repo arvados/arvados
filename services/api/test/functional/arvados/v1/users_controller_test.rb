@@ -734,6 +734,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     verify_link_existence response_user['uuid'], response_user['email'],
           false, false, false, false, false
+
+    assert_equal([], User.find_by_uuid(users(:active).uuid).groups_i_can(:read),
+                 "active user can still read some groups after being deactivated")
   end
 
   test "setup user with send notification param false and verify no email" do
