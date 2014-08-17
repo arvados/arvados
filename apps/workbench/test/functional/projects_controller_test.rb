@@ -1,13 +1,18 @@
 require 'test_helper'
 
 class ProjectsControllerTest < ActionController::TestCase
-  test "inactive user is asked to sign user agreements on front page" do
+  test "invited user is asked to sign user agreements on front page" do
     get :index, {}, session_for(:inactive)
-    assert_response :success
-    assert_not_empty assigns(:required_user_agreements),
-    "Inactive user did not have required_user_agreements"
-    assert_template 'user_agreements/index',
-    "Inactive user was not presented with a user agreement at the front page"
+    assert_response :redirect
+    assert_equal(user_agreements_url, @response.redirect_url,
+                 "Inactive user was not redirected to user_agreements page")
+  end
+
+  test "uninvited user is asked to wait for activation" do
+    get :index, {}, session_for(:inactive_uninvited)
+    assert_response :redirect
+    assert_equal(inactive_users_url, @response.redirect_url,
+                 "Uninvited user was not redirected to inactive user page")
   end
 
   [[:active, true],
