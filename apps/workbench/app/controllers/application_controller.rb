@@ -589,15 +589,6 @@ class ApplicationController < ActionController::Base
     }
   }
 
-  #@@notification_tests.push lambda { |controller, current_user|
-  #  Job.limit(1).where(created_by: current_user.uuid).each do
-  #    return nil
-  #  end
-  #  return lambda { |view|
-  #    view.render partial: 'notifications/jobs_notification'
-  #  }
-  #}
-
   @@notification_tests.push lambda { |controller, current_user|
     Collection.limit(1).where(created_by: current_user.uuid).each do
       return nil
@@ -622,7 +613,7 @@ class ApplicationController < ActionController::Base
     @notification_count = 0
     @notifications = []
 
-    if current_user
+    if current_user.andand.is_active
       @showallalerts = false
       @@notification_tests.each do |t|
         a = t.call(self, current_user)
