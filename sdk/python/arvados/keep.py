@@ -247,14 +247,14 @@ class KeepClient(object):
                             pass
                     limiter.save_response(content.strip(), replicas_stored)
                 else:
-                    _logger.warning("Request fail: PUT %s => %s %s",
+                    _logger.debug("Request fail: PUT %s => %s %s",
                                     url, resp['status'], content)
             except (httplib2.HttpLib2Error,
                     httplib.HTTPException,
                     ssl.SSLError) as e:
                 # When using https, timeouts look like ssl.SSLError from here.
                 # "SSLError: The write operation timed out"
-                _logger.warning("Request fail: PUT %s => %s: %s",
+                _logger.debug("Request fail: PUT %s => %s: %s",
                                 url, type(e), str(e))
 
     def __init__(self, **kwargs):
@@ -446,7 +446,7 @@ class KeepClient(object):
     def get_url(self, url, headers, expect_hash):
         h = httplib2.Http()
         try:
-            _logger.info("Request: GET %s", url)
+            _logger.debug("Request: GET %s", url)
             with timer.Timer() as t:
                 resp, content = h.request(url.encode('utf-8'), 'GET',
                                           headers=headers)
@@ -461,7 +461,7 @@ class KeepClient(object):
                     return content
                 _logger.warning("Checksum fail: md5(%s) = %s", url, md5)
         except Exception as e:
-            _logger.info("Request fail: GET %s => %s: %s",
+            _logger.debug("Request fail: GET %s => %s: %s",
                          url, type(e), str(e))
         return None
 
@@ -496,7 +496,7 @@ class KeepClient(object):
             threads_retry = []
             for t in threads:
                 if not t.success():
-                    _logger.warning("Retrying: PUT %s %s",
+                    _logger.debug("Retrying: PUT %s %s",
                                     t.args['service_root'],
                                     t.args['data_hash'])
                     retry_with_args = t.args.copy()
