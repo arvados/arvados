@@ -13,7 +13,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     page.assert_no_selector "div[data-persistent-state='#{oldstate}']"
   end
 
-  ['/collections', '/users/welcome'].each do |path|
+  ['/collections'].each do |path|
     test "Flip persistent switch at #{path}" do
       Capybara.current_driver = Capybara.javascript_driver
       uuid = api_fixture('collections')['foo_file']['uuid']
