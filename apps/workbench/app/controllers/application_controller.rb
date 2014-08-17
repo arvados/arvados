@@ -490,7 +490,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Reroute this request if an API token is unavailable.
+  # Redirect to login/welcome if client provided expired API token (or none at all)
   def require_thread_api_token
     if Thread.current[:arvados_api_token]
       yield
@@ -501,7 +501,7 @@ class ApplicationController < ActionController::Base
       session.delete :arvados_api_token
       redirect_to_login
     else
-      render 'users/welcome'
+      redirect_to welcome_users_path, return_to: request.fullpath
     end
   end
 
@@ -515,7 +515,7 @@ class ApplicationController < ActionController::Base
   def check_user_agreements
     if current_user && !current_user.is_active
       if not current_user.is_invited
-        return render 'users/inactive'
+        return redirect_to inactive_users_path, return_to: request.fullpath
       end
       signatures = UserAgreement.signatures
       @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
@@ -533,7 +533,7 @@ class ApplicationController < ActionController::Base
         end
       end
       if !current_user.is_active
-        render 'user_agreements/index'
+        redirect_to user_agreements_path, return_to: request.fullpath
       end
     end
     true
