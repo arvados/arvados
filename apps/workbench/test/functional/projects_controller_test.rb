@@ -4,14 +4,16 @@ class ProjectsControllerTest < ActionController::TestCase
   test "invited user is asked to sign user agreements on front page" do
     get :index, {}, session_for(:inactive)
     assert_response :redirect
-    assert_equal(user_agreements_url, @response.redirect_url,
+    assert_match(/^#{Regexp.escape(user_agreements_url)}\b/,
+                 @response.redirect_url,
                  "Inactive user was not redirected to user_agreements page")
   end
 
   test "uninvited user is asked to wait for activation" do
     get :index, {}, session_for(:inactive_uninvited)
     assert_response :redirect
-    assert_equal(inactive_users_url, @response.redirect_url,
+    assert_match(/^#{Regexp.escape(inactive_users_url)}\b/,
+                 @response.redirect_url,
                  "Uninvited user was not redirected to inactive user page")
   end
 
