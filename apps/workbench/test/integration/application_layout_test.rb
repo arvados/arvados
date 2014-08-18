@@ -190,7 +190,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
     end
 
-    assert page.has_text? profile_message.gsub(/<.*?>/,'')[0,25]
+    assert page.has_text? profile_message.gsub(/<.*?>/,'')
     assert page.has_text? required_field_title
     page.find_field('user[prefs][:profile][:'+required_field_key+']').set 'value to fill required field'
 
