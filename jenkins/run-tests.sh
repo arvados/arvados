@@ -219,12 +219,12 @@ install_python_sdk() {
 }
 do_install python_sdk
 
-test_fuse() {
+install_fuse() {
     cd "$WORKSPACE/services/fuse" \
         && python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz \
         && pip install dist/arvados_fuse-0.1.*.tar.gz
 }
-do_test fuse
+do_install fuse
 
 test_python_sdk() {
     # Python SDK. We test this before testing keepproxy: keepproxy runs
@@ -239,13 +239,13 @@ test_python_sdk() {
 }
 do_test python_sdk
 
-install_fuse() {
+test_fuse() {
     # Install test dependencies here too, in case run_test_server needs them.
     cd "$WORKSPACE/services/fuse" \
         && python setup.py test \
         && easy_install *.egg
 }
-do_install fuse
+do_test fuse
 
 for g in "${gostuff[@]}"
 do
