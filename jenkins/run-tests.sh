@@ -66,16 +66,25 @@ done
 checkexit() {
     if [[ "$?" != "0" ]]; then
         title "!!!!!! $1 FAILED !!!!!!"
-        failures+=("$1")
+        failures+=("$1 (`timer`)")
     else
-        successes+=("$1")
+        successes+=("$1 (`timer`)")
     fi
+}
+
+timer_reset() {
+    t0=$SECONDS
+}
+
+timer() {
+    echo -n "$(($SECONDS - $t0))s"
 }
 
 do_test() {
     if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$1" ]] )
     then
         title "Running $1 tests"
+        timer_reset
         if [[ "$2" == "go" ]]
         then
             go test "git.curoverse.com/arvados.git/$1"
@@ -83,7 +92,7 @@ do_test() {
             "test_$1"
         fi
         checkexit "$1 tests"
-        title "End of $1 tests"
+        title "End of $1 tests (`timer`)"
     else
         title "Skipping $1 tests"
     fi
@@ -91,6 +100,7 @@ do_test() {
 
 do_install() {
     title "Running $1 install"
+    timer_reset
     if [[ "$2" == "go" ]]
     then
         go get -t "git.curoverse.com/arvados.git/$1"
@@ -98,7 +108,7 @@ do_install() {
         "install_$1"
     fi
     checkexit "$1 install"
-    title "End of $1 install"
+    title "End of $1 install (`timer`)"
 }
 
 title () {
