@@ -436,6 +436,10 @@ class ApplicationController < ActionController::Base
       false  # We may redirect to login, or not, based on the current action.
     else
       session[:arvados_api_token] = params[:api_token]
+      # If we later have trouble contacting the API server, we still want
+      # to be able to render basic user information in the UI--see
+      # render_exception above.  We store that in the session here.  This is
+      # not intended to be used as a general-purpose cache.  See #2891.
       session[:user] = {
         uuid: user.uuid,
         email: user.email,
