@@ -28,14 +28,14 @@ $(document).
       var text = document.getElementById('report-issue-submit').firstChild;
       text.data = "Report sent";
       $('div').remove('.modal-footer-status');
-      $('.modal-footer').append('<div class="modal-footer-status pull-left"><div><p>Thanks for reporting this issue!</p></div></div>');
+      $('.modal-footer').append('<div class="modal-footer-status pull-left alert alert-success"><div><p>Thanks for reporting this issue!</p></div></div>');
     }
   }).
   on('ajax:failure', function() {
     var sendButton = document.getElementById('report-issue-submit');
     if (sendButton && sendButton.disabled) {
       $('div').remove('.modal-footer-status');
-      $('.modal-footer').append('<div class="modal-footer-status pull-left"></br><p>We are sorry. We could not submit your report! We really want this to work, though -- please try again.</p></div>');
+      $('.modal-footer').append('<div class="modal-footer-status pull-left alert alert-danger"></br><p>We are sorry. We could not submit your report! We really want this to work, though -- please try again.</p></div>');
       var text = document.getElementById('report-issue-submit').firstChild;
       text.data = "Report issue";
       sendButton.disabled = false;
