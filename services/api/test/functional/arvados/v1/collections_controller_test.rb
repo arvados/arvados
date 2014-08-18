@@ -136,23 +136,38 @@ EOS
     assert_equal 'zzzzz-j7d0g-rew6elm53kancon', resp['owner_uuid']
   end
 
+  test "create fails with duplicate name" do
+    permit_unsigned_manifests
+    authorize_with :admin
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        owner_uuid: 'zzzzz-tpzed-000000000000000',
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        name: "foo_file"
+      }
+    }
+    assert_response 422
+  end
+
   test "create with owner_uuid set to group i can_manage" do
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
     post :create, {
       collection: {
-        owner_uuid: groups(:system_owned_group).uuid,
+        owner_uuid: groups(:active_user_has_can_manage).uuid,
         manifest_text: manifest_text,
         portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47"
       }
     }
     assert_response :success
     resp = JSON.parse(@response.body)
-    assert_equal 'zzzzz-j7d0g-8ulrifv67tve5sx', resp['owner_uuid']
+    assert_equal groups(:active_user_has_can_manage).uuid, resp['owner_uuid']
   end
 
-  test "create with owner_uuid fails on group with can_read permission" do
+  test "create with owner_uuid fails on group with only can_read permission" do
     permit_unsigned_manifests
     authorize_with :active
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
@@ -531,4 +546,5 @@ EOS
     assert_empty Collection.where('uuid like ?', manifest_uuid+'%'),
     "Collection should not exist in database after failed create"
   end
+
 end

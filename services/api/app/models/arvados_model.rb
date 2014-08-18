@@ -21,8 +21,8 @@ class ArvadosModel < ActiveRecord::Base
   after_update :log_update
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
+  before_validation :normalize_collection_uuids
   validate :ensure_serialized_attribute_type
-  validate :normalize_collection_uuids
   validate :ensure_valid_uuids
 
   # Note: This only returns permission links. It does not account for
@@ -209,6 +209,11 @@ class ArvadosModel < ActiveRecord::Base
 
     if new_record? and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
+    end
+
+    if self.owner_uuid.nil?
+      errors.add :owner_uuid, "cannot be nil"
+      raise PermissionDeniedError
     end
 
     rsc_class = ArvadosModel::resource_class_for_uuid owner_uuid

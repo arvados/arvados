@@ -14,7 +14,8 @@ class GroupTest < ActiveSupport::TestCase
     # Use the group as the owner of a new object
     s = Specimen.
       create(owner_uuid: groups(:bad_group_has_ownership_cycle_b).uuid)
-    assert s.valid?, "ownership should pass validation"
+    puts s.errors.messages
+    assert s.valid?, "ownership should pass validation #{s.errors.messages}"
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"
 
     # Use the group as the new owner of an existing object
@@ -27,11 +28,8 @@ class GroupTest < ActiveSupport::TestCase
   test "cannot create a new ownership cycle" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create(name: "foo")
-    g_foo.save!
-
-    g_bar = Group.create(name: "bar")
-    g_bar.save!
+    g_foo = Group.create!(name: "foo")
+    g_bar = Group.create!(name: "bar")
 
     g_foo.owner_uuid = g_bar.uuid
     assert g_foo.save, lambda { g_foo.errors.messages }
@@ -44,11 +42,11 @@ class GroupTest < ActiveSupport::TestCase
   test "cannot create a single-object ownership cycle" do
     set_user_from_auth :active_trustedclient
 
-    g_foo = Group.create(name: "foo")
+    g_foo = Group.create!(name: "foo")
     assert g_foo.save
 
     # Ensure I have permission to manage this group even when its owner changes
-    perm_link = Link.create(tail_uuid: users(:active).uuid,
+    perm_link = Link.create!(tail_uuid: users(:active).uuid,
                             head_uuid: g_foo.uuid,
                             link_class: 'permission',
                             name: 'can_manage')

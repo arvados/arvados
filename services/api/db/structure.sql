@@ -271,7 +271,7 @@ CREATE TABLE groups (
     modified_by_client_uuid character varying(255),
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
-    name character varying(255),
+    name character varying(255) NOT NULL,
     description text,
     updated_at timestamp without time zone NOT NULL,
     group_class character varying(255)
@@ -2023,3 +2023,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140811184643');
 INSERT INTO schema_migrations (version) VALUES ('20140815171049');
 
 INSERT INTO schema_migrations (version) VALUES ('20140817035914');
+
+INSERT INTO schema_migrations (version) VALUES ('20140818125735');

@@ -270,21 +270,6 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  test "refuse duplicate name" do
-    skip "Fix for uniqueness constraints"
-    the_name = links(:job_name_in_aproject).name
-    the_project = links(:job_name_in_aproject).tail_uuid
-    authorize_with :active
-    post :create, link: {
-      tail_uuid: the_project,
-      head_uuid: specimens(:owned_by_active_user).uuid,
-      link_class: 'name',
-      name: the_name,
-      properties: {this_s: "a duplicate name"}
-    }
-    assert_response 422
-  end
-
   test "project owner can show a project permission" do
     uuid = links(:project_viewer_can_read_project).uuid
     authorize_with :active
