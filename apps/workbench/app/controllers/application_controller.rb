@@ -202,7 +202,7 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object.attributes.merge(href: url_for(@object)) }
+      f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
       f.html {
         if params['tab_pane']
           render_pane params['tab_pane']
@@ -274,7 +274,7 @@ class ApplicationController < ActionController::Base
     @object ||= model_class.new @new_resource_attrs, params["options"]
     if @object.save
       respond_to do |f|
-        f.json { render json: @object.attributes.merge(href: url_for(@object)) }
+        f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
         f.html {
           redirect_to @object
         }
