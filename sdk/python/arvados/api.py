@@ -4,7 +4,6 @@ import logging
 import os
 import re
 import types
-import hashlib
 
 import apiclient
 import apiclient.discovery
@@ -135,9 +134,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
             'https://%s/discovery/v1/apis/{api}/{apiVersion}/rest' % (host,))
 
     if cache:
-        connprofile = hashlib.sha1(' '.join([
-            version, host, token, ('y' if insecure else 'n')
-        ])).hexdigest()
+        connprofile = (version, host, token, insecure)
         svc = conncache.get(connprofile)
         if svc:
             return svc
