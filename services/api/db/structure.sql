@@ -1273,6 +1273,20 @@ ALTER TABLE ONLY virtual_machines
 
 
 --
+-- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name);
+
+
+--
+-- Name: groups_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX groups_owner_uuid_name_unique ON groups USING btree (owner_uuid, name);
+
+
+--
 -- Name: index_api_client_authorizations_on_api_client_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1784,10 +1798,31 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btr
 
 
 --
+-- Name: jobs_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX jobs_owner_uuid_name_unique ON jobs USING btree (owner_uuid, name);
+
+
+--
 -- Name: links_tail_name_unique_if_link_class_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btree (tail_uuid, name) WHERE ((link_class)::text = 'name'::text);
+
+
+--
+-- Name: pipeline_instance_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX pipeline_instance_owner_uuid_name_unique ON pipeline_instances USING btree (owner_uuid, name);
+
+
+--
+-- Name: pipeline_template_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX pipeline_template_owner_uuid_name_unique ON pipeline_templates USING btree (owner_uuid, name);
 
 
 --
@@ -1986,3 +2021,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140714184006');
 INSERT INTO schema_migrations (version) VALUES ('20140811184643');
 
 INSERT INTO schema_migrations (version) VALUES ('20140815171049');
+
+INSERT INTO schema_migrations (version) VALUES ('20140817035914');
