@@ -31,6 +31,11 @@ class ArvadosApiClientTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # The apiclient library has support for mocking requests for
+        # testing, but it doesn't extend to the discovery document
+        # itself. For now, bring up an API server that will serve
+        # a discovery document.
+        # FIXME: Figure out a better way to stub this out.
         run_test_server.run()
         mock_responses = {
             'arvados.humans.delete': (cls.response_from_code(500), ""),
