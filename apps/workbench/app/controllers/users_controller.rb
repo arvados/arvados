@@ -7,7 +7,11 @@ class UsersController < ApplicationController
 
   def show
     if params[:uuid] == current_user.uuid
-      redirect_to project_path(params[:uuid])
+      respond_to do |f|
+        f.html do
+          redirect_to(params[:return_to] || project_path(params[:uuid]))
+        end
+      end
     else
       super
     end
