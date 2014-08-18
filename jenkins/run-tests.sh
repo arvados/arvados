@@ -235,17 +235,19 @@ install_fuse() {
         && python setup.py test \
         && easy_install *.egg
 }
+do_install fuse
 
 for g in "${gostuff[@]}"
 do
     do_test "$g" go
 done
 
-install_workbench() {
+test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && bundle install --deployment \
         && bundle exec rake test
 }
+do_test workbench
 
 test_cli() {
     title "Starting SDK CLI tests"
