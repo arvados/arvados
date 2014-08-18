@@ -108,13 +108,10 @@ class Arvados::V1::CollectionsController < ApplicationController
     when String
       return if sp.empty?
       if loc = Locator.parse(sp)
-        search_edges(visited, loc.to_s, UP)
+        search_edges(visited, loc.to_s, :search_up)
       end
     end
   end
-
-  UP = 1
-  DOWN = 2
 
   def search_edges(visited, uuid, direction)
     if uuid.nil? or uuid.empty? or visited[uuid]
@@ -138,16 +135,16 @@ class Arvados::V1::CollectionsController < ApplicationController
         }
       end
 
-      if direction == UP
+      if direction == :search_up
         # Search upstream for jobs where this locator is the output of some job
         Job.readable_by(*@read_users).where(output: loc.to_s).each do |job|
-          search_edges(visited, job.uuid, UP)
+          search_edges(visited, job.uuid, :search_up)
         end
 
         Job.readable_by(*@read_users).where(log: loc.to_s).each do |job|
-          search_edges(visited, job.uuid, UP)
+          search_edges(visited, job.uuid, :search_up)
         end
-      elsif direction == DOWN
+      elsif direction == :search_down
         if loc.to_s == "d41d8cd98f00b204e9800998ecf8427e+0"
           # Special case, don't follow the empty collection.
           return
@@ -155,7 +152,7 @@ class Arvados::V1::CollectionsController < ApplicationController
 
         # Search downstream for jobs where this locator is in script_parameters
         Job.readable_by(*@read_users).where(["jobs.script_parameters like ?", "%#{loc.to_s}%"]).each do |job|
-          search_edges(visited, job.uuid, DOWN)
+          search_edges(visited, job.uuid, :search_down)
         end
       end
     else
@@ -164,10 +161,10 @@ class Arvados::V1::CollectionsController < ApplicationController
       if rsc == Job
         Job.readable_by(*@read_users).where(uuid: uuid).each do |job|
           visited[uuid] = job.as_api_response
-          if direction == UP
+          if direction == :search_up
             # Follow upstream collections referenced in the script parameters
             script_param_edges(visited, job.script_parameters)
-          elsif direction == DOWN
+          elsif direction == :search_down
             # Follow downstream job output
             search_edges(visited, job.output, direction)
           end
@@ -184,7 +181,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     end
 
-    if direction == UP
+    if direction == :search_up
       # Search for provenance links pointing to the current uuid
       Link.readable_by(*@read_users).
         where(head_uuid: uuid, link_class: "provenance").
@@ -192,7 +189,7 @@ class Arvados::V1::CollectionsController < ApplicationController
         visited[link.uuid] = link.as_api_response
         search_edges(visited, link.tail_uuid, direction)
       end
-    elsif direction == DOWN
+    elsif direction == :search_down
       # Search for provenance links emanating from the current uuid
       Link.readable_by(current_user).
         where(tail_uuid: uuid, link_class: "provenance").
@@ -205,13 +202,13 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def provenance
     visited = {}
-    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], UP)
+    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], :search_up)
     render json: visited
   end
 
   def used_by
     visited = {}
-    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], DOWN)
+    search_edges(visited, @object[:uuid] || @object[:portable_data_hash], :search_down)
     render json: visited
   end
 
