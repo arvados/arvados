@@ -32,12 +32,14 @@ var api_token = map[string]string{
 // and URI path, then the response from the server will
 // use the corresponding HTTP status and response body.
 //
-var apiserver_responses = []struct {
+type APIRoute struct {
 	token    string
 	path     string
 	status   int
 	response string
-}{
+}
+
+var DefaultFakeAPIRoutes = []APIRoute{
 	// /users/current requests
 	// admin_* tokens return {"is_admin":true}
 	// user_* tokens return {"is_admin":false}
@@ -95,7 +97,7 @@ var apiserver_responses = []struct {
 	},
 	{
 		token:    api_token["admin_noscope"],
-		path:     "/arvados/v1/api_client_authorizations/" + api_token["admin_badscope"],
+		path:     "/arvados/v1/api_client_authorizations/" + api_token["admin_noscope"],
 		status:   http.StatusOK,
 		response: `{"uuid":"admin_noscope"}`,
 	},
@@ -119,23 +121,8 @@ var apiserver_responses = []struct {
 	},
 }
 
-// FakeAPIServer is the http.HandlerFunc implementing the test API
-// server.
-//
-var FakeAPIServer = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-	tok := GetApiToken(req)
-	for _, test := range apiserver_responses {
-		if test.token == tok && test.path == req.URL.Path {
-			resp.WriteHeader(test.status)
-			resp.Write([]byte(test.response))
-			return
-		}
-	}
-	http.Error(resp, "Internal server error", http.StatusInternalServerError)
-})
-
 func TestIsAdmin(t *testing.T) {
-	ts := httptest.NewUnstartedServer(FakeAPIServer)
+	ts := MakeFakeAPIServer(DefaultFakeAPIRoutes)
 	ts.StartTLS()
 	defer ts.Close()
 
@@ -161,7 +148,7 @@ func TestIsAdmin(t *testing.T) {
 }
 
 func TestHasUnlimitedScope(t *testing.T) {
-	ts := httptest.NewUnstartedServer(FakeAPIServer)
+	ts := MakeFakeAPIServer(DefaultFakeAPIRoutes)
 	ts.StartTLS()
 	defer ts.Close()
 
@@ -184,4 +171,77 @@ func TestHasUnlimitedScope(t *testing.T) {
 				token, expected_results[test], result)
 		}
 	}
+}
+
+// TestTokenCache exercises the API token cache.  It issues a token
+// lookup to fill the cache, then tests that a second lookup retrieves
+// the data from cache.
+//
+func TestTokenCache(t *testing.T) {
+	cache_test_token := "cache_test_token"
+	// Default token_cache_ttl = 1 hour (plenty long for unit test)
+	token_cache_ttl = 3600
+	testroutes := append(DefaultFakeAPIRoutes,
+		APIRoute{
+			token:    cache_test_token,
+			path:     "/arvados/v1/users/current",
+			status:   http.StatusOK,
+			response: `{"is_admin":true}`,
+		},
+		APIRoute{
+			token:    cache_test_token,
+			path:     "/arvados/v1/api_client_authorizations/" + cache_test_token,
+			status:   http.StatusOK,
+			response: `{"uuid":"cache_test_token","scopes":["all"]}`,
+		})
+
+	ts := MakeFakeAPIServer(testroutes)
+	ts.StartTLS()
+	defer ts.Close()
+
+	os.Setenv("ARVADOS_API_HOST", ts.Listener.Addr().String())
+	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
+
+	// Fill the cache.
+	// Use a token belonging to an admin to ensure that
+	// IsAdmin(cache_test_token) will return true.
+	//
+	uncached_result := IsAdmin(cache_test_token)
+	if uncached_result != true {
+		t.Errorf("%s: expected %v\nreceived %v",
+			cache_test_token, true, uncached_result)
+	}
+
+	// Restart the server, but without the cache_test_token.  When
+	// IsAdmin is called, it should return the cached value even
+	// though the API server no longer knows about cache_test_token.
+	ts.Close()
+
+	ts = MakeFakeAPIServer(DefaultFakeAPIRoutes)
+	ts.StartTLS()
+
+	os.Setenv("ARVADOS_API_HOST", ts.Listener.Addr().String())
+	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
+
+	cached_result := IsAdmin(cache_test_token)
+	if cached_result != true {
+		t.Errorf("%s: expected %v\nreceived %v",
+			cache_test_token, true, cached_result)
+	}
+}
+
+func MakeFakeAPIServer(routes []APIRoute) *httptest.Server {
+	var apihandler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		tok := GetApiToken(req)
+		for _, route := range routes {
+			if route.token == tok && route.path == req.URL.Path {
+				resp.WriteHeader(route.status)
+				resp.Write([]byte(route.response))
+				return
+			}
+		}
+		http.Error(resp, "Internal server error", http.StatusInternalServerError)
+	})
+
+	return httptest.NewUnstartedServer(apihandler)
 }

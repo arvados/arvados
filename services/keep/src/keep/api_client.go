@@ -6,8 +6,17 @@ import (
 	"log"
 	"net/http"
 	"os"
-	_ "time"
+	"time"
 )
+
+// tokenInfo records information we get from an API token
+type tokenInfo struct {
+	GeneratedAt            time.Time
+	User                   sdk.Dict
+	ApiClientAuthorization sdk.Dict
+}
+
+var tokenCache map[string]*tokenInfo
 
 // MakeApiClient returns a sdk.ArvadosClient suitable for connecting to the
 // requested API server.
@@ -31,32 +40,73 @@ func MakeApiClient(api_token string) sdk.ArvadosClient {
 // "true").
 //
 func IsAdmin(api_token string) bool {
-	var api_client = MakeApiClient(api_token)
-	// Ask the API server whether this user is an admin.
-	var userinfo sdk.Dict
-	if err := api_client.List("users/current", nil, &userinfo); err != nil {
-		log.Printf("IsAdmin: %s\n", err)
+	if tok := lookupToken(api_token); tok == nil {
 		return false
+	} else {
+		return tok.User["is_admin"].(bool)
 	}
-	return userinfo["is_admin"].(bool)
 }
 
 // HasUnlimitedScope returns true if the scopes attached to this
 // token's ApiClientAuthorization record include "all".
 func HasUnlimitedScope(api_token string) bool {
-	var api_client = MakeApiClient(api_token)
-	var auth sdk.Dict
-	req := "api_client_authorizations/" + api_token
-	if err := api_client.List(req, nil, &auth); err != nil {
-		log.Printf("HasUnlimitedScope: %s\n", err)
+	if tok := lookupToken(api_token); tok == nil {
 		return false
-	}
-
-	var scopes []interface{} = auth["scopes"].([]interface{})
-	for _, s := range scopes {
-		if s.(string) == "all" {
-			return true
+	} else {
+		if tok.ApiClientAuthorization["scopes"] == nil {
+			return false
+		}
+		var scopes []interface{} = tok.ApiClientAuthorization["scopes"].([]interface{})
+		for _, s := range scopes {
+			if s.(string) == "all" {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+// lookupToken fetches information about an API token (the User and
+// ApiClientAuthorization methods belonging to it). It will use a
+// cached value, refreshing the cache if the token is not found or has
+// expired.
+//
+func lookupToken(api_token string) *tokenInfo {
+	var refresh bool = true
+	var ti *tokenInfo
+	var ok bool
+
+	if tokenCache == nil {
+		tokenCache = make(map[string]*tokenInfo)
+	}
+	if ti, ok = tokenCache[api_token]; ok {
+		token_age := time.Now().Sub(ti.GeneratedAt)
+		if token_age < time.Duration(token_cache_ttl)*time.Second {
+			refresh = false
+		}
+	}
+	if refresh {
+		ti = fetchTokenInfo(api_token)
+		tokenCache[api_token] = ti
+	}
+	return ti
+}
+
+// fetchTokenInfo issues API calls for the User and
+// ApiClientAuthorization record associated with a token. It returns a
+// tokenInfo with the fetched data.  If any data could
+func fetchTokenInfo(api_token string) *tokenInfo {
+	var ti tokenInfo
+	var api_client = MakeApiClient(api_token)
+	if err := api_client.List("users/current", nil, &ti.User); err != nil {
+		log.Printf("fetchTokenInfo: %s\n", err)
+		return nil
+	}
+	req := "api_client_authorizations/" + api_token
+	if err := api_client.List(req, nil, &ti.ApiClientAuthorization); err != nil {
+		log.Printf("fetchTokenInfo: %s\n", err)
+		return nil
+	}
+	ti.GeneratedAt = time.Now()
+	return &ti
 }

@@ -53,6 +53,10 @@ var permission_ttl time.Duration
 // Initialized by the --data-manager-token-file flag.
 var data_manager_token string
 
+// token_cache_ttl is the number of seconds for which to honor the API
+// token cache.  Tokens older than this should be considered stale and discarded.
+var token_cache_ttl int
+
 // ==========
 // Error types.
 //
@@ -158,12 +162,16 @@ func main() {
 			"e.g. -volumes=/var/keep1,/var/keep2. If empty or not "+
 			"supplied, Keep will scan mounted filesystems for volumes "+
 			"with a /keep top-level directory.")
-
 	flag.StringVar(
 		&pidfile,
 		"pid",
 		"",
 		"Path to write pid file")
+	flag.IntVar(
+		&token_cache_ttl,
+		"token-cache-ttl",
+		3600,
+		"TTL (in seconds) for cached tokens looked up from the API server.")
 
 	flag.Parse()
 
