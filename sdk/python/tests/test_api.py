@@ -5,9 +5,9 @@ import arvados
 import httplib2
 import json
 import mimetypes
-import unittest
 import os
 import run_test_server
+import unittest
 
 from apiclient.http import RequestMockBuilder
 from httplib import responses as HTTP_RESPONSES
