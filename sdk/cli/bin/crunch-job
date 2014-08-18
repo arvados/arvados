@@ -84,6 +84,8 @@ use File::Temp;
 use Fcntl ':flock';
 use File::Path qw( make_path );
 
+use constant EX_TEMPFAIL => 75;
+
 $ENV{"TMPDIR"} ||= "/tmp";
 unless (defined $ENV{"CRUNCH_TMP"}) {
   $ENV{"CRUNCH_TMP"} = $ENV{"TMPDIR"} . "/crunch-job";
@@ -150,17 +152,25 @@ if ($job_has_uuid)
 {
   $Job = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
   if (!$force_unlock) {
+    # If some other crunch-job process has grabbed this job (or we see
+    # other evidence that the job is already underway) we exit
+    # EX_TEMPFAIL so crunch-dispatch (our parent process) doesn't
+    # mark the job as failed.
     if ($Job->{'is_locked_by_uuid'}) {
-      croak("Job is locked: " . $Job->{'is_locked_by_uuid'});
+      Log(undef, "Job is locked by " . $Job->{'is_locked_by_uuid'});
+      exit EX_TEMPFAIL;
     }
     if ($Job->{'success'} ne undef) {
-      croak("Job 'success' flag (" . $Job->{'success'} . ") is not null");
+      Log(undef, "Job 'success' flag (" . $Job->{'success'} . ") is not null");
+      exit EX_TEMPFAIL;
     }
     if ($Job->{'running'}) {
-      croak("Job 'running' flag is already set");
+      Log(undef, "Job 'running' flag is already set");
+      exit EX_TEMPFAIL;
     }
     if ($Job->{'started_at'}) {
-      croak("Job 'started_at' time is already set (" . $Job->{'started_at'} . ")");
+      Log(undef, "Job 'started_at' time is already set (" . $Job->{'started_at'} . ")");
+      exit EX_TEMPFAIL;
     }
   }
 }
@@ -273,7 +283,8 @@ if ($job_has_uuid)
   # Claim this job, and make sure nobody else does
   unless ($Job->update_attributes('is_locked_by_uuid' => $User->{'uuid'}) &&
           $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
-    croak("Error while updating / locking job");
+    Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
+    exit EX_TEMPFAIL;
   }
   $Job->update_attributes('started_at' => scalar gmtime,
                           'running' => 1,
@@ -688,7 +699,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 
     my @execargs = ('bash', '-c', $command);
     srun (\@srunargs, \@execargs, undef, $build_script_to_send);
-    exit (111);
+    # exec() failed, we assume nothing happened.
+    Log(undef, "srun() failed on build script");
+    die;
   }
   close("writer");
   if (!defined $childpid)
@@ -882,7 +895,7 @@ else {
 Log (undef, "finish");
 
 save_meta();
-exit 0;
+exit ($Job->{'success'} ? 1 : 0);
 
 
 

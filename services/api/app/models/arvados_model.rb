@@ -68,6 +68,28 @@ class ArvadosModel < ActiveRecord::Base
     self.columns.select { |col| col.name == attr.to_s }.first
   end
 
+  def self.attributes_required_columns
+    # This method returns a hash.  Each key is the name of an API attribute,
+    # and it's mapped to a list of database columns that must be fetched
+    # to generate that attribute.
+    # This implementation generates a simple map of attributes to
+    # matching column names.  Subclasses can override this method
+    # to specify that method-backed API attributes need to fetch
+    # specific columns from the database.
+    all_columns = columns.map(&:name)
+    api_column_map = Hash.new { |hash, key| hash[key] = [] }
+    methods.grep(/^api_accessible_\w+$/).each do |method_name|
+      next if method_name == :api_accessible_attributes
+      send(method_name).each_pair do |api_attr_name, col_name|
+        col_name = col_name.to_s
+        if all_columns.include?(col_name)
+          api_column_map[api_attr_name.to_s] |= [col_name]
+        end
+      end
+    end
+    api_column_map
+  end
+
   # Return nil if current user is not allowed to see the list of
   # writers. Otherwise, return a list of user_ and group_uuids with
   # write permission. (If not returning nil, current_user is always in

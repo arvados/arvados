@@ -1,8 +1,3 @@
-<%
-  filters = [['uuid', 'is_a', "arvados#group"]]
-  @objects = @object.contents({limit: 50, include_linked: true, :filters => filters})
-  objects_and_names = get_objects_and_names @objects
-  page_offset = next_page_offset @objects
-%>
-
-<%= render partial: 'show_tab_contents', locals: {project: @object, objects_and_names: objects_and_names, filters: filters, page_offset: page_offset, tab_name: 'Subprojects'} %>
+<%= render_pane 'tab_contents', to_string: true, locals: {
+    filters: [['uuid', 'is_a', ["arvados#group"]]]
+    }.merge(local_assigns) %>

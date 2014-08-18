@@ -70,6 +70,9 @@ class ActiveSupport::TestCase
       arvados_api_token: api_fixture('api_client_authorizations')[api_client_auth_name.to_s]['api_token']
     }
   end
+  def json_response
+    Oj.load(@response.body)
+  end
 end
 
 class ApiServerForTests

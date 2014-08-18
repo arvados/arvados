@@ -1,8 +1,21 @@
 #!/usr/bin/env python
 
+# collection-merge
+#
+# Merge two or more collections together.  Can also be used to extract specific
+# files from a collection to produce a new collection.
+#
+# input:
+# An array of collections or collection/file paths in script_parameter["input"]
+#
+# output:
+# A manifest with the collections merged.  Duplicate file names will
+# have their contents concatenated in the order that they appear in the input
+# array.
+
 import arvados
 import md5
-import subst
+import crunchutil.subst as subst
 import subprocess
 import os
 import hashlib
@@ -30,28 +43,4 @@ for c in p["input"]:
                 if fn in s.files():
                     merged += s.files()[fn].as_manifest()
 
-crm = arvados.CollectionReader(merged)
-
-combined = crm.manifest_text(strip=True)
-
-m = hashlib.new('md5')
-m.update(combined)
-
-uuid = "{}+{}".format(m.hexdigest(), len(combined))
-
-collection = arvados.api().collections().create(
-    body={
-        'uuid': uuid,
-        'manifest_text': crm.manifest_text(),
-    }).execute()
-
-for s in src:
-    l = arvados.api().links().create(body={
-        "link": {
-            "tail_uuid": s,
-            "head_uuid": uuid,
-            "link_class": "provenance",
-            "name": "provided"
-        }}).execute()
-
-arvados.current_task().set_output(uuid)
+arvados.current_task().set_output(merged)

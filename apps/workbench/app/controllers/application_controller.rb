@@ -14,6 +14,7 @@ class ApplicationController < ActionController::Base
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
+  before_filter :check_user_profile, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -61,22 +62,31 @@ class ApplicationController < ActionController::Base
     else
       @errors = [e.to_s]
     end
-    # If the user has an active session, and the API server is available,
-    # make user information available on the error page.
+    # Make user information available on the error page, falling back to the
+    # session cache if the API server is unavailable.
     begin
       load_api_token(session[:arvados_api_token])
     rescue ArvadosApiClient::ApiError
-      load_api_token(nil)
+      unless session[:user].nil?
+        begin
+          Thread.current[:user] = User.new(session[:user])
+        rescue ArvadosApiClient::ApiError
+          # This can happen if User's columns are unavailable.  Nothing to do.
+        end
+      end
     end
-    # Preload projects trees for the template.  If that fails, set empty
+    # Preload projects trees for the template.  If that's not doable, set empty
     # trees so error page rendering can proceed.  (It's easier to rescue the
     # exception here than in a template.)
-    begin
-      build_project_trees
-    rescue ArvadosApiClient::ApiError
-      @my_project_tree ||= []
-      @shared_project_tree ||= []
+    unless current_user.nil?
+      begin
+        build_project_trees
+      rescue ArvadosApiClient::ApiError
+        # Fall back to the default-setting code later.
+      end
     end
+    @my_project_tree ||= []
+    @shared_project_tree ||= []
     render_error(err_opts)
   end
 
@@ -89,6 +99,9 @@ class ApplicationController < ActionController::Base
   end
 
   def load_filters_and_paging_params
+    @order = params[:order] || 'created_at desc'
+    @order = [@order] unless @order.is_a? Array
+
     @limit ||= 200
     if params[:limit]
       @limit = params[:limit].to_i
@@ -128,15 +141,30 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render json: @objects }
       f.html {
-        if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
+        if params[:tab_pane]
+          render_pane params[:tab_pane]
         else
           render
         end
       }
       f.js { render }
+    end
+  end
+
+  helper_method :render_pane
+  def render_pane tab_pane, opts={}
+    render_opts = {
+      partial: 'show_' + tab_pane.downcase,
+      locals: {
+        comparable: self.respond_to?(:compare),
+        objects: @objects,
+        tab_pane: tab_pane
+      }.merge(opts[:locals] || {})
+    }
+    if opts[:to_string]
+      render_to_string render_opts
+    else
+      render render_opts
     end
   end
 
@@ -177,9 +205,7 @@ class ApplicationController < ActionController::Base
       f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
       f.html {
         if params['tab_pane']
-          comparable = self.respond_to? :compare
-          render(partial: 'show_' + params['tab_pane'].downcase,
-                 locals: { comparable: comparable, objects: @objects })
+          render_pane params['tab_pane']
         elsif request.method.in? ['GET', 'HEAD']
           render
         else
@@ -393,9 +419,6 @@ class ApplicationController < ActionController::Base
     Thread.current[:arvados_api_token] = new_token
     if new_token.nil?
       Thread.current[:user] = nil
-    elsif (new_token == session[:arvados_api_token]) and
-        session[:user].andand[:is_active]
-      Thread.current[:user] = User.new(session[:user])
     else
       Thread.current[:user] = User.current
     end
@@ -422,6 +445,7 @@ class ApplicationController < ActionController::Base
         is_admin: user.is_admin,
         prefs: user.prefs
       }
+
       if !request.format.json? and request.method.in? ['GET', 'HEAD']
         # Repeat this request with api_token in the (new) session
         # cookie instead of the query string.  This prevents API
@@ -466,7 +490,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Reroute this request if an API token is unavailable.
+  # Redirect to login/welcome if client provided expired API token (or none at all)
   def require_thread_api_token
     if Thread.current[:arvados_api_token]
       yield
@@ -477,7 +501,7 @@ class ApplicationController < ActionController::Base
       session.delete :arvados_api_token
       redirect_to_login
     else
-      render 'users/welcome'
+      redirect_to welcome_users_path(return_to: request.fullpath)
     end
   end
 
@@ -488,19 +512,22 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  helper_method :unsigned_user_agreements
+  def unsigned_user_agreements
+    @signed_ua_uuids ||= UserAgreement.signatures.map &:head_uuid
+    @unsigned_user_agreements ||= UserAgreement.all.map do |ua|
+      if not @signed_ua_uuids.index ua.uuid
+        Collection.find(ua.uuid)
+      end
+    end.compact
+  end
+
   def check_user_agreements
     if current_user && !current_user.is_active
       if not current_user.is_invited
-        return render 'users/inactive'
+        return redirect_to inactive_users_path(return_to: request.fullpath)
       end
-      signatures = UserAgreement.signatures
-      @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
-      @required_user_agreements = UserAgreement.all.map do |ua|
-        if not @signed_ua_uuids.index ua.uuid
-          Collection.find(ua.uuid)
-        end
-      end.compact
-      if @required_user_agreements.empty?
+      if unsigned_user_agreements.empty?
         # No agreements to sign. Perhaps we just need to ask?
         current_user.activate
         if !current_user.is_active
@@ -509,10 +536,45 @@ class ApplicationController < ActionController::Base
         end
       end
       if !current_user.is_active
-        render 'user_agreements/index'
+        redirect_to user_agreements_path(return_to: request.fullpath)
       end
     end
     true
+  end
+
+  def check_user_profile
+    if request.method.downcase != 'get' || params[:partial] ||
+       params[:tab_pane] || params[:action_method] ||
+       params[:action] == 'setup_popup'
+      return true
+    end
+
+    if missing_required_profile?
+      redirect_to profile_user_path(current_user.uuid, return_to: request.fullpath)
+    end
+    true
+  end
+
+  helper_method :missing_required_profile?
+  def missing_required_profile?
+    missing_required = false
+
+    profile_config = Rails.configuration.user_profile_form_fields
+    if current_user && profile_config
+      current_user_profile = current_user.prefs[:profile]
+      profile_config.kind_of?(Array) && profile_config.andand.each do |entry|
+        if entry['required']
+          if !current_user_profile ||
+             !current_user_profile[entry['key'].to_sym] ||
+             current_user_profile[entry['key'].to_sym].empty?
+            missing_required = true
+            break
+          end
+        end
+      end
+    end
+
+    missing_required
   end
 
   def select_theme
@@ -529,15 +591,6 @@ class ApplicationController < ActionController::Base
       view.render partial: 'notifications/ssh_key_notification'
     }
   }
-
-  #@@notification_tests.push lambda { |controller, current_user|
-  #  Job.limit(1).where(created_by: current_user.uuid).each do
-  #    return nil
-  #  end
-  #  return lambda { |view|
-  #    view.render partial: 'notifications/jobs_notification'
-  #  }
-  #}
 
   @@notification_tests.push lambda { |controller, current_user|
     Collection.limit(1).where(created_by: current_user.uuid).each do
@@ -563,7 +616,7 @@ class ApplicationController < ActionController::Base
     @notification_count = 0
     @notifications = []
 
-    if current_user
+    if current_user.andand.is_active
       @showallalerts = false
       @@notification_tests.each do |t|
         a = t.call(self, current_user)

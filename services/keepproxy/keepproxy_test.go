@@ -1,8 +1,8 @@
 package main
 
 import (
-	"arvados.org/keepclient"
-	"arvados.org/sdk"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"crypto/md5"
 	"crypto/tls"
 	"fmt"
@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 	"time"
 )
@@ -31,8 +30,8 @@ var _ = Suite(&ServerRequiredSuite{})
 type ServerRequiredSuite struct{}
 
 func pythonDir() string {
-	gopath := os.Getenv("GOPATH")
-	return fmt.Sprintf("%s/../../sdk/python/tests", strings.Split(gopath, ":")[0])
+	cwd, _ := os.Getwd()
+	return fmt.Sprintf("%s/../../sdk/python/tests", cwd)
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
@@ -40,12 +39,27 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	defer os.Chdir(cwd)
 
 	os.Chdir(pythonDir())
-
-	if err := exec.Command("python", "run_test_server.py", "start").Run(); err != nil {
-		panic("'python run_test_server.py start' returned error")
+	{
+		cmd := exec.Command("python", "run_test_server.py", "start")
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			log.Fatalf("Setting up stderr pipe: %s", err)
+		}
+		go io.Copy(os.Stderr, stderr)
+		if err := cmd.Run(); err != nil {
+			panic(fmt.Sprintf("'python run_test_server.py start' returned error %s", err))
+		}
 	}
-	if err := exec.Command("python", "run_test_server.py", "start_keep").Run(); err != nil {
-		panic("'python run_test_server.py start_keep' returned error")
+	{
+		cmd := exec.Command("python", "run_test_server.py", "start_keep")
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			log.Fatalf("Setting up stderr pipe: %s", err)
+		}
+		go io.Copy(os.Stderr, stderr)
+		if err := cmd.Run(); err != nil {
+			panic(fmt.Sprintf("'python run_test_server.py start_keep' returned error %s", err))
+		}
 	}
 
 	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
@@ -109,7 +123,7 @@ func runProxy(c *C, args []string, token string, port int) keepclient.KeepClient
 
 	os.Setenv("ARVADOS_KEEP_PROXY", fmt.Sprintf("http://localhost:%v", port))
 	os.Setenv("ARVADOS_API_TOKEN", token)
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, err := keepclient.MakeKeepClient(&arv)
 	c.Check(kc.Using_proxy, Equals, true)
 	c.Check(len(kc.ServiceRoots()), Equals, 1)
@@ -131,7 +145,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	setupProxyService()
 
 	os.Setenv("ARVADOS_EXTERNAL_CLIENT", "true")
-	arv, err := sdk.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
 	kc, err := keepclient.MakeKeepClient(&arv)
 	c.Check(kc.Arvados.External, Equals, true)
 	c.Check(kc.Using_proxy, Equals, true)
@@ -156,7 +170,7 @@ func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 		var rep int
 		var err error
 		hash2, rep, err = kc.PutB([]byte("foo"))
-		c.Check(hash2, Equals, fmt.Sprintf("%s+3", hash))
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 		log.Print("PutB")
@@ -238,7 +252,7 @@ func (s *ServerRequiredSuite) TestGetDisabled(c *C) {
 
 	{
 		hash2, rep, err := kc.PutB([]byte("baz"))
-		c.Check(hash2, Equals, fmt.Sprintf("%s+3", hash))
+		c.Check(hash2, Matches, fmt.Sprintf(`^%s\+3(\+.+)?$`, hash))
 		c.Check(rep, Equals, 2)
 		c.Check(err, Equals, nil)
 		log.Print("PutB")

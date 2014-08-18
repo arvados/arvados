@@ -37,7 +37,7 @@ navbar:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
-      - user/topics/tutorial-job-debug.html.textile.liquid
+      - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
       - user/examples/crunch-examples.html.textile.liquid
     - Query the metadata database:
@@ -60,6 +60,8 @@ navbar:
       - sdk/ruby/index.html.textile.liquid
     - Java:
       - sdk/java/index.html.textile.liquid
+    - Go:
+      - sdk/go/index.html.textile.liquid
     - CLI:
       - sdk/cli/index.html.textile.liquid
   api:

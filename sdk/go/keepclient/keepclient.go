@@ -2,8 +2,8 @@
 package keepclient
 
 import (
-	"arvados.org/sdk"
-	"arvados.org/streamer"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -33,7 +33,7 @@ const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 
 // Information about Arvados and Keep servers.
 type KeepClient struct {
-	Arvados       *sdk.ArvadosClient
+	Arvados       *arvadosclient.ArvadosClient
 	Want_replicas int
 	Using_proxy   bool
 	service_roots *[]string
@@ -43,7 +43,7 @@ type KeepClient struct {
 
 // Create a new KeepClient.  This will contact the API server to discover Keep
 // servers.
-func MakeKeepClient(arv *sdk.ArvadosClient) (kc KeepClient, err error) {
+func MakeKeepClient(arv *arvadosclient.ArvadosClient) (kc KeepClient, err error) {
 	kc = KeepClient{
 		Arvados:       arv,
 		Want_replicas: 2,

@@ -6,10 +6,13 @@ class Collection < ArvadosModel
   api_accessible :user, extend: :common do |t|
     t.add :data_size
     t.add :files
+    t.add :manifest_text
   end
 
-  api_accessible :with_data, extend: :user do |t|
-    t.add :manifest_text
+  def self.attributes_required_columns
+    super.merge({ "data_size" => ["manifest_text"],
+                  "files" => ["manifest_text"],
+                })
   end
 
   def redundancy_status

@@ -23,4 +23,10 @@ class UsersControllerTest < ActionController::TestCase
     assert_nil assigns(:my_jobs)
     assert_nil assigns(:my_ssh_keys)
   end
+
+  test "show welcome page if no token provided" do
+    get :index, {}
+    assert_response :redirect
+    assert_match /\/users\/welcome/, @response.redirect_url
+  end
 end
