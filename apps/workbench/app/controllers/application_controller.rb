@@ -14,7 +14,7 @@ class ApplicationController < ActionController::Base
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
-  before_filter :check_user_profile, except: [:update_profile] + ERROR_ACTIONS
+  before_filter :check_user_profile, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
@@ -490,7 +490,7 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Reroute this request if an API token is unavailable.
+  # Redirect to login/welcome if client provided expired API token (or none at all)
   def require_thread_api_token
     if Thread.current[:arvados_api_token]
       yield
@@ -501,7 +501,7 @@ class ApplicationController < ActionController::Base
       session.delete :arvados_api_token
       redirect_to_login
     else
-      render 'users/welcome'
+      redirect_to welcome_users_path(return_to: request.fullpath)
     end
   end
 
@@ -512,19 +512,22 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  helper_method :unsigned_user_agreements
+  def unsigned_user_agreements
+    @signed_ua_uuids ||= UserAgreement.signatures.map &:head_uuid
+    @unsigned_user_agreements ||= UserAgreement.all.map do |ua|
+      if not @signed_ua_uuids.index ua.uuid
+        Collection.find(ua.uuid)
+      end
+    end.compact
+  end
+
   def check_user_agreements
     if current_user && !current_user.is_active
       if not current_user.is_invited
-        return render 'users/inactive'
+        return redirect_to inactive_users_path(return_to: request.fullpath)
       end
-      signatures = UserAgreement.signatures
-      @signed_ua_uuids = UserAgreement.signatures.map &:head_uuid
-      @required_user_agreements = UserAgreement.all.map do |ua|
-        if not @signed_ua_uuids.index ua.uuid
-          Collection.find(ua.uuid)
-        end
-      end.compact
-      if @required_user_agreements.empty?
+      if unsigned_user_agreements.empty?
         # No agreements to sign. Perhaps we just need to ask?
         current_user.activate
         if !current_user.is_active
@@ -533,7 +536,7 @@ class ApplicationController < ActionController::Base
         end
       end
       if !current_user.is_active
-        render 'user_agreements/index'
+        redirect_to user_agreements_path(return_to: request.fullpath)
       end
     end
     true
@@ -547,7 +550,7 @@ class ApplicationController < ActionController::Base
     end
 
     if missing_required_profile?
-      render 'users/profile'
+      redirect_to profile_user_path(current_user.uuid, return_to: request.fullpath)
     end
     true
   end
@@ -589,15 +592,6 @@ class ApplicationController < ActionController::Base
     }
   }
 
-  #@@notification_tests.push lambda { |controller, current_user|
-  #  Job.limit(1).where(created_by: current_user.uuid).each do
-  #    return nil
-  #  end
-  #  return lambda { |view|
-  #    view.render partial: 'notifications/jobs_notification'
-  #  }
-  #}
-
   @@notification_tests.push lambda { |controller, current_user|
     Collection.limit(1).where(created_by: current_user.uuid).each do
       return nil
@@ -622,7 +616,7 @@ class ApplicationController < ActionController::Base
     @notification_count = 0
     @notifications = []
 
-    if current_user
+    if current_user.andand.is_active
       @showallalerts = false
       @@notification_tests.each do |t|
         a = t.call(self, current_user)

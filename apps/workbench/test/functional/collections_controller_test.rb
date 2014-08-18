@@ -170,7 +170,7 @@ class CollectionsControllerTest < ActionController::TestCase
       uuid: ua_collection['uuid'],
       file: ua_collection['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
     }, session_for(:inactive)
-    assert_nil(assigns(:required_user_agreements),
+    assert_nil(assigns(:unsigned_user_agreements),
                "Did not skip check_user_agreements filter " +
                "when showing the user agreement.")
     assert_response :success
