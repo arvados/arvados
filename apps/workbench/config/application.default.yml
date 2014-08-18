@@ -128,6 +128,6 @@ common:
   #      - IT
   #      - Other
 
-  # Use "user_profile_form_message" to configure the message you want to display in
-  # the profile page. If this is not provided, a default message will be displayed.
+  # Use "user_profile_form_message" to configure the message you want to display on
+  # the profile page.
   user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
