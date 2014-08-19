@@ -8,7 +8,7 @@
 </tr>
 <% end %>
 <% elsif attrvalue.is_a? String or attrvalue.respond_to? :to_s %>
-<tr class="<%= 'info' if %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).index(attr.to_s).nil? %>">
+<tr class="<%= 'info' if %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).include?(attr.to_s) %>">
   <td><%= attr %></td>
   <td>
     <%= render partial: 'application/arvados_attr_value', locals: { obj: object, attr: attr, attrvalue: attrvalue } %>

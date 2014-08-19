@@ -87,6 +87,7 @@ module ApplicationHelper
         link_uuid = attrvalue
       end
       link_name = opts[:link_text]
+      tags = ""
       if !link_name
         link_name = object.andand.default_name || resource_class.default_name
 
@@ -112,7 +113,9 @@ module ApplicationHelper
         if !opts[:no_tags] and resource_class == Collection
           links_for_object(link_uuid).each do |tag|
             if tag.link_class.in? ["tag", "identifier"]
-              link_name += ' <span class="label label-info">' + html_escape(tag.name) + '</span>'
+              tags += ' <span class="label label-info">'
+              tags += link_to tag.name, controller: "links", filters: [["link_class", "=", "tag"], ["name", "=", tag.name]].to_json
+              tags += '</span>'
             end
           end
         end
@@ -130,11 +133,18 @@ module ApplicationHelper
       if opts[:no_link]
         raw(link_name)
       else
-        link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts
+        if link_name.nil? or link_name.empty?
+          link_name = "(unnamed)"
+        end
+        (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
       end
     else
       # just return attrvalue if it is not recognizable as an Arvados object or uuid.
-      attrvalue
+      if attrvalue.nil? or (attrvalue.is_a? String and attrvalue.empty?)
+        "(none)"
+      else
+        attrvalue
+      end
     end
   end
 
@@ -176,11 +186,13 @@ module ApplicationHelper
     @unique_id ||= (Time.now.to_f*1000000).to_i
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
+    puts "Span #{object.inspect} #{(object.andand.default_name || 'none')}"
+
     span_tag = content_tag 'span', attrvalue.to_s, {
-      "data-emptytext" => (object.andand.default_name || 'none'),
+      "data-emptytext" => ('(none)'),
       "data-placement" => "bottom",
       "data-type" => input_type,
-      "data-title" => "Edit #{attr.gsub '_', ' '}",
+      "data-title" => "Edit #{attr.to_s.gsub '_', ' '}",
       "data-name" => attr,
       "data-object-uuid" => object.uuid,
       "data-toggle" => "manual",

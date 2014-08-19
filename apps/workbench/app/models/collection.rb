@@ -57,7 +57,11 @@ class Collection < ArvadosBase
   end
 
   def attribute_editable? attr, *args
-    false
+    if %w(name description manifest_text).include? attr.to_s
+      true
+    else
+      super
+    end
   end
 
   def self.creatable?
@@ -70,6 +74,30 @@ class Collection < ArvadosBase
 
   def used_by
     arvados_api_client.api "collections/#{self.uuid}/", "used_by"
+  end
+
+  def uuid
+    if self[:uuid].nil?
+      return self.portable_data_hash
+    else
+      super
+    end
+  end
+
+  def portable_data_hash
+    if self[:portable_data_hash].nil?
+      return self.uuid
+    else
+      super
+    end
+  end
+
+  def friendly_link_name
+    if self.respond_to? :name
+      self.name
+    else
+      self.portable_data_hash
+    end
   end
 
 end

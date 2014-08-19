@@ -176,6 +176,13 @@ class ProjectsController < ApplicationController
                                   filters: @filters,
                                   offset: @offset)
       @next_page_href = next_page_href(partial: :contents_rows)
+
+      uuids = @objects.map { |ob| ob.uuid }
+      @object_tags = {}
+      Link.limit(uuids.length*20).filter([["head_uuid", "in", uuids], ["link_class", "=", "tag"]]).each do |t|
+        @object_tags[t.head_uuid] ||= []
+        @object_tags[t.head_uuid] << t
+      end
     end
   end
 

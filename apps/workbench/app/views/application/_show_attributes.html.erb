@@ -4,10 +4,16 @@
   </thead>
   <tbody>
     <% @object.attributes_for_display.each do |attr, attrvalue| %>
-    <%= render partial: 'application/arvados_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
+      <% if %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).include? attr.to_s %>
+        <%= render partial: 'application/arvados_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
+      <% end %>
+    <% end %>
+    <% @object.attributes_for_display.each do |attr, attrvalue| %>
+      <% if not %w(uuid owner_uuid created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at).include? attr.to_s %>
+        <%= render partial: 'application/arvados_object_attr', locals: { attr: attr, attrvalue: attrvalue } %>
+        <% end %>
     <% end %>
   </tbody>
 </table>
 
 <% end %>
-
