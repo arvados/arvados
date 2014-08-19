@@ -25,6 +25,9 @@ def initialize(config_file=default_config_file):
         if var.startswith('ARVADOS_'):
             _settings[var] = os.environ[var]
 
+def flag_is_true(key):
+    return get(key, '').lower() in set(['1', 't', 'true', 'y', 'yes'])
+
 def get(key, default_val=None):
     return settings().get(key, default_val)
 

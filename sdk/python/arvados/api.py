@@ -119,8 +119,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
                 raise ValueError("%s is not set. Aborting." % x)
         host = config.get('ARVADOS_API_HOST')
         token = config.get('ARVADOS_API_TOKEN')
-        insecure = (config.get('ARVADOS_API_HOST_INSECURE', '').lower() in
-                       ('yes', 'true', '1'))
+        insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
     else:
         # Caller provided one but not the other
         if not host:
