@@ -99,7 +99,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
 
     if not version:
         version = 'v1'
-        logging.info("Using default API version. " +
+        _logger.info("Using default API version. " +
                      "Call arvados.api('%s') instead." %
                      version)
     if 'discoveryServiceUrl' in kwargs:
