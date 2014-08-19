@@ -45,6 +45,9 @@ class CollectionsController < ApplicationController
   def choose
     params[:limit] ||= 40
 
+    find_objects_for_index
+    @collections = @objects
+
     @filters += [['link_class','=','name'],
                  ['head_uuid','is_a','arvados#collection']]
 
@@ -55,7 +58,7 @@ class CollectionsController < ApplicationController
 
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
-    preload_links_for_objects @objects.to_a
+    preload_links_for_objects (@collections.to_a + @objects.to_a)
     super
   end
 

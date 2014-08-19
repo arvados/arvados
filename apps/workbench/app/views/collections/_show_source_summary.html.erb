@@ -1,12 +1,3 @@
-<% if @object.uuid.match /[0-9a-f]{32}/ %>
-<p>Found in collections:<p>
-<p>
-<% cols = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]]).each do |c| %>
-  <%= link_to_if_arvados_object c.owner_uuid, {:friendly_name => true} %> / <%= link_to_if_arvados_object c, {:friendly_name => true} %><br>
-<% end %>
-</p>
-<% end %>
-
 <% if not (@output_of.andand.any? or @log_of.andand.any?) %>
   <p><i>No source information available.</i></p>
 <% end %>

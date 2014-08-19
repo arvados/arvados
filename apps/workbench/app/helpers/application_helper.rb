@@ -107,6 +107,9 @@ module ApplicationHelper
             end
           end
         end
+        if link_name.nil? or link_name.empty?
+          link_name = attrvalue
+        end
         if opts[:with_class_name]
           link_name = "#{resource_class.to_s}: #{link_name}"
         end
@@ -133,9 +136,6 @@ module ApplicationHelper
       if opts[:no_link]
         raw(link_name)
       else
-        if link_name.nil? or link_name.empty?
-          link_name = "(unnamed)"
-        end
         (link_to raw(link_name), { controller: resource_class.to_s.tableize, action: 'show', id: ((opts[:name_link].andand.uuid) || link_uuid) }, style_opts) + raw(tags)
       end
     else
@@ -185,8 +185,6 @@ module ApplicationHelper
     ajax_options['data-pk'] = ajax_options['data-pk'].to_json
     @unique_id ||= (Time.now.to_f*1000000).to_i
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
-
-    puts "Span #{object.inspect} #{(object.andand.default_name || 'none')}"
 
     span_tag = content_tag 'span', attrvalue.to_s, {
       "data-emptytext" => ('(none)'),

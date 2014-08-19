@@ -30,7 +30,7 @@
       <br>
       <span class="tags-span">
     <span class="removable-tag-container">
-    <% if @object_tags[object.uuid] %>
+    <% if @object_tags and @object_tags[object.uuid] %>
       <% @object_tags[object.uuid].each do |tag_link| %>
         <span class="label label-info" data-tag-link-uuid="<%= tag_link.uuid %>">
           <%= link_to tag_link.name, controller: "links", filters: [["link_class", "=", "tag"], ["name", "=", tag_link.name]].to_json %>
