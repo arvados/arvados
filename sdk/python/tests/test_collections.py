@@ -586,7 +586,7 @@ class ArvadosCollectionsTest(ArvadosKeepLocalStoreTestCase):
         state = cwriter.current_state()
         # Add an expired locator to the state.
         state['_current_stream_locators'].append(''.join([
-                    'a' * 32, '+A', 'b' * 40, '@', '10000000']))
+                    'a' * 32, '+1+A', 'b' * 40, '@', '10000000']))
         self.assertRaises(arvados.errors.StaleWriterStateError,
                           TestResumableWriter.from_state, state)
 
