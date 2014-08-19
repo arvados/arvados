@@ -213,8 +213,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         page.find('.glyphicon-search').click
       end
 
-      # we should now be in the user's page as a result of search
-      assert page.has_text? user['first_name']
+      # we should now be in the user's home project as a result of search
+      assert_selector "#Data_collections[data-object-uuid='#{user['uuid']}']"
 
       # let's search again for an invalid valid uuid
       within('.navbar-fixed-top') do

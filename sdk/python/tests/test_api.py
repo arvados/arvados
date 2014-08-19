@@ -5,6 +5,8 @@ import arvados
 import httplib2
 import json
 import mimetypes
+import os
+import run_test_server
 import unittest
 
 from apiclient.http import RequestMockBuilder
@@ -31,10 +33,10 @@ class ArvadosApiClientTest(unittest.TestCase):
     def setUpClass(cls):
         # The apiclient library has support for mocking requests for
         # testing, but it doesn't extend to the discovery document
-        # itself.  Point it at a known stable discovery document for now.
+        # itself. For now, bring up an API server that will serve
+        # a discovery document.
         # FIXME: Figure out a better way to stub this out.
-        cls.orig_api_host = arvados.config.get('ARVADOS_API_HOST')
-        arvados.config.settings()['ARVADOS_API_HOST'] = 'qr1hi.arvadosapi.com'
+        run_test_server.run()
         mock_responses = {
             'arvados.humans.delete': (cls.response_from_code(500), ""),
             'arvados.humans.get': cls.api_error_response(
@@ -43,16 +45,15 @@ class ArvadosApiClientTest(unittest.TestCase):
                     {'items_available': 0, 'items': []})),
             }
         req_builder = RequestMockBuilder(mock_responses)
-        cls.api = arvados.api('v1', False, requestBuilder=req_builder)
+        cls.api = arvados.api('v1', cache=False,
+                              host=os.environ['ARVADOS_API_HOST'],
+                              token='discovery-doc-only-no-token-needed',
+                              insecure=True,
+                              requestBuilder=req_builder)
 
     @classmethod
     def tearDownClass(cls):
-        if cls.orig_api_host is None:
-            del arvados.config.settings()['ARVADOS_API_HOST']
-        else:
-            arvados.config.settings()['ARVADOS_API_HOST'] = cls.orig_api_host
-        # Prevent other tests from using our mocked API client.
-        arvados.uncache_api('v1')
+        run_test_server.stop()
 
     def test_basic_list(self):
         answer = self.api.humans().list(

@@ -202,7 +202,7 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object.attributes.merge(href: url_for(@object)) }
+      f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
       f.html {
         if params['tab_pane']
           render_pane params['tab_pane']
@@ -274,7 +274,7 @@ class ApplicationController < ActionController::Base
     @object ||= model_class.new @new_resource_attrs, params["options"]
     if @object.save
       respond_to do |f|
-        f.json { render json: @object.attributes.merge(href: url_for(@object)) }
+        f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
         f.html {
           redirect_to @object
         }
@@ -436,6 +436,10 @@ class ApplicationController < ActionController::Base
       false  # We may redirect to login, or not, based on the current action.
     else
       session[:arvados_api_token] = params[:api_token]
+      # If we later have trouble contacting the API server, we still want
+      # to be able to render basic user information in the UI--see
+      # render_exception above.  We store that in the session here.  This is
+      # not intended to be used as a general-purpose cache.  See #2891.
       session[:user] = {
         uuid: user.uuid,
         email: user.email,
