@@ -1,0 +1,65 @@
+---
+layout: default
+navsection: sdk
+navmenu: Go
+title: "Go SDK"
+
+...
+
+The Go ("Golang":http://golang.org) SDK provides a generic set of wrappers so you can make API calls easily.
+
+h3. Installation
+
+You don't need to install anything. Just import the client like this. The go tools will fetch the relevant code and dependencies for you.
+
+<notextile>
+<pre><code class="userinput">import (
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+)
+</code></pre>
+</notextile>
+
+h3. Examples
+
+Import the module. (We import the log module here too, so we can use it in the subsequent examples.)
+
+<notextile>
+<pre><code class="userinput">import (
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"log"
+)
+</code></pre>
+</notextile>
+
+Set up an API client user agent:
+
+<notextile>
+<pre><code class="userinput">	arv, err := arvadosclient.MakeArvadosClient()
+	if err != nil {
+		log.Fatalf("Error setting up arvados client %s", err.Error())
+	}
+</code></pre>
+</notextile>
+
+Get the User object for the current user:
+
+<notextile>
+<pre><code class="userinput">	type user struct {
+		Uuid	     string `json:"uuid"`
+		FullName     int    `json:"full_name"`
+	}
+
+	var u user
+	err := arv.Call("GET", "users", "", "current", nil, &u)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Logged in as %s (uuid %s)", user.Uuid, user.FullName)
+</code></pre>
+</notextile>
+
+A few more usage examples can be found in the services/keepproxy and sdk/go/keepclient directories in the arvados source tree.

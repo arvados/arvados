@@ -68,25 +68,28 @@ class Dispatcher
       begin
         sinfo.split("\n").
           each do |line|
-          re = line.match /(\S+?):+(idle|alloc|down)/
+          re = line.match /(\S+?):+(idle|alloc|down)?/
           next if !re
 
+          _, node_name, node_state = *re
+          node_state = 'down' unless %w(idle alloc down).include? node_state
+
           # sinfo tells us about a node N times if it is shared by N partitions
-          next if node_seen[re[1]]
-          node_seen[re[1]] = true
+          next if node_seen[node_name]
+          node_seen[node_name] = true
 
           # update our database (and cache) when a node's state changes
-          if @node_state[re[1]] != re[2]
-            @node_state[re[1]] = re[2]
-            node = Node.where('hostname=?', re[1]).order(:last_ping_at).last
+          if @node_state[node_name] != node_state
+            @node_state[node_name] = node_state
+            node = Node.where('hostname=?', node_name).order(:last_ping_at).last
             if node
-              $stderr.puts "dispatch: update #{re[1]} state to #{re[2]}"
-              node.info['slurm_state'] = re[2]
+              $stderr.puts "dispatch: update #{node_name} state to #{node_state}"
+              node.info['slurm_state'] = node_state
               if not node.save
                 $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
               end
-            elsif re[2] != 'down'
-              $stderr.puts "dispatch: sinfo reports '#{re[1]}' is not down, but no node has that name"
+            elsif node_state != 'down'
+              $stderr.puts "dispatch: sinfo reports '#{node_name}' is not down, but no node has that name"
             end
           end
         end
@@ -375,11 +378,11 @@ class Dispatcher
       $stderr.puts j_done[:stderr_buf] + "\n"
     end
 
-    # Wait the thread
-    j_done[:wait_thr].value
+    # Wait the thread (returns a Process::Status)
+    exit_status = j_done[:wait_thr].value
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if jobrecord.started_at
+    if exit_status.to_i != 75 and jobrecord.started_at
       # Clean up state fields in case crunch-job exited without
       # putting the job in a suitable "finished" state.
       jobrecord.running = false
@@ -392,7 +395,18 @@ class Dispatcher
       # Don't fail the job if crunch-job didn't even get as far as
       # starting it. If the job failed to run due to an infrastructure
       # issue with crunch-job or slurm, we want the job to stay in the
-      # queue.
+      # queue. If crunch-job exited after losing a race to another
+      # crunch-job process, it exits 75 and we should leave the job
+      # record alone so the winner of the race do its thing.
+      #
+      # There is still an unhandled race condition: If our crunch-job
+      # process is about to lose a race with another crunch-job
+      # process, but crashes before getting to its "exit 75" (for
+      # example, "cannot fork" or "cannot reach API server") then we
+      # will assume incorrectly that it's our process's fault
+      # jobrecord.started_at is non-nil, and mark the job as failed
+      # even though the winner of the race is probably still doing
+      # fine.
     end
 
     # Invalidate the per-job auth token

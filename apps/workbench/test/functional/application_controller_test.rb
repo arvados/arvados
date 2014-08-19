@@ -303,4 +303,22 @@ class ApplicationControllerTest < ActionController::TestCase
     get(:show, {id: "zzzzz-zzzzz-zzzzzzzzzzzzzzz"}, session_for(:admin))
     assert_response 404
   end
+
+  test "Workbench returns 4xx when API server is unreachable" do
+    # We're really testing ApplicationController's render_exception.
+    # Our primary concern is that it doesn't raise an error and
+    # return 500.
+    orig_api_server = Rails.configuration.arvados_v1_base
+    begin
+      # The URL should look valid in all respects, and avoid talking over a
+      # network.  100::/64 is the IPv6 discard prefix, so it's perfect.
+      Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+      @controller = NodesController.new
+      get(:index, {}, session_for(:active))
+      assert_includes(405..422, @response.code.to_i,
+                      "bad response code when API server is unreachable")
+    ensure
+      Rails.configuration.arvados_v1_base = orig_api_server
+    end
+  end
 end

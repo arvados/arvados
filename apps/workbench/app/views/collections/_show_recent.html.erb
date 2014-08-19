@@ -1,16 +1,3 @@
-<% content_for :tab_line_buttons do %>
- <%= form_tag collections_path, method: 'get', remote: true, class: 'form-search' do %>
- <div class="input-group">
-   <%= text_field_tag :search, params[:search], class: 'form-control', placeholder: 'Search collections' %>
-   <span class="input-group-btn">
-     <%= button_tag(class: 'btn btn-info') do %>
-     <span class="glyphicon glyphicon-search"></span>
-     <% end %>
-   </span>
- </div>
- <% end %>
-<% end %>
-
 <%= render partial: "paging", locals: {results: @collections, object: @object} %>
 
 <div style="padding-right: 1em">

@@ -39,16 +39,9 @@ class Arvados::V1::CollectionsController < ApplicationController
     end
 
     # Remove any permission signatures from the manifest.
-    resource_attrs[:manifest_text]
-      .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
-      word.strip!
-      loc = Locator.parse(word)
-      if loc
-        " " + loc.without_signature.to_s
-      else
-        " " + word
-      end
-    }
+    munge_manifest_locators(resource_attrs[:manifest_text]) do |loc|
+      loc.without_signature.to_s
+    end
 
     super
   end
@@ -71,28 +64,13 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def show
-    if current_api_client_authorization
-      signing_opts = {
-        key: Rails.configuration.blob_signing_key,
-        api_token: current_api_client_authorization.api_token,
-        ttl: Rails.configuration.blob_signing_ttl,
-      }
-      @object[:manifest_text]
-        .gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) { |word|
-        word.strip!
-        loc = Locator.parse(word)
-        if loc
-          " " + Blob.sign_locator(word, signing_opts)
-        else
-          " " + word
-        end
-      }
-    end
-    if @object.is_a? Collection
-      render json: @object.as_api_response(:with_data)
-    else
-      render json: @object
-    end
+    sign_manifests(@object[:manifest_text])
+    super
+  end
+
+  def index
+    sign_manifests(*@objects.map { |c| c[:manifest_text] })
+    super
   end
 
   def script_param_edges(visited, sp)
@@ -212,4 +190,62 @@ class Arvados::V1::CollectionsController < ApplicationController
     render json: visited
   end
 
+  def self.munge_manifest_locators(manifest)
+    # Given a manifest text and a block, yield each locator,
+    # and replace it with whatever the block returns.
+    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
+      if loc = Locator.parse(word.strip)
+        " " + yield(loc)
+      else
+        " " + word
+      end
+    end
+  end
+
+  protected
+
+  def find_objects_for_index
+    # Omit manifest_text from index results unless expressly selected.
+    @select ||= model_class.api_accessible_attributes(:user).
+      map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
+    super
+  end
+
+  def find_object_by_uuid
+    super
+    if !@object and !params[:uuid].match(/^[0-9a-f]+\+\d+$/)
+      # Normalize the given uuid and search again.
+      hash_part = params[:uuid].match(/^([0-9a-f]*)/)[1]
+      collection = Collection.where('uuid like ?', hash_part + '+%').first
+      if collection
+        # We know the collection exists, and what its real uuid is in
+        # the database. Now, throw out @objects and repeat the usual
+        # lookup procedure. (Returning the collection at this point
+        # would bypass permission checks.)
+        @objects = nil
+        @where = { uuid: collection.uuid }
+        find_objects_for_index
+        @object = @objects.first
+      end
+    end
+  end
+
+  def munge_manifest_locators(manifest, &block)
+    self.class.munge_manifest_locators(manifest, &block)
+  end
+
+  def sign_manifests(*manifests)
+    if current_api_client_authorization
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: current_api_client_authorization.api_token,
+        ttl: Rails.configuration.blob_signing_ttl,
+      }
+      manifests.each do |text|
+        munge_manifest_locators(text) do |loc|
+          Blob.sign_locator(loc.to_s, signing_opts)
+        end
+      end
+    end
+  end
 end

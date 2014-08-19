@@ -13,10 +13,13 @@ class Collection < ArvadosModel
     t.add :description
     t.add :properties
     t.add :portable_data_hash
+    t.add :manifest_text
   end
 
-  api_accessible :with_data, extend: :user do |t|
-    t.add :manifest_text
+  def self.attributes_required_columns
+    super.merge({ "data_size" => ["manifest_text"],
+                  "files" => ["manifest_text"],
+                })
   end
 
   def set_portable_data_hash

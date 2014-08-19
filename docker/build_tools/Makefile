@@ -7,7 +7,6 @@ endif
 all: skydns-image skydock-image api-image compute-image doc-image workbench-image keep-image sso-image shell-image
 
 IMAGE_FILES := $(shell ls *-image 2>/dev/null |grep -v -E 'debian-arvados-image|skydns-image|skydock-image')
-GENERATED_FILES := $(shell ls */generated/* 2>/dev/null)
 GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 
 # `make clean' removes the files generated in the build directory
@@ -15,8 +14,8 @@ GENERATED_DIRS := $(shell ls */generated 2>/dev/null)
 clean:
 	@echo "make clean"
 	-@rm -rf build
-	+@[ "$(IMAGE_FILES)$(GENERATED_FILES)" = "" ] || rm $(IMAGE_FILES) $(GENERATED_FILES) 2>/dev/null
-	+@[ "$(GENERATED_DIRS)" = "" ] || rmdir */generated 2>/dev/null
+	+@[ "$(IMAGE_FILES)" = "" ] || rm -f $(IMAGE_FILES) 2>/dev/null
+	+@[ "$(GENERATED_DIRS)" = "" ] || rm -rf */generated 2>/dev/null
 
 DEBIAN_IMAGE := $(shell $(DOCKER) images -q arvados/debian |head -n1)
 
@@ -104,6 +103,13 @@ WORKBENCH_GENERATED    = workbench/generated/*
 SSO_GENERATED_IN       = sso/*.in
 SSO_GENERATED          = sso/generated/*
 
+KEEP_DEPS += keep/generated/bin/keepproxy
+KEEP_DEPS += keep/generated/bin/keepstore
+keep/generated/bin/%: $(wildcard build/services/%/*.go)
+	mkdir -p keep/generated/src/git.curoverse.com
+	ln -sfn ../../../../.. keep/generated/src/git.curoverse.com/arvados.git
+	GOPATH=$(shell pwd)/keep/generated go get $(@:keep/generated/bin/%=git.curoverse.com/arvados.git/services/%)
+
 $(BUILD):
 	mkdir -p build
 	rsync -rlp --exclude=docker/ --exclude='**/log/*' --exclude='**/tmp/*' \
@@ -154,21 +160,17 @@ api-image: passenger-image $(BUILD) $(API_DEPS)
 	@echo "Building api-image"
 	mkdir -p api/generated
 	tar -czf api/generated/api.tar.gz -C build/services api
-	chmod 755 api/generated/setup.sh
-	chmod 755 api/generated/setup-gitolite.sh
 	$(DOCKER_BUILD) -t arvados/api api
 	date >api-image
 
 shell-image: base-image $(BUILD) $(SHELL_DEPS)
 	@echo "Building shell-image"
 	mkdir -p shell/generated
-	chmod 755 shell/generated/setup.sh
 	$(DOCKER_BUILD) -t arvados/shell shell
 	date >shell-image
 
 compute-image: slurm-image $(BUILD) $(COMPUTE_DEPS)
 	@echo "Building compute-image"
-	chmod 755 compute/generated/setup.sh
 	$(DOCKER_BUILD) -t arvados/compute compute
 	date >compute-image
 

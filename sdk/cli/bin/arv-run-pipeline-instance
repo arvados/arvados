@@ -243,8 +243,8 @@ class PipelineInstance
   end
   def self.create(attributes)
     result = $client.execute(:api_method => $arvados.pipeline_instances.create,
-                             :body => {
-                               :pipeline_instance => attributes.to_json
+                             :body_object => {
+                               :pipeline_instance => attributes
                              },
                              :authenticated => false,
                              :headers => {
@@ -262,8 +262,8 @@ class PipelineInstance
                              :parameters => {
                                :uuid => @pi[:uuid]
                              },
-                             :body => {
-                               :pipeline_instance => @attributes_to_update.to_json
+                             :body_object => {
+                               :pipeline_instance => @attributes_to_update
                              },
                              :authenticated => false,
                              :headers => {
@@ -285,6 +285,16 @@ class PipelineInstance
   def [](x)
     @pi[x]
   end
+
+  def log_stderr(msg)
+    $arv.log.create log: {
+      event_type: 'stderr',
+      object_uuid: self[:uuid],
+      owner_uuid: self[:owner_uuid],
+      properties: {"text" => msg},
+    }
+  end
+
   protected
   def initialize(j)
     @attributes_to_update = {}
@@ -328,7 +338,7 @@ class JobCache
     body = {job: no_nil_values(job)}.merge(no_nil_values(create_params))
 
     result = $client.execute(:api_method => $arvados.jobs.create,
-                             :body => body,
+                             :body_object => body,
                              :authenticated => false,
                              :headers => {
                                authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
@@ -345,19 +355,7 @@ class JobCache
       end
       msg += "Job submission was: #{body.to_json}"
 
-      $client.execute(:api_method => $arvados.logs.create,
-                      :body => {
-                        :log => {
-                          :object_uuid => pipeline[:uuid],
-                          :event_type => 'stderr',
-                          :owner_uuid => pipeline[:owner_uuid],
-                          :properties => {"text" => msg}
-                        }
-                      },
-                      :authenticated => false,
-                      :headers => {
-                        authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
-                      })
+      pipeline.log_stderr(msg)
       nil
     end
   end
@@ -380,10 +378,6 @@ class WhRunPipelineInstance
     if template.match /[^-0-9a-z]/
       # Doesn't look like a uuid -- use it as a filename.
       @template = JSON.parse File.read(template), :symbolize_names => true
-      if !@template[:components]
-        abort ("#{$0}: Template loaded from #{template} " +
-               "does not have a \"components\" key")
-      end
     else
       result = $client.execute(:api_method => $arvados.pipeline_templates.get,
                                :parameters => {
@@ -422,7 +416,24 @@ class WhRunPipelineInstance
       end
     end
 
+    if not @template[:components].is_a?(Hash)
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nSyntax error: Template missing \"components\" hash"
+    end
     @components = @template[:components].dup
+
+    bad_components = @components.each_pair.select do |cname, cspec|
+      not cspec.is_a?(Hash)
+    end
+    if bad_components.any?
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nSyntax error: Components not specified with hashes: #{bad_components.map(&:first).join(', ')}"
+    end
+
+    bad_components = @components.each_pair.select do |cname, cspec|
+      not cspec[:script_parameters].is_a?(Hash)
+    end
+    if bad_components.any?
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nSyntax error: Components missing \"script_parameters\" hashes: #{bad_components.map(&:first).join(', ')}"
+    end
 
     errors = []
     @components.each do |componentname, component|
@@ -475,7 +486,7 @@ class WhRunPipelineInstance
                  }
                },
                pipeline_template_uuid: @template[:uuid],
-               state: ($options[:submit] ? 'New' : 'RunningOnClient'))
+               state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
     end
     self
   end
@@ -710,6 +721,18 @@ class WhRunPipelineInstance
         end
       end
     end
+  end
+
+  def abort(msg)
+    if @instance
+      if ["New", "Ready", "RunningOnClient",
+          "RunningOnServer"].include?(@instance[:state])
+        @instance[:state] = "Failed"
+        @instance.save
+      end
+      @instance.log_stderr(msg)
+    end
+    Kernel::abort(msg)
   end
 end
 

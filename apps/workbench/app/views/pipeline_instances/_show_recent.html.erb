@@ -1,10 +1,3 @@
-<%= content_for :tab_line_buttons do %>
-<%= form_tag({action: 'compare', controller: params[:controller], method: 'get'}, {method: 'get', id: 'compare', class: 'pull-right small-form-margin'}) do |f| %>
-  <%= submit_tag 'Compare 2 or 3 selected', {class: 'btn btn-primary', disabled: true, style: 'display: none'} %>
-  &nbsp;
-<% end rescue nil %>
-<% end %>
-
 <%= render partial: "paging", locals: {results: @objects, object: @object} %>
 
 <%= form_tag do |f| %>

@@ -8,6 +8,8 @@ import re
 import config
 import logging
 
+_logger = logging.getLogger('arvados.events')
+
 class EventClient(WebSocketClient):
     def __init__(self, url, filters, on_event):
         ssl_options = None
@@ -41,8 +43,8 @@ def subscribe(api, filters, on_event):
         ws = EventClient(url, filters, on_event)
         ws.connect()
         return ws
-    except:
-        logging.exception('')
+    except Exception:
+        _logger.exception('')
         if (ws):
-          ws.close_connection()        
+          ws.close_connection()
         raise

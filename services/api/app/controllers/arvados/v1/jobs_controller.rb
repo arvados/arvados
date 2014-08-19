@@ -162,6 +162,24 @@ class Arvados::V1::JobsController < ApplicationController
     index
   end
 
+  def self._create_requires_parameters
+    (super rescue {}).
+      merge({
+              find_or_create: {
+                type: 'boolean', required: false, default: false
+              },
+              filters: {
+                type: 'array', required: false
+              },
+              minimum_script_version: {
+                type: 'string', required: false
+              },
+              exclude_script_versions: {
+                type: 'array', required: false
+              },
+            })
+  end
+
   def self._queue_requires_parameters
     self._index_requires_parameters
   end

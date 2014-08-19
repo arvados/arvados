@@ -1,0 +1,18 @@
+<% content_for :tab_line_buttons do %>
+  <%= button_to(choose_projects_path(id: "run-pipeline-button",
+                                     title: 'Choose project',
+                                     editable: true,
+                                     action_name: 'Choose',
+                                     action_href: pipeline_instances_path,
+                                     action_method: 'post',
+                                     action_data: {selection_param: 'pipeline_instance[owner_uuid]',
+                                                   'pipeline_instance[pipeline_template_uuid]' => @object.uuid,
+                                                   'success' => 'redirect-to-created-object'
+                                                  }.to_json),
+                { class: "btn btn-primary btn-sm", remote: true, method: 'get' }
+               ) do %>
+                   Run this pipeline
+                 <% end %>
+<% end %>
+
+<%= render file: 'application/show.html.erb', locals: local_assigns %>

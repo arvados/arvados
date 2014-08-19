@@ -58,6 +58,25 @@ test:
 
   site_name: Workbench:test
 
+  # Enable user profile with one required field
+  user_profile_form_fields:
+    - key: organization
+      type: text
+      form_field_title: Institution
+      form_field_description: Your organization
+      required: true
+    - key: role
+      type: select
+      form_field_title: Your role
+      form_field_description: Choose the category that best describes your role in your organization.
+      options:
+        - Bio-informatician
+        - Computational biologist
+        - Biologist or geneticist
+        - Software developer
+        - IT
+        - Other
+
 common:
   assets.js_compressor: false
   assets.css_compressor: false
@@ -74,3 +93,41 @@ common:
   secret_key_base: false
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
+
+  # Set user_profile_form_fields to enable and configure the user profile page.
+  # Default is set to false. A commented setting with full description is provided below.
+  user_profile_form_fields: false
+
+  # Below is a sample setting of user_profile_form_fields config parameter.
+  # This configuration parameter should be set to either false (to disable) or
+  # to an array as shown below. 
+  # Configure the list of input fields to be displayed in the profile page
+  # using the attribute "key" for each of the input fields.
+  # This sample shows configuration with one required and one optional form fields.
+  # For each of these input fields:
+  #   You can specify "type" as "text" or "select".
+  #   List the "options" to be displayed for each of the "select" menu.
+  #   Set "required" as "true" for any of these fields to make them required.
+  # If any of the required fields are missing in the user's profile, the user will be
+  # redirected to the profile page before they can access any Workbench features.
+  #user_profile_form_fields:
+  #  - key: organization
+  #    type: text
+  #    form_field_title: Institution/Company
+  #    form_field_description: Your organization
+  #    required: true
+  #  - key: role
+  #    type: select
+  #    form_field_title: Your role
+  #    form_field_description: Choose the category that best describes your role in your organization.
+  #    options:
+  #      - Bio-informatician
+  #      - Computational biologist
+  #      - Biologist or geneticist
+  #      - Software developer
+  #      - IT
+  #      - Other
+
+  # Use "user_profile_form_message" to configure the message you want to display on
+  # the profile page.
+  user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.

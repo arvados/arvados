@@ -205,7 +205,17 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    @objects = @objects.select(@select.map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s.to_s}" }.join ", ") if @select
+    if @select
+      # Map attribute names in @select to real column names, resolve
+      # those to fully-qualified SQL column names, and pass the
+      # resulting string to the select method.
+      api_column_map = model_class.attributes_required_columns
+      columns_list = @select.
+        flat_map { |attr| api_column_map[attr] }.
+        uniq.
+        map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
+      @objects = @objects.select(columns_list.join(", "))
+    end
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
     @objects = @objects.offset(@offset)
