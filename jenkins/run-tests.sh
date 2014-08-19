@@ -235,7 +235,9 @@ test_python_sdk() {
 
     cd "$WORKSPACE/sdk/python" \
         && python setup.py test
+    r=$?
     easy_install *.egg
+    return $r
 }
 do_test python_sdk
 
@@ -243,7 +245,9 @@ test_fuse() {
     # Install test dependencies here too, in case run_test_server needs them.
     cd "$WORKSPACE/services/fuse" \
         && python setup.py test
+    r=$?
     easy_install *.egg
+    return $r
 }
 do_test fuse
 
