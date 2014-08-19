@@ -141,29 +141,29 @@ def _start_keep(n, keep_args):
     keep_cmd = ["keepstore",
                 "-volumes={}".format(keep0),
                 "-listen=:{}".format(25107+n),
-                "-pid={}".format("tmp/keep{}.pid".format(n))]
+                "-pid={}".format("tests/tmp/keep{}.pid".format(n))]
 
     for arg, val in keep_args.iteritems():
         keep_cmd.append("{}={}".format(arg, val))
 
     kp0 = subprocess.Popen(keep_cmd)
-    with open("tmp/keep{}.pid".format(n), 'w') as f:
+    with open("tests/tmp/keep{}.pid".format(n), 'w') as f:
         f.write(str(kp0.pid))
 
-    with open("tmp/keep{}.volume".format(n), 'w') as f:
+    with open("tests/tmp/keep{}.volume".format(n), 'w') as f:
         f.write(keep0)
 
 def run_keep(blob_signing_key=None, enforce_permissions=False):
     stop_keep()
 
-    if not os.path.exists("tmp"):
-        os.mkdir("tmp")
+    if not os.path.exists("tests/tmp"):
+        os.mkdir("tests/tmp")
 
     keep_args = {}
     if blob_signing_key:
-        with open("tmp/keep.blob_signing_key", "w") as f:
+        with open("tests/tmp/keep.blob_signing_key", "w") as f:
             f.write(blob_signing_key)
-        keep_args['--permission-key-file'] = 'tmp/keep.blob_signing_key'
+        keep_args['--permission-key-file'] = 'tests/tmp/keep.blob_signing_key'
     if enforce_permissions:
         keep_args['--enforce-permissions'] = 'true'
 
@@ -186,13 +186,13 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s2["uuid"] } }).execute()
 
 def _stop_keep(n):
-    kill_server_pid("tmp/keep{}.pid".format(n), 0)
-    if os.path.exists("tmp/keep{}.volume".format(n)):
-        with open("tmp/keep{}.volume".format(n), 'r') as r:
+    kill_server_pid("tests/tmp/keep{}.pid".format(n), 0)
+    if os.path.exists("tests/tmp/keep{}.volume".format(n)):
+        with open("tests/tmp/keep{}.volume".format(n), 'r') as r:
             shutil.rmtree(r.read(), True)
-        os.unlink("tmp/keep{}.volume".format(n))
-    if os.path.exists("tmp/keep.blob_signing_key"):
-        os.remove("tmp/keep.blob_signing_key")
+        os.unlink("tests/tmp/keep{}.volume".format(n))
+    if os.path.exists("tests/tmp/keep.blob_signing_key"):
+        os.remove("tests/tmp/keep.blob_signing_key")
 
 def stop_keep():
     _stop_keep(0)
@@ -201,15 +201,16 @@ def stop_keep():
 def run_keep_proxy(auth):
     stop_keep_proxy()
 
-    if not os.path.exists("tmp"):
-        os.mkdir("tmp")
+    if not os.path.exists("tests/tmp"):
+        os.mkdir("tests/tmp")
 
     os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
     os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
     os.environ["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[auth]["api_token"]
 
     kp0 = subprocess.Popen(["keepproxy",
-                            "-pid=tmp/keepproxy.pid", "-listen=:{}".format(25101)])
+                            "-pid=tests/tmp/keepproxy.pid",
+                            "-listen=:{}".format(25101)])
 
     authorize_with("admin")
     api = arvados.api('v1', cache=False)
@@ -218,7 +219,7 @@ def run_keep_proxy(auth):
     arvados.config.settings()["ARVADOS_KEEP_PROXY"] = "http://localhost:25101"
 
 def stop_keep_proxy():
-    kill_server_pid("tmp/keepproxy.pid", 0)
+    kill_server_pid("tests/tmp/keepproxy.pid", 0)
 
 def fixture(fix):
     '''load a fixture yaml file'''
