@@ -17,12 +17,12 @@ where link_class='name' and collections.uuid is null
 }
       links = ActiveRecord::Base.connection.select_all %{
 select links.uuid, head_uuid, tail_uuid, links.name,
-manifest_text, links.created_at, links.modified_at, links.modified_by
+manifest_text, links.created_at, links.modified_at, links.modified_by_client_uuid, links.modified_by_user_uuid
 #{from_clause}
 }
       links.each do |d|
         ActiveRecord::Base.connection.execute %{
-insert into collections (uuid, portable_data_hash, owner_uuid, name, manifest_text, created_at, modified_at, modified_by)
+insert into collections (uuid, portable_data_hash, owner_uuid, name, manifest_text, created_at, modified_at, modified_by_client_uuid, modified_by_user_uuid, updated_at)
 values (#{ActiveRecord::Base.connection.quote Collection.generate_uuid},
 #{ActiveRecord::Base.connection.quote d['head_uuid']},
 #{ActiveRecord::Base.connection.quote d['tail_uuid']},
@@ -30,7 +30,9 @@ values (#{ActiveRecord::Base.connection.quote Collection.generate_uuid},
 #{ActiveRecord::Base.connection.quote d['manifest_text']},
 #{ActiveRecord::Base.connection.quote d['created_at']},
 #{ActiveRecord::Base.connection.quote d['modified_at']},
-#{ActiveRecord::Base.connection.quote d['modified_by']})
+#{ActiveRecord::Base.connection.quote d['modified_by_client_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_by_user_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_at']})
 }
       end
       ActiveRecord::Base.connection.execute "delete from links where links.uuid in (select links.uuid #{from_clause})"
@@ -47,14 +49,16 @@ select links.uuid, head_uuid, tail_uuid, manifest_text, links.created_at, links.
 }
       links.each do |d|
         ActiveRecord::Base.connection.execute %{
-insert into collections (uuid, portable_data_hash, owner_uuid, manifest_text, created_at, modified_at, modified_by)
+insert into collections (uuid, portable_data_hash, owner_uuid, manifest_text, created_at, modified_at, modified_by_client_uuid, modified_by_user_uuid, updated_at)
 values (#{ActiveRecord::Base.connection.quote Collection.generate_uuid},
 #{ActiveRecord::Base.connection.quote d['head_uuid']},
 #{ActiveRecord::Base.connection.quote d['tail_uuid']},
 #{ActiveRecord::Base.connection.quote d['manifest_text']},
 #{ActiveRecord::Base.connection.quote d['created_at']},
 #{ActiveRecord::Base.connection.quote d['modified_at']},
-#{ActiveRecord::Base.connection.quote d['modified_by']})
+#{ActiveRecord::Base.connection.quote d['modified_by_client_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_by_user_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_at']})
 }
       end
       ActiveRecord::Base.connection.execute "delete from links where links.uuid in (select links.uuid #{from_clause})"
@@ -68,14 +72,16 @@ where uuid is null and portable_data_hash not in (select portable_data_hash from
 }
       links.each do |d|
         ActiveRecord::Base.connection.execute %{
-insert into collections (uuid, portable_data_hash, owner_uuid, manifest_text, created_at, modified_at, modified_by)
+insert into collections (uuid, portable_data_hash, owner_uuid, manifest_text, created_at, modified_at, modified_by_client_uuid, modified_by_user_uuid, updated_at)
 values (#{ActiveRecord::Base.connection.quote Collection.generate_uuid},
 #{ActiveRecord::Base.connection.quote d['portable_data_hash']},
 #{ActiveRecord::Base.connection.quote d['owner_uuid']},
 #{ActiveRecord::Base.connection.quote d['manifest_text']},
 #{ActiveRecord::Base.connection.quote d['created_at']},
 #{ActiveRecord::Base.connection.quote d['modified_at']},
-#{ActiveRecord::Base.connection.quote d['modified_by']})
+#{ActiveRecord::Base.connection.quote d['modified_by_client_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_by_user_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_at']})
 }
       end
     end
@@ -98,13 +104,13 @@ from links
 where head_uuid like '________________________________+%' and tail_uuid like '________________________________+%' and links.link_class = 'provenance'
 }
       links = ActiveRecord::Base.connection.select_all %{
-select links.uuid, head_uuid, tail_uuid, links.created_at, links.modified_at, links.modified_by, links.owner_uuid
+select links.uuid, head_uuid, tail_uuid, links.created_at, links.modified_at, links.modified_by_client_uuid, links.modified_by_user_uuid, links.owner_uuid
 #{from_clause}
 }
       links.each do |d|
         newuuid = Job.generate_uuid
         ActiveRecord::Base.connection.execute %{
-insert into jobs (uuid, script_parameters, output, running, success, created_at, modified_at, modified_by, owner_uuid)
+insert into jobs (uuid, script_parameters, output, running, success, created_at, modified_at, modified_by_client_uuid, modified_by_user_uuid, owner_uuid, updated_at)
 values (#{ActiveRecord::Base.connection.quote newuuid},
 #{ActiveRecord::Base.connection.quote "---\ninput: "+d['tail_uuid']},
 #{ActiveRecord::Base.connection.quote d['head_uuid']},
@@ -112,8 +118,10 @@ values (#{ActiveRecord::Base.connection.quote newuuid},
 #{ActiveRecord::Base.connection.quote true},
 #{ActiveRecord::Base.connection.quote d['created_at']},
 #{ActiveRecord::Base.connection.quote d['modified_at']},
-#{ActiveRecord::Base.connection.quote d['modified_by']},
-#{ActiveRecord::Base.connection.quote d['owner_uuid']})
+#{ActiveRecord::Base.connection.quote d['modified_by_client_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_by_user_uuid']},
+#{ActiveRecord::Base.connection.quote d['owner_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_at']})
 }
       end
       ActiveRecord::Base.connection.execute "delete from links where links.uuid in (select links.uuid #{from_clause})"
@@ -126,12 +134,12 @@ where collections.uuid is not null
 }
       links = ActiveRecord::Base.connection.select_all %{
 select links.uuid, collections.uuid as collectionuuid, tail_uuid, link_class, links.properties,
-links.name, links.created_at, links.modified_at, links.modified_by, links.owner_uuid
+links.name, links.created_at, links.modified_at, links.modified_by_client_uuid, links.modified_by_user_uuid, links.owner_uuid
 #{from_clause}
 }
       links.each do |d|
         ActiveRecord::Base.connection.execute %{
-insert into links (uuid, head_uuid, tail_uuid, link_class, name, properties, created_at, modified_at, modified_by, owner_uuid)
+insert into links (uuid, head_uuid, tail_uuid, link_class, name, properties, created_at, modified_at, modified_by_client_uuid, modified_by_user_uuid, owner_uuid, updated_at)
 values (#{ActiveRecord::Base.connection.quote Link.generate_uuid},
 #{ActiveRecord::Base.connection.quote d['collectionuuid']},
 #{ActiveRecord::Base.connection.quote d['tail_uuid']},
@@ -140,8 +148,10 @@ values (#{ActiveRecord::Base.connection.quote Link.generate_uuid},
 #{ActiveRecord::Base.connection.quote d['properties']},
 #{ActiveRecord::Base.connection.quote d['created_at']},
 #{ActiveRecord::Base.connection.quote d['modified_at']},
-#{ActiveRecord::Base.connection.quote d['modified_by']},
-#{ActiveRecord::Base.connection.quote d['owner_uuid']})
+#{ActiveRecord::Base.connection.quote d['modified_by_client_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_by_user_uuid']},
+#{ActiveRecord::Base.connection.quote d['owner_uuid']},
+#{ActiveRecord::Base.connection.quote d['modified_at']})
 }
       end
       ActiveRecord::Base.connection.execute "delete from links where links.uuid in (select links.uuid #{from_clause})"
