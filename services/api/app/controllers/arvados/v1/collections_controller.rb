@@ -171,8 +171,8 @@ class Arvados::V1::CollectionsController < ApplicationController
         end
       elsif rsc == Collection
         if c = Collection.readable_by(*@read_users).where(uuid: uuid).limit(1).first
-          visited[uuid] = c.as_api_response
           search_edges(visited, c.portable_data_hash, direction)
+          visited[c.portable_data_hash] = c.as_api_response
         end
       elsif rsc != nil
         rsc.where(uuid: uuid).each do |r|

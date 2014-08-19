@@ -168,7 +168,7 @@ CREATE TABLE collections (
     manifest_text text,
     name character varying(255),
     description character varying(255),
-    properties character varying(255),
+    properties text,
     expire_time date
 );
 
