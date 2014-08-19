@@ -190,14 +190,14 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
     end
 
-    assert page.has_text? profile_message[0,25]
+    assert page.has_text? profile_message.gsub(/<.*?>/,'')
     assert page.has_text? required_field_title
     page.find_field('user[prefs][:profile][:'+required_field_key+']').set 'value to fill required field'
 
     click_button "Save profile"
     # profile saved and in profile page now with success
     assert page.has_text? 'Thank you for filling in your profile'
-    click_button 'Access Arvados Workbench'
+    click_link 'Back to work'
 
     # profile saved and in home page now
     assert page.has_text? 'My projects'
@@ -213,8 +213,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         page.find('.glyphicon-search').click
       end
 
-      # we should now be in the user's page as a result of search
-      assert page.has_text? user['first_name']
+      # we should now be in the user's home project as a result of search
+      assert_selector "#Data_collections[data-object-uuid='#{user['uuid']}']"
 
       # let's search again for an invalid valid uuid
       within('.navbar-fixed-top') do

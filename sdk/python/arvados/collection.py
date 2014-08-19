@@ -314,8 +314,8 @@ class CollectionWriter(object):
                  self._current_file_pos,
                  self._current_stream_name))
         self._current_stream_files += [[self._current_file_pos,
-                                       self._current_stream_length - self._current_file_pos,
-                                       self._current_file_name]]
+                                        self._current_stream_length - self._current_file_pos,
+                                        self._current_file_name]]
         self._current_file_pos = self._current_stream_length
 
     def start_new_stream(self, newstreamname='.'):
@@ -344,8 +344,8 @@ class CollectionWriter(object):
             if len(self._current_stream_locators) == 0:
                 self._current_stream_locators += [config.EMPTY_BLOCK_LOCATOR]
             self._finished_streams += [[self._current_stream_name,
-                                       self._current_stream_locators,
-                                       self._current_stream_files]]
+                                        self._current_stream_locators,
+                                        self._current_stream_files]]
         self._current_stream_files = []
         self._current_stream_length = 0
         self._current_stream_locators = []
@@ -354,9 +354,8 @@ class CollectionWriter(object):
         self._current_file_name = None
 
     def finish(self):
-        # Send the stripped manifest to Keep, to ensure that we use the
-        # same UUID regardless of what hints are used on the collection.
-        return Keep.put(self.stripped_manifest())
+        # Store the manifest in Keep and return its locator.
+        return Keep.put(self.manifest_text())
 
     def stripped_manifest(self):
         """

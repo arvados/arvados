@@ -153,47 +153,35 @@ class User < ArvadosModel
   # delete user signatures, login, repo, and vm perms, and mark as inactive
   def unsetup
     # delete oid_login_perms for this user
-    oid_login_perms = Link.where(tail_uuid: self.email,
-                                 link_class: 'permission',
-                                 name: 'can_login')
-    oid_login_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.email,
+                     link_class: 'permission',
+                     name: 'can_login')
 
     # delete repo_perms for this user
-    repo_perms = Link.where(tail_uuid: self.uuid,
-                            link_class: 'permission',
-                            name: 'can_manage')
-    repo_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.uuid,
+                     link_class: 'permission',
+                     name: 'can_manage')
 
     # delete vm_login_perms for this user
-    vm_login_perms = Link.where(tail_uuid: self.uuid,
-                                link_class: 'permission',
-                                name: 'can_login')
-    vm_login_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.uuid,
+                     link_class: 'permission',
+                     name: 'can_login')
 
-    # delete "All users' group read permissions for this user
+    # delete "All users" group read permissions for this user
     group = Group.where(name: 'All users').select do |g|
       g[:uuid].match /-f+$/
     end.first
-    group_perms = Link.where(tail_uuid: self.uuid,
-                             head_uuid: group[:uuid],
-                             link_class: 'permission',
-                             name: 'can_read')
-    group_perms.each do |perm|
-      Link.delete perm
-    end
+    Link.destroy_all(tail_uuid: self.uuid,
+                     head_uuid: group[:uuid],
+                     link_class: 'permission',
+                     name: 'can_read')
 
     # delete any signatures by this user
-    signed_uuids = Link.where(link_class: 'signature',
-                              tail_uuid: self.uuid)
-    signed_uuids.each do |sign|
-      Link.delete sign
-    end
+    Link.destroy_all(link_class: 'signature',
+                     tail_uuid: self.uuid)
+
+    # delete user preferences (including profile)
+    self.prefs = {}
 
     # mark the user as inactive
     self.is_active = false

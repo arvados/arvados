@@ -447,7 +447,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         # Register the resulting collection in Arvados.
         collection = arvados.api().collections().create(
             body={
-                'uuid': writer.finish(),
                 'manifest_text': writer.manifest_text(),
                 },
             ).execute()

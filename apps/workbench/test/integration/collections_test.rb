@@ -13,19 +13,17 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     page.assert_no_selector "div[data-persistent-state='#{oldstate}']"
   end
 
-  ['/collections', '/users/welcome'].each do |path|
-    test "Flip persistent switch at #{path}" do
-      Capybara.current_driver = Capybara.javascript_driver
-      uuid = api_fixture('collections')['foo_file']['uuid']
-      visit page_with_token('active', path)
-      within "tr[data-object-uuid='#{uuid}']" do
-        change_persist 'cache', 'persistent'
-      end
-      # Refresh page and make sure the change was committed.
-      visit current_path
-      within "tr[data-object-uuid='#{uuid}']" do
-        change_persist 'persistent', 'cache'
-      end
+  test "Flip persistent switch at /collections" do
+    Capybara.current_driver = Capybara.javascript_driver
+    uuid = api_fixture('collections')['foo_file']['uuid']
+    visit page_with_token('active', '/collections')
+    within "tr[data-object-uuid='#{uuid}']" do
+      change_persist 'cache', 'persistent'
+    end
+    # Refresh page and make sure the change was committed.
+    visit current_path
+    within "tr[data-object-uuid='#{uuid}']" do
+      change_persist 'persistent', 'cache'
     end
   end
 
