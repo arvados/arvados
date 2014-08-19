@@ -126,14 +126,14 @@ clear_temp() {
     done
 }
 
-install_docs() {
+test_docs() {
     cd "$WORKSPACE/doc"
     bundle install --deployment
     rm -rf .site
     # Make sure python-epydoc is installed or the next line won't do much good!
     PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
 }
-do_install docs
+do_test docs
 
 test_doclinkchecker() {
     cd "$WORKSPACE/doc"
@@ -234,16 +234,16 @@ test_python_sdk() {
     # the .egg files that setup.py downloads.
 
     cd "$WORKSPACE/sdk/python" \
-        && python setup.py test \
-        && easy_install *.egg
+        && python setup.py test
+    easy_install *.egg
 }
 do_test python_sdk
 
 test_fuse() {
     # Install test dependencies here too, in case run_test_server needs them.
     cd "$WORKSPACE/services/fuse" \
-        && python setup.py test \
-        && easy_install *.egg
+        && python setup.py test
+    easy_install *.egg
 }
 do_test fuse
 
