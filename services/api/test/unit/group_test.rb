@@ -14,7 +14,6 @@ class GroupTest < ActiveSupport::TestCase
     # Use the group as the owner of a new object
     s = Specimen.
       create(owner_uuid: groups(:bad_group_has_ownership_cycle_b).uuid)
-    puts s.errors.messages
     assert s.valid?, "ownership should pass validation #{s.errors.messages}"
     assert_equal false, s.save, "should not save object with #{g.uuid} as owner"
 
