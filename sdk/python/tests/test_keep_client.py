@@ -126,7 +126,7 @@ class KeepPermissionTestCase(unittest.TestCase):
 
         # Unauthenticated GET for a signed locator => NotFound
         # Unauthenticated GET for an unsigned locator => NotFound
-        del arvados.config.settings()["ARVADOS_API_TOKEN"]
+        arvados.keep.global_client_object.api_token = ''
         self.assertRaises(arvados.errors.NotFoundError,
                           arvados.Keep.get,
                           bar_locator)
@@ -192,7 +192,7 @@ class KeepOptionalPermission(unittest.TestCase):
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("foo"): ' + signed_locator)
 
-        del arvados.config.settings()["ARVADOS_API_TOKEN"]
+        arvados.keep.global_client_object.api_token = ''
         self.assertEqual(arvados.Keep.get(signed_locator),
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
@@ -207,7 +207,7 @@ class KeepOptionalPermission(unittest.TestCase):
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("foo"): ' + signed_locator)
 
-        del arvados.config.settings()["ARVADOS_API_TOKEN"]
+        arvados.keep.global_client_object.api_token = ''
         self.assertEqual(arvados.Keep.get("acbd18db4cc2f85cedef654fccc4a4d8"),
                          'foo',
                          'wrong content from Keep.get(md5("foo"))')
