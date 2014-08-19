@@ -31,28 +31,30 @@ import arvados.util
 
 class KeepLocator(object):
     EPOCH_DATETIME = datetime.datetime.utcfromtimestamp(0)
+    HINT_RE = re.compile(r'^[A-Z][A-Za-z0-9@_-]+$')
 
     def __init__(self, locator_str):
-        self.size = None
-        self.loc_hint = None
+        self.hints = []
         self._perm_sig = None
         self._perm_expiry = None
         pieces = iter(locator_str.split('+'))
         self.md5sum = next(pieces)
+        try:
+            self.size = int(next(pieces))
+        except StopIteration:
+            self.size = None
         for hint in pieces:
-            if hint.startswith('A'):
-                self.parse_permission_hint(hint)
-            elif hint.startswith('K'):
-                self.loc_hint = hint  # FIXME
-            elif hint.isdigit():
-                self.size = int(hint)
-            else:
+            if self.HINT_RE.match(hint) is None:
                 raise ValueError("unrecognized hint data {}".format(hint))
+            elif hint.startswith('A'):
+                self.parse_permission_hint(hint)
+            else:
+                self.hints.append(hint)
 
     def __str__(self):
         return '+'.join(
-            str(s) for s in [self.md5sum, self.size, self.loc_hint,
-                             self.permission_hint()]
+            str(s) for s in [self.md5sum, self.size,
+                             self.permission_hint()] + self.hints
             if s is not None)
 
     def _make_hex_prop(name, length):
