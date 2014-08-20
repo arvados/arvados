@@ -167,8 +167,8 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
 
     keep_args = {}
     if blob_signing_key:
-        with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key", "w")) as f:
-            keep_args['--permission-key-file'] = f.filename
+        with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"), "w") as f:
+            keep_args['--permission-key-file'] = f.name
             f.write(blob_signing_key)
     if enforce_permissions:
         keep_args['--enforce-permissions'] = 'true'
