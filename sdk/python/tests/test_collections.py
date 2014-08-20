@@ -11,7 +11,8 @@ import subprocess
 import tempfile
 import unittest
 
-from arvados_testutil import ArvadosKeepLocalStoreTestCase
+import run_test_server
+from arvados_testutil import ArvadosBaseTestCase
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
     KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.
@@ -20,7 +21,15 @@ class TestResumableWriter(arvados.ResumableCollectionWriter):
         return self.dump_state(copy.deepcopy)
 
 
-class ArvadosCollectionsTest(ArvadosKeepLocalStoreTestCase):
+class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
+                             ArvadosBaseTestCase):
+    MAIN_SERVER = {}
+
+    @classmethod
+    def setUpClass(cls):
+        super(ArvadosCollectionsTest, cls).setUpClass()
+        run_test_server.authorize_with('active')
+
     def write_foo_bar_baz(self):
         cw = arvados.CollectionWriter()
         self.assertEqual(cw.current_stream_name(), '.',
