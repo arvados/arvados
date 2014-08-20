@@ -12,8 +12,8 @@ class User < ArvadosModel
   before_update :prevent_inactive_admin
   before_create :check_auto_admin
   after_create :add_system_group_permission_link
-  after_create :send_admin_notifications
   after_create :auto_setup_new_user
+  after_create :send_admin_notifications
   after_update :send_profile_created_notification
 
 
@@ -423,28 +423,27 @@ class User < ArvadosModel
 
   # Automatically setup new user during creation
   def auto_setup_new_user
-    username = self.email.partition('@')[0] if self.email
-
     blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist.split(', ')
+
+    username = self.email.partition('@')[0] if self.email
 
     if !Rails.configuration.auto_setup_new_users ||
        !(/^[_.A-Za-z0-9][-\@_.A-Za-z0-9]*\$?$/.match(self.email)) ||
        blacklisted_usernames.include?(username)
       return true
     else
-      # Derive repo name and username using the string before @ in user's email
-      # If a repo or vm login link with this prefix exists, generate unique string by appending a random number
       username = derive_unique_username username
-
       # setup user
-      setup_repo_vm_links(username, Rails.configuration.auto_setup_new_users_with_vm_uuid, Rails.configuration.default_openid_prefix)
+      setup_repo_vm_links(username, Rails.configuration.auto_setup_new_users_with_vm_uuid,
+                          Rails.configuration.default_openid_prefix)
     end
   end
 
-  # Derive repo name and username using the string before @ in user's email
-  # If a repo or vm login link with this prefix exists, generate unique string by appending a random number
+  # Derive repo name and vm username using the string before @ in user's email
+  # If a repo or vm login link with this username exists,
+  # generate unique string by appending a random number
   def derive_unique_username username
-      # no need to verify if vm login link or repo exists, if they both are not being created
+      # If repo and vm login link are not being created, no need to generate a unique username
       vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
       if !vm_uuid && !Rails.configuration.auto_setup_new_users_with_repository
         return username

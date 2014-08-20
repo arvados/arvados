@@ -153,10 +153,14 @@ class UserTest < ActiveSupport::TestCase
     [false, [], [], '@example.com', true, true, false],
     [false, [], [], '^^incorrect_format@example.com', true, true, false],
 
-#    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'repeat_username@example.com', true, true, true],
-#    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'repeat_username@example.com', true, false, true],
-#    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'with existing repo name', true, false, true],
-#    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'with existing vm login name', true, false, true],
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', true, true, true],  # existing repository name 'foo'
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', true, false, true],  # existing repository name 'foo'
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', false, true, true],  # existing repository name 'foo'
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', false, false, true],  # existing repository name 'foo', but we are not creating repo or login link
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, true, true], # existing vm login name
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, false, true], # existing vm login name
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', false, true, true], # existing vm login name
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', false, false, true], # existing vm login name, but we are not creating repo or login link
   ].each do |active, active_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, valid_email_format|
     test "create new user with auto setup #{email} #{auto_setup_vm} #{auto_setup_repo}" do
       auto_setup_new_users = Rails.configuration.auto_setup_new_users
@@ -458,11 +462,14 @@ class UserTest < ActiveSupport::TestCase
 
       # check repo
       if Rails.configuration.auto_setup_new_users_with_repository
-        repo = Repository.where(name: username).first
-        assert_not_nil repo, 'repository not found'
-        verify_link_exists true, repo[:uuid], user.uuid, 'permission', 'can_manage', nil, nil
-      else
-        verify_link_exists false, nil, user.uuid, 'permission', 'can_manage', nil, nil
+        repos = Repository.where('name like ?', "%#{username}%")
+        assert_not_nil repos, 'repository not found'
+        assert_equal true, repos.any?, 'repository not found'
+        repo_uuids = []
+        repos.each do |repo|
+          repo_uuids << repo[:uuid]
+        end
+        verify_link_exists true, repo_uuids, user.uuid, 'permission', 'can_manage', nil, nil
       end
     end
 
@@ -509,9 +516,11 @@ class UserTest < ActiveSupport::TestCase
                            tail_uuid: tail_uuid,
                            link_class: link_class,
                            name: link_name)
-    assert_equal link_exists, all_links.any?, "Link not found"
+    assert_equal link_exists, all_links.any?, "Link #{'not' if link_exists} found #{property_value}"
     if link_exists && property_name && property_value
-      assert_equal property_value, all_links.first.properties[property_name], 'Property not found in link'
+      all_links.each do |link|
+        assert_equal true, all_links.first.properties[property_name].start_with?(property_value), 'Property not found in link'
+      end
     end
   end
 
