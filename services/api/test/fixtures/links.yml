@@ -9,7 +9,7 @@ user_agreement_required:
   tail_uuid: zzzzz-tpzed-000000000000000
   link_class: signature
   name: require
-  head_uuid: 4n8aq-4zz18-t68oksiu9m80s4y
+  head_uuid: zzzzz-4zz18-t68oksiu9m80s4y
   properties: {}
 
 user_agreement_readable:
@@ -23,7 +23,7 @@ user_agreement_readable:
   tail_uuid: zzzzz-j7d0g-fffffffffffffff
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-t68oksiu9m80s4y
+  head_uuid: zzzzz-4zz18-t68oksiu9m80s4y
   properties: {}
 
 active_user_member_of_all_users_group:
@@ -65,7 +65,7 @@ user_agreement_signed_by_active:
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: signature
   name: click
-  head_uuid: 4n8aq-4zz18-t68oksiu9m80s4y
+  head_uuid: zzzzz-4zz18-t68oksiu9m80s4y
   properties: {}
 
 user_agreement_signed_by_inactive:
@@ -79,7 +79,7 @@ user_agreement_signed_by_inactive:
   tail_uuid: zzzzz-tpzed-7sg468ezxwnodxs
   link_class: signature
   name: click
-  head_uuid: 4n8aq-4zz18-t68oksiu9m80s4y
+  head_uuid: zzzzz-4zz18-t68oksiu9m80s4y
   properties: {}
 
 spectator_user_member_of_all_users_group:
@@ -135,7 +135,7 @@ foo_file_readable_by_active:
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-znfnqtbbv4spc3w
+  head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   properties: {}
 
 foo_file_readable_by_active_duplicate_permission:
@@ -149,7 +149,7 @@ foo_file_readable_by_active_duplicate_permission:
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-znfnqtbbv4spc3w
+  head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   properties: {}
 
 foo_file_readable_by_active_redundant_permission_via_private_group:
@@ -163,7 +163,7 @@ foo_file_readable_by_active_redundant_permission_via_private_group:
   tail_uuid: zzzzz-j7d0g-22xp1wpjul508rk
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-znfnqtbbv4spc3w
+  head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   properties: {}
 
 foo_file_readable_by_aproject:
@@ -177,7 +177,7 @@ foo_file_readable_by_aproject:
   tail_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-znfnqtbbv4spc3w
+  head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   properties: {}
 
 bar_file_readable_by_active:
@@ -191,7 +191,7 @@ bar_file_readable_by_active:
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-ehbhgtheo8909or
+  head_uuid: zzzzz-4zz18-ehbhgtheo8909or
   properties: {}
 
 bar_file_readable_by_spectator:
@@ -205,7 +205,7 @@ bar_file_readable_by_spectator:
   tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-ehbhgtheo8909or
+  head_uuid: zzzzz-4zz18-ehbhgtheo8909or
   properties: {}
 
 baz_file_publicly_readable:
@@ -219,7 +219,7 @@ baz_file_publicly_readable:
   tail_uuid: zzzzz-j7d0g-fffffffffffffff
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-y9vne9npefyxh8g
+  head_uuid: zzzzz-4zz18-y9vne9npefyxh8g
   properties: {}
 
 barbaz_job_readable_by_spectator:
@@ -358,7 +358,7 @@ foo_collection_tag:
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
   tail_uuid: ~
-  head_uuid: 4n8aq-4zz18-znfnqtbbv4spc3w
+  head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   link_class: tag
   name: foo_tag
   properties: {}
@@ -388,7 +388,7 @@ multilevel_collection_1_readable_by_active:
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-pyw8yp9g3pr7irn
+  head_uuid: zzzzz-4zz18-pyw8yp9g3pr7irn
   properties: {}
 
 has_symbol_keys_in_database_somehow:
@@ -464,7 +464,7 @@ active_user_permission_to_docker_image_collection:
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-1v45jub259sjjgb
+  head_uuid: zzzzz-4zz18-1v45jub259sjjgb
   properties: {}
 
 active_user_permission_to_unlinked_docker_image_collection:
@@ -478,7 +478,7 @@ active_user_permission_to_unlinked_docker_image_collection:
   tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   link_class: permission
   name: can_read
-  head_uuid: 4n8aq-4zz18-d0d8z5wofvfgwad
+  head_uuid: zzzzz-4zz18-d0d8z5wofvfgwad
   properties: {}
 
 docker_image_collection_hash:
@@ -492,7 +492,7 @@ docker_image_collection_hash:
   link_class: docker_image_hash
   name: d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678
   tail_uuid: ~
-  head_uuid: 4n8aq-4zz18-1v45jub259sjjgb
+  head_uuid: zzzzz-4zz18-1v45jub259sjjgb
   properties:
     image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
@@ -507,7 +507,7 @@ docker_image_collection_tag:
   link_class: docker_image_repo+tag
   name: arvados/apitestfixture:latest
   tail_uuid: ~
-  head_uuid: 4n8aq-4zz18-1v45jub259sjjgb
+  head_uuid: zzzzz-4zz18-1v45jub259sjjgb
   properties:
     image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
@@ -522,7 +522,7 @@ docker_image_collection_tag2:
   link_class: docker_image_repo+tag
   name: arvados/apitestfixture:june10
   tail_uuid: ~
-  head_uuid: 4n8aq-4zz18-1v45jub259sjjgb
+  head_uuid: zzzzz-4zz18-1v45jub259sjjgb
   properties:
     image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
@@ -541,7 +541,7 @@ ancient_docker_image_collection_hash:
   link_class: docker_image_hash
   name: d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678
   tail_uuid: ~
-  head_uuid: 4n8aq-4zz18-t68oksiu9m80s4y
+  head_uuid: zzzzz-4zz18-t68oksiu9m80s4y
   properties:
     image_timestamp: "2010-06-10T14:30:00.184019565Z"
 

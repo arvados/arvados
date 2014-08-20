@@ -1,5 +1,5 @@
 user_agreement:
-  uuid: 4n8aq-4zz18-t68oksiu9m80s4y
+  uuid: zzzzz-4zz18-t68oksiu9m80s4y
   portable_data_hash: b519d9cb706a29fc7ea24dbea2f05851+249025
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2013-12-26T19:22:54Z
@@ -11,7 +11,7 @@ user_agreement:
   name: user_agreement
 
 foo_file:
-  uuid: 4n8aq-4zz18-znfnqtbbv4spc3w
+  uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
@@ -23,7 +23,7 @@ foo_file:
   name: foo_file
 
 bar_file:
-  uuid: 4n8aq-4zz18-ehbhgtheo8909or
+  uuid: zzzzz-4zz18-ehbhgtheo8909or
   portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
@@ -35,7 +35,7 @@ bar_file:
   name: bar_file
 
 baz_file:
-  uuid: 4n8aq-4zz18-y9vne9npefyxh8g
+  uuid: zzzzz-4zz18-y9vne9npefyxh8g
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
@@ -47,7 +47,7 @@ baz_file:
   name: baz_file
 
 multilevel_collection_1:
-  uuid: 4n8aq-4zz18-pyw8yp9g3pr7irn
+  uuid: zzzzz-4zz18-pyw8yp9g3pr7irn
   portable_data_hash: 1fd08fc162a5c6413070a8bd0bffc818+150
   owner_uuid: qr1hi-tpzed-000000000000000
   created_at: 2014-02-03T17:22:54Z
@@ -59,7 +59,7 @@ multilevel_collection_1:
   name: multilevel_collection_1
 
 multilevel_collection_2:
-  uuid: 4n8aq-4zz18-45xf9hw1sxkhl6q
+  uuid: zzzzz-4zz18-45xf9hw1sxkhl6q
   # All of this collection's files are deep in subdirectories.
   portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
   owner_uuid: qr1hi-tpzed-000000000000000
@@ -72,7 +72,7 @@ multilevel_collection_2:
   name: multilevel_collection_2
 
 docker_image:
-  uuid: 4n8aq-4zz18-1v45jub259sjjgb
+  uuid: zzzzz-4zz18-1v45jub259sjjgb
   # This Collection has links with Docker image metadata.
   portable_data_hash: fa3c1a9cb6783f85f2ecda037e07b8c3+167
   owner_uuid: qr1hi-tpzed-000000000000000
@@ -85,7 +85,7 @@ docker_image:
   name: docker_image
 
 unlinked_docker_image:
-  uuid: 4n8aq-4zz18-d0d8z5wofvfgwad
+  uuid: zzzzz-4zz18-d0d8z5wofvfgwad
   # This Collection contains a file that looks like a Docker image,
   # but has no Docker metadata links pointing to it.
   portable_data_hash: 9ae44d5792468c58bcf85ce7353c7027+124
@@ -99,7 +99,7 @@ unlinked_docker_image:
   name: unlinked_docker_image
 
 empty:
-  uuid: 4n8aq-4zz18-gs9ooj1h9sd5mde
+  uuid: zzzzz-4zz18-gs9ooj1h9sd5mde
   # Empty collection owned by anonymous_group is added with rake db:seed.
   portable_data_hash: d41d8cd98f00b204e9800998ecf8427e+0
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -112,17 +112,17 @@ empty:
   name: empty_collection
 
 foo_collection_in_aproject:
-  uuid: 4n8aq-4zz18-fy296fx3hot09f7
+  uuid: zzzzz-4zz18-fy296fx3hot09f7
   portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   created_at: 2014-04-21 15:37:48 -0400
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
   manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n"
-  name: "4n8aq-4zz18-znfnqtbbv4spc3w added sometime"
+  name: "zzzzz-4zz18-znfnqtbbv4spc3w added sometime"
 
 user_agreement_in_anonymously_accessible_project:
-  uuid: 4n8aq-4zz18-uukreo9rbgwsujr
+  uuid: zzzzz-4zz18-uukreo9rbgwsujr
   portable_data_hash: b519d9cb706a29fc7ea24dbea2f05851+249025
   owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   created_at: 2014-06-13 20:42:26 -0800
@@ -132,17 +132,17 @@ user_agreement_in_anonymously_accessible_project:
   name: GNU General Public License, version 3
 
 baz_collection_name_in_asubproject:
-  uuid: 4n8aq-4zz18-lsitwcf548ui4oe
+  uuid: zzzzz-4zz18-lsitwcf548ui4oe
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   created_at: 2014-04-21 15:37:48 -0400
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
   manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
-  name: "4n8aq-4zz18-lsitwcf548ui4oe added sometime"
+  name: "zzzzz-4zz18-lsitwcf548ui4oe added sometime"
 
 empty_collection_name_in_active_user_home_project:
-  uuid: 4n8aq-4zz18-5qa38qghh1j3nvv
+  uuid: zzzzz-4zz18-5qa38qghh1j3nvv
   portable_data_hash: d41d8cd98f00b204e9800998ecf8427e+0
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-08-06 22:11:51.242392533 Z
@@ -151,7 +151,7 @@ empty_collection_name_in_active_user_home_project:
   name: Empty collection
 
 baz_file_in_asubproject:
-  uuid: 4n8aq-4zz18-0mri2x4u7ftngez
+  uuid: zzzzz-4zz18-0mri2x4u7ftngez
   portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
   owner_uuid: zzzzz-j7d0g-axqo7eu9pwvna1x
   created_at: 2014-02-03T17:22:54Z
