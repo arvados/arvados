@@ -27,20 +27,6 @@ class ArvadosBaseTestCase(unittest.TestCase):
             basedir = '.'
         return open(os.path.join(basedir, 'data', filename))
 
-
-class ArvadosKeepLocalStoreTestCase(ArvadosBaseTestCase):
-    def setUp(self):
-        super(ArvadosKeepLocalStoreTestCase, self).setUp()
-        self._orig_keep_local_store = os.environ.get('KEEP_LOCAL_STORE')
-        os.environ['KEEP_LOCAL_STORE'] = self.make_tmpdir()
-
-    def tearDown(self):
-        if self._orig_keep_local_store is None:
-            del os.environ['KEEP_LOCAL_STORE']
-        else:
-            os.environ['KEEP_LOCAL_STORE'] = self._orig_keep_local_store
-        super(ArvadosKeepLocalStoreTestCase, self).tearDown()
-
     def build_directory_tree(self, tree):
         tree_root = self.make_tmpdir()
         for leaf in tree:
