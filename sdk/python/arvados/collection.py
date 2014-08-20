@@ -27,6 +27,8 @@ import config
 import errors
 import util
 
+_logger = logging.getLogger('arvados.collection')
+
 def normalize_stream(s, stream):
     stream_tokens = [s]
     sortedfiles = list(stream.keys())
@@ -91,10 +93,10 @@ def normalize(collection):
 
 class CollectionReader(object):
     def __init__(self, manifest_locator_or_text):
-        if re.search(r'^[a-f0-9]{32}(\+\d+)?(\+\S+)*$', manifest_locator_or_text):
+        if re.match(r'[a-f0-9]{32}(\+\d+)?(\+\S+)*$', manifest_locator_or_text):
             self._manifest_locator = manifest_locator_or_text
             self._manifest_text = None
-        elif re.search(r'^\S+( [a-f0-9]{32,}(\+\S+)*)*( \d+:\d+:\S+)+\n', manifest_locator_or_text):
+        elif re.match(r'(\S+)( [a-f0-9]{32}(\+\d+)(\+\S+)*)+( \d+:\d+:\S+)+\n', manifest_locator_or_text):
             self._manifest_text = manifest_locator_or_text
             self._manifest_locator = None
         else:
@@ -117,8 +119,8 @@ class CollectionReader(object):
                     uuid=self._manifest_locator).execute()
                 self._manifest_text = c['manifest_text']
             except Exception as e:
-                logging.warning("API lookup failed for collection %s (%s: %s)" %
-                                (self._manifest_locator, type(e), str(e)))
+                _logger.warning("API lookup failed for collection %s (%s: %s)",
+                                self._manifest_locator, type(e), str(e))
                 self._manifest_text = Keep.get(self._manifest_locator)
         self._streams = []
         for stream_line in self._manifest_text.split("\n"):
@@ -312,8 +314,8 @@ class CollectionWriter(object):
                  self._current_file_pos,
                  self._current_stream_name))
         self._current_stream_files += [[self._current_file_pos,
-                                       self._current_stream_length - self._current_file_pos,
-                                       self._current_file_name]]
+                                        self._current_stream_length - self._current_file_pos,
+                                        self._current_file_name]]
         self._current_file_pos = self._current_stream_length
 
     def start_new_stream(self, newstreamname='.'):
@@ -342,8 +344,8 @@ class CollectionWriter(object):
             if len(self._current_stream_locators) == 0:
                 self._current_stream_locators += [config.EMPTY_BLOCK_LOCATOR]
             self._finished_streams += [[self._current_stream_name,
-                                       self._current_stream_locators,
-                                       self._current_stream_files]]
+                                        self._current_stream_locators,
+                                        self._current_stream_files]]
         self._current_stream_files = []
         self._current_stream_length = 0
         self._current_stream_locators = []
@@ -352,9 +354,8 @@ class CollectionWriter(object):
         self._current_file_name = None
 
     def finish(self):
-        # Send the stripped manifest to Keep, to ensure that we use the
-        # same UUID regardless of what hints are used on the collection.
-        return Keep.put(self.stripped_manifest())
+        # Store the manifest in Keep and return its locator.
+        return Keep.put(self.manifest_text())
 
     def stripped_manifest(self):
         """

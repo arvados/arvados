@@ -2,11 +2,13 @@ new_pipeline:
   state: New
   uuid: zzzzz-d1hrv-f4gneyn6br1xize
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 1.minute.ago.to_s(:db) %>
 
 has_component_with_no_script_parameters:
   state: Ready
   uuid: zzzzz-d1hrv-1xfj6xkicf2muk2
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 10.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
@@ -17,6 +19,7 @@ has_component_with_empty_script_parameters:
   state: Ready
   uuid: zzzzz-d1hrv-jq16l10gcsnyumo
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
@@ -27,6 +30,7 @@ has_job:
   state: Ready
   uuid: zzzzz-d1hrv-1yfj6xkidf2muk3
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
@@ -41,6 +45,7 @@ components_is_jobspec:
   # Helps test that clients cope with funny-shaped components.
   # For an example, see #3321.
   uuid: zzzzz-d1hrv-jobspeccomponts
+  created_at: <%= 30.minute.ago.to_s(:db) %>
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   created_at: 2014-04-14 12:35:04 -0400
   updated_at: 2014-04-14 12:35:04 -0400

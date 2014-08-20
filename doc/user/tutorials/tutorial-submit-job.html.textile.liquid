@@ -1,0 +1,137 @@
+---
+layout: default
+navsection: userguide
+navmenu: Tutorials
+title: "Running on an Arvados cluster"
+...
+
+This tutorial demonstrates how to create a pipeline to run your crunch script on an Arvados cluster.  Cluster jobs can scale out to multiple nodes, and use @git@ and @docker@ to store the complete system snapshot required to achieve reproducibilty.
+
+{% include 'tutorial_expectations' %}
+
+This tutorial uses @$USER@ to denote your username.  Replace @$USER@ with your user name in all the following examples.
+
+h2. Setting up Git
+
+All Crunch scripts are managed through the Git revision control system.  Before you start using Git, you should do some basic configuration (you only need to do this the first time):
+
+<notextile>
+<pre><code>~$ <span class="userinput">git config --global user.name "Your Name"</span>
+~$ <span class="userinput">git config --global user.email $USER@example.com</span></code></pre>
+</notextile>
+
+On the Arvados Workbench, navigate to "Code repositories":https://{{site.arvados_workbench_host}}/repositories.  You should see a repository with your user name listed in the *name* column.  Next to *name* is the column *push_url*.  Copy the *push_url* value associated with your repository.  This should look like <notextile><code>git@git.{{ site.arvados_api_host }}:$USER.git</code></notextile>.
+
+Next, on the Arvados virtual machine, clone your Git repository:
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd $HOME</span> # (or wherever you want to install)
+~$ <span class="userinput">git clone git@git.{{ site.arvados_api_host }}:$USER.git</span>
+Cloning into '$USER'...</code></pre>
+</notextile>
+
+This will create a Git repository in the directory called @$USER@ in your home directory. Say yes when prompted to continue with connection.
+Ignore any warning that you are cloning an empty repository.
+
+{% include 'notebox_begin' %}
+For more information about using Git, try
+
+notextile. <pre><code>$ <span class="userinput">man gittutorial</span></code></pre>
+
+or *"search Google for Git tutorials":http://google.com/#q=git+tutorial*.
+{% include 'notebox_end' %}
+
+h2. Creating a Crunch script
+
+Start by entering the @$USER@ directory created by @git clone@.  Next create a subdirectory called @crunch_scripts@ and change to that directory:
+
+<notextile>
+<pre><code>~$ <span class="userinput">cd $USER</span>
+~/$USER$ <span class="userinput">mkdir crunch_scripts</span>
+~/$USER$ <span class="userinput">cd crunch_scripts</span></code></pre>
+</notextile>
+
+Next, using @nano@ or your favorite Unix text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.
+
+notextile. <pre>~/$USER/crunch_scripts$ <code class="userinput">nano hash.py</code></pre>
+
+Add the following code to compute the MD5 hash of each file in a collection (if you already completed "Writing a Crunch script":tutorial-firstscript.html you can just copy the @hash.py@ file you created previously.)
+
+<notextile> {% code 'tutorial_hash_script_py' as python %} </notextile>
+
+Make the file executable:
+
+notextile. <pre><code>~/$USER/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
+
+Next, add the file to the staging area.  This tells @git@ that the file should be included on the next commit.
+
+notextile. <pre><code>~/$USER/crunch_scripts$ <span class="userinput">git add hash.py</span></code></pre>
+
+Next, commit your changes.  All staged changes are recorded into the local git repository:
+
+<notextile>
+<pre><code>~/$USER/crunch_scripts$ <span class="userinput">git commit -m"my first script"</span>
+[master (root-commit) 27fd88b] my first script
+ 1 file changed, 45 insertions(+)
+ create mode 100755 crunch_scripts/hash.py</code></pre>
+</notextile>
+
+Finally, upload your changes to the Arvados server:
+
+<notextile>
+<pre><code>~/$USER/crunch_scripts$ <span class="userinput">git push origin master</span>
+Counting objects: 4, done.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (4/4), 682 bytes, done.
+Total 4 (delta 0), reused 0 (delta 0)
+To git@git.qr1hi.arvadosapi.com:$USER.git
+ * [new branch]      master -> master</code></pre>
+</notextile>
+
+h2. Create a pipeline template
+
+Next, create a file that contains the pipeline definition:
+
+<notextile>
+<pre><code>~/$USER/crunch_scripts$ <span class="userinput">cd ~</span>
+~$ <span class="userinput">cat &gt;the_pipeline &lt;&lt;EOF
+{
+  "name":"My md5 pipeline",
+  "components":{
+    "do_hash":{
+      "script":"hash.py",
+      "script_parameters":{
+        "input":{
+          "required": true,
+          "dataclass": "Collection"
+        }
+      },
+      "repository":"$USER",
+      "script_version":"master",
+      "output_is_persistent":true,
+      "runtime_constraints":{
+        "docker_image":"arvados/jobs-java-bwa-samtools"
+      }
+    }
+  }
+}
+EOF
+</span></code></pre>
+</notextile>
+
+* @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench under "Code repositories":https://{{site.arvados_workbench_host}}/repositories.
+* @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit Git revision hash, a tag, or a branch (in which case it will use the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
+* @"script"@ specifies the filename of the script to run.  Crunch expects to find this in the @crunch_scripts/@ subdirectory of the Git repository.
+
+Now, use @arv pipeline_template create@ to register your pipeline template in Arvados:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv pipeline_template create --pipeline-template "$(cat the_pipeline)"</span>
+</code></pre>
+</notextile>
+
+h2. Running your pipeline
+
+Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":https://{{ site.arvados_workbench_host }}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
+
+For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html

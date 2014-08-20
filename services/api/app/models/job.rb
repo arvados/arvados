@@ -191,7 +191,7 @@ class Job < ArvadosModel
       if self.cancelled_at and not self.cancelled_at_was
         self.cancelled_at = Time.now
         self.cancelled_by_user_uuid = current_user.uuid
-        self.cancelled_by_client_uuid = current_api_client.uuid
+        self.cancelled_by_client_uuid = current_api_client.andand.uuid
         @need_crunch_dispatch_trigger = true
       else
         self.cancelled_at = self.cancelled_at_was

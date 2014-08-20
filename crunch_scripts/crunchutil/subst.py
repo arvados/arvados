@@ -44,7 +44,11 @@ def sub_basename(v):
     return os.path.splitext(os.path.basename(v))[0]
 
 def sub_glob(v):
-    return glob.glob(v)[0]
+    l = glob.glob(v)
+    if len(l) == 0:
+        raise Exception("$(glob): No match on '%s'" % v)
+    else:
+        return l[0]
 
 default_subs = {"file ": sub_file,
                 "dir ": sub_dir,
@@ -55,7 +59,7 @@ def do_substitution(p, c, subs=default_subs):
     while True:
         #print("c is", c)
         m = search(c)
-        if m != None:
+        if m is not None:
             v = do_substitution(p, c[m[0]+2 : m[1]])
             var = True
             for sub in subs:

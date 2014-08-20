@@ -6,9 +6,6 @@ import os
 import re
 import string
 import sys
-import logging
-
-logger = logging.getLogger(os.path.basename(sys.argv[0]))
 
 parser = argparse.ArgumentParser(
     description='Read manifest on standard input and put normalized manifest on standard output.')

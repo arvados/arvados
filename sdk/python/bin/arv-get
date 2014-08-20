@@ -8,7 +8,13 @@ import string
 import sys
 import logging
 
-logger = logging.getLogger(os.path.basename(sys.argv[0]))
+import arvados
+
+logger = logging.getLogger('arvados.arv-get')
+
+def abort(msg, code=1):
+    print >>sys.stderr, "arv-get:", msg
+    exit(code)
 
 parser = argparse.ArgumentParser(
     description='Copy data from Keep to a local file or pipe.')
@@ -25,8 +31,10 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument('--progress', action='store_true',
                    help="""
 Display human-readable progress on stderr (bytes and, if possible,
-percentage of total data size). This is the default behavior when
-stderr is a tty and stdout is not a tty.
+percentage of total data size). This is the default behavior when it
+is not expected to interfere with the output: specifically, stderr is
+a tty _and_ either stdout is not a tty, or output is being written to
+named files rather than stdout.
 """)
 group.add_argument('--no-progress', action='store_true',
                    help="""
@@ -87,14 +95,8 @@ if not args.r and (os.path.isdir(args.destination) or
                    args.destination[-1] == os.path.sep):
     args.destination = os.path.join(args.destination,
                                     os.path.basename(args.locator))
-    logger.debug("Appended source file name to destination directory: %s" %
+    logger.debug("Appended source file name to destination directory: %s",
                  args.destination)
-
-# Turn on --progress by default if stderr is a tty and stdout isn't.
-if (not (args.batch_progress or args.no_progress)
-    and os.isatty(sys.stderr.fileno())
-    and not os.isatty(sys.stdout.fileno())):
-    args.progress = True
 
 if args.destination == '-':
     args.destination = '/dev/stdout'
@@ -106,8 +108,15 @@ if args.destination == '/dev/stdout':
 else:
     args.destination = args.destination.rstrip(os.sep)
 
+# Turn on --progress by default if stderr is a tty and output is
+# either going to a named file, or going (via stdout) to something
+# that isn't a tty.
+if (not (args.batch_progress or args.no_progress)
+    and sys.stderr.isatty()
+    and (args.destination != '/dev/stdout'
+         or not sys.stdout.isatty())):
+    args.progress = True
 
-import arvados
 
 r = re.search(r'^(.*?)(/.*)?$', args.locator)
 collection = r.group(1)
@@ -121,23 +130,22 @@ if not get_prefix:
     try:
         if not args.n:
             if not args.f and os.path.exists(args.destination):
-                logger.error('Local file %s already exists' % args.destination)
-                sys.exit(1)
+                abort('Local file %s already exists.' % (args.destination,))
             with open(args.destination, 'wb') as f:
                 try:
                     c = arvados.api('v1').collections().get(
                         uuid=collection).execute()
                     manifest = c['manifest_text']
                 except Exception as e:
-                    logging.warning(
-                        "API lookup failed for collection %s (%s: %s)" %
-                        (collection, type(e), str(e)))
+                    logger.warning(
+                        "Collection %s not found. " +
+                        "Trying to fetch directly from Keep (deprecated).",
+                        collection)
                     manifest = arvados.Keep.get(collection)
                 f.write(manifest)
         sys.exit(0)
     except arvados.errors.NotFoundError as e:
-        logger.error(e)
-        sys.exit(1)
+        abort(e)
 
 reader = arvados.CollectionReader(collection)
 
@@ -156,8 +164,7 @@ try:
                     os.path.join(s.name(), f.name())[len(get_prefix)+1:])
                 if (not (args.n or args.f or args.skip_existing) and
                     os.path.exists(dest_path)):
-                    logger.error('Local file %s already exists' % dest_path)
-                    sys.exit(1)
+                    abort('Local file %s already exists.' % (dest_path,))
             else:
                 if os.path.join(s.name(), f.name()) != '.' + get_prefix:
                     continue
@@ -165,8 +172,7 @@ try:
             todo += [(s, f, dest_path)]
             todo_bytes += f.size()
 except arvados.errors.NotFoundError as e:
-    logger.error(e)
-    sys.exit(1)
+    abort(e)
 
 # Read data, and (if not -n) write to local file(s) or pipe.
 
@@ -176,21 +182,19 @@ for s,f,outfilename in todo:
     digestor = None
     if not args.n:
         if args.skip_existing and os.path.exists(outfilename):
-            logger.debug('Local file %s exists. Skipping.' % outfilename)
+            logger.debug('Local file %s exists. Skipping.', outfilename)
             continue
         elif not args.f and (os.path.isfile(outfilename) or
                            os.path.isdir(outfilename)):
             # Good thing we looked again: apparently this file wasn't
             # here yet when we checked earlier.
-            logger.error('Local file %s already exists' % outfilename)
-            sys.exit(1)
+            abort('Local file %s already exists.' % (outfilename,))
         if args.r:
             arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
         try:
             outfile = open(outfilename, 'wb')
         except Exception as e:
-            logger.error('Open(%s) failed: %s' % (outfilename, e))
-            sys.exit(1)
+            abort('Open(%s) failed: %s' % (outfilename, e))
     if args.hash:
         digestor = hashlib.new(args.hash)
     try:

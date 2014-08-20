@@ -20,10 +20,13 @@ if __name__ == '__main__' and os.path.exists(
 import arvados.api
 import arvados.config
 
-ARV_API_SERVER_DIR = '../../../services/api'
-KEEP_SERVER_DIR = '../../../services/keep'
+SERVICES_SRC_DIR = os.path.join(MY_DIRNAME, '../../../services')
 SERVER_PID_PATH = 'tmp/pids/webrick-test.pid'
 WEBSOCKETS_SERVER_PID_PATH = 'tmp/pids/passenger-test.pid'
+if 'GOPATH' in os.environ:
+    gopaths = os.environ['GOPATH'].split(':')
+    gobins = [os.path.join(path, 'bin') for path in gopaths]
+    os.environ['PATH'] = ':'.join(gobins) + ':' + os.environ['PATH']
 
 def find_server_pid(PID_PATH, wait=10):
     now = time.time()
@@ -64,7 +67,7 @@ def kill_server_pid(PID_PATH, wait=10):
 
 def run(websockets=False, reuse_server=False):
     cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR))
+    os.chdir(os.path.join(SERVICES_SRC_DIR, 'api'))
 
     if websockets:
         pid_file = WEBSOCKETS_SERVER_PID_PATH
@@ -116,7 +119,7 @@ def run(websockets=False, reuse_server=False):
 
 def stop():
     cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR))
+    os.chdir(os.path.join(SERVICES_SRC_DIR, 'api'))
 
     kill_server_pid(WEBSOCKETS_SERVER_PID_PATH, 0)
     kill_server_pid(SERVER_PID_PATH, 0)
@@ -135,7 +138,7 @@ def stop():
 
 def _start_keep(n, keep_args):
     keep0 = tempfile.mkdtemp()
-    keep_cmd = ["bin/keep",
+    keep_cmd = ["keepstore",
                 "-volumes={}".format(keep0),
                 "-listen=:{}".format(25107+n),
                 "-pid={}".format("tmp/keep{}.pid".format(n))]
@@ -152,15 +155,6 @@ def _start_keep(n, keep_args):
 
 def run_keep(blob_signing_key=None, enforce_permissions=False):
     stop_keep()
-
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
-    if os.environ.get('GOPATH') == None:
-        os.environ["GOPATH"] = os.getcwd()
-    else:
-        os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
-
-    subprocess.call(["./go.sh", "install", "keep"])
 
     if not os.path.exists("tmp"):
         os.mkdir("tmp")
@@ -191,8 +185,6 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s1["uuid"] } }).execute()
     api.keep_disks().create(body={"keep_disk": {"keep_service_uuid": s2["uuid"] } }).execute()
 
-    os.chdir(cwd)
-
 def _stop_keep(n):
     kill_server_pid("tmp/keep{}.pid".format(n), 0)
     if os.path.exists("tmp/keep{}.volume".format(n)):
@@ -203,25 +195,11 @@ def _stop_keep(n):
         os.remove("tmp/keep.blob_signing_key")
 
 def stop_keep():
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
-
     _stop_keep(0)
     _stop_keep(1)
 
-    os.chdir(cwd)
-
 def run_keep_proxy(auth):
     stop_keep_proxy()
-
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
-    if os.environ.get('GOPATH') == None:
-        os.environ["GOPATH"] = os.getcwd()
-    else:
-        os.environ["GOPATH"] = os.getcwd() + ":" + os.environ["GOPATH"]
-
-    subprocess.call(["./go.sh", "install", "arvados.org/keepproxy"])
 
     if not os.path.exists("tmp"):
         os.mkdir("tmp")
@@ -230,7 +208,8 @@ def run_keep_proxy(auth):
     os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
     os.environ["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[auth]["api_token"]
 
-    kp0 = subprocess.Popen(["bin/keepproxy", "-pid=tmp/keepproxy.pid", "-listen=:{}".format(25101)])
+    kp0 = subprocess.Popen(["keepproxy",
+                            "-pid=tmp/keepproxy.pid", "-listen=:{}".format(25101)])
 
     authorize_with("admin")
     api = arvados.api('v1', cache=False)
@@ -238,17 +217,12 @@ def run_keep_proxy(auth):
 
     arvados.config.settings()["ARVADOS_KEEP_PROXY"] = "http://localhost:25101"
 
-    os.chdir(cwd)
-
 def stop_keep_proxy():
-    cwd = os.getcwd()
-    os.chdir(os.path.join(MY_DIRNAME, KEEP_SERVER_DIR))
     kill_server_pid("tmp/keepproxy.pid", 0)
-    os.chdir(cwd)
 
 def fixture(fix):
     '''load a fixture yaml file'''
-    with open(os.path.join(MY_DIRNAME, ARV_API_SERVER_DIR, "test", "fixtures",
+    with open(os.path.join(SERVICES_SRC_DIR, 'api', "test", "fixtures",
                            fix + ".yml")) as f:
         return yaml.load(f.read())
 

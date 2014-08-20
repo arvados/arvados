@@ -30,18 +30,20 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     specimen_uuid = api_fixture('specimens')['owned_by_aproject_with_no_name_link']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
     click_link 'Other objects'
-    within(".selection-action-container") do
-      within (first('tr', text: 'Specimen')) do
+    within '.selection-action-container' do
+      # Wait for the tab to load:
+      assert_selector 'tr[data-kind="arvados#specimen"]'
+      within first('tr', text: 'Specimen') do
         find(".fa-pencil").click
         find('.editable-input input').set('Now I have a name.')
         find('.glyphicon-ok').click
-        find('.editable', text: 'Now I have a name.').click
+        assert_selector '.editable', text: 'Now I have a name.'
         find(".fa-pencil").click
         find('.editable-input input').set('Now I have a new name.')
         find('.glyphicon-ok').click
-        end
+      end
       wait_for_ajax
-      find('.editable', text: 'Now I have a new name.')
+      assert_selector '.editable', text: 'Now I have a new name.'
     end
     visit current_path
     click_link 'Other objects'

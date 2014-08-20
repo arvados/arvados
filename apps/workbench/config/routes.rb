@@ -27,11 +27,13 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', :on => :collection
     get 'home', :on => :member
     get 'welcome', :on => :collection
+    get 'inactive', :on => :collection
     get 'activity', :on => :collection
     get 'storage', :on => :collection
     post 'sudo', :on => :member
     post 'unsetup', :on => :member
     get 'setup_popup', :on => :member
+    get 'profile', :on => :member
   end
   get '/manage_account' => 'users#manage_account'
   get "/add_ssh_key_popup" => 'users#add_ssh_key_popup', :as => :add_ssh_key_popup

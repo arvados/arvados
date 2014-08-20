@@ -6,6 +6,8 @@ import argparse
 import arvados
 from arvados.events import subscribe
 
+logger = logging.getLogger('arvados.arv-ws')
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', '--uuid', type=str, default="")
 args = parser.parse_args()
@@ -22,9 +24,7 @@ ws = None
 try:
   ws = subscribe(api, filters, lambda ev: on_message(ev))
   ws.run_forever()
-except KeyboardInterrupt:
-  print '' # don't log it
-except:
-  logging.exception('')
+except Exception:
+  logger.exception('')
   if (ws):
     ws.close_connection()

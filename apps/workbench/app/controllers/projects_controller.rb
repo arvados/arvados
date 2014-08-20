@@ -128,20 +128,61 @@ class ProjectsController < ApplicationController
     super
   end
 
+  def load_contents_objects kinds=[]
+    kind_filters = @filters.select do |attr,op,val|
+      op == 'is_a' and val.is_a? Array and val.count > 1
+    end
+    if /^created_at\b/ =~ @order[0] and kind_filters.count == 1
+      # If filtering on multiple types and sorting by date: Get the
+      # first page of each type, sort the entire set, truncate to one
+      # page, and use the last item on this page as a filter for
+      # retrieving the next page. Ideally the API would do this for
+      # us, but it doesn't (yet).
+      nextpage_operator = /\bdesc$/i =~ @order[0] ? '<' : '>'
+      @objects = []
+      @name_link_for = {}
+      kind_filters.each do |attr,op,val|
+        (val.is_a?(Array) ? val : [val]).each do |type|
+          objects = @object.contents(order: @order,
+                                     limit: @limit,
+                                     include_linked: true,
+                                     filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
+                                     offset: @offset)
+          objects.each do |object|
+            @name_link_for[object.andand.uuid] = objects.links_for(object, 'name').first
+          end
+          @objects += objects
+        end
+      end
+      @objects = @objects.to_a.sort_by(&:created_at)
+      @objects.reverse! if nextpage_operator == '<'
+      @objects = @objects[0..@limit-1]
+      @next_page_filters = @filters.reject do |attr,op,val|
+        attr == 'created_at' and op == nextpage_operator
+      end
+      if @objects.any?
+        @next_page_filters += [['created_at',
+                                nextpage_operator,
+                                @objects.last.created_at]]
+        @next_page_href = url_for(partial: :contents_rows,
+                                  filters: @next_page_filters.to_json)
+      else
+        @next_page_href = nil
+      end
+    else
+      @objects = @object.contents(order: @order,
+                                  limit: @limit,
+                                  include_linked: true,
+                                  filters: @filters,
+                                  offset: @offset)
+      @next_page_href = next_page_href(partial: :contents_rows)
+    end
+  end
+
   def show
     if !@object
       return render_not_found("object not found")
     end
-    @objects = @object.contents(limit: 50,
-                                include_linked: true,
-                                filters: params[:filters],
-                                offset: params[:offset] || 0)
-    @logs = Log.limit(10).filter([['object_uuid', '=', @object.uuid]])
-    @users = User.limit(10000).
-      select(["uuid", "is_active", "first_name", "last_name"]).
-      filter([['is_active', '=', 'true']])
-    @groups = Group.limit(10000).
-      select(["uuid", "name", "description"])
 
     @user_is_manager = false
     @share_links = []
@@ -154,24 +195,19 @@ class ProjectsController < ApplicationController
       end
     end
 
-    @objects_and_names = get_objects_and_names @objects
-
     if params[:partial]
+      load_contents_objects
       respond_to do |f|
         f.json {
           render json: {
             content: render_to_string(partial: 'show_contents_rows.html',
-                                      formats: [:html],
-                                      locals: {
-                                        objects_and_names: @objects_and_names,
-                                        project: @object
-                                      }),
-            next_page_href: (next_page_offset and
-                             url_for(offset: next_page_offset, filters: params[:filters], partial: true))
+                                      formats: [:html]),
+            next_page_href: @next_page_href
           }
         }
       end
     else
+      @objects = []
       super
     end
   end
@@ -188,13 +224,17 @@ class ProjectsController < ApplicationController
   end
 
   helper_method :get_objects_and_names
-  def get_objects_and_names(objects)
+  def get_objects_and_names(objects=nil)
+    objects = @objects if objects.nil?
     objects_and_names = []
     objects.each do |object|
-      if !(name_links = objects.links_for(object, 'name')).empty?
+      if objects.respond_to? :links_for and
+          !(name_links = objects.links_for(object, 'name')).empty?
         name_links.each do |name_link|
           objects_and_names << [object, name_link]
         end
+      elsif @name_link_for.andand[object.uuid]
+        objects_and_names << [object, @name_link_for[object.uuid]]
       elsif object.respond_to? :name
         objects_and_names << [object, object]
       else

@@ -18,7 +18,9 @@ class Arvados::V1::RepositoriesController < ApplicationController
         if ArvadosModel::resource_class_for_uuid(perm.tail_uuid) == Group
           @users.each do |user_uuid, user|
             user.group_permissions.each do |group_uuid, perm_mask|
-              if perm_mask[:write]
+              if perm_mask[:manage]
+                perms << {name: 'can_manage', user_uuid: user_uuid}
+              elsif perm_mask[:write]
                 perms << {name: 'can_write', user_uuid: user_uuid}
               elsif perm_mask[:read]
                 perms << {name: 'can_read', user_uuid: user_uuid}
@@ -57,7 +59,11 @@ class Arvados::V1::RepositoriesController < ApplicationController
     end
     @repo_info.values.each do |repo_users|
       repo_users[:user_permissions].each do |user_uuid,perms|
-        if perms['can_write']
+        if perms['can_manage']
+          perms[:gitolite_permissions] = 'RW'
+          perms['can_write'] = true
+          perms['can_read'] = true
+        elsif perms['can_write']
           perms[:gitolite_permissions] = 'RW'
           perms['can_read'] = true
         elsif perms['can_read']
