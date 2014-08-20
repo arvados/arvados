@@ -42,6 +42,7 @@ class ActionsController < ApplicationController
 
   def move_or_copy action
     uuids_to_add = params["selection"]
+    uuids_to_add = [ uuids_to_add ] unless uuids_to_add.is_a? Array
     uuids_to_add.
       collect { |x| ArvadosBase::resource_class_for_uuid(x) }.
       uniq.

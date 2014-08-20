@@ -29,6 +29,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', :on => :collection
     get 'home', :on => :member
     get 'welcome', :on => :collection
+    get 'inactive', :on => :collection
     get 'activity', :on => :collection
     get 'storage', :on => :collection
     post 'sudo', :on => :member

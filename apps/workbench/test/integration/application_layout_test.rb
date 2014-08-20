@@ -73,59 +73,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
         assert page.has_link?('Show version / debugging info'), 'No link - Show version / debugging info'
         assert page.has_link?('Report a problem'), 'No link - Report a problem'
-
-        # check show version info link
-        click_link 'Show version / debugging info'
+        # Version info and Report a problem are tested in "report_issue_test.rb"
       end
-    end
-
-    within '.modal-content' do
-      assert page.has_text?('Version / debugging info'), 'No text - Version / debugging info'
-      assert page.has_no_text?('Report a problem'), 'Found text - Report a problem'
-      assert page.has_text?('Server version'), 'No text - Server version'
-      assert page.has_text?('Server restarted at'), 'No text - Server restarted at'
-      assert page.has_text?('Workbench version'), 'No text - Workbench version'
-      assert page.has_text?('Arvados base'), 'No text - Arvados base'
-      assert page.has_text?('Additional info'), 'No text - Additional info'
-      assert page.has_no_text?('Found a problem?'), 'Found text - Found a problem'
-      assert page.has_button?('Close'), 'No button - Close'
-      assert page.has_no_button?('Report issue'), 'Found button - Report issue'
-      click_button 'Close'
-    end
-
-    # check report issue link
-    within('.navbar-fixed-top') do
-      page.find("#arv-help").click
-      within('.dropdown-menu') do
-        click_link 'Report a problem'
-      end
-    end
-
-    within '.modal-content' do
-      assert page.has_text?('Report a problem'), 'No text - Report a problem'
-      assert page.has_no_text?('Version / debugging info'), 'Found text - Version / debugging info'
-      assert page.has_text?('Server version'), 'No text - Server version'
-      assert page.has_text?('Server restarted at'), 'No text - Server restarted at'
-      assert page.has_text?('Workbench version'), 'No text - Workbench version'
-      assert page.has_text?('Arvados base'), 'No text - Arvados base'
-      assert page.has_text?('Additional info'), 'No text - Additional info'
-      assert page.has_text?('Found a problem?'), 'No text - Found a problem'
-      assert page.has_no_button?('Close'), 'Found button - Close'
-      assert page.has_button?('Report issue'), 'No button - Report issue'
-      assert page.has_button?('Cancel'), 'No button - Cancel'
-
-      # enter a report text and click on report
-      page.find_field('report_issue_text').set 'my test report text'
-      click_button 'Report issue'
-
-      # ajax success updated button texts and added footer message
-      assert page.has_no_button?('Report issue'), 'Found button - Report issue'
-      assert page.has_no_button?('Cancel'), 'Found button - Cancel'
-      assert page.has_text?('Report sent'), 'No text - Report sent'
-      assert page.has_button?('Close'), 'No text - Close'
-      assert page.has_text?('Thanks for reporting this issue'), 'No text - Thanks for reporting this issue'
-
-      click_button 'Close'
     end
   end
 
@@ -244,90 +193,19 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
     end
 
-    assert page.has_text?(profile_message[0,25]), 'No text - configured profile message'
+    assert page.has_text? profile_message.gsub(/<.*?>/,'')
     assert page.has_text?(required_field_title), 'No text - configured required field title'
+
     page.find_field('user[prefs][:profile][:'+required_field_key+']').set 'value to fill required field'
 
     click_button "Save profile"
     # profile saved and in profile page now with success
     assert page.has_text?('Thank you for filling in your profile'), 'No text - Thank you for filling'
-    click_button 'Access Arvados Workbench'
+    click_link 'Back to work!'
 
     # profile saved and in home page now
     assert page.has_text?('My projects'), 'No text - My projects'
     assert page.has_text?('Projects shared with me'), 'No text - Projects shared with me'
-  end
-
-  # test the search box
-  def verify_search_box user
-    if user && user['is_active']
-      # let's search for a valid uuid
-      within('.navbar-fixed-top') do
-        page.find_field('search').set user['uuid']
-        page.find('.glyphicon-search').click
-      end
-
-      # we should now be in the user's page as a result of search
-      assert page.has_text?(user['first_name']), 'No text - user first name'
-
-      # let's search again for an invalid valid uuid
-      within('.navbar-fixed-top') do
-        search_for = String.new user['uuid']
-        search_for[0]='1'
-        page.find_field('search').set search_for
-        page.find('.glyphicon-search').click
-      end
-
-      # we should see 'not found' error page
-      assert page.has_text?('Not Found'), 'No text - Not Found'
-      assert page.has_link?('Report problem'), 'No text - Report problem'
-      click_link 'Report problem'
-      within '.modal-content' do
-        assert page.has_text?('Report a problem'), 'No text - Report a problem'
-        assert page.has_no_text?('Version / debugging info'), 'No text - Version / debugging info'
-        assert page.has_text?('Server version'), 'No text - Server version'
-        assert page.has_text?('Server restarted at'), 'No text - Server restarted at'
-        assert page.has_text?('Found a problem?'), 'No text - Found a problem'
-        assert page.has_button?('Report issue'), 'No button - Report issue'
-        assert page.has_button?('Cancel'), 'No button - Cancel'
-
-        # enter a report text and click on report
-        page.find_field('report_issue_text').set 'my test report text'
-        click_button 'Report issue'
-
-        # ajax success updated button texts and added footer message
-        assert page.has_no_button?('Report issue'), 'Found button - Report issue'
-        assert page.has_no_button?('Cancel'), 'Found button - Cancel'
-        assert page.has_text?('Report sent'), 'No text - Report sent'
-        assert page.has_button?('Close'), 'No text - Close'
-        assert page.has_text?('Thanks for reporting this issue'), 'No text - Thanks for reporting this issue'
-
-        click_button 'Close'
-      end
-
-      # let's search for the anonymously accessible project
-      publicly_accessible_project = api_fixture('groups')['anonymously_accessible_project']
-
-      within('.navbar-fixed-top') do
-        # search again for the anonymously accessible project
-        page.find_field('search').set publicly_accessible_project['name'][0,10]
-        page.find('.glyphicon-search').click
-      end
-
-      within '.modal-content' do
-        assert page.has_text?('All projects'), 'No text - All projects'
-        assert page.has_text?('Search'), 'No text - Search'
-        assert page.has_text?('Cancel'), 'No text - Cancel'
-        assert_selector('div', text: publicly_accessible_project['name'])
-        find(:xpath, '//div[./span[contains(.,publicly_accessible_project["uuid"])]]').click
-
-        click_button 'Show'
-      end
-
-      # seeing "Unrestricted public data" now
-      assert page.has_text?(publicly_accessible_project['name']), 'No text - publicly accessible project name'
-      assert page.has_text?(publicly_accessible_project['description']), 'No text - publicly accessible project description'
-    end
   end
 
   [
@@ -372,12 +250,11 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       check_help_menu
     end
-
   end
 
   [
-    ['active', api_fixture('users')['active'], true, true],
-    ['admin', api_fixture('users')['admin'], true, true],
+    ['active', api_fixture('users')['active']],
+    ['admin', api_fixture('users')['admin']],
   ].each do |token, user|
 
     test "test system menu for user #{token}" do
@@ -389,12 +266,5 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       visit page_with_token(token)
       verify_manage_account user
     end
-
-    test "test search for user #{token}" do
-      visit page_with_token(token)
-      verify_search_box user
-    end
-
   end
-
 end

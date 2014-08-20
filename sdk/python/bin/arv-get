@@ -31,8 +31,10 @@ group = parser.add_mutually_exclusive_group()
 group.add_argument('--progress', action='store_true',
                    help="""
 Display human-readable progress on stderr (bytes and, if possible,
-percentage of total data size). This is the default behavior when
-stderr is a tty and stdout is not a tty.
+percentage of total data size). This is the default behavior when it
+is not expected to interfere with the output: specifically, stderr is
+a tty _and_ either stdout is not a tty, or output is being written to
+named files rather than stdout.
 """)
 group.add_argument('--no-progress', action='store_true',
                    help="""
@@ -96,12 +98,6 @@ if not args.r and (os.path.isdir(args.destination) or
     logger.debug("Appended source file name to destination directory: %s",
                  args.destination)
 
-# Turn on --progress by default if stderr is a tty and stdout isn't.
-if (not (args.batch_progress or args.no_progress)
-    and os.isatty(sys.stderr.fileno())
-    and not os.isatty(sys.stdout.fileno())):
-    args.progress = True
-
 if args.destination == '-':
     args.destination = '/dev/stdout'
 if args.destination == '/dev/stdout':
@@ -111,6 +107,15 @@ if args.destination == '/dev/stdout':
     args.f = True
 else:
     args.destination = args.destination.rstrip(os.sep)
+
+# Turn on --progress by default if stderr is a tty and output is
+# either going to a named file, or going (via stdout) to something
+# that isn't a tty.
+if (not (args.batch_progress or args.no_progress)
+    and sys.stderr.isatty()
+    and (args.destination != '/dev/stdout'
+         or not sys.stdout.isatty())):
+    args.progress = True
 
 
 r = re.search(r'^(.*?)(/.*)?$', args.locator)
