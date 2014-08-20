@@ -1,3 +1,14 @@
+<% if !@object.log %>
+
+<% log_history = stderr_log_history([@object.uuid]) %>
+<div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%= @object.uuid %>">
+  <% log_history.each do |entry| %>
+    <%=entry%><br/>
+  <% end %>
+</div>
+
+<% else %>
+
 <script>
 (function() {
 var pagesize = 1000;
@@ -103,16 +114,8 @@ $("#set-show-failed-only").on("click", function() {
 
   <h3>Summary</h3>
   <p id="log-viewer-overview">
-    <% if !@object.log %>
-      <% if @object.finished_at %>
-        This job did not produce an diagnostic log.
-      <% else %>
-        This job is still running.  The job log will be available when the job is complete.
-      <% end %>
-    <% else %>
-      <% if !logcollection %>
-        The collection containing the job log was not found.
-      <% end %>
+    <% if !logcollection %>
+      The collection containing the job log was not found.
     <% end %>
   </p>
 
@@ -215,3 +218,5 @@ $("#set-show-failed-only").on("click", function() {
     <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
   </div>
 </div>
+
+<% end %>
