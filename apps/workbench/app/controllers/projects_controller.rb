@@ -178,12 +178,7 @@ class ProjectsController < ApplicationController
       @next_page_href = next_page_href(partial: :contents_rows)
     end
 
-    uuids = @objects.map { |ob| ob.uuid }
-    @object_tags = {}
-    Link.limit(uuids.length*20).filter([["head_uuid", "in", uuids], ["link_class", "=", "tag"]]).each do |t|
-      @object_tags[t.head_uuid] ||= []
-      @object_tags[t.head_uuid] << t
-    end
+    preload_links_for_objects(@objects)
   end
 
   def show

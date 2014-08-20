@@ -30,8 +30,7 @@
       <br>
       <span class="tags-span">
     <span class="removable-tag-container">
-    <% if @object_tags and @object_tags[object.uuid] %>
-      <% @object_tags[object.uuid].each do |tag_link| %>
+    <% links_for_object(object).select{|link|link.link_class=='tag'}.each do |tag_link| %>
         <span class="label label-info" data-tag-link-uuid="<%= tag_link.uuid %>">
           <%= link_to tag_link.name, controller: "links", filters: [["link_class", "=", "tag"], ["name", "=", tag_link.name]].to_json %>
           <% if tag_link.owner_uuid == current_user.uuid or current_user.is_admin %>
@@ -40,7 +39,6 @@
             </span>
           <% end %>
         </span>&nbsp;
-      <% end %>
     <% end %>
     </span>
     <a class="btn btn-xs btn-info add-tag-button" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Tag</a>

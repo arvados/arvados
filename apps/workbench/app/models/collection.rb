@@ -78,7 +78,7 @@ class Collection < ArvadosBase
 
   def uuid
     if self[:uuid].nil?
-      return self.portable_data_hash
+      return self[:portable_data_hash]
     else
       super
     end
@@ -86,7 +86,7 @@ class Collection < ArvadosBase
 
   def portable_data_hash
     if self[:portable_data_hash].nil?
-      return self.uuid
+      return self[:uuid]
     else
       super
     end

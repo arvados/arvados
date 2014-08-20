@@ -551,8 +551,9 @@ class ArvPutIntegrationTest(unittest.TestCase):
         p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
                              stdout=subprocess.PIPE, env=self.ENVIRON)
         (arvout, arverr) = p.communicate()
-        self.assertEqual(arverr, None)
         self.assertEqual(p.returncode, 0)
+        self.assertEqual(arverr, None)
+        self.assertEqual(arvout.strip(), manifest_uuid)
 
         # The manifest text stored in the API server under the same
         # manifest UUID must use signed locators.
@@ -564,21 +565,22 @@ class ArvPutIntegrationTest(unittest.TestCase):
         os.remove(os.path.join(datadir, "foo"))
         os.rmdir(datadir)
 
-    def run_and_find_collection(self, text, extra_args=[]):
+    def run_and_find_link(self, text, extra_args=[]):
         self.authorize_with('active')
         pipe = subprocess.Popen(
             [sys.executable, arv_put.__file__] + extra_args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
-        collection_list = arvados.api('v1', cache=False).collections().list(
-            filters=[['uuid', '=', stdout.strip()]]).execute().get('items', [])
-        self.assertEqual(1, len(collection_list))
-        return collection_list[0]
+        link_list = arvados.api('v1', cache=False).links().list(
+            filters=[['head_uuid', '=', stdout.strip()],
+                     ['link_class', '=', 'name']]).execute().get('items', [])
+        self.assertEqual(1, len(link_list))
+        return link_list[0]
 
     def test_put_collection_with_unnamed_project_link(self):
-        link = self.run_and_find_collection("Test unnamed collection",
-                                            ['--project-uuid', self.PROJECT_UUID])
+        link = self.run_and_find_link("Test unnamed collection",
+                                      ['--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
         self.assertRegexpMatches(
             link['name'],
@@ -586,18 +588,19 @@ class ArvPutIntegrationTest(unittest.TestCase):
 
     def test_put_collection_with_name_and_no_project(self):
         link_name = 'Test Collection Link in home project'
-        collection = self.run_and_find_collection("Test named collection in home project",
-                                                  ['--name', link_name])
-        self.assertEqual(link_name, collection['name'])
+        link = self.run_and_find_link("Test named collection in home project",
+                                      ['--name', link_name])
+        self.assertEqual(link_name, link['name'])
         my_user_uuid = self.current_user()['uuid']
-        self.assertEqual(my_user_uuid, collection['owner_uuid'])
+        self.assertEqual(my_user_uuid, link['tail_uuid'])
+        self.assertEqual(my_user_uuid, link['owner_uuid'])
 
     def test_put_collection_with_named_project_link(self):
         link_name = 'Test auto Collection Link'
-        collection = self.run_and_find_collection("Test named collection",
-                                                  ['--name', link_name,
-                                                   '--project-uuid', self.PROJECT_UUID])
-        self.assertEqual(link_name, collection['name'])
+        link = self.run_and_find_link("Test named collection",
+                                      ['--name', link_name,
+                                       '--project-uuid', self.PROJECT_UUID])
+        self.assertEqual(link_name, link['name'])
 
 
 if __name__ == '__main__':
