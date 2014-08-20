@@ -204,10 +204,9 @@ class StreamReader(object):
         self._data_locators = []
         self._files = collections.OrderedDict()
 
-        if keep != None:
-            self._keep = keep
-        else:
-            self._keep = Keep.global_client_object()
+        if keep is None:
+            keep = KeepClient()
+        self._keep = keep
 
         streamoffset = 0L
 
