@@ -448,17 +448,17 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         collection = arvados.api().collections().create(
             body={
                 'manifest_text': writer.manifest_text(),
+                'owner_uuid': project_link['tail_uuid']
                 },
             ).execute()
 
-        # Print the locator (uuid) of the new collection.
         output = collection['uuid']
         if project_link is not None:
+            # Update collection name
             try:
                 if 'name' in collection:
                     arvados.api().collections().update(uuid=output,
-                                                       body={"owner_uuid": project_link["tail_uuid"],
-                                                             "name": project_link["name"]}).execute()
+                                                       body={"name": project_link["name"]}).execute()
                 else:
                     create_project_link(output, project_link)
             except apiclient.errors.Error as error:
@@ -467,6 +467,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                         error))
                 status = 1
 
+    # Print the locator (uuid) of the new collection.
     stdout.write(output)
     if not output.endswith('\n'):
         stdout.write('\n')
