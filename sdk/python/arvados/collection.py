@@ -116,17 +116,26 @@ class CollectionReader(object):
         if self._streams is not None:
             return
         if not self._manifest_text:
-            if self._api_client is None:
-                self._api_client = arvados.api('v1')
-            if self._keep_client is None:
-                self._keep_client = KeepClient(api_client=self._api_client)
             try:
+                # As in KeepClient itself, we must wait until the last possible
+                # moment to instantiate an API client, in order to avoid
+                # tripping up clients that don't have access to an API server.
+                # If we do build one, make sure our Keep client uses it.
+                # If instantiation fails, we'll fall back to the except clause,
+                # just like any other Collection lookup failure.
+                if self._api_client is None:
+                    self._api_client = arvados.api('v1')
+                    self._keep_client = KeepClient(api_client=self._api_client)
+                if self._keep_client is None:
+                    self._keep_client = KeepClient(api_client=self._api_client)
                 c = self._api_client.collections().get(
                     uuid=self._manifest_locator).execute()
                 self._manifest_text = c['manifest_text']
             except Exception as e:
                 _logger.warning("API lookup failed for collection %s (%s: %s)",
                                 self._manifest_locator, type(e), str(e))
+                if self._keep_client is None:
+                    self._keep_client = KeepClient(api_client=self._api_client)
                 self._manifest_text = self._keep_client.get(self._manifest_locator)
         self._streams = []
         for stream_line in self._manifest_text.split("\n"):
