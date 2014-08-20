@@ -1,5 +1,4 @@
-
-A new user has been created:
+A new user has been created<%=' and setup' if Rails.configuration.auto_setup_new_users %>:
 
   <%= @user.full_name %> <<%= @user.email %>>
 
