@@ -1,6 +1,6 @@
 class IssueReporter < ActionMailer::Base
-  default from: Rails.configuration.report_notifier_email_from
-  default to: Rails.configuration.report_notifier_email_to
+  default from: Rails.configuration.issue_reporter_email_from
+  default to: Rails.configuration.issue_reporter_email_to
 
   def send_report(user, params)
     @user = user

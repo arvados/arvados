@@ -137,7 +137,7 @@ common:
   source_version: <%= `git log -n 1 --format=%h` %>
   local_modified: false
 
-  # report nitification to and from addresses
-  report_notifier_email_from: arvados@example.com
-  report_notifier_email_to: arvados@example.com
+  # report notification to and from addresses
+  issue_reporter_email_from: arvados@example.com
+  issue_reporter_email_to: arvados@example.com
   support_email_address: arvados@example.com
