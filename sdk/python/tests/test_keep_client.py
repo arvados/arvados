@@ -2,37 +2,32 @@
 #
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
 
+import contextlib
 import os
 import unittest
 
 import arvados
 import run_test_server
 
-class KeepTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super(KeepTestCase, cls).setUpClass()
-        try:
-            del os.environ['KEEP_LOCAL_STORE']
-        except KeyError:
-            pass
+@contextlib.contextmanager
+def unauthenticated_client(keep_client=None):
+    if keep_client is None:
+        keep_client = arvados.keep.global_client_object
+    if not hasattr(keep_client, 'api_token'):
+        yield keep_client
+    else:
+        orig_token = keep_client.api_token
+        keep_client.api_token = ''
+        yield keep_client
+        keep_client.api_token = orig_token
 
-        # Make sure these are clear, we want to talk to the Keep servers
-        # directly.
-        os.environ["ARVADOS_KEEP_PROXY"] = ""
-        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
+class KeepTestCase(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+    KEEP_SERVER = {}
 
-        run_test_server.run()
-        run_test_server.run_keep()
+    def setUp(self):
         arvados.keep.global_client_object = None
-        arvados.config._settings = None
         run_test_server.authorize_with("admin")
-
-    @classmethod
-    def tearDownClass(cls):
-        super(KeepTestCase, cls).tearDownClass()
-        run_test_server.stop()
-        run_test_server.stop_keep()
 
     def test_KeepBasicRWTest(self):
         foo_locator = arvados.Keep.put('foo')
@@ -79,22 +74,11 @@ class KeepTestCase(unittest.TestCase):
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
-class KeepPermissionTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        try:
-            del os.environ['KEEP_LOCAL_STORE']
-        except KeyError:
-            pass
 
-        run_test_server.run()
-        run_test_server.run_keep(blob_signing_key='abcdefghijk0123456789',
-                                 enforce_permissions=True)
-
-    @classmethod
-    def tearDownClass(cls):
-        run_test_server.stop()
-        run_test_server.stop_keep()
+class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+    KEEP_SERVER = {'blob_signing_key': 'abcdefghijk0123456789',
+                   'enforce_permissions': True}
 
     def test_KeepBasicRWTest(self):
         run_test_server.authorize_with('active')
@@ -126,13 +110,14 @@ class KeepPermissionTestCase(unittest.TestCase):
 
         # Unauthenticated GET for a signed locator => NotFound
         # Unauthenticated GET for an unsigned locator => NotFound
-        arvados.keep.global_client_object.api_token = ''
-        self.assertRaises(arvados.errors.NotFoundError,
-                          arvados.Keep.get,
-                          bar_locator)
-        self.assertRaises(arvados.errors.NotFoundError,
-                          arvados.Keep.get,
-                          unsigned_bar_locator)
+        with unauthenticated_client():
+            self.assertRaises(arvados.errors.NotFoundError,
+                              arvados.Keep.get,
+                              bar_locator)
+            self.assertRaises(arvados.errors.NotFoundError,
+                              arvados.Keep.get,
+                              unsigned_bar_locator)
+
 
 # KeepOptionalPermission: starts Keep with --permission-key-file
 # but not --enforce-permissions (i.e. generate signatures on PUT
@@ -143,22 +128,10 @@ class KeepPermissionTestCase(unittest.TestCase):
 # * authenticated request, unsigned locator
 # * unauthenticated request, signed locator
 # * unauthenticated request, unsigned locator
-
-class KeepOptionalPermission(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        try:
-            del os.environ['KEEP_LOCAL_STORE']
-        except KeyError:
-            pass
-        run_test_server.run()
-        run_test_server.run_keep(blob_signing_key='abcdefghijk0123456789',
-                                 enforce_permissions=False)
-
-    @classmethod
-    def tearDownClass(cls):
-        run_test_server.stop()
-        run_test_server.stop_keep()
+class KeepOptionalPermission(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+    KEEP_SERVER = {'blob_signing_key': 'abcdefghijk0123456789',
+                   'enforce_permissions': False}
 
     def test_KeepAuthenticatedSignedTest(self):
         run_test_server.authorize_with('active')
@@ -192,10 +165,10 @@ class KeepOptionalPermission(unittest.TestCase):
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("foo"): ' + signed_locator)
 
-        arvados.keep.global_client_object.api_token = ''
-        self.assertEqual(arvados.Keep.get(signed_locator),
-                         'foo',
-                         'wrong content from Keep.get(md5("foo"))')
+        with unauthenticated_client():
+            self.assertEqual(arvados.Keep.get(signed_locator),
+                             'foo',
+                             'wrong content from Keep.get(md5("foo"))')
 
     def test_KeepUnauthenticatedUnsignedTest(self):
         # Since --enforce-permissions is not in effect, GET requests
@@ -207,48 +180,30 @@ class KeepOptionalPermission(unittest.TestCase):
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("foo"): ' + signed_locator)
 
-        arvados.keep.global_client_object.api_token = ''
-        self.assertEqual(arvados.Keep.get("acbd18db4cc2f85cedef654fccc4a4d8"),
-                         'foo',
-                         'wrong content from Keep.get(md5("foo"))')
+        with unauthenticated_client():
+            self.assertEqual(arvados.Keep.get("acbd18db4cc2f85cedef654fccc4a4d8"),
+                             'foo',
+                             'wrong content from Keep.get(md5("foo"))')
 
 
-class KeepProxyTestCase(unittest.TestCase):
+class KeepProxyTestCase(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+    KEEP_SERVER = {}
+    KEEP_PROXY_SERVER = {'auth': 'admin'}
+
     @classmethod
     def setUpClass(cls):
         super(KeepProxyTestCase, cls).setUpClass()
+        cls.proxy_addr = os.environ['ARVADOS_KEEP_PROXY']
 
-        try:
-            del os.environ['KEEP_LOCAL_STORE']
-        except KeyError:
-            pass
-
-        os.environ["ARVADOS_KEEP_PROXY"] = ""
-        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
-
-        run_test_server.run()
-        run_test_server.run_keep()
+    def setUp(self):
         arvados.keep.global_client_object = None
-        arvados.config._settings = None
-        run_test_server.run_keep_proxy("admin")
-        KeepProxyTestCase.arvados_keep_proxy = arvados.config.get("ARVADOS_KEEP_PROXY")
-
-    @classmethod
-    def tearDownClass(cls):
-        super(KeepProxyTestCase, cls).tearDownClass()
-        run_test_server.stop()
-        run_test_server.stop_keep()
-        run_test_server.stop_keep_proxy()
+        os.environ['ARVADOS_KEEP_PROXY'] = self.proxy_addr
+        os.environ.pop('ARVADOS_EXTERNAL_CLIENT', None)
 
     def test_KeepProxyTest1(self):
         # Will use ARVADOS_KEEP_PROXY environment variable that is set by
-        # run_keep_proxy() in setUpClass()
-
-        os.environ["ARVADOS_KEEP_PROXY"] = KeepProxyTestCase.arvados_keep_proxy
-        os.environ["ARVADOS_EXTERNAL_CLIENT"] = ""
-        arvados.keep.global_client_object = None
-        arvados.config._settings = None
-
+        # setUpClass().
         baz_locator = arvados.Keep.put('baz')
         self.assertRegexpMatches(
             baz_locator,
@@ -266,12 +221,9 @@ class KeepProxyTestCase(unittest.TestCase):
         # contact the API server.
         os.environ["ARVADOS_KEEP_PROXY"] = ""
         os.environ["ARVADOS_EXTERNAL_CLIENT"] = "true"
-        arvados.keep.global_client_object = None
-        arvados.config._settings = None
 
         # Will send X-External-Client to server and get back the proxy from
         # keep_services/accessible
-
         baz_locator = arvados.Keep.put('baz2')
         self.assertRegexpMatches(
             baz_locator,

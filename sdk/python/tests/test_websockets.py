@@ -4,9 +4,8 @@ import arvados
 import arvados.events
 import time
 
-class WebsocketTest(unittest.TestCase):
-    def setUp(self):
-        run_test_server.run(websockets=True)
+class WebsocketTest(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {'websockets': True}
 
     def on_event(self, ev):
         if self.state == 1:
@@ -27,6 +26,3 @@ class WebsocketTest(unittest.TestCase):
         time.sleep(1)
         self.h = api.humans().create(body={}).execute()
         time.sleep(1)
-
-    def tearDown(self):
-        run_test_server.stop()

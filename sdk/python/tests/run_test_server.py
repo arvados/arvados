@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import unittest
 import yaml
 
 MY_DIRNAME = os.path.dirname(os.path.realpath(__file__))
@@ -216,7 +217,7 @@ def run_keep_proxy(auth):
     api = arvados.api('v1', cache=False)
     api.keep_services().create(body={"keep_service": {"service_host": "localhost",  "service_port": 25101, "service_type": "proxy"} }).execute()
 
-    arvados.config.settings()["ARVADOS_KEEP_PROXY"] = "http://localhost:25101"
+    os.environ["ARVADOS_KEEP_PROXY"] = "http://localhost:25101"
 
 def stop_keep_proxy():
     kill_server_pid("tests/tmp/keepproxy.pid", 0)
@@ -232,6 +233,65 @@ def authorize_with(token):
     arvados.config.settings()["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[token]["api_token"]
     arvados.config.settings()["ARVADOS_API_HOST"] = os.environ.get("ARVADOS_API_HOST")
     arvados.config.settings()["ARVADOS_API_HOST_INSECURE"] = "true"
+
+class TestCaseWithServers(unittest.TestCase):
+    """TestCase to start and stop supporting Arvados servers.
+
+    Define any of MAIN_SERVER, KEEP_SERVER, and/or KEEP_PROXY_SERVER
+    class variables as a dictionary of keyword arguments.  If you do,
+    setUpClass will start the corresponding servers by passing these
+    keyword arguments to the run, run_keep, and/or run_keep_server
+    functions, respectively.  It will also set Arvados environment
+    variables to point to these servers appropriately.  If you don't
+    run a Keep or Keep proxy server, setUpClass will set up a
+    temporary directory for Keep local storage, and set it as
+    KEEP_LOCAL_STORE.
+
+    tearDownClass will stop any servers started, and restore the
+    original environment.
+    """
+    MAIN_SERVER = None
+    KEEP_SERVER = None
+    KEEP_PROXY_SERVER = None
+
+    @staticmethod
+    def _restore_dict(src, dest):
+        for key in dest.keys():
+            if key not in src:
+                del dest[key]
+        dest.update(src)
+
+    @classmethod
+    def setUpClass(cls):
+        cls._orig_environ = os.environ.copy()
+        cls._orig_config = arvados.config.settings().copy()
+        cls._cleanup_funcs = []
+        for server_kwargs, start_func, stop_func in (
+              (cls.MAIN_SERVER, run, stop),
+              (cls.KEEP_SERVER, run_keep, stop_keep),
+              (cls.KEEP_PROXY_SERVER, run_keep_proxy, stop_keep_proxy)):
+            if server_kwargs is not None:
+                start_func(**server_kwargs)
+                cls._cleanup_funcs.append(stop_func)
+        os.environ.pop('ARVADOS_EXTERNAL_CLIENT', None)
+        if cls.KEEP_PROXY_SERVER is None:
+            os.environ.pop('ARVADOS_KEEP_PROXY', None)
+        if (cls.KEEP_SERVER is None) and (cls.KEEP_PROXY_SERVER is None):
+            cls.local_store = tempfile.mkdtemp()
+            os.environ['KEEP_LOCAL_STORE'] = cls.local_store
+            cls._cleanup_funcs.append(
+                lambda: shutil.rmtree(cls.local_store, ignore_errors=True))
+        else:
+            os.environ.pop('KEEP_LOCAL_STORE', None)
+        arvados.config.initialize()
+
+    @classmethod
+    def tearDownClass(cls):
+        for clean_func in cls._cleanup_funcs:
+            clean_func()
+        cls._restore_dict(cls._orig_environ, os.environ)
+        cls._restore_dict(cls._orig_config, arvados.config.settings())
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
