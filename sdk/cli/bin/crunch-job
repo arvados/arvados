@@ -1223,9 +1223,8 @@ sub collate_output
   my $joboutput;
   for (@jobstep)
   {
-    next if (!exists $_->{'arvados_task'}->{output} ||
-             !$_->{'arvados_task'}->{'success'} ||
-             $_->{'exitcode'} != 0);
+    next if (!exists $_->{'arvados_task'}->{'output'} ||
+             !$_->{'arvados_task'}->{'success'});
     my $output = $_->{'arvados_task'}->{output};
     if ($output !~ /^[0-9a-f]{32}(\+\S+)*$/)
     {
