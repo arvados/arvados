@@ -99,7 +99,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
 
     if not version:
         version = 'v1'
-        logging.info("Using default API version. " +
+        _logger.info("Using default API version. " +
                      "Call arvados.api('%s') instead." %
                      version)
     if 'discoveryServiceUrl' in kwargs:
@@ -119,8 +119,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
                 raise ValueError("%s is not set. Aborting." % x)
         host = config.get('ARVADOS_API_HOST')
         token = config.get('ARVADOS_API_TOKEN')
-        insecure = (config.get('ARVADOS_API_HOST_INSECURE', '').lower() in
-                       ('yes', 'true', '1'))
+        insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
     else:
         # Caller provided one but not the other
         if not host:
@@ -155,6 +154,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
     kwargs['http'] = credentials.authorize(kwargs['http'])
 
     svc = apiclient.discovery.build('arvados', version, **kwargs)
+    svc.api_token = token
     kwargs['http'].cache = None
     if cache:
         conncache[connprofile] = svc
