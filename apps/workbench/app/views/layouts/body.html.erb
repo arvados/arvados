@@ -137,12 +137,12 @@
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> API Reference'), "#{Rails.configuration.arvados_docsite}/api", target: "_blank" %></li>
               <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> SDK Reference'), "#{Rails.configuration.arvados_docsite}/sdk", target: "_blank" %></li>
               <li role="presentation" class="divider"></li>
-              <li> <%= link_to report_issue_popup_path(popup_type: 'version', current_location: request.fullpath, action_method: 'post'),
+              <li> <%= link_to report_issue_popup_path(popup_type: 'version', current_location: request.url, action_method: 'post'),
                       {class: 'report-issue-modal-window', 'data-toggle' =>  "modal", 'data-target' => '#report-issue-modal-window', :remote => true, return_to: request.url} do %>
                        <i class="fa fa-fw fa-support"></i> Show version / debugging info ...
                       <% end %>
               </li>
-              <li> <%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.fullpath, action_method: 'post'),
+              <li> <%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.url, action_method: 'post'),
                       {class: 'report-issue-modal-window', 'data-toggle' =>  "modal", 'data-target' => '#report-issue-modal-window', :remote => true, return_to: request.url} do %>
                        <i class="fa fa-fw fa-support"></i> Report a problem ...
                       <% end %>

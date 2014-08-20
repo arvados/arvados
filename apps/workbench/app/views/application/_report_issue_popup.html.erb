@@ -47,7 +47,7 @@
         <div class="form-group">
           <label for="support_version" class="col-sm-4 control-label"> Support email </label>
           <div class="col-sm-8">
-            <p class="form-control-static" name="support_version"><%=support_email%></p>
+            <p class="form-control-static" name="support_version"><a href="mailto:<%=support_email%>?subject=Workbench problem report&body=Problem while viewing page <%=@popup_params[:current_location]%>"><%=support_email%></a></p>
           </div>
         </div>
 
