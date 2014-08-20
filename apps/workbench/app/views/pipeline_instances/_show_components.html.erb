@@ -1,24 +1,10 @@
 <% if !@object.state.in? ['New', 'Ready'] %>
 
-  <% pipeline_job_uuids = [] %>
-
   <div class="pull-right">
     Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>"><%= @object.state.sub('OnServer', '') %></span>&nbsp;
   </div>
 
-  <%= render_pipeline_components("running", :json, pipeline_job_uuids: pipeline_job_uuids) %>
-
-  <% if @object.state.in? %w(RunningOnServer RunningOnClient Failed) %>
-
-      <h4>Log messages from jobs</h4>
-      <% log_history = pipeline_log_history((pipeline_job_uuids || []) + [@object.uuid]) %>
-      <div class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window" id="pipeline_event_log_div" data-object-uuids="<%= @object.uuid %> <%=(pipeline_job_uuids || []).join(" ")%>">
-        <% log_history.each do |entry| %>
-          <%=entry%><br/>
-        <% end %>
-      </div>
-
-  <% end %>
+  <%= render_pipeline_components("running", :json) %>
 
 <% else %>
   <%# state is either New or Ready %>
