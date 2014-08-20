@@ -11,10 +11,13 @@
 # Regardless of which components are tested, install all components in
 # the usual sequence. (Many test suites depend on other components
 # being installed.)
+#
+#
+# First make sure to remove any ARVADOS_ variables from the calling environment
+# that could interfer with the tests.
+unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 
 COLUMNS=80
-
-ARVADOS_API_HOST=qr1hi.arvadosapi.com
 
 export GOPATH=$(mktemp -d)
 VENVDIR=$(mktemp -d)
@@ -131,7 +134,9 @@ test_docs() {
     bundle install --deployment
     rm -rf .site
     # Make sure python-epydoc is installed or the next line won't do much good!
+    ARVADOS_API_HOST=qr1hi.arvadosapi.com
     PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+    unset ARVADOS_API_HOST
 }
 do_test docs
 
