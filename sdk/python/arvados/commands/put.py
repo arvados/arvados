@@ -455,7 +455,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         output = collection['uuid']
         if project_link is not None:
             try:
-                create_project_link(output, project_link)
+                if 'name' in collection:
+                    arvados.api().collections().update(uuid=output,
+                                                       body={"owner_uuid": project_link["tail_uuid"],
+                                                             "name": project_link["name"]}).execute()
+                else:
+                    create_project_link(output, project_link)
             except apiclient.errors.Error as error:
                 print >>stderr, (
                     "arv-put: Error adding Collection to project: {}.".format(
