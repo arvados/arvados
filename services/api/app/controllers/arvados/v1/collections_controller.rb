@@ -5,6 +5,11 @@ class Arvados::V1::CollectionsController < ApplicationController
                         status: :unprocessable_entity)
     end
 
+    if resource_attrs[:uuid] and (loc = Locator.parse(resource_attrs[:uuid]))
+      resource_attrs[:portable_data_hash] = loc.to_s
+      resource_attrs.delete :uuid
+    end
+
     # Check permissions on the collection manifest.
     # If any signature cannot be verified, return 403 Permission denied.
     api_token = current_api_client_authorization.andand.api_token
@@ -210,8 +215,12 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def find_objects_for_index
     # Omit manifest_text from index results unless expressly selected.
-    @select ||= model_class.api_accessible_attributes(:user).
-      map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
+    if @select.nil?
+      @select = model_class.api_accessible_attributes(:user).map { |attr_spec|attr_spec.first.to_s }
+      @select -= ["manifest_text"]
+      # have to make sure 'id' column is included or #update will break.
+      @select += ["id"]
+    end
     super
   end
 

@@ -101,4 +101,37 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['portable_data_hash']
   end
 
+  test "store collection then update name" do
+    signing_opts = {
+      key: Rails.configuration.blob_signing_key,
+      api_token: api_token(:active),
+    }
+    signed_locator = Blob.sign_locator('bad42fa702ae3ea7d888fef11b46f450+44',
+                                       signing_opts)
+    post "/arvados/v1/collections", {
+      format: :json,
+      collection: "{\"manifest_text\":\". #{signed_locator} 0:44:md5sum.txt\\n\",\"portable_data_hash\":\"ad02e37b6a7f45bbe2ead3c29a109b8a+54\"}"
+    }, auth(:active)
+    assert_response 200
+    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['portable_data_hash']
+
+    put "/arvados/v1/collections/#{json_response['uuid']}", {
+      format: :json,
+      collection: { name: "a name" }
+    }, auth(:active)
+
+    assert_response 200
+    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['portable_data_hash']
+    assert_equal 'a name', json_response['name']
+
+    get "/arvados/v1/collections/#{json_response['uuid']}", {
+      format: :json,
+    }, auth(:active)
+
+    assert_response 200
+    assert_equal 'ad02e37b6a7f45bbe2ead3c29a109b8a+54', json_response['portable_data_hash']
+    assert_equal 'a name', json_response['name']
+  end
+
+
 end
