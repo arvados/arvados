@@ -22,7 +22,7 @@
     <div class="panel panel-info">
       <div class="panel-heading">
 	<h3 class="panel-title">
-          <% if @object.uuid.match /[0-9a-f]{32}/ %>
+          <% if @name_link.nil? and @object.uuid.match /[0-9a-f]{32}/ %>
             Content hash <%= @object.portable_data_hash %>
           <% else %>
 	    <%= if @object.respond_to? :name

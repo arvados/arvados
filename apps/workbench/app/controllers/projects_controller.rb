@@ -178,7 +178,7 @@ class ProjectsController < ApplicationController
       @next_page_href = next_page_href(partial: :contents_rows)
     end
 
-    preload_links_for_objects(@objects)
+    preload_links_for_objects(@objects.to_a)
   end
 
   def show

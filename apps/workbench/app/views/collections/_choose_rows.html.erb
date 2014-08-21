@@ -3,7 +3,11 @@
          data-preview-href="<%= chooser_preview_url_for object %>"
          style="margin-left: 1em; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: #DDDDDD">
       <i class="fa fa-fw fa-archive"></i>
-      <%= object.name %>
+      <% if object.respond_to? :name %>
+        <%= object.name %>
+      <% else %>
+        <%= object.uuid %>
+      <% end %>
       <% links_for_object(object).each do |tag| %>
         <% if tag.link_class == 'tag' %>
           <span class="label label-info"><%= tag.name %></span>
