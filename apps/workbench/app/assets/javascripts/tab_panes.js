@@ -12,6 +12,7 @@ $(document).on('shown.bs.tab', '[data-toggle="tab"]', function(e) {
         done(function(data, status, jqxhr) {
             $('> div > div', this).html(data);
             $(this).addClass('loaded');
+            $(this).trigger('arv:pane:loaded');
         }).fail(function(jqxhr, status, error) {
             var errhtml;
             if (jqxhr.getResponseHeader('Content-Type').match(/\btext\/html\b/)) {

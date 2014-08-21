@@ -22,6 +22,7 @@ import tempfile
 import arvados.commands._util as arv_cmd
 
 CAUGHT_SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]
+api_client = None
 
 upload_opts = argparse.ArgumentParser(add_help=False)
 
@@ -238,13 +239,14 @@ class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
     STATE_PROPS = (arvados.ResumableCollectionWriter.STATE_PROPS +
                    ['bytes_written', '_seen_inputs'])
 
-    def __init__(self, cache=None, reporter=None, bytes_expected=None):
+    def __init__(self, cache=None, reporter=None, bytes_expected=None,
+                 api_client=None):
         self.bytes_written = 0
         self._seen_inputs = []
         self.cache = cache
         self.reporter = reporter
         self.bytes_expected = bytes_expected
-        super(ArvPutCollectionWriter, self).__init__()
+        super(ArvPutCollectionWriter, self).__init__(api_client)
 
     @classmethod
     def from_cache(cls, cache, reporter=None, bytes_expected=None):
@@ -342,7 +344,7 @@ def exit_signal_handler(sigcode, frame):
 
 def check_project_exists(project_uuid):
     try:
-        arvados.api('v1').groups().get(uuid=project_uuid).execute()
+        api_client.groups().get(uuid=project_uuid).execute()
     except (apiclient.errors.Error, arvados.errors.NotFoundError) as error:
         raise ValueError("Project {} not found ({})".format(project_uuid,
                                                             error))
@@ -362,7 +364,7 @@ def prep_project_link(args, stderr, project_exists=check_project_exists):
             'link_class': 'name',
             'name': args.name}
     if not link['tail_uuid']:
-        link['tail_uuid'] = arvados.api('v1').users().current().execute()['uuid']
+        link['tail_uuid'] = api_client.users().current().execute()['uuid']
     elif not project_exists(link['tail_uuid']):
         raise ValueError("Project {} not found".format(args.project_uuid))
     if not link['name']:
@@ -377,9 +379,12 @@ def prep_project_link(args, stderr, project_exists=check_project_exists):
 
 def create_project_link(locator, link):
     link['head_uuid'] = locator
-    return arvados.api('v1').links().create(body=link).execute()
+    return api_client.links().create(body=link).execute()
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
+    global api_client
+    if api_client is None:
+        api_client = arvados.api('v1')
     status = 0
 
     args = parse_arguments(arguments)
@@ -445,7 +450,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         output = ','.join(writer.data_locators())
     else:
         # Register the resulting collection in Arvados.
-        collection = arvados.api().collections().create(
+        collection = api_client.collections().create(
             body={
                 'manifest_text': writer.manifest_text(),
                 'owner_uuid': project_link['tail_uuid']
