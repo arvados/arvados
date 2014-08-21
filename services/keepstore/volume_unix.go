@@ -97,6 +97,19 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 	return response.err
 }
 
+func (v *UnixVolume) Touch(loc string) error {
+	p := v.blockPath(loc)
+	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	lockfile(f)
+	defer unlockfile(f)
+	now := time.Now().Unix()
+	utime := syscall.Utimbuf{now, now}
+	return syscall.Utime(p, &utime)
+}
+
 // Read retrieves a block identified by the locator string "loc", and
 // returns its contents as a byte slice.
 //
@@ -230,7 +243,27 @@ func (v *UnixVolume) Index(prefix string) (output string) {
 }
 
 func (v *UnixVolume) Delete(loc string) error {
-	return os.Remove(v.blockPath(loc))
+	p := v.blockPath(loc)
+	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	lockfile(f)
+	defer unlockfile(f)
+
+	// Return PermissionError if the block has been PUT more recently
+	// than -permission_ttl.  This guards against a race condition
+	// where a block is old enough that Data Manager has added it to
+	// the trash list, but the user submitted a PUT for the block
+	// since then.
+	if fi, err := os.Stat(p); err != nil {
+		return err
+	} else {
+		if time.Since(fi.ModTime()) < permission_ttl {
+			return PermissionError
+		}
+	}
+	return os.Remove(p)
 }
 
 // blockDir returns the fully qualified directory name for the directory
@@ -292,4 +325,13 @@ func (v *UnixVolume) FreeDiskSpace() (free uint64, err error) {
 
 func (v *UnixVolume) String() string {
 	return fmt.Sprintf("[UnixVolume %s]", v.root)
+}
+
+// lockfile and unlockfile use flock(2) to manage kernel file locks.
+func lockfile(f os.File) error {
+	return syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
+}
+
+func unlockfile(f os.File) error {
+	return syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
 }

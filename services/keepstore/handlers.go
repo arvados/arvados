@@ -397,6 +397,17 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// GetBlock, PutBlock and TouchBlock implement lower-level code for
+// handling blocks by rooting through volumes connected to the local
+// machine.  Once the handler has determined that system policy permits
+// the request, it calls these methods to perform the actual operation.
+//
+// TODO(twp): this code would probably be better located in the
+// VolumeManager interface. As an abstraction, the VolumeManager
+// should be the only part of the code that cares about which volume a
+// block is stored on, so it should be responsible for figuring out
+// which volume to check for fetching blocks, storing blocks, etc.
+
 func GetBlock(hash string) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
 	error_to_caller := NotFoundError
@@ -484,7 +495,16 @@ func PutBlock(block []byte, hash string) error {
 	// so there is nothing special to do if err != nil.
 	if oldblock, err := GetBlock(hash); err == nil {
 		if bytes.Compare(block, oldblock) == 0 {
-			return nil
+			// The block already exists; update the timestamp and
+			// return.
+			// Note that TouchBlock will fail (and therefore
+			// so will PutBlock) if the block exists but is found on a
+			// read-only volume. That is intentional: if the user has
+			// requested N replicas of a block, we want to be sure that
+			// there are at least N *writable* replicas, so a block
+			// that cannot be written to should not count toward the
+			// replication total.
+			return TouchBlock(block)
 		} else {
 			return CollisionError
 		}
@@ -518,6 +538,22 @@ func PutBlock(block []byte, hash string) error {
 			return GenericError
 		}
 	}
+}
+
+// TouchBlock finds the block identified by hash and updates its
+// filesystem modification time with the current time.
+func TouchBlock(hash string) error {
+	for _, vol := range KeepVM.Volumes() {
+		err := vol.Touch(hash)
+		if os.IsNotExist(err) {
+			continue
+		}
+		// either err is nil (meaning success) or some error other
+		// than "file does not exist" (which we should return upward).
+		return err
+	}
+	// If we got here, the block was not found on any volume.
+	return os.ErrNotExist
 }
 
 // IsValidLocator

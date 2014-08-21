@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 type Volume interface {
 	Get(loc string) ([]byte, error)
 	Put(loc string, block []byte) error
+	Touch(loc string) error
 	Index(prefix string) string
 	Delete(loc string) error
 	Status() *VolumeStatus
@@ -26,12 +28,17 @@ type Volume interface {
 // on all writes and puts.
 //
 type MockVolume struct {
-	Store map[string][]byte
-	Bad   bool
+	Store      map[string][]byte
+	Timestamps map[string]time.Time
+	Bad        bool
 }
 
 func CreateMockVolume() *MockVolume {
-	return &MockVolume{make(map[string][]byte), false}
+	return &MockVolume{
+		make(map[string][]byte),
+		make(map[string]time.Time),
+		false,
+	}
 }
 
 func (v *MockVolume) Get(loc string) ([]byte, error) {
@@ -48,6 +55,14 @@ func (v *MockVolume) Put(loc string, block []byte) error {
 		return errors.New("Bad volume")
 	}
 	v.Store[loc] = block
+	return Touch(loc)
+}
+
+func (v *MockVolume) Touch(loc string) error {
+	if v.Bad {
+		return errors.New("Bad volume")
+	}
+	v.Timestamps[loc] = time.Now()
 	return nil
 }
 
