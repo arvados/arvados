@@ -251,16 +251,16 @@ func (v *UnixVolume) Delete(loc string) error {
 	lockfile(f)
 	defer unlockfile(f)
 
-	// Return PermissionError if the block has been PUT more recently
-	// than -permission_ttl.  This guards against a race condition
-	// where a block is old enough that Data Manager has added it to
-	// the trash list, but the user submitted a PUT for the block
-	// since then.
+	// If the block has been PUT more recently than -permission_ttl,
+	// return success without removing the block.  This guards against
+	// a race condition where a block is old enough that Data Manager
+	// has added it to the trash list, but the user submitted a PUT
+	// for the block since then.
 	if fi, err := os.Stat(p); err != nil {
 		return err
 	} else {
 		if time.Since(fi.ModTime()) < permission_ttl {
-			return PermissionError
+			return nil
 		}
 	}
 	return os.Remove(p)

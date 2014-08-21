@@ -60,7 +60,7 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	// Check that GetBlock returns success.
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != nil {
 		t.Errorf("GetBlock error: %s", err)
 	}
@@ -80,7 +80,7 @@ func TestGetBlockMissing(t *testing.T) {
 	defer func() { KeepVM.Quit() }()
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != NotFoundError {
 		t.Errorf("Expected NotFoundError, got %v", result)
 	}
@@ -101,7 +101,7 @@ func TestGetBlockCorrupt(t *testing.T) {
 	vols[0].Put(TEST_HASH, BAD_BLOCK)
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != DiskHashError {
 		t.Errorf("Expected DiskHashError, got %v (buf: %v)", err, result)
 	}
@@ -156,7 +156,7 @@ func TestPutBlockOneVol(t *testing.T) {
 		t.Fatalf("PutBlock: %v", err)
 	}
 
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != nil {
 		t.Fatalf("GetBlock: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestPutBlockMD5Fail(t *testing.T) {
 	}
 
 	// Confirm that GetBlock fails to return anything.
-	if result, err := GetBlock(TEST_HASH); err != NotFoundError {
+	if result, err := GetBlock(TEST_HASH, false); err != NotFoundError {
 		t.Errorf("GetBlock succeeded after a corrupt block store (result = %s, err = %v)",
 			string(result), err)
 	}
@@ -210,7 +210,7 @@ func TestPutBlockCorrupt(t *testing.T) {
 	}
 
 	// The block on disk should now match TEST_BLOCK.
-	if block, err := GetBlock(TEST_HASH); err != nil {
+	if block, err := GetBlock(TEST_HASH, false); err != nil {
 		t.Errorf("GetBlock: %v", err)
 	} else if bytes.Compare(block, TEST_BLOCK) != 0 {
 		t.Errorf("GetBlock returned: '%s'", string(block))

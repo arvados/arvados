@@ -148,7 +148,7 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	block, err := GetBlock(hash)
+	block, err := GetBlock(hash, false)
 
 	// Garbage collect after each GET. Fixes #2865.
 	// TODO(twp): review Keep memory usage and see if there's
@@ -397,10 +397,11 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// GetBlock, PutBlock and TouchBlock implement lower-level code for
-// handling blocks by rooting through volumes connected to the local
-// machine.  Once the handler has determined that system policy permits
-// the request, it calls these methods to perform the actual operation.
+// ==============================
+// GetBlock and PutBlock implement lower-level code for handling
+// blocks by rooting through volumes connected to the local machine.
+// Once the handler has determined that system policy permits the
+// request, it calls these methods to perform the actual operation.
 //
 // TODO(twp): this code would probably be better located in the
 // VolumeManager interface. As an abstraction, the VolumeManager
@@ -408,7 +409,22 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 // block is stored on, so it should be responsible for figuring out
 // which volume to check for fetching blocks, storing blocks, etc.
 
-func GetBlock(hash string) ([]byte, error) {
+// ==============================
+// GetBlock fetches and returns the block identified by "hash".  If
+// the update_timestamp argument is true, GetBlock also updates the
+// block's file modification time (for the sake of PutBlock, which
+// must update the file's timestamp when the block already exists).
+//
+// On success, GetBlock returns a byte slice with the block data, and
+// a nil error.
+//
+// If the block cannot be found on any volume, returns NotFoundError.
+//
+// If the block found does not have the correct MD5 hash, returns
+// DiskHashError.
+//
+
+func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 	// Attempt to read the requested hash from a keep volume.
 	error_to_caller := NotFoundError
 
@@ -442,6 +458,10 @@ func GetBlock(hash string) ([]byte, error) {
 				if error_to_caller != NotFoundError {
 					log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned\n",
 						vol, hash)
+				}
+				// Update the timestamp if the caller requested.
+				if update_timestamp {
+					vol.Touch(hash)
 				}
 				return buf, nil
 			}
@@ -489,22 +509,16 @@ func PutBlock(block []byte, hash string) error {
 	}
 
 	// If we already have a block on disk under this identifier, return
-	// success (but check for MD5 collisions).
+	// success (but check for MD5 collisions).  While fetching the block,
+	// update its timestamp.
 	// The only errors that GetBlock can return are DiskHashError and NotFoundError.
 	// In either case, we want to write our new (good) block to disk,
 	// so there is nothing special to do if err != nil.
-	if oldblock, err := GetBlock(hash); err == nil {
+	//
+	if oldblock, err := GetBlock(hash, true); err == nil {
 		if bytes.Compare(block, oldblock) == 0 {
-			// The block already exists; update the timestamp and
-			// return.
-			// Note that TouchBlock will fail (and therefore
-			// so will PutBlock) if the block exists but is found on a
-			// read-only volume. That is intentional: if the user has
-			// requested N replicas of a block, we want to be sure that
-			// there are at least N *writable* replicas, so a block
-			// that cannot be written to should not count toward the
-			// replication total.
-			return TouchBlock(hash)
+			// The block already exists; return success.
+			return nil
 		} else {
 			return CollisionError
 		}
@@ -538,22 +552,6 @@ func PutBlock(block []byte, hash string) error {
 			return GenericError
 		}
 	}
-}
-
-// TouchBlock finds the block identified by hash and updates its
-// filesystem modification time with the current time.
-func TouchBlock(hash string) error {
-	for _, vol := range KeepVM.Volumes() {
-		err := vol.Touch(hash)
-		if os.IsNotExist(err) {
-			continue
-		}
-		// either err is nil (meaning success) or some error other
-		// than "file does not exist" (which we should return upward).
-		return err
-	}
-	// If we got here, the block was not found on any volume.
-	return os.ErrNotExist
 }
 
 // IsValidLocator
