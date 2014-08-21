@@ -437,7 +437,7 @@ class User < ArvadosModel
       elsif !(/^[a-zA-Z][-._a-zA-Z0-9]{0,30}[a-zA-Z0-9]$/.match(username))
         return true
       else
-        username = derive_unique_username username
+        return true if !(username = derive_unique_username username)
       end
     end
 
@@ -473,7 +473,7 @@ class User < ArvadosModel
 
       username = orig_username + SecureRandom.random_number(1000).to_s
     end
-    return username
+    return nil  # count expired and no unused username was available
   end
 
   # Send notification if the user saved profile for the first time
