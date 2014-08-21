@@ -100,15 +100,21 @@ module CurrentApiClient
 
   def act_as_system_user
     if block_given?
-      user_was = Thread.current[:user]
-      Thread.current[:user] = system_user
-      begin
+      act_as_user system_user do
         yield
-      ensure
-        Thread.current[:user] = user_was
       end
     else
       Thread.current[:user] = system_user
+    end
+  end
+
+  def act_as_user user
+    user_was = Thread.current[:user]
+    Thread.current[:user] = user
+    begin
+      yield
+    ensure
+      Thread.current[:user] = user_was
     end
   end
 

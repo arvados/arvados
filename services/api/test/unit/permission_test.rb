@@ -132,6 +132,48 @@ class PermissionTest < ActiveSupport::TestCase
     end
   end
 
+  test "users with bidirectional read permission in group can see each other, but cannot see each other's private articles" do
+    a = create :active_user first_name: "A"
+    b = create :active_user first_name: "B"
+    other = create :active_user first_name: "OTHER"
+    act_as_system_user do
+      g = create :group
+      [a,b].each do |u|
+        create(:permission_link,
+               name: 'can_read', tail_uuid: u.uuid, head_uuid: g.uuid)
+        create(:permission_link,
+               name: 'can_read', head_uuid: u.uuid, tail_uuid: g.uuid)
+      end
+    end
+    a_specimen = act_as_user a do
+      Specimen.create!
+    end
+    assert_not_empty(Specimen.readable_by(a).where(uuid: a_specimen.uuid),
+                     "A cannot read own Specimen, following test probably useless.")
+    assert_empty(Specimen.readable_by(b).where(uuid: a_specimen.uuid),
+                 "B can read A's Specimen")
+    [a,b].each do |u|
+      assert_empty(User.readable_by(u).where(uuid: other.uuid),
+                   "#{u.first_name} can see OTHER in the user list")
+      assert_empty(User.readable_by(other).where(uuid: u.uuid),
+                   "OTHER can see #{u.first_name} in the user list")
+      act_as_user u do
+        assert_raises ArvadosModel::PermissionDeniedError, "wrote without perm" do
+          other.update_attributes!(prefs: {'pwned' => true})
+        end
+        assert_equal true, u.update_attributes!(prefs: {'thisisme' => true})
+      end
+      act_as_user other do
+        ([other, a, b] - [u]).each do |x|
+          assert_raises ArvadosModel::PermissionDeniedError, "wrote without perm" do
+            x.update_attributes!(prefs: {'pwned' => true})
+          end
+        end
+        assert_equal true, other.update_attributes!(prefs: {'thisisme' => true})
+      end
+    end
+  end
+
   test "cannot create with owner = unwritable user" do
     set_user_from_auth :rominiadmin
     assert_raises ArvadosModel::PermissionDeniedError, "created with owner = unwritable user" do

@@ -38,6 +38,7 @@ module ArvadosTestSupport
 end
 
 class ActiveSupport::TestCase
+  include FactoryGirl::Syntax::Methods
   fixtures :all
 
   include ArvadosTestSupport
