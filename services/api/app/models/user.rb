@@ -455,9 +455,11 @@ class User < ArvadosModel
 
   # Find a username that starts with the given string and does not collide
   # with any existing repository name or VM login name
-  def derive_unique_username username
+  def derive_unique_username orig_username
     vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
-    while true
+
+    username = String.new orig_username
+    10000.times do |count|
       if Repository.where(name: username).empty?
         login_collisions = Link.where(head_uuid: vm_uuid,
                                       link_class: 'permission',
@@ -468,8 +470,10 @@ class User < ArvadosModel
           return username
         end
       end
-      username = username + SecureRandom.random_number(100).to_s
+
+      username = orig_username + SecureRandom.random_number(1000).to_s
     end
+    return username
   end
 
   # Send notification if the user saved profile for the first time
