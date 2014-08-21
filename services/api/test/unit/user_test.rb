@@ -154,10 +154,10 @@ class UserTest < ActiveSupport::TestCase
 
     [false, [], [], '^^incorrect_format@example.com', true, true, false],
 
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', true, true, true],  # existing repository name 'foo'
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', true, false, true],  # existing repository name 'foo'
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', false, true, true],  # existing repository name 'foo'
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', false, false, true],  # existing repository name 'foo', but we are not creating repo or login link
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', true, true, true],  # existing repository name 'auto_setup_repo'
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', true, false, true],  # existing repository name 'auto_setup_repo'
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', false, true, true],  # existing repository name 'auto_setup_repo'
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', false, false, true],  # existing repository name 'auto_setup_repo', but we are not creating repo or login link
 
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, true, true], # existing vm login name
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, false, true], # existing vm login name
@@ -479,15 +479,8 @@ class UserTest < ActiveSupport::TestCase
 
       username = user.email.partition('@')[0] if email
 
-      # check vm uuid
-      vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
-      if vm_uuid
-        verify_link_exists true, vm_uuid, user.uuid, 'permission', 'can_login', 'username', username
-      else
-        verify_link_exists false, vm_uuid, user.uuid, 'permission', 'can_login', 'username', username
-      end
-
       # check repo
+      repo_names = []
       if Rails.configuration.auto_setup_new_users_with_repository
         repos = Repository.where('name like ?', "%#{username}%")
         assert_not_nil repos, 'repository not found'
@@ -495,8 +488,24 @@ class UserTest < ActiveSupport::TestCase
         repo_uuids = []
         repos.each do |repo|
           repo_uuids << repo[:uuid]
+          repo_names << repo[:name]
         end
+        if username == 'auto_setup_repo'
+          begin
+            repo_names.delete('auto_setup_repo')
+          ensure
+            assert_equal true, repo_names.any?, 'Repository name for username foo is not unique'
+          end
+        end    
         verify_link_exists true, repo_uuids, user.uuid, 'permission', 'can_manage', nil, nil
+      end
+
+      # check vm uuid
+      vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
+      if vm_uuid
+        verify_link_exists true, vm_uuid, user.uuid, 'permission', 'can_login', 'username', (username == 'auto_setup_repo' ? repo_names.first : username)
+      else
+        verify_link_exists false, vm_uuid, user.uuid, 'permission', 'can_login', 'username', (username == 'auto_setup_repo' ? repo_names.first : username)
       end
     end
 

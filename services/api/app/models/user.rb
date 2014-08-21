@@ -438,8 +438,9 @@ class User < ArvadosModel
         return true
       else
         username = derive_unique_username username
-      end  
+      end
     end
+
     # setup user
     if !Rails.configuration.auto_setup_new_users_with_vm_uuid &&
        !Rails.configuration.auto_setup_new_users_with_repository
