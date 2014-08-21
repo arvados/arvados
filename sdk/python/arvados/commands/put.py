@@ -463,7 +463,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             try:
                 if 'name' in collection:
                     arvados.api().collections().update(uuid=output,
-                                                       body={"name": project_link["name"]}).execute()
+                                                       body={"owner_uuid": project_link["tail_uuid"],
+                                                             "name": project_link["name"]}).execute()
                 else:
                     create_project_link(output, project_link)
             except apiclient.errors.Error as error:
