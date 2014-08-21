@@ -23,8 +23,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
-        assert page.has_link?('Show version / debugging info'), 'No link - Show version / debugging info'
-        assert page.has_link?('Report a problem'), 'No link - Report a problem'
+        assert page.has_link?('Show version / debugging info ...'), 'No link - Show version / debugging info'
+        assert page.has_link?('Report a problem ...'), 'No link - Report a problem'
 
         # check show version info link
         click_link 'Show version / debugging info ...'
@@ -40,7 +40,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert page.has_text?('Workbench URI'), 'No text - Arvados base'
       assert page.has_no_text?('Found a problem?'), 'Found text - Found a problem'
       assert page.has_button?('Close'), 'No button - Close'
-      assert page.has_no_button?('Report a problem'), 'Found button - Report a problem'
+      assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
       click_button 'Close'
     end
 
@@ -61,15 +61,15 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert page.has_text?('Workbench URI'), 'No text - Arvados base'
       assert page.has_text?('Found a problem?'), 'No text - Found a problem'
       assert page.has_no_button?('Close'), 'Found button - Close'
-      assert page.has_button?('Report a problem'), 'No button - Report a problem'
+      assert page.has_button?('Send problem report'), 'No button - Send problem report'
       assert page.has_button?('Cancel'), 'No button - Cancel'
 
       # enter a report text and click on report
       page.find_field('report_issue_text').set 'my test report text'
-      click_button 'Report a problem'
+      click_button 'Send problem report'
 
       # ajax success updated button texts and added footer message
-      assert page.has_no_button?('Report a problem'), 'Found button - Report a problem'
+      assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
       assert page.has_no_button?('Cancel'), 'Found button - Cancel'
       assert page.has_text?('Report sent'), 'No text - Report sent'
       assert page.has_button?('Close'), 'No text - Close'

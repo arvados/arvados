@@ -25,7 +25,7 @@ $(document).
     if ($sendButton && $sendButton.prop('disabled')) {
       $('div').remove('.modal-footer-status');
       $('.modal-footer').append('<div class="modal-footer-status alert alert-danger"></br><p align="left">We are sorry. We could not submit your report! We really want this to work, though -- please try again.</p></div>');
-      $sendButton.html('Report a problem');
+      $sendButton.html('Send problem report');
       $sendButton.attr('disabled',false);
     }
     var $cancelButton = $('#report-issue-cancel');

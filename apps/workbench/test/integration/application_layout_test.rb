@@ -71,8 +71,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
         assert page.has_link?('SDK Reference'), 'No link - SDK Reference'
-        assert page.has_link?('Show version / debugging info'), 'No link - Show version / debugging info'
-        assert page.has_link?('Report a problem'), 'No link - Report a problem'
+        assert page.has_link?('Show version / debugging info ...'), 'No link - Show version / debugging info'
+        assert page.has_link?('Report a problem ...'), 'No link - Report a problem'
         # Version info and Report a problem are tested in "report_issue_test.rb"
       end
     end
