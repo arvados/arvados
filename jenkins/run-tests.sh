@@ -5,14 +5,20 @@
 # Exit non-zero if any tests fail.
 #
 # Arguments:
-# --skip FOO   Do not test the FOO component.
-# --only FOO   Do not test anything except the FOO component.
+# --skip FOO     Do not test the FOO component.
+# --only FOO     Do not test anything except the FOO component.
+# envvar=value   Set $envvar to value
 #
 # Regardless of which components are tested, install all components in
 # the usual sequence. (Many test suites depend on other components
 # being installed.)
 #
+# Useful environment variables include $workbench_test, $apiserver_test and
+# $cli_test.  To run a specific test, use a command line such as:
 #
+# $ ./run-tests.sh --only workbench workbench_test=TEST=test/integration/pipeline_instances_test.rb
+
+
 # First make sure to remove any ARVADOS_ variables from the calling environment
 # that could interfer with the tests.
 unset $(env | cut -d= -f1 | grep \^ARVADOS_)
@@ -58,6 +64,9 @@ do
             ;;
         --only)
             only="$1"; shift
+            ;;
+        *=*)
+            eval $arg
             ;;
         *)
             echo >&2 "$0: Unrecognized option: '$arg'"
@@ -188,7 +197,7 @@ do_install apiserver
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    bundle exec rake test
+    bundle exec rake test "$apiserver_test"
 }
 do_test apiserver
 
@@ -264,7 +273,7 @@ done
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && bundle install --deployment \
-        && bundle exec rake test
+        && bundle exec rake test "$workbench_test"
 }
 do_test workbench
 
@@ -273,7 +282,7 @@ test_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && bundle install --deployment \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test "$cli_test"
 }
 do_test cli
 
