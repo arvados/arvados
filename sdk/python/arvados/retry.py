@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import time
+
 from collections import deque
 
 import arvados.errors
@@ -124,3 +126,34 @@ def check_http_response_success(result):
         return False
     else:
         return None  # Get well soon, server.
+
+class HTTPRetryLoop(RetryLoop):
+    """Coordinate limited retries of HTTP requests.
+
+    This RetryLoop uses check_http_response_success as the default
+    success check, and provides exponential backoff between
+    iterations.
+    """
+    def __init__(self, num_retries, success_check=check_http_response_success,
+                 backoff_start=1, backoff_growth=2, save_results=1):
+        """Construct an HTTPRetryLoop.
+
+        New arguments (see RetryLoop for others):
+        * backoff_start: The number of seconds that must pass before the
+          loop's second iteration.  Default 1.
+        * backoff_growth: The wait time multiplier after each iteration.
+          Default 2 (i.e., double the wait time each time).
+        """
+        self.backoff_wait = backoff_start
+        self.backoff_growth = backoff_growth
+        self.next_start_time = 0
+        super(HTTPRetryLoop, self).__init__(num_retries, success_check,
+                                            save_results)
+
+    def next(self):
+        if self.running() and (self.tries_left > 0):
+            wait_time = max(0, self.next_start_time - time.time())
+            time.sleep(wait_time)
+            self.backoff_wait *= self.backoff_growth
+        self.next_start_time = time.time() + self.backoff_wait
+        return super(HTTPRetryLoop, self).next()
