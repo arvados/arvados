@@ -22,4 +22,4 @@ Perhaps you'd like to
 </p>
 
 <% error_message = "The #{req_item_plain_text} was not found." %>
-<%= render :partial => "report_error", :locals => {error_message: error_message} %>
+<%= render :partial => "report_error", :locals => {error_message: error_message, error_type: '404'} %>

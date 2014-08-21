@@ -45,21 +45,38 @@
 
       <div class="modal-body" style="overflow-y:scroll">
         <div class="form-group">
-          <label for="support_version" class="col-sm-4 control-label"> Support email </label>
+          <label for="support_email" class="col-sm-4 control-label"> Support email </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="support_version"><a href="mailto:<%=support_email%>?subject=Workbench problem report&body=Problem while viewing page <%=@popup_params[:current_location]%>"><%=support_email%></a></p>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="server_version" class="col-sm-4 control-label"> Server version </label>
+          <label for="current_page" class="col-sm-4 control-label"> Current page </label>
+          <div class="col-sm-8">
+            <p class="form-control-static" name="current_page"><%=@popup_params[:current_location]%></a></p>
+          </div>
+        </div>
+
+        <% if @popup_params[:popup_type] == 'report' %>
+          <div class="form-group">
+            <label for="report_text_label" class="col-sm-4 control-label"> Found a problem? Tell us what happened </label>
+            <div class="col-sm-8">
+              <textarea class="form-control" rows="4" id="report_issue_text" name="report_issue_text" type="text"/>
+            </div>
+            <input type="hidden" name="report_additional_info" value="<%=additional_info.to_json%>">
+          </div>
+        <% end %>
+
+        <div class="form-group">
+          <label for="server_version" class="col-sm-4 control-label"> API version </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="server_version"><%=api_version%></p>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="generated_at" class="col-sm-4 control-label"> Server restarted at </label>
+          <label for="generated_at" class="col-sm-4 control-label"> API startup time </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="generated_at"><%=generated_at%></p>
           </div>
@@ -73,33 +90,59 @@
         </div>
 
         <div class="form-group">
-          <label for="arvados_base" class="col-sm-4 control-label"> Arvados base </label>
+          <label for="arvados_base" class="col-sm-4 control-label"> Workbench URI </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="arvados_base"><%=arvados_base%></p>
           </div>
         </div>
 
-        <% if @popup_params[:popup_type] == 'report' %>
+        <% if current_user %>
           <div class="form-group">
-            <label for="report_text_label" class="col-sm-4 control-label"> Found a problem? Tell us what happened </label>
+            <label for="user_uuid" class="col-sm-4 control-label"> User UUID </label>
             <div class="col-sm-8">
-              <textarea class="form-control" rows="1" id="report_issue_text" name="report_issue_text" type="text"/>
+              <p class="form-control-static" name="user_uuid"><%=current_user.uuid%></p>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="user_email" class="col-sm-4 control-label"> User email </label>
+            <div class="col-sm-8">
+              <p class="form-control-static" name="user_email"><%=current_user.email%></p>
             </div>
           </div>
         <% end %>
 
-        <div class="form-group">
-          <label for="additional_info" class="col-sm-4 control-label"> Additional info </label>
-          <div class="col-sm-8">
-            <textarea readonly class="form-control" rows="1" name="additional_info" type="text"><%=additional_info_str%></textarea>
+        <% if @popup_params[:error_message] %>
+          <div class="form-group">
+            <label for="error_message" class="col-sm-4 control-label"> Error message </label>
+            <div class="col-sm-8">
+              <p class="form-control-static" name="error_mesasge"><%=@popup_params[:error_message]%></p>
+            </div>
           </div>
-          <input type="hidden" name="report_additional_info" value="<%=additional_info.to_json%>">
-        </div>
+        <% end %>
+
+        <% if @popup_params[:api_error_request_url] %>
+          <div class="form-group">
+            <label for="api_error_url" class="col-sm-4 control-label"> API error request url </label>
+            <div class="col-sm-8">
+              <p class="form-control-static" name="api_error_url"><%=@popup_params[:api_error_request_url]%></p>
+            </div>
+          </div>
+        <% end %>
+
+        <% if @popup_params[:api_error_response] %>
+          <div class="form-group">
+            <label for="api_error_response" class="col-sm-4 control-label"> API error response </label>
+            <div class="col-sm-8">
+              <p class="form-control-static" name="api_error_response"><%=@popup_params[:api_error_response]%></p>
+            </div>
+          </div>
+        <% end %>
       </div>
 
       <div class="modal-footer">
         <% if @popup_params[:popup_type] == 'report' %>
-          <button type="submit" id="report-issue-submit" class="btn btn-primary report-issue-submit" autofocus>Report issue</button>
+          <button type="submit" id="report-issue-submit" class="btn btn-primary report-issue-submit" autofocus>Report a problem</button>
           <button class="btn btn-default report-issue-cancel" id="report-issue-cancel" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
         <% else %>
           <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Close</button>

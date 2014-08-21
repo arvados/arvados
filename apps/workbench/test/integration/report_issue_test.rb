@@ -27,21 +27,20 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         assert page.has_link?('Report a problem'), 'No link - Report a problem'
 
         # check show version info link
-        click_link 'Show version / debugging info'
+        click_link 'Show version / debugging info ...'
       end
     end
 
     within '.modal-content' do
       assert page.has_text?('Version / debugging info'), 'No text - Version / debugging info'
       assert page.has_no_text?('Report a problem'), 'Found text - Report a problem'
-      assert page.has_text?('Server version'), 'No text - Server version'
-      assert page.has_text?('Server restarted at'), 'No text - Server restarted at'
+      assert page.has_text?('API version'), 'No text - API version'
+      assert page.has_text?('API startup time'), 'No text - API startup time'
       assert page.has_text?('Workbench version'), 'No text - Workbench version'
-      assert page.has_text?('Arvados base'), 'No text - Arvados base'
-      assert page.has_text?('Additional info'), 'No text - Additional info'
+      assert page.has_text?('Workbench URI'), 'No text - Arvados base'
       assert page.has_no_text?('Found a problem?'), 'Found text - Found a problem'
       assert page.has_button?('Close'), 'No button - Close'
-      assert page.has_no_button?('Report issue'), 'Found button - Report issue'
+      assert page.has_no_button?('Report a problem'), 'Found button - Report a problem'
       click_button 'Close'
     end
 
@@ -49,29 +48,28 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
-        click_link 'Report a problem'
+        click_link 'Report a problem ...'
       end
     end
 
     within '.modal-content' do
       assert page.has_text?('Report a problem'), 'No text - Report a problem'
       assert page.has_no_text?('Version / debugging info'), 'Found text - Version / debugging info'
-      assert page.has_text?('Server version'), 'No text - Server version'
-      assert page.has_text?('Server restarted at'), 'No text - Server restarted at'
+      assert page.has_text?('API version'), 'No text - API version'
+      assert page.has_text?('API startup time'), 'No text - API startup time'
       assert page.has_text?('Workbench version'), 'No text - Workbench version'
-      assert page.has_text?('Arvados base'), 'No text - Arvados base'
-      assert page.has_text?('Additional info'), 'No text - Additional info'
+      assert page.has_text?('Workbench URI'), 'No text - Arvados base'
       assert page.has_text?('Found a problem?'), 'No text - Found a problem'
       assert page.has_no_button?('Close'), 'Found button - Close'
-      assert page.has_button?('Report issue'), 'No button - Report issue'
+      assert page.has_button?('Report a problem'), 'No button - Report a problem'
       assert page.has_button?('Cancel'), 'No button - Cancel'
 
       # enter a report text and click on report
       page.find_field('report_issue_text').set 'my test report text'
-      click_button 'Report issue'
+      click_button 'Report a problem'
 
       # ajax success updated button texts and added footer message
-      assert page.has_no_button?('Report issue'), 'Found button - Report issue'
+      assert page.has_no_button?('Report a problem'), 'Found button - Report a problem'
       assert page.has_no_button?('Cancel'), 'Found button - Cancel'
       assert page.has_text?('Report sent'), 'No text - Report sent'
       assert page.has_button?('Close'), 'No text - Close'

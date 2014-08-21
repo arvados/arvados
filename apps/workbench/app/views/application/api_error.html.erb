@@ -22,4 +22,4 @@ If that doesn't work, the information below can help system administrators track
 </dl>
 <% end %>
 
-<%= render :partial => "report_error", :locals => {api_error: api_error} %>
+<%= render :partial => "report_error", :locals => {api_error: api_error, error_type: 'api'} %>

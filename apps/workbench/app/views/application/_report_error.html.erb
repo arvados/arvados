@@ -1,7 +1,11 @@
 <p>
 <br/><strong>If you suspect this is a bug, you can help us fix it by sending us a problem report:</strong></br></br>
-<% if api_error %>
-  Send a problem report right here. <%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.url, action_method: 'post', api_error_request_url: api_error.request_url, api_error_response: api_error.api_response_s),
+<% if error_type == 'api' %>
+  <%
+    api_request_url = api_error.andand.request_url ? api_error.request_url : ''
+    api_error_response = api_error.andand.api_response ? api_error.api_response : ''
+  %>
+  Send a problem report right here. <%= link_to report_issue_popup_path(popup_type: 'report', current_location: request.url, action_method: 'post', api_error_request_url: api_request_url, api_error_response: api_error_response),
         {class: 'btn btn-primary report-issue-modal-window', 'data-toggle' =>  "modal", 'data-target' => '#report-issue-modal-window', :remote => true, return_to: request.url} do %>
         <i class="fa fa-fw fa-support"></i> Report problem
   <% end %>
@@ -15,3 +19,5 @@
 <br/></br>
   If you prefer email, send to: <a href="mailto:<%=support_email%>?subject=Workbench problem report&body=Problem while viewing page <%=request.url%>"><%=support_email%></a>
 </p>
+
+
