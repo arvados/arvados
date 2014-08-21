@@ -358,7 +358,7 @@ foo_collection_tag:
   modified_at: 2014-04-21 15:37:48 -0400
   updated_at: 2014-04-21 15:37:48 -0400
   tail_uuid: ~
-  head_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
+  head_uuid: zzzzz-4zz18-fy296fx3hot09f7
   link_class: tag
   name: foo_tag
   properties: {}

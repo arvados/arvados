@@ -28,13 +28,7 @@ in_asubproject:
   created_at: 2014-04-21 15:37:48 -0400
   modified_at: 2014-04-21 15:37:48 -0400
 
-in_aproject_linked_from_asubproject:
-  uuid: zzzzz-j58dm-5gid26432uujf79
-  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
-  created_at: 2014-04-21 15:37:48 -0400
-  modified_at: 2014-04-21 15:37:48 -0400
-
-owned_by_aproject_with_no_name_link:
+owned_by_aproject_with_no_name:
   uuid: zzzzz-j58dm-ypsjlol9dofwijz
   owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
   created_at: 2014-05-05 04:11:52 -0400

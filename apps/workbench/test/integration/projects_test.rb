@@ -27,7 +27,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   test 'Add a new name, then edit it, without creating a duplicate' do
     project_uuid = api_fixture('groups')['aproject']['uuid']
-    specimen_uuid = api_fixture('specimens')['owned_by_aproject_with_no_name_link']['uuid']
+    specimen_uuid = api_fixture('specimens')['owned_by_aproject_with_no_name']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
     click_link 'Other objects'
     within '.selection-action-container' do

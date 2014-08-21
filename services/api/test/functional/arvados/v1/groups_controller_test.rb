@@ -239,19 +239,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items_available']
   end
 
-  test 'get group-owned objects without include_linked' do
-    unexpected_uuid = specimens(:in_aproject_linked_from_asubproject).uuid
-    authorize_with :active
-    get :contents, {
-      id: groups(:asubproject).uuid,
-      format: :json,
-    }
-    assert_response :success
-    uuids = json_response['items'].collect { |i| i['uuid'] }
-    assert_equal nil, uuids.index(unexpected_uuid)
-  end
-
-
   test "get all pages of group-owned objects" do
     authorize_with :active
     limit = 5
