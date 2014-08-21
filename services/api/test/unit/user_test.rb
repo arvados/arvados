@@ -496,7 +496,7 @@ class UserTest < ActiveSupport::TestCase
           ensure
             assert_equal true, repo_names.any?, 'Repository name for username foo is not unique'
           end
-        end    
+        end
         verify_link_exists true, repo_uuids, user.uuid, 'permission', 'can_manage', nil, nil
       end
 
@@ -515,7 +515,7 @@ class UserTest < ActiveSupport::TestCase
 
     new_user_email_subject = "#{Rails.configuration.email_subject_prefix}New user created notification"
     if Rails.configuration.auto_setup_new_users
-      new_user_email_subject = valid_username ? "#{Rails.configuration.email_subject_prefix}New user created and setup notification" : 
+      new_user_email_subject = valid_username ? "#{Rails.configuration.email_subject_prefix}New user created and setup notification" :
                                                 "#{Rails.configuration.email_subject_prefix}New user created, but not setup notification"
     end
 
