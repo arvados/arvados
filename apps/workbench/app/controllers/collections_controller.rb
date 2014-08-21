@@ -44,6 +44,13 @@ class CollectionsController < ApplicationController
   end
 
   def choose
+    # Find collections using default find_objects logic, then search for name
+    # links, and preload any other links connected to the collections that are
+    # found.
+    # Name links will be obsolete when issue #3036 is merged,
+    # at which point this entire custom #choose function can probably be
+    # eliminated.
+
     params[:limit] ||= 40
 
     find_objects_for_index
@@ -59,6 +66,7 @@ class CollectionsController < ApplicationController
 
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
+
     preload_links_for_objects (@collections.to_a + @objects.to_a)
     super
   end
