@@ -423,63 +423,53 @@ class User < ArvadosModel
 
   # Automatically setup new user during creation
   def auto_setup_new_user
-    blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist.split(', ')
+    return true if !Rails.configuration.auto_setup_new_users
+    return true if !self.email
 
-    username = self.email.partition('@')[0] if self.email
+    if Rails.configuration.auto_setup_new_users_with_vm_uuid ||
+       Rails.configuration.auto_setup_new_users_with_repository
+      username = self.email.partition('@')[0] if self.email
+      return true if !username
 
-    if !Rails.configuration.auto_setup_new_users ||
-       !(/^[_.A-Za-z0-9][-\@_.A-Za-z0-9]*\$?$/.match(self.email)) ||
-       blacklisted_usernames.include?(username)
-      return true
+      username = username.gsub!(/[-._]/, '') || username
+      blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist
+      if blacklisted_usernames.include?(username)
+        return true;
+      elsif !(/^[a-zA-Z][a-zA-Z0-9]{0,31}$/.match(username))
+        return true
+      else
+        username = derive_unique_username username
+      end  
+    end
+    # setup user
+    if !Rails.configuration.auto_setup_new_users_with_vm_uuid &&
+       !Rails.configuration.auto_setup_new_users_with_repository
+      oid_login_perm = create_oid_login_perm Rails.configuration.default_openid_prefix
+      group_perm = create_user_group_link
     else
-      username = derive_unique_username username
-      # setup user
-      setup_repo_vm_links(username, Rails.configuration.auto_setup_new_users_with_vm_uuid,
+      setup_repo_vm_links(username,
+                          Rails.configuration.auto_setup_new_users_with_vm_uuid,
                           Rails.configuration.default_openid_prefix)
     end
   end
 
-  # Derive repo name and vm username using the string before @ in user's email
-  # If a repo or vm login link with this username exists,
-  # generate unique string by appending a random number
+  # Find a username that starts with the given string and does not collide
+  # with any existing repository name or VM login name
   def derive_unique_username username
-      # If repo and vm login link are not being created, no need to generate a unique username
-      vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
-      if !vm_uuid && !Rails.configuration.auto_setup_new_users_with_repository
-        return username
-      end
-
-      # need a unique username
-      found_unique_username = false
-      while !found_unique_username
-        repo = Repository.where(name: username).first
-
-        if repo
-          username = username + SecureRandom.random_number(1000000).to_s
-        elsif vm_uuid
-          login_props = {"username" => username}
-
-          vm_login_perms = Link.where(head_uuid: vm_uuid,
+    vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
+    while true
+      if Repository.where(name: username).empty?
+        login_collisions = Link.where(head_uuid: vm_uuid,
                                       link_class: 'permission',
-                                      name: 'can_login')
-          perm_exists = false
-          vm_login_perms.each do |perm|
-            if perm.properties['username'] == username
-              perm_exists = true
-              break
-            end
-          end
-
-          if perm_exists
-            username = username + SecureRandom.random_number(1000000).to_s
-          else
-            found_unique_username = true
-          end
-        else
-          found_unique_username = true
+                                      name: 'can_login').select do |perm|
+          perm.properties['username'] == username
+        end
+        if login_collisions.empty?
+          return username
         end
       end
-    return username
+      username = username + SecureRandom.random_number(100).to_s
+    end
   end
 
   # Send notification if the user saved profile for the first time
