@@ -10,16 +10,16 @@ Access the Arvados Workbench using this link: "https://{{ site.arvados_workbench
 
 Open a shell on the system where you want to use the Arvados client. This may be your local workstation, or an Arvados virtual machine accessed with SSH (instructions for "Unix":{{site.baseurl}}/user/getting_started/ssh-access-unix.html#login or "Windows":{{site.baseurl}}/user/getting_started/ssh-access-windows.html#login).
 
-Click on the link with your _email address_ in the upper right corner to access the user settings menu, and click on the menu item *Manage account* to go to the account management page. On the *Manage account* page, you will see the *Current Token* panel, which lists your current token and instructions to setup your environment.
+Click on the link with your _email address_ in the upper right corner to access your account menu, then click on the menu item *Manage account* to go to the account management page. On the *Manage account* page, you will see the *Current Token* panel, which lists your current token and instructions to set up your environment.
 
-h2. Setting the environment
+h2. Setting environment variables
 
-For your convenience, the "Manage account" page on Workbench provides the "Current Token" panel that includes a command you may copy and paste directly into the shell.  It will look something as the following. 
+For your convenience, the *Manage account* page on Workbench provides the *Current Token* panel that includes a command you may copy and paste directly into the shell.  It will look something as the following.
 
 bc. HISTIGNORE=$HISTIGNORE:'export ARVADOS_API_TOKEN=*'
 export ARVADOS_API_TOKEN=2jv9346o396exampledonotuseexampledonotuseexes7j1ld
 export ARVADOS_API_HOST={{ site.arvados_api_host }}
-export ARVADOS_API_HOST_INSECURE=true
+unset ARVADOS_API_HOST_INSECURE
 
 * The @export@ command puts a local shell variable into the environment that will be inherited by child processes such as the @arv@ client.
 

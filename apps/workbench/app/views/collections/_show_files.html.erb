@@ -18,7 +18,7 @@
       <ul class="collection_files">
     <% else %>
       <% link_params = {controller: 'collections', action: 'show_file',
-                        uuid: @object.uuid, file: file_path, size: size} %>
+                        uuid: @object.portable_data_hash, file: file_path, size: size} %>
        <div class="collection_files_row">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
@@ -28,7 +28,7 @@
                 :friendly_type => "File",
                 :friendly_name => "#{@object.uuid}/#{file_path}",
                 :href => url_for(controller: 'collections', action: 'show_file',
-                                 uuid: @object.uuid, file: file_path),
+                                 uuid: @object.portable_data_hash, file: file_path),
                 :title => "Include #{file_path} in your selections",
               } %>
           <% end %>

@@ -46,6 +46,9 @@ class CollectionsController < ApplicationController
   def choose
     params[:limit] ||= 40
 
+    find_objects_for_index
+    @collections = @objects
+
     @filters += [['link_class','=','name'],
                  ['head_uuid','is_a','arvados#collection']]
 
@@ -56,7 +59,7 @@ class CollectionsController < ApplicationController
 
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
-    preload_links_for_objects @objects.to_a
+    preload_links_for_objects (@collections.to_a + @objects.to_a)
     super
   end
 
@@ -161,8 +164,8 @@ class CollectionsController < ApplicationController
         Job.limit(RELATION_LIMIT).where(conds)
           .results.sort_by { |j| j.finished_at || j.created_at }
       end
-      @output_of = jobs_with.call(output: @object.uuid)
-      @log_of = jobs_with.call(log: @object.uuid)
+      @output_of = jobs_with.call(output: @object.portable_data_hash)
+      @log_of = jobs_with.call(log: @object.portable_data_hash)
       @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'name').results
       project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
