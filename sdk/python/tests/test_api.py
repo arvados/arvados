@@ -10,22 +10,17 @@ import run_test_server
 import unittest
 
 from apiclient.http import RequestMockBuilder
-from httplib import responses as HTTP_RESPONSES
+from arvados_testutil import fake_httplib2_response
 
 if not mimetypes.inited:
     mimetypes.init()
 
 class ArvadosApiClientTest(unittest.TestCase):
-    @classmethod
-    def response_from_code(cls, code):
-        return httplib2.Response(
-            {'status': code,
-             'reason': HTTP_RESPONSES.get(code, "Unknown Response"),
-             'Content-Type': mimetypes.types_map['.json']})
+    ERROR_HEADERS = {'Content-Type': mimetypes.types_map['.json']}
 
     @classmethod
     def api_error_response(cls, code, *errors):
-        return (cls.response_from_code(code),
+        return (fake_httplib2_response(code, **cls.ERROR_HEADERS),
                 json.dumps({'errors': errors,
                             'error_token': '1234567890+12345678'}))
 
@@ -38,7 +33,9 @@ class ArvadosApiClientTest(unittest.TestCase):
         # FIXME: Figure out a better way to stub this out.
         run_test_server.run()
         mock_responses = {
-            'arvados.humans.delete': (cls.response_from_code(500), ""),
+            'arvados.humans.delete': (
+                fake_httplib2_response(500, **cls.ERROR_HEADERS),
+                ""),
             'arvados.humans.get': cls.api_error_response(
                 422, "Bad UUID format", "Bad output format"),
             'arvados.humans.list': (None, json.dumps(
