@@ -79,6 +79,9 @@ func (v *MockVolume) Index(prefix string) string {
 
 func (v *MockVolume) Delete(loc string) error {
 	if _, ok := v.Store[loc]; ok {
+		if time.Since(v.Timestamps[loc]) < permission_ttl {
+			return nil
+		}
 		delete(v.Store, loc)
 		return nil
 	}

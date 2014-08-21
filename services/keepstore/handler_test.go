@@ -451,6 +451,11 @@ func TestDeleteHandler(t *testing.T) {
 	vols := KeepVM.Volumes()
 	vols[0].Put(TEST_HASH, TEST_BLOCK)
 
+	// Explicitly set the permission_ttl to 0 for these
+	// tests, to ensure the MockVolume deletes the blocks
+	// even though they have just been created.
+	permission_ttl = time.Duration(0)
+
 	// Set up a REST router for testing the handlers.
 	rest := MakeRESTRouter()
 
@@ -535,6 +540,29 @@ func TestDeleteHandler(t *testing.T) {
 	var block_deleted = os.IsNotExist(err)
 	if !block_deleted {
 		t.Error("superuser_existing_block_req: block not deleted")
+	}
+
+	// A DELETE request on a block newer than permission_ttl should return
+	// success but leave the block on the volume.
+	vols[0].Put(TEST_HASH, TEST_BLOCK)
+	permission_ttl = time.Duration(1) * time.Hour
+
+	response = IssueRequest(rest, superuser_existing_block_req)
+	ExpectStatusCode(t,
+		"data manager request, existing block",
+		http.StatusOK,
+		response)
+	// Expect response {"copies_deleted":1,"copies_failed":0}
+	expected_dc = deletecounter{1, 0}
+	json.NewDecoder(response.Body).Decode(&response_dc)
+	if response_dc != expected_dc {
+		t.Errorf("superuser_existing_block_req\nexpected: %+v\nreceived: %+v",
+			expected_dc, response_dc)
+	}
+	// Confirm the block has NOT been deleted.
+	_, err = vols[0].Get(TEST_HASH)
+	if err != nil {
+		t.Errorf("testing delete on new block: %s\n", err)
 	}
 }
 
