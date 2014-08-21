@@ -15,6 +15,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "can download an entire collection with a reader token" do
+    Capybara.current_driver = :rack_test
+
     uuid = api_fixture('collections')['foo_file']['uuid']
     token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
     url_head = "/collections/download/#{uuid}/#{token}/"
