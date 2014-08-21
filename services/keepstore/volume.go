@@ -55,7 +55,7 @@ func (v *MockVolume) Put(loc string, block []byte) error {
 		return errors.New("Bad volume")
 	}
 	v.Store[loc] = block
-	return Touch(loc)
+	return v.Touch(loc)
 }
 
 func (v *MockVolume) Touch(loc string) error {

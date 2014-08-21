@@ -328,10 +328,10 @@ func (v *UnixVolume) String() string {
 }
 
 // lockfile and unlockfile use flock(2) to manage kernel file locks.
-func lockfile(f os.File) error {
+func lockfile(f *os.File) error {
 	return syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
 }
 
-func unlockfile(f os.File) error {
+func unlockfile(f *os.File) error {
 	return syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
 }

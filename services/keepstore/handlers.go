@@ -504,7 +504,7 @@ func PutBlock(block []byte, hash string) error {
 			// there are at least N *writable* replicas, so a block
 			// that cannot be written to should not count toward the
 			// replication total.
-			return TouchBlock(block)
+			return TouchBlock(hash)
 		} else {
 			return CollisionError
 		}
