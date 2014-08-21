@@ -170,6 +170,14 @@ class CollectionsController < ApplicationController
         .where(head_uuid: @object.uuid, link_class: 'name').results
       project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
       @projects = project_hash.values
+
+      if @object.uuid.match /[0-9a-f]{32}/
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
+        owners = @same_pdh.map {|s| s.owner_uuid}.to_a
+        preload_objects_for_dataclass Group, owners
+        preload_objects_for_dataclass User, owners
+      end
+
       @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'permission',
                name: 'can_read').results
