@@ -103,7 +103,9 @@ func (v *UnixVolume) Touch(loc string) error {
 	if err != nil {
 		return err
 	}
-	lockfile(f)
+	if e := lockfile(f); e != nil {
+		return e
+	}
 	defer unlockfile(f)
 	now := time.Now().Unix()
 	utime := syscall.Utimbuf{now, now}
