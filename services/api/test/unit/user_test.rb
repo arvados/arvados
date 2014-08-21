@@ -9,7 +9,6 @@ class UserTest < ActiveSupport::TestCase
     system_user
   end
 
-=begin
   test "check non-admin active user properties" do
     @active_user = users(:active)     # get the active user
     assert !@active_user.is_admin, 'is_admin should not be set for a non-admin user'
@@ -127,7 +126,7 @@ class UserTest < ActiveSupport::TestCase
     create_user_and_verify_setup_and_notifications false, [], 'inactive-notify-address@example.com', nil, false
     create_user_and_verify_setup_and_notifications false, [], [], nil, false
   end
-=end
+
   [
     [false, [], [], 'inactive-none@example.com', false, false, true],
     [false, [], [], 'inactive-vm@example.com', true, false, true],
@@ -142,11 +141,12 @@ class UserTest < ActiveSupport::TestCase
     [false, [], [], nil, true, true, false],
 
     [false, [], [], 'arvados', true, true, false],
-    [false, [], [], 'arva_dos', true, true, false],
     [false, [], [], 'arvados', false, false, true],   # since we are not creating repo and vm login, this blaklisted name is not a problem
 
     [false, [], [], 'arvados@example.com', false, false, true],   # since we are not creating repo and vm login, this blaklisted name is not a problem
-    [false, [], [], 'arva_dos@example.com', false, false, true],  # since we are not creating repo and vm login, this blaklisted name is not a problem
+    [false, [], [], 'arva.dos@example.com', true, true, true],    # not blaklisted name
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'root@example.com', true, false, false], # blacklisted name after removing -._ characters
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'roo_t@example.com', false, true, true], # not blacklisted name
 
     [false, [], [], '@example.com', true, false, false],  # incorrect format
     [false, [], [], '@example.com', false, true, false],
@@ -155,31 +155,45 @@ class UserTest < ActiveSupport::TestCase
     [false, [], [], '^^incorrect_format@example.com', true, true, false],
 
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', true, true, true],  # existing repository name 'foo'
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', true, false, true],  # existing repository name 'foo'
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', true, false, true],  # existing repository name 'foo'
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', false, true, true],  # existing repository name 'foo'
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'foo@example.com', false, false, true],  # existing repository name 'foo', but we are not creating repo or login link
 
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, true, true], # existing vm login name
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, false, true], # existing vm login name
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, false, true], # existing vm login name
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', false, true, true], # existing vm login name
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', false, false, true], # existing vm login name, but we are not creating repo or login link
 
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'r_o_o_t@example.com', true, false, false], # blacklisted name after removing -._ characters
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'r_o.o-t@example.com', false, true, false], # blacklisted name after removing -._ characters
-
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'r_o_o_t@example.com', false, false, true], # blacklisted after removing -._, but ok because no repo and vm login
-
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'r_o. o-t@example.com', true, true, false], # invalid because of space character
-
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', true, false, false], # username is invalid format
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', true, false, false], # username is invalid format
     [false, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', false, false, true], # since no repo and vm login, username is ok (not validated)
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', true, true, false], # username is invalid format
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', false, false, true], # no repo or vm login, so format not checked
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', false, false, true], # since no repo and vm login, username is ok (not validated)
+
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', true, true, false], # username is invalid format
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', false, false, true], # no repo or vm login, so format not checked
     [false, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', true, true, false], # username is invalid format
     [false, 'active-notify@example.com', 'inactive-notify@example.com', '&4ad@example.com', false, false, true], # no repo or vm login, so format not checked
 
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', true, true, false], # username is invalid format
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', false, false, true], # no repo or vm login, so format not checked
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', '4ad@example.com', false, false, true], # no repo or vm login, so format not checked
+
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '.foo@example.com', false, false, true], # no repo or vm login, so format not checked
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', '.foo@example.com', true, false, false], # invalid format
+
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'bar.@example.com', false, false, true], # no repo or vm login, so format not checked
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'bar.@example.com', true, false, false], # valid format
+
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'ice9@example.com', false, false, true], # no repo or vm login, so format not checked
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'ice9@example.com', true, false, true], # valid format
+
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'o_o@example.com', false, false, true], # no repo or vm login, so format not checked
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'o_o@example.com', true, false, true], # valid format
+
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', false, false, true], # no repo or vm login, so format not checked
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', true, false, true], # valid format
+
   ].each do |active, active_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, valid_username|
-    test "create new user with auto setup #{email} #{auto_setup_vm} #{auto_setup_repo}" do
+    test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
       auto_setup_new_users = Rails.configuration.auto_setup_new_users
       auto_setup_new_users_with_vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
       auto_setup_new_users_with_repository = Rails.configuration.auto_setup_new_users_with_repository
@@ -205,7 +219,7 @@ class UserTest < ActiveSupport::TestCase
       end
     end
   end
-=begin
+
   test "update existing user" do
     set_user_from_auth :active    # set active user as current user
 
@@ -331,8 +345,6 @@ class UserTest < ActiveSupport::TestCase
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
 
-
-
   test "setup new user in multiple steps" do
     set_user_from_auth :admin
 
@@ -385,7 +397,7 @@ class UserTest < ActiveSupport::TestCase
     vm_perm = find_obj_in_resp response, 'Link', 'arvados#virtualMachine'
     verify_link vm_perm, 'permission', 'can_login', resp_user[:uuid], vm.uuid
   end
-=end
+
   def find_obj_in_resp (response_items, object_type, head_kind=nil)
     return_obj = nil
     response_items.each { |x|
@@ -466,7 +478,6 @@ class UserTest < ActiveSupport::TestCase
       verify_link_exists true, user.uuid, user.email, 'permission', 'can_login', nil, nil
 
       username = user.email.partition('@')[0] if email
-      username = (username.gsub!(/[-._]/, '') || username) if username
 
       # check vm uuid
       vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
@@ -520,7 +531,7 @@ class UserTest < ActiveSupport::TestCase
 
     if active
       assert_nil new_inactive_user_email, 'Expected no inactive user email after setting up active user'
-      if not active_recipients.empty? then
+      if (not active_recipients.empty?) && valid_username then
         assert_not_nil new_user_email, 'Expected new user email after setup'
         assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
         assert_equal active_recipients, new_user_email.to[0]

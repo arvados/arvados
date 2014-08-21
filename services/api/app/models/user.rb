@@ -431,11 +431,10 @@ class User < ArvadosModel
       username = self.email.partition('@')[0] if self.email
       return true if !username
 
-      username = username.gsub!(/[-._]/, '') || username
       blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist
       if blacklisted_usernames.include?(username)
         return true;
-      elsif !(/^[a-zA-Z][a-zA-Z0-9]{0,31}$/.match(username))
+      elsif !(/^[a-zA-Z][-._a-zA-Z0-9]{0,30}[a-zA-Z0-9]$/.match(username))
         return true
       else
         username = derive_unique_username username
