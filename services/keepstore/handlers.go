@@ -460,8 +460,12 @@ func GetBlock(hash string, update_timestamp bool) ([]byte, error) {
 						vol, hash)
 				}
 				// Update the timestamp if the caller requested.
+				// If we could not update the timestamp, continue looking on
+				// other volumes.
 				if update_timestamp {
-					vol.Touch(hash)
+					if vol.Touch(hash) != nil {
+						continue
+					}
 				}
 				return buf, nil
 			}
