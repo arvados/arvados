@@ -27,6 +27,9 @@ COLUMNS=80
 
 export GOPATH=$(mktemp -d)
 VENVDIR=$(mktemp -d)
+cli_test=
+workbench_test=
+apiserver_test=
 
 source /etc/profile.d/rvm.sh
 
@@ -64,6 +67,12 @@ do
             ;;
         --only)
             only="$1"; shift
+            ;;
+        --skip-install)
+            skip_install=1
+            ;;
+        --leave-temp)
+            leave_temp=1
             ;;
         *=*)
             eval $arg
@@ -111,16 +120,21 @@ do_test() {
 }
 
 do_install() {
-    title "Running $1 install"
-    timer_reset
-    if [[ "$2" == "go" ]]
+    if [[ -z "$skip_install" ]]
     then
-        go get -t "git.curoverse.com/arvados.git/$1"
+        title "Running $1 install"
+        timer_reset
+        if [[ "$2" == "go" ]]
+        then
+            go get -t "git.curoverse.com/arvados.git/$1"
+        else
+            "install_$1"
+        fi
+        checkexit "$1 install"
+        title "End of $1 install (`timer`)"
     else
-        "install_$1"
+        title "Skipping $1 install"
     fi
-    checkexit "$1 install"
-    title "End of $1 install (`timer`)"
 }
 
 title () {
@@ -131,9 +145,11 @@ title () {
 clear_temp() {
     for t in "$VENVDIR" "$GOPATH"
     do
-        if [[ -n "$t" ]]
+        if [[ -n "$t" && -z "$leave-temp" ]]
         then
             rm -rf "$t"
+        else
+            echo "Leaving $t"
         fi
     done
 }
@@ -197,7 +213,7 @@ do_install apiserver
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    bundle exec rake test "$apiserver_test"
+    bundle exec rake test $apiserver_test
 }
 do_test apiserver
 
@@ -273,7 +289,7 @@ done
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && bundle install --deployment \
-        && bundle exec rake test "$workbench_test"
+        && bundle exec rake test $workbench_test
 }
 do_test workbench
 
@@ -282,7 +298,7 @@ test_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && bundle install --deployment \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test "$cli_test"
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test $cli_test
 }
 do_test cli
 
