@@ -13,6 +13,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"git.curoverse.com/arvados.git/services/keepstore/replicator"
 	"github.com/gorilla/mux"
 	"io"
 	"log"
@@ -57,6 +58,11 @@ func MakeRESTRouter() *mux.Router {
 	rest.HandleFunc(
 		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
+
+	// The PullHandler processes "PUT /pull" commands from Data Manager.
+	// It parses the JSON list of pull requests in the request body, and
+	// delivers them to the PullBlocks goroutine for replication.
+	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
@@ -397,6 +403,68 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
+/* PullHandler processes "PUT /pull" requests for the data manager.
+   The request body is a JSON message containing a list of pull
+   requests in the following format:
+
+   [
+      {
+         "locator":"e4d909c290d0fb1ca068ffaddf22cbd0+4985",
+         "servers":[
+			"keep0.qr1hi.arvadosapi.com:25107",
+			"keep1.qr1hi.arvadosapi.com:25108"
+		 ]
+	  },
+	  {
+		 "locator":"55ae4d45d2db0793d53f03e805f656e5+658395",
+		 "servers":[
+			"10.0.1.5:25107",
+			"10.0.1.6:25107",
+			"10.0.1.7:25108"
+		 ]
+	  },
+	  ...
+   ]
+
+   Each pull request in the list consists of a block locator string
+   and an ordered list of servers.  Keepstore should try to fetch the
+   block from each server in turn.
+
+   If the request has not been sent by the Data Manager, return 401
+   Unauthorized.
+
+   If the JSON unmarshalling fails, return 400 Bad Request.
+*/
+
+func PullHandler(resp http.ResponseWriter, req *http.Request) {
+	// Reject unauthorized requests.
+	api_token := GetApiToken(req)
+	if !IsDataManagerToken(api_token) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		return
+	}
+
+	// Parse the request body.
+	var pull_list []replicator.PullRequest
+	r := json.NewDecoder(req.Body)
+	if err := r.Decode(&pull_list); err != nil {
+		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		return
+	}
+
+	// We have a properly formatted pull list sent from the data
+	// manager.  Report success and send the list to the keep
+	// replicator for further handling.
+	resp.WriteHeader(http.StatusOK)
+	resp.Write([]byte(
+		fmt.Sprintf("Received %d pull requests\n", len(pull_list))))
+
+	if replica == nil {
+		replica = replicator.New()
+	}
+	replica.Pull(pull_list)
+}
+
 // ==============================
 // GetBlock and PutBlock implement lower-level code for handling
 // blocks by rooting through volumes connected to the local machine.
@@ -606,14 +674,17 @@ func CanDelete(api_token string) bool {
 	}
 	// Blocks may be deleted only when Keep has been configured with a
 	// data manager.
-	if data_manager_token == "" {
-		return false
-	}
-	if api_token == data_manager_token {
+	if IsDataManagerToken(api_token) {
 		return true
 	}
 	// TODO(twp): look up api_token with the API server
 	// return true if is_admin is true and if the token
 	// has unlimited scope
 	return false
+}
+
+// IsDataManagerToken returns true if api_token represents the data
+// manager's token.
+func IsDataManagerToken(api_token string) bool {
+	return data_manager_token != "" && api_token == data_manager_token
 }
