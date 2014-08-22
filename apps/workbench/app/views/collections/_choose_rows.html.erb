@@ -4,7 +4,14 @@
          style="margin-left: 1em; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: #DDDDDD">
       <i class="fa fa-fw fa-archive"></i>
       <% if object.respond_to? :name %>
-        <%= object.name %>
+        <% if not (object.name.nil? or object.name.empty?) %>
+          <%= object.name %>
+        <% elsif object.is_a? Collection and object.files.length > 0 %>
+          <%= object.files[0][1] %>
+          <%= "+ #{object.files.length-1} more" if object.files.length > 1 %>
+        <% else %>
+          <%= object.uuid %>
+        <% end %>
       <% else %>
         <%= object.uuid %>
       <% end %>
