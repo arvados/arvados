@@ -112,6 +112,15 @@ func (v *UnixVolume) Touch(loc string) error {
 	return syscall.Utime(p, &utime)
 }
 
+func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
+	p := v.blockPath(loc)
+	if fi, err := os.Stat(p); err != nil {
+		return time.Time{}, err
+	} else {
+		return fi.ModTime(), nil
+	}
+}
+
 // Read retrieves a block identified by the locator string "loc", and
 // returns its contents as a byte slice.
 //
@@ -250,7 +259,9 @@ func (v *UnixVolume) Delete(loc string) error {
 	if err != nil {
 		return err
 	}
-	lockfile(f)
+	if e := lockfile(f); e != nil {
+		return e
+	}
 	defer unlockfile(f)
 
 	// If the block has been PUT more recently than -permission_ttl,

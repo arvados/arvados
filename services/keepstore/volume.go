@@ -16,6 +16,7 @@ type Volume interface {
 	Get(loc string) ([]byte, error)
 	Put(loc string, block []byte) error
 	Touch(loc string) error
+	Mtime(loc string) (time.Time, error)
 	Index(prefix string) string
 	Delete(loc string) error
 	Status() *VolumeStatus
@@ -64,6 +65,19 @@ func (v *MockVolume) Touch(loc string) error {
 	}
 	v.Timestamps[loc] = time.Now()
 	return nil
+}
+
+func (v *MockVolume) Mtime(loc string) (time.Time, error) {
+	var mtime time.Time
+	var err error
+	if v.Bad {
+		err = errors.New("Bad volume")
+	} else if t, ok := v.Timestamps[loc]; ok {
+		mtime = t
+	} else {
+		err = os.ErrNotExist
+	}
+	return mtime, err
 }
 
 func (v *MockVolume) Index(prefix string) string {

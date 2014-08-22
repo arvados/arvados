@@ -100,6 +100,41 @@ func TestPutBadVolume(t *testing.T) {
 	}
 }
 
+// TestPutTouch
+//     Test that when applying PUT to a block that already exists,
+//     the block's modification time is updated.
+func TestPutTouch(t *testing.T) {
+	v := TempUnixVolume(t, false)
+	defer _teardown(v)
+
+	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
+		t.Error(err)
+	}
+	old_mtime, err := v.Mtime(TEST_HASH)
+	if err != nil {
+		t.Error(err)
+	}
+	if old_mtime.IsZero() {
+		t.Errorf("v.Mtime(%s) returned a zero mtime\n", TEST_HASH)
+	}
+	// Sleep for 1s, then put the block again.  The volume
+	// should report a more recent mtime.
+	// TODO(twp): this would be better handled with a mock Time object.
+	time.Sleep(time.Second)
+	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
+		t.Error(err)
+	}
+	new_mtime, err := v.Mtime(TEST_HASH)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !new_mtime.After(old_mtime) {
+		t.Errorf("v.Put did not update the block mtime:\nold_mtime = %v\nnew_mtime = %v\n",
+			old_mtime, new_mtime)
+	}
+}
+
 // Serialization tests: launch a bunch of concurrent
 //
 // TODO(twp): show that the underlying Read/Write operations executed

@@ -217,7 +217,7 @@ func TestPutBlockCorrupt(t *testing.T) {
 	}
 }
 
-// PutBlockCollision
+// TestPutBlockCollision
 //     PutBlock returns a 400 Collision error when attempting to
 //     store a block that collides with another block on disk.
 //
@@ -242,6 +242,53 @@ func TestPutBlockCollision(t *testing.T) {
 		t.Error("PutBlock did not report a collision")
 	} else if err != CollisionError {
 		t.Errorf("PutBlock returned %v", err)
+	}
+}
+
+// TestPutBlockTouchFails
+//     When PutBlock is asked to PUT an existing block, but cannot
+//     modify the timestamp, it should write a second block.
+//
+func TestPutBlockTouchFails(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes.
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+	vols := KeepVM.Volumes()
+
+	// Store a block and then make the underlying volume bad,
+	// so a subsequent attempt to update the file timestamp
+	// will fail.
+	vols[0].Put(TEST_HASH, BAD_BLOCK)
+	old_mtime, err := vols[0].Mtime(TEST_HASH)
+	if err != nil {
+		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
+	}
+
+	// Mark the volume bad and call PutBlock.
+	vols[0].(*MockVolume).Bad = true
+	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+		t.Fatalf("PutBlock: %v", err)
+	}
+	vols[0].(*MockVolume).Bad = false
+
+	// Now the mtime on the block on vols[0] should be unchanged, and
+	// there should be a copy of the block on vols[1].
+	new_mtime, err := vols[0].Mtime(TEST_HASH)
+	if err != nil {
+		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
+	}
+	if !new_mtime.Equal(old_mtime) {
+		t.Errorf("bad block mtimes do not match:\nold_mtime = %v\nnew_mtime = %v\n",
+			old_mtime, new_mtime)
+	}
+	result, err := vols[1].Get(TEST_HASH)
+	if err != nil {
+		t.Fatalf("vols[1]: %v", err)
+	}
+	if bytes.Compare(result, TEST_BLOCK) != 0 {
+		t.Errorf("new block does not match test block\nnew block = %v\n", result)
 	}
 }
 
