@@ -12,13 +12,18 @@ class Commit < ActiveRecord::Base
   end
 
   def self.find_commit_range(current_user, repository, minimum, maximum, exclude)
-    if (minimum and !git_check_ref_format(minimum)) or !git_check_ref_format(maximum)
-      logger.warn "find_commit_range called with invalid minimum or maximum: '#{minimum}', '#{maximum}'"
+    if minimum and minimum.empty?
+      minimum = nil
+    end
+
+    if minimum and !git_check_ref_format(minimum)
+      logger.warn "find_commit_range called with invalid minimum revision: '#{minimum}'"
       return nil
     end
 
-    if minimum and minimum.empty?
-        minimum = nil
+    if maximum and !git_check_ref_format(maximum)
+      logger.warn "find_commit_range called with invalid maximum revision: '#{maximum}'"
+      return nil
     end
 
     if !maximum
@@ -88,6 +93,8 @@ class Commit < ActiveRecord::Base
         else
           commits.push(max_hash) if !resolved_exclude or !resolved_exclude.include? max_hash
         end
+      else
+        logger.warn "Repository #{r.name} exists in table but not found on disk"
       end
     end
 
