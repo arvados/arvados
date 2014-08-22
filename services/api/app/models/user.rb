@@ -456,13 +456,10 @@ class User < ArvadosModel
   # Find a username that starts with the given string and does not collide
   # with any existing repository name or VM login name
   def derive_unique_username orig_username
-    vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
-
     username = String.new orig_username
     10000.times do |count|
       if Repository.where(name: username).empty?
-        login_collisions = Link.where(head_uuid: vm_uuid,
-                                      link_class: 'permission',
+        login_collisions = Link.where(link_class: 'permission',
                                       name: 'can_login').select do |perm|
           perm.properties['username'] == username
         end

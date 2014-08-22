@@ -159,10 +159,10 @@ class UserTest < ActiveSupport::TestCase
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', false, true, true],  # existing repository name 'auto_setup_repo'
     [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_repo@example.com', false, false, true],  # existing repository name 'auto_setup_repo', but we are not creating repo or login link
 
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, true, true], # existing vm login name
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', true, false, true], # existing vm login name
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', false, true, true], # existing vm login name
-    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'xyz_can_login_to_vm@example.com', false, false, true], # existing vm login name, but we are not creating repo or login link
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', true, true, true], # existing vm login name
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', true, false, true], # existing vm login name
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', false, true, true], # existing vm login name
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'auto_setup_vm_login@example.com', false, false, true], # existing vm login name, but we are not creating repo or login link
 
     [true, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', true, false, false], # username is invalid format
     [false, 'active-notify@example.com', 'inactive-notify@example.com', '*!*@example.com', false, false, true], # since no repo and vm login, username is ok (not validated)
@@ -498,6 +498,14 @@ class UserTest < ActiveSupport::TestCase
           end
         end
         verify_link_exists true, repo_uuids, user.uuid, 'permission', 'can_manage', nil, nil
+      end
+
+      # if username is existing vm login name, make sure the username used to generate any repo is unique
+      if username == 'auto_setup_vm_login'
+        if repo_names.any?
+          assert repo_names.first.start_with? 'auto_setup_vm_login'
+          assert_not_nil /\d$/.match(repo_names.first)
+        end
       end
 
       # check vm uuid
