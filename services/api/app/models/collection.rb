@@ -84,7 +84,11 @@ class Collection < ArvadosModel
       begin
         loc = Locator.parse!(self.portable_data_hash)
         loc.strip_hints!
-        self.portable_data_hash = loc.to_s
+        if loc.size
+          self.portable_data_hash = loc.to_s
+        else
+          self.portable_data_hash = "#{loc.hash}+#{self.manifest_text.length}"
+        end
       rescue ArgumentError => e
         errors.add(:portable_data_hash, "#{e}")
         return false

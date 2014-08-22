@@ -44,7 +44,7 @@ class Locator
       raise ArgumentError.new "not a valid locator #{tok}"
     end
     unless m[2]
-      raise ArgumentError.new "missing size hint on #{tok}"
+      Rails.logger.debug ArgumentError.new "missing size hint on #{tok}"
     end
 
     tokhash, _, toksize, _, trailer = m[1..5]
@@ -95,6 +95,10 @@ class Locator
   end
 
   def to_s
-    [ @hash, @size, *@hints ].join('+')
+    if @size
+      [ @hash, @size, *@hints ].join('+')
+    else
+      [ @hash, *@hints ].join('+')
+    end
   end
 end
