@@ -1,5 +1,5 @@
 // ajax handling for report-issue function
-$('#report-issue-modal-window form').
+$(document).
   on('ajax:send', function() {
     var $sendButton = $('#report-issue-submit');
     if ($sendButton) {
