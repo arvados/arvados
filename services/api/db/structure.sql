@@ -169,7 +169,7 @@ CREATE TABLE collections (
     name character varying(255),
     description character varying(255),
     properties text,
-    expire_time date
+    expires_at date
 );
 
 
