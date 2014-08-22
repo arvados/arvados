@@ -19,7 +19,6 @@ class Collection < ArvadosModel
   def self.attributes_required_columns
     super.merge({ "data_size" => ["manifest_text"],
                   "files" => ["manifest_text"],
-                  "id" => ["id"]
                 })
   end
 

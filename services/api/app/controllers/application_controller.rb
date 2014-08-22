@@ -214,7 +214,7 @@ class ApplicationController < ActionController::Base
         flat_map { |attr| api_column_map[attr] }.
         uniq.
         map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
-      columns_list += ["#{table_name}.id"]
+      columns_list += ["#{table_name}.id"] if not @distinct
       @objects = @objects.select(columns_list.join(", "))
     end
     @objects = @objects.order(@orders.join ", ") if @orders.any?

@@ -27,13 +27,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   test 'Add a new name, then edit it, without creating a duplicate' do
     project_uuid = api_fixture('groups')['aproject']['uuid']
-    specimen_uuid = api_fixture('specimens')['owned_by_aproject_with_no_name']['uuid']
+    specimen_uuid = api_fixture('traits')['owned_by_aproject_with_no_name']['uuid']
     visit page_with_token 'active', '/projects/' + project_uuid
     click_link 'Other objects'
     within '.selection-action-container' do
       # Wait for the tab to load:
-      assert_selector 'tr[data-kind="arvados#specimen"]'
-      within first('tr', text: 'Specimen') do
+      assert_selector 'tr[data-kind="arvados#trait"]'
+      within first('tr', text: 'Trait') do
         find(".fa-pencil").click
         find('.editable-input input').set('Now I have a name.')
         find('.glyphicon-ok').click

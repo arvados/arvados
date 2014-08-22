@@ -56,6 +56,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       loc.strip_hints!
       if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).limit(1).first
         @object = {
+          uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
           manifest_text: c.manifest_text,
           files: c.files,
@@ -216,10 +217,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   def find_objects_for_index
     # Omit manifest_text from index results unless expressly selected.
     if @select.nil?
-      @select = model_class.api_accessible_attributes(:user).map { |attr_spec|attr_spec.first.to_s }
-      @select -= ["manifest_text"]
-      # have to make sure 'id' column is included or #update will break.
-      @select += ["id"]
+      @select = model_class.api_accessible_attributes(:user).map { |attr_spec|attr_spec.first.to_s } - ["manifest_text"]
     end
     super
   end
