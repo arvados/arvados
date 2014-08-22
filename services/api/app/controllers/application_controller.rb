@@ -204,7 +204,7 @@ class ApplicationController < ActionController::Base
     end
 
     if @select
-      if action_name != 'update'
+      unless action_name.in? %w(create update destroy)
         # Map attribute names in @select to real column names, resolve
         # those to fully-qualified SQL column names, and pass the
         # resulting string to the select method.
