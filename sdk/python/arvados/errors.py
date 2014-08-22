@@ -17,11 +17,13 @@ class SyntaxError(Exception):
     pass
 class AssertionError(Exception):
     pass
-class NotFoundError(Exception):
-    pass
 class CommandFailedError(Exception):
     pass
+class KeepReadError(Exception):
+    pass
 class KeepWriteError(Exception):
+    pass
+class NotFoundError(KeepReadError):
     pass
 class NotImplementedError(Exception):
     pass
