@@ -103,12 +103,13 @@ class User < ArvadosModel
         Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
           newgroups << [group.owner_uuid, group.uuid, 'can_manage']
         end
-        # add any permission links from the current lookup_uuids to a
-        # User or Group.
-        Link.where('tail_uuid in (?) and link_class = ? and (head_uuid like ? or head_uuid like ?)',
-                   lookup_uuids,
+        # add any permission links from the current lookup_uuids to a Group.
+        Link.where('link_class = ? and tail_uuid in (?) and ' \
+                   '(head_uuid like ? or (name = ? and head_uuid like ?))',
                    'permission',
+                   lookup_uuids,
                    Group.uuid_like_pattern,
+                   'can_manage',
                    User.uuid_like_pattern).each do |link|
           newgroups << [link.tail_uuid, link.head_uuid, link.name]
         end

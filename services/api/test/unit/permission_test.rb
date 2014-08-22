@@ -132,10 +132,105 @@ class PermissionTest < ActiveSupport::TestCase
     end
   end
 
+  test "manager user gets permission to minions' articles via can_manage link" do
+    manager = create :active_user, first_name: "Manage", last_name: "Er"
+    minion = create :active_user, first_name: "Min", last_name: "Ion"
+    minions_specimen = act_as_user minion do
+      Specimen.create!
+    end
+    # Manager creates a group. (Make sure it doesn't magically give
+    # anyone any additional permissions.)
+    g = nil
+    act_as_user manager do
+      g = create :group, name: "NoBigSecret Lab"
+      assert_empty(User.readable_by(manager).where(uuid: minion.uuid),
+                   "saw a user I shouldn't see")
+      assert_raises(ArvadosModel::PermissionDeniedError,
+                    ActiveRecord::RecordInvalid,
+                    "gave can_read permission to a user I shouldn't see") do
+        create(:permission_link,
+               name: 'can_read', tail_uuid: minion.uuid, head_uuid: g.uuid)
+      end
+      %w(can_manage can_write can_read).each do |perm_type|
+        assert_raises(ArvadosModel::PermissionDeniedError,
+                      ActiveRecord::RecordInvalid,
+                      "escalated privileges") do
+          create(:permission_link,
+                 name: perm_type, tail_uuid: g.uuid, head_uuid: minion.uuid)
+        end
+      end
+      assert_empty(User.readable_by(manager).where(uuid: minion.uuid),
+                   "manager saw minion too soon")
+      assert_empty(User.readable_by(minion).where(uuid: manager.uuid),
+                   "minion saw manager too soon")
+      assert_empty(Group.readable_by(minion).where(uuid: g.uuid),
+                   "minion saw manager's new NoBigSecret Lab group too soon")
+
+      # Manager declares everybody on the system should be able to see
+      # the NoBigSecret Lab group.
+      create(:permission_link,
+             name: 'can_read',
+             tail_uuid: 'zzzzz-j7d0g-fffffffffffffff',
+             head_uuid: g.uuid)
+      # ...but nobody has joined the group yet. Manager still can't see
+      # minion.
+      assert_empty(User.readable_by(manager).where(uuid: minion.uuid),
+                   "manager saw minion too soon")
+    end
+
+    act_as_user minion do
+      # Minion can see the group.
+      assert_not_empty(Group.readable_by(minion).where(uuid: g.uuid),
+                       "minion could not see the NoBigSecret Lab group")
+      # Minion joins the group.
+      create(:permission_link,
+             name: 'can_read',
+             tail_uuid: g.uuid,
+             head_uuid: minion.uuid)
+    end
+
+    act_as_user manager do
+      # Now, manager can see minion.
+      assert_not_empty(User.readable_by(manager).where(uuid: minion.uuid),
+                       "manager could not see minion")
+      # But cannot obtain further privileges this way.
+      assert_raises(ArvadosModel::PermissionDeniedError,
+                    "escalated privileges") do
+        create(:permission_link,
+               name: 'can_manage', tail_uuid: manager.uuid, head_uuid: minion.uuid)
+      end
+      assert_empty(Specimen
+                     .readable_by(manager)
+                     .where(uuid: minions_specimen.uuid),
+                   "manager saw the minion's private stuff")
+      assert_raises(ArvadosModel::PermissionDeniedError,
+                   "manager could update minion's private stuff") do
+        minions_specimen.update_attributes(properties: {'x' => 'y'})
+      end
+    end
+
+    act_as_system_user do
+      # Root can give Manager more privileges over Minion.
+      create(:permission_link,
+             name: 'can_manage', tail_uuid: g.uuid, head_uuid: minion.uuid)
+    end
+
+    act_as_user manager do
+      # Now, manager can read and write Minion's stuff.
+      assert_not_empty(Specimen
+                         .readable_by(manager)
+                         .where(uuid: minions_specimen.uuid),
+                       "manager could not find minion's specimen by uuid")
+      assert_equal(true,
+                   minions_specimen.update_attributes(properties: {'x' => 'y'}),
+                   "manager could not update minion's specimen object")
+    end
+  end
+
   test "users with bidirectional read permission in group can see each other, but cannot see each other's private articles" do
-    a = create :active_user first_name: "A"
-    b = create :active_user first_name: "B"
-    other = create :active_user first_name: "OTHER"
+    a = create :active_user, first_name: "A"
+    b = create :active_user, first_name: "B"
+    other = create :active_user, first_name: "OTHER"
     act_as_system_user do
       g = create :group
       [a,b].each do |u|
@@ -161,15 +256,16 @@ class PermissionTest < ActiveSupport::TestCase
         assert_raises ArvadosModel::PermissionDeniedError, "wrote without perm" do
           other.update_attributes!(prefs: {'pwned' => true})
         end
-        assert_equal true, u.update_attributes!(prefs: {'thisisme' => true})
+        assert_equal(true, u.update_attributes!(prefs: {'thisisme' => true}),
+                     "#{u.first_name} can't update its own prefs")
       end
       act_as_user other do
-        ([other, a, b] - [u]).each do |x|
-          assert_raises ArvadosModel::PermissionDeniedError, "wrote without perm" do
-            x.update_attributes!(prefs: {'pwned' => true})
-          end
+        assert_raises(ArvadosModel::PermissionDeniedError,
+                        "OTHER wrote #{u.first_name} without perm") do
+          u.update_attributes!(prefs: {'pwned' => true})
         end
-        assert_equal true, other.update_attributes!(prefs: {'thisisme' => true})
+        assert_equal(true, other.update_attributes!(prefs: {'thisisme' => true}),
+                     "OTHER can't update its own prefs")
       end
     end
   end

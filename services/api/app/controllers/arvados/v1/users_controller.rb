@@ -136,14 +136,16 @@ class Arvados::V1::UsersController < ApplicationController
     }
   end
 
-  def find_objects_for_index
+  def apply_filters
     if (action_name == "index") and (not @read_users.any? { |u| u.is_admin })
-      # Non-admin index returns very basic information about all active users.
-      # We ignore where and filters params to avoid leaking information.
-      @where = {}
-      @filters = []
-      @select = ["uuid", "is_active", "email", "first_name", "last_name"]
-      @objects = model_class.where(is_active: true)
+      # Non-admin index returns very basic information about readable users.
+      safe_attrs = ["uuid", "is_active", "email", "first_name", "last_name"]
+      if @select
+        @select = @select & safe_attrs
+      else
+        @select = safe_attrs
+      end
+      @filters += [['is_active', '=', true]]
     end
     super
   end
