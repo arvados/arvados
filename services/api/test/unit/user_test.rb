@@ -501,9 +501,9 @@ class UserTest < ActiveSupport::TestCase
       end
 
       # if username is existing vm login name, make sure the username used to generate any repo is unique
-      if username == 'auto_setup_vm_login'
+      if username == 'auto_setup_vm_login' || username == 'auto_setup_repo'
         if repo_names.any?
-          assert repo_names.first.start_with? 'auto_setup_vm_login'
+          assert repo_names.first.start_with? username
           assert_not_nil /\d$/.match(repo_names.first)
         end
       end
