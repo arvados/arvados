@@ -239,7 +239,7 @@ class ProjectsController < ApplicationController
         objects_and_names << [object, @name_link_for[object.uuid]]
       elsif object.respond_to? :name
         objects_and_names << [object, object]
-      else
+      elsif not Collection.attribute_info.include?(:name)
         objects_and_names << [object,
                                Link.new(owner_uuid: @object.uuid,
                                         tail_uuid: @object.uuid,
