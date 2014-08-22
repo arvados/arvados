@@ -23,7 +23,8 @@
   additional_info['api_error_response'] = @popup_params[:api_error_response] if @popup_params[:api_error_response]
 %>
 
-<div class="modal-dialog modal-with-loading-spinner">
+<div class="modal">
+ <div class="modal-dialog modal-with-loading-spinner">
   <div class="modal-content">
 
     <%= form_tag report_issue_path, {name: 'report-issue-form', method: 'post',
@@ -35,7 +36,7 @@
       %>
 
       <div class="modal-header">
-        <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
         <div>
           <div class="col-sm-8"> <h4 class="modal-title"><%=title%></h4> </div>
           <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
@@ -143,11 +144,13 @@
       <div class="modal-footer">
         <% if @popup_params[:popup_type] == 'report' %>
           <button type="submit" id="report-issue-submit" class="btn btn-primary report-issue-submit" autofocus>Send problem report</button>
-          <button class="btn btn-default report-issue-cancel" id="report-issue-cancel" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+          <button class="btn btn-default report-issue-cancel" id="report-issue-cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>
         <% else %>
-          <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Close</button>
+          <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
         <% end %>
       </div>
     <% end #form %>
   </div>
+ </div>
 </div>
+

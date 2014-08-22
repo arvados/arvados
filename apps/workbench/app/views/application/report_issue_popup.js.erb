@@ -1,7 +1,2 @@
 $("#report-issue-modal-window").html("<%= escape_javascript(render partial: 'report_issue_popup') %>");
-
-// reset form input fields, for the next time around
-function reset_form() {
-  $('#report_issue_text').val("");
-  $('#additional_info').val("");
-}
+$("#report-issue-modal-window .modal").modal('show');
