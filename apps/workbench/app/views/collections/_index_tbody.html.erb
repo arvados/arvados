@@ -28,10 +28,6 @@
   <td>
     <%= c.created_at.to_s if c.created_at %>
   </td>
-  <td>
-    <% current_state = @collection_info[c.uuid][:wanted_by_me] ? 'persistent' : 'cache' %>
-    <%= render partial: 'toggle_persist', locals: { uuid: c.uuid, current_state: current_state } %>
-  </td>
   <td class="add-tag-button">
     <a class="btn btn-xs btn-info add-tag-button pull-right" data-remote-href="<%= url_for(controller: 'links', action: 'create') %>" data-remote-method="post"><i class="glyphicon glyphicon-plus"></i>&nbsp;Add</a>
     <span class="removable-tag-container">

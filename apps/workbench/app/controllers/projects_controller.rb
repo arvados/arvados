@@ -86,7 +86,7 @@ class ProjectsController < ApplicationController
       uniq.
       each do |resource_class|
       resource_class.filter([['uuid','in',uuids_to_add]]).each do |dst|
-        if resource_class == Collection
+        if resource_class == Collection and not Collection.attribute_info.include?(:name)
           dst = Link.new(owner_uuid: target_uuid,
                          tail_uuid: target_uuid,
                          head_uuid: dst.uuid,
@@ -177,6 +177,8 @@ class ProjectsController < ApplicationController
                                   offset: @offset)
       @next_page_href = next_page_href(partial: :contents_rows)
     end
+
+    preload_links_for_objects(@objects.to_a)
   end
 
   def show
@@ -237,7 +239,7 @@ class ProjectsController < ApplicationController
         objects_and_names << [object, @name_link_for[object.uuid]]
       elsif object.respond_to? :name
         objects_and_names << [object, object]
-      else
+      elsif not Collection.attribute_info.include?(:name)
         objects_and_names << [object,
                                Link.new(owner_uuid: @object.uuid,
                                         tail_uuid: @object.uuid,

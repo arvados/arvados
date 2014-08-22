@@ -1,3 +1,21 @@
+<% @collections.each do |object| %>
+    <div class="row filterable selectable" data-object-uuid="<%= object.uuid %>"
+         data-preview-href="<%= chooser_preview_url_for object %>"
+         style="margin-left: 1em; border-bottom-style: solid; border-bottom-width: 1px; border-bottom-color: #DDDDDD">
+      <i class="fa fa-fw fa-archive"></i>
+      <% if object.respond_to? :name %>
+        <%= object.name %>
+      <% else %>
+        <%= object.uuid %>
+      <% end %>
+      <% links_for_object(object).each do |tag| %>
+        <% if tag.link_class == 'tag' %>
+          <span class="label label-info"><%= tag.name %></span>
+        <% end %>
+      <% end %>
+    </div>
+<% end %>
+
 <% @name_links.each do |name_link| %>
   <% if (object = get_object(name_link.head_uuid)) %>
     <div class="row filterable selectable" data-object-uuid="<%= name_link.uuid %>"
