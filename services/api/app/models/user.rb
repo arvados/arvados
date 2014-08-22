@@ -455,22 +455,17 @@ class User < ArvadosModel
 
   # Find a username that starts with the given string and does not collide
   # with any existing repository name or VM login name
-  def derive_unique_username orig_username
-    username = String.new orig_username
-    10000.times do |count|
+  def derive_unique_username username
+    while true
       if Repository.where(name: username).empty?
         login_collisions = Link.where(link_class: 'permission',
                                       name: 'can_login').select do |perm|
           perm.properties['username'] == username
         end
-        if login_collisions.empty?
-          return username
-        end
+        return username if login_collisions.empty?
       end
-
-      username = orig_username + SecureRandom.random_number(1000).to_s
+      username = username + SecureRandom.random_number(10).to_s
     end
-    return nil  # count expired and no unused username was available
   end
 
   # Send notification if the user saved profile for the first time
