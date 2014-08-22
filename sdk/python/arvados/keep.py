@@ -242,15 +242,6 @@ class KeepClient(object):
                 resp, content = h.request(url.encode('utf-8'), 'PUT',
                                           headers=headers,
                                           body=self.args['data'])
-                if (resp['status'] == '401' and
-                    re.match(r'Timestamp verification failed', content)):
-                    body = KeepClient.sign_for_old_server(
-                        self.args['data_hash'],
-                        self.args['data'])
-                    h = httplib2.Http(timeout=self.args.get('timeout', None))
-                    resp, content = h.request(url.encode('utf-8'), 'PUT',
-                                              headers=headers,
-                                              body=body)
                 if re.match(r'^2\d\d$', resp['status']):
                     self._success = True
                     _logger.debug("KeepWriterThread %s succeeded %s %s",
@@ -570,9 +561,6 @@ class KeepClient(object):
             "Write fail for %s: wanted %d but wrote %d" %
             (data_hash, want_copies, have_copies))
 
-    @staticmethod
-    def sign_for_old_server(data_hash, data):
-        return (("-----BEGIN PGP SIGNED MESSAGE-----\n\n\n%d %s\n-----BEGIN PGP SIGNATURE-----\n\n-----END PGP SIGNATURE-----\n" % (int(time.time()), data_hash)) + data)
 
     def local_store_put(self, data):
         md5 = hashlib.md5(data).hexdigest()
