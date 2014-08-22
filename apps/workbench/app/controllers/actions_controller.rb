@@ -48,7 +48,7 @@ class ActionsController < ApplicationController
       uniq.
       each do |resource_class|
       resource_class.filter([['uuid','in',uuids_to_add]]).each do |src|
-        if resource_class == Collection
+        if resource_class == Collection and not Collection.attribute_info.include?(:name)
           dst = Link.new(owner_uuid: @object.uuid,
                          tail_uuid: @object.uuid,
                          head_uuid: src.uuid,
@@ -64,6 +64,9 @@ class ActionsController < ApplicationController
               else
                 dst.name = "Copy of unnamed #{dst.class_for_display.downcase}"
               end
+            end
+            if resource_class == Collection
+              dst.manifest_text = Collection.select([:manifest_text]).where(uuid: src.uuid).first.manifest_text
             end
           when :move
             dst = src

@@ -44,7 +44,17 @@ class CollectionsController < ApplicationController
   end
 
   def choose
+    # Find collections using default find_objects logic, then search for name
+    # links, and preload any other links connected to the collections that are
+    # found.
+    # Name links will be obsolete when issue #3036 is merged,
+    # at which point this entire custom #choose function can probably be
+    # eliminated.
+
     params[:limit] ||= 40
+
+    find_objects_for_index
+    @collections = @objects
 
     @filters += [['link_class','=','name'],
                  ['head_uuid','is_a','arvados#collection']]
@@ -56,7 +66,8 @@ class CollectionsController < ApplicationController
 
     @objects = Collection.
       filter([['uuid','in',@name_links.collect(&:head_uuid)]])
-    preload_links_for_objects @objects.to_a
+
+    preload_links_for_objects (@collections.to_a + @objects.to_a)
     super
   end
 
@@ -161,12 +172,20 @@ class CollectionsController < ApplicationController
         Job.limit(RELATION_LIMIT).where(conds)
           .results.sort_by { |j| j.finished_at || j.created_at }
       end
-      @output_of = jobs_with.call(output: @object.uuid)
-      @log_of = jobs_with.call(log: @object.uuid)
+      @output_of = jobs_with.call(output: @object.portable_data_hash)
+      @log_of = jobs_with.call(log: @object.portable_data_hash)
       @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'name').results
       project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash
       @projects = project_hash.values
+
+      if @object.uuid.match /[0-9a-f]{32}/
+        @same_pdh = Collection.filter([["portable_data_hash", "=", @object.portable_data_hash]])
+        owners = @same_pdh.map {|s| s.owner_uuid}.to_a
+        preload_objects_for_dataclass Group, owners
+        preload_objects_for_dataclass User, owners
+      end
+
       @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
         .where(head_uuid: @object.uuid, link_class: 'permission',
                name: 'can_read').results

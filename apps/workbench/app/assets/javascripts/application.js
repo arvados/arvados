@@ -107,12 +107,12 @@ jQuery(function($){
                 attr('data-tag-link-uuid', new_tag_uuid).
                 text(new_tag).
                 css('opacity', '0.2').
-                append('&nbsp;<a title="Delete tag"><i class="glyphicon glyphicon-trash"></i></a>&nbsp;');
+                append('&nbsp;<span class="removable-tag"><a title="Delete tag"><i class="fa fa-fw fa-trash-o"></i></a></span>');
             $(this).
                 parent().
                 find('>span').
                 append(new_tag_span).
-                append('&nbsp; ');
+                append(' ');
             $.ajax($(this).attr('data-remote-href'),
                            {dataType: 'json',
                             type: $(this).attr('data-remote-method'),
