@@ -102,9 +102,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_equal 99999, resp['offset']
   end
 
-  test "create with unsigned manifest" do
-    permit_unsigned_manifests
-    authorize_with :active
+  test "admin can create collection with unsigned manifest" do
+    authorize_with :admin
     test_collection = {
       manifest_text: <<-EOS
 . d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo.txt
@@ -134,7 +133,7 @@ EOS
     assert_response :success
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
-    assert_equal test_collection[:uuid], resp['uuid']
+    assert_equal test_collection[:portable_data_hash], resp['portable_data_hash']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.

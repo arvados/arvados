@@ -36,18 +36,18 @@ module HasUuid
           if re[1] == self.class.uuid_prefix
             return true
           else
-            self.errors.add(:uuid, "Matched uuid type '#{re[1]}', expected '#{self.class.uuid_prefix}'")
+            self.errors.add(:uuid, "type field is '#{re[1]}', expected '#{self.class.uuid_prefix}'")
             return false
           end
         else
-          self.errors.add(:uuid, "'#{self.uuid}' is not a valid Arvados UUID")
+          self.errors.add(:uuid, "not a valid Arvados uuid '#{self.uuid}'")
           return false
         end
       else
         if self.new_record?
-          self.errors.add(:uuid, "Not permitted to specify uuid")
+          self.errors.add(:uuid, "assignment not permittid")
         else
-          self.errors.add(:uuid, "Not permitted to change uuid")
+          self.errors.add(:uuid, "change not permitted")
         end
         return false
       end

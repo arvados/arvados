@@ -214,9 +214,7 @@ class Arvados::V1::JobsController < ApplicationController
         search_list = filter[2].is_a?(Enumerable) ? filter[2] : [filter[2]]
         filter[2] = search_list.flat_map do |search_term|
           image_search, image_tag = search_term.split(':', 2)
-          Collection.uuids_for_docker_image(image_search, image_tag, @read_users).map do |uuid|
-            Collection.find_by_uuid(uuid).portable_data_hash
-          end
+          Collection.find_all_for_docker_image(image_search, image_tag, @read_users).map(&:portable_data_hash)
         end
         true
       else

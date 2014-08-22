@@ -240,7 +240,7 @@ class ArvadosModel < ActiveRecord::Base
 
     rsc_class = ArvadosModel::resource_class_for_uuid owner_uuid
     unless rsc_class == User or rsc_class == Group
-      errors.add :owner_uuid, "can only be set to User or Group"
+      errors.add :owner_uuid, "must be set to User or Group"
       raise PermissionDeniedError
     end
 

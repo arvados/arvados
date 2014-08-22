@@ -72,7 +72,8 @@ class Link < ArvadosModel
 
   def name_links_are_obsolete
     if link_class == 'name'
-        errors.add('name', 'Name links are obsolete')
+      errors.add('name', 'Name links are obsolete')
+      false
     else
       true
     end

@@ -1,53 +1,9 @@
 class Arvados::V1::CollectionsController < ApplicationController
   def create
-    if !resource_attrs[:manifest_text]
-      return send_error("'manifest_text' attribute must be specified",
-                        status: :unprocessable_entity)
-    end
-
     if resource_attrs[:uuid] and (loc = Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s
       resource_attrs.delete :uuid
     end
-
-    # Check permissions on the collection manifest.
-    # If any signature cannot be verified, return 403 Permission denied.
-    api_token = current_api_client_authorization.andand.api_token
-    signing_opts = {
-      key: Rails.configuration.blob_signing_key,
-      api_token: api_token,
-      ttl: Rails.configuration.blob_signing_ttl,
-    }
-    resource_attrs[:manifest_text].lines.each do |entry|
-      entry.split[1..-1].each do |tok|
-        if /^[[:digit:]]+:[[:digit:]]+:/.match tok
-          # This is a filename token, not a blob locator. Note that we
-          # keep checking tokens after this, even though manifest
-          # format dictates that all subsequent tokens will also be
-          # filenames. Safety first!
-        elsif Blob.verify_signature tok, signing_opts
-          # OK.
-        elsif Locator.parse(tok).andand.signature
-          # Signature provided, but verify_signature did not like it.
-          logger.warn "Invalid signature on locator #{tok}"
-          raise ArvadosModel::PermissionDeniedError
-        elsif Rails.configuration.permit_create_collection_with_unsigned_manifest
-          # No signature provided, but we are running in insecure mode.
-          logger.debug "Missing signature on locator #{tok} ignored"
-        elsif Blob.new(tok).empty?
-          # No signature provided -- but no data to protect, either.
-        else
-          logger.warn "Missing signature on locator #{tok}"
-          raise ArvadosModel::PermissionDeniedError
-        end
-      end
-    end
-
-    # Remove any permission signatures from the manifest.
-    munge_manifest_locators(resource_attrs[:manifest_text]) do |loc|
-      loc.without_signature.to_s
-    end
-
     super
   end
 
@@ -200,18 +156,6 @@ class Arvados::V1::CollectionsController < ApplicationController
     render json: visited
   end
 
-  def self.munge_manifest_locators(manifest)
-    # Given a manifest text and a block, yield each locator,
-    # and replace it with whatever the block returns.
-    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
-      if loc = Locator.parse(word.strip)
-        " " + yield(loc)
-      else
-        " " + word
-      end
-    end
-  end
-
   protected
 
   def find_objects_for_index
@@ -222,10 +166,6 @@ class Arvados::V1::CollectionsController < ApplicationController
     super
   end
 
-  def munge_manifest_locators(manifest, &block)
-    self.class.munge_manifest_locators(manifest, &block)
-  end
-
   def sign_manifests(*manifests)
     if current_api_client_authorization
       signing_opts = {
@@ -234,7 +174,7 @@ class Arvados::V1::CollectionsController < ApplicationController
         ttl: Rails.configuration.blob_signing_ttl,
       }
       manifests.each do |text|
-        munge_manifest_locators(text) do |loc|
+        Collection.munge_manifest_locators(text) do |loc|
           Blob.sign_locator(loc.to_s, signing_opts)
         end
       end

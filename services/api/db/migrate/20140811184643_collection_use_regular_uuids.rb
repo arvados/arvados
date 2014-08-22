@@ -3,7 +3,7 @@ class CollectionUseRegularUuids < ActiveRecord::Migration
     add_column :collections, :name, :string
     add_column :collections, :description, :string
     add_column :collections, :properties, :text
-    add_column :collections, :expire_time, :date
+    add_column :collections, :expires_at, :date
     remove_column :collections, :locator
 
     say_with_time "Step 1. Move manifest hashes into portable_data_hash field" do
@@ -175,6 +175,6 @@ where head_uuid like '________________________________+%' or tail_uuid like '___
   end
 
   def down
-    # Not gonna happen.
+    raise ActiveRecord::IrreversibleMigration, "Can't downmigrate changes to collections and links without potentially losing data."
   end
 end

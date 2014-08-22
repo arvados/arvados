@@ -6,6 +6,8 @@ class Arvados::V1::GroupsController < ApplicationController
               uuid: {
                 type: 'string', required: false, default: nil
               },
+              # include_linked returns name links, which are obsolete, so
+              # remove it when clients have been migrated.
               include_linked: {
                 type: 'boolean', required: false, default: false
               },
@@ -34,6 +36,8 @@ class Arvados::V1::GroupsController < ApplicationController
 
   def contents
     # Set @objects:
+    # include_linked returns name links, which are obsolete, so
+    # remove it when clients have been migrated.
     load_searchable_objects(owner_uuid: @object.andand.uuid,
                             include_linked: params[:include_linked])
     sql = 'link_class=? and head_uuid in (?)'

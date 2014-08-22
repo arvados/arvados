@@ -3,6 +3,8 @@ class Collection < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  before_validation :check_signatures
+  before_validation :strip_manifest_text
   before_validation :set_portable_data_hash
   validate :ensure_hash_matches_manifest_text
 
@@ -20,6 +22,59 @@ class Collection < ArvadosModel
     super.merge({ "data_size" => ["manifest_text"],
                   "files" => ["manifest_text"],
                 })
+  end
+
+  def check_signatures
+    return false if self.manifest_text.nil?
+
+    return true if current_user.andand.is_admin
+
+    if self.manifest_text_changed?
+      # Check permissions on the collection manifest.
+      # If any signature cannot be verified, raise PermissionDeniedError
+      # which will return 403 Permission denied to the client.
+      api_token = current_api_client_authorization.andand.api_token
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: api_token,
+        ttl: Rails.configuration.blob_signing_ttl,
+      }
+      self.manifest_text.lines.each do |entry|
+        entry.split[1..-1].each do |tok|
+          if /^[[:digit:]]+:[[:digit:]]+:/.match tok
+            # This is a filename token, not a blob locator. Note that we
+            # keep checking tokens after this, even though manifest
+            # format dictates that all subsequent tokens will also be
+            # filenames. Safety first!
+          elsif Blob.verify_signature tok, signing_opts
+            # OK.
+          elsif Locator.parse(tok).andand.signature
+            # Signature provided, but verify_signature did not like it.
+            logger.warn "Invalid signature on locator #{tok}"
+            raise ArvadosModel::PermissionDeniedError
+          elsif Rails.configuration.permit_create_collection_with_unsigned_manifest
+            # No signature provided, but we are running in insecure mode.
+            logger.debug "Missing signature on locator #{tok} ignored"
+          elsif Blob.new(tok).empty?
+            # No signature provided -- but no data to protect, either.
+          else
+            logger.warn "Missing signature on locator #{tok}"
+            raise ArvadosModel::PermissionDeniedError
+          end
+        end
+      end
+    end
+    true
+  end
+
+  def strip_manifest_text
+    if self.manifest_text_changed?
+      # Remove any permission signatures from the manifest.
+      Collection.munge_manifest_locators(self[:manifest_text]) do |loc|
+        loc.without_signature.to_s
+      end
+    end
+    true
   end
 
   def set_portable_data_hash
@@ -136,6 +191,18 @@ class Collection < ArvadosModel
     end
   end
 
+  def self.munge_manifest_locators(manifest)
+    # Given a manifest text and a block, yield each locator,
+    # and replace it with whatever the block returns.
+    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
+      if loc = Locator.parse(word.strip)
+        " " + yield(loc)
+      else
+        " " + word
+      end
+    end
+  end
+
   def self.normalize_uuid uuid
     hash_part = nil
     size_part = nil
@@ -152,7 +219,8 @@ class Collection < ArvadosModel
     [hash_part, size_part].compact.join '+'
   end
 
-  def self.uuids_for_docker_image(search_term, search_tag=nil, readers=nil)
+  # Return array of Collection objects
+  def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil)
     readers ||= [Thread.current[:user]]
     base_search = Link.
       readable_by(*readers).
@@ -167,7 +235,7 @@ class Collection < ArvadosModel
       coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
       if coll_match and (coll_match.files.size == 1) and
           (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
-        return [coll_match.uuid]
+        return [coll_match]
       end
     end
 
@@ -192,21 +260,14 @@ class Collection < ArvadosModel
     # so that anything with an image timestamp is considered more recent than
     # anything without; then we use the link's created_at as a tiebreaker.
     uuid_timestamps = {}
-    matches.find_each do |link|
-      c = Collection.find_by_uuid(link.head_uuid)
-      uuid_timestamps[c.uuid] =
-        [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
-         -link.created_at.to_i]
+    matches.all.map do |link|
+      uuid_timestamps[link.head_uuid] = [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
+       -link.created_at.to_i]
     end
-    uuid_timestamps.keys.sort_by { |uuid| uuid_timestamps[uuid] }
+    Collection.where('uuid in (?)', uuid_timestamps.keys).sort_by { |c| uuid_timestamps[c.uuid] }
   end
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
-    image_uuid = uuids_for_docker_image(search_term, search_tag, readers).first
-    if image_uuid.nil?
-      nil
-    else
-      find_by_uuid(image_uuid)
-    end
+    find_all_for_docker_image(search_term, search_tag, readers).first
   end
 end
