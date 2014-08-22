@@ -1,18 +1,18 @@
 <% content_for :page_title do %>
-  <%= (@object.respond_to?(:properties) ? @object.properties[:page_title] : nil) ||
+  <%= (@object.respond_to?(:properties) and !@object.properties.nil? ? @object.properties[:page_title] : nil) ||
       @name_link.andand.name ||
       @object.friendly_link_name %>
 <% end %>
 
 <% content_for :content_top do %>
 
-<% if @object.respond_to? :properties %>
+<% if @object.respond_to? :properties and !@object.properties.nil? %>
   <% if @object.properties[:page_content] %>
     <% content_for :page_content do %>
       <h1>
         <%= render_content_from_database(@object.properties[:page_title] || @object.uuid) %>
       </h1>
-      
+
       <% if @object.properties[:page_subtitle] %>
         <h4>
           <%= render_content_from_database @object.properties[:page_subtitle] %>

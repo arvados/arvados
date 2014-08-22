@@ -40,8 +40,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     visit '/projects'
     find('.arv-project-list a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
-    find('span', text: 'foo_tag').click
     within('.modal-dialog') do
+      first('span', text: 'foo_tag').click
       find('.btn', text: 'Add').click
     end
     using_wait_time(Capybara.default_wait_time * 3) do
@@ -49,7 +49,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
 
     click_link 'Jobs and pipelines'
-    find('tr[data-kind="arvados#pipelineInstance"]', text: 'New pipeline instance').
+    find('tr[data-kind="arvados#pipelineInstance"]', text: '(none)').
       find('a', text: 'Show').
       click
 
