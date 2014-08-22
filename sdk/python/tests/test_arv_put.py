@@ -18,7 +18,7 @@ from cStringIO import StringIO
 import arvados
 import arvados.commands.put as arv_put
 
-from arvados_testutil import ArvadosBaseTestCase, ArvadosKeepLocalStoreTestCase
+from arvados_testutil import ArvadosBaseTestCase
 import run_test_server
 
 class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
@@ -196,9 +196,11 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                           arv_put.ResumeCache, path)
 
 
-class ArvadosPutCollectionWriterTest(ArvadosKeepLocalStoreTestCase):
+class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
+                                     ArvadosBaseTestCase):
     def setUp(self):
         super(ArvadosPutCollectionWriterTest, self).setUp()
+        run_test_server.authorize_with('active')
         with tempfile.NamedTemporaryFile(delete=False) as cachefile:
             self.cache = arv_put.ResumeCache(cachefile.name)
             self.cache_filename = cachefile.name
@@ -398,7 +400,9 @@ class ArvadosPutProjectLinkTest(ArvadosBaseTestCase):
                           ['--project-uuid', self.Z_UUID, '--stream'])
 
 
-class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
+class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
+    MAIN_SERVER = {}
+
     def call_main_with_args(self, args):
         self.main_stdout = StringIO()
         self.main_stderr = StringIO()
@@ -412,6 +416,11 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
             "did not find file stream in Keep store")
+
+    def setUp(self):
+        super(ArvadosPutTest, self).setUp()
+        run_test_server.authorize_with('active')
+        arv_put.api_client = None
 
     def tearDown(self):
         for outbuf in ['main_stdout', 'main_stderr']:
@@ -450,58 +459,56 @@ class ArvadosPutTest(ArvadosKeepLocalStoreTestCase):
                           ['--name', 'test without Collection',
                            '--stream', '/dev/null'])
 
-class ArvPutIntegrationTest(unittest.TestCase):
-    PROJECT_UUID = run_test_server.fixture('groups')['aproject']['uuid']
-    ENVIRON = os.environ
-    ENVIRON['PYTHONPATH'] = ':'.join(sys.path)
-
-    @classmethod
-    def setUpClass(cls):
-        try:
-            del os.environ['KEEP_LOCAL_STORE']
-        except KeyError:
-            pass
-
-        # Use the blob_signing_key from the Rails "test" configuration
-        # to provision the Keep server.
-        config_blob_signing_key = None
+class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
+                            ArvadosBaseTestCase):
+    def _getKeepServerConfig():
         for config_file in ['application.yml', 'application.default.yml']:
             with open(os.path.join(run_test_server.SERVICES_SRC_DIR,
                                    "api", "config", config_file)) as f:
                 rails_config = yaml.load(f.read())
                 for config_section in ['test', 'common']:
                     try:
-                        config_blob_signing_key = rails_config[config_section]["blob_signing_key"]
-                        break
-                    except KeyError, AttributeError:
+                        key = rails_config[config_section]["blob_signing_key"]
+                    except (KeyError, TypeError):
                         pass
-            if config_blob_signing_key != None:
-                break
-        run_test_server.run()
-        run_test_server.run_keep(blob_signing_key=config_blob_signing_key,
-                                 enforce_permissions=(config_blob_signing_key != None))
+                    else:
+                        return {'blob_signing_key': key,
+                                'enforce_permissions': True}
+        return {'blog_signing_key': None, 'enforce_permissions': False}
+
+    MAIN_SERVER = {}
+    KEEP_SERVER = _getKeepServerConfig()
+    PROJECT_UUID = run_test_server.fixture('groups')['aproject']['uuid']
 
     @classmethod
-    def tearDownClass(cls):
-        run_test_server.stop()
-        run_test_server.stop_keep()
+    def setUpClass(cls):
+        super(ArvPutIntegrationTest, cls).setUpClass()
+        cls.ENVIRON = os.environ.copy()
+        cls.ENVIRON['PYTHONPATH'] = ':'.join(sys.path)
+
+    def setUp(self):
+        super(ArvPutIntegrationTest, self).setUp()
+        arv_put.api_client = None
 
     def authorize_with(self, token_name):
         run_test_server.authorize_with(token_name)
         for v in ["ARVADOS_API_HOST",
                   "ARVADOS_API_HOST_INSECURE",
                   "ARVADOS_API_TOKEN"]:
-            os.environ[v] = arvados.config.settings()[v]
+            self.ENVIRON[v] = arvados.config.settings()[v]
+        arv_put.api_client = arvados.api('v1', cache=False)
 
     def current_user(self):
-        return arvados.api('v1').users().current().execute()
+        return arv_put.api_client.users().current().execute()
 
     def test_check_real_project_found(self):
+        self.authorize_with('active')
         self.assertTrue(arv_put.check_project_exists(self.PROJECT_UUID),
                         "did not correctly find test fixture project")
 
     def test_check_error_finding_nonexistent_project(self):
         BAD_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
+        self.authorize_with('active')
         try:
             result = arv_put.check_project_exists(BAD_UUID)
         except ValueError as error:
@@ -540,12 +547,12 @@ class ArvPutIntegrationTest(unittest.TestCase):
 
         # Before doing anything, demonstrate that the collection
         # we're about to create is not present in our test fixture.
-        api = arvados.api('v1', cache=False)
         manifest_uuid = "00b4e9f40ac4dd432ef89749f1c01e74+47"
         with self.assertRaises(apiclient.errors.HttpError):
-            notfound = api.collections().get(uuid=manifest_uuid).execute()
+            notfound = arv_put.api_client.collections().get(
+                uuid=manifest_uuid).execute()
 
-        datadir = tempfile.mkdtemp()
+        datadir = self.make_tmpdir()
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
         p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
@@ -557,13 +564,10 @@ class ArvPutIntegrationTest(unittest.TestCase):
 
         # The manifest text stored in the API server under the same
         # manifest UUID must use signed locators.
-        c = api.collections().get(uuid=manifest_uuid).execute()
+        c = arv_put.api_client.collections().get(uuid=manifest_uuid).execute()
         self.assertRegexpMatches(
             c['manifest_text'],
             r'^\. 08a008a01d498c404b0c30852b39d3b8\+44\+A[0-9a-f]+@[0-9a-f]+ 0:44:foo\n')
-
-        os.remove(os.path.join(datadir, "foo"))
-        os.rmdir(datadir)
 
     def run_and_find_link(self, text, extra_args=[]):
         self.authorize_with('active')
@@ -572,7 +576,7 @@ class ArvPutIntegrationTest(unittest.TestCase):
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
-        link_list = arvados.api('v1', cache=False).links().list(
+        link_list = arv_put.api_client.links().list(
             filters=[['head_uuid', '=', stdout.strip()],
                      ['link_class', '=', 'name']]).execute().get('items', [])
         self.assertEqual(1, len(link_list))

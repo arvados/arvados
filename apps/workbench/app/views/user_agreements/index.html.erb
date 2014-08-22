@@ -1,27 +1,27 @@
 <% content_for :breadcrumbs do raw '<!-- -->' end %>
 
-<% n_files = @required_user_agreements.collect(&:files).flatten(1).count %>
+<% n_files = unsigned_user_agreements.collect(&:files).flatten(1).count %>
 <% content_for :page_title do %>
 <% if n_files == 1 %>
-<%= @required_user_agreements.first.files.first[1].sub(/\.[a-z]{3,4}$/,'') %>
+<%= unsigned_user_agreements.first.files.first[1].sub(/\.[a-z]{3,4}$/,'') %>
 <% else %>
 User agreements
 <% end %>
 <% end %>
 
-<%= form_for(@required_user_agreements.first, {url: {action: 'sign', controller: 'user_agreements'}, method: 'post'}) do |f| %>
+<%= form_for(unsigned_user_agreements.first, {url: {action: 'sign', controller: 'user_agreements'}, method: 'post'}) do |f| %>
 <%= hidden_field_tag :return_to, request.url %>
 <div id="open_user_agreement">
   <div class="alert alert-info">
     <strong>Please check <%= n_files > 1 ? 'each' : 'the' %> box below</strong> to indicate that you have read and accepted the user agreement<%= 's' if n_files > 1 %>.
   </div>
   <% if n_files == 1 and (Rails.configuration.show_user_agreement_inline rescue false) %>
-  <% ua = @required_user_agreements.first; file = ua.files.first %>
+  <% ua = unsigned_user_agreements.first; file = ua.files.first %>
   <object data="<%= url_for(controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}") %>" type="<%= Rack::Mime::MIME_TYPES[file[1].match(/\.\w+$/)[0]] rescue '' %>" width="100%" height="400px">
   </object>
   <% end %>
   <div>
-    <% @required_user_agreements.each do |ua| %>
+    <% unsigned_user_agreements.each do |ua| %>
     <% ua.files.each do |file| %>
     <%= f.label 'checked[]', class: 'checkbox inline' do %>
     <%= check_box_tag 'checked[]', "#{ua.uuid}/#{file[0]}/#{file[1]}", false %>
@@ -36,16 +36,4 @@ User agreements
     <%= f.submit 'Continue', {class: 'btn btn-primary', disabled: true} %>
   </div>
 </div>
-<% end %>
-
-<% content_for :footer_js do %>
-$('#open_user_agreement input[name="checked[]"]').on('click', function() {
-    var dialog = $('#open_user_agreement')[0]
-    $('input[type=submit]', dialog).prop('disabled',false);
-    $('input[name="checked[]"]', dialog).each(function(){
-        if(!this.checked) {
-            $('input[type=submit]', dialog).prop('disabled',true);
-        }
-    });
-});
 <% end %>

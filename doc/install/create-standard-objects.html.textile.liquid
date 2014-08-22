@@ -13,6 +13,10 @@ The convention is to add every active user to this group. We give it a distincti
 
 <pre>
 prefix=`arv --format=uuid user current | cut -d- -f1`
+
+echo "Site prefix is '$prefix'"
+# (Make sure it matches your configured 5-character site prefix.)
+
 read -rd $'\000' newgroup <<EOF; arv group create --group "$newgroup"
 {
  "uuid":"$prefix-j7d0g-fffffffffffffff",
@@ -27,9 +31,13 @@ This will be readable by the "All users" group, and therefore by every active us
 
 <pre>
 prefix=`arv --format=uuid user current | cut -d- -f1`
+
+echo "Site prefix is '$prefix'"
+# (Make sure it matches your configured 5-character site prefix.)
+
 all_users_group_uuid="$prefix-j7d0g-fffffffffffffff"
 repo_uuid=`arv --format=uuid repository create --repository '{"name":"arvados"}'`
-echo "Arvados repository uuid is $repo_uuid"
+echo "Arvados repository uuid is '$repo_uuid'"
 
 read -rd $'\000' newlink <<EOF; arv link create --link "$newlink" 
 {
@@ -43,16 +51,21 @@ EOF
 
 h3. Keep disks
 
-Currently, you need to tell Arvados about Keep disks manually.
+Currently, you need to tell Arvados about Keep services manually. You'll need at least two "disk" services.
+
+Example:
 
 <pre>
-secret=`ruby -e 'print rand(2**512).to_s(36)[0..49]'`
-read -rd $'\000' keepdisk <<EOF; arv keep_disk create --keep-disk "$keepdisk"
+prefix=`arv --format=uuid user current | cut -d- -f1`
+echo "Site prefix is '$prefix'"
+# (Make sure it matches your configured 5-character site prefix.)
+
+read -rd $'\000' keepservice <<EOF; arv keep_service create --keep-service "$keepservice"
 {
- "service_host":"keep0.xyzzy.arvadosapi.com",
+ "service_host":"keep0.$prefix.arvadosapi.com",
  "service_port":25107,
  "service_ssl_flag":false,
- "ping_secret":"$secret"
+ "service_type":"disk"
 }
 EOF
 </pre>
