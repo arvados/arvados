@@ -137,8 +137,9 @@ class Arvados::V1::UsersController < ApplicationController
   end
 
   def apply_filters
-    if (action_name == "index") and (not @read_users.any? { |u| u.is_admin })
-      # Non-admin index returns very basic information about readable users.
+    return super if @read_users.any? &:is_admin
+    if params[:uuid] != current_user.andand.uuid
+      # Non-admin index/show returns very basic information about readable users.
       safe_attrs = ["uuid", "is_active", "email", "first_name", "last_name"]
       if @select
         @select = @select & safe_attrs

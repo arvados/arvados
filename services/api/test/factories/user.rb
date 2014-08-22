@@ -2,12 +2,22 @@ include CurrentApiClient
 
 FactoryGirl.define do
   factory :user do
-    before :create do
-      Thread.current[:user_was] = Thread.current[:user]
-      Thread.current[:user] = system_user
+    ignore do
+      join_groups []
     end
-    after :create do
-      Thread.current[:user] = Thread.current[:user_was]
+    after :create do |user, evaluator|
+      act_as_system_user do
+        evaluator.join_groups.each do |g|
+          Link.create!(tail_uuid: user.uuid,
+                       head_uuid: g.uuid,
+                       link_class: 'permission',
+                       name: 'can_read')
+          Link.create!(tail_uuid: g.uuid,
+                       head_uuid: user.uuid,
+                       link_class: 'permission',
+                       name: 'can_read')
+        end
+      end
     end
     first_name "Factory"
     last_name "Factory"
@@ -23,6 +33,11 @@ FactoryGirl.define do
                        link_class: 'permission',
                        name: 'can_read')
         end
+      end
+    end
+    to_create do |instance|
+      act_as_system_user do
+        instance.save!
       end
     end
   end

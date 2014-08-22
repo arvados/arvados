@@ -131,8 +131,6 @@ class ArvadosModel < ActiveRecord::Base
     # Collect the uuids for each user and any groups readable by each user.
     user_uuids = users_list.map { |u| u.uuid }
     uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
-    sanitized_uuid_list = uuid_list.
-      collect { |uuid| sanitize(uuid) }.join(', ')
     sql_conds = []
     sql_params = []
     sql_table = kwargs.fetch(:table_name, table_name)
@@ -146,12 +144,18 @@ class ArvadosModel < ActiveRecord::Base
     # A permission link exists ('write' and 'manage' implicitly include
     # 'read') from a member of users_list, or a group readable by users_list,
     # to this row, or to the owner of this row (see join() below).
-    permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
+    sql_conds += ["#{sql_table}.uuid in (?)"]
+    sql_params += [user_uuids]
 
-    sql_conds += ["#{sql_table}.owner_uuid in (?)",
-                  "#{sql_table}.uuid in (?)",
-                  "#{sql_table}.uuid IN #{permitted_uuids}"]
-    sql_params += [uuid_list, user_uuids]
+    if uuid_list.any?
+      sql_conds += ["#{sql_table}.owner_uuid in (?)"]
+      sql_params += [uuid_list]
+
+      sanitized_uuid_list = uuid_list.
+        collect { |uuid| sanitize(uuid) }.join(', ')
+      permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
+      sql_conds += ["#{sql_table}.uuid IN #{permitted_uuids}"]
+    end
 
     if sql_table == "links" and users_list.any?
       # This row is a 'permission' or 'resources' link class
