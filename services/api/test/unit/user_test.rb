@@ -194,7 +194,7 @@ class UserTest < ActiveSupport::TestCase
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', false, false, true], # no repo or vm login, so format not checked
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', true, false, true], # valid format
 
-  ].each do |active, active_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, ok_to_auto_setup|
+  ].each do |active, new_user_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, ok_to_auto_setup|
     test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
       auto_setup_new_users = Rails.configuration.auto_setup_new_users
       auto_setup_new_users_with_vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
@@ -213,7 +213,7 @@ class UserTest < ActiveSupport::TestCase
 
         Rails.configuration.auto_setup_new_users_with_repository = auto_setup_repo
 
-        create_user_and_verify_setup_and_notifications active, active_recipients, inactive_recipients, email, ok_to_auto_setup
+        create_user_and_verify_setup_and_notifications active, new_user_recipients, inactive_recipients, email, ok_to_auto_setup
       ensure
         Rails.configuration.auto_setup_new_users = auto_setup_new_users
         Rails.configuration.auto_setup_new_users_with_vm_uuid = auto_setup_new_users_with_vm_uuid
@@ -445,11 +445,11 @@ class UserTest < ActiveSupport::TestCase
     end
   end
 
-  def create_user_and_verify_setup_and_notifications (active, active_recipients, inactive_recipients, email, ok_to_auto_setup)
-    Rails.configuration.new_user_notification_recipients = active_recipients
+  def create_user_and_verify_setup_and_notifications (active, new_user_recipients, inactive_recipients, email, ok_to_auto_setup)
+    Rails.configuration.new_user_notification_recipients = new_user_recipients
     Rails.configuration.new_inactive_user_notification_recipients = inactive_recipients
 
-    assert_equal active_recipients, Rails.configuration.new_user_notification_recipients
+    assert_equal new_user_recipients, Rails.configuration.new_user_notification_recipients
     assert_equal inactive_recipients, Rails.configuration.new_inactive_user_notification_recipients
 
     ActionMailer::Base.deliveries = []
@@ -538,6 +538,17 @@ class UserTest < ActiveSupport::TestCase
       end
     end
 
+    # both active and inactive user creations should result in new user creation notification mails,
+    # if the new user email recipients config parameter is set
+    if not new_user_recipients.empty? then
+      assert_not_nil new_user_email, 'Expected new user email after setup'
+      assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
+      assert_equal new_user_recipients, new_user_email.to[0]
+      assert_equal new_user_email_subject, new_user_email.subject
+    else
+      assert_nil new_user_email, 'Did not expect new user email after setup'
+    end
+
     if not active
       if not inactive_recipients.empty? then
         assert_not_nil new_inactive_user_email, 'Expected new inactive user email after setup'
@@ -547,26 +558,8 @@ class UserTest < ActiveSupport::TestCase
       else
         assert_nil new_inactive_user_email, 'Did not expect new inactive user email after setup'
       end
-      if not active_recipients.empty? then
-        assert_not_nil new_user_email, 'Expected new user email after setup'
-        assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
-        assert_equal active_recipients, new_user_email.to[0]
-        assert_equal new_user_email_subject, new_user_email.subject
-      else
-        assert_nil new_user_email, 'Did not expect new user email after setup'
-      end
-    end
-
-    if active
+    else
       assert_nil new_inactive_user_email, 'Expected no inactive user email after setting up active user'
-      if not active_recipients.empty? then
-        assert_not_nil new_user_email, 'Expected new user email after setup'
-        assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
-        assert_equal active_recipients, new_user_email.to[0]
-        assert_equal new_user_email_subject, new_user_email.subject
-      else
-        assert_nil new_user_email, 'Did not expect new user email after setup'
-      end
     end
     ActionMailer::Base.deliveries = []
 
