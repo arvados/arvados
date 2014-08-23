@@ -141,10 +141,11 @@ class UserTest < ActiveSupport::TestCase
     [false, [], [], nil, true, true, false],
 
     [false, [], [], 'arvados', true, true, false],
-    [false, [], [], 'arvados', false, false, true],   # since we are not creating repo and vm login, this blaklisted name is not a problem
+    [false, [], [], 'arvados', true, false, false],   # blacklisted username
+    [false, [], [], 'arvados', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
 
-    [false, [], [], 'arvados@example.com', false, false, true],   # since we are not creating repo and vm login, this blaklisted name is not a problem
-    [false, [], [], 'arva.dos@example.com', true, true, true],    # not blaklisted name
+    [false, [], [], 'arvados@example.com', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'arvados@ex.com', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'root@example.com', true, false, false], # blacklisted name after removing -._ characters
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'roo_t@example.com', false, true, true], # not blacklisted name
 

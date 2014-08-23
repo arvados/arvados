@@ -442,15 +442,9 @@ class User < ArvadosModel
     end
 
     # setup user
-    if !Rails.configuration.auto_setup_new_users_with_vm_uuid &&
-       !Rails.configuration.auto_setup_new_users_with_repository
-      oid_login_perm = create_oid_login_perm Rails.configuration.default_openid_prefix
-      group_perm = create_user_group_link
-    else
-      setup_repo_vm_links(username,
-                          Rails.configuration.auto_setup_new_users_with_vm_uuid,
-                          Rails.configuration.default_openid_prefix)
-    end
+    setup_repo_vm_links(username,
+                        Rails.configuration.auto_setup_new_users_with_vm_uuid,
+                        Rails.configuration.default_openid_prefix)
   end
 
   # Find a username that starts with the given string and does not collide
