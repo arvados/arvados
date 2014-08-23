@@ -547,6 +547,14 @@ class UserTest < ActiveSupport::TestCase
       else
         assert_nil new_inactive_user_email, 'Did not expect new inactive user email after setup'
       end
+      if not active_recipients.empty? then
+        assert_not_nil new_user_email, 'Expected new user email after setup'
+        assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
+        assert_equal active_recipients, new_user_email.to[0]
+        assert_equal new_user_email_subject, new_user_email.subject
+      else
+        assert_nil new_user_email, 'Did not expect new user email after setup'
+      end
     end
 
     if active
