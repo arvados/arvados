@@ -57,6 +57,9 @@ class UserSessionsController < ApplicationController
       end
     end
 
+    # For the benefit of functional and integration tests:
+    @user = user
+
     # prevent ArvadosModel#before_create and _update from throwing
     # "unauthorized":
     Thread.current[:user] = user

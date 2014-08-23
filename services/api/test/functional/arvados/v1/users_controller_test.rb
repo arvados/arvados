@@ -1044,9 +1044,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       assert !repo_perms.any?, "expected all repo_perms deleted"
     end
 
-    vm_login_perms = Link.where(tail_uuid: uuid,
-                              link_class: 'permission',
-                              name: 'can_login').where("head_uuid like ?", VirtualMachine.uuid_like_pattern)
+    vm_login_perms = Link.
+      where(tail_uuid: uuid,
+            link_class: 'permission',
+            name: 'can_login').
+      where("head_uuid like ?",
+            VirtualMachine.uuid_like_pattern).
+      where('uuid <> ?',
+            links(:auto_setup_vm_login_username_can_login_to_test_vm).uuid)
     if expect_vm_perms
       assert vm_login_perms.any?, "expected vm_login_perms"
     else
@@ -1057,9 +1062,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
       g[:uuid].match /-f+$/
     end.first
     group_read_perms = Link.where(tail_uuid: uuid,
-                             head_uuid: group[:uuid],
-                             link_class: 'permission',
-                             name: 'can_read')
+                                  head_uuid: group[:uuid],
+                                  link_class: 'permission',
+                                  name: 'can_read')
     if expect_group_perms
       assert group_read_perms.any?, "expected all users group read perms"
     else
@@ -1067,7 +1072,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     end
 
     signed_uuids = Link.where(link_class: 'signature',
-                                  tail_uuid: uuid)
+                              tail_uuid: uuid)
 
     if expect_signatures
       assert signed_uuids.any?, "expected signatures"
