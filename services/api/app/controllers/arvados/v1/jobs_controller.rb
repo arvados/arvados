@@ -34,7 +34,7 @@ class Arvados::V1::JobsController < ApplicationController
            ["script_version", "in git",
             params[:minimum_script_version] || resource_attrs[:script_version]],
            ["script_version", "not in git", params[:exclude_script_versions]],
-          ].reject { |filter| filter.last.nil? }
+          ].reject { |filter| filter.last.nil? or filter.last.empty? }
         if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
           if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
             image_search += ":#{image_tag}"
@@ -238,7 +238,7 @@ class Arvados::V1::JobsController < ApplicationController
       if version_range.nil?
         raise ArgumentError.
           new(["error searching #{script_info['repository']} from",
-               "#{script_range['min_version']} to #{last_version},",
+               "'#{script_range['min_version']}' to '#{last_version}',",
                "excluding #{script_range['exclude_versions']}"].join(" "))
       end
       @filters.append(["script_version", "in", version_range])
