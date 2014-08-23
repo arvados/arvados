@@ -433,7 +433,7 @@ class User < ArvadosModel
 
       blacklisted_usernames = Rails.configuration.auto_setup_name_blacklist
       if blacklisted_usernames.include?(username)
-        return true;
+        return true
       elsif !(/^[a-zA-Z][-._a-zA-Z0-9]{0,30}[a-zA-Z0-9]$/.match(username))
         return true
       else

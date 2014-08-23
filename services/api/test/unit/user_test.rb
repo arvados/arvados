@@ -193,7 +193,7 @@ class UserTest < ActiveSupport::TestCase
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', false, false, true], # no repo or vm login, so format not checked
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'r00t@example.com', true, false, true], # valid format
 
-  ].each do |active, active_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, valid_username|
+  ].each do |active, active_recipients, inactive_recipients, email, auto_setup_vm, auto_setup_repo, ok_to_auto_setup|
     test "create new user with auto setup #{active} #{email} #{auto_setup_vm} #{auto_setup_repo}" do
       auto_setup_new_users = Rails.configuration.auto_setup_new_users
       auto_setup_new_users_with_vm_uuid = Rails.configuration.auto_setup_new_users_with_vm_uuid
@@ -212,7 +212,7 @@ class UserTest < ActiveSupport::TestCase
 
         Rails.configuration.auto_setup_new_users_with_repository = auto_setup_repo
 
-        create_user_and_verify_setup_and_notifications active, active_recipients, inactive_recipients, email, valid_username
+        create_user_and_verify_setup_and_notifications active, active_recipients, inactive_recipients, email, ok_to_auto_setup
       ensure
         Rails.configuration.auto_setup_new_users = auto_setup_new_users
         Rails.configuration.auto_setup_new_users_with_vm_uuid = auto_setup_new_users_with_vm_uuid
@@ -444,7 +444,7 @@ class UserTest < ActiveSupport::TestCase
     end
   end
 
-  def create_user_and_verify_setup_and_notifications (active, active_recipients, inactive_recipients, email, valid_username)
+  def create_user_and_verify_setup_and_notifications (active, active_recipients, inactive_recipients, email, ok_to_auto_setup)
     Rails.configuration.new_user_notification_recipients = active_recipients
     Rails.configuration.new_inactive_user_notification_recipients = inactive_recipients
 
@@ -464,7 +464,7 @@ class UserTest < ActiveSupport::TestCase
       g[:uuid].match /-f+$/
     end.first
 
-    if !Rails.configuration.auto_setup_new_users || !valid_username
+    if !Rails.configuration.auto_setup_new_users || !ok_to_auto_setup
       # verify that the user is not added to "All groups" by auto_setup
       verify_link_exists false, group[:uuid], user.uuid, 'permission', 'can_read', nil, nil
 
@@ -524,7 +524,7 @@ class UserTest < ActiveSupport::TestCase
 
     new_user_email_subject = "#{Rails.configuration.email_subject_prefix}New user created notification"
     if Rails.configuration.auto_setup_new_users
-      new_user_email_subject = valid_username ? "#{Rails.configuration.email_subject_prefix}New user created and setup notification" :
+      new_user_email_subject = ok_to_auto_setup ? "#{Rails.configuration.email_subject_prefix}New user created and setup notification" :
                                                 "#{Rails.configuration.email_subject_prefix}New user created, but not setup notification"
     end
 
@@ -549,7 +549,7 @@ class UserTest < ActiveSupport::TestCase
 
     if active
       assert_nil new_inactive_user_email, 'Expected no inactive user email after setting up active user'
-      if (not active_recipients.empty?) && valid_username then
+      if (not active_recipients.empty?) && ok_to_auto_setup then
         assert_not_nil new_user_email, 'Expected new user email after setup'
         assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
         assert_equal active_recipients, new_user_email.to[0]
