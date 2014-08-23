@@ -12,11 +12,11 @@ class AdminNotifier < ActionMailer::Base
 
       add_to_subject = ''
       if Rails.configuration.auto_setup_new_users
-        add_to_subject = @user.is_invited ? 'and setup' : ', but not setup'
+        add_to_subject = @user.is_invited ? 'and setup ' : ', but not setup '
       end
 
       mail(to: @recipients,
-           subject: "#{Rails.configuration.email_subject_prefix}New user created #{add_to_subject} notification"
+           subject: "#{Rails.configuration.email_subject_prefix}New user created #{add_to_subject}notification"
           )
     end
   end

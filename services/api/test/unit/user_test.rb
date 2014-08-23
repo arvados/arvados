@@ -145,8 +145,9 @@ class UserTest < ActiveSupport::TestCase
     [false, [], [], 'arvados', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
 
     [false, [], [], 'arvados@example.com', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'arvados@ex.com', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
-    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'root@example.com', true, false, false], # blacklisted name after removing -._ characters
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'arvados@example.com', false, false, true],   # since we are not creating repo and vm login, this blacklisted name is not a problem
+    [true, 'active-notify@example.com', 'inactive-notify@example.com', 'root@example.com', true, false, false], # blacklisted name
+    [false, 'active-notify@example.com', 'inactive-notify@example.com', 'root@example.com', true, false, false], # blacklisted name
     [true, 'active-notify@example.com', 'inactive-notify@example.com', 'roo_t@example.com', false, true, true], # not blacklisted name
 
     [false, [], [], '@example.com', true, false, false],  # incorrect format
@@ -524,8 +525,9 @@ class UserTest < ActiveSupport::TestCase
 
     new_user_email_subject = "#{Rails.configuration.email_subject_prefix}New user created notification"
     if Rails.configuration.auto_setup_new_users
-      new_user_email_subject = ok_to_auto_setup ? "#{Rails.configuration.email_subject_prefix}New user created and setup notification" :
-                                                "#{Rails.configuration.email_subject_prefix}New user created, but not setup notification"
+      new_user_email_subject = (ok_to_auto_setup || active) ?
+                                 "#{Rails.configuration.email_subject_prefix}New user created and setup notification" :
+                                 "#{Rails.configuration.email_subject_prefix}New user created, but not setup notification"
     end
 
     ActionMailer::Base.deliveries.each do |d|
@@ -549,7 +551,7 @@ class UserTest < ActiveSupport::TestCase
 
     if active
       assert_nil new_inactive_user_email, 'Expected no inactive user email after setting up active user'
-      if (not active_recipients.empty?) && ok_to_auto_setup then
+      if not active_recipients.empty? then
         assert_not_nil new_user_email, 'Expected new user email after setup'
         assert_equal Rails.configuration.user_notifier_email_from, new_user_email.from[0]
         assert_equal active_recipients, new_user_email.to[0]
