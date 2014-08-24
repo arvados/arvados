@@ -105,18 +105,18 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       within '.modal-content' do
         assert page.has_text?('Report a problem'), 'Report a problem text not found'
         assert page.has_no_text?('Version / debugging info'), 'Version / debugging info is not expected'
-        assert page.has_text?('Server version'), 'Server version  text not found'
-        assert page.has_text?('Server restarted at'), 'Server restarted at text not found'
+        assert page.has_text?('API version'), 'API version  text not found'
+        assert page.has_text?('API startup time'), 'API startup time text not found'
         assert page.has_text?('Found a problem?'), 'Found a problem text not found'
-        assert page.has_button?('Report issue'), 'Report issue button not found'
+        assert page.has_button?('Send problem report'), 'Send problem report button not found'
         assert page.has_button?('Cancel'), 'Cancel button not found'
 
         # enter a report text and click on report
         page.find_field('report_issue_text').set 'my test report text'
-        click_button 'Report issue'
+        click_button 'Send problem report'
 
         # ajax success updated button texts and added footer message
-        assert page.has_no_button?('Report issue'), 'Found button - Report issue'
+        assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
         assert page.has_no_button?('Cancel'), 'Found button - Cancel'
         assert page.has_text?('Report sent'), 'No text - Report sent'
         assert page.has_button?('Close'), 'No button - Close'
@@ -126,7 +126,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       end
 
       # out of the popup now and should be back in the error page
-      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page')
+      assert(page.has_text?('Dashboard'), 'Expected to see dashboard')
     ensure
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
     end

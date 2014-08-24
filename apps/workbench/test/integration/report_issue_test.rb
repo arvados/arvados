@@ -89,7 +89,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['active_no_prefs_profile', api_fixture('users')['active_no_prefs_profile']],
   ].each do |token, user|
 
-    test "check help for user #{token}" do
+    test "check version info and report issue for user #{token}" do
       if !token
         visit ('/')
       else

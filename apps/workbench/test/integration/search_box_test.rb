@@ -36,18 +36,18 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       within '.modal-content' do
         assert page.has_text?('Report a problem'), 'No text - Report a problem'
         assert page.has_no_text?('Version / debugging info'), 'No text - Version / debugging info'
-        assert page.has_text?('Server version'), 'No text - Server version'
-        assert page.has_text?('Server restarted at'), 'No text - Server restarted at'
+        assert page.has_text?('API version'), 'No text - API version'
+        assert page.has_text?('API startup time'), 'No text - API startup time'
         assert page.has_text?('Found a problem?'), 'No text - Found a problem'
-        assert page.has_button?('Report issue'), 'No button - Report issue'
+        assert page.has_button?('Send problem report'), 'No button - Send problem report'
         assert page.has_button?('Cancel'), 'No button - Cancel'
 
         # enter a report text and click on report
         page.find_field('report_issue_text').set 'my test report text'
-        click_button 'Report issue'
+        click_button 'Send problem report'
 
         # ajax success updated button texts and added footer message
-        assert page.has_no_button?('Report issue'), 'Found button - Report issue'
+        assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
         assert page.has_no_button?('Cancel'), 'Found button - Cancel'
         assert page.has_text?('Report sent'), 'No text - Report sent'
         assert page.has_button?('Close'), 'No text - Close'
@@ -86,7 +86,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     ['admin', api_fixture('users')['admin']],
   ].each do |token, user|
 
-    test "test search for user #{token}" do
+    test "test search box for user #{token}" do
       visit page_with_token(token)
 
       verify_search_box user
