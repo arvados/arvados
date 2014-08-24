@@ -14,7 +14,8 @@ module RedClothArvadosLinkExtension
     text.gsub!(/"(?!\s)([^"]*\S)":(\S+)/) do
       text, link = $~[1..2]
       arvados_link = RedClothViewBase.new.helper_link_to_if_arvados_object(link, { :link_text => text })
-      arvados_link ? arvados_link : "#{text}:#{link}"
+      # if it's not an arvados_link the helper will return the link unprocessed and so we will reconstruct the textile link string so it can be processed normally
+      (arvados_link == link) ? "\"#{text}\":#{link}" : arvados_link
     end
   end
 end
