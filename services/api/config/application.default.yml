@@ -108,7 +108,9 @@ common:
 
   accept_api_token: {}
 
+  # When new_users_are_active is set to true, the user agreement check is skipped.
   new_users_are_active: false
+
   admin_notifier_email_from: arvados@example.com
   email_subject_prefix: "[ARVADOS] "
   user_notifier_email_from: arvados@example.com
@@ -179,3 +181,13 @@ common:
 
   # email address to which mail should be sent when the user creates profile for the first time
   user_profile_notification_address: false
+
+  default_openid_prefix: https://www.google.com/accounts/o8/id
+
+  # Config parameters to automatically setup new users.
+  # The params auto_setup_new_users_with_* are meaningful only when auto_setup_new_users is turned on.
+  # auto_setup_name_blacklist is a list of usernames to be blacklisted for auto setup.
+  auto_setup_new_users: false
+  auto_setup_new_users_with_vm_uuid: false
+  auto_setup_new_users_with_repository: false
+  auto_setup_name_blacklist: [arvados, git, gitolite, gitolite-admin, root, syslog]
