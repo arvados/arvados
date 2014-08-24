@@ -8,7 +8,7 @@ $(document).
     }
     $('div').remove('.modal-footer-status');
 
-    $.ajax().
+    $.ajax('/').
       success(function(data, status, jqxhr) {
         var $sendButton = $('#report-issue-submit');
         $sendButton.html('Report sent');
@@ -26,8 +26,6 @@ $(document).
         var $cancelButton = $('#report-issue-cancel');
         var text = document.getElementById('report-issue-cancel').firstChild;
         $cancelButton.html('Cancel');
-      }).
-      always(function(data, status, jqxhr) {
       });
 
   });
