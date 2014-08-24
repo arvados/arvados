@@ -283,6 +283,7 @@ no_backoff = mock.patch('time.sleep', lambda n: None)
 class KeepClientRetryGetTestCase(unittest.TestCase, KeepClientRetryTestMixin):
     DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_DATA
     DEFAULT_EXCEPTION = arvados.errors.KeepReadError
+    HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
 
     def run_method(self, locator=KeepClientRetryTestMixin.TEST_LOCATOR,
                    *args, **kwargs):
@@ -298,17 +299,16 @@ class KeepClientRetryGetTestCase(unittest.TestCase, KeepClientRetryTestMixin):
         # This test rigs up 50/50 disagreement between two servers, and
         # checks that it does not become a NotFoundError.
         client = self.new_client()
-        client.service_roots = [self.PROXY_ADDR, self.PROXY_ADDR]
         with self.mock_responses(self.DEFAULT_EXPECT, 404, 500):
             with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
-                client.get(self.TEST_LOCATOR)
+                client.get(self.HINTED_LOCATOR)
             self.assertNotIsInstance(
                 exc_check.exception, arvados.errors.NotFoundError,
                 "mixed errors raised NotFoundError")
 
     def test_hint_server_can_succeed_without_retries(self):
         with self.mock_responses(self.DEFAULT_EXPECT, 404, 200, 500):
-            self.check_success(locator=self.TEST_LOCATOR + '+K@xyzzy')
+            self.check_success(locator=self.HINTED_LOCATOR)
 
 
 @no_backoff
