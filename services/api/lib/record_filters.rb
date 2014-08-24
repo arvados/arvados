@@ -40,7 +40,7 @@ module RecordFilters
           raise ArgumentError.new("Invalid attribute '#{attr}' in filter")
         end
         case operator.downcase
-        when '=', '<', '<=', '>', '>=', '!=', 'like'
+        when '=', '<', '<=', '>', '>=', '!=', 'like', 'ilike'
           attr_type = model_class.attribute_column(attr).type
           operator = '<>' if operator == '!='
           if operand.is_a? String
