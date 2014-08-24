@@ -20,7 +20,7 @@
    end
    perms_json = perms_json.to_json
    choose_filters = {
-     "groups" => [["group_class", "=", nil]],
+     "groups" => [["group_class", "=", "role"]],
    }
    choose_filters.default = []
    owner_icon = fa_icon_class_for_uuid(@object.owner_uuid)
