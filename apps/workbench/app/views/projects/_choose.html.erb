@@ -24,6 +24,7 @@
                  row_selectable = !params[:editable] || projectnode[:object].editable?
                  if projectnode[:object].uuid == current_user.uuid
                    row_name = "Home"
+                   row_selectable = true
                  else
                    row_name = projectnode[:object].friendly_link_name || 'New project'
                  end %>
