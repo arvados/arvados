@@ -17,7 +17,7 @@
             <% tree.each do |projectnode| %>
               <% if projectnode[:object].is_a? String %>
                 <div class="row" style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px">
-                  <i class="fa fa-fw fa-folder-open-o"></i>
+                  <i class="fa fa-fw fa-share-alt"></i>
                   <%= projectnode[:object] %>
                 </div>
               <% else

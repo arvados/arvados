@@ -730,7 +730,7 @@ class ApplicationController < ActionController::Base
     @my_project_tree =
       sorted_paths.call buildtree.call(children_of, 'me')
     @shared_project_tree =
-      sorted_paths.call({'Shared with me' =>
+      sorted_paths.call({'Projects shared with me' =>
                           buildtree.call(children_of, false)})
   end
 
