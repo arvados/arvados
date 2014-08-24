@@ -63,6 +63,60 @@ class PermissionTest < ActiveSupport::TestCase
     assert ob.writable_by.include?(users(:active).uuid), "user does not have write permission"
   end
 
+  test "writable_by reports requesting user's own uuid for a writable project" do
+    invited_to_write = users(:project_viewer)
+    group = groups(:asubproject)
+
+    # project_view can read, but cannot see write or see writers list
+    set_user_from_auth :project_viewer
+    assert_equal([group.owner_uuid],
+                 group.writable_by,
+                 "writers list should just have owner_uuid")
+
+    # allow project_viewer to write for the remainder of the test
+    set_user_from_auth :admin
+    Link.create!(tail_uuid: invited_to_write.uuid,
+                 head_uuid: group.uuid,
+                 link_class: 'permission',
+                 name: 'can_write')
+    group.permissions.reload
+
+    # project_viewer should see self in writers list (but not all writers)
+    set_user_from_auth :project_viewer
+    assert_not_nil(group.writable_by,
+                    "can write but cannot see writers list")
+    assert_includes(group.writable_by, invited_to_write.uuid,
+                    "self missing from writers list")
+    assert_includes(group.writable_by, group.owner_uuid,
+                    "project owner missing from writers list")
+    refute_includes(group.writable_by, users(:active).uuid,
+                    "saw :active user in writers list")
+
+    # active user should see full writers list
+    set_user_from_auth :active
+    assert_includes(group.writable_by, invited_to_write.uuid,
+                    "permission just added, but missing from writers list")
+
+    # allow project_viewer to manage for the remainder of the test
+    set_user_from_auth :admin
+    Link.create!(tail_uuid: invited_to_write.uuid,
+                 head_uuid: group.uuid,
+                 link_class: 'permission',
+                 name: 'can_manage')
+    # invite another writer we can test for
+    Link.create!(tail_uuid: users(:spectator).uuid,
+                 head_uuid: group.uuid,
+                 link_class: 'permission',
+                 name: 'can_write')
+    group.permissions.reload
+
+    set_user_from_auth :project_viewer
+    assert_not_nil(group.writable_by,
+                    "can manage but cannot see writers list")
+    assert_includes(group.writable_by, users(:spectator).uuid,
+                    ":spectator missing from writers list")
+  end
+
   test "user owns group, group can_manage object's group, user can add permissions" do
     set_user_from_auth :admin
 
