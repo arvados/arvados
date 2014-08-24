@@ -1,10 +1,17 @@
 $(document).
     on('paste keyup input', 'input[type=text].filterable-control', function() {
+        var infinite_container = $(this).closest('[data-infinite-scroller]');
         var q = new RegExp($(this).val(), 'i');
-        $($(this).attr('data-filterable-target')).
+        var $target = $($(this).attr('data-filterable-target'));
+        $target.
             addClass('filterable-container').
             data('q', q).
             trigger('refresh');
+        if ($target.is('[data-infinite-scroller]')) {
+            params = $target.data('infinite-content-params') || {};
+            params.filters = JSON.stringify([['any', 'like', '%' + $(this).val() + '%']]);
+            $target.data('infinite-content-params', params);
+        }
     }).on('refresh', '.filterable-container', function() {
         var $container = $(this);
         var q = $(this).data('q');
