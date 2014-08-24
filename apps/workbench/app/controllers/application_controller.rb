@@ -205,7 +205,7 @@ class ApplicationController < ActionController::Base
       f.json do
         extra_attrs = { href: url_for(action: :show, id: @object) }
         @object.textile_attributes.each do |textile_attr|
-          extra_attrs.merge!({ "#{textile_attr}Textile" => view_context.render_content_from_database(@object.attributes[textile_attr]) })
+          extra_attrs.merge!({ "#{textile_attr}Textile" => view_context.render_markup(@object.attributes[textile_attr]) })
         end
         render json: @object.attributes.merge(extra_attrs)
       end

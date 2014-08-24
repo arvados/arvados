@@ -11,7 +11,7 @@ module ApplicationHelper
     Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
   end
 
-  def render_content_from_database(markup)
+  def render_markup(markup)
     raw RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile) if markup
   end
 
@@ -455,6 +455,6 @@ private
   end
 
   def render_textile_if_textile( object, attr, attrvalue )
-    is_textile?( object, attr ) ? render_content_from_database(attrvalue) : attrvalue
+    is_textile?( object, attr ) ? render_markup(attrvalue) : attrvalue
   end
 end
