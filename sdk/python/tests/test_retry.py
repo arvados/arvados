@@ -9,7 +9,7 @@ import mock
 
 from arvados_testutil import fake_httplib2_response
 
-class RetryLoopTestCase(unittest.TestCase):
+class RetryLoopTestMixin(object):
     @staticmethod
     def loop_success(result):
         # During the tests, we use integers that look like HTTP status
@@ -23,9 +23,10 @@ class RetryLoopTestCase(unittest.TestCase):
         else:
             return None
 
-    def run_loop(self, num_retries, *results):
+    def run_loop(self, num_retries, *results, **kwargs):
         responses = itertools.chain(results, itertools.repeat(None))
-        retrier = arv_retry.RetryLoop(num_retries, self.loop_success)
+        retrier = arv_retry.RetryLoop(num_retries, self.loop_success,
+                                      **kwargs)
         for tries_left, response in itertools.izip(retrier, responses):
             retrier.save_result(response)
         return retrier
@@ -35,6 +36,8 @@ class RetryLoopTestCase(unittest.TestCase):
                       "loop success flag is incorrect")
         self.assertEqual(last_code, retrier.last_result())
 
+
+class RetryLoopTestCase(unittest.TestCase, RetryLoopTestMixin):
     def test_zero_retries_and_success(self):
         retrier = self.run_loop(0, 200)
         self.check_result(retrier, True, 200)
@@ -94,79 +97,54 @@ class RetryLoopTestCase(unittest.TestCase):
         self.assertRaises(arv_error.AssertionError, retrier.save_result, 1)
 
 
+@mock.patch('time.time', side_effect=itertools.count())
 @mock.patch('time.sleep')
-class HTTPRetryLoopTestCase(unittest.TestCase):
-    def run_loop(self, num_retries, *codes, **kwargs):
-        responses = itertools.chain(
-            ((fake_httplib2_response(c), str(c)) for c in codes),
-            itertools.repeat((None, None)))
-        retrier = arv_retry.HTTPRetryLoop(num_retries, **kwargs)
-        for tries_left, response in itertools.izip(retrier, responses):
-            retrier.save_result(response)
-        return retrier
+class RetryLoopBackoffTestCase(unittest.TestCase, RetryLoopTestMixin):
+    def run_loop(self, num_retries, *results, **kwargs):
+        kwargs.setdefault('backoff_start', 8)
+        return super(RetryLoopBackoffTestCase, self).run_loop(
+            num_retries, *results, **kwargs)
 
-    def check_result(self, retrier, expect_success, last_status,
-                     sleep_mock, sleep_count):
-        self.assertIs(retrier.success(), expect_success,
-                      "loop success flag is incorrect")
-        self.assertEqual(str(last_status), retrier.last_result()[1],
-                         "wrong loop result")
-        self.assertEqual(sleep_count, sleep_mock.call_count,
+    def check_backoff(self, sleep_mock, sleep_count, multiplier=1):
+        # Figure out how much time we actually spent sleeping.
+        sleep_times = [arglist[0][0] for arglist in sleep_mock.call_args_list
+                       if arglist[0][0] > 0]
+        self.assertEqual(sleep_count, len(sleep_times),
                          "loop did not back off correctly")
-
-    def sleep_times(self, sleep_mock):
-        return (arglist[0][0] for arglist in sleep_mock.call_args_list)
-
-    def check_backoff_growth(self, sleep_mock, multiplier=1):
-        check = (self.assertGreater if (multiplier == 1)
-                 else self.assertGreaterEqual)
-        sleep_times = self.sleep_times(sleep_mock)
-        last_wait = next(sleep_times)
+        last_wait = 0
         for this_wait in sleep_times:
-            check(this_wait, last_wait * multiplier,
-                  "loop did not grow backoff times correctly")
+            self.assertGreater(this_wait, last_wait * multiplier,
+                               "loop did not grow backoff times correctly")
             last_wait = this_wait
 
-    def test_no_retries_and_success(self, sleep_mock):
-        retrier = self.run_loop(0, 200)
-        self.check_result(retrier, True, 200, sleep_mock, 0)
+    def test_no_backoff_with_no_retries(self, sleep_mock, time_mock):
+        self.run_loop(0, 500, 201)
+        self.check_backoff(sleep_mock, 0)
 
-    def test_no_retries_and_tempfail(self, sleep_mock):
-        retrier = self.run_loop(0, 500, 200)
-        self.check_result(retrier, None, 500, sleep_mock, 0)
+    def test_no_backoff_after_success(self, sleep_mock, time_mock):
+        self.run_loop(1, 200, 501)
+        self.check_backoff(sleep_mock, 0)
 
-    def test_no_retries_and_permfail(self, sleep_mock):
-        retrier = self.run_loop(0, 400, 200)
-        self.check_result(retrier, False, 400, sleep_mock, 0)
+    def test_no_backoff_after_permfail(self, sleep_mock, time_mock):
+        self.run_loop(1, 400, 201)
+        self.check_backoff(sleep_mock, 0)
 
-    def test_retries_with_immediate_success(self, sleep_mock):
-        retrier = self.run_loop(3, 200, 500, 500)
-        self.check_result(retrier, True, 200, sleep_mock, 0)
+    def test_backoff_before_success(self, sleep_mock, time_mock):
+        self.run_loop(5, 500, 501, 502, 203, 504)
+        self.check_backoff(sleep_mock, 3)
 
-    def test_retries_with_delayed_success(self, sleep_mock):
-        retrier = self.run_loop(3, 500, 500, 200, 502)
-        self.check_result(retrier, True, 200, sleep_mock, 2)
-        self.check_backoff_growth(sleep_mock)
+    def test_backoff_before_permfail(self, sleep_mock, time_mock):
+        self.run_loop(5, 500, 501, 502, 403, 504)
+        self.check_backoff(sleep_mock, 3)
 
-    def test_retries_then_permfail(self, sleep_mock):
-        retrier = self.run_loop(3, 500, 404, 200, 200)
-        self.check_result(retrier, False, 404, sleep_mock, 1)
+    def test_backoff_all_tempfail(self, sleep_mock, time_mock):
+        self.run_loop(3, 500, 501, 502, 503, 504)
+        self.check_backoff(sleep_mock, 3)
 
-    def test_retries_all_tempfail(self, sleep_mock):
-        retrier = self.run_loop(3, 502, 502, 502, 500, 200)
-        self.check_result(retrier, None, 500, sleep_mock, 3)
-        self.check_backoff_growth(sleep_mock)
-
-    def test_backoff_parameters(self, sleep_mock):
-        with mock.patch('time.time', side_effects=itertools.count):
-            self.run_loop(3, 500, 500, 500, 500,
-                          backoff_start=5, backoff_growth=10)
-        self.check_backoff_growth(sleep_mock, 10)
-
-    def test_custom_success_check(self, mock):
-        retrier = self.run_loop(3, 200, 777, 201, 202, 203,
-                                success_check=lambda r: r[1] == '777' or None)
-        self.check_result(retrier, True, 777, mock, 1)
+    def test_backoff_multiplier(self, sleep_mock, time_mock):
+        self.run_loop(5, 500, 501, 502, 503, 504, 505,
+                      backoff_start=5, backoff_growth=10)
+        self.check_backoff(sleep_mock, 5, 9)
 
 
 class CheckHTTPResponseSuccessTestCase(unittest.TestCase):

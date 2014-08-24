@@ -28,7 +28,7 @@ class RetryLoop(object):
             return loop.last_result()
     """
     def __init__(self, num_retries, success_check=lambda r: True,
-                 save_results=1):
+                 backoff_start=0, backoff_growth=2, save_results=1):
         """Construct a new RetryLoop.
 
         Arguments:
@@ -40,12 +40,19 @@ class RetryLoop(object):
           represents a permanent failure state, and None if the loop
           should continue.  If no function is provided, the loop will
           end as soon as it records any result.
+        * backoff_start: The number of seconds that must pass before the
+          loop's second iteration.  Default 0, which disables all waiting.
+        * backoff_growth: The wait time multiplier after each iteration.
+          Default 2 (i.e., double the wait time each time).
         * save_results: Specify a number to save the last N results
           that the loop recorded.  These records are available through
           the results attribute, oldest first.  Default 1.
         """
         self.tries_left = num_retries + 1
         self.check_result = success_check
+        self.backoff_wait = backoff_start
+        self.backoff_growth = backoff_growth
+        self.next_start_time = 0
         self.results = deque(maxlen=save_results)
         self._running = None
         self._success = None
@@ -62,6 +69,11 @@ class RetryLoop(object):
         if (self.tries_left < 1) or not self.running():
             self._running = False
             raise StopIteration
+        else:
+            wait_time = max(0, self.next_start_time - time.time())
+            time.sleep(wait_time)
+            self.backoff_wait *= self.backoff_growth
+        self.next_start_time = time.time() + self.backoff_wait
         self.tries_left -= 1
         return self.tries_left
 
@@ -126,34 +138,3 @@ def check_http_response_success(result):
         return False
     else:
         return None  # Get well soon, server.
-
-class HTTPRetryLoop(RetryLoop):
-    """Coordinate limited retries of HTTP requests.
-
-    This RetryLoop uses check_http_response_success as the default
-    success check, and provides exponential backoff between
-    iterations.
-    """
-    def __init__(self, num_retries, success_check=check_http_response_success,
-                 backoff_start=1, backoff_growth=2, save_results=1):
-        """Construct an HTTPRetryLoop.
-
-        New arguments (see RetryLoop for others):
-        * backoff_start: The number of seconds that must pass before the
-          loop's second iteration.  Default 1.
-        * backoff_growth: The wait time multiplier after each iteration.
-          Default 2 (i.e., double the wait time each time).
-        """
-        self.backoff_wait = backoff_start
-        self.backoff_growth = backoff_growth
-        self.next_start_time = 0
-        super(HTTPRetryLoop, self).__init__(num_retries, success_check,
-                                            save_results)
-
-    def next(self):
-        if self.running() and (self.tries_left > 0):
-            wait_time = max(0, self.next_start_time - time.time())
-            time.sleep(wait_time)
-            self.backoff_wait *= self.backoff_growth
-        self.next_start_time = time.time() + self.backoff_wait
-        return super(HTTPRetryLoop, self).next()
