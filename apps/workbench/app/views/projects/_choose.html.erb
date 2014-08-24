@@ -22,17 +22,14 @@
                 </div>
               <% else
                  row_selectable = !params[:editable] || projectnode[:object].editable?
-                 folder_class = "fa-folder-o"
                  if projectnode[:object].uuid == current_user.uuid
-                   row_name = "My Projects"
-                   row_selectable &&= params[:my_root_selectable]
-                   folder_class = "fa-folder-open-o" if not row_selectable
+                   row_name = "Home"
                  else
                    row_name = projectnode[:object].friendly_link_name || 'New project'
                  end %>
                 <div class="<%= 'selectable project' if row_selectable %> row"
                      style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px" data-object-uuid="<%= projectnode[:object].uuid %>">
-                  <i class="fa fa-fw <%= folder_class %>"></i> <%= row_name %>
+                  <i class="fa fa-fw fa-folder-o"></i> <%= row_name %>
                 </div>
               <% end %>
             <% end %>
