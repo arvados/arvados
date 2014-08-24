@@ -105,6 +105,11 @@ $(document).
                 return;
             $(this).addClass('infinite-scroller-ready');
 
+            // $scroller is the DOM element that hears "scroll"
+            // events: sometimes it's a div, sometimes it's
+            // window. Here, "this" is the DOM element containing the
+            // result rows. We pass it to maybe_load_more_content in
+            // event.data.
             var $scroller = $($(this).attr('data-infinite-scroller'));
             if (!$scroller.hasClass('smart-scroll') &&
                 'scroll' != $scroller.css('overflow-y'))
