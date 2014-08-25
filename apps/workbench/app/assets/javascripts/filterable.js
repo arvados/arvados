@@ -24,9 +24,9 @@ $(document).
                 // characters in the search box), hide the stale
                 // content and ask the server for new results.
                 var newquery = $target.data('filterable-query-new');
-                var params = $target.data('infinite-content-params') || {};
-                params.filters = JSON.stringify([['any', 'ilike', '%' + newquery + '%']]);
-                $target.data('infinite-content-params', params);
+                var params = $target.data('infiniteContentParamsFilterable') || {};
+                params.filters = [['any', 'ilike', '%' + newquery + '%']];
+                $target.data('infiniteContentParamsFilterable', params);
                 $target.data('filterable-query', newquery);
                 $target.trigger('refresh-content');
             }, 250));

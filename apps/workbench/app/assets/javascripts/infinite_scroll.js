@@ -5,6 +5,7 @@ function maybe_load_more_content(event) {
     var scrollHeight;
     var spinner, colspan;
     var serial = Date.now();
+    var params;
     scrollHeight = scroller.scrollHeight || $('body')[0].scrollHeight;
     if ($(scroller).scrollTop() + $(scroller).height()
         >
@@ -39,10 +40,36 @@ function maybe_load_more_content(event) {
         $container.find(".spinner").detach();
         $container.append(spinner);
         $container.attr('data-infinite-serial', serial);
+
+        // Combine infiniteContentParams from multiple
+        // sources. filterable.js might put its params in
+        // infiniteContentParamsFilterable, etc.
+        params = {};
+        $.each($container.data(), function(datakey, datavalue) {
+            if (/^infiniteContentParams/.exec(datakey)) {
+                if (datavalue instanceof Object) {
+                    $.each(datavalue, function(hkey, hvalue) {
+                        if (hvalue instanceof Array) {
+                            params[hkey] = (params[hkey] || []).concat(hvalue);
+                        } else if (hvalue instanceof Object) {
+                            $.extend(params[hkey], hvalue);
+                        } else {
+                            params[hkey] = hvalue;
+                        }
+                    });
+                }
+            }
+        });
+        $.each(params, function(k,v) {
+            if (v instanceof Object) {
+                params[k] = JSON.stringify(v);
+            }
+        });
+
         $.ajax(src,
                {dataType: 'json',
                 type: 'GET',
-                data: ($container.data('infinite-content-params') || {}),
+                data: params,
                 context: {container: $container, src: src, serial: serial}}).
             fail(function(jqxhr, status, error) {
                 var $faildiv;
@@ -81,11 +108,12 @@ function maybe_load_more_content(event) {
 $(document).
     on('click', 'div.infinite-retry button', function() {
         var $retry_div = $(this).closest('.infinite-retry');
-        var $scroller = $(this).closest('.infinite-scroller')
-        $scroller.attr('data-infinite-content-href',
-                       $retry_div.attr('data-infinite-content-href'));
-        $retry_div.replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
-        $scroller.trigger('scroll');
+        var $container = $(this).closest('.infinite-scroller-ready')
+        $container.attr('data-infinite-content-href',
+                        $retry_div.attr('data-infinite-content-href'));
+        $retry_div.
+            replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
+        $('.infinite-scroller').trigger('scroll');
     }).
     on('refresh-content', '[data-infinite-scroller]', function() {
         // Clear all rows, reset source href to initial state, and
