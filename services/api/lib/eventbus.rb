@@ -79,7 +79,7 @@ class EventBus
 
           # Add filters to query
           if cond_out.any?
-            logs = logs.where(cond_out.join(' OR '), *param_out)
+            logs = logs.where('(' + cond_out.join(') OR (') + ')', *param_out)
           end
 
           # Finally execute query and actually send the matching log rows

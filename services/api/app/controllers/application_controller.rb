@@ -143,7 +143,8 @@ class ApplicationController < ActionController::Base
     model_class ||= self.model_class
     ft = record_filters @filters, model_class
     if ft[:cond_out].any?
-      @objects = @objects.where(ft[:cond_out].join(' AND '), *ft[:param_out])
+      @objects = @objects.where('(' + ft[:cond_out].join(') AND (') + ')',
+                                *ft[:param_out])
     end
   end
 
