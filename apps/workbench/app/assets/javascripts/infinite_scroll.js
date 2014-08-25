@@ -105,6 +105,13 @@ function maybe_load_more_content(event) {
      }
 }
 
+function ping_all_scrollers() {
+    // Send a scroll event to all scroll listeners that might need
+    // updating. Adding infinite-scroller class to the window element
+    // doesn't work, so we add it explicitly here.
+    $('.infinite-scroller').add(window).trigger('scroll');
+}
+
 $(document).
     on('click', 'div.infinite-retry button', function() {
         var $retry_div = $(this).closest('.infinite-retry');
@@ -113,7 +120,7 @@ $(document).
                         $retry_div.attr('data-infinite-content-href'));
         $retry_div.
             replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
-        $('.infinite-scroller').trigger('scroll');
+        ping_all_scrollers();
     }).
     on('refresh-content', '[data-infinite-scroller]', function() {
         // Clear all rows, reset source href to initial state, and
@@ -124,8 +131,7 @@ $(document).
         $(this).
             html('').
             attr('data-infinite-content-href', first_page_href);
-        $('.infinite-scroller').
-            trigger('scroll');
+        ping_all_scrollers();
     }).
     on('ready ajax:complete', function() {
         $('[data-infinite-scroller]').each(function() {
