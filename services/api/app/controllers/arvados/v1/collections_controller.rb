@@ -158,10 +158,11 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   protected
 
-  def find_objects_for_index
-    # Omit manifest_text from index results unless expressly selected.
-    if @select.nil?
-      @select = model_class.api_accessible_attributes(:user).map { |attr_spec|attr_spec.first.to_s } - ["manifest_text"]
+  def apply_filters
+    if action_name == 'index'
+      # Omit manifest_text from index results unless expressly selected.
+      @select ||= model_class.api_accessible_attributes(:user).
+        map { |attr_spec| attr_spec.first.to_s } - ["manifest_text"]
     end
     super
   end

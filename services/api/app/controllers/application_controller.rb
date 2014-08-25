@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render json: @object.as_api_response
+    render json: @object.as_api_response(nil, select: @select)
   end
 
   def create
@@ -205,16 +205,24 @@ class ApplicationController < ActionController::Base
     end
 
     if @select
-      # Map attribute names in @select to real column names, resolve
-      # those to fully-qualified SQL column names, and pass the
-      # resulting string to the select method.
-      api_column_map = model_class.attributes_required_columns
-      columns_list = @select.
-        flat_map { |attr| api_column_map[attr] }.
-        uniq.
-        map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
-      columns_list += ["#{table_name}.id"] if not @distinct
-      @objects = @objects.select(columns_list.join(", "))
+      unless action_name.in? %w(create update destroy)
+        # Map attribute names in @select to real column names, resolve
+        # those to fully-qualified SQL column names, and pass the
+        # resulting string to the select method.
+        api_column_map = model_class.attributes_required_columns
+        columns_list = @select.
+          flat_map { |attr| api_column_map[attr] }.
+          uniq.
+          map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
+        @objects = @objects.select(columns_list.join(", "))
+      end
+
+      # This information helps clients understand what they're seeing
+      # (Workbench always expects it), but they can't select it explicitly
+      # because it's not an SQL column.  Always add it.
+      # (This is harmless, given that clients can deduce what they're
+      # looking at by the returned UUID anyway.)
+      @select |= ["kind"]
     end
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
@@ -364,14 +372,6 @@ class ApplicationController < ActionController::Base
   accept_param_as_json :reader_tokens, Array
 
   def render_list
-    if @select
-      # This information helps clients understand what they're seeing
-      # (Workbench always expects it), but they can't select it explicitly
-      # because it's not an SQL column.  Always add it.
-      # I believe this is safe because clients can always deduce what they're
-      # looking at by the returned UUID anyway.
-      @select |= ["kind"]
-    end
     @object_list = {
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",

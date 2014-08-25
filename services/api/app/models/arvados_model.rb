@@ -124,61 +124,65 @@ class ArvadosModel < ActiveRecord::Base
     end
 
     # Check if any of the users are admin.  If so, we're done.
-    if users_list.select { |u| u.is_admin }.empty?
+    if users_list.select { |u| u.is_admin }.any?
+      return self
+    end
 
-      # Collect the uuids for each user and any groups readable by each user.
-      user_uuids = users_list.map { |u| u.uuid }
-      uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    # Collect the uuids for each user and any groups readable by each user.
+    user_uuids = users_list.map { |u| u.uuid }
+    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    sql_conds = []
+    sql_params = []
+    sql_table = kwargs.fetch(:table_name, table_name)
+    or_object_uuid = ''
+
+    # This row is owned by a member of users_list, or owned by a group
+    # readable by a member of users_list
+    # or
+    # This row uuid is the uuid of a member of users_list
+    # or
+    # A permission link exists ('write' and 'manage' implicitly include
+    # 'read') from a member of users_list, or a group readable by users_list,
+    # to this row, or to the owner of this row (see join() below).
+    sql_conds += ["#{sql_table}.uuid in (?)"]
+    sql_params += [user_uuids]
+
+    if uuid_list.any?
+      sql_conds += ["#{sql_table}.owner_uuid in (?)"]
+      sql_params += [uuid_list]
+
       sanitized_uuid_list = uuid_list.
         collect { |uuid| sanitize(uuid) }.join(', ')
-      sql_conds = []
-      sql_params = []
-      sql_table = kwargs.fetch(:table_name, table_name)
-      or_object_uuid = ''
-
-      # This row is owned by a member of users_list, or owned by a group
-      # readable by a member of users_list
-      # or
-      # This row uuid is the uuid of a member of users_list
-      # or
-      # A permission link exists ('write' and 'manage' implicitly include
-      # 'read') from a member of users_list, or a group readable by users_list,
-      # to this row, or to the owner of this row (see join() below).
       permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
-
-      sql_conds += ["#{sql_table}.owner_uuid in (?)",
-                    "#{sql_table}.uuid in (?)",
-                    "#{sql_table}.uuid IN #{permitted_uuids}"]
-      sql_params += [uuid_list, user_uuids]
-
-      if sql_table == "links" and users_list.any?
-        # This row is a 'permission' or 'resources' link class
-        # The uuid for a member of users_list is referenced in either the head
-        # or tail of the link
-        sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
-        sql_params += [user_uuids, user_uuids]
-      end
-
-      if sql_table == "logs" and users_list.any?
-        # Link head points to the object described by this row
-        sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
-
-        # This object described by this row is owned by this user, or owned by a group readable by this user
-        sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
-        sql_params += [uuid_list]
-      end
-
-      # Link head points to this row, or to the owner of this row (the thing to be read)
-      #
-      # Link tail originates from this user, or a group that is readable by this
-      # user (the identity with authorization to read)
-      #
-      # Link class is 'permission' ('write' and 'manage' implicitly include 'read')
-      where(sql_conds.join(' OR '), *sql_params)
-    else
-      # At least one user is admin, so don't bother to apply any restrictions.
-      self
+      sql_conds += ["#{sql_table}.uuid IN #{permitted_uuids}"]
     end
+
+    if sql_table == "links" and users_list.any?
+      # This row is a 'permission' or 'resources' link class
+      # The uuid for a member of users_list is referenced in either the head
+      # or tail of the link
+      sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
+      sql_params += [user_uuids, user_uuids]
+    end
+
+    if sql_table == "logs" and users_list.any?
+      # Link head points to the object described by this row
+      sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
+
+      # This object described by this row is owned by this user, or owned by a group readable by this user
+      sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
+      sql_params += [uuid_list]
+    end
+
+    # Link head points to this row, or to the owner of this row (the
+    # thing to be read)
+    #
+    # Link tail originates from this user, or a group that is readable
+    # by this user (the identity with authorization to read)
+    #
+    # Link class is 'permission' ('write' and 'manage' implicitly
+    # include 'read')
+    where(sql_conds.join(' OR '), *sql_params)
   end
 
   def logged_attributes

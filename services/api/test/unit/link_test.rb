@@ -58,7 +58,7 @@ class LinkTest < ActiveSupport::TestCase
                                   tail_uuid: users(:admin).uuid)
   end
 
-  test "link granting project permissions to unreadable user is valid" do
-    assert new_active_link_valid?(tail_uuid: users(:admin).uuid)
+  test "link granting project permissions to unreadable user is invalid" do
+    refute new_active_link_valid?(tail_uuid: users(:admin).uuid)
   end
 end

@@ -16,6 +16,24 @@ private_and_can_read_foofile:
   name: Private and Can Read Foofile
   description: Another Private Group
 
+activeandfriends:
+  uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-08-22 14:02:18.481582707 Z
+  modified_by_client_uuid:
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-08-22 14:02:18.481319501 Z
+  name: Active User and friends
+  description:
+  updated_at: 2014-08-22 14:02:18.481166435 Z
+  group_class:
+
+system_owned_group:
+  uuid: zzzzz-j7d0g-8ulrifv67tve5sx
+  owner_uuid: zzzzz-tpzed-000000000000000
+  name: System Private
+  description: System-owned Group
+
 system_group:
   uuid: zzzzz-j7d0g-000000000000000
   owner_uuid: zzzzz-tpzed-000000000000000

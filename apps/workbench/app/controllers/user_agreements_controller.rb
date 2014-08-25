@@ -3,6 +3,12 @@ class UserAgreementsController < ApplicationController
   skip_before_filter :find_object_by_uuid
   skip_before_filter :check_user_profile
 
+  def index
+    if unsigned_user_agreements.empty?
+      redirect_to(params[:return_to] || :back)
+    end
+  end
+
   def model_class
     Collection
   end
