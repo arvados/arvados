@@ -49,6 +49,12 @@ class ActiveSupport::TestCase
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
+    # Restore configuration settings changed during tests
+    $application_config.each do |k,v|
+      if k.match /^[^.]*$/
+        Rails.configuration.send (k + '='), v
+      end
+    end
   end
 
   def set_user_from_auth(auth_name)

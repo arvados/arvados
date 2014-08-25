@@ -453,20 +453,30 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         collection = api_client.collections().create(
             body={
                 'manifest_text': writer.manifest_text(),
+                'owner_uuid': project_link['tail_uuid']
                 },
             ).execute()
 
-        # Print the locator (uuid) of the new collection.
-        output = collection['uuid']
+        if 'portable_data_hash' in collection and collection['portable_data_hash']:
+            output = collection['portable_data_hash']
+        else:
+            output = collection['uuid']
+
         if project_link is not None:
+            # Update collection name
             try:
-                create_project_link(output, project_link)
+                if 'name' in collection:
+                    arvados.api().collections().update(uuid=collection['uuid'],
+                                                       body={"name": project_link["name"]}).execute()
+                else:
+                    create_project_link(output, project_link)
             except apiclient.errors.Error as error:
                 print >>stderr, (
                     "arv-put: Error adding Collection to project: {}.".format(
                         error))
                 status = 1
 
+    # Print the locator (uuid) of the new collection.
     stdout.write(output)
     if not output.endswith('\n'):
         stdout.write('\n')

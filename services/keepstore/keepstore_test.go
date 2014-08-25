@@ -60,7 +60,7 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	// Check that GetBlock returns success.
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != nil {
 		t.Errorf("GetBlock error: %s", err)
 	}
@@ -80,7 +80,7 @@ func TestGetBlockMissing(t *testing.T) {
 	defer func() { KeepVM.Quit() }()
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != NotFoundError {
 		t.Errorf("Expected NotFoundError, got %v", result)
 	}
@@ -101,7 +101,7 @@ func TestGetBlockCorrupt(t *testing.T) {
 	vols[0].Put(TEST_HASH, BAD_BLOCK)
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != DiskHashError {
 		t.Errorf("Expected DiskHashError, got %v (buf: %v)", err, result)
 	}
@@ -156,7 +156,7 @@ func TestPutBlockOneVol(t *testing.T) {
 		t.Fatalf("PutBlock: %v", err)
 	}
 
-	result, err := GetBlock(TEST_HASH)
+	result, err := GetBlock(TEST_HASH, false)
 	if err != nil {
 		t.Fatalf("GetBlock: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestPutBlockMD5Fail(t *testing.T) {
 	}
 
 	// Confirm that GetBlock fails to return anything.
-	if result, err := GetBlock(TEST_HASH); err != NotFoundError {
+	if result, err := GetBlock(TEST_HASH, false); err != NotFoundError {
 		t.Errorf("GetBlock succeeded after a corrupt block store (result = %s, err = %v)",
 			string(result), err)
 	}
@@ -210,14 +210,14 @@ func TestPutBlockCorrupt(t *testing.T) {
 	}
 
 	// The block on disk should now match TEST_BLOCK.
-	if block, err := GetBlock(TEST_HASH); err != nil {
+	if block, err := GetBlock(TEST_HASH, false); err != nil {
 		t.Errorf("GetBlock: %v", err)
 	} else if bytes.Compare(block, TEST_BLOCK) != 0 {
 		t.Errorf("GetBlock returned: '%s'", string(block))
 	}
 }
 
-// PutBlockCollision
+// TestPutBlockCollision
 //     PutBlock returns a 400 Collision error when attempting to
 //     store a block that collides with another block on disk.
 //
@@ -242,6 +242,54 @@ func TestPutBlockCollision(t *testing.T) {
 		t.Error("PutBlock did not report a collision")
 	} else if err != CollisionError {
 		t.Errorf("PutBlock returned %v", err)
+	}
+}
+
+// TestPutBlockTouchFails
+//     When PutBlock is asked to PUT an existing block, but cannot
+//     modify the timestamp, it should write a second block.
+//
+func TestPutBlockTouchFails(t *testing.T) {
+	defer teardown()
+
+	// Prepare two test Keep volumes.
+	KeepVM = MakeTestVolumeManager(2)
+	defer func() { KeepVM.Quit() }()
+	vols := KeepVM.Volumes()
+
+	// Store a block and then make the underlying volume bad,
+	// so a subsequent attempt to update the file timestamp
+	// will fail.
+	vols[0].Put(TEST_HASH, BAD_BLOCK)
+	old_mtime, err := vols[0].Mtime(TEST_HASH)
+	if err != nil {
+		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
+	}
+
+	// vols[0].Touch will fail on the next call, so the volume
+	// manager will store a copy on vols[1] instead.
+	vols[0].(*MockVolume).Touchable = false
+	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
+		t.Fatalf("PutBlock: %v", err)
+	}
+	vols[0].(*MockVolume).Touchable = true
+
+	// Now the mtime on the block on vols[0] should be unchanged, and
+	// there should be a copy of the block on vols[1].
+	new_mtime, err := vols[0].Mtime(TEST_HASH)
+	if err != nil {
+		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
+	}
+	if !new_mtime.Equal(old_mtime) {
+		t.Errorf("mtime was changed on vols[0]:\nold_mtime = %v\nnew_mtime = %v\n",
+			old_mtime, new_mtime)
+	}
+	result, err := vols[1].Get(TEST_HASH)
+	if err != nil {
+		t.Fatalf("vols[1]: %v", err)
+	}
+	if bytes.Compare(result, TEST_BLOCK) != 0 {
+		t.Errorf("new block does not match test block\nnew block = %v\n", result)
 	}
 }
 

@@ -22,14 +22,30 @@
     <div class="panel panel-info">
       <div class="panel-heading">
 	<h3 class="panel-title">
-	  <%= @name_link.andand.name || @object.uuid %>
+          <% if @name_link.nil? and @object.uuid.match /[0-9a-f]{32}/ %>
+            Content hash <%= @object.portable_data_hash %>
+          <% else %>
+	    <%= if @object.respond_to? :name
+                  render_editable_attribute @object, :name
+                else
+                  @name_link.andand.name || @object.uuid
+                end %>
+            <% end %>
 	</h3>
       </div>
       <div class="panel-body">
         <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
-	<p><i>Content hash:</i><br />
-	  <span class="arvados-uuid"><%= @object.uuid %></span></p>
-
+        <% if defined? @same_pdh %>
+          <p>Found in collections:<p>
+          <p>
+            <% @same_pdh.each do |c| %>
+              <%= link_to_if_arvados_object get_object(c.owner_uuid), {:friendly_name => true} %> / <%= link_to_if_arvados_object c, {:friendly_name => true} %><br>
+            <% end %>
+          </p>
+        <% else %>
+	  <p><i>Content hash:</i><br />
+	    <span class="arvados-uuid"><%= link_to @object.portable_data_hash, collection_path(@object.portable_data_hash) %></span></p>
+        <% end %>
         <%= render partial: "show_source_summary" %>
       </div>
     </div>
@@ -49,10 +65,10 @@
         <% name_or_object = @name_link.andand.uuid ? @name_link : @object %>
         <% if name_or_object.created_at and not @logs.andand.any? %>
           <p>
-            Created: <%= name_or_object.created_at.to_s(:long) %>
+            Created: <%= name_or_object.created_at.to_s(:long) if name_or_object.created_at %>
           </p>
           <p>
-            Last modified: <%= name_or_object.modified_at.to_s(:long) %> by <%= link_to_if_arvados_object name_or_object.modified_by_user_uuid, friendly_name: true %>
+            Last modified: <%= name_or_object.modified_at.to_s(:long) if name_or_object.modified_at %> by <%= link_to_if_arvados_object name_or_object.modified_by_user_uuid, friendly_name: true %>
           </p>
         <% else %>
           <%= render_arvados_object_list_start(@logs, 'Show all activity',
@@ -108,10 +124,5 @@
     </div>
   </div>
 </div>
-
-<% content_for :tab_line_buttons do %>
-  <span style="padding-left: 1em">Collection storage status:</span>
-  <%= render partial: 'toggle_persist', locals: { uuid: @object.uuid, current_state: (@is_persistent ? 'persistent' : 'cache') } %>
-<% end %>
 
 <%= render file: 'application/show.html.erb', locals: local_assigns %>

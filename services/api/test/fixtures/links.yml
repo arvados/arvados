@@ -763,3 +763,17 @@ future_project_user_joined_activeandfriends:
   head_uuid: zzzzz-tpzed-futureprojview2
   properties: {}
   updated_at: 2014-08-22 14:04:24.181799856 Z
+
+auto_setup_vm_login_username_can_login_to_test_vm:
+  uuid: zzzzz-o0j2j-i3n6m98766tmoi4
+  owner_uuid: zzzzz-tpzed-xabcdjxw79nv3jz
+  created_at: 2014-08-06 22:11:51.242392533 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-xabcdjxw79nv3jz
+  modified_at: 2014-08-06 22:11:51.242150425 Z
+  tail_uuid: zzzzz-tpzed-xabcdjxw79nv3jz
+  link_class: permission
+  name: can_login
+  head_uuid: zzzzz-2x53u-382brsig8rp3064
+  properties: {username: 'auto_setup_vm_login'}
+  updated_at: 2014-08-06 22:11:51.242010312 Z
