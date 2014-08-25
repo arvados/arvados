@@ -49,6 +49,9 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
             else
               assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
             end
+          else
+            assert page.has_no_link?('Manage account'), 'Found link - Manage account'
+            assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
           end
           assert page.has_link?('Log out'), 'No link - Log out'
         end
