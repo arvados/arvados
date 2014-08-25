@@ -17,6 +17,8 @@ if not ($options[:jobs] or $options[:pipelines])
   abort "Nothing to do. Please specify at least one of: --jobs, --pipelines."
 end
 
+ARGV.reject! { |a| a =~ /--jobs|--pipelines/ }
+
 $warned = {}
 $signal = {}
 %w{TERM INT}.each do |sig|
@@ -51,7 +53,7 @@ class Dispatcher
   def refresh_todo
     @todo = []
     if $options[:jobs]
-      @todo = Job.queue.select(&:repository) end
+      @todo = Job.queue.select(&:repository)
     end
     @todo_pipelines = []
     if $options[:pipelines]
