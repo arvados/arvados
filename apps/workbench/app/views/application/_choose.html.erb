@@ -48,17 +48,17 @@
         <div style="height: 1em" />
 
         <% preview_pane = (params[:preview_pane].to_s != "false")
-           pane_col_class = preview_pane ? "col-sm-6" : "col-sm-12" %>
+           pane_col_class = preview_pane ? "col-md-6" : "col-md-12" %>
         <div class="row" style="height: 20em">
-          <div class="<%= pane_col_class %> container arv-filterable-list selectable-container <%= 'multiple' if multiple %>"
+          <div class="<%= pane_col_class %> arv-filterable-list selectable-container <%= 'multiple' if multiple %>"
                style="height: 100%; overflow-y: scroll"
                data-infinite-scroller="#choose-scroll"
                id="choose-scroll"
                data-infinite-content-href="<%= url_for partial: true %>">
           </div>
           <% if preview_pane %>
-          <div class="col-sm-6 visible-md visible-lg modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
-          </div>
+            <div class="col-md-6 hidden-xs hidden-sm modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
+            </div>
           <% end %>
         </div>
 
