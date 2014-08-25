@@ -17,6 +17,8 @@ if not ($options[:jobs] or $options[:pipelines])
   abort "Nothing to do. Please specify at least one of: --jobs, --pipelines."
 end
 
+ARGV.reject! { |a| a =~ /--jobs|--pipelines/ }
+
 $warned = {}
 $signal = {}
 %w{TERM INT}.each do |sig|
