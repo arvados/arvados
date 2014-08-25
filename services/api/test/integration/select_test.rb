@@ -18,7 +18,8 @@ class SelectTest < ActionDispatch::IntegrationTest
     assert_response :success
     distinct = json_response['items']
 
-    assert distinct.count < links.count, "distinct count should be less than link count"
+    assert_operator(distinct.count, :<, links.count,
+                    "distinct count should be less than link count")
     assert_equal links.uniq.count, distinct.count
   end
 
