@@ -7,9 +7,8 @@
   support_email = Rails.configuration.support_email_address
 
   additional_info = {}
-  additional_info['Current location'] = @popup_params[:current_location]
+  additional_info['Current location'] = params[:current_location]
   additional_info['User UUID'] = current_user.uuid if current_user
-  additional_info['User email'] = current_user.email if current_user
 
   additional_info_str = additional_info.map {|k,v| "#{k}=#{v}"}.join("\n")
 
@@ -18,9 +17,9 @@
   additional_info['workbench_version'] = wb_version
   additional_info['arvados_base'] = arvados_base
   additional_info['support_email'] = support_email
-  additional_info['error_message'] = @popup_params[:error_message] if @popup_params[:error_message]
-  additional_info['api_error_request_url'] = @popup_params[:api_error_request_url] if @popup_params[:api_error_request_url]
-  additional_info['api_error_response'] = @popup_params[:api_error_response] if @popup_params[:api_error_response]
+  additional_info['error_message'] = params[:error_message] if params[:error_message]
+  additional_info['api_error_request_url'] = params[:api_error_request_url] if params[:api_error_request_url]
+  additional_info['api_error_response'] = params[:api_error_response] if params[:api_error_response]
 %>
 
 <div class="modal">
@@ -32,7 +31,7 @@
 
       <%
         title = 'Version / debugging info'
-        title = 'Report a problem' if @popup_params[:popup_type] == 'report'
+        title = 'Report a problem' if params[:popup_type] == 'report'
       %>
 
       <div class="modal-header">
@@ -48,20 +47,20 @@
         <div class="form-group">
           <label for="support_email" class="col-sm-4 control-label"> Support email </label>
           <div class="col-sm-8">
-            <p class="form-control-static" name="support_version"><a href="mailto:<%=support_email%>?subject=Workbench problem report&body=Problem while viewing page <%=@popup_params[:current_location]%>"><%=support_email%></a></p>
+            <p class="form-control-static" name="support_version"><a href="mailto:<%=support_email%>?subject=Workbench problem report&amp;body=Problem while viewing page <%=params[:current_location]%>"><%=support_email%></a></p>
           </div>
         </div>
 
         <div class="form-group">
           <label for="current_page" class="col-sm-4 control-label"> Current page </label>
           <div class="col-sm-8">
-            <p class="form-control-static text-overflow-ellipsis" name="current_page"><%=@popup_params[:current_path]%></a></p>
+            <p class="form-control-static text-overflow-ellipsis" name="current_page"><%=params[:current_path]%></a></p>
           </div>
         </div>
 
-        <% if @popup_params[:popup_type] == 'report' %>
+        <% if params[:popup_type] == 'report' %>
           <div class="form-group">
-            <label for="report_text_label" class="col-sm-4 control-label"> Found a problem? Tell us what happened </label>
+            <label for="report_text_label" class="col-sm-4 control-label"> Describe the problem </label>
             <div class="col-sm-8">
               <textarea class="form-control" rows="4" id="report_issue_text" name="report_issue_text" type="text"/>
             </div>
@@ -104,47 +103,40 @@
               <p class="form-control-static" name="user_uuid"><%=current_user.uuid%></p>
             </div>
           </div>
-
-          <div class="form-group">
-            <label for="user_email" class="col-sm-4 control-label"> User email </label>
-            <div class="col-sm-8">
-              <p class="form-control-static" name="user_email"><%=current_user.email%></p>
-            </div>
-          </div>
         <% end %>
 
-        <% if @popup_params[:error_message] %>
+        <% if params[:error_message] %>
           <div class="form-group">
             <label for="error_message" class="col-sm-4 control-label"> Error message </label>
             <div class="col-sm-8">
-              <p class="form-control-static text-overflow-ellipsis" name="error_message"><%=@popup_params[:error_message]%></p>
+              <p class="form-control-static text-overflow-ellipsis" name="error_message"><%=params[:error_message]%></p>
             </div>
           </div>
         <% end %>
 
-        <% if @popup_params[:api_error_request_url] %>
+        <% if params[:api_error_request_url] %>
           <div class="form-group">
-            <label for="api_error_url" class="col-sm-4 control-label"> API error request url </label>
+            <label for="api_error_url" class="col-sm-4 control-label"> API error request URL </label>
             <div class="col-sm-8">
-              <p class="form-control-static text-overflow-ellipsis" name="api_error_url"><%=@popup_params[:api_error_request_url]%></p>
+              <p class="form-control-static text-overflow-ellipsis" name="api_error_url"><%=params[:api_error_request_url]%></p>
             </div>
           </div>
         <% end %>
 
-        <% if @popup_params[:api_error_response] %>
+        <% if params[:api_error_response] %>
           <div class="form-group">
             <label for="api_error_response" class="col-sm-4 control-label"> API error response </label>
             <div class="col-sm-8">
-              <p class="form-control-static text-overflow-ellipsis" name="api_error_response"><%=@popup_params[:api_error_response]%></p>
+              <p class="form-control-static text-overflow-ellipsis" name="api_error_response"><%=params[:api_error_response]%></p>
             </div>
           </div>
         <% end %>
       </div>
 
       <div class="modal-footer">
-        <% if @popup_params[:popup_type] == 'report' %>
-          <button type="submit" id="report-issue-submit" class="btn btn-primary report-issue-submit" autofocus>Send problem report</button>
+        <% if params[:popup_type] == 'report' %>
           <button class="btn btn-default report-issue-cancel" id="report-issue-cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>
+          <button type="submit" id="report-issue-submit" class="btn btn-primary report-issue-submit" autofocus>Send problem report</button>
         <% else %>
           <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
         <% end %>
