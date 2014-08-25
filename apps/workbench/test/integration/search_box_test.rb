@@ -14,6 +14,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     if user && user['is_active']
       # let's search for a valid uuid
       within('.navbar-fixed-top') do
+        page.has_field?('search')
         page.find_field('search').set user['uuid']
         page.find('.glyphicon-search').click
       end
@@ -78,10 +79,17 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       # seeing "Unrestricted public data" now
       assert page.has_text?(publicly_accessible_project['name']), 'No text - publicly accessible project name'
       assert page.has_text?(publicly_accessible_project['description']), 'No text - publicly accessible project description'
+    else
+      within('.navbar-fixed-top') do
+        page.has_no_field?('search')
+      end
     end
   end
 
   [
+    [nil, nil],
+    ['inactive', api_fixture('users')['inactive']],
+    ['inactive_uninvited', api_fixture('users')['inactive_uninvited']],
     ['active', api_fixture('users')['active']],
     ['admin', api_fixture('users')['admin']],
   ].each do |token, user|
