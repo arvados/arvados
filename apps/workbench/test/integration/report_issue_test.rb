@@ -2,7 +2,7 @@ require 'integration_helper'
 require 'selenium-webdriver'
 require 'headless'
 
-class ApplicationLayoutTest < ActionDispatch::IntegrationTest
+class ReportIssueTest < ActionDispatch::IntegrationTest
   setup do
     headless = Headless.new
     headless.start
@@ -34,11 +34,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within '.modal-content' do
       assert page.has_text?('Version / debugging info'), 'No text - Version / debugging info'
       assert page.has_no_text?('Report a problem'), 'Found text - Report a problem'
-      assert page.has_text?('API version'), 'No text - API version'
-      assert page.has_text?('API startup time'), 'No text - API startup time'
-      assert page.has_text?('Workbench version'), 'No text - Workbench version'
-      assert page.has_text?('Workbench URI'), 'No text - Arvados base'
-      assert page.has_no_text?('Found a problem?'), 'Found text - Found a problem'
+      assert page.has_no_text?('Describe the problem?'), 'Found text - Describe the problem'
       assert page.has_button?('Close'), 'No button - Close'
       assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
       click_button 'Close'
@@ -55,11 +51,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within '.modal-content' do
       assert page.has_text?('Report a problem'), 'No text - Report a problem'
       assert page.has_no_text?('Version / debugging info'), 'Found text - Version / debugging info'
-      assert page.has_text?('API version'), 'No text - API version'
-      assert page.has_text?('API startup time'), 'No text - API startup time'
-      assert page.has_text?('Workbench version'), 'No text - Workbench version'
-      assert page.has_text?('Workbench URI'), 'No text - Arvados base'
-      assert page.has_text?('Found a problem?'), 'No text - Found a problem'
+      assert page.has_text?('Describe the problem'), 'No text - Describe the problem'
       assert page.has_no_button?('Close'), 'Found button - Close'
       assert page.has_button?('Send problem report'), 'No button - Send problem report'
       assert page.has_button?('Cancel'), 'No button - Cancel'
