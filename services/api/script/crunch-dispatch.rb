@@ -51,7 +51,7 @@ class Dispatcher
   def refresh_todo
     @todo = []
     if $options[:jobs]
-      @todo = Job.queue.select(&:repository) end
+      @todo = Job.queue.select(&:repository)
     end
     @todo_pipelines = []
     if $options[:pipelines]
