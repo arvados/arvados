@@ -10,8 +10,8 @@ ArvadosWorkbench::Application.routes.draw do
   get '/user_agreements/signatures' => 'user_agreements#signatures'
   get "users/setup_popup" => 'users#setup_popup', :as => :setup_user_popup
   get "users/setup" => 'users#setup', :as => :setup_user
-  get "actions/report_issue_popup" => 'actions#report_issue_popup', :as => :report_issue_popup
-  post "actions/report_issue" => 'actions#report_issue', :as => :report_issue
+  get "report_issue_popup" => 'actions#report_issue_popup', :as => :report_issue_popup
+  post "report_issue" => 'actions#report_issue', :as => :report_issue
   resources :nodes
   resources :humans
   resources :traits
