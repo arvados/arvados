@@ -2,7 +2,7 @@
   <div class="modal-dialog" style="width:80%">
     <div class="modal-content">
       <div class="modal-header">
-        <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
         <h4 class="modal-title"><%= params[:title] || "Choose #{@objects.first.andand.class_for_display}" %></h4>
       </div>
 
@@ -54,9 +54,7 @@
                style="height: 100%; overflow-y: scroll"
                data-infinite-scroller="#choose-scroll"
                id="choose-scroll"
-               data-infinite-content-href="<%= next_page_href partial: true %>"
-               data-infinite-content-href0="<%= url_for partial: true %>">
-            <%= render partial: 'choose_rows' %>
+               data-infinite-content-href="<%= url_for partial: true %>">
           </div>
           <% if preview_pane %>
           <div class="col-sm-6 visible-md visible-lg modal-dialog-preview-pane" style="height: 100%; overflow-y: scroll">
