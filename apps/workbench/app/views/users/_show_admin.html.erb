@@ -35,15 +35,15 @@
   <div class="col-md-6">
     <div class="panel panel-default">
       <div class="panel-heading">
-        Groups
+        Group memberships
       </div>
       <div class="panel-body">
         <div class="alert alert-info">
-          A <i>permitted</i> user <i>has all permissions</i> available to the group.
+          <b>Tip:</b> in most cases, you want <i>both permissions at once</i> for a given group.
           <br/>
-          A <i>member</i> user <i>is visible to</i> everyone else who can see the group.
+          The user&rarr;group permission is can_manage.
           <br/>
-          (Tip: in most cases, you don't want one without the other.)
+          The group&rarr;user permission is can_read.
         </div>
         <form>
           <% permitted_group_perms = {}
@@ -69,7 +69,7 @@
                     data: {
                       permission_head: group.uuid,
                       permission_uuid: permitted_group_perms[group.uuid]}) %>
-                permitted
+                <small>user&rarr;group</small>
               </label>
               <label class="checkbox-inline" data-toggle-permission="true" data-permission-head="<%= @object.uuid %>" data-permission-name="can_read">
                 <%= check_box_tag(
@@ -80,7 +80,7 @@
                     data: {
                       permission_tail: group.uuid,
                       permission_uuid: member_group_perms[group.uuid]}) %>
-                member
+                <small>group&rarr;user</small>
               </label>
               <label class="checkbox-inline">
                 <%= group.name || '(unnamed)' %> <span class="deemphasize">(owned by <%= User.find(group.owner_uuid).andand.full_name %>)</span>
