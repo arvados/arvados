@@ -54,6 +54,7 @@
                style="height: 100%; overflow-y: scroll"
                data-infinite-scroller="#choose-scroll"
                id="choose-scroll"
+               data-infinite-content-params-from-chooser="<%= {filters: params[:filters] || []}.to_json %>"
                data-infinite-content-href="<%= url_for partial: true %>">
           </div>
           <% if preview_pane %>
