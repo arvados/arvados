@@ -89,8 +89,9 @@ class Link < ArvadosModel
   end
 
   # A user is permitted to create, update or modify a permission link
-  # if and only if they have "manage" permission on the destination
-  # object.
+  # if and only if they have "manage" permission on the object
+  # indicated by the permission link's head_uuid.
+  #
   # All other links are treated as regular ArvadosModel objects.
   #
   def ensure_owner_uuid_is_permitted
@@ -105,14 +106,4 @@ class Link < ArvadosModel
     end
   end
 
-  # A user can give all other users permissions on projects.
-  def skip_uuid_read_permission_check
-    skipped_attrs = super
-    if link_class == "permission" and
-        (ArvadosModel.resource_class_for_uuid(head_uuid) == Group) and
-        (ArvadosModel.resource_class_for_uuid(tail_uuid) == User)
-      skipped_attrs << "tail_uuid"
-    end
-    skipped_attrs
-  end
 end

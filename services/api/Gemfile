@@ -6,6 +6,7 @@ gem 'rails', '~> 3.2.0'
 # gem 'rails',     :git => 'git://github.com/rails/rails.git'
 
 group :test, :development do
+  gem 'factory_girl_rails'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.

@@ -708,6 +708,62 @@ empty_collection_name_in_active_user_home_project:
   properties: {}
   updated_at: 2014-08-06 22:11:51.242010312 Z
 
+active_user_can_read_activeandfriends:
+  uuid: zzzzz-o0j2j-8184f5vk8c851ts
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-08-22 14:03:46.321059945 Z
+  modified_by_client_uuid:
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-08-22 14:03:46.320865926 Z
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
+  properties: {}
+  updated_at: 2014-08-22 14:03:46.320743213 Z
+
+active_user_joined_activeandfriends:
+  uuid: zzzzz-o0j2j-t63rdd7vupqvnco
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-08-22 14:03:28.835064240 Z
+  modified_by_client_uuid:
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-08-22 14:03:28.834849409 Z
+  tail_uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  properties: {}
+  updated_at: 2014-08-22 14:03:28.834720558 Z
+
+future_project_can_read_activeandfriends:
+  uuid: zzzzz-o0j2j-bkdtnddpmwxqiza
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-08-22 14:04:18.811622057 Z
+  modified_by_client_uuid:
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-08-22 14:04:18.811463859 Z
+  tail_uuid: zzzzz-tpzed-futureprojview2
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
+  properties: {}
+  updated_at: 2014-08-22 14:04:18.811387314 Z
+
+future_project_user_joined_activeandfriends:
+  uuid: zzzzz-o0j2j-ksl8bo92eokv332
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-08-22 14:04:24.182103355 Z
+  modified_by_client_uuid:
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-08-22 14:04:24.181939129 Z
+  tail_uuid: zzzzz-j7d0g-swqu6hmi4pa7bk7
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-tpzed-futureprojview2
+  properties: {}
+  updated_at: 2014-08-22 14:04:24.181799856 Z
+
 auto_setup_vm_login_username_can_login_to_test_vm:
   uuid: zzzzz-o0j2j-i3n6m98766tmoi4
   owner_uuid: zzzzz-tpzed-xabcdjxw79nv3jz
