@@ -13,18 +13,17 @@ $(document).
         var $sendButton = $('#report-issue-submit');
         $sendButton.html('Report sent');
         $('div').remove('.modal-footer-status');
-        $('.modal-footer').append('<div class="modal-footer-status alert alert-success"><div><p align="left">Thanks for reporting this issue!</p></div></div>');
+        $('.modal-footer').append('<div><br/></div><div class="modal-footer-status alert alert-success"><p align="left">Thanks for reporting this issue!</p></div>');
       }).
       fail(function(jqxhr, status, error) {
         var $sendButton = $('#report-issue-submit');
         if ($sendButton && $sendButton.prop('disabled')) {
-        $('div').remove('.modal-footer-status');
-        $('.modal-footer').append('<div class="modal-footer-status alert alert-danger"></br><p align="left">We are sorry. We could not submit your report! We really want this to work, though -- please try again.</p></div>');
-        $sendButton.html('Send problem report');
-        $sendButton.attr('disabled',false);
-      }
+          $('div').remove('.modal-footer-status');
+          $('.modal-footer').append('<div><br/></div><div class="modal-footer-status alert alert-danger"><p align="left">We are sorry. We could not submit your report! We really want this to work, though -- please try again.</p></div>');
+          $sendButton.html('Send problem report');
+          $sendButton.attr('disabled',false);
+        }
         var $cancelButton = $('#report-issue-cancel');
-        var text = document.getElementById('report-issue-cancel').firstChild;
         $cancelButton.html('Cancel');
       });
 

@@ -182,7 +182,6 @@ class ActionsController < ApplicationController
   end
 
   def report_issue_popup
-    @popup_params = params
     respond_to do |format|
       format.js
       format.html

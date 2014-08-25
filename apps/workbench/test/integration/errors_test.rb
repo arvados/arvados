@@ -83,8 +83,6 @@ class ErrorsTest < ActionDispatch::IntegrationTest
   end
 
   test "API error page has Report problem button" do
-    visit page_with_token("active")
-
     original_arvados_v1_base = Rails.configuration.arvados_v1_base
 
     begin
@@ -105,9 +103,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       within '.modal-content' do
         assert page.has_text?('Report a problem'), 'Report a problem text not found'
         assert page.has_no_text?('Version / debugging info'), 'Version / debugging info is not expected'
-        assert page.has_text?('API version'), 'API version  text not found'
-        assert page.has_text?('API startup time'), 'API startup time text not found'
-        assert page.has_text?('Found a problem?'), 'Found a problem text not found'
+        assert page.has_text?('Describe the problem'), 'Describe the problem text not found'
         assert page.has_button?('Send problem report'), 'Send problem report button not found'
         assert page.has_button?('Cancel'), 'Cancel button not found'
 
