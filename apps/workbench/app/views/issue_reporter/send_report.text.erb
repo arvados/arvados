@@ -1,13 +1,12 @@
 <% if @user %>
-Issue reported by user <%=@user.full_name%> <%=@user.email%>
+Issue reported by user <%=@user.email%>
 <% else %>
 Issue reported
 <% end %>
 
 Details of the report:
 <% if @params['report_additional_info'] %>
-<% json_map = JSON.parse(@params['report_additional_info']).map %>
-<%  map_to_s = json_map.map {|k,v| "#{k}=#{v}"}.join("\n") %>
+<%  map_to_s = JSON.parse(@params['report_additional_info']).map {|k,v| "#{k}=#{v}"}.join("\n") %>
 <%= map_to_s %>
 <% end %>
 Report text=<%=@params['report_issue_text'] %>
