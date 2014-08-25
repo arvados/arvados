@@ -123,15 +123,14 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       check_help_menu
     end
-  end
-
-  [
-    ['active', api_fixture('users')['active']],
-    ['admin', api_fixture('users')['admin']],
-  ].each do |token, user|
 
     test "test system menu for user #{token}" do
-      visit page_with_token(token)
+      if !token
+        visit ('/')
+      else
+        visit page_with_token(token)
+      end
+
       verify_system_menu user
     end
   end
