@@ -266,12 +266,13 @@ func TestPutBlockTouchFails(t *testing.T) {
 		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
 	}
 
-	// Mark the volume bad and call PutBlock.
-	vols[0].(*MockVolume).Bad = true
+	// vols[0].Touch will fail on the next call, so the volume
+	// manager will store a copy on vols[1] instead.
+	vols[0].(*MockVolume).Touchable = false
 	if err := PutBlock(TEST_BLOCK, TEST_HASH); err != nil {
 		t.Fatalf("PutBlock: %v", err)
 	}
-	vols[0].(*MockVolume).Bad = false
+	vols[0].(*MockVolume).Touchable = true
 
 	// Now the mtime on the block on vols[0] should be unchanged, and
 	// there should be a copy of the block on vols[1].
@@ -280,7 +281,7 @@ func TestPutBlockTouchFails(t *testing.T) {
 		t.Fatalf("vols[0].Mtime(%s): %s\n", TEST_HASH, err)
 	}
 	if !new_mtime.Equal(old_mtime) {
-		t.Errorf("bad block mtimes do not match:\nold_mtime = %v\nnew_mtime = %v\n",
+		t.Errorf("mtime was changed on vols[0]:\nold_mtime = %v\nnew_mtime = %v\n",
 			old_mtime, new_mtime)
 	}
 	result, err := vols[1].Get(TEST_HASH)

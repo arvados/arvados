@@ -119,7 +119,11 @@ func TestPutTouch(t *testing.T) {
 	}
 	// Sleep for 1s, then put the block again.  The volume
 	// should report a more recent mtime.
+	//
 	// TODO(twp): this would be better handled with a mock Time object.
+	// Alternatively, set the mtime manually to some moment in the past
+	// (maybe a v.SetMtime method?)
+	//
 	time.Sleep(time.Second)
 	if err := v.Put(TEST_HASH, TEST_BLOCK); err != nil {
 		t.Error(err)

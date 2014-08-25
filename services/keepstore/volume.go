@@ -28,17 +28,29 @@ type Volume interface {
 // If the Bad field is true, this volume should return an error
 // on all writes and puts.
 //
+// The Touchable field signifies whether the Touch method will
+// succeed.  Defaults to true.  Note that Bad and Touchable are
+// independent: a MockVolume may be set up so that Put fails but Touch
+// works or vice versa.
+//
+// TODO(twp): rename Bad to something more descriptive, e.g. Writable,
+// and make sure that the tests that rely on it are testing the right
+// thing.  We may need to simulate Writable, Touchable and Corrupt
+// volumes in different ways.
+//
 type MockVolume struct {
 	Store      map[string][]byte
 	Timestamps map[string]time.Time
 	Bad        bool
+	Touchable  bool
 }
 
 func CreateMockVolume() *MockVolume {
 	return &MockVolume{
-		make(map[string][]byte),
-		make(map[string]time.Time),
-		false,
+		Store:      make(map[string][]byte),
+		Timestamps: make(map[string]time.Time),
+		Bad:        false,
+		Touchable:  true,
 	}
 }
 
@@ -60,11 +72,11 @@ func (v *MockVolume) Put(loc string, block []byte) error {
 }
 
 func (v *MockVolume) Touch(loc string) error {
-	if v.Bad {
-		return errors.New("Bad volume")
+	if v.Touchable {
+		v.Timestamps[loc] = time.Now()
+		return nil
 	}
-	v.Timestamps[loc] = time.Now()
-	return nil
+	return errors.New("Touch failed")
 }
 
 func (v *MockVolume) Mtime(loc string) (time.Time, error) {
