@@ -44,7 +44,7 @@ Each condition is expressed as an array with three elements: @[attribute, operat
 
 table(table table-bordered table-condensed).
 |_. Index|_. Element|_. Type|_. Description|_. Examples|
-|0|attribute|string|Name of the attribute to compare|@script_version@, @head_uuid@|
+|0|attribute|string|Name of the attribute to compare (or "any" to return resources with any matching attribute)|@script_version@, @head_uuid@, @any@|
 |1|operator|string|Comparison operator|@>@, @>=@, @like@, @not in@|
 |2|operand|string, array, or null|Value to compare with the resource attribute|@"d00220fb%"@, @"1234"@, @["foo","bar"]@, @nil@|
 
@@ -52,7 +52,7 @@ The following operators are available.
 
 table(table table-bordered table-condensed).
 |_. Operator|_. Operand type|_. Example|
-|@<@, @<=@, @>=@, @>@, @like@|string|@["script_version","like","d00220fb%"]@|
+|@<@, @<=@, @>=@, @>@, @like@, @ilike@|string|@["script_version","like","d00220fb%"]@|
 |@=@, @!=@|string or null|@["tail_uuid","=","xyzzy-j7d0g-fffffffffffffff"]@
 @["tail_uuid","!=",null]@|
 |@in@, @not in@|array of strings|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|

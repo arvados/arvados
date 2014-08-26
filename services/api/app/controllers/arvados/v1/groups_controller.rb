@@ -96,7 +96,7 @@ class Arvados::V1::GroupsController < ApplicationController
 
       @objects = @objects.order("#{klass.table_name}.uuid")
       @limit = limit_all - all_objects.count
-      apply_where_limit_order_params
+      apply_where_limit_order_params klass
       klass_items_available = @objects.
         except(:limit).except(:offset).
         count(:id, distinct: true)

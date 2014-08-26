@@ -31,11 +31,11 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "get list of groups that are not projects" do
     authorize_with :active
-    get :index, filters: [['group_class', '=', nil]], format: :json
+    get :index, filters: [['group_class', '!=', 'project']], format: :json
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
-      assert_equal nil, group['group_class']
+      assert_not_equal 'project', group['group_class']
       group_uuids << group['uuid']
     end
     assert_not_includes group_uuids, groups(:aproject).uuid
