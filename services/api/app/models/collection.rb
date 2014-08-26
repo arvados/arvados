@@ -3,9 +3,18 @@ class Collection < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  before_validation :check_signatures
+  before_validation :strip_manifest_text
+  before_validation :set_portable_data_hash
+  validate :ensure_hash_matches_manifest_text
+
   api_accessible :user, extend: :common do |t|
     t.add :data_size
     t.add :files
+    t.add :name
+    t.add :description
+    t.add :properties
+    t.add :portable_data_hash
     t.add :manifest_text
   end
 
@@ -13,6 +22,91 @@ class Collection < ArvadosModel
     super.merge({ "data_size" => ["manifest_text"],
                   "files" => ["manifest_text"],
                 })
+  end
+
+  def check_signatures
+    return false if self.manifest_text.nil?
+
+    return true if current_user.andand.is_admin
+
+    if self.manifest_text_changed?
+      # Check permissions on the collection manifest.
+      # If any signature cannot be verified, raise PermissionDeniedError
+      # which will return 403 Permission denied to the client.
+      api_token = current_api_client_authorization.andand.api_token
+      signing_opts = {
+        key: Rails.configuration.blob_signing_key,
+        api_token: api_token,
+        ttl: Rails.configuration.blob_signing_ttl,
+      }
+      self.manifest_text.lines.each do |entry|
+        entry.split[1..-1].each do |tok|
+          if /^[[:digit:]]+:[[:digit:]]+:/.match tok
+            # This is a filename token, not a blob locator. Note that we
+            # keep checking tokens after this, even though manifest
+            # format dictates that all subsequent tokens will also be
+            # filenames. Safety first!
+          elsif Blob.verify_signature tok, signing_opts
+            # OK.
+          elsif Locator.parse(tok).andand.signature
+            # Signature provided, but verify_signature did not like it.
+            logger.warn "Invalid signature on locator #{tok}"
+            raise ArvadosModel::PermissionDeniedError
+          elsif Rails.configuration.permit_create_collection_with_unsigned_manifest
+            # No signature provided, but we are running in insecure mode.
+            logger.debug "Missing signature on locator #{tok} ignored"
+          elsif Blob.new(tok).empty?
+            # No signature provided -- but no data to protect, either.
+          else
+            logger.warn "Missing signature on locator #{tok}"
+            raise ArvadosModel::PermissionDeniedError
+          end
+        end
+      end
+    end
+    true
+  end
+
+  def strip_manifest_text
+    if self.manifest_text_changed?
+      # Remove any permission signatures from the manifest.
+      Collection.munge_manifest_locators(self[:manifest_text]) do |loc|
+        loc.without_signature.to_s
+      end
+    end
+    true
+  end
+
+  def set_portable_data_hash
+    if (self.portable_data_hash.nil? or (self.portable_data_hash == "") or (manifest_text_changed? and !portable_data_hash_changed?))
+      self.portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+    elsif portable_data_hash_changed?
+      begin
+        loc = Locator.parse!(self.portable_data_hash)
+        loc.strip_hints!
+        if loc.size
+          self.portable_data_hash = loc.to_s
+        else
+          self.portable_data_hash = "#{loc.hash}+#{self.manifest_text.length}"
+        end
+      rescue ArgumentError => e
+        errors.add(:portable_data_hash, "#{e}")
+        return false
+      end
+    end
+    true
+  end
+
+  def ensure_hash_matches_manifest_text
+    if manifest_text_changed? or portable_data_hash_changed?
+      computed_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
+      unless computed_hash == portable_data_hash
+        logger.debug "(computed) '#{computed_hash}' != '#{portable_data_hash}' (provided)"
+        errors.add(:portable_data_hash, "does not match hash of manifest_text")
+        return false
+      end
+    end
+    true
   end
 
   def redundancy_status
@@ -30,39 +124,6 @@ class Collection < ArvadosModel
       end
     end
   end
-
-  def assign_uuid
-    if not self.manifest_text
-      errors.add :manifest_text, 'not supplied'
-      return false
-    end
-    expect_uuid = Digest::MD5.hexdigest(self.manifest_text)
-    if self.uuid
-      self.uuid.gsub! /\+.*/, ''
-      if self.uuid != expect_uuid
-        errors.add :uuid, 'must match checksum of manifest_text'
-        return false
-      end
-    else
-      self.uuid = expect_uuid
-    end
-    self.uuid.gsub! /$/, '+' + self.manifest_text.length.to_s
-    true
-  end
-
-  # TODO (#3036/tom) replace above assign_uuid method with below assign_uuid and self.generate_uuid
-  # def assign_uuid
-  #   # Even admins cannot assign collection uuids.
-  #   self.uuid = self.class.generate_uuid
-  # end
-  # def self.generate_uuid
-  #   # The last 10 characters of a collection uuid are the last 10
-  #   # characters of the base-36 SHA256 digest of manifest_text.
-  #   [Server::Application.config.uuid_prefix,
-  #    self.uuid_prefix,
-  #    rand(2**256).to_s(36)[-5..-1] + Digest::SHA256.hexdigest(self.manifest_text).to_i(16).to_s(36)[-10..-1],
-  #   ].join '-'
-  # end
 
   def data_size
     inspect_manifest_text if @data_size.nil? or manifest_text_changed?
@@ -134,8 +195,16 @@ class Collection < ArvadosModel
     end
   end
 
-  def self.uuid_like_pattern
-    "________________________________+%"
+  def self.munge_manifest_locators(manifest)
+    # Given a manifest text and a block, yield each locator,
+    # and replace it with whatever the block returns.
+    manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
+      if loc = Locator.parse(word.strip)
+        " " + yield(loc)
+      else
+        " " + word
+      end
+    end
   end
 
   def self.normalize_uuid uuid
@@ -154,7 +223,8 @@ class Collection < ArvadosModel
     [hash_part, size_part].compact.join '+'
   end
 
-  def self.uuids_for_docker_image(search_term, search_tag=nil, readers=nil)
+  # Return array of Collection objects
+  def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil)
     readers ||= [Thread.current[:user]]
     base_search = Link.
       readable_by(*readers).
@@ -166,11 +236,16 @@ class Collection < ArvadosModel
     # that looks like a Docker image, return it.
     if loc = Locator.parse(search_term)
       loc.strip_hints!
-      coll_match = readable_by(*readers).where(uuid: loc.to_s).first
+      coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
       if coll_match and (coll_match.files.size == 1) and
           (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
-        return [loc.to_s]
+        return [coll_match]
       end
+    end
+
+    if search_tag.nil? and (n = search_term.index(":"))
+      search_tag = search_term[n+1..-1]
+      search_term = search_term[0..n-1]
     end
 
     # Find Collections with matching Docker image repository+tag pairs.
@@ -181,7 +256,7 @@ class Collection < ArvadosModel
     # If that didn't work, find Collections with matching Docker image hashes.
     if matches.empty?
       matches = base_search.
-        where("link_class = ? and name LIKE ?",
+        where("link_class = ? and links.name LIKE ?",
               "docker_image_hash", "#{search_term}%")
     end
 
@@ -189,20 +264,14 @@ class Collection < ArvadosModel
     # so that anything with an image timestamp is considered more recent than
     # anything without; then we use the link's created_at as a tiebreaker.
     uuid_timestamps = {}
-    matches.find_each do |link|
-      uuid_timestamps[link.head_uuid] =
-        [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
-         -link.created_at.to_i]
+    matches.all.map do |link|
+      uuid_timestamps[link.head_uuid] = [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
+       -link.created_at.to_i]
     end
-    uuid_timestamps.keys.sort_by { |uuid| uuid_timestamps[uuid] }
+    Collection.where('uuid in (?)', uuid_timestamps.keys).sort_by { |c| uuid_timestamps[c.uuid] }
   end
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
-    image_uuid = uuids_for_docker_image(search_term, search_tag, readers).first
-    if image_uuid.nil?
-      nil
-    else
-      find_by_uuid(image_uuid)
-    end
+    find_all_for_docker_image(search_term, search_tag, readers).first
   end
 end

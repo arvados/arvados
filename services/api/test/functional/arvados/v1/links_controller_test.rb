@@ -165,7 +165,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-f0-9]{32}\+\d+/}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match /.....-4zz18-.............../}).count
   end
 
   test "test can still use where tail_kind" do
@@ -268,20 +268,6 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     authorize_with :admin
     post :create, link: link
     assert_response :success
-  end
-
-  test "refuse duplicate name" do
-    the_name = links(:job_name_in_aproject).name
-    the_project = links(:job_name_in_aproject).tail_uuid
-    authorize_with :active
-    post :create, link: {
-      tail_uuid: the_project,
-      head_uuid: specimens(:owned_by_active_user).uuid,
-      link_class: 'name',
-      name: the_name,
-      properties: {this_s: "a duplicate name"}
-    }
-    assert_response 422
   end
 
   test "project owner can show a project permission" do

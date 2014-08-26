@@ -21,8 +21,8 @@ class ArvadosModel < ActiveRecord::Base
   after_update :log_update
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
+  before_validation :normalize_collection_uuids
   validate :ensure_serialized_attribute_type
-  validate :normalize_collection_uuids
   validate :ensure_valid_uuids
 
   # Note: This only returns permission links. It does not account for
@@ -183,12 +183,6 @@ class ArvadosModel < ActiveRecord::Base
       sql_params += [uuid_list]
     end
 
-    if sql_table == "collections" and users_list.any?
-      # There is a 'name' link going from a readable group to the collection.
-      name_links = "(SELECT head_uuid FROM links WHERE link_class='name' AND tail_uuid IN (#{sanitized_uuid_list}))"
-      sql_conds += ["#{sql_table}.uuid IN #{name_links}"]
-    end
-
     # Link head points to this row, or to the owner of this row (the
     # thing to be read)
     #
@@ -217,7 +211,7 @@ class ArvadosModel < ActiveRecord::Base
     if new_record? or owner_uuid_changed?
       uuid_in_path = {owner_uuid => true, uuid => true}
       x = owner_uuid
-      while (owner_class = self.class.resource_class_for_uuid(x)) != User
+      while (owner_class = ArvadosModel::resource_class_for_uuid(x)) != User
         begin
           if x == uuid
             # Test for cycles with the new version, not the DB contents
@@ -247,12 +241,29 @@ class ArvadosModel < ActiveRecord::Base
 
   def ensure_owner_uuid_is_permitted
     raise PermissionDeniedError if !current_user
+
     if new_record? and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
     end
-    # Verify permission to write to old owner (unless owner_uuid was
-    # nil -- or hasn't changed, in which case the following
-    # "permission to write to new owner" block will take care of us)
+
+    if self.owner_uuid.nil?
+      errors.add :owner_uuid, "cannot be nil"
+      raise PermissionDeniedError
+    end
+
+    rsc_class = ArvadosModel::resource_class_for_uuid owner_uuid
+    unless rsc_class == User or rsc_class == Group
+      errors.add :owner_uuid, "must be set to User or Group"
+      raise PermissionDeniedError
+    end
+
+    # Verify "write" permission on old owner
+    # default fail unless one of:
+    # owner_uuid did not change
+    # previous owner_uuid is nil
+    # current user is the old owner
+    # current user is this object
+    # current user can_write old owner
     unless !owner_uuid_changed? or
         owner_uuid_was.nil? or
         current_user.uuid == self.owner_uuid_was or
@@ -262,12 +273,18 @@ class ArvadosModel < ActiveRecord::Base
       errors.add :owner_uuid, "cannot be changed without write permission on old owner"
       raise PermissionDeniedError
     end
-    # Verify permission to write to new owner
+
+    # Verify "write" permission on new owner
+    # default fail unless one of:
+    # current_user is this object
+    # current user can_write new owner
     unless current_user == self or current_user.can? write: owner_uuid
       logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
       errors.add :owner_uuid, "cannot be changed without write permission on new owner"
       raise PermissionDeniedError
     end
+
+    true
   end
 
   def ensure_permission_to_save
@@ -411,8 +428,6 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
-  @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
-
   @@prefixes_hash = nil
   def self.uuid_prefixes
     unless @@prefixes_hash
@@ -431,7 +446,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def ensure_valid_uuids
-    specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
+    specials = [system_user_uuid]
 
     foreign_key_attributes.each do |attr|
       if new_record? or send (attr + "_changed?")
@@ -477,13 +492,10 @@ class ArvadosModel < ActiveRecord::Base
     unless uuid.is_a? String
       return nil
     end
-    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
-      return Collection
-    end
     resource_class = nil
 
     Rails.application.eager_load!
-    uuid.match @@UUID_REGEX do |re|
+    uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
 

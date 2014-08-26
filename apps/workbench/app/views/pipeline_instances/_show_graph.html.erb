@@ -1,14 +1,3 @@
-<% content_for :css do %>
-  .pipeline_color_legend {
-    margin-top: 0.2em;
-    padding: 0.2em 1em;
-    border: 1px solid #000;
-  }
-  .pipeline_color_legend a {
-    color: #000;
-  }
-<% end %>
-
 <% if @pipelines.count > 1 %>
   <div style="text-align: center; padding-top: 0.5em">
     <span class="pipeline_color_legend" style="background: #aaffaa"><%= link_to_if_arvados_object @pipelines[0], friendly_name: true %></span>

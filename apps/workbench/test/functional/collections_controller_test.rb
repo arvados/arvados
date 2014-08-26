@@ -56,8 +56,8 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "viewing a collection fetches related projects" do
-    show_collection(:foo_file, :active)
-    assert_includes(assigns(:projects).map(&:uuid),
+    show_collection({id: api_fixture('collections')["foo_file"]['portable_data_hash']}, :active)
+    assert_includes(assigns(:same_pdh).map(&:owner_uuid),
                     api_fixture('groups')['aproject']['uuid'],
                     "controller did not find linked project")
   end

@@ -44,7 +44,6 @@ def subscribe(api, filters, on_event):
         ws.connect()
         return ws
     except Exception:
-        _logger.exception('')
         if (ws):
           ws.close_connection()
         raise
