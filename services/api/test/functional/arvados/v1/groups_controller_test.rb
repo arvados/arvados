@@ -369,8 +369,9 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json
     }
     assert_response :success
-    assert_nil(json_response['writable_by'],
-               "Should not receive uuid list in 'writable_by' field")
+    assert_equal([json_response['owner_uuid']],
+                 json_response['writable_by'],
+                 "Should only see owner_uuid in 'writable_by' field")
   end
 
   test 'get writable_by list by admin user' do

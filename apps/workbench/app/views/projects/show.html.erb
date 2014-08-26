@@ -39,6 +39,8 @@
       <i class="fa fa-fw fa-plus"></i>
       Add a subproject
     <% end %>
+  <% end %>
+  <% if @object.owner_uuid == current_user.uuid or (Group.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
     <% if @object.uuid != current_user.uuid # Not the "Home" project %>
       <%= link_to(
           choose_projects_path(
