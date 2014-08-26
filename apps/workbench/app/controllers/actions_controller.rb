@@ -176,7 +176,7 @@ class ActionsController < ApplicationController
 
     respond_to do |format|
       IssueReporter.send_report(current_user, params).deliver
-      format.js
+      format.js {render nothing: true}
     end
   end
 
