@@ -14,8 +14,6 @@ class LoginsTest < ActionDispatch::IntegrationTest
   end
 
   test "trying to use expired token redirects to login page" do
-    Capybara.current_driver = :rack_test
-
     visit page_with_token('expired_trustedclient')
     buttons = all("a.btn", text: /Log in/)
     assert_equal(1, buttons.size, "Failed to find one login button")
