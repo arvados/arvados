@@ -1504,8 +1504,10 @@ my $commit = $ENV{"CRUNCH_SRC_COMMIT"};
 my $repo = $ENV{"CRUNCH_SRC_URL"};
 my $task_work = $ENV{"TASK_WORK"};
 
-make_path $task_work;
--e $task_work or die "Failed to create temporary working directory ($task_work): $!";
+if ($task_work) {
+    make_path $task_work;
+    -e $task_work or die "Failed to create temporary working directory ($task_work): $!";
+}
 
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
