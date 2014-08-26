@@ -243,9 +243,9 @@ class KeepClient(object):
                 self.last_result = result
                 self.success_flag = retry.check_http_response_success(result)
                 content = result[1]
-                _logger.info("%s response: %s bytes in %s msec (%s MiB/sec)",
+                _logger.info("%s response: %s bytes in %s msec (%.3f MiB/sec)",
                              self.last_status(), len(content), t.msecs,
-                             (len(content)/(1024*1024))/t.secs)
+                             (len(content)/(1024.0*1024))/t.secs)
                 if self.success_flag:
                     resp_md5 = hashlib.md5(content).hexdigest()
                     if resp_md5 == locator.md5sum:
