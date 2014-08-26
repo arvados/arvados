@@ -41,11 +41,26 @@ function maybe_load_more_content(event) {
         $container.append(spinner);
         $container.attr('data-infinite-serial', serial);
 
-        // Combine infiniteContentParams from multiple
-        // sources. filterable.js might put its params in
-        // infiniteContentParamsFilterable, etc.
+        // Combine infiniteContentParams from multiple sources. This
+        // mechanism allows each of several components to set and
+        // update its own set of filters, without having to worry
+        // about stomping on some other component's filters.
+        //
+        // For example, filterable.js writes filters in
+        // infiniteContentParamsFilterable ("search for text foo")
+        // without worrying about clobbering the filters set up by the
+        // tab pane ("only show jobs and pipelines in this tab").
         params = {};
         $.each($container.data(), function(datakey, datavalue) {
+            // Note: We attach these data to DOM elements using
+            // <element data-foo-bar="baz">. We store/retrieve them
+            // using $('element').data('foo-bar'), although
+            // .data('fooBar') would also work. The "all data" hash
+            // returned by $('element').data(), however, always has
+            // keys like 'fooBar'. In other words, where we have a
+            // choice, we stick with the 'foo-bar' style to be
+            // consistent with HTML. Here, our only option is
+            // 'fooBar'.
             if (/^infiniteContentParams/.exec(datakey)) {
                 if (datavalue instanceof Object) {
                     $.each(datavalue, function(hkey, hvalue) {
