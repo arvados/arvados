@@ -12,6 +12,7 @@ development:
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
+  local_modified: <%= '-modified' if `git status -s` %>
 
 production:
   force_ssl: true
@@ -131,3 +132,12 @@ common:
   # Use "user_profile_form_message" to configure the message you want to display on
   # the profile page.
   user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
+
+  # source_version
+  source_version: <%= `git log -n 1 --format=%h` %>
+  local_modified: false
+
+  # report notification to and from addresses
+  issue_reporter_email_from: arvados@example.com
+  issue_reporter_email_to: arvados@example.com
+  support_email_address: arvados@example.com

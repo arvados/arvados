@@ -1,5 +1,8 @@
 class ActionsController < ApplicationController
 
+  skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
+  skip_filter :check_user_agreements, only: [:report_issue_popup, :report_issue]
+
   @@exposed_actions = {}
   def self.expose_action method, &block
     @@exposed_actions[method] = true
@@ -162,6 +165,22 @@ class ActionsController < ApplicationController
     end
 
     redirect_to controller: 'collections', action: :show, id: newc.uuid
+  end
+
+  def report_issue_popup
+    respond_to do |format|
+      format.js
+      format.html
+    end
+  end
+
+  def report_issue
+    logger.warn "report_issue: #{params.inspect}"
+
+    respond_to do |format|
+      IssueReporter.send_report(current_user, params).deliver
+      format.js {render nothing: true}
+    end
   end
 
 end

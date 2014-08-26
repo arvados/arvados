@@ -1,0 +1,147 @@
+<%
+  api_version = arvados_api_client.discovery[:source_version]
+  generated_at = arvados_api_client.discovery[:generatedAt]
+  wb_version = Rails.configuration.source_version
+  wb_version += Rails.configuration.local_modified if Rails.configuration.local_modified
+  arvados_base = Rails.configuration.arvados_v1_base
+  support_email = Rails.configuration.support_email_address
+
+  additional_info = {}
+  additional_info['Current location'] = params[:current_location]
+  additional_info['User UUID'] = current_user.uuid if current_user
+
+  additional_info_str = additional_info.map {|k,v| "#{k}=#{v}"}.join("\n")
+
+  additional_info['api_version'] = api_version
+  additional_info['generated_at'] = generated_at
+  additional_info['workbench_version'] = wb_version
+  additional_info['arvados_base'] = arvados_base
+  additional_info['support_email'] = support_email
+  additional_info['error_message'] = params[:error_message] if params[:error_message]
+  additional_info['api_error_request_url'] = params[:api_error_request_url] if params[:api_error_request_url]
+  additional_info['api_error_response'] = params[:api_error_response] if params[:api_error_response]
+%>
+
+<div class="modal">
+ <div class="modal-dialog modal-with-loading-spinner">
+  <div class="modal-content">
+
+    <%= form_tag report_issue_path, {name: 'report-issue-form', method: 'post',
+        class: 'form-horizontal', remote: true} do %>
+
+      <%
+        title = 'Version / debugging info'
+        title = 'Report a problem' if params[:popup_type] == 'report'
+      %>
+
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <div>
+          <div class="col-sm-8"> <h4 class="modal-title"><%=title%></h4> </div>
+          <div class="spinner spinner-32px spinner-h-center col-sm-1" hidden="true"></div>
+        </div>
+        <br/>
+      </div>
+
+      <div class="modal-body" style="height: 25em; overflow-y: scroll">
+        <div class="form-group">
+          <label for="support_email" class="col-sm-4 control-label"> Support email </label>
+          <div class="col-sm-8">
+            <p class="form-control-static" name="support_version"><a href="mailto:<%=support_email%>?subject=Workbench problem report&amp;body=Problem while viewing page <%=params[:current_location]%>"><%=support_email%></a></p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="current_page" class="col-sm-4 control-label"> Current page </label>
+          <div class="col-sm-8">
+            <p class="form-control-static text-overflow-ellipsis" name="current_page"><%=params[:current_path]%></a></p>
+          </div>
+        </div>
+
+        <% if params[:popup_type] == 'report' %>
+          <div class="form-group">
+            <label for="report_text_label" class="col-sm-4 control-label"> Describe the problem </label>
+            <div class="col-sm-8">
+              <textarea class="form-control" rows="4" id="report_issue_text" name="report_issue_text" type="text"/>
+            </div>
+            <input type="hidden" name="report_additional_info" value="<%=additional_info.to_json%>">
+          </div>
+        <% end %>
+
+        <div class="form-group">
+          <label for="server_version" class="col-sm-4 control-label"> API version </label>
+          <div class="col-sm-8">
+            <p class="form-control-static" name="server_version"><%=api_version%></p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="generated_at" class="col-sm-4 control-label"> API startup time </label>
+          <div class="col-sm-8">
+            <p class="form-control-static" name="generated_at"><%=generated_at%></p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="wb_version" class="col-sm-4 control-label"> Workbench version </label>
+          <div class="col-sm-8">
+            <p class="form-control-static" name="wb_version"><%=wb_version%></p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="arvados_base" class="col-sm-4 control-label"> Workbench URI </label>
+          <div class="col-sm-8">
+            <p class="form-control-static" name="arvados_base"><%=arvados_base%></p>
+          </div>
+        </div>
+
+        <% if current_user %>
+          <div class="form-group">
+            <label for="user_uuid" class="col-sm-4 control-label"> User UUID </label>
+            <div class="col-sm-8">
+              <p class="form-control-static" name="user_uuid"><%=current_user.uuid%></p>
+            </div>
+          </div>
+        <% end %>
+
+        <% if params[:error_message] %>
+          <div class="form-group">
+            <label for="error_message" class="col-sm-4 control-label"> Error message </label>
+            <div class="col-sm-8">
+              <p class="form-control-static text-overflow-ellipsis" name="error_message"><%=params[:error_message]%></p>
+            </div>
+          </div>
+        <% end %>
+
+        <% if params[:api_error_request_url] %>
+          <div class="form-group">
+            <label for="api_error_url" class="col-sm-4 control-label"> API error request URL </label>
+            <div class="col-sm-8">
+              <p class="form-control-static text-overflow-ellipsis" name="api_error_url"><%=params[:api_error_request_url]%></p>
+            </div>
+          </div>
+        <% end %>
+
+        <% if params[:api_error_response] %>
+          <div class="form-group">
+            <label for="api_error_response" class="col-sm-4 control-label"> API error response </label>
+            <div class="col-sm-8">
+              <p class="form-control-static text-overflow-ellipsis" name="api_error_response"><%=params[:api_error_response]%></p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="modal-footer">
+        <% if params[:popup_type] == 'report' %>
+          <button class="btn btn-default report-issue-cancel" id="report-issue-cancel" data-dismiss="modal" aria-hidden="true">Cancel</button>
+          <button type="submit" id="report-issue-submit" class="btn btn-primary report-issue-submit" autofocus>Send problem report</button>
+        <% else %>
+          <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+        <% end %>
+      </div>
+    <% end #form %>
+  </div>
+ </div>
+</div>

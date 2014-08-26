@@ -1,6 +1,14 @@
 require 'integration_helper'
+require 'selenium-webdriver'
+require 'headless'
 
 class ErrorsTest < ActionDispatch::IntegrationTest
+  setup do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+  end
+
   BAD_UUID = "ffffffffffffffffffffffffffffffff+0"
 
   test "error page renders user navigation" do
@@ -73,4 +81,51 @@ class ErrorsTest < ActionDispatch::IntegrationTest
     assert(page.has_no_text?(/fiddlesticks/i),
            "unrouted request returned a generic error page, not 404")
   end
+
+  test "API error page has Report problem button" do
+    original_arvados_v1_base = Rails.configuration.arvados_v1_base
+
+    begin
+      # point to a bad api server url to generate fiddlesticks error
+      Rails.configuration.arvados_v1_base = "https://[100::f]:1/"
+
+      visit page_with_token("active")
+
+      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page')
+
+      # reset api server base config to let the popup rendering to work
+      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+
+      # check the "Report problem" button
+      assert page.has_link? 'Report problem', 'Report problem link not found'
+
+      click_link 'Report problem'
+      within '.modal-content' do
+        assert page.has_text?('Report a problem'), 'Report a problem text not found'
+        assert page.has_no_text?('Version / debugging info'), 'Version / debugging info is not expected'
+        assert page.has_text?('Describe the problem'), 'Describe the problem text not found'
+        assert page.has_button?('Send problem report'), 'Send problem report button not found'
+        assert page.has_button?('Cancel'), 'Cancel button not found'
+
+        # enter a report text and click on report
+        page.find_field('report_issue_text').set 'my test report text'
+        click_button 'Send problem report'
+
+        # ajax success updated button texts and added footer message
+        assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
+        assert page.has_no_button?('Cancel'), 'Found button - Cancel'
+        assert page.has_text?('Report sent'), 'No text - Report sent'
+        assert page.has_button?('Close'), 'No button - Close'
+        assert page.has_text?('Thanks for reporting this issue'), 'No text - Thanks for reporting this issue'
+
+        click_button 'Close'
+      end
+
+      # out of the popup now and should be back in the error page
+      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page after closing report issue popup')
+    ensure
+      Rails.configuration.arvados_v1_base = original_arvados_v1_base
+    end
+  end
+
 end
