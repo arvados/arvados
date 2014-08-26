@@ -89,7 +89,16 @@ class ActionsController < ApplicationController
 
   def arv_normalize mt, *opts
     r = ""
-    IO.popen(['arv-normalize'] + opts, 'w+b') do |io|
+    env = Hash[ENV].
+      merge({'ARVADOS_API_HOST' =>
+              arvados_api_client.arvados_v1_base.
+              sub(/\/arvados\/v1/, '').
+              sub(/^https?:\/\//, ''),
+              'ARVADOS_API_TOKEN' => 'x',
+              'ARVADOS_API_HOST_INSECURE' =>
+              Rails.configuration.arvados_insecure_https ? 'true' : 'false'
+            })
+    IO.popen([env, 'arv-normalize'] + opts, 'w+b') do |io|
       io.write mt
       io.close_write
       while buf = io.read(2**16)
