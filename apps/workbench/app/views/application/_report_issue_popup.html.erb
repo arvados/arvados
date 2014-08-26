@@ -69,6 +69,13 @@
         <% end %>
 
         <div class="form-group">
+          <label for="wb_version" class="col-sm-4 control-label"> Workbench version </label>
+          <div class="col-sm-8">
+            <p class="form-control-static" name="wb_version"><%=wb_version%></p>
+          </div>
+        </div>
+
+        <div class="form-group">
           <label for="server_version" class="col-sm-4 control-label"> API version </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="server_version"><%=api_version%></p>
@@ -83,14 +90,7 @@
         </div>
 
         <div class="form-group">
-          <label for="wb_version" class="col-sm-4 control-label"> Workbench version </label>
-          <div class="col-sm-8">
-            <p class="form-control-static" name="wb_version"><%=wb_version%></p>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="arvados_base" class="col-sm-4 control-label"> Workbench URI </label>
+          <label for="arvados_base" class="col-sm-4 control-label"> API address </label>
           <div class="col-sm-8">
             <p class="form-control-static" name="arvados_base"><%=arvados_base%></p>
           </div>
