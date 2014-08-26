@@ -17,7 +17,6 @@ class PipelineInstance < ArvadosModel
     t.add :pipeline_template_uuid
     t.add :pipeline_template, :if => :pipeline_template
     t.add :name
-    t.add :description
     t.add :components
     t.add :dependencies
     t.add :properties

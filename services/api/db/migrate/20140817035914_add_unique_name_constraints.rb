@@ -1,7 +1,7 @@
 class AddUniqueNameConstraints < ActiveRecord::Migration
   def change
     # Ensure uniqueness before adding constraints.
-    ["collections", "pipeline_templates", "pipeline_instances", "jobs", "groups"].each do |table|
+    ["collections", "pipeline_templates", "groups"].each do |table|
       rows = ActiveRecord::Base.connection.select_all %{
 select uuid, owner_uuid, name from #{table} order by owner_uuid, name
 }
