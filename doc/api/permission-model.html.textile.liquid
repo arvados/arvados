@@ -15,8 +15,10 @@ Each API transaction (read, write, create, etc.) is done on behalf of a person.
 
 A user (person) is permitted to act on an object if there is a path (series of permission Links) from the acting user to the object in which
 
-* Every intervening object is a Group or a User, and
+* Every intervening object is a Group, and
 * Every intervening permission Link allows the current action
+
+Special case: A permission path can also include intervening User objects if the links _to_ the Users are "can_manage" links.
 
 Each object has exactly one _owner_, which can be either a User or a Group.
 

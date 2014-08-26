@@ -1,21 +1,108 @@
-<p>As an admin, you can log in as this user. When you&rsquo;ve
-finished, you will need to log out and log in again with your own
-account.</p>
+<div class="row">
+  <div class="col-md-6">
+    <p>
+      As an admin, you can log in as this user. When you&rsquo;ve
+      finished, you will need to log out and log in again with your
+      own account.
+    </p>
 
-<blockquote>
-<%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
-</blockquote>
+    <blockquote>
+      <%= button_to "Log in as #{@object.full_name}", sudo_user_url(id: @object.uuid), class: 'btn btn-primary' %>
+    </blockquote>
 
-<p>As an admin, you can setup this user. Please input a VM and repository for the user. If you had previously provided any of these items, they are pre-filled for you and you can leave them as is if you would like to reuse them.</p>
+    <p>
+      As an admin, you can setup this user. Please input a VM and
+      repository for the user. If you had previously provided any of
+      these items, they are pre-filled for you and you can leave them
+      as is if you would like to reuse them.
+    </p>
 
-<blockquote>
-<%= link_to "Setup #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
-</blockquote>
+    <blockquote>
+      <%= link_to "Setup #{@object.full_name}", setup_popup_user_url(id: @object.uuid),  {class: 'btn btn-primary', :remote => true, 'data-toggle' =>  "modal", 'data-target' => '#user-setup-modal-window'}  %>
+    </blockquote>
 
-<p>As an admin, you can deactivate and reset this user. This will remove all repository/VM permissions for the user. If you "setup" the user again, the user will have to sign the user agreement again.</p>
+    <p>
+      As an admin, you can deactivate and reset this user. This will
+      remove all repository/VM permissions for the user. If you
+      "setup" the user again, the user will have to sign the user
+      agreement again.
+    </p>
 
-<blockquote>
-<%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', data: {confirm: "Are you sure you want to deactivate #{@object.full_name}?"} %>
-</blockquote>
+    <blockquote>
+      <%= button_to "Deactivate #{@object.full_name}", unsetup_user_url(id: @object.uuid), class: 'btn btn-primary', data: {confirm: "Are you sure you want to deactivate #{@object.full_name}?"} %>
+    </blockquote>
+  </div>
+  <div class="col-md-6">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        Group memberships
+      </div>
+      <div class="panel-body">
+        <div class="alert alert-info">
+          <b>Tip:</b> in most cases, you want <i>both permissions at once</i> for a given group.
+          <br/>
+          The user&rarr;group permission is can_manage.
+          <br/>
+          The group&rarr;user permission is can_read.
+        </div>
+        <form>
+          <% permitted_group_perms = {}
+             Link.limit(10000).filter([
+             ['tail_uuid', '=', @object.uuid],
+             ['head_uuid', 'is_a', 'arvados#group'],
+             ['link_class', '=', 'permission'],
+             ]).each do |perm|
+               permitted_group_perms[perm.head_uuid] = perm.uuid
+             end %>
+          <% member_group_perms = {}
+             Link.permissions_for(@object).each do |perm|
+               member_group_perms[perm.tail_uuid] = perm.uuid
+             end %>
+          <% Group.order(['name']).where(group_class: 'role').each do |group| %>
+            <div>
+              <label class="checkbox-inline" data-toggle-permission="true" data-permission-tail="<%= @object.uuid %>" data-permission-name="can_manage">
+                <%= check_box_tag(
+                    'group_uuids[]',
+                    group.uuid,
+                    permitted_group_perms[group.uuid],
+                    disabled: (group.owner_uuid == @object.uuid),
+                    data: {
+                      permission_head: group.uuid,
+                      permission_uuid: permitted_group_perms[group.uuid]}) %>
+                <small>user&rarr;group</small>
+              </label>
+              <label class="checkbox-inline" data-toggle-permission="true" data-permission-head="<%= @object.uuid %>" data-permission-name="can_read">
+                <%= check_box_tag(
+                    'group_uuids[]',
+                    group.uuid,
+                    member_group_perms[group.uuid],
+                    disabled: (group.owner_uuid == @object.uuid),
+                    data: {
+                      permission_tail: group.uuid,
+                      permission_uuid: member_group_perms[group.uuid]}) %>
+                <small>group&rarr;user</small>
+              </label>
+              <label class="checkbox-inline">
+                <%= group.name || '(unnamed)' %> <span class="deemphasize">(owned by <%= User.find(group.owner_uuid).andand.full_name %>)</span>
+              </label>
+            </div>
+          <% end.empty? and begin %>
+            <div>
+              (No groups defined.)
+            </div>
+          <% end %>
+        </form>
+      </div>
+      <div class="panel-footer">
+        To manage these groups (roles), use:
+        <ul>
+          <li><code>arv group create \<br/>--group '{"group_class":"role","name":"New group"}'</code></li>
+          <li><code>arv group list \<br/>--filters '[["group_class","=","role"]]' \<br/>--select '["uuid","name"]'</code></li>
+          <li><code>arv edit <i>uuid</i></code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="user-setup-modal-window" class="modal fade" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true"></div>
