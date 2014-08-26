@@ -18,6 +18,7 @@
           </li>
 
           <% if current_user %>
+          <% if current_user.is_active %>
           <li>
             <form class="navbar-form" role="search"
                        data-search-modal=
@@ -36,6 +37,7 @@
               </div>
             </form>
           </li>
+          <% end %>
 
           <li class="dropdown notification-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
