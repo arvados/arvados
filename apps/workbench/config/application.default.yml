@@ -134,7 +134,7 @@ common:
   user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
 
   # source_version
-  source_version: <%= `git log -n 1 --format=%h` %>
+  source_version: "<%= `git log -n 1 --format=%h` %>"
   local_modified: false
 
   # report notification to and from addresses
