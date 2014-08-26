@@ -24,10 +24,6 @@ update #{table} set name='#{r["name"]} #{n}' where uuid='#{r["uuid"]}'
               name: 'collection_owner_uuid_name_unique')
     add_index(:pipeline_templates, [:owner_uuid, :name], unique: true,
               name: 'pipeline_template_owner_uuid_name_unique')
-    add_index(:pipeline_instances, [:owner_uuid, :name], unique: true,
-              name: 'pipeline_instance_owner_uuid_name_unique')
-    add_index(:jobs, [:owner_uuid, :name], unique: true,
-              name: 'jobs_owner_uuid_name_unique')
     add_index(:groups, [:owner_uuid, :name], unique: true,
               name: 'groups_owner_uuid_name_unique')
   end

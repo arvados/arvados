@@ -579,7 +579,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text)
         collection_list = arvados.api('v1', cache=False).collections().list(
-            filters=[['uuid', '=', stdout.strip()]]).execute().get('items', [])
+            filters=[['portable_data_hash', '=', stdout.strip()]]).execute().get('items', [])
         self.assertEqual(1, len(collection_list))
         return collection_list[0]
 

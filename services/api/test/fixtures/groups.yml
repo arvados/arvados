@@ -28,12 +28,6 @@ activeandfriends:
   updated_at: 2014-08-22 14:02:18.481166435 Z
   group_class:
 
-system_owned_group:
-  uuid: zzzzz-j7d0g-8ulrifv67tve5sx
-  owner_uuid: zzzzz-tpzed-000000000000000
-  name: System Private
-  description: System-owned Group
-
 system_group:
   uuid: zzzzz-j7d0g-000000000000000
   owner_uuid: zzzzz-tpzed-000000000000000
