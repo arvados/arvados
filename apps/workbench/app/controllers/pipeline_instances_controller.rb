@@ -54,12 +54,6 @@ class PipelineInstancesController < ApplicationController
       p.components.each do |k, v|
         j = v[:job] || next
 
-        # The graph is interested in whether the component is
-        # indicated as persistent, more than whether the job
-        # satisfying it (which could have been reused, or someone
-        # else's) is.
-        j[:output_is_persistent] = v[:output_is_persistent]
-
         uuid = j[:uuid].intern
         provenance[uuid] = j
         pips[uuid] = 0 unless pips[uuid] != nil
