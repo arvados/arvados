@@ -18,110 +18,110 @@
           </li>
 
           <% if current_user %>
-          <% if current_user.is_active %>
-          <li>
-            <form class="navbar-form" role="search"
-                       data-search-modal=
-                       "<%= url_for(
-                        action: 'choose',
-                        controller: 'search',
-                        title: 'Search',
-                        action_name: 'Show',
-                        action_href: url_for(controller: :actions, action: :show),
-                        action_method: 'get',
-                        action_data: {selection_param: 'uuid', success: 'redirect-to-created-object', copy_from_search_box: true}.to_json)
-                       %>">
-              <div class="input-group" style="width: 220px">
-                <input type="text" class="form-control" placeholder="search">
-                <a class="input-group-addon"><span class="glyphicon glyphicon-search"></span></a>
-              </div>
-            </form>
-          </li>
-          <% end %>
+            <% if current_user.is_active %>
+            <li>
+              <form class="navbar-form" role="search"
+                         data-search-modal=
+                         "<%= url_for(
+                          action: 'choose',
+                          controller: 'search',
+                          title: 'Search',
+                          action_name: 'Show',
+                          action_href: url_for(controller: :actions, action: :show),
+                          action_method: 'get',
+                          action_data: {selection_param: 'uuid', success: 'redirect-to-created-object', copy_from_search_box: true}.to_json)
+                         %>">
+                <div class="input-group" style="width: 220px">
+                  <input type="text" class="form-control" placeholder="search">
+                  <a class="input-group-addon"><span class="glyphicon glyphicon-search"></span></a>
+                </div>
+              </form>
+            </li>
+            <% end %>
 
-          <li class="dropdown notification-menu">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
-              <span class="badge badge-alert notification-count"><%= @notification_count %></span>
-              <%= current_user.email %> <span class="caret"></span>
-            </a>
-            <ul class="dropdown-menu" role="menu">
-              <li role="presentation" class="dropdown-header">
-                My account
-              </li>
-              <% if current_user.is_active %>
-              <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
-              <% if Rails.configuration.user_profile_form_fields %>
-                <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
-              <% end %>
-              <li role="presentation" class="divider"></li>
-              <% end %>
-              <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
-              <% if current_user.is_active and
-                    (@notifications || []).length > 0 %>
-                <li role="presentation" class="divider"></li>
-                <% @notifications.each_with_index do |n, i| %>
-                  <% if i > 0 %><li class="divider"></li><% end %>
-                  <li class="notification"><%= n.call(self) %></li>
-                <% end %>
-              <% end %>
-            </ul>
-          </li>
-
-          <li class="dropdown selection-menu">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              <span class="fa fa-lg fa-paperclip"></span>
-              <span class="badge" id="persistent-selection-count"></span>
-            </a>
-            <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
-              <%= form_tag '/actions' do %>
-                <%= hidden_field_tag 'uuid', @object.andand.uuid %>
-                <div id="selection-form-content"></div>
-              <% end %>
-            </ul>
-          </li>
-
-          <% if current_user.is_admin %>
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
-                <span class="fa fa-lg fa-gear"></span>
+            <li class="dropdown notification-menu">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notifications-menu">
+                <span class="badge badge-alert notification-count"><%= @notification_count %></span>
+                <%= current_user.email %> <span class="caret"></span>
               </a>
               <ul class="dropdown-menu" role="menu">
                 <li role="presentation" class="dropdown-header">
-                  Settings
+                  My account
                 </li>
-                <li role="menuitem"><a href="/repositories">
-                    <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
-                </a></li>
-                <li role="menuitem"><a href="/virtual_machines">
-                    <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
-                </a></li>
-                <li role="menuitem"><a href="/authorized_keys">
-                    <i class="fa fa-lg fa-key fa-fw"></i> SSH keys
-                </a></li>
-                <li role="menuitem"><a href="/api_client_authorizations">
-                    <i class="fa fa-lg fa-ticket fa-fw"></i> API tokens
-                </a></li>
-                <li role="menuitem"><a href="/links">
-                    <i class="fa fa-lg fa-arrows-h fa-fw"></i> Links
-                </a></li>
-                <li role="menuitem"><a href="/users">
-                    <i class="fa fa-lg fa-user fa-fw"></i> Users
-                </a></li>
-                <li role="menuitem"><a href="/groups">
-                    <i class="fa fa-lg fa-users fa-fw"></i> Groups
-                </a></li>
-                <li role="menuitem"><a href="/nodes">
-                    <i class="fa fa-lg fa-cloud fa-fw"></i> Compute nodes
-                </a></li>
-                <li role="menuitem"><a href="/keep_services">
-                    <i class="fa fa-lg fa-exchange fa-fw"></i> Keep services
-                </a></li>
-                <li role="menuitem"><a href="/keep_disks">
-                    <i class="fa fa-lg fa-hdd-o fa-fw"></i> Keep disks
-                </a></li>
+                <% if current_user.is_active %>
+                <li role="menuitem"><a href="/manage_account" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage account</a></li>
+                <% if Rails.configuration.user_profile_form_fields %>
+                  <li role="menuitem"><a href="/users/<%=current_user.uuid%>/profile" role="menuitem"><i class="fa fa-key fa-fw"></i> Manage profile</a></li>
+                <% end %>
+                <li role="presentation" class="divider"></li>
+                <% end %>
+                <li role="menuitem"><a href="<%= logout_path %>" role="menuitem"><i class="fa fa-sign-out fa-fw"></i> Log out</a></li>
+                <% if current_user.is_active and
+                      (@notifications || []).length > 0 %>
+                  <li role="presentation" class="divider"></li>
+                  <% @notifications.each_with_index do |n, i| %>
+                    <% if i > 0 %><li class="divider"></li><% end %>
+                    <li class="notification"><%= n.call(self) %></li>
+                  <% end %>
+                <% end %>
               </ul>
             </li>
-          <% end %>
+
+            <li class="dropdown selection-menu">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                <span class="fa fa-lg fa-paperclip"></span>
+                <span class="badge" id="persistent-selection-count"></span>
+              </a>
+              <ul class="dropdown-menu" role="menu" id="persistent-selection-list">
+                <%= form_tag '/actions' do %>
+                  <%= hidden_field_tag 'uuid', @object.andand.uuid %>
+                  <div id="selection-form-content"></div>
+                <% end %>
+              </ul>
+            </li>
+
+            <% if current_user.is_admin %>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="system-menu">
+                  <span class="fa fa-lg fa-gear"></span>
+                </a>
+                <ul class="dropdown-menu" role="menu">
+                  <li role="presentation" class="dropdown-header">
+                    Settings
+                  </li>
+                  <li role="menuitem"><a href="/repositories">
+                      <i class="fa fa-lg fa-code-fork fa-fw"></i> Repositories
+                  </a></li>
+                  <li role="menuitem"><a href="/virtual_machines">
+                      <i class="fa fa-lg fa-terminal fa-fw"></i> Virtual machines
+                  </a></li>
+                  <li role="menuitem"><a href="/authorized_keys">
+                      <i class="fa fa-lg fa-key fa-fw"></i> SSH keys
+                  </a></li>
+                  <li role="menuitem"><a href="/api_client_authorizations">
+                      <i class="fa fa-lg fa-ticket fa-fw"></i> API tokens
+                  </a></li>
+                  <li role="menuitem"><a href="/links">
+                      <i class="fa fa-lg fa-arrows-h fa-fw"></i> Links
+                  </a></li>
+                  <li role="menuitem"><a href="/users">
+                      <i class="fa fa-lg fa-user fa-fw"></i> Users
+                  </a></li>
+                  <li role="menuitem"><a href="/groups">
+                      <i class="fa fa-lg fa-users fa-fw"></i> Groups
+                  </a></li>
+                  <li role="menuitem"><a href="/nodes">
+                      <i class="fa fa-lg fa-cloud fa-fw"></i> Compute nodes
+                  </a></li>
+                  <li role="menuitem"><a href="/keep_services">
+                      <i class="fa fa-lg fa-exchange fa-fw"></i> Keep services
+                  </a></li>
+                  <li role="menuitem"><a href="/keep_disks">
+                      <i class="fa fa-lg fa-hdd-o fa-fw"></i> Keep disks
+                  </a></li>
+                </ul>
+              </li>
+            <% end %>
           <% else %>
             <li><a href="<%= arvados_api_client.arvados_login_url(return_to: root_url) %>">Log in</a></li>
           <% end %>
