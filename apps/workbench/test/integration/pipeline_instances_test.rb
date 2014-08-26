@@ -41,8 +41,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find('.arv-project-list a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
     within('.modal-dialog') do
-      find('.dropdown-toggle').click
-      find('a', text: 'Home').click
       wait_for_ajax
       first('span', text: 'foo_tag').click
       find('.btn', text: 'Add').click

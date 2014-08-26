@@ -28,6 +28,14 @@ module PipelineInstancesHelper
     ret = []
     i = -1
 
+    jobuuids = object.components.values.map { |c|
+      c[:job][:uuid] if c.is_a?(Hash) and c[:job].is_a?(Hash)
+    }.compact
+    job = {}
+    Job.where(uuid: jobuuids).each do |j|
+      job[j[:uuid]] = j
+    end
+
     object.components.each do |cname, c|
       i += 1
       pj = {index: i, name: cname}
@@ -35,7 +43,11 @@ module PipelineInstancesHelper
         ret << pj
         next
       end
-      pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
+      if c[:job] and c[:job][:uuid] and job[c[:job][:uuid]]
+        pj[:job] = job[c[:job][:uuid]]
+      else
+        pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
+      end
       pj[:percent_done] = 0
       pj[:percent_running] = 0
       if pj[:job][:success]
