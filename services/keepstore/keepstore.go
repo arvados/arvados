@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/services/keepstore/trash"
 	"io/ioutil"
 	"log"
 	"net"
@@ -65,8 +66,13 @@ type KeepError struct {
 	ErrMsg   string
 }
 
+// The trashbin is responsible for processing the trash list sent by
+// Data Manager via the PUT /trash request.
+var trashbin *trash.Collector
+
 var (
 	BadRequestError     = &KeepError{400, "Bad Request"}
+	UnauthorizedError   = &KeepError{401, "Unauthorized"}
 	CollisionError      = &KeepError{500, "Collision"}
 	RequestHashError    = &KeepError{422, "Hash mismatch in request"}
 	PermissionError     = &KeepError{403, "Forbidden"}

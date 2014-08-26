@@ -13,6 +13,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"git.curoverse.com/arvados.git/services/keepstore/trash"
 	"github.com/gorilla/mux"
 	"io"
 	"log"
@@ -57,6 +58,12 @@ func MakeRESTRouter() *mux.Router {
 	rest.HandleFunc(
 		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
+
+	// The TrashHandler processes "PUT /trash" commands from Data
+	// Manager.  It parses the JSON list of blocks to be trashed in
+	// the request body, and delivers them to the TrashCollector
+	// goroutine for replication.
+	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
@@ -397,6 +404,58 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
+/* TrashHandler processes "PUT /trash" requests for the data manager.
+   The request body is a JSON message containing a trash list
+   in the following format:
+
+   {
+       "expiration_time":1409082153
+       "trash_blocks":[
+           "e4d909c290d0fb1ca068ffaddf22cbd0",
+           "55ae4d45d2db0793d53f03e805f656e5",
+           "1fd08fc162a5c6413070a8bd0bffc818",
+           ...
+       ]
+   }
+
+   The expiration_time field is a Unix timestamp signifying when this
+   trash list expires. After that time, this list should be discarded.
+
+   If the request has not been sent by the Data Manager, return 401
+   Unauthorized.
+
+   If the JSON unmarshalling fails, return 400 Bad Request.
+*/
+
+func TrashHandler(resp http.ResponseWriter, req *http.Request) {
+	// Reject unauthorized requests.
+	api_token := GetApiToken(req)
+	if !IsDataManagerToken(api_token) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		return
+	}
+
+	// Parse the request body.
+	var tlist trash.List
+	r := json.NewDecoder(req.Body)
+	if err := r.Decode(&tlist); err != nil {
+		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		return
+	}
+
+	// We have a properly formatted trash list sent from the data
+	// manager.  Report success and send the list to the keep
+	// replicator for further handling.
+	resp.WriteHeader(http.StatusOK)
+	resp.Write([]byte(
+		fmt.Sprintf("Received %d trash requests\n", len(tlist.TrashBlocks))))
+
+	if trashbin == nil {
+		trashbin = trash.New()
+	}
+	trashbin.Start(tlist)
+}
+
 // ==============================
 // GetBlock and PutBlock implement lower-level code for handling
 // blocks by rooting through volumes connected to the local machine.
@@ -616,4 +675,10 @@ func CanDelete(api_token string) bool {
 	// return true if is_admin is true and if the token
 	// has unlimited scope
 	return false
+}
+
+// IsDataManagerToken returns true if api_token represents the data
+// manager's token.
+func IsDataManagerToken(api_token string) bool {
+	return data_manager_token != "" && api_token == data_manager_token
 }
