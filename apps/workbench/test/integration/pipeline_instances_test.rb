@@ -41,6 +41,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     find('.arv-project-list a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
     within('.modal-dialog') do
+      find('.dropdown-toggle').click
+      find('a', text: 'Home').click
+      wait_for_ajax
       first('span', text: 'foo_tag').click
       find('.btn', text: 'Add').click
     end
@@ -62,10 +65,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     within('.modal-dialog') do
       assert(has_text?("Foo/bar pair"),
              "pipeline input picker missing name of input")
+      wait_for_ajax
       first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end
-
     wait_for_ajax
 
     # "Run" button is now enabled
@@ -107,7 +110,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
     within('.modal-dialog') do
-      assert page.has_text? 'Two Part Pipeline Template'
       find('.selectable', text: 'Two Part Pipeline Template').click
       find('.btn', text: 'Next: choose inputs').click
     end
@@ -120,10 +122,10 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     within('.modal-dialog') do
       assert_selector 'button.dropdown-toggle', text: 'A Project'
+      wait_for_ajax
       first('span', text: 'foo_tag').click
       find('button', text: 'OK').click
     end
-
     wait_for_ajax
 
     # "Run" button present and enabled

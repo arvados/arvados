@@ -1,10 +1,43 @@
 $(document).
     on('paste keyup input', 'input[type=text].filterable-control', function() {
-        var q = new RegExp($(this).val(), 'i');
-        $($(this).attr('data-filterable-target')).
-            addClass('filterable-container').
-            data('q', q).
-            trigger('refresh');
+        var $target = $($(this).attr('data-filterable-target'));
+        var currentquery = $target.data('filterable-query');
+        if (currentquery === undefined) currentquery = '';
+        if ($target.is('[data-infinite-scroller]')) {
+            // We already know how to load content dynamically, so we
+            // can do all filtering on the server side.
+
+            if ($target.data('infinite-cooloff-timer') > 0) {
+                // Clear a stale refresh-after-delay timer.
+                clearTimeout($target.data('infinite-cooloff-timer'));
+            }
+            // Stash the new query string in the filterable container.
+            $target.data('filterable-query-new', $(this).val());
+            if (currentquery == $(this).val()) {
+                // Don't mess with existing results or queries in
+                // progress.
+                return;
+            }
+            $target.data('infinite-cooloff-timer', setTimeout(function() {
+                // If the user doesn't do any query-changing actions
+                // in the next 1/4 second (like type or erase
+                // characters in the search box), hide the stale
+                // content and ask the server for new results.
+                var newquery = $target.data('filterable-query-new');
+                var params = $target.data('infinite-content-params-filterable') || {};
+                params.filters = [['any', 'ilike', '%' + newquery + '%']];
+                $target.data('infinite-content-params-filterable', params);
+                $target.data('filterable-query', newquery);
+                $target.trigger('refresh-content');
+            }, 250));
+        } else {
+            // Target does not have infinite-scroll capability. Just
+            // filter the rows in the browser using a RegExp.
+            $target.
+                addClass('filterable-container').
+                data('q', new RegExp($(this).val(), 'i')).
+                trigger('refresh');
+        }
     }).on('refresh', '.filterable-container', function() {
         var $container = $(this);
         var q = $(this).data('q');

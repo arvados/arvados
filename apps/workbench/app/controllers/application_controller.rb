@@ -218,10 +218,10 @@ class ApplicationController < ActionController::Base
 
   def choose
     params[:limit] ||= 40
-    find_objects_for_index if !@objects
     respond_to do |f|
       if params[:partial]
         f.json {
+          find_objects_for_index if !@objects
           render json: {
             content: render_to_string(partial: "choose_rows.html",
                                       formats: [:html]),
@@ -230,6 +230,7 @@ class ApplicationController < ActionController::Base
         }
       end
       f.js {
+        find_objects_for_index if !@objects
         render partial: 'choose', locals: {multiple: params[:multiple]}
       }
     end
