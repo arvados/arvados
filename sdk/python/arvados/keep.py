@@ -529,10 +529,10 @@ class KeepClient(object):
     @staticmethod
     def _check_loop_result(result):
         # KeepClient RetryLoops should save results as a 2-tuple: the
-        # actual result of the request, and the number of servers that
-        # received the request.
+        # actual result of the request, and the number of servers available
+        # to receive the request this round.
         # This method returns True if there's a real result, False if
-        # there are no more servers receiving the request, otherwise None.
+        # there are no more servers available, otherwise None.
         if isinstance(result, Exception):
             return None
         result, tried_server_count = result
@@ -615,6 +615,8 @@ class KeepClient(object):
         # No servers fulfilled the request.  Count how many responded
         # "not found;" if the ratio is high enough (currently 75%), report
         # Not Found; otherwise a generic error.
+        # Q: Including 403 is necessary for the Keep tests to continue
+        # passing, but maybe they should expect KeepReadError instead?
         not_founds = sum(1 for ks in roots_map.values()
                          if ks.last_status() in set([403, 404, 410]))
         if roots_map and ((float(not_founds) / len(roots_map)) >= .75):
