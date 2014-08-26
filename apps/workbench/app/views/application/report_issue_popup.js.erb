@@ -1,6 +1,2 @@
 $("#report-issue-modal-window").html("<%= escape_javascript(render partial: 'report_issue_popup') %>");
 $("#report-issue-modal-window .modal").modal('show');
-
-$('#report-issue-modal-window').on('hidden.bs.modal', function () {
- location.reload();
-})

@@ -122,7 +122,7 @@ class ErrorsTest < ActionDispatch::IntegrationTest
       end
 
       # out of the popup now and should be back in the error page
-      assert(page.has_text?('Dashboard'), 'Expected to see dashboard')
+      assert(page.has_text?(/fiddlesticks/i), 'Expected to be in error page after closing report issue popup')
     ensure
       Rails.configuration.arvados_v1_base = original_arvados_v1_base
     end

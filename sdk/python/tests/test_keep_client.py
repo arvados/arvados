@@ -1,12 +1,11 @@
-# usage example:
-#
-# ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
-
+import mock
 import os
 import unittest
 
 import arvados
+import arvados.retry
 import run_test_server
+from arvados_testutil import fake_httplib2_response
 
 class KeepTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
@@ -219,3 +218,108 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
                          'baz2',
                          'wrong content from Keep.get(md5("baz2"))')
         self.assertTrue(keep_client.using_proxy)
+
+
+class KeepClientRetryTestMixin(object):
+    # Testing with a local Keep store won't exercise the retry behavior.
+    # Instead, our strategy is:
+    # * Create a client with one proxy specified (pointed at a black
+    #   hole), so there's no need to instantiate an API client, and
+    #   all HTTP requests come from one place.
+    # * Mock httplib's request method to provide simulated responses.
+    # This lets us test the retry logic extensively without relying on any
+    # supporting servers, and prevents side effects in case something hiccups.
+    # To use this mixin, define DEFAULT_EXPECT, DEFAULT_EXCEPTION, and
+    # run_method().
+    PROXY_ADDR = 'http://[100::]/'
+    TEST_DATA = 'testdata'
+    TEST_LOCATOR = 'ef654c40ab4f1747fc699915d4f70902+8'
+
+    @staticmethod
+    def mock_responses(body, *codes):
+        return mock.patch('httplib2.Http.request', side_effect=(
+                (fake_httplib2_response(code), body) for code in codes))
+
+    def new_client(self):
+        return arvados.KeepClient(proxy=self.PROXY_ADDR, local_store='')
+
+    def run_method(self, *args, **kwargs):
+        raise NotImplementedError("test subclasses must define run_method")
+
+    def check_success(self, expected=None, *args, **kwargs):
+        if expected is None:
+            expected = self.DEFAULT_EXPECT
+        self.assertEqual(expected, self.run_method(*args, **kwargs))
+
+    def check_exception(self, error_class=None, *args, **kwargs):
+        if error_class is None:
+            error_class = self.DEFAULT_EXCEPTION
+        self.assertRaises(error_class, self.run_method, *args, **kwargs)
+
+    def test_immediate_success(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 200):
+            self.check_success()
+
+    def test_retry_then_success(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+            self.check_success(num_retries=3)
+
+    def test_no_default_retry(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+            self.check_exception()
+
+    def test_no_retry_after_permanent_error(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 403, 200):
+            self.check_exception(num_retries=3)
+
+    def test_error_after_retries_exhausted(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 500, 500, 200):
+            self.check_exception(num_retries=1)
+
+
+# Don't delay from HTTPRetryLoop's exponential backoff.
+no_backoff = mock.patch('time.sleep', lambda n: None)
+@no_backoff
+class KeepClientRetryGetTestCase(unittest.TestCase, KeepClientRetryTestMixin):
+    DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_DATA
+    DEFAULT_EXCEPTION = arvados.errors.KeepReadError
+    HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
+
+    def run_method(self, locator=KeepClientRetryTestMixin.TEST_LOCATOR,
+                   *args, **kwargs):
+        return self.new_client().get(locator, *args, **kwargs)
+
+    def test_specific_exception_when_not_found(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 404, 200):
+            self.check_exception(arvados.errors.NotFoundError, num_retries=3)
+
+    def test_general_exception_with_mixed_errors(self):
+        # get should raise a NotFoundError if no server returns the block,
+        # and a high threshold of servers report that it's not found.
+        # This test rigs up 50/50 disagreement between two servers, and
+        # checks that it does not become a NotFoundError.
+        client = self.new_client()
+        with self.mock_responses(self.DEFAULT_EXPECT, 404, 500):
+            with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
+                client.get(self.HINTED_LOCATOR)
+            self.assertNotIsInstance(
+                exc_check.exception, arvados.errors.NotFoundError,
+                "mixed errors raised NotFoundError")
+
+    def test_hint_server_can_succeed_without_retries(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 404, 200, 500):
+            self.check_success(locator=self.HINTED_LOCATOR)
+
+
+@no_backoff
+class KeepClientRetryPutTestCase(unittest.TestCase, KeepClientRetryTestMixin):
+    DEFAULT_EXPECT = KeepClientRetryTestMixin.TEST_LOCATOR
+    DEFAULT_EXCEPTION = arvados.errors.KeepWriteError
+
+    def run_method(self, data=KeepClientRetryTestMixin.TEST_DATA,
+                   copies=1, *args, **kwargs):
+        return self.new_client().put(data, copies, *args, **kwargs)
+
+    def test_do_not_send_multiple_copies_to_same_server(self):
+        with self.mock_responses(self.DEFAULT_EXPECT, 200):
+            self.check_exception(copies=2, num_retries=3)
