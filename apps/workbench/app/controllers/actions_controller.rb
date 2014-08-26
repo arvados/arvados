@@ -1,5 +1,8 @@
 class ActionsController < ApplicationController
 
+  skip_filter :require_thread_api_token, only: [:report_issue_popup, :report_issue]
+  skip_filter :check_user_agreements, only: [:report_issue_popup, :report_issue]
+
   @@exposed_actions = {}
   def self.expose_action method, &block
     @@exposed_actions[method] = true

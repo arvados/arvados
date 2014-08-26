@@ -1,5 +1,5 @@
 <p>
-<br/><strong>If you suspect this is a bug, you can help us fix it by sending us a problem report:</strong></br></br>
+<br/><strong>If you suspect this is a bug, you can help us fix it by sending us a problem report:</strong><br/><br/>
 <% if error_type == 'api' %>
   <%
     api_request_url = api_error.andand.request_url ? api_error.request_url : ''
@@ -16,6 +16,6 @@
   <% end %>
 <% end %>
 <% support_email = Rails.configuration.support_email_address%>
-<br/></br>
+<br/><br/>
   If you prefer, send email to: <a href="mailto:<%=support_email%>?subject=Workbench problem report&amp;body=Problem while viewing page <%=request.url%>"><%=support_email%></a>
 </p>
