@@ -562,19 +562,30 @@ class WhRunPipelineInstance
               # succeeded. (At the top of this loop, I was still
               # waiting for it to finish.)
 
-              output_name = c[:output_name] || cname
+              debuglog "names: #{@instance[:name]} #{@template[:name]}", 0
+              if (not @instance[:name].nil?) and (not @instance[:name].empty?)
+                pipeline_name = @instance[:name]
+              else
+                fetch_template(@instance[:pipeline_template_uuid])
+                pipeline_name = @template[:name]
+              end
+              output_name = c[:output_name] || "Output of #{cname} of #{pipeline_name}"
               # Create a collection located in the same project as the pipeline with the contents of the output.
               portable_data_hash = c[:job][:output]
               collections = $arv.collection.list(limit: 1,
-                                                 filters: [['portable_data_hash', '=', portable_data_hash]]
+                                                 filters: [['portable_data_hash', '=', portable_data_hash]],
+                                                 select: ["portable_data_hash", "manifest_text"]
                                                  )[:items]
               if collections.any?
-                newlink = $arv.collection.create collection: {
+                newcollection = {
                   owner_uuid: owner_uuid,
-                  name: "#{output_name} #{portable_data_hash[0..7]}",
+                  name: "#{output_name} at #{c[:job][:finished_at]}",
                   portable_data_hash: collections.first[:portable_data_hash],
                   manifest_text: collections.first[:manifest_text]
                 }
+                debuglog "Creating collection #{newcollection}", 0
+                newcollection_actual = $arv.collection.create collection: newcollection
+                c[:output_uuid] = newcollection_actual[:uuid]
               else
                 debuglog "Could not find a collection with portable data hash #{portable_data_hash}", 0
               end

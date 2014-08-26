@@ -868,21 +868,10 @@ else {
     }
     my $stripped_manifest_text = join("", @stripped_manifest_lines);
     my $output = $arv->{'collections'}->{'create'}->execute('collection' => {
-      'uuid' => md5_hex($stripped_manifest_text),
       'manifest_text' => $orig_manifest_text,
     });
-    Log(undef, "output " . $output->{uuid});
-    $Job->update_attributes('output' => $output->{uuid}) if $job_has_uuid;
-    if ($Job->{'output_is_persistent'}) {
-      $arv->{'links'}->{'create'}->execute('link' => {
-        'tail_kind' => 'arvados#user',
-        'tail_uuid' => $User->{'uuid'},
-        'head_kind' => 'arvados#collection',
-        'head_uuid' => $Job->{'output'},
-        'link_class' => 'resources',
-        'name' => 'wants',
-      });
-    }
+    Log(undef, "output " . $output->{portable_data_hash});
+    $Job->update_attributes('output' => $output->{portable_data_hash}) if $job_has_uuid;
   };
   if ($@) {
     Log (undef, "Failed to register output manifest: $@");

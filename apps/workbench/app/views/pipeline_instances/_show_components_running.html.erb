@@ -23,6 +23,7 @@
     </thead>
     <tbody>
       <% render_pipeline_jobs.each do |pj| %>
+        <% puts pj %>
         <tr data-object-uuid="<%= pj[:job].andand[:uuid] %>">
           <td>
             <%= pj[:name] %>
@@ -34,7 +35,7 @@
           </td><td>
             <%= pj[:progress_bar] %>
           </td>
-          <% current_job = Job.find(pj[:job][:uuid]) rescue nil %>
+          <% current_job = pj[:job] rescue nil %>
           <td>
             <% if current_job %>
               <%= render partial: 'show_object_button', locals: {object: current_job, size: 'xs', link_text: 'Show job details'} %>
@@ -51,8 +52,10 @@
               <% end %>
             <% end %>
           </td><td>
-            <% if current_job.andand[:output] %>
-              <%= link_to_if_arvados_object current_job[:output], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
+            <% if pj[:output_uuid] %>
+                <%= link_to_if_arvados_object pj[:output_uuid], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
+            <% elsif current_job.andand[:output] %>
+                <%= link_to_if_arvados_object current_job[:output], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
             <% end %>
           </td>
         </tr>
