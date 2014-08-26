@@ -2,10 +2,10 @@
   <% tree.each do |projectnode| %>
     <% rowtype = projectnode[:object].class %>
     <% next if rowtype != Group and !show_root_node %>
-    <div class="<%= 'project' if rowtype == Group %> row">
+    <div class="<%= 'project' if rowtype.in?([Group,User]) %> row">
       <div class="col-md-4" style="padding-left: <%= projectnode[:depth] - (show_root_node ? 0 : 1) %>em;">
         <% if show_root_node and rowtype == String %>
-          <i class="fa fa-fw fa-folder-open-o"></i>
+          <i class="fa fa-fw fa-share-alt"></i>
           <%= projectnode[:object] %>
         <% elsif show_root_node and rowtype == User %>
           <% if projectnode[:object].uuid == current_user.andand.uuid %>
