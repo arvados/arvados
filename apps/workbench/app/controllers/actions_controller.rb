@@ -89,7 +89,16 @@ class ActionsController < ApplicationController
 
   def arv_normalize mt, *opts
     r = ""
-    IO.popen(['arv-normalize'] + opts, 'w+b') do |io|
+    env = Hash[ENV].
+      merge({'ARVADOS_API_HOST' =>
+              arvados_api_client.arvados_v1_base.
+              sub(/\/arvados\/v1/, '').
+              sub(/^https?:\/\//, ''),
+              'ARVADOS_API_TOKEN' => 'x',
+              'ARVADOS_API_HOST_INSECURE' =>
+              Rails.configuration.arvados_insecure_https ? 'true' : 'false'
+            })
+    IO.popen([env, 'arv-normalize'] + opts, 'w+b') do |io|
       io.write mt
       io.close_write
       while buf = io.read(2**16)
@@ -139,39 +148,13 @@ class ActionsController < ApplicationController
     end
 
     normalized = arv_normalize combined
-    normalized_stripped = arv_normalize combined, '--strip'
-
-    require 'digest/md5'
-
-    d = Digest::MD5.new()
-    d << normalized_stripped
-    newuuid = "#{d.hexdigest}+#{normalized_stripped.length}"
-
-    env = Hash[ENV].
-      merge({
-              'ARVADOS_API_HOST' =>
-              arvados_api_client.arvados_v1_base.
-              sub(/\/arvados\/v1/, '').
-              sub(/^https?:\/\//, ''),
-              'ARVADOS_API_TOKEN' => Thread.current[:arvados_api_token],
-              'ARVADOS_API_HOST_INSECURE' =>
-              Rails.configuration.arvados_insecure_https ? 'true' : 'false'
-            })
-
-    IO.popen([env, 'arv-put', '--raw'], 'w+b') do |io|
-      io.write normalized_stripped
-      io.close_write
-      while buf = io.read(2**16)
-      end
-    end
-
-    newc = Collection.new({:uuid => newuuid, :manifest_text => normalized})
+    newc = Collection.new({:manifest_text => normalized})
     newc.save!
 
     chash.each do |k,v|
       l = Link.new({
                      tail_uuid: k,
-                     head_uuid: newuuid,
+                     head_uuid: newc.uuid,
                      link_class: "provenance",
                      name: "provided"
                    })

@@ -118,7 +118,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
       link_class: 'test',
       name: 'stuff',
       head_uuid: users(:active).uuid,
-      tail_uuid: virtual_machines(:testvm).uuid
+      tail_uuid: virtual_machines(:testvm2).uuid
     }
     authorize_with :active
     post :create, link: link
@@ -165,7 +165,7 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
     found = assigns(:objects)
     assert_not_equal 0, found.count
-    assert_equal found.count, (found.select { |f| f.head_uuid.match /[a-f0-9]{32}\+\d+/}).count
+    assert_equal found.count, (found.select { |f| f.head_uuid.match /.....-4zz18-.............../}).count
   end
 
   test "test can still use where tail_kind" do
@@ -270,20 +270,6 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  test "refuse duplicate name" do
-    the_name = links(:job_name_in_aproject).name
-    the_project = links(:job_name_in_aproject).tail_uuid
-    authorize_with :active
-    post :create, link: {
-      tail_uuid: the_project,
-      head_uuid: specimens(:owned_by_active_user).uuid,
-      link_class: 'name',
-      name: the_name,
-      properties: {this_s: "a duplicate name"}
-    }
-    assert_response 422
-  end
-
   test "project owner can show a project permission" do
     uuid = links(:project_viewer_can_read_project).uuid
     authorize_with :active
@@ -312,16 +298,16 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response 404
   end
 
-  test "project owner can index project permissions" do
-    skip "Test tickles known bug"
-    # readable_by only lets users see permission links that relate to them
-    # directly.  It does not allow users to see permission links for groups
-    # they manage.
-    # We'd like to fix this general issue, but we haven't settled on a general
-    # way to do it that doesn't involve making readable_by ridiculously hairy.
-    # This test demonstrates the desired behavior once we're ready to tackle
-    # it.  In the meantime, clients should use /permissions to get this
-    # information.
+  test "retrieve all permissions using generic links index api" do
+    skip "(not implemented)"
+    # Links.readable_by() does not return the full set of permission
+    # links that are visible to a user (i.e., all permission links
+    # whose head_uuid references an object for which the user has
+    # ownership or can_manage permission). Therefore, neither does
+    # /arvados/v1/links.
+    #
+    # It is possible to retrieve the full set of permissions for a
+    # single object via /arvados/v1/permissions.
     authorize_with :active
     get :index, filters: [['link_class', '=', 'permission'],
                           ['head_uuid', '=', groups(:aproject).uuid]]

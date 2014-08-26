@@ -100,15 +100,21 @@ module CurrentApiClient
 
   def act_as_system_user
     if block_given?
-      user_was = Thread.current[:user]
-      Thread.current[:user] = system_user
-      begin
+      act_as_user system_user do
         yield
-      ensure
-        Thread.current[:user] = user_was
       end
     else
       Thread.current[:user] = system_user
+    end
+  end
+
+  def act_as_user user
+    user_was = Thread.current[:user]
+    Thread.current[:user] = user
+    begin
+      yield
+    ensure
+      Thread.current[:user] = user_was
     end
   end
 
@@ -167,12 +173,8 @@ module CurrentApiClient
       act_as_system_user do
         ActiveRecord::Base.transaction do
           $empty_collection = Collection.
-            where(uuid: empty_collection_uuid).
-            first_or_create!(manifest_text: '')
-          Link.where(tail_uuid: anonymous_group.uuid,
-                     head_uuid: empty_collection_uuid,
-                     link_class: 'permission',
-                     name: 'can_read').first_or_create!
+            where(portable_data_hash: empty_collection_uuid).
+            first_or_create!(manifest_text: '', owner_uuid: anonymous_group.uuid)
         end
       end
     end

@@ -9,11 +9,14 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 type Volume interface {
 	Get(loc string) ([]byte, error)
 	Put(loc string, block []byte) error
+	Touch(loc string) error
+	Mtime(loc string) (time.Time, error)
 	Index(prefix string) string
 	Delete(loc string) error
 	Status() *VolumeStatus
@@ -25,13 +28,30 @@ type Volume interface {
 // If the Bad field is true, this volume should return an error
 // on all writes and puts.
 //
+// The Touchable field signifies whether the Touch method will
+// succeed.  Defaults to true.  Note that Bad and Touchable are
+// independent: a MockVolume may be set up so that Put fails but Touch
+// works or vice versa.
+//
+// TODO(twp): rename Bad to something more descriptive, e.g. Writable,
+// and make sure that the tests that rely on it are testing the right
+// thing.  We may need to simulate Writable, Touchable and Corrupt
+// volumes in different ways.
+//
 type MockVolume struct {
-	Store map[string][]byte
-	Bad   bool
+	Store      map[string][]byte
+	Timestamps map[string]time.Time
+	Bad        bool
+	Touchable  bool
 }
 
 func CreateMockVolume() *MockVolume {
-	return &MockVolume{make(map[string][]byte), false}
+	return &MockVolume{
+		Store:      make(map[string][]byte),
+		Timestamps: make(map[string]time.Time),
+		Bad:        false,
+		Touchable:  true,
+	}
 }
 
 func (v *MockVolume) Get(loc string) ([]byte, error) {
@@ -48,7 +68,28 @@ func (v *MockVolume) Put(loc string, block []byte) error {
 		return errors.New("Bad volume")
 	}
 	v.Store[loc] = block
-	return nil
+	return v.Touch(loc)
+}
+
+func (v *MockVolume) Touch(loc string) error {
+	if v.Touchable {
+		v.Timestamps[loc] = time.Now()
+		return nil
+	}
+	return errors.New("Touch failed")
+}
+
+func (v *MockVolume) Mtime(loc string) (time.Time, error) {
+	var mtime time.Time
+	var err error
+	if v.Bad {
+		err = errors.New("Bad volume")
+	} else if t, ok := v.Timestamps[loc]; ok {
+		mtime = t
+	} else {
+		err = os.ErrNotExist
+	}
+	return mtime, err
 }
 
 func (v *MockVolume) Index(prefix string) string {
@@ -64,6 +105,9 @@ func (v *MockVolume) Index(prefix string) string {
 
 func (v *MockVolume) Delete(loc string) error {
 	if _, ok := v.Store[loc]; ok {
+		if time.Since(v.Timestamps[loc]) < permission_ttl {
+			return nil
+		}
 		delete(v.Store, loc)
 		return nil
 	}

@@ -38,6 +38,7 @@ module ArvadosTestSupport
 end
 
 class ActiveSupport::TestCase
+  include FactoryGirl::Syntax::Methods
   fixtures :all
 
   include ArvadosTestSupport
@@ -48,6 +49,12 @@ class ActiveSupport::TestCase
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
+    # Restore configuration settings changed during tests
+    $application_config.each do |k,v|
+      if k.match /^[^.]*$/
+        Rails.configuration.send (k + '='), v
+      end
+    end
   end
 
   def set_user_from_auth(auth_name)
@@ -61,8 +68,15 @@ class ActiveSupport::TestCase
     self.request.headers["Accept"] = "text/json"
   end
 
-  def authorize_with(api_client_auth_name)
-    ArvadosApiToken.new.call ({"rack.input" => "", "HTTP_AUTHORIZATION" => "OAuth2 #{api_client_authorizations(api_client_auth_name).api_token}"})
+  def authorize_with api_client_auth_name
+    authorize_with_token api_client_authorizations(api_client_auth_name).api_token
+  end
+
+  def authorize_with_token token
+    t = token
+    t = t.api_token if t.respond_to? :api_token
+    ArvadosApiToken.new.call("rack.input" => "",
+                             "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
   end
 end
 

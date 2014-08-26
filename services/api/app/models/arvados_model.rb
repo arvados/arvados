@@ -21,8 +21,8 @@ class ArvadosModel < ActiveRecord::Base
   after_update :log_update
   after_destroy :log_destroy
   after_find :convert_serialized_symbols_to_strings
+  before_validation :normalize_collection_uuids
   validate :ensure_serialized_attribute_type
-  validate :normalize_collection_uuids
   validate :ensure_valid_uuids
 
   # Note: This only returns permission links. It does not account for
@@ -90,16 +90,25 @@ class ArvadosModel < ActiveRecord::Base
     api_column_map
   end
 
-  # Return nil if current user is not allowed to see the list of
-  # writers. Otherwise, return a list of user_ and group_uuids with
-  # write permission. (If not returning nil, current_user is always in
-  # the list because can_manage permission is needed to see the list
-  # of writers.)
+  # If current user can manage the object, return an array of uuids of
+  # users and groups that have permission to write the object. The
+  # first two elements are always [self.owner_uuid, current user's
+  # uuid].
+  #
+  # If current user can write but not manage the object, return
+  # [self.owner_uuid, current user's uuid].
+  #
+  # If current user cannot write this object, just return
+  # [self.owner_uuid].
   def writable_by
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
-            current_user.groups_i_can(:manage).index(owner_uuid))
-      return nil
+            (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
+      if current_user.groups_i_can(:write).index(uuid)
+        return [owner_uuid, current_user.uuid]
+      else
+        return [owner_uuid]
+      end
     end
     [owner_uuid, current_user.uuid] + permissions.collect do |p|
       if ['can_write', 'can_manage'].index p.name
@@ -124,67 +133,65 @@ class ArvadosModel < ActiveRecord::Base
     end
 
     # Check if any of the users are admin.  If so, we're done.
-    if users_list.select { |u| u.is_admin }.empty?
+    if users_list.select { |u| u.is_admin }.any?
+      return self
+    end
 
-      # Collect the uuids for each user and any groups readable by each user.
-      user_uuids = users_list.map { |u| u.uuid }
-      uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    # Collect the uuids for each user and any groups readable by each user.
+    user_uuids = users_list.map { |u| u.uuid }
+    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    sql_conds = []
+    sql_params = []
+    sql_table = kwargs.fetch(:table_name, table_name)
+    or_object_uuid = ''
+
+    # This row is owned by a member of users_list, or owned by a group
+    # readable by a member of users_list
+    # or
+    # This row uuid is the uuid of a member of users_list
+    # or
+    # A permission link exists ('write' and 'manage' implicitly include
+    # 'read') from a member of users_list, or a group readable by users_list,
+    # to this row, or to the owner of this row (see join() below).
+    sql_conds += ["#{sql_table}.uuid in (?)"]
+    sql_params += [user_uuids]
+
+    if uuid_list.any?
+      sql_conds += ["#{sql_table}.owner_uuid in (?)"]
+      sql_params += [uuid_list]
+
       sanitized_uuid_list = uuid_list.
         collect { |uuid| sanitize(uuid) }.join(', ')
-      sql_conds = []
-      sql_params = []
-      sql_table = kwargs.fetch(:table_name, table_name)
-      or_object_uuid = ''
-
-      # This row is owned by a member of users_list, or owned by a group
-      # readable by a member of users_list
-      # or
-      # This row uuid is the uuid of a member of users_list
-      # or
-      # A permission link exists ('write' and 'manage' implicitly include
-      # 'read') from a member of users_list, or a group readable by users_list,
-      # to this row, or to the owner of this row (see join() below).
       permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
-
-      sql_conds += ["#{sql_table}.owner_uuid in (?)",
-                    "#{sql_table}.uuid in (?)",
-                    "#{sql_table}.uuid IN #{permitted_uuids}"]
-      sql_params += [uuid_list, user_uuids]
-
-      if sql_table == "links" and users_list.any?
-        # This row is a 'permission' or 'resources' link class
-        # The uuid for a member of users_list is referenced in either the head
-        # or tail of the link
-        sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
-        sql_params += [user_uuids, user_uuids]
-      end
-
-      if sql_table == "logs" and users_list.any?
-        # Link head points to the object described by this row
-        sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
-
-        # This object described by this row is owned by this user, or owned by a group readable by this user
-        sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
-        sql_params += [uuid_list]
-      end
-
-      if sql_table == "collections" and users_list.any?
-        # There is a 'name' link going from a readable group to the collection.
-        name_links = "(SELECT head_uuid FROM links WHERE link_class='name' AND tail_uuid IN (#{sanitized_uuid_list}))"
-        sql_conds += ["#{sql_table}.uuid IN #{name_links}"]
-      end
-
-      # Link head points to this row, or to the owner of this row (the thing to be read)
-      #
-      # Link tail originates from this user, or a group that is readable by this
-      # user (the identity with authorization to read)
-      #
-      # Link class is 'permission' ('write' and 'manage' implicitly include 'read')
-      where(sql_conds.join(' OR '), *sql_params)
-    else
-      # At least one user is admin, so don't bother to apply any restrictions.
-      self
+      sql_conds += ["#{sql_table}.uuid IN #{permitted_uuids}"]
     end
+
+    if sql_table == "links" and users_list.any?
+      # This row is a 'permission' or 'resources' link class
+      # The uuid for a member of users_list is referenced in either the head
+      # or tail of the link
+      sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
+      sql_params += [user_uuids, user_uuids]
+    end
+
+    if sql_table == "logs" and users_list.any?
+      # Link head points to the object described by this row
+      sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
+
+      # This object described by this row is owned by this user, or owned by a group readable by this user
+      sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
+      sql_params += [uuid_list]
+    end
+
+    # Link head points to this row, or to the owner of this row (the
+    # thing to be read)
+    #
+    # Link tail originates from this user, or a group that is readable
+    # by this user (the identity with authorization to read)
+    #
+    # Link class is 'permission' ('write' and 'manage' implicitly
+    # include 'read')
+    where(sql_conds.join(' OR '), *sql_params)
   end
 
   def logged_attributes
@@ -204,7 +211,7 @@ class ArvadosModel < ActiveRecord::Base
     if new_record? or owner_uuid_changed?
       uuid_in_path = {owner_uuid => true, uuid => true}
       x = owner_uuid
-      while (owner_class = self.class.resource_class_for_uuid(x)) != User
+      while (owner_class = ArvadosModel::resource_class_for_uuid(x)) != User
         begin
           if x == uuid
             # Test for cycles with the new version, not the DB contents
@@ -234,12 +241,29 @@ class ArvadosModel < ActiveRecord::Base
 
   def ensure_owner_uuid_is_permitted
     raise PermissionDeniedError if !current_user
+
     if new_record? and respond_to? :owner_uuid=
       self.owner_uuid ||= current_user.uuid
     end
-    # Verify permission to write to old owner (unless owner_uuid was
-    # nil -- or hasn't changed, in which case the following
-    # "permission to write to new owner" block will take care of us)
+
+    if self.owner_uuid.nil?
+      errors.add :owner_uuid, "cannot be nil"
+      raise PermissionDeniedError
+    end
+
+    rsc_class = ArvadosModel::resource_class_for_uuid owner_uuid
+    unless rsc_class == User or rsc_class == Group
+      errors.add :owner_uuid, "must be set to User or Group"
+      raise PermissionDeniedError
+    end
+
+    # Verify "write" permission on old owner
+    # default fail unless one of:
+    # owner_uuid did not change
+    # previous owner_uuid is nil
+    # current user is the old owner
+    # current user is this object
+    # current user can_write old owner
     unless !owner_uuid_changed? or
         owner_uuid_was.nil? or
         current_user.uuid == self.owner_uuid_was or
@@ -249,12 +273,18 @@ class ArvadosModel < ActiveRecord::Base
       errors.add :owner_uuid, "cannot be changed without write permission on old owner"
       raise PermissionDeniedError
     end
-    # Verify permission to write to new owner
+
+    # Verify "write" permission on new owner
+    # default fail unless one of:
+    # current_user is this object
+    # current user can_write new owner
     unless current_user == self or current_user.can? write: owner_uuid
       logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
       errors.add :owner_uuid, "cannot be changed without write permission on new owner"
       raise PermissionDeniedError
     end
+
+    true
   end
 
   def ensure_permission_to_save
@@ -398,8 +428,6 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
-  @@UUID_REGEX = /^[0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15}$/
-
   @@prefixes_hash = nil
   def self.uuid_prefixes
     unless @@prefixes_hash
@@ -418,7 +446,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def ensure_valid_uuids
-    specials = [system_user_uuid, 'd41d8cd98f00b204e9800998ecf8427e+0']
+    specials = [system_user_uuid]
 
     foreign_key_attributes.each do |attr|
       if new_record? or send (attr + "_changed?")
@@ -464,13 +492,10 @@ class ArvadosModel < ActiveRecord::Base
     unless uuid.is_a? String
       return nil
     end
-    if uuid.match /^[0-9a-f]{32}(\+[^,]+)*(,[0-9a-f]{32}(\+[^,]+)*)*$/
-      return Collection
-    end
     resource_class = nil
 
     Rails.application.eager_load!
-    uuid.match @@UUID_REGEX do |re|
+    uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
 

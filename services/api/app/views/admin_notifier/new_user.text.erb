@@ -1,5 +1,10 @@
-
-A new user has been created:
+<%
+  add_to_message = ''
+  if Rails.configuration.auto_setup_new_users
+    add_to_message = @user.is_invited ? ' and setup' : ', but not setup'
+  end
+%>
+A new user has been created<%=add_to_message%>:
 
   <%= @user.full_name %> <<%= @user.email %>>
 

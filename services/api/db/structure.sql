@@ -3,7 +3,6 @@
 --
 
 SET statement_timeout = 0;
-SET lock_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
@@ -154,7 +153,6 @@ ALTER SEQUENCE authorized_keys_id_seq OWNED BY authorized_keys.id;
 
 CREATE TABLE collections (
     id integer NOT NULL,
-    locator character varying(255),
     owner_uuid character varying(255),
     created_at timestamp without time zone NOT NULL,
     modified_by_client_uuid character varying(255),
@@ -167,7 +165,11 @@ CREATE TABLE collections (
     redundancy_confirmed_as integer,
     updated_at timestamp without time zone NOT NULL,
     uuid character varying(255),
-    manifest_text text
+    manifest_text text,
+    name character varying(255),
+    description character varying(255),
+    properties text,
+    expires_at date
 );
 
 
@@ -269,7 +271,7 @@ CREATE TABLE groups (
     modified_by_client_uuid character varying(255),
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
-    name character varying(255),
+    name character varying(255) NOT NULL,
     description text,
     updated_at timestamp without time zone NOT NULL,
     group_class character varying(255)
@@ -427,7 +429,9 @@ CREATE TABLE jobs (
     repository character varying(255),
     output_is_persistent boolean DEFAULT false NOT NULL,
     supplied_script_version character varying(255),
-    docker_image_locator character varying(255)
+    docker_image_locator character varying(255),
+    name character varying(255),
+    description text
 );
 
 
@@ -676,7 +680,8 @@ CREATE TABLE pipeline_instances (
     updated_at timestamp without time zone NOT NULL,
     properties text,
     state character varying(255),
-    components_summary text
+    components_summary text,
+    description text
 );
 
 
@@ -1268,6 +1273,20 @@ ALTER TABLE ONLY virtual_machines
 
 
 --
+-- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name);
+
+
+--
+-- Name: groups_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX groups_owner_uuid_name_unique ON groups USING btree (owner_uuid, name);
+
+
+--
 -- Name: index_api_client_authorizations_on_api_client_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1779,10 +1798,31 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btr
 
 
 --
+-- Name: jobs_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX jobs_owner_uuid_name_unique ON jobs USING btree (owner_uuid, name);
+
+
+--
 -- Name: links_tail_name_unique_if_link_class_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btree (tail_uuid, name) WHERE ((link_class)::text = 'name'::text);
+
+
+--
+-- Name: pipeline_instance_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX pipeline_instance_owner_uuid_name_unique ON pipeline_instances USING btree (owner_uuid, name);
+
+
+--
+-- Name: pipeline_template_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX pipeline_template_owner_uuid_name_unique ON pipeline_templates USING btree (owner_uuid, name);
 
 
 --
@@ -1977,3 +2017,11 @@ INSERT INTO schema_migrations (version) VALUES ('20140627210837');
 INSERT INTO schema_migrations (version) VALUES ('20140709172343');
 
 INSERT INTO schema_migrations (version) VALUES ('20140714184006');
+
+INSERT INTO schema_migrations (version) VALUES ('20140811184643');
+
+INSERT INTO schema_migrations (version) VALUES ('20140815171049');
+
+INSERT INTO schema_migrations (version) VALUES ('20140817035914');
+
+INSERT INTO schema_migrations (version) VALUES ('20140818125735');

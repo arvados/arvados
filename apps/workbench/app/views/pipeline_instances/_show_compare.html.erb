@@ -1,19 +1,6 @@
-<% content_for :css do %>
-.notnormal {
-  background: #ffffaa;
-}
-.headrow div {
-  padding-top: .5em;
-  padding-bottom: .5em;
-}
-.headrow:first-child {
-  border-bottom: 1px solid black;
-}
-<% end %>
-
 <% pi_span = [(10.0/[@objects.count,1].max).floor,1].max %>
 
-<div class="headrow">
+<div class="headrow pipeline-compare-headrow">
   <div class="row">
   <div class="col-sm-2">
     <%# label %>
@@ -30,7 +17,7 @@
 </div>
 
 <% @rows.each do |row| %>
-<div class="row">
+<div class="row pipeline-compare-row">
   <div class="col-sm-2">
     <%= row[:name] %>
   </div>

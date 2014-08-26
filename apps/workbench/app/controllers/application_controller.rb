@@ -17,7 +17,7 @@ class ApplicationController < ActionController::Base
   before_filter :check_user_profile, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
-  before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
+  before_filter :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
   begin

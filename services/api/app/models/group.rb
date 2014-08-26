@@ -7,6 +7,7 @@ class Group < ArvadosModel
   include CanBeAnOwner
   after_create :invalidate_permissions_cache
   after_update :maybe_invalidate_permissions_cache
+  before_create :assign_name
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -28,4 +29,12 @@ class Group < ArvadosModel
     # immediately after being created.
     User.invalidate_permissions_cache
   end
+
+  def assign_name
+    if self.new_record? and (self.name.nil? or self.name.empty?)
+      self.name = self.uuid
+    end
+    true
+  end
+
 end
