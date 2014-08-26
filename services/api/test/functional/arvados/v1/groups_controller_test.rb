@@ -31,11 +31,11 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
   test "get list of groups that are not projects" do
     authorize_with :active
-    get :index, filters: [['group_class', '=', nil]], format: :json
+    get :index, filters: [['group_class', '!=', 'project']], format: :json
     assert_response :success
     group_uuids = []
     json_response['items'].each do |group|
-      assert_equal nil, group['group_class']
+      assert_not_equal 'project', group['group_class']
       group_uuids << group['uuid']
     end
     assert_not_includes group_uuids, groups(:aproject).uuid
@@ -311,8 +311,9 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       format: :json
     }
     assert_response :success
-    assert_nil(json_response['writable_by'],
-               "Should not receive uuid list in 'writable_by' field")
+    assert_equal([json_response['owner_uuid']],
+                 json_response['writable_by'],
+                 "Should only see owner_uuid in 'writable_by' field")
   end
 
   test 'get writable_by list by admin user' do

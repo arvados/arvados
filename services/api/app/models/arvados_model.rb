@@ -90,16 +90,25 @@ class ArvadosModel < ActiveRecord::Base
     api_column_map
   end
 
-  # Return nil if current user is not allowed to see the list of
-  # writers. Otherwise, return a list of user_ and group_uuids with
-  # write permission. (If not returning nil, current_user is always in
-  # the list because can_manage permission is needed to see the list
-  # of writers.)
+  # If current user can manage the object, return an array of uuids of
+  # users and groups that have permission to write the object. The
+  # first two elements are always [self.owner_uuid, current user's
+  # uuid].
+  #
+  # If current user can write but not manage the object, return
+  # [self.owner_uuid, current user's uuid].
+  #
+  # If current user cannot write this object, just return
+  # [self.owner_uuid].
   def writable_by
     unless (owner_uuid == current_user.uuid or
             current_user.is_admin or
-            current_user.groups_i_can(:manage).index(owner_uuid))
-      return nil
+            (current_user.groups_i_can(:manage) & [uuid, owner_uuid]).any?)
+      if current_user.groups_i_can(:write).index(uuid)
+        return [owner_uuid, current_user.uuid]
+      else
+        return [owner_uuid]
+      end
     end
     [owner_uuid, current_user.uuid] + permissions.collect do |p|
       if ['can_write', 'can_manage'].index p.name

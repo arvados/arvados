@@ -649,7 +649,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     my $build_script_to_send = "";
     my $command =
 	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
-        ."mkdir -p $ENV{JOB_WORK} $ENV{CRUNCH_TMP} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT}"
+        ."mkdir -p $ENV{CRUNCH_TMP} $ENV{JOB_WORK} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
 	."&& cd $ENV{CRUNCH_TMP} ";
     if ($build_script)
     {
@@ -674,10 +674,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       while (my ($env_key, $env_val) = each %ENV)
       {
         if ($env_key =~ /^(ARVADOS|JOB|TASK)_/) {
-          if ($env_key eq "TASK_WORK") {
-            $command .= "--env=\QTASK_WORK=/tmp/crunch-job\E ";
-          }
-          elsif ($env_key eq "TASK_KEEPMOUNT") {
+          if ($env_key eq "TASK_KEEPMOUNT") {
             $command .= "--env=\QTASK_KEEPMOUNT=/keep\E ";
           }
           else {
@@ -1500,10 +1497,17 @@ __DATA__
 # checkout-and-build
 
 use Fcntl ':flock';
+use File::Path qw( make_path );
 
 my $destdir = $ENV{"CRUNCH_SRC"};
 my $commit = $ENV{"CRUNCH_SRC_COMMIT"};
 my $repo = $ENV{"CRUNCH_SRC_URL"};
+my $task_work = $ENV{"TASK_WORK"};
+
+if ($task_work) {
+    make_path $task_work;
+    -e $task_work or die "Failed to create temporary working directory ($task_work): $!";
+}
 
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;

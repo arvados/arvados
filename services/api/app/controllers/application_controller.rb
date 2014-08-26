@@ -140,15 +140,17 @@ class ApplicationController < ActionController::Base
     apply_where_limit_order_params
   end
 
-  def apply_filters
-    ft = record_filters @filters, @objects.table_name
+  def apply_filters model_class=nil
+    model_class ||= self.model_class
+    ft = record_filters @filters, model_class
     if ft[:cond_out].any?
-      @objects = @objects.where(ft[:cond_out].join(' AND '), *ft[:param_out])
+      @objects = @objects.where('(' + ft[:cond_out].join(') AND (') + ')',
+                                *ft[:param_out])
     end
   end
 
-  def apply_where_limit_order_params
-    apply_filters
+  def apply_where_limit_order_params *args
+    apply_filters *args
 
     ar_table_name = @objects.table_name
     if @where.is_a? Hash and @where.any?

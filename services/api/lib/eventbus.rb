@@ -72,14 +72,14 @@ class EventBus
           cond_out = []
           param_out = []
           ws.filters.each do |filter|
-            ft = record_filters filter.filters, Log.table_name
+            ft = record_filters filter.filters, Log
             cond_out += ft[:cond_out]
             param_out += ft[:param_out]
           end
 
           # Add filters to query
           if cond_out.any?
-            logs = logs.where(cond_out.join(' OR '), *param_out)
+            logs = logs.where('(' + cond_out.join(') OR (') + ')', *param_out)
           end
 
           # Finally execute query and actually send the matching log rows
