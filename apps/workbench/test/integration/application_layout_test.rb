@@ -75,38 +75,22 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
   def verify_system_menu user
-    if user && user['is_active']
-      look_for_add_new = nil
+    if user && user['is_admin']
+      assert page.has_link?('system-menu'), 'No link - system menu'
       within('.navbar-fixed-top') do
         page.find("#system-menu").click
-        if user['is_admin']
-          within('.dropdown-menu') do
-            assert page.has_text?('Groups'), 'No text - Groups'
-            assert page.has_link?('Repositories'), 'No link - Repositories'
-            assert page.has_link?('Virtual machines'), 'No link - Virtual machines'
-            assert page.has_link?('SSH keys'), 'No link - SSH keys'
-            assert page.has_link?('API tokens'), 'No link - API tokens'
-            find('a', text: 'Users').click
-            look_for_add_new = 'Add a new user'
-          end
-        else
-          within('.dropdown-menu') do
-            assert page.has_no_text?('Users'), 'Found text - Users'
-            assert page.has_no_link?('Repositories'), 'Found link - Repositories'
-            assert page.has_no_link?('Virtual machines'), 'Found link - Virtual machines'
-            assert page.has_no_link?('SSH keys'), 'Found link - SSH keys'
-            assert page.has_no_link?('API tokens'), 'Found link - API tokens'
-
-            find('a', text: 'Groups').click
-            look_for_add_new = 'Add a new group'
-          end
+        within('.dropdown-menu') do
+          assert page.has_text?('Groups'), 'No text - Groups'
+          assert page.has_link?('Repositories'), 'No link - Repositories'
+          assert page.has_link?('Virtual machines'), 'No link - Virtual machines'
+          assert page.has_link?('SSH keys'), 'No link - SSH keys'
+          assert page.has_link?('API tokens'), 'No link - API tokens'
+          find('a', text: 'Users').click
         end
       end
-      if look_for_add_new
-        assert page.has_text? look_for_add_new
-      end
+      assert page.has_text? 'Add a new user'
     else
-      assert page.has_no_link?('#system-menu'), 'Found link - system menu'
+      assert page.has_no_link?('system-menu'), 'Found link - system menu'
     end
   end
 
@@ -139,15 +123,14 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       check_help_menu
     end
-  end
-
-  [
-    ['active', api_fixture('users')['active']],
-    ['admin', api_fixture('users')['admin']],
-  ].each do |token, user|
 
     test "test system menu for user #{token}" do
-      visit page_with_token(token)
+      if !token
+        visit ('/')
+      else
+        visit page_with_token(token)
+      end
+
       verify_system_menu user
     end
   end
