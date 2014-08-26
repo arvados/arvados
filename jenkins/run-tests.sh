@@ -13,10 +13,31 @@
 # the usual sequence. (Many test suites depend on other components
 # being installed.)
 #
-# Useful environment variables include $workbench_test, $apiserver_test and
-# $cli_test.  To run a specific test, use a command line such as:
+# To run a specific Ruby test, set $workbench_test, $apiserver_test or
+# $cli_test on the command line:
 #
-# $ ./run-tests.sh --only workbench workbench_test=TEST=test/integration/pipeline_instances_test.rb
+# $ run-tests.sh --only workbench workbench_test=TEST=test/integration/pipeline_instances_test.rb
+#
+#
+# To run a specific Python test set $python_sdk_test or $fuse_test.
+#
+# $ run-tests.sh --only python_sdk python_sdk_test="--test-suite tests.test_keep_locator"
+#
+#
+# You can also pass "export ARVADOS_DEBUG=1" to enable additional debugging output:
+#
+# $ run-tests.sh "export ARVADOS_DEBUG=1"
+#
+#
+# Finally, you can skip the installation steps on subsequent runs this way:
+#
+## First run
+# $ run-tests.sh --leave-temp
+#
+## Subsequent runs: record the values of VENVDIR and GOPATH from the first run, and
+# provide them on the command line in subsequent runs:
+#
+# $ run-tests.sh --skip-install VENVDIR="/tmp/tmp.y3tsTmigio" GOPATH="/tmp/tmp.3r4sSA9F3l"
 
 
 # First make sure to remove any ARVADOS_ variables from the calling environment
@@ -30,8 +51,15 @@ VENVDIR=$(mktemp -d)
 cli_test=
 workbench_test=
 apiserver_test=
+python_sdk_test=
+fuse_test=
+leave_temp=
+skip_install=
 
-source /etc/profile.d/rvm.sh
+if [[ -f /etc/profile.d/rvm.sh ]]
+then
+    source /etc/profile.d/rvm.sh
+fi
 
 fatal() {
     clear_temp
@@ -75,7 +103,7 @@ do
             leave_temp=1
             ;;
         *=*)
-            eval $arg
+            eval $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2)\"
             ;;
         *)
             echo >&2 "$0: Unrecognized option: '$arg'"
@@ -143,15 +171,16 @@ title () {
 }
 
 clear_temp() {
-    for t in "$VENVDIR" "$GOPATH"
-    do
-        if [[ -n "$t" && -z "$leave-temp" ]]
-        then
+    if [[ -n "$t" && -z "$leave_temp" ]]
+    then
+        for t in "$VENVDIR" "$GOPATH"
+        do
             rm -rf "$t"
-        else
-            echo "Leaving $t"
-        fi
-    done
+        done
+    else
+        echo "Leaving VENVDIR=\"$VENVDIR\""
+        echo "Leaving GOPATH=\"$GOPATH\""
+    fi
 }
 
 test_docs() {
@@ -264,7 +293,7 @@ test_python_sdk() {
     # the .egg files that setup.py downloads.
 
     cd "$WORKSPACE/sdk/python" \
-        && python setup.py test
+        && python setup.py test $python_sdk_test
     r=$?
     easy_install *.egg
     return $r
@@ -274,7 +303,7 @@ do_test python_sdk
 test_fuse() {
     # Install test dependencies here too, in case run_test_server needs them.
     cd "$WORKSPACE/services/fuse" \
-        && python setup.py test
+        && python setup.py test $fuse_test
     r=$?
     easy_install *.egg
     return $r
