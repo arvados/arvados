@@ -35,9 +35,16 @@ class Locator
   # Locator.parse! returns a Locator object parsed from the string tok,
   # raising an ArgumentError if tok cannot be parsed.
   def self.parse!(tok)
+    if tok.nil? or tok.empty?
+      raise ArgumentError.new "locator is nil or empty"
+    end
+
     m = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?(\+([[:upper:]][[:alnum:]+@_-]*))?$/.match(tok.strip)
     unless m
-      raise ArgumentError.new "could not parse #{tok}"
+      raise ArgumentError.new "not a valid locator #{tok}"
+    end
+    unless m[2]
+      Rails.logger.debug ArgumentError.new "missing size hint on #{tok}"
     end
 
     tokhash, _, toksize, _, trailer = m[1..5]
@@ -88,6 +95,10 @@ class Locator
   end
 
   def to_s
-    [ @hash, @size, *@hints ].join('+')
+    if @size
+      [ @hash, @size, *@hints ].join('+')
+    else
+      [ @hash, *@hints ].join('+')
+    end
   end
 end

@@ -75,10 +75,10 @@ $(document).on('click', '.selectable', function() {
     var project_uuid = $(this).attr('data-project-uuid');
     $(this).attr('href', '#');  // Skip normal click handler
     if (project_uuid) {
-        params = {'filters[]': JSON.stringify(['owner_uuid',
-                                               '=',
-                                               project_uuid]),
-                  project_uuid: project_uuid
+        params = {'filters': [['owner_uuid',
+                               '=',
+                               project_uuid]],
+                  'project_uuid': project_uuid
                  };
     }
     // Use current selection as dropdown button label
@@ -88,7 +88,7 @@ $(document).on('click', '.selectable', function() {
         html($(this).text() + ' <span class="caret"></span>');
     // Set (or unset) filter params and refresh filterable rows
     $($(this).closest('[data-filterable-target]').attr('data-filterable-target')).
-        data('infinite-content-params', params).
+        data('infinite-content-params-from-project-dropdown', params).
         trigger('refresh-content');
 }).on('ready', function() {
     $('form[data-search-modal] a').on('click', function() {

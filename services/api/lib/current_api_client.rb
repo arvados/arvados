@@ -173,12 +173,8 @@ module CurrentApiClient
       act_as_system_user do
         ActiveRecord::Base.transaction do
           $empty_collection = Collection.
-            where(uuid: empty_collection_uuid).
-            first_or_create!(manifest_text: '')
-          Link.where(tail_uuid: anonymous_group.uuid,
-                     head_uuid: empty_collection_uuid,
-                     link_class: 'permission',
-                     name: 'can_read').first_or_create!
+            where(portable_data_hash: empty_collection_uuid).
+            first_or_create!(manifest_text: '', owner_uuid: anonymous_group.uuid)
         end
       end
     end

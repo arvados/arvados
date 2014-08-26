@@ -31,18 +31,12 @@ activeandfriends:
   updated_at: 2014-08-22 14:02:18.481166435 Z
   group_class: role
 
-system_owned_group:
-  uuid: zzzzz-j7d0g-8ulrifv67tve5sx
-  owner_uuid: zzzzz-tpzed-000000000000000
-  name: System Private
-  description: System-owned Group
-  group_class: role
-
 system_group:
   uuid: zzzzz-j7d0g-000000000000000
   owner_uuid: zzzzz-tpzed-000000000000000
   name: System Private
   description: System-owned Group
+  group_class: role
 
 empty_lonely_group:
   uuid: zzzzz-j7d0g-jtp06ulmvsezgyu
@@ -129,3 +123,8 @@ anonymously_accessible_project:
   name: Unrestricted public data
   group_class: project
   description: An anonymously accessible project
+
+active_user_has_can_manage:
+  uuid: zzzzz-j7d0g-ptt1ou6a9lxrv07
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  name: Active user has can_manage

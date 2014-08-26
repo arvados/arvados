@@ -11,9 +11,9 @@ class ApplicationController < ActionController::Base
   around_filter :set_thread_api_token
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
-  around_filter :require_thread_api_token, except: [:report_issue_popup, :report_issue] + ERROR_ACTIONS
+  around_filter :require_thread_api_token, except: ERROR_ACTIONS
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
-  before_filter :check_user_agreements, except: [:report_issue_popup, :report_issue] + ERROR_ACTIONS
+  before_filter :check_user_agreements, except: ERROR_ACTIONS
   before_filter :check_user_profile, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
@@ -218,10 +218,10 @@ class ApplicationController < ActionController::Base
 
   def choose
     params[:limit] ||= 40
-    find_objects_for_index if !@objects
     respond_to do |f|
       if params[:partial]
         f.json {
+          find_objects_for_index if !@objects
           render json: {
             content: render_to_string(partial: "choose_rows.html",
                                       formats: [:html]),
@@ -230,6 +230,7 @@ class ApplicationController < ActionController::Base
         }
       end
       f.js {
+        find_objects_for_index if !@objects
         render partial: 'choose', locals: {multiple: params[:multiple]}
       }
     end
