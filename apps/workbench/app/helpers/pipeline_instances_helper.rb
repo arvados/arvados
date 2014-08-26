@@ -28,7 +28,9 @@ module PipelineInstancesHelper
     ret = []
     i = -1
 
-    jobuuids = object.components.select { |cname, c| c[:job] and c[:job][:uuid] }
+    jobuuids = object.components.values.map { |c|
+      c[:job][:uuid] if c.is_a?(Hash) and c[:job].is_a?(Hash)
+    }.compact
     job = {}
     Job.where(uuid: jobuuids).each do |j|
       job[j[:uuid]] = j
@@ -41,7 +43,7 @@ module PipelineInstancesHelper
         ret << pj
         next
       end
-      if c[:job] and c[:job][:uuid]
+      if c[:job] and c[:job][:uuid] and job[c[:job][:uuid]]
         pj[:job] = job[c[:job][:uuid]]
       else
         pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
