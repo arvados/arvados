@@ -90,12 +90,13 @@ class ArvadosModel < ActiveRecord::Base
     api_column_map
   end
 
-  # Return an array of uuids of users and groups that have permission
-  # to write this object. The first two elements are always
-  # [self.owner_uuid, current user's uuid].
+  # If current user can manage the object, return an array of uuids of
+  # users and groups that have permission to write the object. The
+  # first two elements are always [self.owner_uuid, current user's
+  # uuid].
   #
-  # If the the current user can write but not manage the object,
-  # return [self.owner_uuid, current user's uuid].
+  # If current user can write but not manage the object, return
+  # [self.owner_uuid, current user's uuid].
   #
   # If current user cannot write this object, just return
   # [self.owner_uuid].
