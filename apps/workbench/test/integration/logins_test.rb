@@ -1,6 +1,12 @@
 require 'integration_helper'
 
 class LoginsTest < ActionDispatch::IntegrationTest
+  setup do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+  end
+
   test "login with api_token works after redirect" do
     visit page_with_token('active_trustedclient')
     assert page.has_text?('Recent jobs'), "Missing 'Recent jobs' from page"
