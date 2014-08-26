@@ -147,5 +147,52 @@ class RetryLoopBackoffTestCase(unittest.TestCase, RetryLoopTestMixin):
         self.check_backoff(sleep_mock, 5, 9)
 
 
+class CheckHTTPResponseSuccessTestCase(unittest.TestCase):
+    def results_map(self, *codes):
+        for code in codes:
+            response = (fake_httplib2_response(code), None)
+            yield code, arv_retry.check_http_response_success(response)
+
+    def check(assert_name):
+        def check_method(self, expected, *codes):
+            assert_func = getattr(self, assert_name)
+            for code, actual in self.results_map(*codes):
+                assert_func(expected, actual,
+                            "{} status flagged {}".format(code, actual))
+                if assert_name != 'assertIs':
+                    self.assertTrue(
+                        actual is True or actual is False or actual is None,
+                        "{} status returned {}".format(code, actual))
+        return check_method
+
+    check_is = check('assertIs')
+    check_is_not = check('assertIsNot')
+
+    def test_obvious_successes(self):
+        self.check_is(True, *range(200, 207))
+
+    def test_obvious_stops(self):
+        self.check_is(False, 424, 426, 428, 431,
+                      *range(400, 408) + range(410, 420))
+
+    def test_obvious_retries(self):
+        self.check_is(None, 500, 502, 503, 504)
+
+    def test_4xx_retries(self):
+        self.check_is(None, 408, 409, 422, 423)
+
+    def test_5xx_failures(self):
+        self.check_is(False, 501, *range(505, 512))
+
+    def test_1xx_not_retried(self):
+        self.check_is_not(None, 100, 101)
+
+    def test_redirects_not_retried(self):
+        self.check_is_not(None, *range(300, 309))
+
+    def test_wacky_code_retries(self):
+        self.check_is(None, 0, 99, 600, -200)
+
+
 if __name__ == '__main__':
     unittest.main()

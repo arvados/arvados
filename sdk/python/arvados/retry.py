@@ -6,6 +6,9 @@ from collections import deque
 
 import arvados.errors
 
+_HTTP_SUCCESSES = set(xrange(200, 300))
+_HTTP_CAN_RETRY = set([408, 409, 422, 423, 500, 502, 503, 504])
+
 class RetryLoop(object):
     """Coordinate limited retries of code.
 
@@ -102,3 +105,36 @@ class RetryLoop(object):
         except IndexError:
             raise arvados.errors.AssertionError(
                 "queried loop results before any were recorded")
+
+
+def check_http_response_success(result):
+    """Convert an httplib2 request result to a loop control flag.
+
+    Pass this method the 2-tuple returned by httplib2.Http.request.  It
+    returns True if the response indicates success, None if it indicates
+    temporary failure, and False otherwise.  You can use this as the
+    success_check for a RetryLoop.
+
+    Implementation details:
+    * Any 2xx result returns True.
+    * A select few status codes, or any malformed responses, return None.
+      422 Unprocessable Entity is in this category.  This may not meet the
+      letter of the HTTP specification, but the Arvados API server will
+      use it for various server-side problems like database connection
+      errors.
+    * Everything else returns False.  Note that this includes 1xx and
+      3xx status codes.  They don't indicate success, and you can't
+      retry those requests verbatim.
+    """
+    try:
+        status = int(result[0].status)
+    except Exception:
+        return None
+    if status in _HTTP_SUCCESSES:
+        return True
+    elif status in _HTTP_CAN_RETRY:
+        return None
+    elif 100 <= status < 600:
+        return False
+    else:
+        return None  # Get well soon, server.
