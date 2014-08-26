@@ -30,10 +30,7 @@ def run_command(execargs, **kwargs):
     kwargs.setdefault('close_fds', True)
     kwargs.setdefault('shell', False)
     p = subprocess.Popen(execargs, **kwargs)
-    if kwargs['stdout'] == subprocess.PIPE:
-        stdoutdata, stderrdata = p.communicate(None)
-    else:
-        p.wait()
+    stdoutdata, stderrdata = p.communicate(None)
     if p.returncode != 0:
         raise errors.CommandFailedError(
             "run_command %s exit %d:\n%s" %

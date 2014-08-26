@@ -46,7 +46,11 @@ class PipelineInstance < ArvadosBase
   def component_input_title(component_name, input_name)
     component = components[component_name]
     return nil if component.nil?
-    component[:script_parameters].andand[input_name.to_sym].andand[:title] ||
+    param_info = component[:script_parameters].andand[input_name.to_sym]
+    if param_info.is_a?(Hash) and param_info[:title]
+      param_info[:title]
+    else
       "\"#{input_name.to_s}\" parameter for #{component[:script]} script in #{component_name} component"
+    end
   end
 end
