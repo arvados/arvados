@@ -487,6 +487,8 @@ else
     croak ("could not figure out commit id for $treeish");
   }
 
+  # Note: this section is almost certainly unnecessary if we're
+  # running tasks in docker containers.
   my $installpid = fork();
   if ($installpid == 0)
   {
@@ -654,8 +656,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     if ($build_script)
     {
       $build_script_to_send = $build_script;
-      $command .=
-	  "&& perl -";
     }
     $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
@@ -668,7 +668,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .=
           q{$(ip -o address show scope global |
               gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
-      $command .= "--volume=\Q$ENV{CRUNCH_SRC}:/tmp/crunch-src:ro\E ";
       $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT}:/keep:ro\E ";
       $command .= "--env=\QHOME=/home/crunch\E ";
       while (my ($env_key, $env_val) = each %ENV)
@@ -686,11 +685,13 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--env=\QCRUNCH_SRC=/tmp/crunch-src\E ";
       $command .= "\Q$docker_hash\E ";
       $command .= "stdbuf --output=0 --error=0 ";
+      $command .= "perl - ";
       $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
       $command .= "stdbuf --output=0 --error=0 ";
+      $command .= "perl - ";
       $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
 
@@ -1504,9 +1505,11 @@ my $commit = $ENV{"CRUNCH_SRC_COMMIT"};
 my $repo = $ENV{"CRUNCH_SRC_URL"};
 my $task_work = $ENV{"TASK_WORK"};
 
-if ($task_work) {
-    make_path $task_work;
-    -e $task_work or die "Failed to create temporary working directory ($task_work): $!";
+for my $dir ($destdir, $task_work) {
+    if ($dir) {
+        make_path $dir;
+        -e $dir or die "Failed to create temporary directory ($dir): $!";
+    }
 }
 
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
@@ -1558,7 +1561,11 @@ if ($commit) {
 
 close L;
 
-exit 0;
+if (@ARGV) {
+    exec(@ARGV);
+} else {
+    exit 0;
+}
 
 sub shell_or_die
 {
