@@ -1,4 +1,6 @@
 require 'integration_helper'
+require 'selenium-webdriver'
+require 'headless'
 
 class LoginsTest < ActionDispatch::IntegrationTest
   setup do
