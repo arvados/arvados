@@ -182,7 +182,7 @@ class CollectionDirectory(Directory):
         self.collection_locator = collection_locator
 
     def same(self, i):
-        return i['uuid'] == self.collection_locator
+        return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
     def update(self):
         try:

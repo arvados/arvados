@@ -3,11 +3,10 @@ require 'selenium-webdriver'
 require 'headless'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
-  test "Collection page renders default name links" do
+  test "Collection page renders name" do
     uuid = api_fixture('collections')['foo_file']['uuid']
-    coll_name = api_fixture('links')['foo_collection_name_in_aproject']['name']
-    name_uuid = api_fixture('links')['foo_collection_name_in_aproject']['uuid']
-    visit page_with_token('active', "/collections/#{name_uuid}")
+    coll_name = api_fixture('collections')['foo_file']['name']
+    visit page_with_token('active', "/collections/#{uuid}")
     assert(page.has_text?(coll_name), "Collection page did not include name")
     # Now check that the page is otherwise normal, and the collection name
     # isn't only showing up in an error message.
