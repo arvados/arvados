@@ -457,7 +457,7 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// We have a properly formatted pull list sent from the data
 	// manager.  Report success and send the list to the pull list
 	// manager for further handling.
-	log.Printf("%s %s: received %s\n", req.Method, req.URL, plist)
+	log.Printf("%s %s: received %v\n", req.Method, req.URL, plist)
 	resp.WriteHeader(http.StatusOK)
 	resp.Write([]byte(
 		fmt.Sprintf("Received %d pull requests\n", len(plist))))
