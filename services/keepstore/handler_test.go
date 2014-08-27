@@ -566,6 +566,111 @@ func TestDeleteHandler(t *testing.T) {
 	}
 }
 
+// TestPullHandler
+//
+// Test handling of the PUT /pull statement.
+//
+// Cases tested: syntactically valid and invalid pull lists, from the
+// data manager and from unprivileged users:
+//
+//   1. Valid pull list from an ordinary user
+//      (expected result: 401 Unauthorized)
+//
+//   2. Invalid pull request from an ordinary user
+//      (expected result: 401 Unauthorized)
+//
+//   3. Valid pull request from the data manager
+//      (expected result: 200 OK with request body "Received 3 pull
+//      requests"
+//
+//   4. Invalid pull request from the data manager
+//      (expected result: 400 Bad Request)
+//
+// Test that in the end, the pull manager received a good pull list with
+// the expected number of requests.
+//
+// TODO(twp): test concurrency: launch 100 goroutines to update the
+// pull list simultaneously.  Make sure that none of them return 400
+// Bad Request and that pullmgr.GetList() returns a valid list.
+//
+func TestPullHandler(t *testing.T) {
+	defer teardown()
+
+	// Set up a REST router for testing the handlers.
+	rest := MakeRESTRouter()
+
+	var user_token = "USER TOKEN"
+	data_manager_token = "DATA MANAGER TOKEN"
+
+	good_json := []byte(`[
+		{
+			"locator":"locator_with_two_servers",
+			"servers":[
+				"server1",
+				"server2"
+		 	]
+		},
+		{
+			"locator":"locator_with_no_servers",
+			"servers":[]
+		},
+		{
+			"locator":"",
+			"servers":["empty_locator"]
+		}
+	]`)
+
+	bad_json := []byte(`{ "key":"I'm a little teapot" }`)
+
+	type pullTest struct {
+		name          string
+		req           RequestTester
+		response_code int
+		response_body string
+	}
+	var testcases = []pullTest{
+		{
+			"user token, good request",
+			RequestTester{"/pull", user_token, "PUT", good_json},
+			http.StatusUnauthorized,
+			"Unauthorized\n",
+		},
+		{
+			"user token, bad request",
+			RequestTester{"/pull", user_token, "PUT", bad_json},
+			http.StatusUnauthorized,
+			"Unauthorized\n",
+		},
+		{
+			"data manager token, good request",
+			RequestTester{"/pull", data_manager_token, "PUT", good_json},
+			http.StatusOK,
+			"Received 3 pull requests\n",
+		},
+		{
+			"data manager token, bad request",
+			RequestTester{"/pull", data_manager_token, "PUT", bad_json},
+			http.StatusBadRequest,
+			"Bad Request\n",
+		},
+	}
+
+	for _, tst := range testcases {
+		response := IssueRequest(rest, &tst.req)
+		ExpectStatusCode(t, tst.name, tst.response_code, response)
+		ExpectBody(t, tst.name, tst.response_body, response)
+	}
+
+	// The Keep pull manager should have received one good list with 3
+	// requests on it.
+	var saved_pull_list = pullmgr.GetList()
+	if len(saved_pull_list) != 3 {
+		t.Errorf(
+			"saved_pull_list: expected 3 elements, got %d\nsaved_pull_list = %v",
+			len(saved_pull_list), saved_pull_list)
+	}
+}
+
 // ====================
 // Helper functions
 // ====================

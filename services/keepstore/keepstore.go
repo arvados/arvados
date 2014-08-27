@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/services/keepstore/pull_list"
 	"io/ioutil"
 	"log"
 	"net"
@@ -34,10 +35,6 @@ const MIN_FREE_KILOBYTES = BLOCKSIZE / 1024
 
 var PROC_MOUNTS = "/proc/mounts"
 
-// The Keep VolumeManager maintains a list of available volumes.
-// Initialized by the --volumes flag (or by FindKeepVolumes).
-var KeepVM VolumeManager
-
 // enforce_permissions controls whether permission signatures
 // should be enforced (affecting GET and DELETE requests).
 // Initialized by the --enforce-permissions flag.
@@ -67,6 +64,7 @@ type KeepError struct {
 
 var (
 	BadRequestError     = &KeepError{400, "Bad Request"}
+	UnauthorizedError   = &KeepError{401, "Unauthorized"}
 	CollisionError      = &KeepError{500, "Collision"}
 	RequestHashError    = &KeepError{422, "Hash mismatch in request"}
 	PermissionError     = &KeepError{403, "Forbidden"}
@@ -82,6 +80,24 @@ var (
 func (e *KeepError) Error() string {
 	return e.ErrMsg
 }
+
+// ========================
+// Internal data structures
+//
+// These global variables are used by multiple parts of the
+// program. They are good candidates for moving into their own
+// packages.
+
+// The Keep VolumeManager maintains a list of available volumes.
+// Initialized by the --volumes flag (or by FindKeepVolumes).
+var KeepVM VolumeManager
+
+// The pull list manager is a singleton pull list (a list of blocks
+// that the current keepstore process should be pulling from remote
+// keepstore servers in order to increase data replication) with
+// atomic update methods that are safe to use from multiple
+// goroutines.
+var pullmgr *pull_list.Manager
 
 // TODO(twp): continue moving as much code as possible out of main
 // so it can be effectively tested. Esp. handling and postprocessing
