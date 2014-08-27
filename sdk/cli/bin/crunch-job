@@ -852,6 +852,10 @@ else {
   eval {
     open(my $orig_manifest, '-|', 'arv-get', $collated_output)
         or die "failed to get collated manifest: $!";
+    my $orig_manifest_text = '';
+    while (my $manifest_line = <$orig_manifest>) {
+      $orig_manifest_text .= $manifest_line;
+    }
     my $output = $arv->{'collections'}->{'create'}->execute('collection' => {
       'manifest_text' => $orig_manifest_text,
     });

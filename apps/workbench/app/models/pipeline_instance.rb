@@ -9,7 +9,11 @@ class PipelineInstance < ArvadosBase
     pipeline_name = self.name
     if pipeline_name.nil? or pipeline_name.empty?
       template = PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
-      template.name if template else self.uuid
+      if template
+        template.name
+      else
+        self.uuid
+      end
     else
       pipeline_name
     end
