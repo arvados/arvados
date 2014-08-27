@@ -36,7 +36,7 @@
           </td>
           <% current_job = pj[:job] rescue nil %>
           <td>
-            <% if current_job %>
+            <% if current_job.is_a? Job %>
               <%= render partial: 'show_object_button', locals: {object: current_job, size: 'xs', link_text: 'Show job details'} %>
             <% end %>
           </td><td>
