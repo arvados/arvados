@@ -92,10 +92,11 @@ func (e *KeepError) Error() string {
 // Initialized by the --volumes flag (or by FindKeepVolumes).
 var KeepVM VolumeManager
 
-// The pull list manager is responsible for pulling blocks from other
-// Keep servers to ensure replication. When Keep receives a new "pull
-// list" from Data Manager, the pull manager is responsible for fetching
-// blocks on the list.
+// The pull list manager is a singleton pull list (a list of blocks
+// that the current keepstore process should be pulling from remote
+// keepstore servers in order to increase data replication) with
+// atomic update methods that are safe to use from multiple
+// goroutines.
 var pullmgr *pull_list.Manager
 
 // TODO(twp): continue moving as much code as possible out of main
