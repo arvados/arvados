@@ -23,7 +23,6 @@
     </thead>
     <tbody>
       <% render_pipeline_jobs.each do |pj| %>
-        <% puts pj %>
         <tr data-object-uuid="<%= pj[:job].andand[:uuid] %>">
           <td>
             <%= pj[:name] %>
@@ -43,7 +42,7 @@
           </td><td>
             <% if current_job.andand[:log] %>
               <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
-              <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
+              <% Collection.limit(1).where(portable_data_hash: fixup[1]).each do |c| %>
                 <% c.files.first.andand do |file| %>
                   <%= link_to url_for(controller: 'collections', action: 'show_file', uuid: current_job[:log], file: "#{file[0]}/#{file[1]}", disposition: 'inline', size: file[2]), class: 'btn btn-default btn-xs' do %>
                     <i class="fa fa-fw fa-info"></i> Show log messages

@@ -3,7 +3,8 @@ module PipelineComponentsHelper
     begin
       render(partial: "pipeline_instances/show_components_#{template_suffix}",
              locals: locals)
-    rescue
+    rescue Exception => e
+      logger.error e.inspect
       case fallback
       when :json
         render(partial: "pipeline_instances/show_components_json")
