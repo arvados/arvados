@@ -441,6 +441,7 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	api_token := GetApiToken(req)
 	if !IsDataManagerToken(api_token) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
 	}
 
@@ -449,12 +450,14 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	r := json.NewDecoder(req.Body)
 	if err := r.Decode(&pull_list); err != nil {
 		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		log.Printf("%s %s: %s\n", req.Method, req.URL, err.Error())
 		return
 	}
 
 	// We have a properly formatted pull list sent from the data
 	// manager.  Report success and send the list to the keep
 	// replicator for further handling.
+	log.Printf("%s %s: received %s\n", req.Method, req.URL, pull_list)
 	resp.WriteHeader(http.StatusOK)
 	resp.Write([]byte(
 		fmt.Sprintf("Received %d pull requests\n", len(pull_list))))
@@ -462,7 +465,7 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	if replica == nil {
 		replica = replicator.New()
 	}
-	replica.Pull(pull_list)
+	replica.SetList(pull_list)
 }
 
 // ==============================

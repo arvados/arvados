@@ -8,9 +8,10 @@ package replicator
    replicator.New() launches a replication goroutine and returns the
    new Replicator object.
 
-   replicator.Pull() assigns a new pull list to the goroutine.
+   replicator.SetList() assigns a new pull list to the goroutine. Any
+   existing list is discarded.
 
-   replicator.Dump() reports the goroutine's current pull list.
+   replicator.GetList() reports the goroutine's current pull list.
 
    replicator.Close() shuts down the replicator.
 */
@@ -37,16 +38,16 @@ func New() *Replicator {
 	return &r
 }
 
-// Pull sends a new list of pull requests to the replicator goroutine.
-// The replicator will discard any outstanding pull requests and begin
+// SetList sends a new list of pull requests to the replicator goroutine.
+// The replicator will discard any outstanding pull list and begin
 // working on the new list.
 //
-func (r *Replicator) Pull(pr []PullRequest) {
+func (r *Replicator) SetList(pr []PullRequest) {
 	r.queue <- pr
 }
 
-// Dump reports the contents of the current pull list.
-func (r *Replicator) Dump() []PullRequest {
+// GetList reports the contents of the current pull list.
+func (r *Replicator) GetList() []PullRequest {
 	return <-r.dump
 }
 

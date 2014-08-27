@@ -591,7 +591,7 @@ func TestDeleteHandler(t *testing.T) {
 //
 // TODO(twp): test concurrency: launch 100 goroutines to update the
 // pull list simultaneously.  Make sure that none of them return 400
-// Bad Request and that replica.Dump() returns a valid list.
+// Bad Request and that replica.GetList() returns a valid list.
 //
 func TestPullHandler(t *testing.T) {
 	defer teardown()
@@ -663,7 +663,7 @@ func TestPullHandler(t *testing.T) {
 
 	// The Keep replicator should have received one good list with 3
 	// requests on it.
-	var saved_pull_list = replica.Dump()
+	var saved_pull_list = replica.GetList()
 	if len(saved_pull_list) != 3 {
 		t.Errorf(
 			"saved_pull_list: expected 3 elements, got %d\nsaved_pull_list = %v",
