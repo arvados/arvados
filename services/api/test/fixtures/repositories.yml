@@ -12,3 +12,8 @@ repository2:
   uuid: zzzzz-s0uqq-382brsig8rp3667
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   name: foo2
+
+auto_setup_repository:
+  uuid: zzzzz-s0uqq-382brabc8rp3667
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
+  name: auto_setup_repo

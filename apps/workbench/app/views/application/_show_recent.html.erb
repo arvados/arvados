@@ -6,7 +6,7 @@
 
 <% else %>
 
-<% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at owner_uuid group_class' %>
+<% attr_blacklist = ' created_at modified_at modified_by_user_uuid modified_by_client_uuid updated_at owner_uuid group_class properties' %>
 
 <%= render partial: "paging", locals: {results: objects, object: @object} %>
 
@@ -30,7 +30,7 @@
       </th>
     </tr>
   </thead>
-      
+
   <tbody>
     <% objects.each do |object| %>
     <tr data-object-uuid="<%= object.uuid %>">
@@ -47,15 +47,9 @@
       <% next if attr_blacklist.index(" "+attr) %>
       <td class="arv-object-<%= object.class.to_s %> arv-attr-<%= attr %>">
         <% if attr == 'uuid' %>
-        <span class="arvados-uuid"><%= attrvalue %></span>
+          <span class="arvados-uuid"><%= attrvalue %></span>
         <% else %>
-        <% if object.attribute_editable? attr %>
-        <%= render_editable_attribute object, attr %>
-        <% else %>
-        <%= resource_class_for_uuid(attrvalue, referring_attr: attr, referring_object: @object).to_s %>
-        <%= attrvalue %>
-        <% end %>
-        <%= link_to_if_arvados_object(attrvalue, { referring_object: @object, link_text: raw('<i class="icon-hand-right"></i>') }) if resource_class_for_uuid(attrvalue, {referring_object: @object}) %>
+          <%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: object, with_class_name: true, friendly_name: true} %>
         <% end %>
       </td>
       <% end %>

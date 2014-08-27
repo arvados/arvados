@@ -25,12 +25,6 @@ class Group < ArvadosBase
     group_class == 'project' ? 'Project' : super
   end
 
-  def editable?
-    respond_to?(:writable_by) and
-      writable_by and
-      writable_by.index(current_user.uuid)
-  end
-
   def textile_attributes
     [ 'description' ]
   end

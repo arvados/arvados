@@ -4,11 +4,11 @@
   <% end %>
 <% else %>
       <% if obj.attribute_editable?(attr) and (!defined?(editable) || editable) %>
-        <%= render_editable_attribute obj, attr %>
         <% if resource_class_for_uuid(attrvalue, {referring_object: obj, referring_attr: attr}) %>
-	<br />
-        (<%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: obj, with_class_name: true, friendly_name: true} %>)
+          <%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: obj, with_class_name: true, friendly_name: true} %>
+          <br>
         <% end %>
+        <%= render_editable_attribute obj, attr %>
       <% elsif attr == 'uuid' %>
         <%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: obj, with_class_name: false, friendly_name: false} %>
       <% else %>

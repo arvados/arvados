@@ -5,6 +5,7 @@ function maybe_load_more_content(event) {
     var scrollHeight;
     var spinner, colspan;
     var serial = Date.now();
+    var params;
     scrollHeight = scroller.scrollHeight || $('body')[0].scrollHeight;
     if ($(scroller).scrollTop() + $(scroller).height()
         >
@@ -39,10 +40,51 @@ function maybe_load_more_content(event) {
         $container.find(".spinner").detach();
         $container.append(spinner);
         $container.attr('data-infinite-serial', serial);
+
+        // Combine infiniteContentParams from multiple sources. This
+        // mechanism allows each of several components to set and
+        // update its own set of filters, without having to worry
+        // about stomping on some other component's filters.
+        //
+        // For example, filterable.js writes filters in
+        // infiniteContentParamsFilterable ("search for text foo")
+        // without worrying about clobbering the filters set up by the
+        // tab pane ("only show jobs and pipelines in this tab").
+        params = {};
+        $.each($container.data(), function(datakey, datavalue) {
+            // Note: We attach these data to DOM elements using
+            // <element data-foo-bar="baz">. We store/retrieve them
+            // using $('element').data('foo-bar'), although
+            // .data('fooBar') would also work. The "all data" hash
+            // returned by $('element').data(), however, always has
+            // keys like 'fooBar'. In other words, where we have a
+            // choice, we stick with the 'foo-bar' style to be
+            // consistent with HTML. Here, our only option is
+            // 'fooBar'.
+            if (/^infiniteContentParams/.exec(datakey)) {
+                if (datavalue instanceof Object) {
+                    $.each(datavalue, function(hkey, hvalue) {
+                        if (hvalue instanceof Array) {
+                            params[hkey] = (params[hkey] || []).concat(hvalue);
+                        } else if (hvalue instanceof Object) {
+                            $.extend(params[hkey], hvalue);
+                        } else {
+                            params[hkey] = hvalue;
+                        }
+                    });
+                }
+            }
+        });
+        $.each(params, function(k,v) {
+            if (v instanceof Object) {
+                params[k] = JSON.stringify(v);
+            }
+        });
+
         $.ajax(src,
                {dataType: 'json',
                 type: 'GET',
-                data: ($container.data('infinite-content-params') || {}),
+                data: params,
                 context: {container: $container, src: src, serial: serial}}).
             fail(function(jqxhr, status, error) {
                 var $faildiv;
@@ -78,14 +120,22 @@ function maybe_load_more_content(event) {
      }
 }
 
+function ping_all_scrollers() {
+    // Send a scroll event to all scroll listeners that might need
+    // updating. Adding infinite-scroller class to the window element
+    // doesn't work, so we add it explicitly here.
+    $('.infinite-scroller').add(window).trigger('scroll');
+}
+
 $(document).
     on('click', 'div.infinite-retry button', function() {
         var $retry_div = $(this).closest('.infinite-retry');
-        var $scroller = $(this).closest('.infinite-scroller')
-        $scroller.attr('data-infinite-content-href',
-                       $retry_div.attr('data-infinite-content-href'));
-        $retry_div.replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
-        $scroller.trigger('scroll');
+        var $container = $(this).closest('.infinite-scroller-ready')
+        $container.attr('data-infinite-content-href',
+                        $retry_div.attr('data-infinite-content-href'));
+        $retry_div.
+            replaceWith('<div class="spinner spinner-32px spinner-h-center" />');
+        ping_all_scrollers();
     }).
     on('refresh-content', '[data-infinite-scroller]', function() {
         // Clear all rows, reset source href to initial state, and
@@ -96,8 +146,7 @@ $(document).
         $(this).
             html('').
             attr('data-infinite-content-href', first_page_href);
-        $('.infinite-scroller').
-            trigger('scroll');
+        ping_all_scrollers();
     }).
     on('ready ajax:complete', function() {
         $('[data-infinite-scroller]').each(function() {
@@ -105,6 +154,11 @@ $(document).
                 return;
             $(this).addClass('infinite-scroller-ready');
 
+            // $scroller is the DOM element that hears "scroll"
+            // events: sometimes it's a div, sometimes it's
+            // window. Here, "this" is the DOM element containing the
+            // result rows. We pass it to maybe_load_more_content in
+            // event.data.
             var $scroller = $($(this).attr('data-infinite-scroller'));
             if (!$scroller.hasClass('smart-scroll') &&
                 'scroll' != $scroller.css('overflow-y'))

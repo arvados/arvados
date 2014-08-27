@@ -23,17 +23,19 @@ User agreements
   <div>
     <% unsigned_user_agreements.each do |ua| %>
     <% ua.files.each do |file| %>
-    <%= f.label 'checked[]', class: 'checkbox inline' do %>
-    <%= check_box_tag 'checked[]', "#{ua.uuid}/#{file[0]}/#{file[1]}", false %>
-    Accept <%= file[1].sub(/\.[a-z]{3,4}$/,'') %>
-    <%= link_to 'View agreement', {controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}"}, {target: '_blank', class: 'btn btn-mini btn-primary'} %>
-    <% end %>
+    <div class="checkbox">
+      <%= f.label 'checked[]' do %>
+      <%= check_box_tag 'checked[]', "#{ua.uuid}/#{file[0]}/#{file[1]}", false %>
+      Accept <%= file[1].sub(/\.[a-z]{3,4}$/,'') %>
+      <%= link_to 'View agreement', {controller: 'collections', action: 'show_file', uuid: ua.uuid, file: "#{file[0]}/#{file[1]}"}, {target: '_blank', class: 'btn btn-xs btn-info'} %>
+      <% end %>
+    </div>
     <% end %>
     <% end %>
   </div>
   <div style="height: 1em"></div>
   <div>
-    <%= f.submit 'Continue', {class: 'btn btn-primary', disabled: true} %>
+    <%= f.submit 'Continue', {class: 'btn btn-primary'} %>
   </div>
 </div>
 <% end %>

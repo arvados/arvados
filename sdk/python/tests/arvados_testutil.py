@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 
 import errno
+import httplib
+import httplib2
 import os
 import shutil
 import tempfile
 import unittest
+
+def fake_httplib2_response(code, **headers):
+    headers.update(status=str(code),
+                   reason=httplib.responses.get(code, "Unknown Response"))
+    return httplib2.Response(headers)
 
 class ArvadosBaseTestCase(unittest.TestCase):
     # This class provides common utility functions for our tests.
@@ -26,20 +33,6 @@ class ArvadosBaseTestCase(unittest.TestCase):
         except NameError:
             basedir = '.'
         return open(os.path.join(basedir, 'data', filename))
-
-
-class ArvadosKeepLocalStoreTestCase(ArvadosBaseTestCase):
-    def setUp(self):
-        super(ArvadosKeepLocalStoreTestCase, self).setUp()
-        self._orig_keep_local_store = os.environ.get('KEEP_LOCAL_STORE')
-        os.environ['KEEP_LOCAL_STORE'] = self.make_tmpdir()
-
-    def tearDown(self):
-        if self._orig_keep_local_store is None:
-            del os.environ['KEEP_LOCAL_STORE']
-        else:
-            os.environ['KEEP_LOCAL_STORE'] = self._orig_keep_local_store
-        super(ArvadosKeepLocalStoreTestCase, self).tearDown()
 
     def build_directory_tree(self, tree):
         tree_root = self.make_tmpdir()

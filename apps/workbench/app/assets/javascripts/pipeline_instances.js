@@ -58,15 +58,40 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
         propertyText = properties.text;
     }
     if (propertyText !== undefined) {
+        propertyText = propertyText.
+            replace(/\n$/, '').
+            replace(/\n/g, '<br/>');
         $(this).append(propertyText + "<br/>");
-    } else {
-        $(this).append(parsedData.summary + "<br/>");
+    } else if (parsedData.summary !== undefined) {
+        if (parsedData.summary.match(/^update of [-a-z0-9]{27}$/))
+            ; // Not helpful.
+        else
+            $(this).append(parsedData.summary + "<br/>");
     }
     if (wasatbottom)
         this.scrollTop = this.scrollHeight;
-}).on('ready ajax:complete', function(){
-    $('.arv-log-event-handler-append-logs').each(function() {
+}).on('arv:pane:loaded', '#Logs,#Log', function(){
+    $('.arv-log-event-handler-append-logs', this).each(function() {
         this.scrollTop = this.scrollHeight;
+        $(this).closest('.tab-pane').on('arv:pane:reload', function(e) {
+            // Do not let this tab auto-refresh.
+            e.stopPropagation();
+        });
+    });
+}).on('ready ajax:complete', function(){
+    $(".arv-log-event-listener[data-object-uuids-live]").each(function() {
+        // Look at data-object-uuid attribute of elements matching
+        // given selector, so the event listener can listen for events
+        // that appeared on the page via ajax.
+        var $listener = $(this);
+        var have_uuids = '' + $listener.attr('data-object-uuids');
+        $($listener.attr('data-object-uuids-live')).each(function() {
+            var this_uuid = $(this).attr('data-object-uuid');
+            if (have_uuids.indexOf(this_uuid) == -1) {
+                have_uuids = have_uuids + ' ' + this_uuid;
+            }
+        });
+        $listener.attr('data-object-uuids', have_uuids);
     });
 });
 

@@ -12,8 +12,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
     set_user_from_auth :active_trustedclient
     want_uuid = Specimen.generate_uuid
     a = create_with_attrs(uuid: want_uuid)
-    assert_not_equal want_uuid, a.uuid, "Non-admin should not assign uuid."
-    assert a.uuid.length==27, "Auto assigned uuid length is wrong."
+    assert_nil a, "Non-admin should not assign uuid."
   end
 
   test 'admin can assign valid uuid' do
@@ -24,11 +23,23 @@ class ArvadosModelTest < ActiveSupport::TestCase
     assert a.uuid.length==27, "Auto assigned uuid length is wrong."
   end
 
+  test 'admin cannot assign uuid with wrong object type' do
+    set_user_from_auth :admin_trustedclient
+    want_uuid = Human.generate_uuid
+    a = create_with_attrs(uuid: want_uuid)
+    assert_nil a, "Admin should not be able to assign invalid uuid."
+  end
+
+  test 'admin cannot assign badly formed uuid' do
+    set_user_from_auth :admin_trustedclient
+    a = create_with_attrs(uuid: "ntoheunthaoesunhasoeuhtnsaoeunhtsth")
+    assert_nil a, "Admin should not be able to assign invalid uuid."
+  end
+
   test 'admin cannot assign empty uuid' do
     set_user_from_auth :admin_trustedclient
     a = create_with_attrs(uuid: "")
-    assert_not_equal "", a.uuid, "Admin should not assign empty uuid."
-    assert a.uuid.length==27, "Auto assigned uuid length is wrong."
+    assert_nil a, "Admin cannot assign empty uuid."
   end
 
   [ {:a => 'foo'},

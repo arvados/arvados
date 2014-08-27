@@ -65,7 +65,7 @@ class ApplicationController < ActionController::Base
   end
 
   def show
-    render json: @object.as_api_response
+    render json: @object.as_api_response(nil, select: @select)
   end
 
   def create
@@ -104,7 +104,8 @@ class ApplicationController < ActionController::Base
     if e.respond_to? :backtrace and e.backtrace
       logger.error e.backtrace.collect { |x| x + "\n" }.join('')
     end
-    if @object and @object.errors and @object.errors.full_messages and not @object.errors.full_messages.empty?
+    if (@object.respond_to? :errors and
+        @object.errors.andand.full_messages.andand.any?)
       errors = @object.errors.full_messages
       logger.error errors.inspect
     else
@@ -139,15 +140,17 @@ class ApplicationController < ActionController::Base
     apply_where_limit_order_params
   end
 
-  def apply_filters
-    ft = record_filters @filters, @objects.table_name
+  def apply_filters model_class=nil
+    model_class ||= self.model_class
+    ft = record_filters @filters, model_class
     if ft[:cond_out].any?
-      @objects = @objects.where(ft[:cond_out].join(' AND '), *ft[:param_out])
+      @objects = @objects.where('(' + ft[:cond_out].join(') AND (') + ')',
+                                *ft[:param_out])
     end
   end
 
-  def apply_where_limit_order_params
-    apply_filters
+  def apply_where_limit_order_params *args
+    apply_filters *args
 
     ar_table_name = @objects.table_name
     if @where.is_a? Hash and @where.any?
@@ -204,15 +207,24 @@ class ApplicationController < ActionController::Base
     end
 
     if @select
-      # Map attribute names in @select to real column names, resolve
-      # those to fully-qualified SQL column names, and pass the
-      # resulting string to the select method.
-      api_column_map = model_class.attributes_required_columns
-      columns_list = @select.
-        flat_map { |attr| api_column_map[attr] }.
-        uniq.
-        map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
-      @objects = @objects.select(columns_list.join(", "))
+      unless action_name.in? %w(create update destroy)
+        # Map attribute names in @select to real column names, resolve
+        # those to fully-qualified SQL column names, and pass the
+        # resulting string to the select method.
+        api_column_map = model_class.attributes_required_columns
+        columns_list = @select.
+          flat_map { |attr| api_column_map[attr] }.
+          uniq.
+          map { |s| "#{table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
+        @objects = @objects.select(columns_list.join(", "))
+      end
+
+      # This information helps clients understand what they're seeing
+      # (Workbench always expects it), but they can't select it explicitly
+      # because it's not an SQL column.  Always add it.
+      # (This is harmless, given that clients can deduce what they're
+      # looking at by the returned UUID anyway.)
+      @select |= ["kind"]
     end
     @objects = @objects.order(@orders.join ", ") if @orders.any?
     @objects = @objects.limit(@limit)
@@ -362,14 +374,6 @@ class ApplicationController < ActionController::Base
   accept_param_as_json :reader_tokens, Array
 
   def render_list
-    if @select
-      # This information helps clients understand what they're seeing
-      # (Workbench always expects it), but they can't select it explicitly
-      # because it's not an SQL column.  Always add it.
-      # I believe this is safe because clients can always deduce what they're
-      # looking at by the returned UUID anyway.
-      @select |= ["kind"]
-    end
     @object_list = {
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",

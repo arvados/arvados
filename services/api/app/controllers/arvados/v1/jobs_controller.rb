@@ -34,7 +34,7 @@ class Arvados::V1::JobsController < ApplicationController
            ["script_version", "in git",
             params[:minimum_script_version] || resource_attrs[:script_version]],
            ["script_version", "not in git", params[:exclude_script_versions]],
-          ].reject { |filter| filter.last.nil? }
+          ].reject { |filter| filter.last.nil? or filter.last.empty? }
         if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
           if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
             image_search += ":#{image_tag}"
@@ -71,7 +71,7 @@ class Arvados::V1::JobsController < ApplicationController
             # We'll use this if we don't find a job that has completed
             incomplete_job ||= j
           else
-            if Collection.readable_by(current_user).find_by_uuid(j.output)
+            if Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
               # Record the first job in the list
               if !@object
                 @object = j
@@ -214,7 +214,7 @@ class Arvados::V1::JobsController < ApplicationController
         search_list = filter[2].is_a?(Enumerable) ? filter[2] : [filter[2]]
         filter[2] = search_list.flat_map do |search_term|
           image_search, image_tag = search_term.split(':', 2)
-          Collection.uuids_for_docker_image(image_search, image_tag, @read_users)
+          Collection.find_all_for_docker_image(image_search, image_tag, @read_users).map(&:portable_data_hash)
         end
         true
       else
@@ -238,7 +238,7 @@ class Arvados::V1::JobsController < ApplicationController
       if version_range.nil?
         raise ArgumentError.
           new(["error searching #{script_info['repository']} from",
-               "#{script_range['min_version']} to #{last_version},",
+               "'#{script_range['min_version']}' to '#{last_version}',",
                "excluding #{script_range['exclude_versions']}"].join(" "))
       end
       @filters.append(["script_version", "in", version_range])

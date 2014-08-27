@@ -17,7 +17,7 @@ class ApplicationController < ActionController::Base
   before_filter :check_user_profile, except: ERROR_ACTIONS
   before_filter :check_user_notifications, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
-  before_filter :find_object_by_uuid, except: [:index, :choose] + ERROR_ACTIONS
+  before_filter :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -224,10 +224,10 @@ class ApplicationController < ActionController::Base
 
   def choose
     params[:limit] ||= 40
-    find_objects_for_index if !@objects
     respond_to do |f|
       if params[:partial]
         f.json {
+          find_objects_for_index if !@objects
           render json: {
             content: render_to_string(partial: "choose_rows.html",
                                       formats: [:html]),
@@ -236,6 +236,7 @@ class ApplicationController < ActionController::Base
         }
       end
       f.js {
+        find_objects_for_index if !@objects
         render partial: 'choose', locals: {multiple: params[:multiple]}
       }
     end
@@ -736,7 +737,7 @@ class ApplicationController < ActionController::Base
     @my_project_tree =
       sorted_paths.call buildtree.call(children_of, 'me')
     @shared_project_tree =
-      sorted_paths.call({'Shared with me' =>
+      sorted_paths.call({'Projects shared with me' =>
                           buildtree.call(children_of, false)})
   end
 

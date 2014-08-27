@@ -4,8 +4,10 @@
      class_name_h = class_name.humanize(capitalize: false)
      req_item = safe_join([class_name_h, " with UUID ",
                            raw("<code>"), params[:uuid], raw("</code>")], "")
+     req_item_plain_text = safe_join([class_name_h, " with UUID ", params[:uuid]])
    else
      req_item = "page you requested"
+     req_item_plain_text = "page you requested"
    end
 %>
 
@@ -20,3 +22,5 @@ Perhaps you'd like to
 
 </p>
 
+<% error_message = "The #{req_item_plain_text} was not found." %>
+<%= render :partial => "report_error", :locals => {error_message: error_message, error_type: '404'} %>

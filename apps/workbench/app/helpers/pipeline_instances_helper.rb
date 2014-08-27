@@ -22,32 +22,19 @@ module PipelineInstancesHelper
     pj
   end
 
-  def pipeline_log_history(job_uuids)
-    results = []
-
-    log_history = Log.where(event_type: 'stderr',
-                            object_uuid: job_uuids).order('id DESC')
-    if !log_history.results.empty?
-      reversed_results = log_history.results.reverse
-      reversed_results.each do |entry|
-        if entry.andand.properties
-          properties = entry.properties
-          text = properties[:text]
-          if text
-            results = results.concat text.split("\n")
-          end
-        end
-      end
-    end
-
-    return results
-  end
-
   protected
 
   def pipeline_jobs_newschool object
     ret = []
     i = -1
+
+    jobuuids = object.components.values.map { |c|
+      c[:job][:uuid] if c.is_a?(Hash) and c[:job].is_a?(Hash)
+    }.compact
+    job = {}
+    Job.where(uuid: jobuuids).each do |j|
+      job[j[:uuid]] = j
+    end
 
     object.components.each do |cname, c|
       i += 1
@@ -56,7 +43,11 @@ module PipelineInstancesHelper
         ret << pj
         next
       end
-      pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
+      if c[:job] and c[:job][:uuid] and job[c[:job][:uuid]]
+        pj[:job] = job[c[:job][:uuid]]
+      else
+        pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
+      end
       pj[:percent_done] = 0
       pj[:percent_running] = 0
       if pj[:job][:success]
