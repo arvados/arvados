@@ -210,6 +210,17 @@ module ApplicationHelper
     end
   end
 
+  def render_textile_attribute(object, attr, truncate)
+    attrvalue = object.send(attr)
+    if attrvalue && attrvalue.length > 0
+      markup = render_textile_if_textile( object, attr, attrvalue )
+      markup = markup[0,markup.index('</p>')+4] if (truncate && markup.index('</p>'))
+      return markup
+    else
+      return (attr == 'name' and object.andand.default_name) || ''
+    end
+  end
+
   def render_pipeline_component_attribute(object, attr, subattr, value_info, htmloptions={})
     datatype = nil
     required = true
