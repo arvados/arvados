@@ -853,37 +853,15 @@ else {
   eval {
     open(my $orig_manifest, '-|', 'arv-get', $collated_output)
         or die "failed to get collated manifest: $!";
-    # Read the original manifest, and strip permission hints from it,
-    # so we can put the result in a Collection.
-    my @stripped_manifest_lines = ();
     my $orig_manifest_text = '';
     while (my $manifest_line = <$orig_manifest>) {
       $orig_manifest_text .= $manifest_line;
-      my @words = split(/ /, $manifest_line, -1);
-      foreach my $ii (0..$#words) {
-        if ($words[$ii] =~ /^[0-9a-f]{32}\+/) {
-          $words[$ii] =~ s/\+A[0-9a-f]{40}@[0-9a-f]{8}\b//;
-        }
-      }
-      push(@stripped_manifest_lines, join(" ", @words));
     }
-    my $stripped_manifest_text = join("", @stripped_manifest_lines);
     my $output = $arv->{'collections'}->{'create'}->execute('collection' => {
-      'uuid' => md5_hex($stripped_manifest_text),
       'manifest_text' => $orig_manifest_text,
     });
-    Log(undef, "output " . $output->{uuid});
-    $Job->update_attributes('output' => $output->{uuid}) if $job_has_uuid;
-    if ($Job->{'output_is_persistent'}) {
-      $arv->{'links'}->{'create'}->execute('link' => {
-        'tail_kind' => 'arvados#user',
-        'tail_uuid' => $User->{'uuid'},
-        'head_kind' => 'arvados#collection',
-        'head_uuid' => $Job->{'output'},
-        'link_class' => 'resources',
-        'name' => 'wants',
-      });
-    }
+    Log(undef, "output " . $output->{portable_data_hash});
+    $Job->update_attributes('output' => $output->{portable_data_hash}) if $job_has_uuid;
   };
   if ($@) {
     Log (undef, "Failed to register output manifest: $@");

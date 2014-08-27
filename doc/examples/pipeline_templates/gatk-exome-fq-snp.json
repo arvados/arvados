@@ -13,7 +13,7 @@
     ],
     "input":"d237a90bae3870b3b033aea1e99de4a9+10820+K@qr1hi"
    },
-   "output_is_persistent":false
+   "output_name":false
   },
   "bwa-index":{
    "repository":"arvados",
@@ -28,7 +28,7 @@
      "required":true
     }
    },
-   "output_is_persistent":false
+   "output_name":false
   },
   "bwa-aln":{
    "repository":"arvados",
@@ -54,7 +54,7 @@
    "runtime_constraints":{
     "max_tasks_per_node":1
    },
-   "output_is_persistent":false
+   "output_name":false
   },
   "picard-gatk2-prep":{
    "repository":"arvados",
@@ -75,7 +75,7 @@
    "runtime_constraints":{
     "max_tasks_per_node":1
    },
-   "output_is_persistent":false
+   "output_name":false
   },
   "GATK2-realign":{
    "repository":"arvados",
@@ -107,7 +107,7 @@
    "runtime_constraints":{
     "max_tasks_per_node":2
    },
-   "output_is_persistent":false
+   "output_name":false
   },
   "GATK2-bqsr":{
    "repository":"arvados",
@@ -130,7 +130,7 @@
      "required":true
     }
    },
-   "output_is_persistent":false
+   "output_name":false
   },
   "GATK2-merge-call":{
    "repository":"arvados",
@@ -169,7 +169,7 @@
      ]
     }
    },
-   "output_is_persistent":true
+   "output_name":"Variant calls from UnifiedGenotyper"
   }
  }
 }

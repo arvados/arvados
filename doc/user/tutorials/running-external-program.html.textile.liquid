@@ -24,7 +24,6 @@ This will open the template record in an interactive text editor (as specified b
 * @"components"@ is a set of scripts or commands that make up the pipeline.  Each component is given an identifier (@"bwa-mem"@ and @"SortSam"@) in this example).
 ** Each entry in components @"components"@ is an Arvados job submission.  For more information about individual jobs, see the "job object reference":{{site.baseurl}}/api/schema/Job.html and "job create method.":{{site.baseurl}}/api/methods/jobs.html#create
 * @"repository"@, @"script_version"@, and @"script"@ indicate that we intend to use the external @"run-command"@ tool wrapper that is part of the Arvados.  These parameters are described in more detail in "Writing a script":tutorial-firstscript.html
-* @"output_is_persistent"@ indicates whether the output of the component is considered valuable. If this value is false (or not given), the output will be treated as intermediate data which may be eventually deleted to reclaim disk space.
 * @"runtime_constraints"@ describes runtime resource requirements for the component.
 ** @"docker_image"@ specifies the "Docker":https://www.docker.com/ runtime environment in which to run the job.  The Docker image @"arvados/jobs-java-bwa-samtools"@ supplied here has the Arvados SDK, Java runtime environment, bwa, and samtools installed.
 * @"script_parameters"@ describes the component parameters.

@@ -5,12 +5,20 @@ navmenu: Schema
 title: PipelineTemplate
 ...
 
-Pipelines consist of a set of "components".  Each component is an Arvados job submission.  "Parameters for job submissions are described on the job method page.":{{site.baseurl}}/api/methods/jobs.html#create
+The pipeline template consists of "name" and "components".
 
 table(table table-bordered table-condensed).
 |_. Attribute    |_. Type |_. Accepted values                           |_. Required|_. Description|
 |name            |string  |any                                          |yes        |The human-readable name of the pipeline template.|
 |components      |object  |JSON object containing job submission objects|yes        |The component jobs that make up the pipeline, with the component name as the key. |
+
+h3. Components
+
+The components field of the pipeline template is a JSON object which describes the individual steps that make up the pipeline.  Each component is an Arvados job submission.  "Parameters for job submissions are described on the job method page.":{{site.baseurl}}/api/methods/jobs.html#create  In addition, a component can have the following parameters:
+
+table(table table-bordered table-condensed).
+|_. Attribute    |_. Type          |_. Accepted values |_. Required|_. Description|
+|output_name     |string or boolean|string or false    |no         |If a string is provided, use this name for the output collection of this component.  If the value is false, do not create a permanent output collection (an temporary intermediate collection will still be created).  If not provided, a default name will be assigned to the output.|
 
 h3. Script parameters
 

@@ -7,7 +7,7 @@
   <% else %>
     Re-run job using script version:
     <%= form_tag '/jobs', style: "display:inline; padding-left: 1em" do |f| %>
-      <% [:script, :script_version, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
+      <% [:script, :script_version, :repository, :supplied_script_version, :nondeterministic].each do |d| %>
         <%= hidden_field :job, d, :value => @object[d] %>
       <% end %>
       <% [:script_parameters, :runtime_constraints].each do |d| %>
@@ -17,7 +17,7 @@
     <% end %>
   <% if @object.respond_to? :supplied_script_version and !@object.supplied_script_version.nil? and !@object.supplied_script_version.empty? and @object.script_version != @object.supplied_script_version%>
       <%= form_tag '/jobs', style: "display:inline" do |f| %>
-      <% [:script, :repository, :output_is_persistent, :supplied_script_version, :nondeterministic].each do |d| %>
+      <% [:script, :repository, :supplied_script_version, :nondeterministic].each do |d| %>
         <%= hidden_field :job, d, :value => @object[d] %>
       <% end %>
       <%= hidden_field :job, :script_version, :value => @object[:supplied_script_version] %>
