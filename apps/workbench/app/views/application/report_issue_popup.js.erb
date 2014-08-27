@@ -1,2 +1,21 @@
 $("#report-issue-modal-window").html("<%= escape_javascript(render partial: 'report_issue_popup') %>");
 $("#report-issue-modal-window .modal").modal('show');
+
+// Disable the submit button until the problem description is entered
+$submit = $('#report-issue-submit');
+
+var problem_desc = document.forms["report-issue-form"]["report_issue_text"].value;
+if (problem_desc == null || problem_desc == "") {
+  $submit.attr('disabled', true);
+}
+
+// capture events to enable submit button when applicable
+$('#report_issue_text').bind('input propertychange', function() {
+  var problem_desc = document.forms["report-issue-form"]["report_issue_text"].value;
+
+  var trigger = false;
+  if (problem_desc == null || problem_desc == "") {
+    trigger = true;
+  }
+  trigger ? $submit.attr('disabled', true) : $submit.removeAttr('disabled');
+});
