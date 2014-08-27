@@ -586,12 +586,12 @@ func TestDeleteHandler(t *testing.T) {
 //   4. Invalid pull request from the data manager
 //      (expected result: 400 Bad Request)
 //
-// Test that in the end, the replicator received a good pull list with
+// Test that in the end, the pull manager received a good pull list with
 // the expected number of requests.
 //
 // TODO(twp): test concurrency: launch 100 goroutines to update the
 // pull list simultaneously.  Make sure that none of them return 400
-// Bad Request and that replica.GetList() returns a valid list.
+// Bad Request and that pullmgr.GetList() returns a valid list.
 //
 func TestPullHandler(t *testing.T) {
 	defer teardown()
@@ -661,9 +661,9 @@ func TestPullHandler(t *testing.T) {
 		ExpectBody(t, tst.name, tst.response_body, response)
 	}
 
-	// The Keep replicator should have received one good list with 3
+	// The Keep pull manager should have received one good list with 3
 	// requests on it.
-	var saved_pull_list = replica.GetList()
+	var saved_pull_list = pullmgr.GetList()
 	if len(saved_pull_list) != 3 {
 		t.Errorf(
 			"saved_pull_list: expected 3 elements, got %d\nsaved_pull_list = %v",

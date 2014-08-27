@@ -13,7 +13,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"git.curoverse.com/arvados.git/services/keepstore/replicator"
+	"git.curoverse.com/arvados.git/services/keepstore/pull_list"
 	"github.com/gorilla/mux"
 	"io"
 	"log"
@@ -61,7 +61,7 @@ func MakeRESTRouter() *mux.Router {
 
 	// The PullHandler processes "PUT /pull" commands from Data Manager.
 	// It parses the JSON list of pull requests in the request body, and
-	// delivers them to the PullBlocks goroutine for replication.
+	// delivers them to the pull list manager for replication.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
 
 	// Any request which does not match any of these routes gets
@@ -446,26 +446,26 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	// Parse the request body.
-	var pull_list []replicator.PullRequest
+	var plist []pull_list.PullRequest
 	r := json.NewDecoder(req.Body)
-	if err := r.Decode(&pull_list); err != nil {
+	if err := r.Decode(&plist); err != nil {
 		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
 		log.Printf("%s %s: %s\n", req.Method, req.URL, err.Error())
 		return
 	}
 
 	// We have a properly formatted pull list sent from the data
-	// manager.  Report success and send the list to the keep
-	// replicator for further handling.
-	log.Printf("%s %s: received %s\n", req.Method, req.URL, pull_list)
+	// manager.  Report success and send the list to the pull list
+	// manager for further handling.
+	log.Printf("%s %s: received %s\n", req.Method, req.URL, plist)
 	resp.WriteHeader(http.StatusOK)
 	resp.Write([]byte(
-		fmt.Sprintf("Received %d pull requests\n", len(pull_list))))
+		fmt.Sprintf("Received %d pull requests\n", len(plist))))
 
-	if replica == nil {
-		replica = replicator.New()
+	if pullmgr == nil {
+		pullmgr = pull_list.NewManager()
 	}
-	replica.SetList(pull_list)
+	pullmgr.SetList(plist)
 }
 
 // ==============================

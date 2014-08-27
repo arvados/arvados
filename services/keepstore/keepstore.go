@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/services/keepstore/replicator"
+	"git.curoverse.com/arvados.git/services/keepstore/pull_list"
 	"io/ioutil"
 	"log"
 	"net"
@@ -92,11 +92,11 @@ func (e *KeepError) Error() string {
 // Initialized by the --volumes flag (or by FindKeepVolumes).
 var KeepVM VolumeManager
 
-// The KeepReplica is responsible for pulling blocks from other
-// Keep servers to ensure replication. When Keep receives a new
-// "pull list" from Data Manager, KeepReplica is responsible for
-// fetching blocks on the list.
-var replica *replicator.Replicator
+// The pull list manager is responsible for pulling blocks from other
+// Keep servers to ensure replication. When Keep receives a new "pull
+// list" from Data Manager, the pull manager is responsible for fetching
+// blocks on the list.
+var pullmgr *pull_list.Manager
 
 // TODO(twp): continue moving as much code as possible out of main
 // so it can be effectively tested. Esp. handling and postprocessing
