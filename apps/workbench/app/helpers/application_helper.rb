@@ -11,8 +11,8 @@ module ApplicationHelper
     Rails.configuration.arvados_v1_base.gsub /https?:\/\/|\/arvados\/v1/,''
   end
 
-  def render_content_from_database(markup)
-    raw RedCloth.new(markup).to_html
+  def render_markup(markup)
+    raw RedCloth.new(markup.to_s).to_html(:refs_arvados, :textile) if markup
   end
 
   def human_readable_bytes_html(n)
@@ -153,9 +153,12 @@ module ApplicationHelper
     if !object.attribute_editable?(attr, :ever) or
         (!object.editable? and
          !object.owner_uuid.in?(my_projects.collect(&:uuid)))
-      return ((attrvalue && attrvalue.length > 0 && attrvalue) ||
-              (attr == 'name' and object.andand.default_name) ||
-              '(none)')
+      if attrvalue && attrvalue.length > 0
+        return render_textile_if_textile( object, attr, attrvalue )
+      else
+        return (attr == 'name' and object.andand.default_name) ||
+                '(none)'
+      end
     end
 
     input_type = 'text'
@@ -169,6 +172,7 @@ module ApplicationHelper
     end
 
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
+    rendervalue = render_textile_if_textile( object, attr, attrvalue )
 
     ajax_options = {
       "data-pk" => {
@@ -186,16 +190,17 @@ module ApplicationHelper
     @unique_id ||= (Time.now.to_f*1000000).to_i
     span_id = object.uuid.to_s + '-' + attr.to_s + '-' + (@unique_id += 1).to_s
 
-    span_tag = content_tag 'span', attrvalue.to_s, {
-      "data-emptytext" => ('(none)'),
+    span_tag = content_tag 'span', rendervalue, {
+      "data-emptytext" => '(none)',
       "data-placement" => "bottom",
       "data-type" => input_type,
       "data-title" => "Edit #{attr.to_s.gsub '_', ' '}",
       "data-name" => attr,
       "data-object-uuid" => object.uuid,
       "data-toggle" => "manual",
+      "data-value" => attrvalue,
       "id" => span_id,
-      :class => "editable"
+      :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
     }.merge(htmloptions).merge(ajax_options)
     edit_button = raw('<a href="#" class="btn btn-xs btn-default btn-nodecorate" data-toggle="x-editable tooltip" data-toggle-selector="#' + span_id + '" data-placement="top" title="' + (htmloptions[:tiptitle] || 'edit') + '"><i class="fa fa-fw fa-pencil"></i></a>')
     if htmloptions[:btnplacement] == :left
@@ -453,5 +458,14 @@ module ApplicationHelper
     else
       nil
     end
+  end
+
+private
+  def is_textile?( object, attr )
+    is_textile = object.textile_attributes.andand.include?(attr)
+  end
+
+  def render_textile_if_textile( object, attr, attrvalue )
+    is_textile?( object, attr ) ? render_markup(attrvalue) : attrvalue
   end
 end

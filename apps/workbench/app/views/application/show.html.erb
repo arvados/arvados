@@ -10,16 +10,16 @@
   <% if @object.properties[:page_content] %>
     <% content_for :page_content do %>
       <h1>
-        <%= render_content_from_database(@object.properties[:page_title] || @object.uuid) %>
+        <%= render_markup(@object.properties[:page_title] || @object.uuid) %>
       </h1>
 
       <% if @object.properties[:page_subtitle] %>
         <h4>
-          <%= render_content_from_database @object.properties[:page_subtitle] %>
+          <%= render_markup @object.properties[:page_subtitle] %>
         </h4>
       <% end %>
 
-      <%= render_content_from_database @object.properties[:page_content] %>
+      <%= render_markup @object.properties[:page_content] %>
     <% end %>
   <% end %>
 <% end %>

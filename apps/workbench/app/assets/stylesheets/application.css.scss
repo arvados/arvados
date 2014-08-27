@@ -244,7 +244,9 @@ div.pane-content iframe {
   width: 100%;
   border: none;
 }
-
+span.editable-textile {
+  display: inline-block;
+}
 .text-overflow-ellipsis {
   white-space: nowrap;
   overflow: hidden;

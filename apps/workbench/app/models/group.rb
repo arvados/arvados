@@ -24,4 +24,8 @@ class Group < ArvadosBase
   def class_for_display
     group_class == 'project' ? 'Project' : super
   end
+
+  def textile_attributes
+    [ 'description' ]
+  end
 end

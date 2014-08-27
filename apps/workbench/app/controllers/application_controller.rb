@@ -202,7 +202,13 @@ class ApplicationController < ActionController::Base
       return render_not_found("object not found")
     end
     respond_to do |f|
-      f.json { render json: @object.attributes.merge(href: url_for(action: :show, id: @object)) }
+      f.json do
+        extra_attrs = { href: url_for(action: :show, id: @object) }
+        @object.textile_attributes.each do |textile_attr|
+          extra_attrs.merge!({ "#{textile_attr}Textile" => view_context.render_markup(@object.attributes[textile_attr]) })
+        end
+        render json: @object.attributes.merge(extra_attrs)
+      end
       f.html {
         if params['tab_pane']
           render_pane params['tab_pane']
