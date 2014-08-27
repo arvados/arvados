@@ -39,14 +39,18 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
     visit current_path
+    assert(has_no_text?('.container-fluid', text: '*Textile description for A project*'),
+           "Description is not rendered properly")
     assert(find?('.container-fluid', text: 'Textile description for A project'),
            "Description update did not survive page refresh")
     assert(!find?('.container-fluid', text: '*Textile description for A project*'),
            "Textile description is displayed with uninterpreted formatting characters")
     assert(page.has_link?("take me home"), "link not found in description")
     click_link 'take me home'
-    assert page.has_text?('My projects')
-    assert page.has_text?('Projects shared with me')
+    assert(page.has_text?('My projects'), 'My projects - not found on dashboard')
+    assert(page.has_text?('Projects shared with me'), 'Projects shared with me - not found on dashboard')
+    assert(page.has_text?('Textile description for A project'), "Project description not found")
+    assert(page.has_no_text?('*Textile description for A project*'), "Project description is not rendered properly")
   end
 
   test 'Find a project and edit description to html description' do
