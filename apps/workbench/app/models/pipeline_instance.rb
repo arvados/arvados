@@ -8,9 +8,10 @@ class PipelineInstance < ArvadosBase
   def friendly_link_name
     pipeline_name = self.name
     if pipeline_name.nil? or pipeline_name.empty?
-      return PipelineTemplate.where(uuid: self.pipeline_template_uuid).first.name
+      template = PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+      template.name if template else self.uuid
     else
-      return pipeline_name
+      pipeline_name
     end
   end
 
