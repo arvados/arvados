@@ -33,7 +33,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('span', text: api_fixture('groups')['aproject']['name']).click
       within('.arv-description-as-subtitle') do
         find('.fa-pencil').click
-        find('.editable-input textarea').set('<p>*Textile description for A project* - "take me home":/ </p><p>And a new paragraph in description.<p/>')
+        find('.editable-input textarea').set('<p>*Textile description for A project* - "take me home":/ </p><p>And a new paragraph in description.</p>')
         find('.editable-submit').click
       end
       wait_for_ajax
