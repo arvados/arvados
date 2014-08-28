@@ -154,7 +154,7 @@ module ApplicationHelper
         (!object.editable? and
          !object.owner_uuid.in?(my_projects.collect(&:uuid)))
       if attrvalue && attrvalue.length > 0
-        return render_textile_if_textile( object, attr, attrvalue )
+        return render_attribute_as_textile( object, attr, attrvalue, false )
       else
         return (attr == 'name' and object.andand.default_name) ||
                 '(none)'
@@ -172,7 +172,7 @@ module ApplicationHelper
     end
 
     attrvalue = attrvalue.to_json if attrvalue.is_a? Hash or attrvalue.is_a? Array
-    rendervalue = render_textile_if_textile( object, attr, attrvalue )
+    rendervalue = render_attribute_as_textile( object, attr, attrvalue, false )
 
     ajax_options = {
       "data-pk" => {
@@ -207,17 +207,6 @@ module ApplicationHelper
       edit_button + ' ' + span_tag
     else
       span_tag + ' ' + edit_button
-    end
-  end
-
-  def render_textile_attribute(object, attr, truncate)
-    attrvalue = object.send(attr)
-    if attrvalue && attrvalue.length > 0
-      markup = render_textile_if_textile( object, attr, attrvalue )
-      markup = markup[0,markup.index('</p>')+4] if (truncate && markup.index('</p>'))
-      return markup
-    else
-      return (attr == 'name' and object.andand.default_name) || ''
     end
   end
 
@@ -471,12 +460,18 @@ module ApplicationHelper
     end
   end
 
+  def render_attribute_as_textile( object, attr, attrvalue, truncate )
+    if attrvalue && (is_textile? object, attr)
+      markup = render_markup attrvalue
+      markup = markup[0,markup.index('</p>')+4] if (truncate && markup.index('</p>'))
+      return markup
+    else
+      return attrvalue
+    end
+  end
+
 private
   def is_textile?( object, attr )
     is_textile = object.textile_attributes.andand.include?(attr)
-  end
-
-  def render_textile_if_textile( object, attr, attrvalue )
-    is_textile?( object, attr ) ? render_markup(attrvalue) : attrvalue
   end
 end

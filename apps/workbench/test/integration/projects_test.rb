@@ -33,24 +33,30 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('span', text: api_fixture('groups')['aproject']['name']).click
       within('.arv-description-as-subtitle') do
         find('.fa-pencil').click
-        find('.editable-input textarea').set('*Textile description for A project* - "take me home":/')
+        find('.editable-input textarea').set('<p>*Textile description for A project* - "take me home":/ </p><p>And a new paragraph in description.<p/>')
         find('.editable-submit').click
       end
       wait_for_ajax
     end
+
+    # visit project page
     visit current_path
     assert(has_no_text?('.container-fluid', text: '*Textile description for A project*'),
            "Description is not rendered properly")
     assert(find?('.container-fluid', text: 'Textile description for A project'),
            "Description update did not survive page refresh")
-    assert(!find?('.container-fluid', text: '*Textile description for A project*'),
-           "Textile description is displayed with uninterpreted formatting characters")
+    assert(find?('.container-fluid', text: 'And a new paragraph in description'),
+           "Description did not contain the expected new paragraph")
     assert(page.has_link?("take me home"), "link not found in description")
+
     click_link 'take me home'
+
+    # now in dashboard
     assert(page.has_text?('My projects'), 'My projects - not found on dashboard')
     assert(page.has_text?('Projects shared with me'), 'Projects shared with me - not found on dashboard')
     assert(page.has_text?('Textile description for A project'), "Project description not found")
-    assert(page.has_no_text?('*Textile description for A project*'), "Project description is not rendered properly")
+    assert(page.has_no_text?('*Textile description for A project*'), "Project description is not rendered properly in dashboard")
+    assert(page.has_no_text?('And a new paragraph in description'), "Project description is not truncated after first paragraph")
   end
 
   test 'Find a project and edit description to html description' do
