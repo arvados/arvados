@@ -46,6 +46,12 @@ class FreshBase(object):
         self._stale = False
         self._last_update = time()
 
+    def ctime():
+        return 0
+
+    def mtime():
+        return 0
+
 
 class File(FreshBase):
     '''Base for file objects.'''
@@ -65,9 +71,10 @@ class File(FreshBase):
 class StreamReaderFile(File):
     '''Wraps a StreamFileReader as a file.'''
 
-    def __init__(self, parent_inode, reader):
+    def __init__(self, parent_inode, reader, collection):
         super(StreamReaderFile, self).__init__(parent_inode)
         self.reader = reader
+        self.collection = collection
 
     def size(self):
         return self.reader.size()
@@ -77,6 +84,12 @@ class StreamReaderFile(File):
 
     def stale(self):
         return False
+
+    def ctime():
+        return collection["created_at"]
+
+    def mtime():
+        return collection["modified_at"]
 
 
 class ObjectFile(File):
@@ -166,7 +179,9 @@ class Directory(FreshBase):
                 self._entries[n] = oldentries[n]
                 del oldentries[n]
             else:
-                self._entries[n] = self.inodes.add_entry(new_entry(i))
+                ent = new_entry(i)
+                if ent is not None:
+                    self._entries[n] = self.inodes.add_entry(ent)
         for n in oldentries:
             llfuse.invalidate_entry(self.inode, str(n))
             self.inodes.del_entry(oldentries[n])
@@ -237,7 +252,19 @@ class MagicDirectory(Directory):
         else:
             raise KeyError("No collection with id " + item)
 
-class TagsDirectory(Directory):
+class RecursiveInvalidateDirectory(Directory):
+    def invalidate(self):
+        try:
+            if self.parent_inode == llfuse.ROOT_INODE:
+                llfuse.lock.acquire()
+            super(RecursiveInvalidateDirectory, self).invalidate()
+            for a in self._entries:
+                self._entries[a].invalidate()
+        finally:
+            if self.parent_inode == llfuse.ROOT_INODE:
+                llfuse.lock.release()
+
+class TagsDirectory(RecursiveInvalidateDirectory):
     '''A special directory that contains as subdirectories all tags visible to the user.'''
 
     def __init__(self, parent_inode, inodes, api, poll_time=60):
@@ -249,12 +276,6 @@ class TagsDirectory(Directory):
         except:
             self._poll = True
             self._poll_time = poll_time
-
-    def invalidate(self):
-        with llfuse.lock:
-            super(TagsDirectory, self).invalidate()
-            for a in self._entries:
-                self._entries[a].invalidate()
 
     def update(self):
         tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = True).execute()
@@ -288,35 +309,7 @@ class TagDirectory(Directory):
                    lambda i: CollectionDirectory(self.inode, self.inodes, i['head_uuid']))
 
 
-class HomeDirectory(Directory):
-    '''A special directory that represents the "home" project.'''
-
-    def __init__(self, parent_inode, inodes, api, poll_time=60):
-        super(HomeDirectory, self).__init__(parent_inode)
-        self.inodes = inodes
-        self.api = api
-        try:
-            arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
-        except:
-            self._poll = True
-            self._poll_time = poll_time
-
-    def invalidate(self):
-        with llfuse.lock:
-            super(HomeDirectory, self).invalidate()
-            for a in self._entries:
-                self._entries[a].invalidate()
-
-    def update(self):
-        groups = self.api.groups().list(
-            filters=[['group_class','=','project']]).execute()
-        self.merge(groups['items'],
-                   lambda i: i['uuid'],
-                   lambda a, i: a.uuid == i['uuid'],
-                   lambda i: ProjectDirectory(self.inode, self.inodes, self.api, i, poll=self._poll, poll_time=self._poll_time))
-
-
-class ProjectDirectory(Directory):
+class ProjectDirectory(RecursiveInvalidateDirectory):
     '''A special directory that contains the contents of a project.'''
 
     def __init__(self, parent_inode, inodes, api, uuid, poll=False, poll_time=60):
@@ -324,27 +317,34 @@ class ProjectDirectory(Directory):
         self.inodes = inodes
         self.api = api
         self.uuid = uuid['uuid']
-        self._poll = poll
-        self._poll_time = poll_time
 
-    def invalidate(self):
-        with llfuse.lock:
-            super(ProjectDirectory, self).invalidate()
-            for a in self._entries:
-                self._entries[a].invalidate()
+        if parent_inode == llfuse.ROOT_INODE:
+            try:
+                arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
+            except:
+                self._poll = True
+                self._poll_time = poll_time
+        else:
+            self._poll = poll
+            self._poll_time = poll_time
+
 
     def createDirectory(self, i):
-        if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']):
+        if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']) and i['name'] is not None:
             return CollectionDirectory(self.inode, self.inodes, i['uuid'])
         elif re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', i['uuid']):
             return ProjectDirectory(self.parent_inode, self.inodes, self.api, i, self._poll, self._poll_time)
-        elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
-            return ObjectFile(self.parent_inode, i)
-        return None
+        #elif re.match(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}', i['uuid']):
+        #    return None
+        #elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
+        #    return ObjectFile(self.parent_inode, i)
+        else:
+            return None
+
+    def contents(self):
+        return arvados.util.all_contents(self.api, self.uuid)
 
     def update(self):
-        contents = self.api.groups().contents(uuid=self.uuid).execute()
-
         def same(a, i):
             if isinstance(a, CollectionDirectory):
                 return a.collection_locator == i['uuid']
@@ -354,11 +354,20 @@ class ProjectDirectory(Directory):
                 return a.uuid == i['uuid'] and not a.stale()
             return False
 
-        self.merge(contents['items'],
-                   lambda i: i['uuid'],
+        self.merge(self.contents(),
+                   lambda i: i['name'] if 'name' in i and i['name'] is not None and len(i['name']) > 0 else i['uuid'],
                    same,
                    self.createDirectory)
 
+
+class HomeDirectory(ProjectDirectory):
+    '''A special directory that represents the "home" project.'''
+
+    def __init__(self, parent_inode, inodes, api, poll=False, poll_time=60):
+        super(HomeDirectory, self).__init__(parent_inode, inodes, api, api.users().current().execute())
+
+    #def contents(self):
+    #    return self.api.groups().contents(uuid=self.uuid).execute()['items']
 
 class FileHandle(object):
     '''Connects a numeric file handle to a File or Directory object that has
