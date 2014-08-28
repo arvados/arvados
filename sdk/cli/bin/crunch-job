@@ -860,7 +860,8 @@ else {
     my $output = $arv->{'collections'}->{'create'}->execute('collection' => {
       'manifest_text' => $orig_manifest_text,
     });
-    Log(undef, "output " . $output->{portable_data_hash});
+    Log(undef, "output uuid " . $output->{uuid});
+    Log(undef, "output hash " . $output->{portable_data_hash});
     $Job->update_attributes('output' => $output->{portable_data_hash}) if $job_has_uuid;
   };
   if ($@) {
@@ -1335,7 +1336,7 @@ sub save_meta
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
   $local_logfile->flush;
-  my $cmd = "arv-put --filename ''\Q$keep_logfile\E "
+  my $cmd = "arv-put --portable-data-hash --filename ''\Q$keep_logfile\E "
       . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;
@@ -1493,7 +1494,12 @@ for my $dir ($destdir, $task_work) {
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
 if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
-    exit 0;
+    if (@ARGV) {
+        exec(@ARGV);
+        die "Cannot exec `@ARGV`: $!";
+    } else {
+        exit 0;
+    }
 }
 
 unlink "$destdir.commit";
@@ -1541,6 +1547,7 @@ close L;
 
 if (@ARGV) {
     exec(@ARGV);
+    die "Cannot exec `@ARGV`: $!";
 } else {
     exit 0;
 }
