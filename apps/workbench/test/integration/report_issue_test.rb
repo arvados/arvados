@@ -59,7 +59,7 @@ class ReportIssueTest < ActionDispatch::IntegrationTest
 
       # enter a report text and click on report
       page.find_field('report_issue_text').set 'my test report text'
-        assert page.has_button?('Send problem report'), 'Send problem report button not enabled after entering text'
+      assert page.has_button?('Send problem report'), 'Send problem report button not enabled after entering text'
       click_button 'Send problem report'
 
       # ajax success updated button texts and added footer message
