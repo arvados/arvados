@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
 import logging
-logging.basicConfig(level=logging.INFO, format="run-command: %(message)s")
+
+logger = logging.getLogger('run-command')
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter("run-command: %(message)s"))
+logger.addHandler(log_handler)
+logger.setLevel(logging.INFO)
 
 import arvados
 import re
@@ -124,7 +129,7 @@ try:
         if arvados.current_task()['sequence'] == 0:
             var = jobp["task.foreach"]
             items = get_items(jobp, jobp[var])
-            logging.info("parallelizing on %s with items %s" % (var, items))
+            logger.info("parallelizing on %s with items %s" % (var, items))
             if items is not None:
                 for i in items:
                     params = copy.copy(jobp)
@@ -165,16 +170,16 @@ try:
         stdoutname = subst.do_substitution(taskp, taskp["task.stdout"])
         stdoutfile = open(stdoutname, "wb")
 
-    logging.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
+    logger.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
 except subst.SubstitutionError as e:
-    logging.error(str(e))
-    logging.error("task parameters was:")
-    logging.error(pprint.pformat(taskp))
+    logger.error(str(e))
+    logger.error("task parameters was:")
+    logger.error(pprint.pformat(taskp))
     sys.exit(1)
 except Exception as e:
-    logging.exception("caught exception")
-    logging.error("task parameters was:")
-    logging.error(pprint.pformat(taskp))
+    logger.exception("caught exception")
+    logger.error("task parameters was:")
+    logger.error(pprint.pformat(taskp))
     sys.exit(1)
 
 try:
@@ -190,13 +195,13 @@ try:
     rcode = sp.wait()
 
     if sig.sig is not None:
-        logging.critical("terminating on signal %s" % sig.sig)
+        logger.critical("terminating on signal %s" % sig.sig)
         sys.exit(2)
     else:
-        logging.info("completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
+        logger.info("completed with exit code %i (%s)" % (rcode, "success" if rcode == 0 else "failed"))
 
 except Exception as e:
-    logging.exception("caught exception")
+    logger.exception("caught exception")
 
 # restore default signal handlers.
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -206,11 +211,11 @@ signal.signal(signal.SIGQUIT, signal.SIG_DFL)
 for l in links:
     os.unlink(l)
 
-logging.info("the following output files will be saved to keep:")
+logger.info("the following output files will be saved to keep:")
 
 subprocess.call(["find", ".", "-type", "f", "-printf", "run-command: %12.12s %h/%f\\n"], stdout=sys.stderr)
 
-logging.info("start writing output to keep")
+logger.info("start writing output to keep")
 
 if "task.vwd" in taskp:
     if "task.foreach" in jobp:
