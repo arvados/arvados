@@ -1,9 +1,11 @@
 class JobPriorityFixup < ActiveRecord::Migration
   def up
-    change_column :jobs, :priority, :string, null: false, default: "0"
+    remove_column :jobs, :priority
+    add_column :jobs, :priority, :integer, null: false, default: 0
   end
 
   def down
-    change_column :jobs, :priority, :string, null: true, default: nil
+    remove_column :jobs, :priority
+    add_column :jobs, :priority, :string, null: true, default: nil
   end
 end

@@ -75,7 +75,7 @@ class Job < ArvadosModel
 
   def set_priority
     if self.priority.nil?
-      self.priority = "0"
+      self.priority = 0
     end
     true
   end

@@ -420,7 +420,6 @@ CREATE TABLE jobs (
     output character varying(255),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    priority character varying(255) DEFAULT '0'::character varying NOT NULL,
     is_locked_by_uuid character varying(255),
     log character varying(255),
     tasks_summary text,
@@ -430,7 +429,8 @@ CREATE TABLE jobs (
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
     name character varying(255),
-    description text
+    description text,
+    priority integer DEFAULT 0 NOT NULL
 );
 
 
@@ -1808,13 +1808,6 @@ CREATE UNIQUE INDEX jobs_owner_uuid_name_unique ON jobs USING btree (owner_uuid,
 --
 
 CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btree (tail_uuid, name) WHERE ((link_class)::text = 'name'::text);
-
-
---
--- Name: pipeline_instance_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX pipeline_instance_owner_uuid_name_unique ON pipeline_instances USING btree (owner_uuid, name);
 
 
 --
