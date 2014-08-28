@@ -173,12 +173,12 @@ try:
     logger.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
 except subst.SubstitutionError as e:
     logger.error(str(e))
-    logger.error("task parameters was:")
+    logger.error("task parameters were:")
     logger.error(pprint.pformat(taskp))
     sys.exit(1)
 except Exception as e:
     logger.exception("caught exception")
-    logger.error("task parameters was:")
+    logger.error("task parameters were:")
     logger.error(pprint.pformat(taskp))
     sys.exit(1)
 

@@ -2,8 +2,7 @@ import os
 import glob
 
 class SubstitutionError(Exception):
-    def __init__(self, message):
-        super(SubstitutionError, self).__init__(message)
+    pass
 
 def search(c):
     DEFAULT = 0
@@ -79,7 +78,7 @@ def do_substitution(p, c, subs=default_subs):
                 raise SubstitutionError("Unknown variable or function '%s' while performing substitution on '%s'" % (v, c))
             if r is None:
                 raise SubstitutionError("Substitution for '%s' is null while performing substitution on '%s'" % (v, c))
-            if not (isinstance(r, str) or isinstance(r, unicode)):
+            if not isinstance(r, basestring):
                 raise SubstitutionError("Substitution for '%s' must be a string while performing substitution on '%s'" % (v, c))
 
         c = c[:m[0]] + r + c[m[1]+1:]
