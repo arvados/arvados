@@ -1,6 +1,10 @@
 import os
 import glob
 
+class SubstitutionError(Exception):
+    def __init__(self, message):
+        super(SubstitutionError, self).__init__(message)
+
 def search(c):
     DEFAULT = 0
     DOLLAR = 1
@@ -28,7 +32,7 @@ def search(c):
             state = DEFAULT
         i += 1
     if depth != 0:
-        raise Exception("Substitution error, mismatched parentheses {}".format(c))
+        raise SubstitutionError("Substitution error, mismatched parentheses {}".format(c))
     return None
 
 def sub_file(v):
@@ -46,7 +50,7 @@ def sub_basename(v):
 def sub_glob(v):
     l = glob.glob(v)
     if len(l) == 0:
-        raise Exception("$(glob): No match on '%s'" % v)
+        raise SubstitutionError("$(glob): No match on '%s'" % v)
     else:
         return l[0]
 
@@ -57,19 +61,25 @@ default_subs = {"file ": sub_file,
 
 def do_substitution(p, c, subs=default_subs):
     while True:
-        #print("c is", c)
         m = search(c)
-        if m is not None:
-            v = do_substitution(p, c[m[0]+2 : m[1]])
-            var = True
-            for sub in subs:
-                if v.startswith(sub):
-                    r = subs[sub](v[len(sub):])
-                    var = False
-                    break
-            if var:
-                r = p[v]
-
-            c = c[:m[0]] + r + c[m[1]+1:]
-        else:
+        if m is None:
             return c
+
+        v = do_substitution(p, c[m[0]+2 : m[1]])
+        var = True
+        for sub in subs:
+            if v.startswith(sub):
+                r = subs[sub](v[len(sub):])
+                var = False
+                break
+        if var:
+            if v in p:
+                r = p[v]
+            else:
+                raise SubstitutionError("Unknown variable or function '%s' while performing substitution on '%s'" % (v, c))
+            if r is None:
+                raise SubstitutionError("Substitution for '%s' is null while performing substitution on '%s'" % (v, c))
+            if not (isinstance(r, str) or isinstance(r, unicode)):
+                raise SubstitutionError("Substitution for '%s' must be a string while performing substitution on '%s'" % (v, c))
+
+        c = c[:m[0]] + r + c[m[1]+1:]

@@ -166,7 +166,11 @@ try:
         stdoutfile = open(stdoutname, "wb")
 
     logging.info("{}{}{}".format(' '.join(cmd), (" < " + stdinname) if stdinname is not None else "", (" > " + stdoutname) if stdoutname is not None else ""))
-
+except subst.SubstitutionError as e:
+    logging.error(str(e))
+    logging.error("task parameters was:")
+    logging.error(pprint.pformat(taskp))
+    sys.exit(1)
 except Exception as e:
     logging.exception("caught exception")
     logging.error("task parameters was:")
