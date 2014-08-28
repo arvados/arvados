@@ -18,8 +18,6 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     new_job = JSON.parse(@response.body)
     assert_not_nil new_job['uuid']
     assert_not_nil new_job['script_version'].match(/^[0-9a-f]{40}$/)
-    # Default: not persistent
-    assert_equal false, new_job['output_is_persistent']
   end
 
   test "normalize output and log uuids when creating job" do
