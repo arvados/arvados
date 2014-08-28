@@ -71,7 +71,7 @@ gem 'database_cleaner'
 
 gem 'themes_for_rails'
 
-gem 'arvados-cli', '>= 0.1.20140825141611'
+gem 'arvados-cli', '>= 0.1.20140827170424'
 
 # pg_power lets us use partial indexes in schema.rb in Rails 3
 gem 'pg_power'

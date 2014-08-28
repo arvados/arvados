@@ -223,7 +223,7 @@ PLATFORMS
 DEPENDENCIES
   acts_as_api
   andand
-  arvados-cli (>= 0.1.20140825141611)
+  arvados-cli (>= 0.1.20140827170424)
   coffee-rails (~> 3.2.0)
   database_cleaner
   factory_girl_rails
