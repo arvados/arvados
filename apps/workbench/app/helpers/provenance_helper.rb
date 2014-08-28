@@ -189,11 +189,6 @@ module ProvenanceHelper
           @pdata.each do |k, job|
             if job[:output] == uuid.to_s
               extra = { label: 'output' }
-              if job[:output_is_persistent]
-                extra[:label] += ' (persistent)'
-                @node_extra[uuid] ||= {}
-                @node_extra[uuid][:penwidth] = 4
-              end
               gr += edge(uuid, job_uuid(job), extra)
               gr += generate_provenance_edges(job[:uuid])
             end

@@ -427,7 +427,6 @@ CREATE TABLE jobs (
     runtime_constraints text,
     nondeterministic boolean,
     repository character varying(255),
-    output_is_persistent boolean DEFAULT false NOT NULL,
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
     name character varying(255),
@@ -2025,3 +2024,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140815171049');
 INSERT INTO schema_migrations (version) VALUES ('20140817035914');
 
 INSERT INTO schema_migrations (version) VALUES ('20140818125735');
+
+INSERT INTO schema_migrations (version) VALUES ('20140826180337');

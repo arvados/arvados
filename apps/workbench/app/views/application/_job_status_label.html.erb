@@ -6,6 +6,8 @@
   <span class="label label-default"><%= if defined? title then title else 'finished' end %></span>
 <% elsif j[:started_at] %>
   <span class="label label-info"><%= if defined? title then title else 'running' end %></span>
+<% elsif not j.nil? %>
+  <span class="label label-default"><%= if defined? title then title else 'queued' end %></span>
 <% else %>
-  <span class="label label-default"><%= if defined? title then title else 'not running' end %></span>
+  <span class="label label-default"><%= if defined? title then title else 'not ready' end %></span>
 <% end %>

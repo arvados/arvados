@@ -518,7 +518,6 @@ class WhRunPipelineInstance
             :script_version => c[:script_version],
             :repository => c[:repository],
             :nondeterministic => c[:nondeterministic],
-            :output_is_persistent => c[:output_is_persistent] || false,
             :runtime_constraints => c[:runtime_constraints],
             :owner_uuid => owner_uuid,
           }, {
@@ -562,37 +561,34 @@ class WhRunPipelineInstance
               # This is my first time discovering that the job
               # succeeded. (At the top of this loop, I was still
               # waiting for it to finish.)
-              if c[:output_is_persistent]
-                # I need to make sure a resources/wants link is in
-                # place to protect the output from garbage
-                # collection. (Normally Crunch does this for me, but
-                # here I might be reusing the output of someone else's
-                # job and I need to make sure it's understood that the
-                # output is valuable to me, too.)
-                wanted = c[:job][:output]
-                debuglog "checking for existing persistence link for #{wanted}"
-                @my_user_uuid ||= $arv.user.current[:uuid]
-                links = $arv.link.list(limit: 1,
-                                       filters:
-                                       [%w(link_class = resources),
-                                        %w(name = wants),
-                                        %w(tail_uuid =) + [@my_user_uuid],
-                                        %w(head_uuid =) + [wanted]
-                                       ])[:items]
-                if links.any?
-                  debuglog "link already exists, uuid #{links.first[:uuid]}"
-                else
-                  newlink = $arv.link.create link: \
-                  {
-                    link_class: 'resources',
-                    name: 'wants',
-                    tail_kind: 'arvados#user',
-                    tail_uuid: @my_user_uuid,
-                    head_kind: 'arvados#collection',
-                    head_uuid: wanted,
-                    owner_uuid: owner_uuid
+
+              debuglog "names: #{@instance[:name]} #{@template[:name]}", 0
+              if (not @instance[:name].nil?) and (not @instance[:name].empty?)
+                pipeline_name = @instance[:name]
+              else
+                fetch_template(@instance[:pipeline_template_uuid])
+                pipeline_name = @template[:name]
+              end
+              if c[:output_name] != false
+                output_name = c[:output_name] || "Output of #{cname} of #{pipeline_name}"
+                # Create a collection located in the same project as the pipeline with the contents of the output.
+                portable_data_hash = c[:job][:output]
+                collections = $arv.collection.list(limit: 1,
+                                                   filters: [['portable_data_hash', '=', portable_data_hash]],
+                                                   select: ["portable_data_hash", "manifest_text"]
+                                                   )[:items]
+                if collections.any?
+                  newcollection = {
+                    owner_uuid: owner_uuid,
+                    name: "#{output_name} at #{c[:job][:finished_at]}",
+                    portable_data_hash: collections.first[:portable_data_hash],
+                    manifest_text: collections.first[:manifest_text]
                   }
-                  debuglog "added link, uuid #{newlink[:uuid]}"
+                  debuglog "Creating collection #{newcollection}", 0
+                  newcollection_actual = $arv.collection.create collection: newcollection
+                  c[:output_uuid] = newcollection_actual[:uuid]
+                else
+                  debuglog "Could not find a collection with portable data hash #{portable_data_hash}", 0
                 end
               end
             end

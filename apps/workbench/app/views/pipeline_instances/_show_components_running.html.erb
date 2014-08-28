@@ -34,15 +34,15 @@
           </td><td>
             <%= pj[:progress_bar] %>
           </td>
-          <% current_job = Job.find(pj[:job][:uuid]) rescue nil %>
+          <% current_job = pj[:job] rescue nil %>
           <td>
-            <% if current_job %>
+            <% if current_job.is_a? Job %>
               <%= render partial: 'show_object_button', locals: {object: current_job, size: 'xs', link_text: 'Show job details'} %>
             <% end %>
           </td><td>
             <% if current_job.andand[:log] %>
               <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
-              <% Collection.limit(1).where(uuid: fixup[1]).each do |c| %>
+              <% Collection.limit(1).where(portable_data_hash: fixup[1]).each do |c| %>
                 <% c.files.first.andand do |file| %>
                   <%= link_to url_for(controller: 'collections', action: 'show_file', uuid: current_job[:log], file: "#{file[0]}/#{file[1]}", disposition: 'inline', size: file[2]), class: 'btn btn-default btn-xs' do %>
                     <i class="fa fa-fw fa-info"></i> Show log messages
@@ -51,8 +51,10 @@
               <% end %>
             <% end %>
           </td><td>
-            <% if current_job.andand[:output] %>
-              <%= link_to_if_arvados_object current_job[:output], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
+            <% if pj[:output_uuid] %>
+                <%= link_to_if_arvados_object pj[:output_uuid], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
+            <% elsif current_job.andand[:output] %>
+                <%= link_to_if_arvados_object current_job[:output], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
             <% end %>
           </td>
         </tr>

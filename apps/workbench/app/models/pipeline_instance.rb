@@ -5,6 +5,20 @@ class PipelineInstance < ArvadosBase
     true
   end
 
+  def friendly_link_name
+    pipeline_name = self.name
+    if pipeline_name.nil? or pipeline_name.empty?
+      template = PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+      if template
+        template.name
+      else
+        self.uuid
+      end
+    else
+      pipeline_name
+    end
+  end
+
   def content_summary
     begin
       PipelineTemplate.find(pipeline_template_uuid).name
