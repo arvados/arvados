@@ -225,7 +225,7 @@ if "task.vwd" in taskp:
         # Just a single task, so do merge with the original collection
         outcollection = vwd.checkin(subst.do_substitution(taskp, taskp["task.vwd"]), outdir, merge=True).manifest_text()
 else:
-    outcollection = robust_put.upload(outdir)
+    outcollection = robust_put.upload(outdir, logger)
 
 api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                      body={
