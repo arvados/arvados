@@ -260,7 +260,7 @@ class TagsDirectory(Directory):
         tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = True).execute()
         if "items" in tags:
             self.merge(tags['items'],
-                       lambda i: i['name'],
+                       lambda i: i['name'] if 'name' in i else i['uuid'],
                        lambda a, i: a.tag == i,
                        lambda i: TagDirectory(self.inode, self.inodes, self.api, i['name'], poll=self._poll, poll_time=self._poll_time))
 
@@ -320,7 +320,7 @@ class ProjectDirectory(Directory):
     '''A special directory that contains the contents of a project.'''
 
     def __init__(self, parent_inode, inodes, api, uuid, poll=False, poll_time=60):
-        super(GroupDirectory, self).__init__(parent_inode)
+        super(ProjectDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
         self.uuid = uuid['uuid']
@@ -329,42 +329,33 @@ class ProjectDirectory(Directory):
 
     def invalidate(self):
         with llfuse.lock:
-            super(GroupDirectory, self).invalidate()
+            super(ProjectDirectory, self).invalidate()
             for a in self._entries:
                 self._entries[a].invalidate()
 
     def createDirectory(self, i):
-        if re.match(r'[0-9a-f]{32}\+\d+', i['uuid']):
+        if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']):
             return CollectionDirectory(self.inode, self.inodes, i['uuid'])
         elif re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', i['uuid']):
-            return GroupDirectory(self.parent_inode, self.inodes, self.api, i, self._poll, self._poll_time)
+            return ProjectDirectory(self.parent_inode, self.inodes, self.api, i, self._poll, self._poll_time)
         elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
             return ObjectFile(self.parent_inode, i)
         return None
 
     def update(self):
-        contents = self.api.groups().contents(uuid=self.uuid, include_linked=True).execute()
-        links = {}
-        for a in contents['links']:
-            links[a['head_uuid']] = a['name']
-
-        def choose_name(i):
-            if i['uuid'] in links:
-                return links[i['uuid']]
-            else:
-                return i['uuid']
+        contents = self.api.groups().contents(uuid=self.uuid).execute()
 
         def same(a, i):
             if isinstance(a, CollectionDirectory):
                 return a.collection_locator == i['uuid']
-            elif isinstance(a, GroupDirectory):
+            elif isinstance(a, ProjectDirectory):
                 return a.uuid == i['uuid']
             elif isinstance(a, ObjectFile):
                 return a.uuid == i['uuid'] and not a.stale()
             return False
 
         self.merge(contents['items'],
-                   choose_name,
+                   lambda i: i['uuid'],
                    same,
                    self.createDirectory)
 
