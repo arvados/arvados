@@ -101,9 +101,15 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # Add this collection to the project using collections menu from top nav
     visit '/projects'
     find('.arv-project-list a,button', text: 'A Project').click
-
-    find('li.selection-menu > a').click
-    click_button 'Copy selections into this project'
+    find('.btn', text: 'Add data').click
+    within('.modal-dialog') do
+      wait_for_ajax
+      first('span', text: 'foo_tag').click
+      find('.btn', text: 'Add').click
+    end
+    using_wait_time(Capybara.default_wait_time * 3) do
+      wait_for_ajax
+    end
 
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
