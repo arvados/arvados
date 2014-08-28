@@ -171,11 +171,14 @@ title () {
 }
 
 clear_temp() {
-    if [[ -n "$t" && -z "$leave_temp" ]]
+    if [[ -z "$leave_temp" ]]
     then
         for t in "$VENVDIR" "$GOPATH"
         do
-            rm -rf "$t"
+            if [[ -n "$t" ]]
+            then
+                rm -rf "$t"
+            fi
         done
     else
         echo "Leaving VENVDIR=\"$VENVDIR\""
