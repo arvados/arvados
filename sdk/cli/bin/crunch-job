@@ -1493,6 +1493,7 @@ for my $dir ($destdir, $task_work) {
 open L, ">", "$destdir.lock" or die "$destdir.lock: $!";
 flock L, LOCK_EX;
 if (readlink ("$destdir.commit") eq $commit && -d $destdir) {
+    exec(@ARGV) if @ARGV;
     exit 0;
 }
 
