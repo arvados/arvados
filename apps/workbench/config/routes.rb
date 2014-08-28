@@ -70,6 +70,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :projects do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
     match 'remove_items', on: :member, via: :delete, action: :remove_items
+    get 'copy_items', on: :member, action: :copy_items
     get 'move_items', on: :member, action: :move_items
     get 'choose', on: :collection
     post 'share_with', on: :member
