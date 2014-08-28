@@ -288,11 +288,11 @@ class TagDirectory(Directory):
                    lambda i: CollectionDirectory(self.inode, self.inodes, i['head_uuid']))
 
 
-class GroupsDirectory(Directory):
-    '''A special directory that contains as subdirectories all groups visible to the user.'''
+class HomeDirectory(Directory):
+    '''A special directory that represents the "home" project.'''
 
     def __init__(self, parent_inode, inodes, api, poll_time=60):
-        super(GroupsDirectory, self).__init__(parent_inode)
+        super(HomeDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
         try:
@@ -303,7 +303,7 @@ class GroupsDirectory(Directory):
 
     def invalidate(self):
         with llfuse.lock:
-            super(GroupsDirectory, self).invalidate()
+            super(HomeDirectory, self).invalidate()
             for a in self._entries:
                 self._entries[a].invalidate()
 
@@ -313,11 +313,11 @@ class GroupsDirectory(Directory):
         self.merge(groups['items'],
                    lambda i: i['uuid'],
                    lambda a, i: a.uuid == i['uuid'],
-                   lambda i: GroupDirectory(self.inode, self.inodes, self.api, i, poll=self._poll, poll_time=self._poll_time))
+                   lambda i: ProjectDirectory(self.inode, self.inodes, self.api, i, poll=self._poll, poll_time=self._poll_time))
 
 
-class GroupDirectory(Directory):
-    '''A special directory that contains the contents of a group.'''
+class ProjectDirectory(Directory):
+    '''A special directory that contains the contents of a project.'''
 
     def __init__(self, parent_inode, inodes, api, uuid, poll=False, poll_time=60):
         super(GroupDirectory, self).__init__(parent_inode)

@@ -15,11 +15,7 @@ logger = logging.getLogger('arvados.arv-mount')
 if __name__ == '__main__':
     # Handle command line parameters
     parser = argparse.ArgumentParser(
-        description='''Mount Keep data under the local filesystem.  By default, if neither
-        --collection or --tags is specified, this mounts as a virtual directory
-        under which all Keep collections are available as subdirectories named
-        with the Keep locator; however directories will not be visible to 'ls'
-        until a program tries to access them.''',
+        description='''Mount Keep data under the local filesystem.  Default mode is --home''',
         epilog="""
 Note: When using the --exec feature, you must either specify the
 mountpoint before --exec, or mark the end of your --exec arguments
@@ -28,10 +24,19 @@ with "--".
     parser.add_argument('mountpoint', type=str, help="""Mount point.""")
     parser.add_argument('--allow-other', action='store_true',
                         help="""Let other users read the mount""")
-    parser.add_argument('--collection', type=str, help="""Mount only the specified collection at the mount point.""")
-    parser.add_argument('--tags', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing tagged
-collections on the server.""")
-    parser.add_argument('--groups', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing groups on the server.""")
+
+    mount_mode = parser.add_mutually_exclusive_group()
+
+    mount_mode.add_argument('--home', action='store_true', help="""Mount the user's home project (default).""")
+    mount_mode.add_argument('--collection', type=str, help="""Mount only the specified collection at the mount point.""")
+    mount_mode.add_argument('--tags', action='store_true',
+                            help="""Mount as a virtual directory consisting of subdirectories representing
+tagged collections on the server.""")
+    mount_mode.add_argument('--project', type=str, help="""Mount a specific project by uuid.""")
+    mount_mode.add_argument('--by-hash', action='store_true',
+                            help="""Mount as a virtual directory consisting of subdirectories for each
+collection by portable data hash.""")
+
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
     parser.add_argument('--logfile', help="""Write debug logs and errors to the specified file (default stderr).""")
     parser.add_argument('--foreground', action='store_true', help="""Run in foreground (default is to daemonize unless --exec specified)""", default=False)
@@ -83,16 +88,19 @@ collections on the server.""")
         operations = Operations(os.getuid(), os.getgid())
         api = arvados.api('v1')
 
-        if args.groups:
-            e = operations.inodes.add_entry(GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        if args.by_hash:
+            # Set up the request handler with the 'magic directory' at the root
+            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
         elif args.tags:
             e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
         elif args.collection != None:
             # Set up the request handler with the collection at the root
             e = operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
+        elif args.project != None:
+            e = operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, args.project))
         else:
-            # Set up the request handler with the 'magic directory' at the root
-            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+            e = operations.inodes.add_entry(HomeDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+
     except Exception:
         logger.exception("arv-mount: exception during API setup")
         exit(1)
