@@ -16,7 +16,10 @@ class Args(object):
 
 # Upload to Keep with error recovery.
 # Return a uuid or raise an exception if there are too many failures.
-def upload(source_dir):
+def upload(source_dir, logger=None):
+    if logger is None:
+        logger = logging.getLogger("arvados")
+
     source_dir = os.path.abspath(source_dir)
     done = False
     if 'TASK_WORK' in os.environ:
@@ -35,15 +38,15 @@ def upload(source_dir):
             outuuid = out.finish()
             done = True
         except KeyboardInterrupt as e:
-            logging.critical("caught interrupt signal 2")
+            logger.critical("caught interrupt signal 2")
             raise e
         except Exception as e:
-            logging.exception("caught exception:")
+            logger.exception("caught exception:")
             backoff *= 2
             if backoff > 256:
-                logging.critical("Too many upload failures, giving up")
+                logger.critical("Too many upload failures, giving up")
                 raise e
             else:
-                logging.warning("Sleeping for %s seconds before trying again" % backoff)
+                logger.warning("Sleeping for %s seconds before trying again" % backoff)
                 time.sleep(backoff)
     return outuuid
