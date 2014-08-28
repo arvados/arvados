@@ -262,6 +262,10 @@ func main() {
 
 		logger.Print("Running ", flag.Args())
 
+		// Child process will read from our stdin pipe (we
+		// close our copy below)
+		cmd.Stdin = os.Stdin
+
 		// Forward SIGINT and SIGTERM to inner process
 		term := make(chan os.Signal, 1)
 		go func(sig <-chan os.Signal) {
@@ -292,6 +296,9 @@ func main() {
 			logger.Fatal(err)
 		}
 	}
+
+	// Close standard input in this (parent) process
+	os.Stdin.Close()
 
 	// Read the cid file
 	var container_id string
