@@ -1,6 +1,8 @@
+require "arvados/keep"
+
 class Arvados::V1::CollectionsController < ApplicationController
   def create
-    if resource_attrs[:uuid] and (loc = Locator.parse(resource_attrs[:uuid]))
+    if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s
       resource_attrs.delete :uuid
     end
@@ -8,15 +10,13 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_object_by_uuid
-    if loc = Locator.parse(params[:id])
+    if loc = Keep::Locator.parse(params[:id])
       loc.strip_hints!
       if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).limit(1).first
         @object = {
           uuid: c.portable_data_hash,
           portable_data_hash: c.portable_data_hash,
           manifest_text: c.manifest_text,
-          files: c.files,
-          data_size: c.data_size
         }
       end
     else
@@ -51,7 +51,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       end
     when String
       return if sp.empty?
-      if loc = Locator.parse(sp)
+      if loc = Keep::Locator.parse(sp)
         search_edges(visited, loc.to_s, :search_up)
       end
     end
@@ -62,7 +62,7 @@ class Arvados::V1::CollectionsController < ApplicationController
       return
     end
 
-    if loc = Locator.parse(uuid)
+    if loc = Keep::Locator.parse(uuid)
       loc.strip_hints!
       return if visited[loc.to_s]
     end
@@ -74,8 +74,6 @@ class Arvados::V1::CollectionsController < ApplicationController
       if c = Collection.readable_by(*@read_users).where(portable_data_hash: loc.to_s).limit(1).first
         visited[loc.to_s] = {
           portable_data_hash: c.portable_data_hash,
-          files: c.files,
-          data_size: c.data_size
         }
       end
 

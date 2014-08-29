@@ -72,10 +72,14 @@ class CollectionsController < ApplicationController
   end
 
   def index
+    # API server index doesn't return manifest_text by default, but our
+    # callers want it unless otherwise specified.
+    @select ||= Collection.columns.map(&:name)
+    base_search = Collection.select(@select)
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
-      @collections = (Collection.where(uuid: tags.collect(&:head_uuid)) |
-                      Collection.where(any: ['contains', params[:search]])).
+      @collections = (base_search.where(uuid: tags.collect(&:head_uuid)) |
+                      base_search.where(any: ['contains', params[:search]])).
         uniq { |c| c.uuid }
     else
       if params[:limit]
@@ -90,7 +94,7 @@ class CollectionsController < ApplicationController
         offset = 0
       end
 
-      @collections = Collection.limit(limit).offset(offset)
+      @collections = base_search.limit(limit).offset(offset)
     end
     @links = Link.limit(1000).
       where(head_uuid: @collections.collect(&:uuid))
@@ -275,10 +279,9 @@ class CollectionsController < ApplicationController
 
   def file_in_collection?(collection, filename)
     target = CollectionsHelper.file_path(File.split(filename))
-    collection.files.each do |file_spec|
-      return true if (CollectionsHelper.file_path(file_spec) == target)
+    collection.manifest.each_file.any? do |file_spec|
+      CollectionsHelper.file_path(file_spec) == target
     end
-    false
   end
 
   def file_enumerator(opts)
