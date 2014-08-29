@@ -4,8 +4,8 @@
 
 import os
 import sys
-
 import llfuse
+from llfuse import FUSEError
 import errno
 import stat
 import threading
@@ -16,18 +16,20 @@ import re
 import apiclient
 import json
 import logging
+import time
+import calendar
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
-from time import time
-from llfuse import FUSEError
+def convertTime(t):
+    return calendar.timegm(time.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
 
 class FreshBase(object):
     '''Base class for maintaining fresh/stale state to determine when to update.'''
     def __init__(self):
         self._stale = True
         self._poll = False
-        self._last_update = time()
+        self._last_update = time.time()
         self._poll_time = 60
 
     # Mark the value as stale
@@ -39,17 +41,17 @@ class FreshBase(object):
         if self._stale:
             return True
         if self._poll:
-            return (self._last_update + self._poll_time) < time()
+            return (self._last_update + self._poll_time) < time.time()
         return False
 
     def fresh(self):
         self._stale = False
-        self._last_update = time()
+        self._last_update = time.time()
 
-    def ctime():
+    def ctime(self):
         return 0
 
-    def mtime():
+    def mtime(self):
         return 0
 
 
@@ -85,11 +87,11 @@ class StreamReaderFile(File):
     def stale(self):
         return False
 
-    def ctime():
-        return collection["created_at"]
+    def ctime(self):
+        return convertTime(self.collection["created_at"])
 
-    def mtime():
-        return collection["modified_at"]
+    def mtime(self):
+        return convertTime(self.collection["modified_at"])
 
 
 class ObjectFile(File):
@@ -187,36 +189,60 @@ class Directory(FreshBase):
             self.inodes.del_entry(oldentries[n])
         self.fresh()
 
+    def clear(self):
+        '''Delete all entries'''
+        oldentries = self._entries
+        self._entries = {}
+        for n in oldentries:
+            if isinstance(n, Directory):
+                n.clear()
+            llfuse.invalidate_entry(self.inode, str(n))
+            self.inodes.del_entry(oldentries[n])
+        self.invalidate()
+
 
 class CollectionDirectory(Directory):
     '''Represents the root of a directory tree holding a collection.'''
 
-    def __init__(self, parent_inode, inodes, collection_locator):
+    def __init__(self, parent_inode, inodes, api, collection_locator):
         super(CollectionDirectory, self).__init__(parent_inode)
         self.inodes = inodes
+        self.api = api
         self.collection_locator = collection_locator
+        self.portable_data_hash = None
+        self.collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
     def update(self):
         try:
-            collection = arvados.CollectionReader(self.collection_locator)
-            for s in collection.all_streams():
-                cwd = self
-                for part in s.name().split('/'):
-                    if part != '' and part != '.':
-                        if part not in cwd._entries:
-                            cwd._entries[part] = self.inodes.add_entry(Directory(cwd.inode))
-                        cwd = cwd._entries[part]
-                for k, v in s.files().items():
-                    cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v))
+            self.collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
+            if self.portable_data_hash != self.collection_object["portable_data_hash"]:
+                self.portable_data_hash = self.collection_object["portable_data_hash"]
+                self.clear()
+                collection = arvados.CollectionReader(self.collection_object["manifest_text"], self.api)
+                for s in collection.all_streams():
+                    cwd = self
+                    for part in s.name().split('/'):
+                        if part != '' and part != '.':
+                            if part not in cwd._entries:
+                                cwd._entries[part] = self.inodes.add_entry(Directory(cwd.inode))
+                            cwd = cwd._entries[part]
+                    for k, v in s.files().items():
+                        cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.collection_object))
             self.fresh()
             return True
         except Exception as detail:
             _logger.debug("arv-mount %s: error: %s",
                           self.collection_locator, detail)
             return False
+
+    def ctime(self):
+        return convertTime(self.collection_object["created_at"])
+
+    def mtime(self):
+        return convertTime(self.collection_object["modified_at"])
 
 class MagicDirectory(Directory):
     '''A special directory that logically contains the set of all extant keep
@@ -228,15 +254,16 @@ class MagicDirectory(Directory):
     to readdir().
     '''
 
-    def __init__(self, parent_inode, inodes):
+    def __init__(self, parent_inode, inodes, api):
         super(MagicDirectory, self).__init__(parent_inode)
         self.inodes = inodes
+        self.api = api
 
     def __contains__(self, k):
         if k in self._entries:
             return True
         try:
-            e = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, k))
+            e = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, self.api, k))
             if e.update():
                 self._entries[k] = e
                 return True
@@ -254,14 +281,16 @@ class MagicDirectory(Directory):
 
 class RecursiveInvalidateDirectory(Directory):
     def invalidate(self):
+        if self.inode == llfuse.ROOT_INODE:
+            llfuse.lock.acquire()
         try:
-            if self.parent_inode == llfuse.ROOT_INODE:
-                llfuse.lock.acquire()
             super(RecursiveInvalidateDirectory, self).invalidate()
             for a in self._entries:
                 self._entries[a].invalidate()
+        except Exception as e:
+            _logger.exception(e)
         finally:
-            if self.parent_inode == llfuse.ROOT_INODE:
+            if self.inode == llfuse.ROOT_INODE:
                 llfuse.lock.release()
 
 class TagsDirectory(RecursiveInvalidateDirectory):
@@ -306,7 +335,7 @@ class TagDirectory(Directory):
         self.merge(taggedcollections['items'],
                    lambda i: i['head_uuid'],
                    lambda a, i: a.collection_locator == i['head_uuid'],
-                   lambda i: CollectionDirectory(self.inode, self.inodes, i['head_uuid']))
+                   lambda i: CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid']))
 
 
 class ProjectDirectory(RecursiveInvalidateDirectory):
@@ -317,6 +346,10 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
         self.inodes = inodes
         self.api = api
         self.uuid = uuid['uuid']
+
+        self.project_object = None
+        if re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', self.uuid):
+            self.project_object = self.api.groups().get(uuid=self.uuid).execute()
 
         if parent_inode == llfuse.ROOT_INODE:
             try:
@@ -331,9 +364,9 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
 
     def createDirectory(self, i):
         if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']) and i['name'] is not None:
-            return CollectionDirectory(self.inode, self.inodes, i['uuid'])
+            return CollectionDirectory(self.inode, self.inodes, self.api, i['uuid'])
         elif re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', i['uuid']):
-            return ProjectDirectory(self.parent_inode, self.inodes, self.api, i, self._poll, self._poll_time)
+            return ProjectDirectory(self.inode, self.inodes, self.api, i, self._poll, self._poll_time)
         #elif re.match(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}', i['uuid']):
         #    return None
         #elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
@@ -354,10 +387,19 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
                 return a.uuid == i['uuid'] and not a.stale()
             return False
 
+        if re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', self.uuid):
+            self.project_object = self.api.groups().get(uuid=self.uuid).execute()
+
         self.merge(self.contents(),
                    lambda i: i['name'] if 'name' in i and i['name'] is not None and len(i['name']) > 0 else i['uuid'],
                    same,
                    self.createDirectory)
+
+    def ctime(self):
+        return convertTime(self.project_object["created_at"]) if self.project_object is not None else 0
+
+    def mtime(self):
+        return convertTime(self.project_object["modified_at"]) if self.project_object is not None else 0
 
 
 class HomeDirectory(ProjectDirectory):
@@ -473,8 +515,8 @@ class Operations(llfuse.Operations):
         if e.size()/1024 != 0:
             entry.st_blocks += 1
         entry.st_atime = 0
-        entry.st_mtime = 0
-        entry.st_ctime = 0
+        entry.st_mtime = e.mtime()
+        entry.st_ctime = e.ctime()
 
         return entry
 
