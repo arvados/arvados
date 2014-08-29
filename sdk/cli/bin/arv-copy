@@ -1,0 +1,64 @@
+#! /usr/bin/env python
+
+import argparse
+import hashlib
+import os
+import re
+import string
+import sys
+import logging
+
+import arvados
+import arvados.config
+
+def main():
+    logger = logging.getLogger('arvados.arv-copy')
+
+    parser = argparse.ArgumentParser(
+        description='Copy a pipeline instance from one Arvados instance to another.')
+
+    parser.add_argument('--recursive', dest='recursive', action='store_true')
+    parser.add_argument('--no-recursive', dest='recursive', action='store_false')
+    parser.add_argument('pipeline_instance_uuid')
+    parser.add_argument('source_arvados')
+    parser.add_argument('destination_arvados')
+    parser.set_defaults(recursive=True)
+
+    args = parser.parse_args()
+
+    # Create API clients for the source and destination instances
+    src_arv = api_for_instance(args.source_arvados)
+    dst_arv = api_for_instance(args.destination_arvados)
+
+    # And now for the copying.
+
+    exit(0)
+
+# Creates an API client for the Arvados instance identified by
+# instance_name.  Looks in $HOME/.config/arvados/instance_name.conf
+# for credentials.
+#
+def api_for_instance(instance_name):
+    if '/' in instance_name:
+        abort('illegal instance name {}'.format(instance_name))
+    config_file = os.path.join(os.environ['HOME'], '.config', 'arvados', "{}.conf".format(instance_name))
+    cfg = arvados.config.load(config_file)
+
+    if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
+        api_is_insecure = (
+            cfg.get('ARVADOS_API_HOST_INSECURE', '').lower() in set(
+                ['1', 't', 'true', 'y', 'yes']))
+        client = arvados.api('v1',
+                             host=cfg['ARVADOS_API_HOST'],
+                             token=cfg['ARVADOS_API_TOKEN'],
+                             insecure=api_is_insecure)
+    else:
+        abort('need ARVADOS_API_HOST and ARVADOS_API_TOKEN for {}'.format(instance_name))
+    return client
+
+def abort(msg, code=1):
+    print >>sys.stderr, "arv-copy:", msg
+    exit(code)
+
+if __name__ == '__main__':
+    main()
