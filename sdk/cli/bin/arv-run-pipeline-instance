@@ -59,8 +59,6 @@
 class WhRunPipelineInstance
 end
 
-$application_version = 1.0
-
 if RUBY_VERSION < '1.9.3' then
   abort <<-EOS
 #{$0.gsub(/^\.\//,'')} requires Ruby version 1.9.3 or higher.
@@ -107,21 +105,6 @@ if $arvados_api_host.match /local/
   # You probably don't care about SSL certificate checks if you're
   # testing with a dev server.
   suppress_warnings { OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE }
-end
-
-class Google::APIClient
-  def discovery_document(api, version)
-    api = api.to_s
-    return @discovery_documents["#{api}:#{version}"] ||=
-      begin
-        response = self.execute!(
-                                 :http_method => :get,
-                                 :uri => self.discovery_uri(api, version),
-                                 :authenticated => false
-                                 )
-        response.body.class == String ? JSON.parse(response.body) : response.body
-      end
-  end
 end
 
 
@@ -214,13 +197,9 @@ end
 
 # Set up the API client.
 
-$client ||= Google::APIClient.
-  new(:host => $arvados_api_host,
-      :application_name => File.split($0).last,
-      :application_version => $application_version.to_s)
-$arvados = $client.discovered_api('arvados', $arvados_api_version)
 $arv = Arvados.new api_version: 'v1'
-
+$client = $arv.client
+$arvados = $arv.arvados_api
 
 class PipelineInstance
   def self.find(uuid)
