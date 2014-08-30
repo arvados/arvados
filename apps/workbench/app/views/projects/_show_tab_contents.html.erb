@@ -17,18 +17,21 @@
                   'method' => 'delete',
                   'data-toggle' => 'dropdown'
             %></li>
-	          <li><%= link_to "Move selected", '#',
-            		  'data-href' => choose_projects_path(
-                                   title: 'Move to...',
-                                   editable: true,
-                                   action_name: 'Move',
-                                   action_href: move_items_project_path,
-                                   action_method: 'get',
-                                   action_data: {selection_param: 'target',
-                                                 success: 'page-refresh'}.to_json),
+	  <li><%= link_to "Move selected", '#',
+                  'data-href' => choose_projects_path(
+                    title: 'Move selected items to...',
+                    editable: true,
+                    action_name: 'Move',
+                    action_href: actions_path,
+                    action_method: 'post',
+                    action_data_from_params: ['selection'],
+                    action_data: {
+                      move_selections_into_project: true,
+                      selection_param: 'uuid',
+                      success: 'page-refresh'}.to_json),
                   'data-remote' => true,
-                  'data-selection-param-name' => 'move_items[]',
-		              'data-selection-action' => 'move'
+                  'data-selection-param-name' => 'selection[]',
+                  'data-selection-action' => 'move'
             %></li>
         </ul>
       </div>
