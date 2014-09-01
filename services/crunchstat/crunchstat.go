@@ -149,7 +149,7 @@ func PollCgroupStats(cgroup_root string, cgroup_parent string, container_id stri
 				user_diff := next_user - last_user
 				sys_diff := next_sys - last_sys
 				// Assume we're reading stats based on 100
-				// jiffies per second.  Because the ellaspsed
+				// jiffies per second.  Because the elapsed
 				// time is in milliseconds, we need to boost
 				// that to 1000 jiffies per second, then boost
 				// it by another 100x to get a percentage, then
@@ -241,7 +241,7 @@ func main() {
 	logger := log.New(os.Stderr, "crunchstat: ", 0)
 
 	if cgroup_root == "" {
-		logger.Fatal("Must provide either -cgroup-root")
+		logger.Fatal("Must provide -cgroup-root")
 	}
 
 	// Make output channel
