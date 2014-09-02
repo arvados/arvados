@@ -128,6 +128,8 @@ class ApplicationController < ActionController::Base
           end
         end
       end
+      # After this, params[:filters] can be trusted to be an array of arrays:
+      params[:filters] = filters
       @filters += filters
     end
   end
