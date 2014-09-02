@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import datetime
 
 from collections import namedtuple
 from stat import *
@@ -26,23 +27,35 @@ opt_parser.add_argument(
     '-f', '--force', action='store_true', default=False,
     help="Re-upload the image even if it already exists on the server")
 
+opt_parser.add_argument(
+    '--project-uuid',
+    help="Add the Docker image and metadata to the specified project.")
+
 _group = opt_parser.add_mutually_exclusive_group()
 _group.add_argument(
-    '--pull', action='store_true', default=True,
-    help="Pull the latest image from Docker repositories first (default)")
+    '--pull', action='store_true', default=False,
+    help="Pull the latest image from Docker repositories first")
 _group.add_argument(
     '--no-pull', action='store_false', dest='pull',
-    help="Don't pull images from Docker repositories")
+    help="Don't pull images from Docker repositories, use local (default)")
+
+_group = opt_parser.add_mutually_exclusive_group()
+_group.add_argument(
+    '--images', action='store_true',
+    help="List Docker images in Arvados")
+_group.add_argument(
+    '--push', action='store_true', default=True,
+    help="Push Docker image to Arvados (default)")
 
 opt_parser.add_argument(
-    'image',
+    'image', nargs='?',
     help="Docker image to upload, as a repository name or hash")
 opt_parser.add_argument(
     'tag', nargs='?', default='latest',
     help="Tag of the Docker image to upload (default 'latest')")
 
 arg_parser = argparse.ArgumentParser(
-        description="Upload a Docker image to Arvados",
+        description="Upload or list Docker images in Arvados",
         parents=[opt_parser, arv_put.run_opts])
 
 class DockerError(Exception):
@@ -152,8 +165,52 @@ def make_link(link_class, link_name, **link_attrs):
     link_attrs.update({'link_class': link_class, 'name': link_name})
     return arvados.api('v1').links().create(body=link_attrs).execute()
 
+def ptimestamp(t):
+    s = t.split(".")
+    if len(s) == 2:
+        t = s[0] + s[1][-1:]
+    return datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ")
+
+def list_images_in_arv():
+    existing_links = arvados.api('v1').links().list(filters=[['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']]]).execute()['items']
+    img = {}
+    for i in existing_links:
+        c = i["head_uuid"]
+        if c not in img:
+            img[c] = {"dockerhash": "<none>",
+                      "repo":"<none>",
+                      "tag":"<none>",
+                      "timestamp": ptimestamp("1970-01-01T00:00:01Z")}
+
+        if i["link_class"] == "docker_image_hash":
+            img[c]["dockerhash"] = i["name"]
+
+        if i["link_class"] == "docker_image_repo+tag":
+            r = i["name"].split(":")
+            img[c]["repo"] = r[0]
+            if len(r) > 1:
+                img[c]["tag"] = r[1]
+
+        if "image_timestamp" in i["properties"]:
+            img[c]["timestamp"] = ptimestamp(i["properties"]["image_timestamp"])
+
+    st = sorted(img.items(), lambda a, b: cmp(b[1]["timestamp"], a[1]["timestamp"]))
+
+    fmt = "{:30}  {:10}  {:12}  {:38}  {:20}"
+    print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "KEEP LOCATOR", "CREATED")
+    for i, j in st:
+        print(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:11], i, j["timestamp"].strftime("%c")))
+
 def main(arguments=None):
     args = arg_parser.parse_args(arguments)
+
+    if args.images:
+        list_images_in_arv()
+        sys.exit(0)
+
+    if args.image is None:
+        print >> sys.stderr, "arv-keepdocker: error: missing image to push"
+        sys.exit(1)
 
     # Pull the image if requested, unless the image is specified as a hash
     # that we already have.
@@ -187,6 +244,9 @@ def main(arguments=None):
     # Call arv-put with switches we inherited from it
     # (a.k.a., switches that aren't our own).
     put_args = opt_parser.parse_known_args(arguments)[1]
+    put_args += ['--name', '{}:{} {}'.format(args.image, args.tag, image_hash[0:11])]
+    if args.project_uuid is not None:
+        put_args += ['--project-uuid', args.project_uuid]
     coll_uuid = arv_put.main(
         put_args + ['--filename', outfile_name, image_file.name]).strip()
 
@@ -200,6 +260,8 @@ def main(arguments=None):
     link_base = {'head_uuid': coll_uuid, 'properties': {}}
     if 'created' in image_metadata:
         link_base['properties']['image_timestamp'] = image_metadata['created']
+    if args.project_uuid is not None:
+        link_base['owner_uuid'] = args.project_uuid
 
     make_link('docker_image_hash', image_hash, **link_base)
     if not image_hash.startswith(args.image.lower()):
