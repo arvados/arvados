@@ -1,5 +1,21 @@
 #! /usr/bin/env python
 
+# arv-copy [--recursive] [--no-recursive] object-uuid src dst
+#
+# Copies an object from Arvados instance src to instance dst.
+#
+# By default, arv-copy recursively copies any dependent objects
+# necessary to make the object functional in the new instance
+# (e.g. for a pipeline instance, arv-copy copies the pipeline
+# template, input collection, docker images, git repositories). If
+# --no-recursive is given, arv-copy copies only the single record
+# identified by object-uuid.
+#
+# The user must have files $HOME/.config/arvados/{src}.conf and
+# $HOME/.config/arvados/{dst}.conf with valid login credentials for
+# instances src and dst.  If either of these files is not found,
+# arv-copy will issue an error.
+
 import argparse
 import hashlib
 import os
@@ -19,7 +35,7 @@ def main():
 
     parser.add_argument('--recursive', dest='recursive', action='store_true')
     parser.add_argument('--no-recursive', dest='recursive', action='store_false')
-    parser.add_argument('pipeline_instance_uuid')
+    parser.add_argument('object_uuid')
     parser.add_argument('source_arvados')
     parser.add_argument('destination_arvados')
     parser.set_defaults(recursive=True)
@@ -31,6 +47,16 @@ def main():
     dst_arv = api_for_instance(args.destination_arvados)
 
     # And now for the copying.
+    t = uuid_type(args.object_uuid)
+    if t == 'collection':
+        copy_collection(args.object_uuid, src=src_arv, dst=dst_arv)
+    elif t == 'pipeline_instance':
+        copy_pipeline_instance(args.object_uuid, src=src_arv, dst=dst_arv)
+    elif t == 'pipeline_template':
+        new_pt = copy_pipeline_template(args.object_uuid, src=src_arv, dst=dst_arv)
+        print new_pt
+    else:
+        abort("cannot copy object {} of type {}".format(args.object_uuid, t))
 
     exit(0)
 
@@ -51,10 +77,35 @@ def api_for_instance(instance_name):
         client = arvados.api('v1',
                              host=cfg['ARVADOS_API_HOST'],
                              token=cfg['ARVADOS_API_TOKEN'],
-                             insecure=api_is_insecure)
+                             insecure=api_is_insecure,
+                             cache=False)
     else:
         abort('need ARVADOS_API_HOST and ARVADOS_API_TOKEN for {}'.format(instance_name))
     return client
+
+def copy_collection(obj_uuid, src=None, dst=None):
+    raise NotImplementedError
+
+def copy_pipeline_instance(obj_uuid, src=None, dst=None):
+    raise NotImplementedError
+
+def copy_pipeline_template(obj_uuid, src=None, dst=None):
+    # fetch the pipeline template from the source instance
+    old_pt = src.pipeline_templates().get(uuid=obj_uuid).execute()
+    old_pt['name'] = old_pt['name'] + ' copy'
+    del old_pt['uuid']
+    del old_pt['owner_uuid']
+    return dst.pipeline_templates().create(body=old_pt).execute()
+
+uuid_type_map = {
+    "4zz18": "collection",
+    "d1hrv": "pipeline_instance",
+    "p5p6p": "pipeline_template",
+}
+
+def uuid_type(object_uuid):
+    type_str = object_uuid.split('-')[1]
+    return uuid_type_map.get(type_str, None)
 
 def abort(msg, code=1):
     print >>sys.stderr, "arv-copy:", msg
