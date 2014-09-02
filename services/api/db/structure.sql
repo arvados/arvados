@@ -428,9 +428,7 @@ CREATE TABLE jobs (
     nondeterministic boolean,
     repository character varying(255),
     supplied_script_version character varying(255),
-    docker_image_locator character varying(255),
-    name character varying(255),
-    description text
+    docker_image_locator character varying(255)
 );
 
 
@@ -1797,24 +1795,10 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btr
 
 
 --
--- Name: jobs_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX jobs_owner_uuid_name_unique ON jobs USING btree (owner_uuid, name);
-
-
---
 -- Name: links_tail_name_unique_if_link_class_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btree (tail_uuid, name) WHERE ((link_class)::text = 'name'::text);
-
-
---
--- Name: pipeline_instance_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX pipeline_instance_owner_uuid_name_unique ON pipeline_instances USING btree (owner_uuid, name);
 
 
 --
