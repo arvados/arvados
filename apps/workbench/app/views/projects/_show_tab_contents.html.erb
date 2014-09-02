@@ -9,32 +9,6 @@
                   'data-selection-param-name' => 'uuids[]',
                   'data-selection-action' => 'compare'
             %></li>
-          <li><%= link_to "Copy selected", '#',
-            		  'data-href' => choose_projects_path(
-                                   title: 'Copy into...',
-                                   editable: true,
-                                   action_name: 'Copy',
-                                   action_href: copy_items_project_path,
-                                   action_method: 'get',
-                                   action_data: {selection_param: 'target',
-                                                 success: 'page-refresh'}.to_json),
-                  'data-remote' => true,
-                  'data-selection-param-name' => 'move_or_copy_items[]',
-		              'data-selection-action' => 'copy'
-            %></li>
-          <li><%= link_to "Move selected", '#',
-            		  'data-href' => choose_projects_path(
-                                   title: 'Move to...',
-                                   editable: true,
-                                   action_name: 'Move',
-                                   action_href: move_items_project_path,
-                                   action_method: 'get',
-                                   action_data: {selection_param: 'target',
-                                                 success: 'page-refresh'}.to_json),
-                  'data-remote' => true,
-                  'data-selection-param-name' => 'move_or_copy_items[]',
-		              'data-selection-action' => 'move'
-            %></li>
           <li><%= link_to "Remove selected", '#',
                   'data-href' => url_for(action: :remove_items),
                   'data-selection-param-name' => 'item_uuids[]',
@@ -42,6 +16,22 @@
                   'data-remote' => true,
                   'method' => 'delete',
                   'data-toggle' => 'dropdown'
+            %></li>
+	  <li><%= link_to "Move selected", '#',
+                  'data-href' => choose_projects_path(
+                    title: 'Move selected items to...',
+                    editable: true,
+                    action_name: 'Move',
+                    action_href: actions_path,
+                    action_method: 'post',
+                    action_data_from_params: ['selection'],
+                    action_data: {
+                      move_selections_into_project: true,
+                      selection_param: 'uuid',
+                      success: 'page-refresh'}.to_json),
+                  'data-remote' => true,
+                  'data-selection-param-name' => 'selection[]',
+                  'data-selection-action' => 'move'
             %></li>
         </ul>
       </div>

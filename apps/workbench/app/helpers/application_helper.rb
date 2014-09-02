@@ -470,51 +470,6 @@ module ApplicationHelper
     end
   end
 
-  def move_or_copy_items action, uuids_to_add, target_uuid
-    uuids_to_add = [ uuids_to_add ] unless uuids_to_add.is_a? Array
-    uuids_to_add.
-      collect { |x| ArvadosBase::resource_class_for_uuid(x) }.
-      uniq.
-      each do |resource_class|
-      resource_class.filter([['uuid','in',uuids_to_add]]).each do |src|
-        if resource_class == Collection and not Collection.attribute_info.include?(:name)
-          dst = Link.new(owner_uuid: target_uuid,
-                         tail_uuid: target_uuid,
-                         head_uuid: src.uuid,
-                         link_class: 'name',
-                         name: src.uuid)
-        else
-          case action
-          when :copy
-            dst = src.dup
-            if dst.respond_to? :'name='
-              if dst.name
-                dst.name = "Copy of #{dst.name}"
-              else
-                dst.name = "Copy of unnamed #{dst.class_for_display.downcase}"
-              end
-            end
-            if resource_class == Collection
-              dst.manifest_text = Collection.select([:manifest_text]).where(uuid: src.uuid).first.manifest_text
-            end
-          when :move
-            dst = src
-          else
-            raise ArgumentError.new "Unsupported action #{action}"
-          end
-          dst.owner_uuid = target_uuid
-          dst.tail_uuid = target_uuid if dst.class == Link
-        end
-        begin
-          dst.save!
-        rescue
-          dst.name += " (#{Time.now.localtime})" if dst.respond_to? :name=
-          dst.save!
-        end
-      end
-    end
-  end
-
 private
   def is_textile?( object, attr )
     is_textile = object.textile_attributes.andand.include?(attr)

@@ -77,21 +77,6 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def copy_items
-    move_or_copy_project_items :copy
-  end
-
-  def move_items
-    move_or_copy_project_items :move
-  end
-
-  def move_or_copy_project_items action
-    uuids_to_add = session[:selected_move_or_copy_items]
-    move_or_copy_items action, uuids_to_add, params['target']
-    session[:selected_move_or_copy_items] = nil
-    redirect_to @object
-  end
-
   def destroy
     while (objects = Link.filter([['owner_uuid','=',@object.uuid],
                                   ['tail_uuid','=',@object.uuid]])).any?
