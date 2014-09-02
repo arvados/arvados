@@ -685,13 +685,13 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--env=\QCRUNCH_SRC=/tmp/crunch-src\E ";
       $command .= "\Q$docker_hash\E ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - ";
+      $command .= "perl - " if ($build_script);
       $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - ";
+      $command .= "perl - " if ($build_script);
       $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
 
