@@ -428,8 +428,6 @@ CREATE TABLE jobs (
     repository character varying(255),
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
-    name character varying(255),
-    description text,
     priority integer DEFAULT 0 NOT NULL
 );
 
@@ -1794,13 +1792,6 @@ CREATE INDEX index_virtual_machines_on_hostname ON virtual_machines USING btree 
 --
 
 CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btree (uuid);
-
-
---
--- Name: jobs_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX jobs_owner_uuid_name_unique ON jobs USING btree (owner_uuid, name);
 
 
 --

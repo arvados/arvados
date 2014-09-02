@@ -25,7 +25,7 @@
         <% end %>
       </div>
       <% if projectnode[:object].respond_to?(:description) and not projectnode[:object].description.blank? %>
-        <div class="col-md-8 small"><%= projectnode[:object].description %></div>
+        <div class="col-md-8 small"><%= render_attribute_as_textile(projectnode[:object], "description", projectnode[:object].description, true) %></div>
       <% end %>
     </div>
   <% end %>
