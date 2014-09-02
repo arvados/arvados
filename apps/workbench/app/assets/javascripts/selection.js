@@ -185,9 +185,12 @@ function dispatch_selection_action() {
     if ($(this).closest('.disabled').length > 0) {
 	return false;
     }
-    $('.persistent-selection:checkbox:checked').each(function() {
-        data.push({name: param_name, value: $(this).val()});
-    });
+    $(this).
+        closest('.selection-action-container').
+        find(':checkbox:checked').
+        each(function() {
+            data.push({name: param_name, value: $(this).val()});
+        });
     if (href.indexOf('?') >= 0)
         href += '&';
     else
@@ -198,7 +201,8 @@ function dispatch_selection_action() {
 }
 
 function enable_disable_selection_actions() {
-    var $checked = $('.persistent-selection:checkbox:checked');
+    var $container = $(this).closest('.selection-action-container');
+    var $checked = $('.persistent-selection:checkbox:checked', $container);
     $('[data-selection-action]').
         closest('div.btn-group-sm').
         find('ul li').
@@ -217,6 +221,7 @@ function enable_disable_selection_actions() {
 
 $(document).
     on('selections-updated ready ajax:complete', function() {
-        $('[data-selection-action]').click(dispatch_selection_action);
-        enable_disable_selection_actions();
+        var $btn = $('[data-selection-action]');
+        $btn.click(dispatch_selection_action);
+        enable_disable_selection_actions.call($btn);
     });

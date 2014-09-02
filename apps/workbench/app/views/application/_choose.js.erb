@@ -1,8 +1,27 @@
-<% session[:selected_move_or_copy_items] = params['move_or_copy_items'] if params['move_or_copy_items'] %>
+<%
+=begin
+
+Parameters received from the caller/requestor of the modal are
+attached to the action button (.btn-primary) as follows:
+
+action_class -- string -- added as a pseudoclass to the action button.
+
+action_href -- string -- will be available at $(btn).attr('data-action-href')
+
+action_data -- json-encoded object -- will be at $(btn).data('action-data')
+
+action_data_form_params -- array -- for each X in this array, the
+value of params[X] during this "show chooser" request will be in
+$(btn).data('action-data-from-params')[X].
+
+=end
+%>
+
 $('body > .modal-container').html("<%= escape_javascript(render partial: 'choose.html', locals: {multiple: multiple}) %>");
 $('body > .modal-container .modal').modal('show');
 $('body > .modal-container .modal .modal-footer .btn-primary').
     addClass('<%= j params[:action_class] %>').
     attr('data-action-href', '<%= j params[:action_href] %>').
     attr('data-method', '<%= j params[:action_method] %>').
-    data('action-data', <%= raw params[:action_data] %>);
+    data('action-data', <%= raw params[:action_data] %>).
+    data('action-data-from-params', <%= raw params.select { |k,v| k.in?(params[:action_data_from_params] || []) }.to_json %>);
