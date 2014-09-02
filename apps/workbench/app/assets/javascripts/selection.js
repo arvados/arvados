@@ -216,7 +216,7 @@ function enable_disable_selection_actions() {
         closest('li').
         toggleClass('disabled',
                     ($checked.filter('[value*=-j7d0g-]').length > 0) ||
-                    (($checked.not('[value*=-d1hrv-]').length > 0) && ($checked.filter('[value*=-]').length < 0)));
+                    ($checked.length < 1));
 }
 
 $(document).
