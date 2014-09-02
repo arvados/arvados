@@ -402,11 +402,40 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
         return convertTime(self.project_object["modified_at"]) if self.project_object is not None else 0
 
 
+
 class HomeDirectory(ProjectDirectory):
     '''A special directory that represents the "home" project.'''
 
     def __init__(self, parent_inode, inodes, api, poll=False, poll_time=60):
-        super(HomeDirectory, self).__init__(parent_inode, inodes, api, api.users().current().execute())
+        self.current_user = api.users().current().execute()
+        super(HomeDirectory, self).__init__(parent_inode, inodes, api, self.current_user)
+
+    def build_project_trees():
+        all_projects = self.api.groups().list(filters=[['group_class','=','project']], order=['name']).execute()['items']
+        parent_of = {self.current_user['uuid']: 'me'}
+        for ob in all_projects:
+            parent_of[ob['uuid']] = ob['owner_uuid']
+        children_of = {False: [], 'me': [self.current_user]}
+
+        for ob in all_projects:
+            if ob['owner_uuid'] != self.current_user['uuid'] and ob['owner_uuid'] not in parent_of:
+                parent_of[ob['uuid']] = False
+            if parent_of[ob['uuid']] not in children_of:
+                children_of[parent_of[ob['uuid']]] = []
+            children_of[parent_of[ob['uuid']]] += ob
+
+        def buildtree(children_of, root_uuid):
+            tree = {}
+            for ob in children_of[root_uuid]:
+                tree[ob] = buildtree(children_of, ob['uuid'])
+            return tree
+
+        my_project_tree = buildtree(children_of, 'me')
+        shared_project_tree = buildtree(children_of, False)
+
+        import pprint
+        pprint.pprint(my_project_tree)
+        pprint.pprint(shared_project_tree)
 
     #def contents(self):
     #    return self.api.groups().contents(uuid=self.uuid).execute()['items']
