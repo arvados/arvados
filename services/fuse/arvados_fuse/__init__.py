@@ -131,7 +131,9 @@ class ObjectFile(StringFile):
     '''Wrap a dict as a serialized json object.'''
 
     def __init__(self, parent_inode, contents):
-        super(ObjectFile, self).__init__(parent_inode, json.dumps(self.contentsdict, indent=4, sort_keys=True))
+        _ctime = convertTime(contents['created_at']) if 'created_at' in contents else 0
+        _mtime = convertTime(contents['modified_at']) if 'modified_at' in contents else 0
+        super(ObjectFile, self).__init__(parent_inode, json.dumps(contents, indent=4, sort_keys=True)+"\n", _ctime, _mtime)
         self.contentsdict = contents
         self.uuid = self.contentsdict['uuid']
 
@@ -255,6 +257,7 @@ class CollectionDirectory(Directory):
 
     def update(self):
         try:
+            #with llfuse.lock_released:
             new_collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
             if "portable_data_hash" not in new_collection_object:
                 new_collection_object["portable_data_hash"] = new_collection_object["uuid"]
@@ -300,15 +303,13 @@ class CollectionDirectory(Directory):
         elif item == '.portable_data_hash':
             if self.pdh_file is None:
                 self.pdh_file = StringFile(self.inode, self.collection_object["portable_data_hash"], self.ctime(), self.mtime())
-                print self.ctime
-                print self.pdh_file._ctime
                 self.inodes.add_entry(self.pdh_file)
             return self.pdh_file
         else:
             return super(CollectionDirectory, self).__getitem__(item)
 
     def __contains__(self, k):
-        if k == '.manifest_text' or '.portable_data_hash':
+        if k in ('.manifest_text', '.portable_data_hash'):
             return True
         else:
             return super(CollectionDirectory, self).__contains__(k)
@@ -434,13 +435,29 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
             return CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid'])
         #elif re.match(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}', i['uuid']):
         #    return None
-        #elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
-        #    return ObjectFile(self.parent_inode, i)
+        elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
+            return ObjectFile(self.parent_inode, i)
         else:
             return None
 
     def update(self):
-        def same(a, i):
+        def namefn(i):
+            if 'name' in i:
+                if i['name'] is None:
+                    return None
+                elif re.match(r'[a-z0-9]{5}-(4zz18|j7d0g)-[a-z0-9]{15}', i['uuid']):
+                    # collection or subproject
+                    return i['name']
+                elif re.match(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}', i['uuid']) and i['head_kind'] == 'arvados#collection':
+                    # name link
+                    return i['name']
+                elif 'kind' in i and i['kind'].startswith('arvados#'):
+                    # something else
+                    return "{}.{}".format(i['name'], i['kind'][8:])                    
+            else:
+                return None
+
+        def samefn(a, i):
             if isinstance(a, CollectionDirectory):
                 return a.collection_locator == i['uuid']
             elif isinstance(a, ProjectDirectory):
@@ -449,19 +466,21 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
                 return a.uuid == i['uuid'] and not a.stale()
             return False
 
+        #with llfuse.lock_released:
         if re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', self.uuid):
             self.project_object = self.api.groups().get(uuid=self.uuid).execute()
         elif re.match(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}', self.uuid):
             self.project_object = self.api.users().get(uuid=self.uuid).execute()
 
         contents = arvados.util.list_all(self.api.groups().contents, uuid=self.uuid)
-
         # Name links will be obsolete soon, take this out when there are no more pre-#3036 in use.
         contents += arvados.util.list_all(self.api.links().list, filters=[['tail_uuid', '=', self.uuid], ['link_class', '=', 'name']])
 
+        #print contents
+
         self.merge(contents,
-                   lambda i: i['name'] if 'name' in i and i['name'] is not None and len(i['name']) > 0 else i['uuid'],
-                   same,
+                   namefn,
+                   samefn,
                    self.createDirectory)
 
     def ctime(self):
@@ -484,10 +503,11 @@ class HomeDirectory(RecursiveInvalidateDirectory):
         # try:
         #     arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
         # except:
-        #     self._poll = True
-        #     self._poll_time = poll_time
+        self._poll = True
+        self._poll_time = poll_time
 
     def update(self):
+        #with llfuse.lock_released:
         all_projects = arvados.util.list_all(self.api.groups().list, filters=[['group_class','=','project']])
         objects = {}
         for ob in all_projects:
@@ -500,6 +520,7 @@ class HomeDirectory(RecursiveInvalidateDirectory):
                 roots.append(ob)
                 root_owners[ob['owner_uuid']] = True
 
+        #with llfuse.lock_released:
         lusers = arvados.util.list_all(self.api.users().list, filters=[['uuid','in', list(root_owners)]])
         lgroups = arvados.util.list_all(self.api.groups().list, filters=[['uuid','in', list(root_owners)]])
 
@@ -532,8 +553,6 @@ class HomeDirectory(RecursiveInvalidateDirectory):
         except Exception as e:
             _logger.exception(e)
 
-    #def contents(self):
-    #    return self.api.groups().contents(uuid=self.uuid).execute()['items']
 
 class FileHandle(object):
     '''Connects a numeric file handle to a File or Directory object that has
@@ -634,9 +653,9 @@ class Operations(llfuse.Operations):
 
         entry.st_size = e.size()
 
-        entry.st_blksize = 1024
-        entry.st_blocks = e.size()/1024
-        if e.size()/1024 != 0:
+        entry.st_blksize = 512
+        entry.st_blocks = (e.size()/512)
+        if e.size()/512 != 0:
             entry.st_blocks += 1
         entry.st_atime = 0
         entry.st_mtime = e.mtime()
@@ -740,7 +759,7 @@ class Operations(llfuse.Operations):
 
     def statfs(self):
         st = llfuse.StatvfsData()
-        st.f_bsize = 1024 * 1024
+        st.f_bsize = 64 * 1024
         st.f_blocks = 0
         st.f_files = 0
 
