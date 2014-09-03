@@ -27,15 +27,15 @@ with "--".
 
     mount_mode = parser.add_mutually_exclusive_group()
 
-    mount_mode.add_argument('--home', action='store_true', help="""Mount the user's home project (default).""")
-    mount_mode.add_argument('--collection', type=str, help="""Mount only the specified collection at the mount point.""")
-    mount_mode.add_argument('--tags', action='store_true',
-                            help="""Mount as a virtual directory consisting of subdirectories representing
-tagged collections on the server.""")
-    mount_mode.add_argument('--project', type=str, help="""Mount a specific project by uuid.""")
+    mount_mode.add_argument('--all', action='store_true', help="""Mount a subdirectory for each mode: home, shared, tags, portable data hash (default).""")
+    mount_mode.add_argument('--home', action='store_true', help="""Mount only the user's home project.""")
+    mount_mode.add_argument('--shared', action='store_true', help="""Mount only list of projects shared with the user.""")
+    mount_mode.add_argument('--by-tag', action='store_true',
+                            help="""Mount subdirectories listed by tag.""")
     mount_mode.add_argument('--by-hash', action='store_true',
-                            help="""Mount as a virtual directory consisting of subdirectories for each
-collection by portable data hash.""")
+                            help="""Mount subdirectories listed by portable data hash.""")
+    mount_mode.add_argument('--project', type=str, help="""Mount a specific project.""")
+    mount_mode.add_argument('--collection', type=str, help="""Mount only the specified collection.""")
 
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
     parser.add_argument('--logfile', help="""Write debug logs and errors to the specified file (default stderr).""")
@@ -90,16 +90,23 @@ collection by portable data hash.""")
 
         if args.by_hash:
             # Set up the request handler with the 'magic directory' at the root
-            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
-        elif args.tags:
-            e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        elif args.by_tag:
+            operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        elif args.shared:
+            operations.inodes.add_entry(SharedDirectory(llfuse.ROOT_INODE, operations.inodes, api))
         elif args.collection != None:
             # Set up the request handler with the collection at the root
-            e = operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
+            operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
         elif args.project != None:
-            e = operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, args.project))
+            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, args.project))
         else:
-            e = operations.inodes.add_entry(HomeDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+            e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
+            usr = api.users().current().execute()
+            e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(e.inode, operations.inodes, api, usr))
+            e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(e.inode, operations.inodes, api, usr))
+            e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(e.inode, operations.inodes, api))
+            e._entries['by_hash'] = operations.inodes.add_entry(MagicDirectory(e.inode, operations.inodes, api))
 
     except Exception:
         logger.exception("arv-mount: exception during API setup")

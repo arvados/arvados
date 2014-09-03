@@ -257,6 +257,8 @@ class CollectionDirectory(Directory):
 
     def update(self):
         try:
+            if re.match(r'^[a-f0-9]{32}', self.collection_locator):
+                return
             #with llfuse.lock_released:
             new_collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
             if "portable_data_hash" not in new_collection_object:
@@ -287,7 +289,6 @@ class CollectionDirectory(Directory):
                     for k, v in s.files().items():
                         cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.ctime(), self.mtime()))
             self.fresh()
-            return True
         except Exception as detail:
             _logger.error("arv-mount %s: error", self.collection_locator)
             _logger.exception(detail)
@@ -378,11 +379,11 @@ class TagsDirectory(RecursiveInvalidateDirectory):
         super(TagsDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
-        try:
-            arvados.events.subscribe(self.api, [['object_uuid', 'is_a', 'arvados#link']], lambda ev: self.invalidate())
-        except:
-            self._poll = True
-            self._poll_time = poll_time
+        #try:
+        #    arvados.events.subscribe(self.api, [['object_uuid', 'is_a', 'arvados#link']], lambda ev: self.invalidate())
+        #except:
+        self._poll = True
+        self._poll_time = poll_time
 
     def update(self):
         tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = True).execute()
@@ -491,11 +492,11 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
 
 
 
-class HomeDirectory(RecursiveInvalidateDirectory):
+class SharedDirectory(RecursiveInvalidateDirectory):
     '''A special directory that represents users or groups who have shared projects with me.'''
 
-    def __init__(self, parent_inode, inodes, api, poll=False, poll_time=60):
-        super(HomeDirectory, self).__init__(parent_inode)
+    def __init__(self, parent_inode, inodes, api, exclude, poll=False, poll_time=60):
+        super(SharedDirectory, self).__init__(parent_inode)
         self.current_user = api.users().current().execute()
         self.inodes = inodes
         self.api = api
@@ -516,7 +517,7 @@ class HomeDirectory(RecursiveInvalidateDirectory):
         roots = []
         root_owners = {}
         for ob in all_projects:
-            if ob['owner_uuid'] == self.current_user['uuid'] or ob['owner_uuid'] not in objects:
+            if ob['owner_uuid'] != self.current_user['uuid'] and ob['owner_uuid'] not in objects:
                 roots.append(ob)
                 root_owners[ob['owner_uuid']] = True
 
