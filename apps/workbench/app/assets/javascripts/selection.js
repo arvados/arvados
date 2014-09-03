@@ -57,10 +57,6 @@ jQuery(function($){
         $("#persistent-selection-count").text(lst.length);
         if (lst.length > 0) {
             html = '<li><a href="#" class="btn btn-xs btn-info" id="clear_selections_button"><i class="fa fa-fw fa-ban"></i> Clear selections</a></li>';
-            if (this_object_uuid.match('-j7d0g-')) {
-                html += '<li><button class="btn btn-xs btn-info" type="submit" name="copy_selections_into_project" id="copy_selections_into_project"><i class="fa fa-fw fa-copy"></i> Copy selections into this project</button></li>';
-                html += '<li><button class="btn btn-xs btn-info" type="submit" name="move_selections_into_project" id="move_selections_into_project"><i class="fa fa-fw fa-truck"></i> Move selections into this project</button></li>';
-	    }
             html += '<li><button class="btn btn-xs btn-info" type="submit" name="combine_selected_files_into_collection" '
                 + ' id="combine_selected_files_into_collection">'
                 + '<i class="fa fa-fw fa-archive"></i> Combine selected collections and files into a new collection</button></li>'
@@ -216,6 +212,11 @@ function enable_disable_selection_actions() {
         toggleClass('disabled',
                     ($checked.filter('[value*=-d1hrv-]').length < 2) ||
                     ($checked.not('[value*=-d1hrv-]').length > 0));
+    $('[data-selection-action=copy]').
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.filter('[value*=-j7d0g-]').length > 0) ||
+                    ($checked.length < 1));
 }
 
 $(document).
