@@ -3,31 +3,24 @@ require 'arvados'
 require 'digest/md5'
 
 class TestBigRequest < Minitest::Test
-  def setup
-    begin
-      Dir.mkdir './tmp'
-    rescue Errno::EEXIST
-    end
-    @@arv = Arvados.new
-  end
-
   def boring_manifest nblocks
     x = '.'
     (0..nblocks).each do |z|
       x += ' d41d8cd98f00b204e9800998ecf8427e+0'
     end
-    x += "0:0:foo.txt\n"
+    x += " 0:0:foo.txt\n"
     x
   end
 
   def test_create_manifest nblocks=1
+    skip "Test needs an API server to run against"
     manifest_text = boring_manifest nblocks
     uuid = Digest::MD5.hexdigest(manifest_text) + '+' + manifest_text.size.to_s
-    c = @@arv.collection.create(collection: {
-                                  uuid: uuid,
-                                  manifest_text: manifest_text
-                                })
-    assert_equal uuid, c[:uuid]
+    c = Arvados.new.collection.create(collection: {
+                                        uuid: uuid,
+                                        manifest_text: manifest_text,
+                                      })
+    assert_equal uuid, c[:portable_data_hash]
   end
 
   def test_create_big_manifest
