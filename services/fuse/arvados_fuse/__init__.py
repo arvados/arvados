@@ -257,8 +257,8 @@ class CollectionDirectory(Directory):
 
     def update(self):
         try:
-            if re.match(r'^[a-f0-9]{32}', self.collection_locator):
-                return
+            if self.collection_object is not None and re.match(r'^[a-f0-9]{32}', self.collection_locator):
+                return True
             #with llfuse.lock_released:
             new_collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
             if "portable_data_hash" not in new_collection_object:
@@ -289,6 +289,7 @@ class CollectionDirectory(Directory):
                     for k, v in s.files().items():
                         cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.ctime(), self.mtime()))
             self.fresh()
+            return True
         except Exception as detail:
             _logger.error("arv-mount %s: error", self.collection_locator)
             _logger.exception(detail)

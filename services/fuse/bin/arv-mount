@@ -88,21 +88,23 @@ with "--".
         operations = Operations(os.getuid(), os.getgid())
         api = arvados.api('v1')
 
+        usr = api.users().current().execute()
         if args.by_hash:
             # Set up the request handler with the 'magic directory' at the root
             operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes, api))
         elif args.by_tag:
             operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
         elif args.shared:
-            operations.inodes.add_entry(SharedDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+            operations.inodes.add_entry(SharedDirectory(llfuse.ROOT_INODE, operations.inodes, api, usr))
+        elif args.home:
+            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, usr))
         elif args.collection != None:
             # Set up the request handler with the collection at the root
-            operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
-        elif args.project != None:
-            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, args.project))
+            operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, api, args.collection))
+        elif args.project != None:            
+            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, api.groups().get(uuid=args.project).execute()))
         else:
             e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
-            usr = api.users().current().execute()
             e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(e.inode, operations.inodes, api, usr))
             e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(e.inode, operations.inodes, api, usr))
             e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(e.inode, operations.inodes, api))
