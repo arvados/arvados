@@ -341,26 +341,12 @@ class TagDirectory(Directory):
 class ProjectDirectory(RecursiveInvalidateDirectory):
     '''A special directory that contains the contents of a project.'''
 
-    def __init__(self, parent_inode, inodes, api, uuid, poll=False, poll_time=60):
+    def __init__(self, parent_inode, inodes, api, project_object, poll=False, poll_time=60):
         super(ProjectDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
-        self.uuid = uuid['uuid']
-
-        self.project_object = None
-        if re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', self.uuid):
-            self.project_object = self.api.groups().get(uuid=self.uuid).execute()
-
-        if parent_inode == llfuse.ROOT_INODE:
-            try:
-                arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
-            except:
-                self._poll = True
-                self._poll_time = poll_time
-        else:
-            self._poll = poll
-            self._poll_time = poll_time
-
+        self.project_object = project_object
+        self.uuid = project_object['uuid']
 
     def createDirectory(self, i):
         if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']) and i['name'] is not None:
@@ -375,7 +361,7 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
             return None
 
     def contents(self):
-        return arvados.util.all_contents(self.api, self.uuid)
+        return arvados.util.list_all(self.api.groups().contents, uuid=self.uuid)
 
     def update(self):
         def same(a, i):
@@ -389,6 +375,9 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
 
         if re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', self.uuid):
             self.project_object = self.api.groups().get(uuid=self.uuid).execute()
+            print self.project_object
+        elif re.match(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}', self.uuid):
+            self.project_object = self.api.users().get(uuid=self.uuid).execute()
 
         self.merge(self.contents(),
                    lambda i: i['name'] if 'name' in i and i['name'] is not None and len(i['name']) > 0 else i['uuid'],
@@ -396,46 +385,74 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
                    self.createDirectory)
 
     def ctime(self):
-        return convertTime(self.project_object["created_at"]) if self.project_object is not None else 0
+        return convertTime(self.project_object["created_at"]) if "created_at" in self.project_object else 0
 
     def mtime(self):
-        return convertTime(self.project_object["modified_at"]) if self.project_object is not None else 0
+        return convertTime(self.project_object["modified_at"]) if "modified_at" in self.project_object  else 0
 
 
 
-class HomeDirectory(ProjectDirectory):
-    '''A special directory that represents the "home" project.'''
+class HomeDirectory(RecursiveInvalidateDirectory):
+    '''A special directory that represents users or groups who have shared projects with me.'''
 
     def __init__(self, parent_inode, inodes, api, poll=False, poll_time=60):
+        super(HomeDirectory, self).__init__(parent_inode)
         self.current_user = api.users().current().execute()
-        super(HomeDirectory, self).__init__(parent_inode, inodes, api, self.current_user)
+        self.inodes = inodes
+        self.api = api
 
-    def build_project_trees():
-        all_projects = self.api.groups().list(filters=[['group_class','=','project']], order=['name']).execute()['items']
-        parent_of = {self.current_user['uuid']: 'me'}
+        try:
+            arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
+        except:
+            self._poll = True
+            self._poll_time = poll_time
+
+    def update(self):
+        all_projects = arvados.util.list_all(self.api.groups().list, filters=[['group_class','=','project']])
+        objects = {}
         for ob in all_projects:
-            parent_of[ob['uuid']] = ob['owner_uuid']
-        children_of = {False: [], 'me': [self.current_user]}
+            objects[ob['uuid']] = ob
 
+        roots = []
+        root_owners = {}
         for ob in all_projects:
-            if ob['owner_uuid'] != self.current_user['uuid'] and ob['owner_uuid'] not in parent_of:
-                parent_of[ob['uuid']] = False
-            if parent_of[ob['uuid']] not in children_of:
-                children_of[parent_of[ob['uuid']]] = []
-            children_of[parent_of[ob['uuid']]] += ob
+            if ob['owner_uuid'] == self.current_user['uuid'] or ob['owner_uuid'] not in objects:
+                roots.append(ob)
+                root_owners[ob['owner_uuid']] = True
 
-        def buildtree(children_of, root_uuid):
-            tree = {}
-            for ob in children_of[root_uuid]:
-                tree[ob] = buildtree(children_of, ob['uuid'])
-            return tree
+        lusers = arvados.util.list_all(self.api.users().list, filters=[['uuid','in', list(root_owners)]])
+        lgroups = arvados.util.list_all(self.api.groups().list, filters=[['uuid','in', list(root_owners)]])
 
-        my_project_tree = buildtree(children_of, 'me')
-        shared_project_tree = buildtree(children_of, False)
+        users = {}
+        groups = {}
 
-        import pprint
-        pprint.pprint(my_project_tree)
-        pprint.pprint(shared_project_tree)
+        for l in lusers:
+            objects[l["uuid"]] = l
+        for l in lgroups:
+            objects[l["uuid"]] = l
+
+        contents = {}
+        for r in root_owners:
+            if r in objects:
+                obr = objects[r]
+                if "name" in obr:
+                    contents[obr["name"]] = obr
+                if "first_name" in obr:
+                    contents[u"{} {}".format(obr["first_name"], obr["last_name"])] = obr
+
+        for r in roots:
+            if r['owner_uuid'] not in objects:
+                contents[r['name']] = r
+        
+        try:
+            print "start merge"
+            self.merge(contents.items(),
+                       lambda i: i[0],
+                       lambda a, i: a.uuid == i[1]['uuid'],
+                       lambda i: ProjectDirectory(self.inode, self.inodes, self.api, i[1], poll=self._poll, poll_time=self._poll_time))
+        except Exception as e:
+            _logger.exception(e)
+        print "done merge"
 
     #def contents(self):
     #    return self.api.groups().contents(uuid=self.uuid).execute()['items']

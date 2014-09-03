@@ -331,12 +331,12 @@ def is_hex(s, *length_args):
         good_len = True
     return bool(good_len and HEX_RE.match(s))
 
-def all_contents(api, uuid):
+def list_all(fn, **kwargs):
     items = []
     offset = 0
     items_available = sys.maxint
     while len(items) < items_available:
-        c = api.groups().contents(uuid=uuid, offset=offset).execute()
+        c = fn(offset=offset, **kwargs).execute()
         items += c['items']
         items_available = c['items_available']
         offset = c['offset'] + len(c['items'])
