@@ -326,4 +326,93 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  # Test copy action state. It should not be available when a subproject is selected.
+  test "copy action is disabled when a subproject is selected" do
+    my_project = api_fixture('groups')['aproject']
+    my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+    my_subproject = api_fixture('groups')['asubproject']
+
+    # verify that selection options are disabled on the project until an item is selected
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_selector 'li.disabled', text: 'Copy selected'
+      page.assert_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li.disabled', text: 'Remove selected'
+    end
+
+    # select collection and verify links are enabled
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+
+    within('tr', text: my_collection['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_no_selector 'li.disabled', text: 'Copy selected'
+      page.assert_selector 'li', text: 'Copy selected'
+      page.assert_no_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li', text: 'Move selected'
+      page.assert_no_selector 'li.disabled', text: 'Remove selected'
+      page.assert_selector 'li', text: 'Remove selected'
+    end
+
+    # select subproject and verify that copy action is disabled
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+
+    click_link 'Subprojects'
+    assert page.has_text?(my_subproject['name']), 'Subproject not found in project'
+
+    within('tr', text: my_subproject['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_selector 'li.disabled', text: 'Copy selected'
+      page.assert_no_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li', text: 'Move selected'
+      page.assert_no_selector 'li.disabled', text: 'Remove selected'
+      page.assert_selector 'li', text: 'Remove selected'
+    end
+
+    # select subproject and a collection and verify that copy action is still disabled
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+
+    click_link 'Subprojects'
+    assert page.has_text?(my_subproject['name']), 'Subproject not found in project'
+
+    within('tr', text: my_subproject['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_link 'Data collections'
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+
+    within('tr', text: my_collection['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_selector 'li.disabled', text: 'Copy selected'
+      page.assert_no_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li', text: 'Move selected'
+      page.assert_no_selector 'li.disabled', text: 'Remove selected'
+      page.assert_selector 'li', text: 'Remove selected'
+    end
+  end
+
 end
