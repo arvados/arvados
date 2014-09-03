@@ -24,6 +24,26 @@ _logger = logging.getLogger('arvados.arvados_fuse')
 def convertTime(t):
     return calendar.timegm(time.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
 
+def sanitize_filename(dirty):
+    # http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+    if dirty is None:
+        return None
+
+    fn = ""
+    for c in dirty:
+        if (c >= '\x00' and c <= '\x1f') or c == '\x7f' or c == '/':
+            # skip control characters and /
+            continue
+        fn += c
+
+    # strip whitespace and leading - or ~
+    stripped = fn.strip().lstrip("-~")
+    if len(stripped) > 0:
+        return stripped
+    else:
+        return None
+
+
 class FreshBase(object):
     '''Base class for maintaining fresh/stale state to determine when to update.'''
     def __init__(self):
@@ -160,33 +180,44 @@ class Directory(FreshBase):
         return k in self._entries
 
     def merge(self, items, fn, same, new_entry):
-        '''Helper method for updating the contents of the directory.
+        '''Helper method for updating the contents of the directory.  Takes a list
+        describing the new contents of the directory, reuse entries that are
+        the same in both the old and new lists, create new entries, and delete
+        old entries missing from the new list.
 
-        items: array with new directory contents
+        items: iterable with new directory contents
 
         fn: function to take an entry in 'items' and return the desired file or
-        directory name
+        directory name, or None if this entry should be skipped
 
-        same: function to compare an existing entry with an entry in the items
-        list to determine whether to keep the existing entry.
+        same: function to compare an existing entry (a File or Directory
+        object) with an entry in the items list to determine whether to keep
+        the existing entry.
 
-        new_entry: function to create a new directory entry from array entry.
+        new_entry: function to create a new directory entry (File or Directory
+        object) from an entry in the items list.
+
         '''
 
         oldentries = self._entries
         self._entries = {}
         for i in items:
-            n = fn(i)
-            if n in oldentries and same(oldentries[n], i):
-                self._entries[n] = oldentries[n]
-                del oldentries[n]
-            else:
-                ent = new_entry(i)
-                if ent is not None:
-                    self._entries[n] = self.inodes.add_entry(ent)
-        for n in oldentries:
-            llfuse.invalidate_entry(self.inode, str(n))
-            self.inodes.del_entry(oldentries[n])
+            name = sanitize_filename(fn(i))
+            if name:
+                if name in oldentries and same(oldentries[name], i):
+                    # move existing directory entry over
+                    self._entries[name] = oldentries[name]
+                    del oldentries[name]
+                else:
+                    # create new directory entry
+                    ent = new_entry(i)
+                    if ent is not None:
+                        self._entries[name] = self.inodes.add_entry(ent)
+
+        # delete any other directory entries that were not in found in 'items'
+        for i in oldentries:            
+            llfuse.invalidate_entry(self.inode, str(i))
+            self.inodes.del_entry(oldentries[i])
         self.fresh()
 
     def clear(self):
@@ -226,11 +257,12 @@ class CollectionDirectory(Directory):
                     cwd = self
                     for part in s.name().split('/'):
                         if part != '' and part != '.':
-                            if part not in cwd._entries:
-                                cwd._entries[part] = self.inodes.add_entry(Directory(cwd.inode))
-                            cwd = cwd._entries[part]
+                            partname = sanitize_filename(part)
+                            if partname not in cwd._entries:
+                                cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode))
+                            cwd = cwd._entries[partname]
                     for k, v in s.files().items():
-                        cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.collection_object))
+                        cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.collection_object))
             self.fresh()
             return True
         except Exception as detail:
@@ -349,19 +381,18 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
         self.uuid = project_object['uuid']
 
     def createDirectory(self, i):
-        if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']) and i['name'] is not None:
+        if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']):
             return CollectionDirectory(self.inode, self.inodes, self.api, i['uuid'])
         elif re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', i['uuid']):
             return ProjectDirectory(self.inode, self.inodes, self.api, i, self._poll, self._poll_time)
+        elif re.match(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}', i['uuid']) and i['head_kind'] == 'arvados#collection':
+            return CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid'])
         #elif re.match(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}', i['uuid']):
         #    return None
         #elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
         #    return ObjectFile(self.parent_inode, i)
         else:
             return None
-
-    def contents(self):
-        return arvados.util.list_all(self.api.groups().contents, uuid=self.uuid)
 
     def update(self):
         def same(a, i):
@@ -375,11 +406,15 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
 
         if re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', self.uuid):
             self.project_object = self.api.groups().get(uuid=self.uuid).execute()
-            print self.project_object
         elif re.match(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}', self.uuid):
             self.project_object = self.api.users().get(uuid=self.uuid).execute()
 
-        self.merge(self.contents(),
+        contents = arvados.util.list_all(self.api.groups().contents, uuid=self.uuid)
+
+        # Name links will be obsolete soon, take this out when there are no more pre-#3036 in use.
+        contents += arvados.util.list_all(self.api.links().list, filters=[['tail_uuid', '=', self.uuid], ['link_class', '=', 'name']])
+
+        self.merge(contents,
                    lambda i: i['name'] if 'name' in i and i['name'] is not None and len(i['name']) > 0 else i['uuid'],
                    same,
                    self.createDirectory)
@@ -401,11 +436,11 @@ class HomeDirectory(RecursiveInvalidateDirectory):
         self.inodes = inodes
         self.api = api
 
-        try:
-            arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
-        except:
-            self._poll = True
-            self._poll_time = poll_time
+        # try:
+        #     arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
+        # except:
+        #     self._poll = True
+        #     self._poll_time = poll_time
 
     def update(self):
         all_projects = arvados.util.list_all(self.api.groups().list, filters=[['group_class','=','project']])
@@ -445,14 +480,12 @@ class HomeDirectory(RecursiveInvalidateDirectory):
                 contents[r['name']] = r
         
         try:
-            print "start merge"
             self.merge(contents.items(),
                        lambda i: i[0],
                        lambda a, i: a.uuid == i[1]['uuid'],
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, i[1], poll=self._poll, poll_time=self._poll_time))
         except Exception as e:
             _logger.exception(e)
-        print "done merge"
 
     #def contents(self):
     #    return self.api.groups().contents(uuid=self.uuid).execute()['items']
