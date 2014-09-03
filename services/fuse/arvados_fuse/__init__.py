@@ -36,8 +36,8 @@ def sanitize_filename(dirty):
             continue
         fn += c
 
-    # strip whitespace and leading - or ~
-    stripped = fn.strip().lstrip("-~")
+    # strip leading - or ~ and leading/trailing whitespace
+    stripped = fn.lstrip("-~ ").rstrip()
     if len(stripped) > 0:
         return stripped
     else:
@@ -78,10 +78,12 @@ class FreshBase(object):
 class File(FreshBase):
     '''Base for file objects.'''
 
-    def __init__(self, parent_inode):
+    def __init__(self, parent_inode, _ctime=0, _mtime=0):
         super(File, self).__init__()
         self.inode = None
         self.parent_inode = parent_inode
+        self._ctime = _ctime
+        self._mtime = _mtime
 
     def size(self):
         return 0
@@ -89,14 +91,19 @@ class File(FreshBase):
     def readfrom(self, off, size):
         return ''
 
+    def ctime(self):
+        return self._ctime
+
+    def mtime(self):
+        return self._mtime
+
 
 class StreamReaderFile(File):
     '''Wraps a StreamFileReader as a file.'''
 
-    def __init__(self, parent_inode, reader, collection):
-        super(StreamReaderFile, self).__init__(parent_inode)
+    def __init__(self, parent_inode, reader, _ctime, _mtime):
+        super(StreamReaderFile, self).__init__(parent_inode, _ctime, _mtime)
         self.reader = reader
-        self.collection = collection
 
     def size(self):
         return self.reader.size()
@@ -107,27 +114,26 @@ class StreamReaderFile(File):
     def stale(self):
         return False
 
-    def ctime(self):
-        return convertTime(self.collection["created_at"])
 
-    def mtime(self):
-        return convertTime(self.collection["modified_at"])
-
-
-class ObjectFile(File):
-    '''Wraps a dict as a serialized json object.'''
-
-    def __init__(self, parent_inode, contents):
-        super(ObjectFile, self).__init__(parent_inode)
-        self.contentsdict = contents
-        self.uuid = self.contentsdict['uuid']
-        self.contents = json.dumps(self.contentsdict, indent=4, sort_keys=True)
+class StringFile(File):
+    '''Wrap a simple string as a file'''
+    def __init__(self, parent_inode, contents, _ctime, _mtime):
+        super(StringFile, self).__init__(parent_inode, _ctime, _mtime)
+        self.contents = contents
 
     def size(self):
         return len(self.contents)
 
     def readfrom(self, off, size):
-        return self.contents[off:(off+size)]
+        return self.contents[off:(off+size)]    
+
+class ObjectFile(StringFile):
+    '''Wrap a dict as a serialized json object.'''
+
+    def __init__(self, parent_inode, contents):
+        super(ObjectFile, self).__init__(parent_inode, json.dumps(self.contentsdict, indent=4, sort_keys=True))
+        self.contentsdict = contents
+        self.uuid = self.contentsdict['uuid']
 
 
 class Directory(FreshBase):
@@ -240,17 +246,31 @@ class CollectionDirectory(Directory):
         self.inodes = inodes
         self.api = api
         self.collection_locator = collection_locator
-        self.portable_data_hash = None
-        self.collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
+        self.manifest_text_file = None
+        self.pdh_file = None
+        self.collection_object = None
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
     def update(self):
         try:
-            self.collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
-            if self.portable_data_hash != self.collection_object["portable_data_hash"]:
-                self.portable_data_hash = self.collection_object["portable_data_hash"]
+            new_collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
+            if "portable_data_hash" not in new_collection_object:
+                new_collection_object["portable_data_hash"] = new_collection_object["uuid"]
+
+            if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:
+                self.collection_object = new_collection_object
+
+                if self.manifest_text_file is not None:
+                    self.manifest_text_file.contents = self.collection_object["manifest_text"]
+                    self.manifest_text_file._ctime = self.ctime()
+                    self.manifest_text_file._mtime = self.mtime()
+                if self.pdh_file is not None:
+                    self.pdh_file.contents = self.collection_object["portable_data_hash"]
+                    self.pdh_file._ctime = self.ctime()
+                    self.pdh_file._mtime = self.mtime()
+
                 self.clear()
                 collection = arvados.CollectionReader(self.collection_object["manifest_text"], self.api)
                 for s in collection.all_streams():
@@ -262,18 +282,43 @@ class CollectionDirectory(Directory):
                                 cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode))
                             cwd = cwd._entries[partname]
                     for k, v in s.files().items():
-                        cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.collection_object))
+                        cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.ctime(), self.mtime()))
             self.fresh()
             return True
         except Exception as detail:
-            _logger.debug("arv-mount %s: error: %s",
-                          self.collection_locator, detail)
+            _logger.error("arv-mount %s: error", self.collection_locator)
+            _logger.exception(detail)
             return False
 
+    def __getitem__(self, item):
+        self.checkupdate()
+        if item == '.manifest_text':
+            if self.manifest_text_file is None:
+                self.manifest_text_file = StringFile(self.inode, self.collection_object["manifest_text"], self.ctime(), self.mtime())
+                self.inodes.add_entry(self.manifest_text_file)
+            return self.manifest_text_file
+        elif item == '.portable_data_hash':
+            if self.pdh_file is None:
+                self.pdh_file = StringFile(self.inode, self.collection_object["portable_data_hash"], self.ctime(), self.mtime())
+                print self.ctime
+                print self.pdh_file._ctime
+                self.inodes.add_entry(self.pdh_file)
+            return self.pdh_file
+        else:
+            return super(CollectionDirectory, self).__getitem__(item)
+
+    def __contains__(self, k):
+        if k == '.manifest_text' or '.portable_data_hash':
+            return True
+        else:
+            return super(CollectionDirectory, self).__contains__(k)
+
     def ctime(self):
+        self.checkupdate()
         return convertTime(self.collection_object["created_at"])
 
     def mtime(self):
+        self.checkupdate()
         return convertTime(self.collection_object["modified_at"])
 
 class MagicDirectory(Directory):
