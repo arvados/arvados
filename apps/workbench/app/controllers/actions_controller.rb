@@ -116,17 +116,24 @@ class ActionsController < ApplicationController
     files = []
     params["selection"].each do |s|
       a = ArvadosBase::resource_class_for_uuid s
+      uuid_with_optional_file = false
       m = nil
       if a == Link
         begin
           m = CollectionsHelper.match(Link.find(s).head_uuid)
         rescue
         end
+      elsif (m = CollectionsHelper.match(s))
+        m
       else
-        m = CollectionsHelper.match(s)
+        m = CollectionsHelper.match_uuid_with_optional_filepath(s)
+        uuid_with_optional_file = true
       end
 
-      if m and m[1] and m[2]
+      if uuid_with_optional_file
+        lst.append(m[1])
+        files.append(m)
+      elsif m and m[1] and m[2]
         lst.append(m[1] + m[2])
         files.append(m)
       end
@@ -142,11 +149,20 @@ class ActionsController < ApplicationController
 
     combined = ""
     files.each do |m|
-      mt = chash[m[1]+m[2]].manifest_text
-      if m[4]
-        combined += arv_normalize mt, '--extract', m[4][1..-1]
+      if CollectionsHelper.match_uuid_with_optional_filepath(m[0])
+        mt = chash[m[1]].manifest_text
+        if m[2].andand.size>0
+          combined += arv_normalize mt, '--extract', m[2][1..-1]
+        else
+          combined += chash[m[1]].manifest_text
+        end
       else
-        combined += chash[m[1]+m[2]].manifest_text
+        mt = chash[m[1]+m[2]].manifest_text
+        if m[4]
+          combined += arv_normalize mt, '--extract', m[4][1..-1]
+        else
+          combined += chash[m[1]+m[2]].manifest_text
+        end
       end
     end
 

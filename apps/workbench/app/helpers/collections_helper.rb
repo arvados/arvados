@@ -18,6 +18,15 @@ module CollectionsHelper
   end
 
   ##
+  # Regex match for collection UUID or "UUID/file" path.
+  # Returns a regex match object with the
+  # UUID in group 1, (optional) file path in group 2; or nil for no match.
+  #
+  def self.match_uuid_with_optional_filepath(uuid_with_optional_file)
+    /^([0-9a-z]{5}-[0-9a-z]{5}-[0-9a-z]{15})(\/*.*)$/.match(uuid_with_optional_file.to_s)
+  end
+
+  ##
   # Regex match for common image file extensions, returns a regex match object
   # with the matched extension in group 1; or nil for no match.
   #
