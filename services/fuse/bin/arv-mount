@@ -86,7 +86,7 @@ with "--".
     try:
         # Create the request handler
         operations = Operations(os.getuid(), os.getgid())
-        api = arvados.api('v1')
+        api = SafeApi(arvados.config)
 
         usr = api.users().current().execute()
         if args.by_hash:
