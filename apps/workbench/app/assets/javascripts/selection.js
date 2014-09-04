@@ -57,10 +57,6 @@ jQuery(function($){
         $("#persistent-selection-count").text(lst.length);
         if (lst.length > 0) {
             html = '<li><a href="#" class="btn btn-xs btn-info" id="clear_selections_button"><i class="fa fa-fw fa-ban"></i> Clear selections</a></li>';
-            html += '<li><button class="btn btn-xs btn-info" type="submit" name="combine_selected_files_into_collection" '
-                + ' id="combine_selected_files_into_collection">'
-                + '<i class="fa fa-fw fa-archive"></i> Combine selected collections and files into a new collection</button></li>'
-                + '<li class="notification"><table style="width: 100%"></table></li>';
             $('#selection-form-content').html(html);
 
             for (var i = 0; i < lst.length; i++) {
