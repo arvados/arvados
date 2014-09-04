@@ -154,14 +154,19 @@ def copy_pipeline_instance(obj_uuid, src=None, dst=None):
     # Fetch the pipeline instance record.
     pi = src.pipeline_instances().get(uuid=obj_uuid).execute()
 
-    # Copy input collections (collections listed as job dependencies
-    # for any of the pipeline's components)
+    # Copy input collections and docker images:
+    # For each component c in the pipeline, add any
+    # collection hashes found in c['job']['dependencies']
+    # and c['job']['docker_image_locator'].
     #
     input_collections = sets.Set()
     for cname in pi['components']:
-        comp = pi['components'][cname]
-        for c in comp['job']['dependencies']:
-            input_collections.add(c)
+        job = pi['components'][cname]['job']
+        for dep in job['dependencies']:
+            input_collections.add(dep)
+        docker = job.get('docker_image_locator', None)
+        if docker:
+            input_collections.add(docker)
 
     for c in input_collections:
         copy_collection(c, src, dst)
