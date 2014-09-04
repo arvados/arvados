@@ -22,6 +22,13 @@ import threading
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
+portable_data_hash_pattern = re.compile(r'[0-9a-f]{32}\+\d+')
+uuid_pattern = re.compile(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}')
+collection_uuid_pattern = re.compile(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}')
+group_uuid_pattern = re.compile(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}')
+user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
+link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
+
 class SafeApi(object):
     '''Threadsafe wrapper for API object.  This stores and returns a different api
     object per thread, because httplib2 which underlies apiclient is not
@@ -314,7 +321,7 @@ class CollectionDirectory(Directory):
 
     def update(self):
         try:
-            if self.collection_object is not None and re.match(r'^[a-f0-9]{32}', self.collection_locator):
+            if self.collection_object is not None and portable_data_hash_pattern.match(self.collection_locator):
                 return True
 
             with llfuse.lock_released:
@@ -359,11 +366,11 @@ class CollectionDirectory(Directory):
 
     def ctime(self):
         self.checkupdate()
-        return convertTime(self.collection_object["created_at"]) if self.collection_object is not None else 0
+        return convertTime(self.collection_object["created_at"]) if self.collection_object is not None and 'created_at' in self.collection_object else 0
 
     def mtime(self):
         self.checkupdate()
-        return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None else 0
+        return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None and 'modified_at' in self.collection_object else 0
 
 
 class MagicDirectory(Directory):
@@ -380,10 +387,28 @@ class MagicDirectory(Directory):
         super(MagicDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
+        self.readme_file = None
 
     def __contains__(self, k):
+        if self.readme_file is None:
+            text = '''This directory provides access to Arvados collections as subdirectories listed
+by uuid (in the form 'zzzzz-4zz18-1234567890abcde') or portable data hash (in
+the form '1234567890abcdefghijklmnopqrstuv+123').
+
+Note that this directory will appear empty until you attempt to access a
+specific collection subdirectory (such as trying to 'cd' into it), at which
+point the collection will actually be looked up on the server and the directory
+will appear if it exists.
+'''
+            self.readme_file = self.inodes.add_entry(StringFile(self.inode, text, 0, 0))
+            self._entries["README"] = self.readme_file
+
         if k in self._entries:
             return True
+
+        if not portable_data_hash_pattern.match(k) and not uuid_pattern.match(k):
+            return False
+
         try:
             e = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, self.api, k))
             if e.update():
@@ -478,18 +503,16 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
         self.uuid = project_object['uuid']
 
     def createDirectory(self, i):
-        if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']):
+        if collection_uuid_pattern.match(i['uuid']):
             return CollectionDirectory(self.inode, self.inodes, self.api, i)
-        elif re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', i['uuid']):
+        elif group_uuid_pattern.match(i['uuid']):
             return ProjectDirectory(self.inode, self.inodes, self.api, i, self._poll, self._poll_time)
-        elif re.match(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}', i['uuid']):
-            if i['head_kind'] == 'arvados#collection' or re.match('[0-9a-f]{32}\+\d+', i['head_uuid']):
+        elif link_uuid_pattern.match(i['uuid']):
+            if i['head_kind'] == 'arvados#collection' or portable_data_hash_pattern.match(i['head_uuid']):
                 return CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid'])
             else:
                 return None
-        #elif re.match(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}', i['uuid']):
-        #    return None
-        elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
+        elif uuid_pattern.match(i['uuid']):
             return ObjectFile(self.parent_inode, i)
         else:
             return None
@@ -499,10 +522,10 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
             if 'name' in i:
                 if i['name'] is None or len(i['name']) == 0:
                     return None
-                elif re.match(r'[a-z0-9]{5}-(4zz18|j7d0g)-[a-z0-9]{15}', i['uuid']):
+                elif collection_uuid_pattern.match(i['uuid']) or group_uuid_pattern.match(i['uuid']):
                     # collection or subproject
                     return i['name']
-                elif re.match(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}', i['uuid']) and i['head_kind'] == 'arvados#collection':
+                elif link_uuid_pattern.match(i['uuid']) and i['head_kind'] == 'arvados#collection':
                     # name link
                     return i['name']
                 elif 'kind' in i and i['kind'].startswith('arvados#'):
@@ -521,9 +544,9 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
             return False
 
         with llfuse.lock_released:
-            if re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', self.uuid):
+            if group_uuid_pattern.match(self.uuid):
                 self.project_object = self.api.groups().get(uuid=self.uuid).execute()
-            elif re.match(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}', self.uuid):
+            elif user_uuid_pattern.match(self.uuid):
                 self.project_object = self.api.users().get(uuid=self.uuid).execute()
 
             contents = arvados.util.list_all(self.api.groups().contents, uuid=self.uuid)

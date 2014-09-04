@@ -110,6 +110,22 @@ with "--".
             e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(e.inode, operations.inodes, api))
             e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(e.inode, operations.inodes, api))
 
+            text = '''
+Welcome to Arvados!  This directory provides file system access to files and objects 
+available on the Arvados installation located at '{}' 
+using credentials for user '{}'.
+
+From here, the following directories are available:
+
+  by_id/     Access to Keep collections by uuid or portable data hash (see by_id/README for details).
+  by_tag/    Access to Keep collections organized by tag.
+  home/      The contents of your home project.
+  shared/    Projects shared with you.
+'''.format(arvados.config.get('ARVADOS_API_HOST'), usr['email'])
+
+            e._entries["README"] = operations.inodes.add_entry(StringFile(e.inode, text, 0, 0))
+
+
     except Exception:
         logger.exception("arv-mount: exception during API setup")
         exit(1)
