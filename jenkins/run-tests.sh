@@ -52,6 +52,7 @@ cli_test=
 workbench_test=
 apiserver_test=
 python_sdk_test=
+ruby_sdk_test=
 fuse_test=
 leave_temp=
 skip_install=
@@ -188,7 +189,7 @@ clear_temp() {
 
 test_docs() {
     cd "$WORKSPACE/doc"
-    bundle install --deployment
+    bundle install --no-deployment
     rm -rf .site
     # Make sure python-epydoc is installed or the next line won't do much good!
     ARVADOS_API_HOST=qr1hi.arvadosapi.com
@@ -203,9 +204,39 @@ test_doclinkchecker() {
 }
 do_test doclinkchecker
 
+test_ruby_sdk() {
+    cd "$WORKSPACE/sdk/ruby" \
+        && bundle install --no-deployment \
+        && bundle exec rake test
+}
+do_test ruby_sdk
+
+install_ruby_sdk() {
+    cd "$WORKSPACE/sdk/ruby" \
+        && gem build arvados.gemspec \
+        && gem install arvados-*.gem
+}
+do_install ruby_sdk
+
+install_cli() {
+    cd "$WORKSPACE/sdk/cli" \
+        && gem build arvados-cli.gemspec \
+        && gem install arvados-cli-*.gem
+}
+do_install cli
+
+test_cli() {
+    title "Starting SDK CLI tests"
+    cd "$WORKSPACE/sdk/cli" \
+        && bundle install --no-deployment \
+        && mkdir -p /tmp/keep \
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test $cli_test
+}
+do_test cli
+
 install_apiserver() {
     cd "$WORKSPACE/services/api"
-    bundle install --deployment
+    bundle install --no-deployment
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -248,12 +279,6 @@ test_apiserver() {
     bundle exec rake test $apiserver_test
 }
 do_test apiserver
-
-install_cli() {
-    cd "$WORKSPACE/sdk/cli"
-    bundle install --deployment
-}
-do_install cli
 
 declare -a gostuff
 gostuff=(
@@ -320,19 +345,10 @@ done
 
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && bundle install --deployment \
+        && bundle install --no-deployment \
         && bundle exec rake test $workbench_test
 }
 do_test workbench
-
-test_cli() {
-    title "Starting SDK CLI tests"
-    cd "$WORKSPACE/sdk/cli" \
-        && bundle install --deployment \
-        && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test $cli_test
-}
-do_test cli
 
 clear_temp
 
