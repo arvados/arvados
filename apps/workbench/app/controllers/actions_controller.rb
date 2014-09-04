@@ -139,29 +139,36 @@ class ActionsController < ApplicationController
       end
     end
 
-    collections = Collection.where(uuid: lst)
-
+    lst = lst.uniq
     chash = {}
+
+    collections = Collection.where(uuid: lst)
     collections.each do |c|
       c.reload()
       chash[c.uuid] = c
     end
 
+    collections = Collection.where(portable_data_hash: lst)
+    collections.each do |c|
+      c.reload()
+      chash[c.portable_data_hash] = c
+    end
+
     combined = ""
     files.each do |m|
       if CollectionsHelper.match_uuid_with_optional_filepath(m[0])
-        mt = chash[m[1]].manifest_text
+        mt = chash[m[1]].andand.manifest_text
         if m[2].andand.size>0
           combined += arv_normalize mt, '--extract', m[2][1..-1]
         else
-          combined += chash[m[1]].manifest_text
+          combined += mt
         end
       else
-        mt = chash[m[1]+m[2]].manifest_text
-        if m[4]
+        mt = chash[m[1]+m[2]].andand.manifest_text
+        if m[4].andand.size>0
           combined += arv_normalize mt, '--extract', m[4][1..-1]
         else
-          combined += chash[m[1]+m[2]].manifest_text
+          combined += mt
         end
       end
     end
