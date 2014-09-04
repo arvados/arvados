@@ -159,15 +159,19 @@ class StringFile(File):
     def readfrom(self, off, size):
         return self.contents[off:(off+size)]    
 
+
 class ObjectFile(StringFile):
     '''Wrap a dict as a serialized json object.'''
 
-    def __init__(self, parent_inode, contents):
-        _ctime = convertTime(contents['created_at']) if 'created_at' in contents else 0
-        _mtime = convertTime(contents['modified_at']) if 'modified_at' in contents else 0
-        super(ObjectFile, self).__init__(parent_inode, json.dumps(contents, indent=4, sort_keys=True)+"\n", _ctime, _mtime)
-        self.contentsdict = contents
-        self.uuid = self.contentsdict['uuid']
+    def __init__(self, parent_inode, obj):
+        super(ObjectFile, self).__init__(parent_inode, "", 0, 0)
+        self.uuid = obj['uuid']
+        self.update(obj)
+
+    def update(self, obj):
+        self._ctime = convertTime(obj['created_at']) if 'created_at' in obj else 0
+        self._mtime = convertTime(obj['modified_at']) if 'modified_at' in obj else 0
+        self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
 
 
 class Directory(FreshBase):
@@ -275,17 +279,38 @@ class Directory(FreshBase):
 class CollectionDirectory(Directory):
     '''Represents the root of a directory tree holding a collection.'''
 
-    def __init__(self, parent_inode, inodes, api, collection_locator):
+    def __init__(self, parent_inode, inodes, api, collection):
         super(CollectionDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
-        self.collection_locator = collection_locator
-        self.manifest_text_file = None
-        self.pdh_file = None
+        self.collection_object_file = None
         self.collection_object = None
+        if isinstance(collection, dict):
+            self.collection_locator = collection['uuid']
+        else:
+            self.collection_locator = collection
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
+
+    def new_collection(self, new_collection_object):
+        self.collection_object = new_collection_object
+
+        if self.collection_object_file is not None:
+            self.collection_object_file.update(self.collection_object)
+
+        self.clear()
+        collection = arvados.CollectionReader(self.collection_object["manifest_text"], self.api)
+        for s in collection.all_streams():
+            cwd = self
+            for part in s.name().split('/'):
+                if part != '' and part != '.':
+                    partname = sanitize_filename(part)
+                    if partname not in cwd._entries:
+                        cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode))
+                    cwd = cwd._entries[partname]
+            for k, v in s.files().items():
+                cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.ctime(), self.mtime()))        
 
     def update(self):
         try:
@@ -299,75 +324,47 @@ class CollectionDirectory(Directory):
             # end with llfuse.lock_released, re-acquire lock
 
             if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:
-                self.collection_object = new_collection_object
+                self.new_collection(new_collection_object)
 
-                if self.manifest_text_file is not None:
-                    self.manifest_text_file.contents = self.collection_object["manifest_text"]
-                    self.manifest_text_file._ctime = self.ctime()
-                    self.manifest_text_file._mtime = self.mtime()
-                if self.pdh_file is not None:
-                    self.pdh_file.contents = self.collection_object["portable_data_hash"]
-                    self.pdh_file._ctime = self.ctime()
-                    self.pdh_file._mtime = self.mtime()
-
-                self.clear()
-                collection = arvados.CollectionReader(self.collection_object["manifest_text"], self.api)
-                for s in collection.all_streams():
-                    cwd = self
-                    for part in s.name().split('/'):
-                        if part != '' and part != '.':
-                            partname = sanitize_filename(part)
-                            if partname not in cwd._entries:
-                                cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode))
-                            cwd = cwd._entries[partname]
-                    for k, v in s.files().items():
-                        cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.ctime(), self.mtime()))
             self.fresh()
             return True
         except apiclient.errors.HttpError as e:
-            import pprint
-            pprint.pprint(self.resp.status)
-            if self.resp.status == 404:
+            if e.resp.status == 404:
                 _logger.warn("arv-mount %s: not found", self.collection_locator)
             else:
                 _logger.error("arv-mount %s: error", self.collection_locator)
                 _logger.exception(detail)
-            return False                
         except Exception as detail:
             _logger.error("arv-mount %s: error", self.collection_locator)
             if "manifest_text" in self.collection_object:
                 _logger.error("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
             _logger.exception(detail)                
-            return False
+        return False
 
     def __getitem__(self, item):
         self.checkupdate()
-        if item == '.arvados#collection.manifest_text':
-            if self.manifest_text_file is None:
-                self.manifest_text_file = StringFile(self.inode, self.collection_object["manifest_text"], self.ctime(), self.mtime())
-                self.inodes.add_entry(self.manifest_text_file)
-            return self.manifest_text_file
-        elif item == '.arvados#collection.portable_data_hash':
-            if self.pdh_file is None:
-                self.pdh_file = StringFile(self.inode, self.collection_object["portable_data_hash"], self.ctime(), self.mtime())
-                self.inodes.add_entry(self.pdh_file)
-            return self.pdh_file
+        if item == '.arvados#collection':
+            if self.collection_object_file is None:
+                self.collection_object_file = ObjectFile(self.inode, self.collection_object)
+                self.inodes.add_entry(self.collection_object_file)
+            return self.collection_object_file
         else:
             return super(CollectionDirectory, self).__getitem__(item)
 
     def __contains__(self, k):
-        if k in ('.arvados#collection.manifest_text', '.arvados#collection.portable_data_hash'):
+        if k == '.arvados#collection':
             return True
         else:
             return super(CollectionDirectory, self).__contains__(k)
 
     def ctime(self):
         self.checkupdate()
-        return convertTime(self.collection_object["created_at"])
+        return convertTime(self.collection_object["created_at"]) if self.collection_object is not None else 0
 
     def mtime(self):
         self.checkupdate()
-        return convertTime(self.collection_object["modified_at"])
+        return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None else 0
+
 
 class MagicDirectory(Directory):
     '''A special directory that logically contains the set of all extant keep
@@ -404,6 +401,7 @@ class MagicDirectory(Directory):
         else:
             raise KeyError("No collection with id " + item)
 
+
 class RecursiveInvalidateDirectory(Directory):
     def invalidate(self):
         if self.inode == llfuse.ROOT_INODE:
@@ -417,6 +415,7 @@ class RecursiveInvalidateDirectory(Directory):
         finally:
             if self.inode == llfuse.ROOT_INODE:
                 llfuse.lock.release()
+
 
 class TagsDirectory(RecursiveInvalidateDirectory):
     '''A special directory that contains as subdirectories all tags visible to the user.'''
@@ -439,6 +438,7 @@ class TagsDirectory(RecursiveInvalidateDirectory):
                        lambda i: i['name'] if 'name' in i else i['uuid'],
                        lambda a, i: a.tag == i,
                        lambda i: TagDirectory(self.inode, self.inodes, self.api, i['name'], poll=self._poll, poll_time=self._poll_time))
+
 
 class TagDirectory(Directory):
     '''A special directory that contains as subdirectories all collections visible
@@ -473,15 +473,20 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
         self.inodes = inodes
         self.api = api
         self.project_object = project_object
+        self.project_object_file = ObjectFile(self.inode, self.project_object)
+        self.inodes.add_entry(self.project_object_file)
         self.uuid = project_object['uuid']
 
     def createDirectory(self, i):
         if re.match(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}', i['uuid']):
-            return CollectionDirectory(self.inode, self.inodes, self.api, i['uuid'])
+            return CollectionDirectory(self.inode, self.inodes, self.api, i)
         elif re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', i['uuid']):
             return ProjectDirectory(self.inode, self.inodes, self.api, i, self._poll, self._poll_time)
-        elif re.match(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}', i['uuid']) and i['head_kind'] == 'arvados#collection':
-            return CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid'])
+        elif re.match(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}', i['uuid']):
+            if i['head_kind'] == 'arvados#collection' or re.match('[0-9a-f]{32}\+\d+', i['head_uuid']):
+                return CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid'])
+            else:
+                return None
         #elif re.match(r'[a-z0-9]{5}-8i9sb-[a-z0-9]{15}', i['uuid']):
         #    return None
         elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
@@ -492,7 +497,7 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
     def update(self):
         def namefn(i):
             if 'name' in i:
-                if i['name'] is None:
+                if i['name'] is None or len(i['name']) == 0:
                     return None
                 elif re.match(r'[a-z0-9]{5}-(4zz18|j7d0g)-[a-z0-9]{15}', i['uuid']):
                     # collection or subproject
@@ -532,12 +537,24 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
                    samefn,
                    self.createDirectory)
 
+    def __getitem__(self, item):
+        self.checkupdate()
+        if item == '.arvados#project':
+            return self.project_object_file
+        else:
+            return super(ProjectDirectory, self).__getitem__(item)
+
+    def __contains__(self, k):
+        if k == '.arvados#project':
+            return True
+        else:
+            return super(ProjectDirectory, self).__contains__(k)
+
     def ctime(self):
         return convertTime(self.project_object["created_at"]) if "created_at" in self.project_object else 0
 
     def mtime(self):
         return convertTime(self.project_object["modified_at"]) if "modified_at" in self.project_object  else 0
-
 
 
 class SharedDirectory(RecursiveInvalidateDirectory):
