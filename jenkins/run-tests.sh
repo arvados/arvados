@@ -103,7 +103,7 @@ do
             leave_temp=1
             ;;
         *=*)
-            eval $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2)\"
+            eval $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
             ;;
         *)
             echo >&2 "$0: Unrecognized option: '$arg'"
