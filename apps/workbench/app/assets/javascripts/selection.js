@@ -217,6 +217,11 @@ function enable_disable_selection_actions() {
         toggleClass('disabled',
                     ($checked.filter('[value*=-j7d0g-]').length > 0) ||
                     ($checked.length < 1));
+    $('[data-selection-action=combine]').
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.filter('[value*=-4zz18-]').length < 1) ||
+                    ($checked.length != $checked.filter('[value*=-4zz18-]').length));
 }
 
 $(document).

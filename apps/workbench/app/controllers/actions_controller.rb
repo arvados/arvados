@@ -164,7 +164,13 @@ class ActionsController < ApplicationController
       l.save!
     end
 
-    redirect_to controller: 'collections', action: :show, id: newc.uuid
+    if params["show_project"]
+      respond_to do |format|
+        format.js {render inline: "location.reload();" }
+      end
+    else
+      redirect_to controller: 'collections', action: :show, id: newc.uuid
+    end
   end
 
   def report_issue_popup
