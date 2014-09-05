@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import subprocess
+import time
 
 from arvados_fuse import *
 
@@ -89,6 +90,7 @@ with "--".
         api = SafeApi(arvados.config)
 
         usr = api.users().current().execute()
+        now = time.time()
         if args.by_id:
             # Set up the request handler with the 'magic directory' at the root
             operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes, api))
@@ -105,6 +107,7 @@ with "--".
             operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, api.groups().get(uuid=args.project).execute()))
         else:
             e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
+
             e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(e.inode, operations.inodes, api, usr))
             e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(e.inode, operations.inodes, api, usr))
             e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(e.inode, operations.inodes, api))
@@ -123,7 +126,7 @@ From here, the following directories are available:
   shared/    Projects shared with you.
 '''.format(arvados.config.get('ARVADOS_API_HOST'), usr['email'])
 
-            e._entries["README"] = operations.inodes.add_entry(StringFile(e.inode, text, 0, 0))
+            e._entries["README"] = operations.inodes.add_entry(StringFile(e.inode, text, now))
 
 
     except Exception:

@@ -89,39 +89,36 @@ class FreshBase(object):
         self._stale = True
         self._poll = False
         self._last_update = time.time()
+        self._atime = time.time()
         self._poll_time = 60
 
     # Mark the value as stale
     def invalidate(self):
         self._stale = True
 
-    # Test if the entries dict is stale
+    # Test if the entries dict is stale.  Also updates atime.
     def stale(self):
+        self._atime = time.time()
         if self._stale:
             return True
         if self._poll:
-            return (self._last_update + self._poll_time) < time.time()
+            return (self._last_update + self._poll_time) < self._atime
         return False
 
     def fresh(self):
         self._stale = False
         self._last_update = time.time()
 
-    def ctime(self):
-        return 0
-
-    def mtime(self):
-        return 0
-
+    def atime(self):
+        return self._atime
 
 class File(FreshBase):
     '''Base for file objects.'''
 
-    def __init__(self, parent_inode, _ctime=0, _mtime=0):
+    def __init__(self, parent_inode, _mtime=0):
         super(File, self).__init__()
         self.inode = None
         self.parent_inode = parent_inode
-        self._ctime = _ctime
         self._mtime = _mtime
 
     def size(self):
@@ -130,9 +127,6 @@ class File(FreshBase):
     def readfrom(self, off, size):
         return ''
 
-    def ctime(self):
-        return self._ctime
-
     def mtime(self):
         return self._mtime
 
@@ -140,8 +134,8 @@ class File(FreshBase):
 class StreamReaderFile(File):
     '''Wraps a StreamFileReader as a file.'''
 
-    def __init__(self, parent_inode, reader, _ctime, _mtime):
-        super(StreamReaderFile, self).__init__(parent_inode, _ctime, _mtime)
+    def __init__(self, parent_inode, reader, _mtime):
+        super(StreamReaderFile, self).__init__(parent_inode, _mtime)
         self.reader = reader
 
     def size(self):
@@ -156,8 +150,8 @@ class StreamReaderFile(File):
 
 class StringFile(File):
     '''Wrap a simple string as a file'''
-    def __init__(self, parent_inode, contents, _ctime, _mtime):
-        super(StringFile, self).__init__(parent_inode, _ctime, _mtime)
+    def __init__(self, parent_inode, contents, _mtime):
+        super(StringFile, self).__init__(parent_inode, _mtime)
         self.contents = contents
 
     def size(self):
@@ -171,12 +165,11 @@ class ObjectFile(StringFile):
     '''Wrap a dict as a serialized json object.'''
 
     def __init__(self, parent_inode, obj):
-        super(ObjectFile, self).__init__(parent_inode, "", 0, 0)
+        super(ObjectFile, self).__init__(parent_inode, "", 0)
         self.uuid = obj['uuid']
         self.update(obj)
 
     def update(self, obj):
-        self._ctime = convertTime(obj['created_at']) if 'created_at' in obj else 0
         self._mtime = convertTime(obj['modified_at']) if 'modified_at' in obj else 0
         self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
 
@@ -196,6 +189,7 @@ class Directory(FreshBase):
             raise Exception("parent_inode should be an int")
         self.parent_inode = parent_inode
         self._entries = {}
+        self._mtime = time.time()
 
     #  Overriden by subclasses to implement logic to update the entries dict
     #  when the directory is stale
@@ -252,6 +246,7 @@ class Directory(FreshBase):
 
         oldentries = self._entries
         self._entries = {}
+        changed = False
         for i in items:
             name = sanitize_filename(fn(i))
             if name:
@@ -264,11 +259,17 @@ class Directory(FreshBase):
                     ent = new_entry(i)
                     if ent is not None:
                         self._entries[name] = self.inodes.add_entry(ent)
+                    changed = True
 
         # delete any other directory entries that were not in found in 'items'
         for i in oldentries:            
             llfuse.invalidate_entry(self.inode, str(i))
             self.inodes.del_entry(oldentries[i])
+            changed = True
+
+        if changed:
+            self._mtime = time.time()
+
         self.fresh()
 
     def clear(self):
@@ -281,6 +282,9 @@ class Directory(FreshBase):
             llfuse.invalidate_entry(self.inode, str(n))
             self.inodes.del_entry(oldentries[n])
         self.invalidate()
+
+    def mtime(self):
+        return self._mtime
 
 
 class CollectionDirectory(Directory):
@@ -317,7 +321,7 @@ class CollectionDirectory(Directory):
                         cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode))
                     cwd = cwd._entries[partname]
             for k, v in s.files().items():
-                cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.ctime(), self.mtime()))        
+                cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.mtime()))        
 
     def update(self):
         try:
@@ -364,10 +368,6 @@ class CollectionDirectory(Directory):
         else:
             return super(CollectionDirectory, self).__contains__(k)
 
-    def ctime(self):
-        self.checkupdate()
-        return convertTime(self.collection_object["created_at"]) if self.collection_object is not None and 'created_at' in self.collection_object else 0
-
     def mtime(self):
         self.checkupdate()
         return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None and 'modified_at' in self.collection_object else 0
@@ -400,7 +400,7 @@ specific collection subdirectory (such as trying to 'cd' into it), at which
 point the collection will actually be looked up on the server and the directory
 will appear if it exists.
 '''
-            self.readme_file = self.inodes.add_entry(StringFile(self.inode, text, 0, 0))
+            self.readme_file = self.inodes.add_entry(StringFile(self.inode, text, time.time()))
             self._entries["README"] = self.readme_file
 
         if k in self._entries:
@@ -449,9 +449,6 @@ class TagsDirectory(RecursiveInvalidateDirectory):
         super(TagsDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
-        #try:
-        #    arvados.events.subscribe(self.api, [['object_uuid', 'is_a', 'arvados#link']], lambda ev: self.invalidate())
-        #except:
         self._poll = True
         self._poll_time = poll_time
 
@@ -573,12 +570,6 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
         else:
             return super(ProjectDirectory, self).__contains__(k)
 
-    def ctime(self):
-        return convertTime(self.project_object["created_at"]) if "created_at" in self.project_object else 0
-
-    def mtime(self):
-        return convertTime(self.project_object["modified_at"]) if "modified_at" in self.project_object  else 0
-
 
 class SharedDirectory(RecursiveInvalidateDirectory):
     '''A special directory that represents users or groups who have shared projects with me.'''
@@ -588,10 +579,6 @@ class SharedDirectory(RecursiveInvalidateDirectory):
         self.current_user = api.users().current().execute()
         self.inodes = inodes
         self.api = api
-
-        # try:
-        #     arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
-        # except:
         self._poll = True
         self._poll_time = poll_time
 
@@ -744,12 +731,10 @@ class Operations(llfuse.Operations):
         entry.st_size = e.size()
 
         entry.st_blksize = 512
-        entry.st_blocks = (e.size()/512)
-        if e.size()/512 != 0:
-            entry.st_blocks += 1
-        entry.st_atime = 0
-        entry.st_mtime = e.mtime()
-        entry.st_ctime = e.ctime()
+        entry.st_blocks = (e.size()/512)+1
+        entry.st_atime = int(e.atime())
+        entry.st_mtime = int(e.mtime())
+        entry.st_ctime = int(e.mtime())
 
         return entry
 
