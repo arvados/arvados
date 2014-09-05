@@ -2,7 +2,7 @@
 
 # Arvados cli client
 #
-# Ward Vandewege <ward@clinicalfuture.com>
+# Ward Vandewege <ward@curoverse.com>
 
 require 'fileutils'
 

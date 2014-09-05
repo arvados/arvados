@@ -1,3 +1,5 @@
+require "arvados/keep"
+
 class Collection < ArvadosBase
   MD5_EMPTY = 'd41d8cd98f00b204e9800998ecf8427e'
 
@@ -18,25 +20,33 @@ class Collection < ArvadosBase
     true
   end
 
+  def manifest
+    Keep::Manifest.new(manifest_text || "")
+  end
+
+  def files
+    # This method provides backwards compatibility for code that relied on
+    # the old files field in API results.  New code should use manifest
+    # methods directly.
+    if @files.nil? or manifest_text_changed?
+      @files = manifest.each_file.to_a
+    end
+    @files
+  end
+
   def content_summary
     ApplicationController.helpers.human_readable_bytes_html(total_bytes) + " " + super
   end
 
   def total_bytes
-    if files
-      tot = 0
-      files.each do |file|
-        tot += file[2]
-      end
-      tot
-    else
-      0
-    end
+    manifest.each_file.inject(0) { |sum, filespec| sum + filespec.last }
   end
 
   def files_tree
-    return [] if files.empty?
-    tree = files.group_by { |file_spec| File.split(file_spec.first) }
+    tree = manifest.each_file.group_by do |file_spec|
+      File.split(file_spec.first)
+    end
+    return [] if tree.empty?
     # Fill in entries for empty directories.
     tree.keys.map { |basedir, _| File.split(basedir) }.each do |splitdir|
       until tree.include?(splitdir)

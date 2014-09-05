@@ -4,14 +4,14 @@ $(function(){
 });
 <% end %>
 <div id="intropage">
-  <img class="clinicalfuture-logo" src="<%= asset_path('logo.png') %>" style="display:block; margin:2em auto"/>
+  <img class="curoverse-logo" src="<%= asset_path('logo.png') %>" style="display:block; margin:2em auto"/>
   <div style="width:30em; margin:2em auto 0 auto">
     <h1>Welcome</h1>
-    <h4>Clinical Future ARVADOS</h4>
+    <h4>Curoverse ARVADOS</h4>
 
     <% if !current_user and session['invite_code'] %>
 
-    <p>Clinical Future Arvados lets you manage and process human genomes and exomes.  You can start using the private beta
+    <p>Curoverse Arvados lets you manage and process human genomes and exomes.  You can start using the private beta
     now with your Google account.</p>
     <p style="float:right;margin-top:1em">
       <button class="login" href="/auth/joshid">Log in and get started</button>
@@ -19,11 +19,11 @@ $(function(){
 
     <% else %>
 
-    <p>Clinical Future ARVADOS is transforming how researchers and
+    <p>Curoverse ARVADOS is transforming how researchers and
     clinical geneticists use whole genome sequences. </p>
     <p>If you&rsquo;re interested in learning more, we&rsquo;d love to hear
     from you &mdash;
-    contact <a href="mailto:arvados@clinicalfuture.com">arvados@clinicalfuture.com</a>.</p>
+    contact <a href="mailto:arvados@curoverse.com">arvados@curoverse.com</a>.</p>
 
     <% if !current_user %>
     <p style="float:right;margin-top:1em">
