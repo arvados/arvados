@@ -3,6 +3,10 @@ require 'selenium-webdriver'
 require 'headless'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
+  setup do
+    Capybara.current_driver = Capybara.javascript_driver
+  end
+
   test "Collection page renders name" do
     uuid = api_fixture('collections')['foo_file']['uuid']
     coll_name = api_fixture('collections')['foo_file']['name']
@@ -87,9 +91,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     end
 
     # now in collection page
-    within('tr', text: foo_collection['name'].split('_')[0]) do
-      find('input[type=checkbox]').click
-    end
+    find('input[type=checkbox]').click
 
     click_button 'Selection...'
     within('.selection-action-container') do
@@ -98,6 +100,5 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # go back to collections page
     visit page_with_token('active', "/collections")
-    assert(page.has_text?('sdfsdfsdfsdfsdfsdfsdf'), "Collection page did not include foo file link")
   end
 end
