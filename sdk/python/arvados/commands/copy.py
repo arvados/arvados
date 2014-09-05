@@ -18,6 +18,7 @@
 
 import argparse
 import os
+import re
 import sets
 import sys
 import logging
@@ -26,8 +27,9 @@ import arvados
 import arvados.config
 import arvados.keep
 
+logger = logging.getLogger('arvados.arv-copy')
+
 def main():
-    logger = logging.getLogger('arvados.arv-copy')
     logger.setLevel(logging.DEBUG)
 
     parser = argparse.ArgumentParser(
@@ -121,6 +123,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
             abort('bad manifest line in collection {}: {}'.format(obj_uuid, f))
 
     # Copy each block from src_keep to dst_keep.
+    dst_keep = arvados.keep.KeepClient(dst)
     for locator in collection_blocks:
         data = src_keep.get(locator)
         logger.debug('copying block %s', locator)
@@ -129,7 +132,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
 
     # Copy the manifest and save the collection.
     dst_keep.put(manifest)
-    return dst_keep.collections().create(manifest_text=manifest).execute()
+    return dst.collections().create(body={"manifest_text": manifest}).execute()
 
 # copy_pipeline_instance(obj_uuid, src, dst)
 #
@@ -214,8 +217,8 @@ def uuid_type(api, object_uuid):
     type_prefix = object_uuid.split('-')[1]
     for k in api._schema.schemas:
         obj_class = api._schema.schemas[k].get('uuidPrefix', None)
-        if obj_class:
-            return obj_class
+        if type_prefix == obj_class:
+            return k
     return None
 
 def abort(msg, code=1):
