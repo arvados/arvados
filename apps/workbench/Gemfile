@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 gem 'rails', '~> 4.1.0'
 gem 'minitest', '>= 5.0.0'
 
-gem 'arvados', '>= 0.1.20140903145725'
+gem 'arvados', '>= 0.1.20140905115707'
 
 # Bundle edge Rails instead:
 # gem 'rails', :git => 'git://github.com/rails/rails.git'
