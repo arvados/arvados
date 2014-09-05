@@ -67,7 +67,7 @@ class FuseMountTest(MountTestBase):
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.testcollection))
+        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, None, self.testcollection))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -121,7 +121,7 @@ class FuseMagicTest(MountTestBase):
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes, None))
 
         self.mounttmp = tempfile.mkdtemp()
 
@@ -135,7 +135,7 @@ class FuseMagicTest(MountTestBase):
         # now check some stuff
         d1 = os.listdir(self.mounttmp)
         d1.sort()
-        self.assertEqual([], d1)
+        self.assertEqual(['README'], d1)
 
         d2 = os.listdir(os.path.join(self.mounttmp, self.testcollection))
         d2.sort()
@@ -143,7 +143,7 @@ class FuseMagicTest(MountTestBase):
 
         d3 = os.listdir(self.mounttmp)
         d3.sort()
-        self.assertEqual([self.testcollection], d3)
+        self.assertEqual(['README', self.testcollection], d3)
 
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
