@@ -112,64 +112,47 @@ class ActionsController < ApplicationController
   end
 
   expose_action :combine_selected_files_into_collection do
-    lst = []
+    uuids = []
+    pdhs = []
     files = []
     params["selection"].each do |s|
       a = ArvadosBase::resource_class_for_uuid s
-      uuid_with_optional_file = false
-      m = nil
       if a == Link
         begin
-          m = CollectionsHelper.match(Link.find(s).head_uuid)
+          if (m = CollectionsHelper.match(Link.find(s).head_uuid))
+            pdhs.append(m[1] + m[2])
+            files.append(m)
+          end
         rescue
         end
       elsif (m = CollectionsHelper.match(s))
-        m
-      else
-        m = CollectionsHelper.match_uuid_with_optional_filepath(s)
-        uuid_with_optional_file = true
-      end
-
-      if uuid_with_optional_file
-        lst.append(m[1])
+        pdhs.append(m[1] + m[2])
         files.append(m)
-      elsif m and m[1] and m[2]
-        lst.append(m[1] + m[2])
+      elsif (m = CollectionsHelper.match_uuid_with_optional_filepath(s))
+        uuids.append(m[1])
         files.append(m)
       end
     end
 
-    lst = lst.uniq
+    pdhs = pdhs.uniq
+    uuids = uuids.uniq
     chash = {}
 
-    collections = Collection.where(uuid: lst)
-    collections.each do |c|
-      c.reload()
+    Collection.select([:uuid, :manifest_text]).where(uuid: uuids).each do |c|
       chash[c.uuid] = c
     end
 
-    collections = Collection.where(portable_data_hash: lst)
-    collections.each do |c|
-      c.reload()
+    Collection.select([:portable_data_hash, :manifest_text]).where(portable_data_hash: pdhs).each do |c|
       chash[c.portable_data_hash] = c
     end
 
     combined = ""
     files.each do |m|
-      if CollectionsHelper.match_uuid_with_optional_filepath(m[0])
-        mt = chash[m[1]].andand.manifest_text
-        if m[2].andand.size>0
-          combined += arv_normalize mt, '--extract', m[2][1..-1]
-        else
-          combined += mt
-        end
+      mt = chash[m[1]+m[2]].andand.manifest_text
+      if not m[4].nil? and m[4].size > 1
+        combined += arv_normalize mt, '--extract', m[4][1..-1]
       else
-        mt = chash[m[1]+m[2]].andand.manifest_text
-        if m[4].andand.size>0
-          combined += arv_normalize mt, '--extract', m[4][1..-1]
-        else
-          combined += mt
-        end
+        combined += mt
       end
     end
 
