@@ -17,45 +17,45 @@
   </div>
   <p/>
 
-  <%= render partial: "paging", locals: {results: @collections, object: @object} %>
+<%= render partial: "paging", locals: {results: @collections, object: @object} %>
 
-  <div style="padding-right: 1em">
+<div style="padding-right: 1em">
 
-  <%= form_tag do |f| %>
-
-  <table id="collections-index" class="topalign table table-condensed table-fixedlayout"> <!-- table-fixed-header-row -->
-    <colgroup>
-      <col width="10%" />
-      <col width="10%" />
-      <col width="40%" />
-      <col width="10%" />
-      <col width="30%" />
-    </colgroup>
-    <thead>
-      <tr class="contain-align-left">
-        <th></th>
-        <th>uuid</th>
-        <th>contents</th>
-        <th>created at</th>
-        <th>tags</th>
-      </tr>
-    </thead>
-    <tbody>
-      <%= render partial: 'index_tbody' %>
-    </tbody>
-  </table>
-
-  <% end %>
-
-  </div>
-
-  <%= render partial: "paging", locals: {results: @collections, object: @object} %>
-
-  <% content_for :footer_js do %>
-  $(document).on('click', 'form[data-remote] input[type=submit]', function() {
-    $('table#collections-index tbody').fadeTo(200, 0.3);
-    return true;
-  });
-  <% end %>
+<%= form_tag do |f| %>
 
 </div>
+
+<table id="collections-index" class="topalign table table-condensed table-fixedlayout"> <!-- table-fixed-header-row -->
+  <colgroup>
+    <col width="10%" />
+    <col width="10%" />
+    <col width="40%" />
+    <col width="10%" />
+    <col width="30%" />
+  </colgroup>
+  <thead>
+    <tr class="contain-align-left">
+      <th></th>
+      <th>uuid</th>
+      <th>contents</th>
+      <th>created at</th>
+      <th>tags</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%= render partial: 'index_tbody' %>
+  </tbody>
+</table>
+
+<% end %>
+
+</div>
+
+<%= render partial: "paging", locals: {results: @collections, object: @object} %>
+
+<% content_for :footer_js do %>
+$(document).on('click', 'form[data-remote] input[type=submit]', function() {
+  $('table#collections-index tbody').fadeTo(200, 0.3);
+  return true;
+});
+<% end %>
