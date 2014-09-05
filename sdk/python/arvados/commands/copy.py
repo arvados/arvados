@@ -206,7 +206,11 @@ def copy_pipeline_template(obj_uuid, src=None, dst=None):
 #
 #    It returns a string such as 'Collection', 'PipelineInstance', etc.
 #
+#    Special case: if handed a Keep locator hash, return 'Collection'.
+#
 def uuid_type(api, object_uuid):
+    if re.match(r'^[a-f0-9]{32}(\+[A-Za-z0-9+-]+)?$', object_uuid):
+        return 'Collection'
     type_prefix = object_uuid.split('-')[1]
     for k in api._schema.schemas:
         obj_class = api._schema.schemas[k].get('uuidPrefix', None)
