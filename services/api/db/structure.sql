@@ -428,9 +428,7 @@ CREATE TABLE jobs (
     nondeterministic boolean,
     repository character varying(255),
     supplied_script_version character varying(255),
-    docker_image_locator character varying(255),
-    name character varying(255),
-    description text
+    docker_image_locator character varying(255)
 );
 
 
