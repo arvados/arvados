@@ -259,7 +259,7 @@ class Directory(FreshBase):
                     ent = new_entry(i)
                     if ent is not None:
                         self._entries[name] = self.inodes.add_entry(ent)
-                    changed = True
+                        changed = True
 
         # delete any other directory entries that were not in found in 'items'
         for i in oldentries:            
