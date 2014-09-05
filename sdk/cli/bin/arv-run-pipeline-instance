@@ -580,11 +580,11 @@ class WhRunPipelineInstance
                   name = c[:output_name] || "Output #{portable_data_hash[0..7]} of #{cname} of #{pipeline_name}"
 
                   # check if there is a name collision.
-                  name_collisions = $arv.collection.list(filters: [["owner_uuid", "=", owner_uuid]
+                  name_collisions = $arv.collection.list(filters: [["owner_uuid", "=", owner_uuid],
                                                                    ["name", "=", name]])[:items]
 
                   newcollection_actual = nil
-                  if name_collisions.any? and name_collisions.first["portable_data_hash"] == portable_data_hash
+                  if name_collisions.any? and name_collisions.first[:portable_data_hash] == portable_data_hash
                     # There is already a collection with the same name and the
                     # same contents, so just point to that.
                     newcollection_actual = name_collisions.first
