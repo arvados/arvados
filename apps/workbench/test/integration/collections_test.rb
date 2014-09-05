@@ -46,4 +46,58 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     visit page_with_token('active', "/collections/#{uuid}")
     assert page.has_text?('This collection is empty')
   end
+
+  test "combine selected collections into new collection" do
+    foo_collection_uuid = api_fixture('collections')['foo_file']['uuid']
+    bar_collection_uuid = api_fixture('collections')['bar_file']['uuid']
+
+    visit page_with_token('active', "/collections")
+
+    assert(page.has_text?(foo_collection_uuid), "Collection page did not include foo file")
+    assert(page.has_text?(bar_collection_uuid), "Collection page did not include bar file")
+
+    within('tr', text: foo_collection_uuid) do
+      find('input[type=checkbox]').click
+    end
+
+    within('tr', text: bar_collection_uuid) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Combine selections into a new collection'
+    end
+
+    # back in collections page
+    assert(page.has_text?(foo_collection_uuid), "Collection page did not include foo file")
+    assert(page.has_text?(bar_collection_uuid), "Collection page did not include bar file")
+  end
+
+  test "combine selected collection contents into new collection" do
+    foo_collection = api_fixture('collections')['foo_file']
+   # bar_collection = api_fixture('collections')['bar_file']
+   # pdh_collection = api_fixture('collections')['multilevel_collection_1']
+
+    visit page_with_token('active', "/collections")
+
+    # choose file from foo collection
+    within('tr', text: foo_collection['uuid']) do
+      click_link 'Show'
+    end
+
+    # now in collection page
+    within('tr', text: foo_collection['name'].split('_')[0]) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Combine selections into a new collection'
+    end
+
+    # go back to collections page
+    visit page_with_token('active', "/collections")
+    assert(page.has_text?('sdfsdfsdfsdfsdfsdfsdf'), "Collection page did not include foo file link")
+  end
 end
