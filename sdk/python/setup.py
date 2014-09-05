@@ -17,6 +17,7 @@ setup(name='arvados-python-client',
       license='Apache 2.0',
       packages=find_packages(),
       scripts=[
+        'bin/arv-copy',
         'bin/arv-get',
         'bin/arv-keepdocker',
         'bin/arv-ls',
