@@ -58,10 +58,10 @@ class Arvados::V1::SchemaController < ApplicationController
         auth: {
           oauth2: {
             scopes: {
-              "https://api.clinicalfuture.com/auth/arvados" => {
+              "https://api.curoverse.com/auth/arvados" => {
                 description: "View and manage objects"
               },
-              "https://api.clinicalfuture.com/auth/arvados.readonly" => {
+              "https://api.curoverse.com/auth/arvados.readonly" => {
                 description: "View objects"
               }
             }
@@ -171,8 +171,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados",
-                       "https://api.clinicalfuture.com/auth/arvados.readonly"
+                       "https://api.curoverse.com/auth/arvados",
+                       "https://api.curoverse.com/auth/arvados.readonly"
                       ]
             },
             list: {
@@ -248,8 +248,8 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => "#{k.to_s}List"
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados",
-                       "https://api.clinicalfuture.com/auth/arvados.readonly"
+                       "https://api.curoverse.com/auth/arvados",
+                       "https://api.curoverse.com/auth/arvados.readonly"
                       ]
             },
             create: {
@@ -270,7 +270,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
+                       "https://api.curoverse.com/auth/arvados"
                       ]
             },
             update: {
@@ -298,7 +298,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
+                       "https://api.curoverse.com/auth/arvados"
                       ]
             },
             delete: {
@@ -318,7 +318,7 @@ class Arvados::V1::SchemaController < ApplicationController
                 "$ref" => k.to_s
               },
               scopes: [
-                       "https://api.clinicalfuture.com/auth/arvados"
+                       "https://api.curoverse.com/auth/arvados"
                       ]
             }
           }
@@ -345,7 +345,7 @@ class Arvados::V1::SchemaController < ApplicationController
                   "$ref" => (action == 'index' ? "#{k.to_s}List" : k.to_s)
                 },
                 scopes: [
-                         "https://api.clinicalfuture.com/auth/arvados"
+                         "https://api.curoverse.com/auth/arvados"
                         ]
               }
               route.segment_keys.each do |key|
