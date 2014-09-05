@@ -1465,14 +1465,26 @@ sub find_docker_image {
   # If so, return its stream name and Docker hash.
   # If not, return undef for both values.
   my $locator = shift;
+  my ($streamname, $filename);
   if (my $image = $arv->{collections}->{get}->execute(uuid => $locator)) {
-    my @file_list = @{$image->{files}};
-    if ((scalar(@file_list) == 1) &&
-        ($file_list[0][1] =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
-      return ($file_list[0][0], $1);
+    foreach my $line (split(/\n/, $image->{manifest_text})) {
+      my @tokens = split(/\s+/, $line);
+      next if (!@tokens);
+      $streamname = shift(@tokens);
+      foreach my $filedata (grep(/^\d+:\d+:/, @tokens)) {
+        if (defined($filename)) {
+          return (undef, undef);  # More than one file in the Collection.
+        } else {
+          $filename = (split(/:/, $filedata, 3))[2];
+        }
+      }
     }
   }
-  return (undef, undef);
+  if (defined($filename) and ($filename =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
+    return ($streamname, $1);
+  } else {
+    return (undef, undef);
+  }
 }
 
 __DATA__
