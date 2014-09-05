@@ -23,8 +23,6 @@
 
 <%= form_tag do |f| %>
 
-</div>
-
 <table id="collections-index" class="topalign table table-condensed table-fixedlayout"> <!-- table-fixed-header-row -->
   <colgroup>
     <col width="10%" />
@@ -48,6 +46,8 @@
 </table>
 
 <% end %>
+
+</div>
 
 <%= render partial: "paging", locals: {results: @collections, object: @object} %>
 
