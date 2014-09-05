@@ -49,8 +49,6 @@
 
 <% end %>
 
-</div>
-
 <%= render partial: "paging", locals: {results: @collections, object: @object} %>
 
 <% content_for :footer_js do %>
@@ -59,3 +57,5 @@ $(document).on('click', 'form[data-remote] input[type=submit]', function() {
   return true;
 });
 <% end %>
+
+</div>
