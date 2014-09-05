@@ -6,15 +6,27 @@ module CollectionsHelper
   end
 
   ##
-  # Regex match for collection UUIDs, returns a regex match object with the
+  # Regex match for collection portable data hash, returns a regex match object with the
   # hash in group 1, (optional) size in group 2, (optional) subsequent uuid
   # fields in group 3, and (optional) file path within the collection as group
-  # 4; or nil for no match.
+  # 4
+  # returns nil for no match.
   #
-  # +uuid+ the uuid string to match
+  # +pdh+ the portable data hash string to match
   #
-  def self.match(uuid)
-    /^([a-f0-9]{32})(\+[0-9]+)?(\+.*?)?(\/.*)?$/.match(uuid.to_s)
+  def self.match(pdh)
+    /^([a-f0-9]{32})(\+\d+)(\+[^+]+)*?(\/.*)?$/.match(pdh.to_s)
+  end
+
+  ##
+  # Regex match for collection UUIDs, returns a regex match object with the
+  # uuid in group 1, empty groups 2 and 3 (for consistency with the match
+  # method above), and (optional) file path within the collection as group
+  # 4.
+  # returns nil for no match.
+  #
+  def self.match_uuid_with_optional_filepath(uuid_with_optional_file)
+    /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})()()(\/.*)?$/.match(uuid_with_optional_file.to_s)
   end
 
   ##
