@@ -570,7 +570,6 @@ class WhRunPipelineInstance
                 pipeline_name = @template[:name]
               end
               if c[:output_name] != false
-                output_name = c[:output_name] || "Output of #{cname} of #{pipeline_name}"
                 # Create a collection located in the same project as the pipeline with the contents of the output.
                 portable_data_hash = c[:job][:output]
                 collections = $arv.collection.list(limit: 1,
@@ -578,14 +577,33 @@ class WhRunPipelineInstance
                                                    select: ["portable_data_hash", "manifest_text"]
                                                    )[:items]
                 if collections.any?
-                  newcollection = {
-                    owner_uuid: owner_uuid,
-                    name: "#{output_name} at #{c[:job][:finished_at]}",
-                    portable_data_hash: collections.first[:portable_data_hash],
-                    manifest_text: collections.first[:manifest_text]
-                  }
-                  debuglog "Creating collection #{newcollection}", 0
-                  newcollection_actual = $arv.collection.create collection: newcollection
+                  name = c[:output_name] || "Output #{portable_data_hash[0..7]} of #{cname} of #{pipeline_name}"
+
+                  # check if there is a name collision.
+                  name_collisions = $arv.collection.list(filters: [["owner_uuid", "=", owner_uuid]
+                                                                   ["name", "=", name]])[:items]
+
+                  newcollection_actual = nil
+                  if name_collisions.any? and name_collisions.first["portable_data_hash"] == portable_data_hash
+                    # There is already a collection with the same name and the
+                    # same contents, so just point to that.
+                    newcollection_actual = name_collisions.first
+                  end
+
+                  if newcollection_actual.nil?
+                    # Did not find a collection with the same name (or the
+                    # collection has a different portable data hash) so create
+                    # a new collection with ensure_unique_name: true.
+                    newcollection = {
+                      owner_uuid: owner_uuid,
+                      name: name,
+                      portable_data_hash: collections.first[:portable_data_hash],
+                      manifest_text: collections.first[:manifest_text]                      
+                    }
+                    debuglog "Creating collection #{newcollection}", 0
+                    newcollection_actual = $arv.collection.create collection: newcollection, ensure_unique_name: true
+                  end
+
                   c[:output_uuid] = newcollection_actual[:uuid]
                 else
                   debuglog "Could not find a collection with portable data hash #{portable_data_hash}", 0
