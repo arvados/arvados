@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import datetime
 import errno
 import json
 import os
@@ -8,7 +9,6 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import datetime
 
 from collections import namedtuple
 from stat import *
@@ -29,23 +29,18 @@ opt_parser.add_argument(
 
 opt_parser.add_argument(
     '--project-uuid',
-    help="Add the Docker image and metadata to the specified project.")
+    help="Add the Docker image and metadata to the specified project.  Goes into user 'home' project by default.")
+opt_parser.add_argument(
+    '--name',
+    help="Name to use for the collection that will contain the docker image.")
 
 _group = opt_parser.add_mutually_exclusive_group()
 _group.add_argument(
     '--pull', action='store_true', default=False,
-    help="Pull the latest image from Docker repositories first")
+    help="Try to pull the latest image from Docker registry")
 _group.add_argument(
     '--no-pull', action='store_false', dest='pull',
-    help="Don't pull images from Docker repositories, use local (default)")
-
-_group = opt_parser.add_mutually_exclusive_group()
-_group.add_argument(
-    '--images', action='store_true',
-    help="List Docker images in Arvados")
-_group.add_argument(
-    '--push', action='store_true', default=True,
-    help="Push Docker image to Arvados (default)")
+    help="Use locally installed image only, don't pull image from Docker registry (default)")
 
 opt_parser.add_argument(
     'image', nargs='?',
@@ -173,28 +168,30 @@ def ptimestamp(t):
 
 def list_images_in_arv():
     existing_links = arvados.api('v1').links().list(filters=[['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']]]).execute()['items']
-    img = {}
-    for i in existing_links:
-        c = i["head_uuid"]
-        if c not in img:
-            img[c] = {"dockerhash": "<none>",
+    images = {}
+    for link in existing_links:
+        collection_uuid = link["head_uuid"]
+        if collection_uuid not in images:
+            images[collection_uuid]= {"dockerhash": "<none>",
                       "repo":"<none>",
                       "tag":"<none>",
                       "timestamp": ptimestamp("1970-01-01T00:00:01Z")}
 
-        if i["link_class"] == "docker_image_hash":
-            img[c]["dockerhash"] = i["name"]
+        if link["link_class"] == "docker_image_hash":
+            images[collection_uuid]["dockerhash"] = link["name"]
 
-        if i["link_class"] == "docker_image_repo+tag":
-            r = i["name"].split(":")
-            img[c]["repo"] = r[0]
+        if link["link_class"] == "docker_image_repo+tag":
+            r = link["name"].split(":")
+            images[collection_uuid]["repo"] = r[0]
             if len(r) > 1:
-                img[c]["tag"] = r[1]
+                images[collection_uuid]["tag"] = r[1]
 
-        if "image_timestamp" in i["properties"]:
-            img[c]["timestamp"] = ptimestamp(i["properties"]["image_timestamp"])
+        if "image_timestamp" in link["properties"]:
+            images[collection_uuid]["timestamp"] = ptimestamp(link["properties"]["image_timestamp"])
+        else:
+            images[collection_uuid]["timestamp"] = ptimestamp(link["created_at"])
 
-    st = sorted(img.items(), lambda a, b: cmp(b[1]["timestamp"], a[1]["timestamp"]))
+    st = sorted(images.items(), lambda a, b: cmp(b[1]["timestamp"], a[1]["timestamp"]))
 
     fmt = "{:30}  {:10}  {:12}  {:38}  {:20}"
     print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "KEEP LOCATOR", "CREATED")
@@ -204,13 +201,9 @@ def list_images_in_arv():
 def main(arguments=None):
     args = arg_parser.parse_args(arguments)
 
-    if args.images:
+    if args.image is None or args.image == 'images':
         list_images_in_arv()
         sys.exit(0)
-
-    if args.image is None:
-        print >> sys.stderr, "arv-keepdocker: error: missing image to push"
-        sys.exit(1)
 
     # Pull the image if requested, unless the image is specified as a hash
     # that we already have.
@@ -244,9 +237,15 @@ def main(arguments=None):
     # Call arv-put with switches we inherited from it
     # (a.k.a., switches that aren't our own).
     put_args = opt_parser.parse_known_args(arguments)[1]
-    put_args += ['--name', '{}:{} {}'.format(args.image, args.tag, image_hash[0:11])]
+
+    if args.name is None:
+        put_args += ['--name', 'Docker image {}:{} {}'.format(args.image, args.tag, image_hash[0:11])]
+    else:
+        put_args += ['--name', args.name]
+
     if args.project_uuid is not None:
         put_args += ['--project-uuid', args.project_uuid]
+
     coll_uuid = arv_put.main(
         put_args + ['--filename', outfile_name, image_file.name]).strip()
 
