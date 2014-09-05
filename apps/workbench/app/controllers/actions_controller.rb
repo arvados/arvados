@@ -112,41 +112,47 @@ class ActionsController < ApplicationController
   end
 
   expose_action :combine_selected_files_into_collection do
-    lst = []
+    uuids = []
+    pdhs = []
     files = []
     params["selection"].each do |s|
       a = ArvadosBase::resource_class_for_uuid s
-      m = nil
       if a == Link
         begin
-          m = CollectionsHelper.match(Link.find(s).head_uuid)
+          if (m = CollectionsHelper.match(Link.find(s).head_uuid))
+            pdhs.append(m[1] + m[2])
+            files.append(m)
+          end
         rescue
         end
-      else
-        m = CollectionsHelper.match(s)
-      end
-
-      if m and m[1] and m[2]
-        lst.append(m[1] + m[2])
+      elsif (m = CollectionsHelper.match(s))
+        pdhs.append(m[1] + m[2])
+        files.append(m)
+      elsif (m = CollectionsHelper.match_uuid_with_optional_filepath(s))
+        uuids.append(m[1])
         files.append(m)
       end
     end
 
-    collections = Collection.where(uuid: lst)
-
+    pdhs = pdhs.uniq
+    uuids = uuids.uniq
     chash = {}
-    collections.each do |c|
-      c.reload()
+
+    Collection.select([:uuid, :manifest_text]).where(uuid: uuids).each do |c|
       chash[c.uuid] = c
+    end
+
+    Collection.select([:portable_data_hash, :manifest_text]).where(portable_data_hash: pdhs).each do |c|
+      chash[c.portable_data_hash] = c
     end
 
     combined = ""
     files.each do |m|
-      mt = chash[m[1]+m[2]].manifest_text
-      if m[4]
+      mt = chash[m[1]+m[2]].andand.manifest_text
+      if not m[4].nil? and m[4].size > 1
         combined += arv_normalize mt, '--extract', m[4][1..-1]
       else
-        combined += chash[m[1]+m[2]].manifest_text
+        combined += mt
       end
     end
 
