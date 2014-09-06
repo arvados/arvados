@@ -149,6 +149,24 @@ EOS
     assert_response 422
   end
 
+  test "create succeeds with with duplicate name with ensure_unique_name" do
+    permit_unsigned_manifests
+    authorize_with :admin
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        owner_uuid: 'zzzzz-tpzed-000000000000000',
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        name: "foo_file"
+      },
+      ensure_unique_name: true
+    }
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal 'foo_file (2)', resp['name']
+  end
+
   test "create with owner_uuid set to group i can_manage" do
     permit_unsigned_manifests
     authorize_with :active
