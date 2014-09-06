@@ -170,7 +170,8 @@ class ActionsController < ApplicationController
       l.save!
     end
 
-    if params["show_project"]
+    action_data = JSON.parse(params['action_data']) if params['action_data']
+    if action_data && action_data['selection_param'].eql?('project')
       respond_to do |format|
         format.js {render inline: "location.reload();" }
       end
