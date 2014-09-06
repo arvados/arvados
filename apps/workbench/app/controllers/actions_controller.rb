@@ -176,7 +176,9 @@ class ActionsController < ApplicationController
         format.js {render inline: "location.reload();" }
       end
     else
-      redirect_to controller: 'collections', action: :show, id: newc.uuid
+      respond_to do |format|
+        format.js {redirect_to url_for(controller: 'collections', action: :show, id: newc.uuid)}
+      end
     end
   end
 
