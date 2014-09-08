@@ -22,6 +22,7 @@ import re
 import sets
 import sys
 import logging
+import tempfile
 
 import arvados
 import arvados.config
@@ -40,6 +41,9 @@ def main():
         help='Recursively add any objects that this object depends upon.')
     parser.add_argument(
         '--no-recursive', dest='recursive', action='store_false')
+    parser.add_argument(
+        '--dest-git-repo', dest='dest_git_repo',
+        help='The name of the destination git repository.')
     parser.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
@@ -177,6 +181,8 @@ def copy_pipeline_instance(obj_uuid, src=None, dst=None):
     for c in input_collections:
         copy_collection(c, src, dst)
 
+    # Copy the git repository
+
     # Copy the pipeline template and save the uuid of the copy
     new_pt = copy_pipeline_template(pi['pipeline_template_uuid'], src, dst)
 
@@ -203,6 +209,56 @@ def copy_pipeline_template(obj_uuid, src=None, dst=None):
     del old_pt['uuid']
     del old_pt['owner_uuid']
     return dst.pipeline_templates().create(body=old_pt).execute()
+
+# copy_git_repo(repo_name, src, dst)
+#
+#    Copies commits from git repository 'src_git_repo' to
+#    'dst_git_repo'.
+#
+#    Because users cannot create their own repositories, the
+#    destination repository must already exist. A branch 'dst_branch'
+#    is created at the destination repository, and commits from
+#    src_git_repo are merged onto that branch.
+#
+#    Steps to import commits from the source repo to the destination:
+#      1. clone dst_git_repo
+#      2. checkout dst_branch
+#      3. pull src_git_repo
+#      4. push dst_git_repo
+#
+#    The user running this command must be authenticated
+#    to both repositories.
+#
+def copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src=None, dst=None):
+    # Identify the fetch and push URLs for the git repositories.
+    r = src.repositories().list(
+        filters=[['name', '=', src_git_repo]]).execute()
+    if r['items_available'] != 1:
+        raise Exception('cannot identify source repo {}; {} repos found'
+                        .format(src_git_repo, r['items_available']))
+    src_git_url = r['items'][0]['fetch_url']
+    logger.debug('src_git_url: {}'.format(src_git_url)
+
+    r = dst.repositories().list(
+        filters=[['name', '=', dst_git_repo]]).execute()
+    if r['items_available'] != 1:
+        raise Exception('cannot identify source repo {}; {} repos found'
+                        .format(dst_git_repo, r['items_available']))
+    dst_git_fetch_url = r['items'][0]['fetch_url']
+    dst_git_push_url  = r['items'][0]['push_url']
+    logger.debug('dst_git_fetch_url: {}'.format(dst_git_fetch_url)
+    logger.debug('dst_git_push_url: {}'.format(dst_git_push_url)
+
+    tmprepo = tempfile.mkdtemp()
+
+    arvados.util.run_command(
+        ["git", "clone", dst_git_fetch_url, tmprepo],
+        cwd=os.path.dirname(tmprepo))
+    arvados.util.run_command(
+        ["git", "checkout", "-B", dst_branch],
+        cwd=tmprepo)
+    arvados.util.run_command(["git", "pull", src_git_url], cwd=tmprepo)
+    arvados.util.run_command(["git", "push", dst_git_push_url], cwd=tmprepo)
 
 # uuid_type(api, object_uuid)
 #
