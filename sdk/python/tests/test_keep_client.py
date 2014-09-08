@@ -64,6 +64,13 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
+    def test_KeepEmptyCollectionTest(self):
+        blob_locator = self.keep_client.put('', copies=1)
+        self.assertRegexpMatches(
+            blob_locator,
+            '^d41d8cd98f00b204e9800998ecf8427e\+0',
+            ('wrong locator from Keep.put(""): ' + blob_locator))
+
 
 class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
