@@ -20,6 +20,8 @@ You don't need to install anything. Just import the client like this. The go too
 </code></pre>
 </notextile>
 
+If you need pre-release client code, you can use the latest version from the repo by following "these instructions.":https://arvados.org/projects/arvados/wiki/Go#Using-Go-with-Arvados
+
 h3. Examples
 
 Import the module. (We import the log module here too, so we can use it in the subsequent examples.)
@@ -47,8 +49,8 @@ Get the User object for the current user:
 
 <notextile>
 <pre><code class="userinput">	type user struct {
-		Uuid	     string `json:"uuid"`
-		FullName     int    `json:"full_name"`
+		Uuid       string   `json:"uuid"`
+		FullName   string   `json:"full_name"`
 	}
 
 	var u user
@@ -59,6 +61,39 @@ Get the User object for the current user:
 	}
 
 	log.Printf("Logged in as %s (uuid %s)", user.Uuid, user.FullName)
+</code></pre>
+</notextile>
+
+Print all returned fields for collections:
+
+<notextile>
+<pre><code class="userinput">	var collections map[string]interface{}
+
+	params := arvadosclient.Dict{"limit": 10}
+
+	err = arv.Call("GET", "collections", "", "", params, &collections)
+	if err != nil {
+		log.Fatalf("error querying collections", err.Error())
+	}
+
+	for key, value := range collections {
+		if key == "items" {
+			items := value.([]interface{})
+			for index, item := range items {
+				fmt.Println("===========  ", index, "  ===========")
+				item_map := item.(map[string]interface{})
+				if len(item_map) == 0 {
+					fmt.Println("item", index, ": empty map")
+				} else {
+					for k,v := range item_map {
+						fmt.Println(index, k, ":", v)
+					}
+				}
+			}
+		} else {
+			fmt.Println(key, ":", value)
+		}
+	}
 </code></pre>
 </notextile>
 
