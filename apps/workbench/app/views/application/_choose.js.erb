@@ -14,7 +14,9 @@ action_data_form_params -- array -- for each X in this array, the
 value of params[X] during this "show chooser" request will be in
 $(btn).data('action-data-from-params')[X].
 
-=end %>
+=end
+%>
+
 $('body > .modal-container').html("<%= escape_javascript(render partial: 'choose.html', locals: {multiple: multiple}) %>");
 $('body > .modal-container .modal').modal('show');
 $('body > .modal-container .modal .modal-footer .btn-primary').

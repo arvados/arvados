@@ -7,6 +7,7 @@ import logging
 import os
 import signal
 import subprocess
+import time
 
 from arvados_fuse import *
 
@@ -15,11 +16,7 @@ logger = logging.getLogger('arvados.arv-mount')
 if __name__ == '__main__':
     # Handle command line parameters
     parser = argparse.ArgumentParser(
-        description='''Mount Keep data under the local filesystem.  By default, if neither
-        --collection or --tags is specified, this mounts as a virtual directory
-        under which all Keep collections are available as subdirectories named
-        with the Keep locator; however directories will not be visible to 'ls'
-        until a program tries to access them.''',
+        description='''Mount Keep data under the local filesystem.  Default mode is --home''',
         epilog="""
 Note: When using the --exec feature, you must either specify the
 mountpoint before --exec, or mark the end of your --exec arguments
@@ -28,10 +25,19 @@ with "--".
     parser.add_argument('mountpoint', type=str, help="""Mount point.""")
     parser.add_argument('--allow-other', action='store_true',
                         help="""Let other users read the mount""")
-    parser.add_argument('--collection', type=str, help="""Mount only the specified collection at the mount point.""")
-    parser.add_argument('--tags', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing tagged
-collections on the server.""")
-    parser.add_argument('--groups', action='store_true', help="""Mount as a virtual directory consisting of subdirectories representing groups on the server.""")
+
+    mount_mode = parser.add_mutually_exclusive_group()
+
+    mount_mode.add_argument('--all', action='store_true', help="""Mount a subdirectory for each mode: home, shared, by_tag, by_id (default).""")
+    mount_mode.add_argument('--home', action='store_true', help="""Mount only the user's home project.""")
+    mount_mode.add_argument('--shared', action='store_true', help="""Mount only list of projects shared with the user.""")
+    mount_mode.add_argument('--by-tag', action='store_true',
+                            help="""Mount subdirectories listed by tag.""")
+    mount_mode.add_argument('--by-id', action='store_true',
+                            help="""Mount subdirectories listed by portable data hash or uuid.""")
+    mount_mode.add_argument('--project', type=str, help="""Mount a specific project.""")
+    mount_mode.add_argument('--collection', type=str, help="""Mount only the specified collection.""")
+
     parser.add_argument('--debug', action='store_true', help="""Debug mode""")
     parser.add_argument('--logfile', help="""Write debug logs and errors to the specified file (default stderr).""")
     parser.add_argument('--foreground', action='store_true', help="""Run in foreground (default is to daemonize unless --exec specified)""", default=False)
@@ -81,18 +87,48 @@ collections on the server.""")
     try:
         # Create the request handler
         operations = Operations(os.getuid(), os.getgid())
-        api = arvados.api('v1')
+        api = SafeApi(arvados.config)
 
-        if args.groups:
-            e = operations.inodes.add_entry(GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
-        elif args.tags:
-            e = operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        usr = api.users().current().execute()
+        now = time.time()
+        if args.by_id:
+            # Set up the request handler with the 'magic directory' at the root
+            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        elif args.by_tag:
+            operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        elif args.shared:
+            operations.inodes.add_entry(SharedDirectory(llfuse.ROOT_INODE, operations.inodes, api, usr))
+        elif args.home:
+            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, usr))
         elif args.collection != None:
             # Set up the request handler with the collection at the root
-            e = operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, args.collection))
+            operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, api, args.collection))
+        elif args.project != None:            
+            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, api.groups().get(uuid=args.project).execute()))
         else:
-            # Set up the request handler with the 'magic directory' at the root
-            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes))
+            e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
+
+            e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(e.inode, operations.inodes, api, usr))
+            e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(e.inode, operations.inodes, api, usr))
+            e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(e.inode, operations.inodes, api))
+            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(e.inode, operations.inodes, api))
+
+            text = '''
+Welcome to Arvados!  This directory provides file system access to files and objects 
+available on the Arvados installation located at '{}' 
+using credentials for user '{}'.
+
+From here, the following directories are available:
+
+  by_id/     Access to Keep collections by uuid or portable data hash (see by_id/README for details).
+  by_tag/    Access to Keep collections organized by tag.
+  home/      The contents of your home project.
+  shared/    Projects shared with you.
+'''.format(arvados.config.get('ARVADOS_API_HOST'), usr['email'])
+
+            e._entries["README"] = operations.inodes.add_entry(StringFile(e.inode, text, now))
+
+
     except Exception:
         logger.exception("arv-mount: exception during API setup")
         exit(1)
