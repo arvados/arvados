@@ -40,16 +40,6 @@ a single stream. Default: -1 (unlimited), i.e., exactly one manifest
 stream per filesystem directory that contains files.
 """)
 
-upload_opts.add_argument('--project-uuid', metavar='UUID', help="""
-Store the collection in the specified project, instead of your Home
-project.
-""")
-
-upload_opts.add_argument('--name', help="""
-Save the collection with the specified name, rather than the default
-generic name "Saved at {time} by {username}@{host}".
-""")
-
 _group = upload_opts.add_mutually_exclusive_group()
 
 _group.add_argument('--as-stream', action='store_true', dest='stream',
@@ -113,6 +103,16 @@ created by the upload.
 """)
 
 run_opts = argparse.ArgumentParser(add_help=False)
+
+run_opts.add_argument('--project-uuid', metavar='UUID', help="""
+Store the collection in the specified project, instead of your Home
+project.
+""")
+
+run_opts.add_argument('--name', help="""
+Save the collection with the specified name.
+""")
+
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--progress', action='store_true',
                    help="""
