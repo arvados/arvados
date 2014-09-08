@@ -161,16 +161,6 @@ class FuseMagicTest(MountTestBase):
 
 
 class FuseTagsTest(MountTestBase):
-    def setUp(self):
-        super(FuseTagsTest, self).setUp()
-
-        cw = arvados.CollectionWriter()
-
-        cw.start_new_file('foo')
-        cw.write("foo")
-
-        self.testcollection = cw.finish()
-
     def runTest(self):
         operations = fuse.Operations(os.getuid(), os.getgid())
         e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api))
@@ -193,13 +183,6 @@ class FuseTagsTest(MountTestBase):
         d3 = os.listdir(os.path.join(self.mounttmp, 'foo_tag', 'zzzzz-4zz18-fy296fx3hot09f7'))
         d3.sort()
         self.assertEqual(['foo'], d3)
-
-        files = {}
-        files[os.path.join(self.mounttmp, 'foo_tag', 'zzzzz-4zz18-fy296fx3hot09f7', 'foo')] = 'foo'
-
-        for k, v in files.items():
-            with open(os.path.join(self.mounttmp, k)) as f:
-                self.assertEqual(v, f.read())
 
 
 class FuseTagsUpdateTest(MountTestBase):
@@ -276,6 +259,7 @@ class FuseSharedTest(MountTestBase):
         self.assertEqual(['A Project',
                           "Empty collection",
                           "Empty collection.link",
+                          "Pipeline Template with Input Parameter with Search.pipelineTemplate",
                           "Pipeline Template with Jobspec Components.pipelineTemplate",
                           "pipeline_with_job.pipelineInstance"
                       ], d2)
@@ -284,6 +268,7 @@ class FuseSharedTest(MountTestBase):
         d3.sort()
         self.assertEqual(["A Subproject",
                           "Two Part Pipeline Template.pipelineTemplate",
+                          "collection_to_move_around",
                           "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
                       ], d3)
 
