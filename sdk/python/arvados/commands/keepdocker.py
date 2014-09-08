@@ -9,7 +9,6 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import textwrap
 
 from collections import namedtuple
 from stat import *
@@ -193,7 +192,7 @@ def list_images_in_arv():
     fmt = "{:30}  {:10}  {:12}  {:29}  {:20}"
     print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED")
     for i, j in st:
-        print(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:11], i, j["timestamp"].strftime("%c")))
+        print(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
 
 def main(arguments=None):
     args = arg_parser.parse_args(arguments)
@@ -213,10 +212,13 @@ def main(arguments=None):
         print >>sys.stderr, "arv-keepdocker:", error.message
         sys.exit(1)
 
-    image_repo_tag = '{}:{}'.format(args.image, args.tag)
+    image_repo_tag = '{}:{}'.format(args.image, args.tag) if not image_hash.startswith(args.image.lower()) else None
 
     if args.name is None:
-        collection_name = 'Docker image {} {}'.format(image_repo_tag, image_hash[0:11])
+        if image_repo_tag:
+            collection_name = 'Docker image {} {}'.format(image_repo_tag, image_hash[0:12])
+        else:
+            collection_name = 'Docker image {}'.format(image_hash[0:12])
     else:
         collection_name = args.name
 
@@ -235,45 +237,45 @@ def main(arguments=None):
         if existing_links:
             # get readable collections
             collections = api.collections().list(
-                filters=[['uuid', 'in', [link['head_uuid'] for link in existing_links]]], 
+                filters=[['uuid', 'in', [link['head_uuid'] for link in existing_links]]],
                 select=["uuid", "owner_uuid", "name", "manifest_text"]).execute()['items']
 
             if collections:
                 # check for repo+tag links on these collections
-                existing_repo_tag = api.links().list(
+                existing_repo_tag = (api.links().list(
                     filters=[['link_class', '=', 'docker_image_repo+tag'],
                              ['name', '=', image_repo_tag],
-                             ['head_uuid', 'in', collections]]).execute()['items']
+                             ['head_uuid', 'in', collections]]).execute()['items']) if image_repo_tag else []
 
                 # Filter on elements owned by the parent project
                 owned_col = [c for c in collections if c['owner_uuid'] == parent_project_uuid]
-                owned_img = [c for c in existing_links if c['owner_uuid'] == parent_project_uuid] 
-                owned_rep = [c for c in existing_repo_tag if c['owner_uuid'] == parent_project_uuid] 
+                owned_img = [c for c in existing_links if c['owner_uuid'] == parent_project_uuid]
+                owned_rep = [c for c in existing_repo_tag if c['owner_uuid'] == parent_project_uuid]
 
                 if owned_col:
                     # already have a collection owned by this project
                     coll_uuid = owned_col[0]['uuid']
                 else:
                     # create new collection owned by the project
-                    coll_uuid = api.collections().create(body={"manifest_text": collections[0]['manifest_text'], 
-                                                               "name": collection_name, 
-                                                               "owner_uuid": parent_project_uuid}, 
+                    coll_uuid = api.collections().create(body={"manifest_text": collections[0]['manifest_text'],
+                                                               "name": collection_name,
+                                                               "owner_uuid": parent_project_uuid},
                                                          ensure_unique_name=True).execute()['uuid']
 
-                link_base = {'owner_uuid': parent_project_uuid, 
+                link_base = {'owner_uuid': parent_project_uuid,
                              'head_uuid':  coll_uuid }
 
                 if not owned_img:
                     # create image link owned by the project
                     make_link('docker_image_hash', image_hash, **link_base)
 
-                if not owned_rep:
+                if not owned_rep and image_repo_tag:
                     # create repo+tag link owned by the project
                     make_link('docker_image_repo+tag', image_repo_tag, **link_base)
 
                 print(coll_uuid)
 
-                sys.exit(0)                
+                sys.exit(0)
 
     # Open a file for the saved image, and write it if needed.
     outfile_name = '{}.tar'.format(image_hash)
@@ -305,7 +307,7 @@ def main(arguments=None):
         link_base['owner_uuid'] = args.project_uuid
 
     make_link('docker_image_hash', image_hash, **link_base)
-    if not image_hash.startswith(args.image.lower()):
+    if image_repo_tag:
         make_link('docker_image_repo+tag', image_repo_tag,
                   **link_base)
 

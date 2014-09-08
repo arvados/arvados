@@ -348,44 +348,18 @@ def progress_writer(progress_func, outfile=sys.stderr):
 def exit_signal_handler(sigcode, frame):
     sys.exit(-sigcode)
 
-def check_project_exists(project_uuid):
-    try:
-        api_client.groups().get(uuid=project_uuid).execute()
-    except (apiclient.errors.Error, arvados.errors.NotFoundError) as error:
-        raise ValueError("Project {} not found ({})".format(project_uuid,
-                                                            error))
+def check_project_exists(api_client, project_uuid):
+    if project_uuid:
+        if arvados.util.user_uuid_pattern.match(project_uuid):
+            api_client.users().get(uuid=project_uuid).execute()
+            return project_uuid
+        elif arvados.util.group_uuid_pattern.match(project_uuid):
+            api_client.groups().get(uuid=project_uuid).execute()
+            return project_uuid
+        else:
+            raise Exception("Not a valid project uuid: {}".format(project_uuid))
     else:
-        return True
-
-def prep_project_link(args, stderr, project_exists=check_project_exists):
-    # Given the user's command line arguments, return a dictionary with data
-    # to create the desired project link for this Collection, or None.
-    # Raises ValueError if the arguments request something impossible.
-    making_collection = not (args.raw or args.stream)
-    if not making_collection:
-        if args.name or args.project_uuid:
-            raise ValueError("Requested a Link without creating a Collection")
-        return None
-    link = {'tail_uuid': args.project_uuid,
-            'link_class': 'name',
-            'name': args.name}
-    if not link['tail_uuid']:
-        link['tail_uuid'] = api_client.users().current().execute()['uuid']
-    elif not project_exists(link['tail_uuid']):
-        raise ValueError("Project {} not found".format(args.project_uuid))
-    if not link['name']:
-        link['name'] = "Saved at {} by {}@{}".format(
-            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-            pwd.getpwuid(os.getuid()).pw_name,
-            socket.gethostname())
-        stderr.write(
-            "arv-put: No --name specified. Saving as \"%s\"\n" % link['name'])
-    link['owner_uuid'] = link['tail_uuid']
-    return link
-
-def create_project_link(locator, link):
-    link['head_uuid'] = locator
-    return api_client.links().create(body=link).execute()
+        return api_client.users().current().execute()['uuid']
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
@@ -394,11 +368,29 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     status = 0
 
     args = parse_arguments(arguments)
+
+    # Determine the name to use
+    if args.name:
+        if args.stream or args.raw:
+            print >>stderr, "Cannot use --name with --stream or --raw"
+            sys.exit(1)
+        collection_name = args.name
+    else:
+        collection_name = "Saved at {} by {}@{}".format(
+            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            pwd.getpwuid(os.getuid()).pw_name,
+            socket.gethostname())
+
+    if args.project_uuid and (args.stream or args.raw):
+        print >>stderr, "Cannot use --project-uuid with --stream or --raw"
+        sys.exit(1)
+
+    # Determine the parent project
     try:
-        project_link = prep_project_link(args, stderr)
-    except ValueError as error:
-        print >>stderr, "arv-put: {}.".format(error)
-        sys.exit(2)
+        project_uuid = check_project_exists(api_client, args.project_uuid)
+    except Exception as error:
+        print >>stderr, "Project {} not found: {}".format(args.project_uuid, error)
+        sys.exit(1)
 
     if args.progress:
         reporter = progress_writer(human_progress)
@@ -455,33 +447,29 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
-        # Register the resulting collection in Arvados.
-        collection = api_client.collections().create(
-            body={
-                'manifest_text': writer.manifest_text(),
-                'owner_uuid': project_link['tail_uuid']
-                },
-            ensure_unique_name=True
-            ).execute()
+        try:
+            # Register the resulting collection in Arvados.
+            collection = api_client.collections().create(
+                body={
+                    'owner_uuid': project_uuid,
+                    'name': collection_name,
+                    'manifest_text': writer.manifest_text()
+                    },
+                ensure_unique_name=True
+                ).execute()
 
-        if args.portable_data_hash and 'portable_data_hash' in collection and collection['portable_data_hash']:
-            output = collection['portable_data_hash']
-        else:
-            output = collection['uuid']
+            print >>stderr, "Collection saved as '%s'" % collection['name']
 
-        if project_link is not None:
-            # Update collection name
-            try:
-                if 'name' in collection:
-                    arvados.api().collections().update(uuid=collection['uuid'],
-                                                       body={"name": project_link["name"]}).execute()
-                else:
-                    create_project_link(output, project_link)
-            except apiclient.errors.Error as error:
-                print >>stderr, (
-                    "arv-put: Error adding Collection to project: {}.".format(
-                        error))
-                status = 1
+            if args.portable_data_hash and 'portable_data_hash' in collection and collection['portable_data_hash']:
+                output = collection['portable_data_hash']
+            else:
+                output = collection['uuid']
+
+        except apiclient.errors.Error as error:
+            print >>stderr, (
+                "arv-put: Error adding Collection to project: {}.".format(
+                    error))
+            status = 1
 
     # Print the locator (uuid) of the new collection.
     stdout.write(output)
