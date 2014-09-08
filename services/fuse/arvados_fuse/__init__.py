@@ -57,10 +57,13 @@ class SafeApi(object):
 
     def users(self):
         return self.localapi().users()
-        
+
 def convertTime(t):
     '''Parse Arvados timestamp to unix time.'''
-    return calendar.timegm(time.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
+    try:
+        return calendar.timegm(time.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
+    except (TypeError, ValueError):
+        return 0
 
 def sanitize_filename(dirty):
     '''Remove troublesome characters from filenames.'''
@@ -96,9 +99,8 @@ class FreshBase(object):
     def invalidate(self):
         self._stale = True
 
-    # Test if the entries dict is stale.  Also updates atime.
+    # Test if the entries dict is stale.
     def stale(self):
-        self._atime = time.time()
         if self._stale:
             return True
         if self._poll:
@@ -158,7 +160,7 @@ class StringFile(File):
         return len(self.contents)
 
     def readfrom(self, off, size):
-        return self.contents[off:(off+size)]    
+        return self.contents[off:(off+size)]
 
 
 class ObjectFile(StringFile):
@@ -262,7 +264,7 @@ class Directory(FreshBase):
                         changed = True
 
         # delete any other directory entries that were not in found in 'items'
-        for i in oldentries:            
+        for i in oldentries:
             llfuse.invalidate_entry(self.inode, str(i))
             self.inodes.del_entry(oldentries[i])
             changed = True
@@ -321,7 +323,7 @@ class CollectionDirectory(Directory):
                         cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode))
                     cwd = cwd._entries[partname]
             for k, v in s.files().items():
-                cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.mtime()))        
+                cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.mtime()))
 
     def update(self):
         try:
@@ -347,9 +349,9 @@ class CollectionDirectory(Directory):
                 _logger.exception(detail)
         except Exception as detail:
             _logger.error("arv-mount %s: error", self.collection_locator)
-            if "manifest_text" in self.collection_object:
+            if self.collection_object is not None and "manifest_text" in self.collection_object:
                 _logger.error("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
-            _logger.exception(detail)                
+            _logger.exception(detail)
         return False
 
     def __getitem__(self, item):
@@ -387,9 +389,11 @@ class MagicDirectory(Directory):
         super(MagicDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
+        # Have to defer creating readme_file because at this point we don't
+        # yet have an inode assigned.
         self.readme_file = None
 
-    def __contains__(self, k):
+    def create_readme(self):
         if self.readme_file is None:
             text = '''This directory provides access to Arvados collections as subdirectories listed
 by uuid (in the form 'zzzzz-4zz18-1234567890abcde') or portable data hash (in
@@ -402,6 +406,9 @@ will appear if it exists.
 '''
             self.readme_file = self.inodes.add_entry(StringFile(self.inode, text, time.time()))
             self._entries["README"] = self.readme_file
+
+    def __contains__(self, k):
+        self.create_readme()
 
         if k in self._entries:
             return True
@@ -419,6 +426,10 @@ will appear if it exists.
         except Exception as e:
             _logger.debug('arv-mount exception keep %s', e)
             return False
+
+    def items(self):
+        self.create_readme()
+        return self._entries.items()
 
     def __getitem__(self, item):
         if item in self:
@@ -487,7 +498,7 @@ class TagDirectory(Directory):
                    lambda i: CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid']))
 
 
-class ProjectDirectory(RecursiveInvalidateDirectory):
+class ProjectDirectory(Directory):
     '''A special directory that contains the contents of a project.'''
 
     def __init__(self, parent_inode, inodes, api, project_object, poll=False, poll_time=60):
@@ -495,8 +506,7 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
         self.inodes = inodes
         self.api = api
         self.project_object = project_object
-        self.project_object_file = ObjectFile(self.inode, self.project_object)
-        self.inodes.add_entry(self.project_object_file)
+        self.project_object_file = None
         self.uuid = project_object['uuid']
 
     def createDirectory(self, i):
@@ -515,6 +525,10 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
             return None
 
     def update(self):
+        if self.project_object_file == None:
+            self.project_object_file = ObjectFile(self.inode, self.project_object)
+            self.inodes.add_entry(self.project_object_file)
+
         def namefn(i):
             if 'name' in i:
                 if i['name'] is None or len(i['name']) == 0:
@@ -527,7 +541,7 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
                     return i['name']
                 elif 'kind' in i and i['kind'].startswith('arvados#'):
                     # something else
-                    return "{}.{}".format(i['name'], i['kind'][8:])                    
+                    return "{}.{}".format(i['name'], i['kind'][8:])
             else:
                 return None
 
@@ -549,7 +563,7 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
             contents = arvados.util.list_all(self.api.groups().contents, uuid=self.uuid)
             # Name links will be obsolete soon, take this out when there are no more pre-#3036 in use.
             contents += arvados.util.list_all(self.api.links().list, filters=[['tail_uuid', '=', self.uuid], ['link_class', '=', 'name']])
-            
+
         # end with llfuse.lock_released, re-acquire lock
 
         self.merge(contents,
@@ -571,7 +585,7 @@ class ProjectDirectory(RecursiveInvalidateDirectory):
             return super(ProjectDirectory, self).__contains__(k)
 
 
-class SharedDirectory(RecursiveInvalidateDirectory):
+class SharedDirectory(Directory):
     '''A special directory that represents users or groups who have shared projects with me.'''
 
     def __init__(self, parent_inode, inodes, api, exclude, poll=False, poll_time=60):
@@ -750,7 +764,7 @@ class Operations(llfuse.Operations):
                 p = self.inodes[parent_inode]
                 if name == '..':
                     inode = p.parent_inode
-                elif name in p:
+                elif isinstance(p, Directory) and name in p:
                     inode = p[name].inode
 
         if inode != None:
@@ -782,6 +796,9 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
+        # update atime
+        handle.entry._atime = time.time()
+
         try:
             with llfuse.lock_released:
                 return handle.entry.readfrom(off, size)
@@ -809,6 +826,9 @@ class Operations(llfuse.Operations):
             parent = self.inodes[p.parent_inode]
         else:
             raise llfuse.FUSEError(errno.EIO)
+
+        # update atime
+        p._atime = time.time()
 
         self._filehandles[fh] = FileHandle(fh, [('.', p), ('..', parent)] + list(p.items()))
         return fh

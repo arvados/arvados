@@ -17,8 +17,13 @@ class MountTestBase(unittest.TestCase):
         self.keeptmp = tempfile.mkdtemp()
         os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
         self.mounttmp = tempfile.mkdtemp()
+        run_test_server.run(False)
+        run_test_server.authorize_with("admin")
+        self.api = api = fuse.SafeApi(arvados.config)
 
     def tearDown(self):
+        run_test_server.stop()
+
         # llfuse.close is buggy, so use fusermount instead.
         #llfuse.close(unmount=True)
         count = 0
@@ -63,11 +68,12 @@ class FuseMountTest(MountTestBase):
         cw.write("data 8")
 
         self.testcollection = cw.finish()
+        self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, None, self.testcollection))
+        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, self.testcollection))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -117,11 +123,12 @@ class FuseMagicTest(MountTestBase):
         cw.write("data 1")
 
         self.testcollection = cw.finish()
+        self.api.collections().create(body={"manifest_text":cw.manifest_text()}).execute()
 
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes, None))
+        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes, self.api))
 
         self.mounttmp = tempfile.mkdtemp()
 
@@ -143,7 +150,7 @@ class FuseMagicTest(MountTestBase):
 
         d3 = os.listdir(self.mounttmp)
         d3.sort()
-        self.assertEqual(['README', self.testcollection], d3)
+        self.assertEqual([self.testcollection, 'README'], d3)
 
         files = {}
         files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
@@ -152,189 +159,159 @@ class FuseMagicTest(MountTestBase):
             with open(os.path.join(self.mounttmp, k)) as f:
                 self.assertEqual(v, f.read())
 
-#
-# Restore these tests when working on issue #3644
-#
-# class FuseTagsTest(MountTestBase):
-#     def setUp(self):
-#         super(FuseTagsTest, self).setUp()
 
-#         cw = arvados.CollectionWriter()
+class FuseTagsTest(MountTestBase):
+    def setUp(self):
+        super(FuseTagsTest, self).setUp()
 
-#         cw.start_new_file('foo')
-#         cw.write("foo")
+        cw = arvados.CollectionWriter()
 
-#         self.testcollection = cw.finish()
+        cw.start_new_file('foo')
+        cw.write("foo")
 
-#         run_test_server.run()
+        self.testcollection = cw.finish()
 
-#     def runTest(self):
-#         run_test_server.authorize_with("admin")
-#         api = arvados.api('v1', cache=False)
+    def runTest(self):
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api))
 
-#         operations = fuse.Operations(os.getuid(), os.getgid())
-#         e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
 
-#         llfuse.init(operations, self.mounttmp, [])
-#         t = threading.Thread(None, lambda: llfuse.main())
-#         t.start()
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
 
-#         # wait until the driver is finished initializing
-#         operations.initlock.wait()
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertEqual(['foo_tag'], d1)
 
-#         d1 = os.listdir(self.mounttmp)
-#         d1.sort()
-#         self.assertEqual(['foo_tag'], d1)
+        d2 = os.listdir(os.path.join(self.mounttmp, 'foo_tag'))
+        d2.sort()
+        self.assertEqual(['zzzzz-4zz18-fy296fx3hot09f7'], d2)
 
-#         d2 = os.listdir(os.path.join(self.mounttmp, 'foo_tag'))
-#         d2.sort()
-#         self.assertEqual(['1f4b0bc7583c2a7f9102c395f4ffc5e3+45'], d2)
+        d3 = os.listdir(os.path.join(self.mounttmp, 'foo_tag', 'zzzzz-4zz18-fy296fx3hot09f7'))
+        d3.sort()
+        self.assertEqual(['foo'], d3)
 
-#         d3 = os.listdir(os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'))
-#         d3.sort()
-#         self.assertEqual(['foo'], d3)
+        files = {}
+        files[os.path.join(self.mounttmp, 'foo_tag', 'zzzzz-4zz18-fy296fx3hot09f7', 'foo')] = 'foo'
 
-#         files = {}
-#         files[os.path.join(self.mounttmp, 'foo_tag', '1f4b0bc7583c2a7f9102c395f4ffc5e3+45', 'foo')] = 'foo'
-
-#         for k, v in files.items():
-#             with open(os.path.join(self.mounttmp, k)) as f:
-#                 self.assertEqual(v, f.read())
+        for k, v in files.items():
+            with open(os.path.join(self.mounttmp, k)) as f:
+                self.assertEqual(v, f.read())
 
 
-#     def tearDown(self):
-#         run_test_server.stop()
+class FuseTagsUpdateTest(MountTestBase):
+    def runRealTest(self):
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, poll_time=1))
 
-#         super(FuseTagsTest, self).tearDown()
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
 
-# class FuseTagsUpdateTestBase(MountTestBase):
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
 
-#     def runRealTest(self):
-#         run_test_server.authorize_with("admin")
-#         api = arvados.api('v1', cache=False)
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertEqual(['foo_tag'], d1)
 
-#         operations = fuse.Operations(os.getuid(), os.getgid())
-#         e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api, poll_time=1))
+        self.api.links().create(body={'link': {
+            'head_uuid': 'fa7aeb5140e2848d39b416daeef4ffc5+45',
+            'link_class': 'tag',
+            'name': 'bar_tag'
+        }}).execute()
 
-#         llfuse.init(operations, self.mounttmp, [])
-#         t = threading.Thread(None, lambda: llfuse.main())
-#         t.start()
+        time.sleep(1)
 
-#         # wait until the driver is finished initializing
-#         operations.initlock.wait()
+        d2 = os.listdir(self.mounttmp)
+        d2.sort()
+        self.assertEqual(['bar_tag', 'foo_tag'], d2)
 
-#         d1 = os.listdir(self.mounttmp)
-#         d1.sort()
-#         self.assertEqual(['foo_tag'], d1)
+        d3 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d3.sort()
+        self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d3)
 
-#         api.links().create(body={'link': {
-#             'head_uuid': 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-#             'link_class': 'tag',
-#             'name': 'bar_tag'
-#         }}).execute()
+        l = self.api.links().create(body={'link': {
+            'head_uuid': 'ea10d51bcf88862dbcc36eb292017dfd+45',
+            'link_class': 'tag',
+            'name': 'bar_tag'
+        }}).execute()
 
-#         time.sleep(1)
+        time.sleep(1)
 
-#         d2 = os.listdir(self.mounttmp)
-#         d2.sort()
-#         self.assertEqual(['bar_tag', 'foo_tag'], d2)
+        d4 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d4.sort()
+        self.assertEqual(['ea10d51bcf88862dbcc36eb292017dfd+45', 'fa7aeb5140e2848d39b416daeef4ffc5+45'], d4)
 
-#         d3 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
-#         d3.sort()
-#         self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d3)
+        self.api.links().delete(uuid=l['uuid']).execute()
 
-#         l = api.links().create(body={'link': {
-#             'head_uuid': 'ea10d51bcf88862dbcc36eb292017dfd+45',
-#             'link_class': 'tag',
-#             'name': 'bar_tag'
-#         }}).execute()
+        time.sleep(1)
 
-#         time.sleep(1)
-
-#         d4 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
-#         d4.sort()
-#         self.assertEqual(['ea10d51bcf88862dbcc36eb292017dfd+45', 'fa7aeb5140e2848d39b416daeef4ffc5+45'], d4)
-
-#         api.links().delete(uuid=l['uuid']).execute()
-
-#         time.sleep(1)
-
-#         d5 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
-#         d5.sort()
-#         self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d5)
+        d5 = os.listdir(os.path.join(self.mounttmp, 'bar_tag'))
+        d5.sort()
+        self.assertEqual(['fa7aeb5140e2848d39b416daeef4ffc5+45'], d5)
 
 
-# class FuseTagsUpdateTestWebsockets(FuseTagsUpdateTestBase):
-#     def setUp(self):
-#         super(FuseTagsUpdateTestWebsockets, self).setUp()
-#         run_test_server.run(True)
+class FuseSharedTest(MountTestBase):
+    def runTest(self):
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.SharedDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, self.api.users().current().execute()['uuid']))
 
-#     def runTest(self):
-#         self.runRealTest()
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
 
-#     def tearDown(self):
-#         run_test_server.stop()
-#         super(FuseTagsUpdateTestWebsockets, self).tearDown()
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
+
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertIn('Active User', d1)
+
+        d2 = os.listdir(os.path.join(self.mounttmp, 'Active User'))
+        d2.sort()
+        self.assertEqual(['A Project',
+                          "Empty collection",
+                          "Empty collection.link",
+                          "Pipeline Template with Jobspec Components.pipelineTemplate",
+                          "pipeline_with_job.pipelineInstance"
+                      ], d2)
+
+        d3 = os.listdir(os.path.join(self.mounttmp, 'Active User', 'A Project'))
+        d3.sort()
+        self.assertEqual(["A Subproject",
+                          "Two Part Pipeline Template.pipelineTemplate",
+                          "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
+                      ], d3)
+
+        with open(os.path.join(self.mounttmp, 'Active User', "A Project", "Two Part Pipeline Template.pipelineTemplate")) as f:
+            j = json.load(f)
+            self.assertEqual("Two Part Pipeline Template", j['name'])
 
 
-# class FuseTagsUpdateTestPoll(FuseTagsUpdateTestBase):
-#     def setUp(self):
-#         super(FuseTagsUpdateTestPoll, self).setUp()
-#         run_test_server.run(False)
+class FuseHomeTest(MountTestBase):
+    def runTest(self):
+        operations = fuse.Operations(os.getuid(), os.getgid())
+        e = operations.inodes.add_entry(fuse.ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, self.api.users().current().execute()))
 
-#     def runTest(self):
-#         self.runRealTest()
+        llfuse.init(operations, self.mounttmp, [])
+        t = threading.Thread(None, lambda: llfuse.main())
+        t.start()
 
-#     def tearDown(self):
-#         run_test_server.stop()
-#         super(FuseTagsUpdateTestPoll, self).tearDown()
+        # wait until the driver is finished initializing
+        operations.initlock.wait()
 
+        d1 = os.listdir(self.mounttmp)
+        d1.sort()
+        self.assertIn('Unrestricted public data', d1)
 
-# class FuseGroupsTest(MountTestBase):
-#     def setUp(self):
-#         super(FuseGroupsTest, self).setUp()
-#         run_test_server.run()
+        d2 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data'))
+        d2.sort()
+        self.assertEqual(['GNU General Public License, version 3'], d2)
 
-#     def runTest(self):
-#         run_test_server.authorize_with("admin")
-#         api = arvados.api('v1', cache=False)
-
-#         operations = fuse.Operations(os.getuid(), os.getgid())
-#         e = operations.inodes.add_entry(fuse.GroupsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
-
-#         llfuse.init(operations, self.mounttmp, [])
-#         t = threading.Thread(None, lambda: llfuse.main())
-#         t.start()
-
-#         # wait until the driver is finished initializing
-#         operations.initlock.wait()
-
-#         d1 = os.listdir(self.mounttmp)
-#         d1.sort()
-#         self.assertIn('zzzzz-j7d0g-v955i6s2oi1cbso', d1)
-
-#         d2 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso'))
-#         d2.sort()
-#         self.assertEqual(['1f4b0bc7583c2a7f9102c395f4ffc5e3+45 added sometime',
-#                           "I'm a job in a project",
-#                           "I'm a template in a project",
-#                           "zzzzz-j58dm-5gid26432uujf79",
-#                           "zzzzz-j58dm-7r18rnd5nzhg5yk",
-#                           "zzzzz-j58dm-ypsjlol9dofwijz",
-#                           "zzzzz-j7d0g-axqo7eu9pwvna1x"
-#                       ], d2)
-
-#         d3 = os.listdir(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', 'zzzzz-j7d0g-axqo7eu9pwvna1x'))
-#         d3.sort()
-#         self.assertEqual(["I'm in a subproject, too",
-#                           "ea10d51bcf88862dbcc36eb292017dfd+45 added sometime",
-#                           "zzzzz-j58dm-c40lddwcqqr1ffs"
-#                       ], d3)
-
-#         with open(os.path.join(self.mounttmp, 'zzzzz-j7d0g-v955i6s2oi1cbso', "I'm a template in a project")) as f:
-#             j = json.load(f)
-#             self.assertEqual("Two Part Pipeline Template", j['name'])
-
-#     def tearDown(self):
-#         run_test_server.stop()
-#         super(FuseGroupsTest, self).tearDown()
+        d3 = os.listdir(os.path.join(self.mounttmp, 'Unrestricted public data', 'GNU General Public License, version 3'))
+        d3.sort()
+        self.assertEqual(["GNU_General_Public_License,_version_3.pdf"], d3)
