@@ -35,13 +35,13 @@ GEM
     addressable (2.3.6)
     andand (1.3.3)
     arel (3.0.3)
-    arvados (0.1.20140827170424)
+    arvados (0.1.20140905165259)
       activesupport (>= 3.2.13)
       andand
       google-api-client (~> 0.6.3)
       json (>= 1.7.7)
       jwt (>= 0.1.5, < 1.0.0)
-    arvados-cli (0.1.20140827170424)
+    arvados-cli (0.1.20140905165259)
       activesupport (~> 3.2, >= 3.2.13)
       andand (~> 1.3, >= 1.3.3)
       arvados (~> 0.1.0)
@@ -223,7 +223,8 @@ PLATFORMS
 DEPENDENCIES
   acts_as_api
   andand
-  arvados-cli (>= 0.1.20140827170424)
+  arvados (>= 0.1.20140905165259)
+  arvados-cli (>= 0.1.20140905165259)
   coffee-rails (~> 3.2.0)
   database_cleaner
   factory_girl_rails

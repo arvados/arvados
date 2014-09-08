@@ -77,32 +77,6 @@ class ProjectsController < ApplicationController
     end
   end
 
-  def move_items
-    target_uuid = params['target']
-    uuids_to_add = session[:selected_move_items]
-
-    uuids_to_add.
-      collect { |x| ArvadosBase::resource_class_for_uuid(x) }.
-      uniq.
-      each do |resource_class|
-      resource_class.filter([['uuid','in',uuids_to_add]]).each do |dst|
-        if resource_class == Collection and not Collection.attribute_info.include?(:name)
-          dst = Link.new(owner_uuid: target_uuid,
-                         tail_uuid: target_uuid,
-                         head_uuid: dst.uuid,
-                         link_class: 'name',
-                         name: target_uuid)
-        else
-          dst.owner_uuid = target_uuid
-          dst.tail_uuid = target_uuid if dst.class == Link
-        end
-        dst.save!
-      end
-    end
-    session[:selected_move_items] = nil
-    redirect_to @object
-  end
-
   def destroy
     while (objects = Link.filter([['owner_uuid','=',@object.uuid],
                                   ['tail_uuid','=',@object.uuid]])).any?
@@ -239,13 +213,14 @@ class ProjectsController < ApplicationController
         objects_and_names << [object, @name_link_for[object.uuid]]
       elsif object.respond_to? :name
         objects_and_names << [object, object]
-      elsif not Collection.attribute_info.include?(:name)
+      else
         objects_and_names << [object,
                                Link.new(owner_uuid: @object.uuid,
                                         tail_uuid: @object.uuid,
                                         head_uuid: object.uuid,
                                         link_class: "name",
                                         name: "")]
+
       end
     end
     objects_and_names

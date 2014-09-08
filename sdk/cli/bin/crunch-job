@@ -656,6 +656,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     if ($build_script)
     {
       $build_script_to_send = $build_script;
+      $command .=
+	  "&& perl -";
     }
     $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
@@ -668,12 +670,16 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .=
           q{$(ip -o address show scope global |
               gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
+      $command .= "--volume=\Q$ENV{CRUNCH_SRC}:/tmp/crunch-src:ro\E ";
       $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT}:/keep:ro\E ";
       $command .= "--env=\QHOME=/home/crunch\E ";
       while (my ($env_key, $env_val) = each %ENV)
       {
         if ($env_key =~ /^(ARVADOS|JOB|TASK)_/) {
-          if ($env_key eq "TASK_KEEPMOUNT") {
+          if ($env_key eq "TASK_WORK") {
+            $command .= "--env=\QTASK_WORK=/tmp/crunch-job\E ";
+          }
+          elsif ($env_key eq "TASK_KEEPMOUNT") {
             $command .= "--env=\QTASK_KEEPMOUNT=/keep\E ";
           }
           else {
@@ -685,13 +691,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--env=\QCRUNCH_SRC=/tmp/crunch-src\E ";
       $command .= "\Q$docker_hash\E ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - ";
       $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - ";
       $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
 
@@ -1461,14 +1465,26 @@ sub find_docker_image {
   # If so, return its stream name and Docker hash.
   # If not, return undef for both values.
   my $locator = shift;
+  my ($streamname, $filename);
   if (my $image = $arv->{collections}->{get}->execute(uuid => $locator)) {
-    my @file_list = @{$image->{files}};
-    if ((scalar(@file_list) == 1) &&
-        ($file_list[0][1] =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
-      return ($file_list[0][0], $1);
+    foreach my $line (split(/\n/, $image->{manifest_text})) {
+      my @tokens = split(/\s+/, $line);
+      next if (!@tokens);
+      $streamname = shift(@tokens);
+      foreach my $filedata (grep(/^\d+:\d+:/, @tokens)) {
+        if (defined($filename)) {
+          return (undef, undef);  # More than one file in the Collection.
+        } else {
+          $filename = (split(/:/, $filedata, 3))[2];
+        }
+      }
     }
   }
-  return (undef, undef);
+  if (defined($filename) and ($filename =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
+    return ($streamname, $1);
+  } else {
+    return (undef, undef);
+  }
 }
 
 __DATA__

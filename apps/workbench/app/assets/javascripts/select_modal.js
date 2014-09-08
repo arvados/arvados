@@ -37,20 +37,28 @@ $(document).on('click', '.selectable', function() {
     var data = [];
     var $modal = $(this).closest('.modal');
     var action_data = $(this).data('action-data');
+    var action_data_from_params = $(this).data('action-data-from-params');
     var selection_param = action_data.selection_param;
     $modal.find('.modal-error').removeClass('hide').hide();
     $modal.find('.selectable.active[data-object-uuid]').each(function() {
         var val = $(this).attr('data-object-uuid');
         data.push({name: selection_param, value: val});
     });
-    $.each(action_data, function(key, value) {
-        data.push({name: key, value: value});
-    });
+    $.each($.extend({}, action_data, action_data_from_params),
+           function(key, value) {
+               if (value instanceof Array && key[-1] != ']') {
+                   for (var i in value) {
+                       data.push({name: key + '[]', value: value[i]});
+                   }
+               } else {
+                   data.push({name: key, value: value});
+               }
+           });
     $.ajax($(this).attr('data-action-href'),
            {dataType: 'json',
             type: $(this).attr('data-method'),
             data: data,
-            traditional: true,
+            traditional: false,
             context: {modal: $modal, action_data: action_data}}).
         fail(function(jqxhr, status, error) {
             if (jqxhr.readyState == 0 || jqxhr.status == 0) {

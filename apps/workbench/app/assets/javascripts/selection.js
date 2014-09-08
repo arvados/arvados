@@ -57,10 +57,6 @@ jQuery(function($){
         $("#persistent-selection-count").text(lst.length);
         if (lst.length > 0) {
             html = '<li><a href="#" class="btn btn-xs btn-info" id="clear_selections_button"><i class="fa fa-fw fa-ban"></i> Clear selections</a></li>';
-            if (this_object_uuid.match('-j7d0g-')) {
-                html += '<li><button class="btn btn-xs btn-info" type="submit" name="copy_selections_into_project" id="copy_selections_into_project"><i class="fa fa-fw fa-copy"></i> Copy selections into this project</button></li>';
-                html += '<li><button class="btn btn-xs btn-info" type="submit" name="move_selections_into_project" id="move_selections_into_project"><i class="fa fa-fw fa-truck"></i> Move selections into this project</button></li>';
-	    }
             html += '<li><button class="btn btn-xs btn-info" type="submit" name="combine_selected_files_into_collection" '
                 + ' id="combine_selected_files_into_collection">'
                 + '<i class="fa fa-fw fa-archive"></i> Combine selected collections and files into a new collection</button></li>'
@@ -189,9 +185,12 @@ function dispatch_selection_action() {
     if ($(this).closest('.disabled').length > 0) {
 	return false;
     }
-    $('.persistent-selection:checkbox:checked').each(function() {
-        data.push({name: param_name, value: $(this).val()});
-    });
+    $(this).
+        closest('.selection-action-container').
+        find(':checkbox:checked').
+        each(function() {
+            data.push({name: param_name, value: $(this).val()});
+        });
     if (href.indexOf('?') >= 0)
         href += '&';
     else
@@ -202,7 +201,8 @@ function dispatch_selection_action() {
 }
 
 function enable_disable_selection_actions() {
-    var $checked = $('.persistent-selection:checkbox:checked');
+    var $container = $(this).closest('.selection-action-container');
+    var $checked = $('.persistent-selection:checkbox:checked', $container);
     $('[data-selection-action]').
         closest('div.btn-group-sm').
         find('ul li').
@@ -212,10 +212,16 @@ function enable_disable_selection_actions() {
         toggleClass('disabled',
                     ($checked.filter('[value*=-d1hrv-]').length < 2) ||
                     ($checked.not('[value*=-d1hrv-]').length > 0));
+    $('[data-selection-action=copy]').
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.filter('[value*=-j7d0g-]').length > 0) ||
+                    ($checked.length < 1));
 }
 
 $(document).
     on('selections-updated ready ajax:complete', function() {
-        $('[data-selection-action]').click(dispatch_selection_action);
-        enable_disable_selection_actions();
+        var $btn = $('[data-selection-action]');
+        $btn.click(dispatch_selection_action);
+        enable_disable_selection_actions.call($btn);
     });
