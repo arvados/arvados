@@ -35,7 +35,7 @@
 	  { class: "btn btn-primary btn-sm", remote: true, method: 'get' }) do %>
       <i class="fa fa-fw fa-gear"></i> Run a pipeline...
     <% end %>
-    <%= link_to projects_path('project[owner_uuid]' => @object.uuid), method: 'post', class: 'btn btn-sm btn-primary' do %>
+    <%= link_to projects_path({'project[owner_uuid]' => @object.uuid, 'options' => {'ensure_unique_name' => true}}), method: 'post', class: 'btn btn-sm btn-primary' do %>
       <i class="fa fa-fw fa-plus"></i>
       Add a subproject
     <% end %>
