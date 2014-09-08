@@ -33,20 +33,30 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       find('span', text: api_fixture('groups')['aproject']['name']).click
       within('.arv-description-as-subtitle') do
         find('.fa-pencil').click
-        find('.editable-input textarea').set('*Textile description for A project* - "take me home":/')
+        find('.editable-input textarea').set('<p>*Textile description for A project* - "take me home":/ </p><p>And a new paragraph in description.</p>')
         find('.editable-submit').click
       end
       wait_for_ajax
     end
+
+    # visit project page
     visit current_path
+    assert(has_no_text?('.container-fluid', text: '*Textile description for A project*'),
+           "Description is not rendered properly")
     assert(find?('.container-fluid', text: 'Textile description for A project'),
            "Description update did not survive page refresh")
-    assert(!find?('.container-fluid', text: '*Textile description for A project*'),
-           "Textile description is displayed with uninterpreted formatting characters")
+    assert(find?('.container-fluid', text: 'And a new paragraph in description'),
+           "Description did not contain the expected new paragraph")
     assert(page.has_link?("take me home"), "link not found in description")
+
     click_link 'take me home'
-    assert page.has_text?('My projects')
-    assert page.has_text?('Projects shared with me')
+
+    # now in dashboard
+    assert(page.has_text?('My projects'), 'My projects - not found on dashboard')
+    assert(page.has_text?('Projects shared with me'), 'Projects shared with me - not found on dashboard')
+    assert(page.has_text?('Textile description for A project'), "Project description not found")
+    assert(page.has_no_text?('*Textile description for A project*'), "Project description is not rendered properly in dashboard")
+    assert(page.has_no_text?('And a new paragraph in description'), "Project description is not truncated after first paragraph")
   end
 
   test 'Find a project and edit description to html description' do
@@ -248,4 +258,161 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert(page.has_no_selector?(".selectable[data-object-uuid=\"#{bad_uuid}\"]"),
            "'share with groups' listing includes project")
   end
+
+  [
+    'Move',
+    'Remove',
+    'Copy',
+  ].each do |action|
+    test "selection #{action} for project" do
+      src = api_fixture('groups')['aproject']
+      dest = api_fixture('groups')['asubproject']
+      my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+
+      perform_selection_action src, dest, my_collection, action
+
+      case action
+      when 'Copy'
+        assert page.has_text?(my_collection['name']), 'Collection not found in src project after copy'
+        visit page_with_token 'active', '/'
+        find('.arv-project-list a,button', text: dest['name']).click
+        assert page.has_text?(my_collection['name']), 'Collection not found in dest project after copy'
+
+        # now remove it from destination project to restore to original state
+        perform_selection_action dest, nil, my_collection, 'Remove'
+      when 'Move'
+        assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after move'
+        visit page_with_token 'active', '/'
+        find('.arv-project-list a,button', text: dest['name']).click
+        assert page.has_text?(my_collection['name']), 'Collection not found in dest project after move'
+
+        # move it back to src project to restore to original state
+        perform_selection_action dest, src, my_collection, action
+      when 'Remove'
+        assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after remove'
+        visit page_with_token 'active', '/'
+        find('.arv-project-list a,button', text: 'Home').click
+        assert page.has_text?(my_collection['name']), 'Collection not found in home project after remove'
+      end
+    end
+  end
+
+  def perform_selection_action src, dest, item, action
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: src['name']).click
+    assert page.has_text?(item['name']), 'Collection not found in src project'
+
+    within('tr', text: item['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+
+    within('.selection-action-container') do
+      assert page.has_text?("Compare selected"), "Compare selected link text not found"
+      assert page.has_link?("Copy selected"), "Copy selected link not found"
+      assert page.has_link?("Move selected"), "Move selected link not found"
+      assert page.has_link?("Remove selected"), "Remove selected link not found"
+
+      click_link "#{action} selected"
+    end
+
+    # select the destination project if a Copy or Move action is being performed
+    if action == 'Copy' || action == 'Move'
+      within(".modal-container") do
+        find('.selectable', text: dest['name']).click
+        find('.modal-footer a,button', text: action).click
+        wait_for_ajax
+      end
+    end
+  end
+
+  # Test copy action state. It should not be available when a subproject is selected.
+  test "copy action is disabled when a subproject is selected" do
+    my_project = api_fixture('groups')['aproject']
+    my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+    my_subproject = api_fixture('groups')['asubproject']
+
+    # verify that selection options are disabled on the project until an item is selected
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_selector 'li.disabled', text: 'Copy selected'
+      page.assert_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li.disabled', text: 'Remove selected'
+    end
+
+    # select collection and verify links are enabled
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+
+    within('tr', text: my_collection['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_no_selector 'li.disabled', text: 'Copy selected'
+      page.assert_selector 'li', text: 'Copy selected'
+      page.assert_no_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li', text: 'Move selected'
+      page.assert_no_selector 'li.disabled', text: 'Remove selected'
+      page.assert_selector 'li', text: 'Remove selected'
+    end
+
+    # select subproject and verify that copy action is disabled
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+
+    click_link 'Subprojects'
+    assert page.has_text?(my_subproject['name']), 'Subproject not found in project'
+
+    within('tr', text: my_subproject['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_selector 'li.disabled', text: 'Copy selected'
+      page.assert_no_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li', text: 'Move selected'
+      page.assert_no_selector 'li.disabled', text: 'Remove selected'
+      page.assert_selector 'li', text: 'Remove selected'
+    end
+
+    # select subproject and a collection and verify that copy action is still disabled
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+
+    click_link 'Subprojects'
+    assert page.has_text?(my_subproject['name']), 'Subproject not found in project'
+
+    within('tr', text: my_subproject['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_link 'Data collections'
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+
+    within('tr', text: my_collection['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Compare selected'
+      page.assert_selector 'li.disabled', text: 'Copy selected'
+      page.assert_no_selector 'li.disabled', text: 'Move selected'
+      page.assert_selector 'li', text: 'Move selected'
+      page.assert_no_selector 'li.disabled', text: 'Remove selected'
+      page.assert_selector 'li', text: 'Remove selected'
+    end
+  end
+
 end

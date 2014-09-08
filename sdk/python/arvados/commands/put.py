@@ -106,6 +106,12 @@ input file. It can be used only if there is exactly one path given and
 it is not a directory. Implies --manifest.
 """)
 
+upload_opts.add_argument('--portable-data-hash', action='store_true',
+                    help="""
+Print the portable data hash instead of the Arvados UUID for the collection
+created by the upload.
+""")
+
 run_opts = argparse.ArgumentParser(add_help=False)
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--progress', action='store_true',
@@ -457,7 +463,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 },
             ).execute()
 
-        if 'portable_data_hash' in collection and collection['portable_data_hash']:
+        if args.portable_data_hash and 'portable_data_hash' in collection and collection['portable_data_hash']:
             output = collection['portable_data_hash']
         else:
             output = collection['uuid']

@@ -101,9 +101,15 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # Add this collection to the project using collections menu from top nav
     visit '/projects'
     find('.arv-project-list a,button', text: 'A Project').click
-
-    find('li.selection-menu > a').click
-    click_button 'Copy selections into this project'
+    find('.btn', text: 'Add data').click
+    within('.modal-dialog') do
+      wait_for_ajax
+      first('span', text: 'foo_tag').click
+      find('.btn', text: 'Add').click
+    end
+    using_wait_time(Capybara.default_wait_time * 3) do
+      wait_for_ajax
+    end
 
     # create a pipeline instance
     find('.btn', text: 'Run a pipeline').click
@@ -161,5 +167,38 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     click_on "Show components JSON"
     assert(page.has_text?("script_parameters"),
            "components JSON not found")
+  end
+
+  PROJECT_WITH_SEARCH_COLLECTION = "A Subproject"
+  def check_parameter_search(proj_name)
+    template = api_fixture("pipeline_templates")["parameter_with_search"]
+    search_text = template["components"]["with-search"]["script_parameters"]["input"]["search_for"]
+    visit page_with_token("active", "/pipeline_templates/#{template['uuid']}")
+    click_on "Run this pipeline"
+    within(".modal-dialog") do  # Set project for the new pipeline instance
+      find(".selectable", text: proj_name).click
+      click_on "Choose"
+    end
+    assert(has_text?("From template"), "did not land on pipeline instance page")
+    first("a.btn,button", text: "Choose").click
+    within(".modal-body") do
+      if (proj_name != PROJECT_WITH_SEARCH_COLLECTION)
+        # Switch finder modal to Subproject to find the Collection.
+        click_on proj_name
+        click_on PROJECT_WITH_SEARCH_COLLECTION
+      end
+      assert_equal(search_text, first("input").value,
+                   "parameter search not preseeded")
+      assert(has_text?(api_fixture("collections")["baz_collection_name_in_asubproject"]["name"]),
+             "baz Collection not in preseeded search results")
+    end
+  end
+
+  test "Workbench respects search_for parameter in templates" do
+    check_parameter_search(PROJECT_WITH_SEARCH_COLLECTION)
+  end
+
+  test "Workbench preserves search_for parameter after project switch" do
+    check_parameter_search("A Project")
   end
 end

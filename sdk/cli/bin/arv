@@ -2,7 +2,7 @@
 
 # Arvados cli client
 #
-# Ward Vandewege <ward@clinicalfuture.com>
+# Ward Vandewege <ward@curoverse.com>
 
 require 'fileutils'
 
@@ -358,10 +358,6 @@ end
 
 def help_resources(option_parser, discovery_document, resource)
   option_parser.educate
-
-  if not resource.nil? and resource != '--help' then
-    Trollop::die "Unknown resource type #{resource.inspect}"
-  end
   exit 255
 end
 

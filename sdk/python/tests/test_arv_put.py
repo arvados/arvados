@@ -585,7 +585,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
 
     def test_put_collection_with_unnamed_project_link(self):
         link = self.run_and_find_collection("Test unnamed collection",
-                                      ['--project-uuid', self.PROJECT_UUID])
+                                      ['--portable-data-hash', '--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
         self.assertRegexpMatches(
             link['name'],
@@ -594,7 +594,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
     def test_put_collection_with_name_and_no_project(self):
         link_name = 'Test Collection Link in home project'
         collection = self.run_and_find_collection("Test named collection in home project",
-                                      ['--name', link_name])
+                                      ['--portable-data-hash', '--name', link_name])
         self.assertEqual(link_name, collection['name'])
         my_user_uuid = self.current_user()['uuid']
         self.assertEqual(my_user_uuid, collection['owner_uuid'])
@@ -602,7 +602,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
     def test_put_collection_with_named_project_link(self):
         link_name = 'Test auto Collection Link'
         collection = self.run_and_find_collection("Test named collection",
-                                      ['--name', link_name,
+                                      ['--portable-data-hash',
+                                       '--name', link_name,
                                        '--project-uuid', self.PROJECT_UUID])
         self.assertEqual(link_name, collection['name'])
 

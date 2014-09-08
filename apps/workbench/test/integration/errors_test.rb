@@ -104,15 +104,17 @@ class ErrorsTest < ActionDispatch::IntegrationTest
         assert page.has_text?('Report a problem'), 'Report a problem text not found'
         assert page.has_no_text?('Version / debugging info'), 'Version / debugging info is not expected'
         assert page.has_text?('Describe the problem'), 'Describe the problem text not found'
-        assert page.has_button?('Send problem report'), 'Send problem report button not found'
+        assert page.has_text?('Send problem report'), 'Send problem report button text is not found'
+        assert page.has_no_button?('Send problem report'), 'Send problem report button is not disabled before entering problem description'
         assert page.has_button?('Cancel'), 'Cancel button not found'
 
         # enter a report text and click on report
         page.find_field('report_issue_text').set 'my test report text'
+        assert page.has_button?('Send problem report'), 'Send problem report button not enabled after entering text'
         click_button 'Send problem report'
 
         # ajax success updated button texts and added footer message
-        assert page.has_no_button?('Send problem report'), 'Found button - Send problem report'
+        assert page.has_no_text?('Send problem report'), 'Found button - Send problem report'
         assert page.has_no_button?('Cancel'), 'Found button - Cancel'
         assert page.has_text?('Report sent'), 'No text - Report sent'
         assert page.has_button?('Close'), 'No button - Close'
