@@ -461,13 +461,17 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 
         f = sr.files()["foo"]
 
+        # f.read() calls will be aligned on block boundaries (as a
+        # result of ticket #3663).
+
         f.seek(0)
-        self.assertEqual(f.read(20), content[0:20])
+        self.assertEqual(f.read(20), content[0:10])
 
         f.seek(0)
         self.assertEqual(f.read(6), content[0:6])
-        self.assertEqual(f.read(6), content[6:12])
-        self.assertEqual(f.read(6), content[12:18])
+        self.assertEqual(f.read(6), content[6:10])
+        self.assertEqual(f.read(6), content[10:16])
+        self.assertEqual(f.read(6), content[16:20])
 
     def test_extract_file(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
