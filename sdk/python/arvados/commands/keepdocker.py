@@ -257,7 +257,8 @@ def main(arguments=None):
                     # create new collection owned by the project
                     coll_uuid = api.collections().create(body={"manifest_text": collections[0]['manifest_text'], 
                                                                "name": collection_name, 
-                                                               "owner_uuid": parent_project_uuid}).execute()['uuid']
+                                                               "owner_uuid": parent_project_uuid}, 
+                                                         ensure_unique_name=True).execute()['uuid']
 
                 link_base = {'owner_uuid': parent_project_uuid, 
                              'head_uuid':  coll_uuid }

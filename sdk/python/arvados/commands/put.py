@@ -461,6 +461,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 'manifest_text': writer.manifest_text(),
                 'owner_uuid': project_link['tail_uuid']
                 },
+            ensure_unique_name=True
             ).execute()
 
         if args.portable_data_hash and 'portable_data_hash' in collection and collection['portable_data_hash']:
