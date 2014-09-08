@@ -131,6 +131,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
         dst_keep.put(data)
 
     # Copy the manifest and save the collection.
+    logger.debug('saving {} manifest: {}'.format(obj_uuid, manifest))
     dst_keep.put(manifest)
     return dst.collections().create(body={"manifest_text": manifest}).execute()
 
@@ -164,6 +165,8 @@ def copy_pipeline_instance(obj_uuid, src=None, dst=None):
     #
     input_collections = sets.Set()
     for cname in pi['components']:
+        if 'job' not in pi['components'][cname]:
+            continue
         job = pi['components'][cname]['job']
         for dep in job['dependencies']:
             input_collections.add(dep)
