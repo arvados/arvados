@@ -172,13 +172,9 @@ class ActionsController < ApplicationController
 
     action_data = JSON.parse(params['action_data']) if params['action_data']
     if action_data && action_data['selection_param'].eql?('project')
-      respond_to do |format|
-        format.js {render inline: "location.reload();" }
-      end
+      redirect_to :back
     else
-      respond_to do |format|
-        format.js {redirect_to url_for(controller: 'collections', action: :show, id: newc.uuid)}
-      end
+      redirect_to url_for(controller: 'collections', action: :show, id: newc.uuid)
     end
   end
 

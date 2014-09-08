@@ -52,19 +52,19 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "combine selected collections into new collection" do
-    foo_collection_uuid = api_fixture('collections')['foo_file']['uuid']
-    bar_collection_uuid = api_fixture('collections')['bar_file']['uuid']
+    foo_collection = api_fixture('collections')['foo_file']
+    bar_collection = api_fixture('collections')['bar_file']
 
     visit page_with_token('active', "/collections")
 
-    assert(page.has_text?(foo_collection_uuid), "Collection page did not include foo file")
-    assert(page.has_text?(bar_collection_uuid), "Collection page did not include bar file")
+    assert(page.has_text?(foo_collection['uuid']), "Collection page did not include foo file")
+    assert(page.has_text?(bar_collection['uuid']), "Collection page did not include bar file")
 
-    within('tr', text: foo_collection_uuid) do
+    within('tr', text: foo_collection['uuid']) do
       find('input[type=checkbox]').click
     end
 
-    within('tr', text: bar_collection_uuid) do
+    within('tr', text: bar_collection['uuid']) do
       find('input[type=checkbox]').click
     end
 
@@ -73,15 +73,16 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       click_link 'Combine selections into a new collection'
     end
 
-    # back in collections page
-    assert(page.has_text?(foo_collection_uuid), "Collection page did not include foo file")
-    assert(page.has_text?(bar_collection_uuid), "Collection page did not include bar file")
+    # now in the newly created collection page
+    assert(page.has_text?('Copy to project'), "Copy to project text not found in new collection page")
+    assert(page.has_no_text?(foo_collection['name']), "Collection page did not include foo file")
+    assert(page.has_text?('foo'), "Collection page did not include foo file")
+    assert(page.has_no_text?(bar_collection['name']), "Collection page did not include foo file")
+    assert(page.has_text?('bar'), "Collection page did not include bar file")
   end
 
   test "combine selected collection contents into new collection" do
     foo_collection = api_fixture('collections')['foo_file']
-   # bar_collection = api_fixture('collections')['bar_file']
-   # pdh_collection = api_fixture('collections')['multilevel_collection_1']
 
     visit page_with_token('active', "/collections")
 
@@ -98,7 +99,9 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       click_link 'Combine selections into a new collection'
     end
 
-    # go back to collections page
-    visit page_with_token('active', "/collections")
+    # now in the newly created collection page
+    assert(page.has_text?('Copy to project'), "Copy to project text not found in new collection page")
+    assert(page.has_no_text?(foo_collection['name']), "Collection page did not include foo file")
+    assert(page.has_text?('foo'), "Collection page did not include foo file")
   end
 end
