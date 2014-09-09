@@ -495,6 +495,10 @@ class WhRunPipelineInstance
     moretodo = true
     interrupted = false
 
+    if @instance[:started_at].nil?
+      @instance[:started_at] = Time.now
+    end
+
     job_creation_failed = 0
     while moretodo
       moretodo = false
@@ -598,7 +602,7 @@ class WhRunPipelineInstance
                       owner_uuid: owner_uuid,
                       name: name,
                       portable_data_hash: collections.first[:portable_data_hash],
-                      manifest_text: collections.first[:manifest_text]                      
+                      manifest_text: collections.first[:manifest_text]
                     }
                     debuglog "Creating collection #{newcollection}", 0
                     newcollection_actual = $arv.collection.create collection: newcollection, ensure_unique_name: true
@@ -679,6 +683,10 @@ class WhRunPipelineInstance
       end
     end
 
+    if @instance[:finished_at].nil? and ['Complete', 'Failed'].include? @instance[:state]
+      @instance[:finished_at] = Time.now
+    end
+
     debuglog "pipeline instance state is #{@instance[:state]}"
 
     # set components_summary
@@ -742,6 +750,7 @@ class WhRunPipelineInstance
       if ["New", "Ready", "RunningOnClient",
           "RunningOnServer"].include?(@instance[:state])
         @instance[:state] = "Failed"
+        @instance[:finished_at] = Time.now
         @instance.save
       end
       @instance.log_stderr(msg)

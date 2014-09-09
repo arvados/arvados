@@ -74,6 +74,7 @@ behavior (e.g., cancel job if cancelled_at becomes non-nil).
 
 use strict;
 use POSIX ':sys_wait_h';
+use POSIX qw(strftime);
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use Arvados;
 use Digest::MD5 qw(md5_hex);
@@ -979,6 +980,9 @@ sub reapchildren
   }
   $Jobstep->{exitcode} = $childstatus;
   $Jobstep->{finishtime} = time;
+  $Jobstep->{'arvados_task'}->{started_at} = strftime "Y%-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{starttime});
+  $Jobstep->{'arvados_task'}->{finished_at} = strftime "Y%-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
+  $Jobstep->{'arvados_task'}->save;
   process_stderr ($jobstepid, $task_success);
   Log ($jobstepid, "output " . $Jobstep->{'arvados_task'}->{output});
 
