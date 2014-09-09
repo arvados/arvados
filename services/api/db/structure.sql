@@ -420,7 +420,6 @@ CREATE TABLE jobs (
     output character varying(255),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    priority character varying(255),
     is_locked_by_uuid character varying(255),
     log character varying(255),
     tasks_summary text,
@@ -428,7 +427,8 @@ CREATE TABLE jobs (
     nondeterministic boolean,
     repository character varying(255),
     supplied_script_version character varying(255),
-    docker_image_locator character varying(255)
+    docker_image_locator character varying(255),
+    priority integer DEFAULT 0 NOT NULL
 );
 
 
@@ -2010,3 +2010,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140817035914');
 INSERT INTO schema_migrations (version) VALUES ('20140818125735');
 
 INSERT INTO schema_migrations (version) VALUES ('20140826180337');
+
+INSERT INTO schema_migrations (version) VALUES ('20140828141043');

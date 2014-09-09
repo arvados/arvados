@@ -8,6 +8,7 @@ class Job < ArvadosModel
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
   after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
+  before_validation :set_priority
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
 
@@ -70,6 +71,13 @@ class Job < ArvadosModel
 
   def skip_uuid_existence_check
     super + %w(output log)
+  end
+
+  def set_priority
+    if self.priority.nil?
+      self.priority = 0
+    end
+    true
   end
 
   def ensure_script_version_is_commit
