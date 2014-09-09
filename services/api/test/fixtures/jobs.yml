@@ -11,7 +11,7 @@ running:
   running: true
   success: ~
   output: ~
-  priority: ~
+  priority: 0
   log: ~
   is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   tasks_summary:
@@ -34,7 +34,7 @@ running_cancelled:
   running: true
   success: ~
   output: ~
-  priority: ~
+  priority: 0
   log: ~
   is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   tasks_summary:
@@ -57,7 +57,7 @@ uses_nonexistent_script_version:
   running: false
   success: true
   output: d41d8cd98f00b204e9800998ecf8427e+0
-  priority: ~
+  priority: 0
   log: d41d8cd98f00b204e9800998ecf8427e+0
   is_locked_by_uuid: ~
   tasks_summary:
@@ -82,7 +82,7 @@ foobar:
   running: false
   success: true
   output: fa7aeb5140e2848d39b416daeef4ffc5+45
-  priority: ~
+  priority: 0
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   is_locked_by_uuid: ~
   tasks_summary:
@@ -109,7 +109,7 @@ barbaz:
   success: true
   repository: foo
   output: ea10d51bcf88862dbcc36eb292017dfd+45
-  priority: ~
+  priority: 0
   log: d41d8cd98f00b204e9800998ecf8427e+0
   is_locked_by_uuid: ~
   tasks_summary:
@@ -207,7 +207,7 @@ queued:
   running: ~
   success: ~
   output: ~
-  priority: ~
+  priority: 0
   log: ~
   is_locked_by_uuid: ~
   tasks_summary: {}
