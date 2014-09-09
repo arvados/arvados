@@ -51,9 +51,13 @@
                 :title => "Include #{file_path} in your selections",
               } %>
           <% end %>
+
+          <% if Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1] %>
           <%= link_to(raw('<i class="fa fa-search"></i>'),
                       link_params.merge(disposition: 'inline'),
                       {title: "View #{file_path}", class: "btn btn-info btn-sm"}) %>
+          <% end %>
+
           <%= link_to(raw('<i class="fa fa-download"></i>'),
                       link_params.merge(disposition: 'attachment'),
                       {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
