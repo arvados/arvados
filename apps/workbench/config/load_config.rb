@@ -3,7 +3,7 @@
 
 $application_config = {}
 
-%w(application.default application).each do |cfgfile|
+%w(application.default application diagnostics).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
   if File.exists? path
     yaml = ERB.new(IO.read path).result(binding)

@@ -1,4 +1,5 @@
-ENV["RAILS_ENV"] = "test"
+ENV["RAILS_ENV"] = "test" if !ENV["RAILS_ENV"]
+
 unless ENV["NO_COVERAGE_TEST"]
   begin
     require 'simplecov'
@@ -151,4 +152,6 @@ class ApiServerForTests
   end
 end
 
-ApiServerForTests.run
+if ENV["RAILS_ENV"].eql? 'test'
+  ApiServerForTests.run
+end
