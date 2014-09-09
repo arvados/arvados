@@ -66,7 +66,7 @@ def main():
     if t == 'Collection':
         result = copy_collection(args.object_uuid, src=src_arv, dst=dst_arv)
     elif t == 'PipelineInstance':
-        result = copy_pipeline_instance(args.object_uuid, src=src_arv, dst=dst_arv)
+        result = copy_pipeline_instance(args.object_uuid, args.dest_git_repo, src=src_arv, dst=dst_arv)
     elif t == 'PipelineTemplate':
         result = copy_pipeline_template(args.object_uuid, src=src_arv, dst=dst_arv)
     else:
@@ -75,9 +75,11 @@ def main():
     print result
     exit(0)
 
-# Creates an API client for the Arvados instance identified by
-# instance_name.  Looks in $HOME/.config/arvados/instance_name.conf
-# for credentials.
+# api_for_instance(instance_name)
+#
+#     Creates an API client for the Arvados instance identified by
+#     instance_name.  Credentials must be stored in
+#     $HOME/.config/arvados/instance_name.conf
 #
 def api_for_instance(instance_name):
     if '/' in instance_name:
@@ -139,7 +141,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
     dst_keep.put(manifest)
     return dst.collections().create(body={"manifest_text": manifest}).execute()
 
-# copy_pipeline_instance(obj_uuid, src, dst)
+# copy_pipeline_instance(obj_uuid, dst_git_repo, src, dst)
 #
 #    Copies a pipeline instance identified by obj_uuid from src to dst.
 #
@@ -158,7 +160,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
 #      3. The owner_uuid of the instance is changed to the user who
 #         copied it.
 #
-def copy_pipeline_instance(obj_uuid, src=None, dst=None):
+def copy_pipeline_instance(obj_uuid, dst_git_repo, src=None, dst=None):
     # Fetch the pipeline instance record.
     pi = src.pipeline_instances().get(uuid=obj_uuid).execute()
 
@@ -181,7 +183,18 @@ def copy_pipeline_instance(obj_uuid, src=None, dst=None):
     for c in input_collections:
         copy_collection(c, src, dst)
 
-    # Copy the git repository
+    # Copy the git repositorie(s)
+    repos = sets.Set()
+    for c in pi['components']:
+        component = pi['components'][c]
+        if 'repository' in component:
+            repos.add(component['repository'])
+        if 'job' in component and 'repository' in component['job']:
+            repos.add(component['job']['repository'])
+
+    for r in repos:
+        dst_branch = '{}_{}'.format(obj_uuid, r)
+        copy_git_repo(r, dst_git_repo, dst_branch, src, dst)
 
     # Copy the pipeline template and save the uuid of the copy
     new_pt = copy_pipeline_template(pi['pipeline_template_uuid'], src, dst)
@@ -210,21 +223,15 @@ def copy_pipeline_template(obj_uuid, src=None, dst=None):
     del old_pt['owner_uuid']
     return dst.pipeline_templates().create(body=old_pt).execute()
 
-# copy_git_repo(repo_name, src, dst)
+# copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src, dst)
 #
-#    Copies commits from git repository 'src_git_repo' to
-#    'dst_git_repo'.
-#
-#    Because users cannot create their own repositories, the
-#    destination repository must already exist. A branch 'dst_branch'
+#    Copies commits from git repository 'src_git_repo' on Arvados
+#    instance 'src' to 'dst_git_repo' on 'dst'. A branch 'dst_branch'
 #    is created at the destination repository, and commits from
 #    src_git_repo are merged onto that branch.
 #
-#    Steps to import commits from the source repo to the destination:
-#      1. clone dst_git_repo
-#      2. checkout dst_branch
-#      3. pull src_git_repo
-#      4. push dst_git_repo
+#    Because users cannot create their own repositories, the
+#    destination repository must already exist.
 #
 #    The user running this command must be authenticated
 #    to both repositories.
