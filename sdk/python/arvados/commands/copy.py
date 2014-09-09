@@ -237,28 +237,26 @@ def copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src=None, dst=None):
         raise Exception('cannot identify source repo {}; {} repos found'
                         .format(src_git_repo, r['items_available']))
     src_git_url = r['items'][0]['fetch_url']
-    logger.debug('src_git_url: {}'.format(src_git_url)
+    logger.debug('src_git_url: {}'.format(src_git_url))
 
     r = dst.repositories().list(
         filters=[['name', '=', dst_git_repo]]).execute()
     if r['items_available'] != 1:
         raise Exception('cannot identify source repo {}; {} repos found'
                         .format(dst_git_repo, r['items_available']))
-    dst_git_fetch_url = r['items'][0]['fetch_url']
     dst_git_push_url  = r['items'][0]['push_url']
-    logger.debug('dst_git_fetch_url: {}'.format(dst_git_fetch_url)
-    logger.debug('dst_git_push_url: {}'.format(dst_git_push_url)
+    logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
 
     tmprepo = tempfile.mkdtemp()
 
     arvados.util.run_command(
-        ["git", "clone", dst_git_fetch_url, tmprepo],
+        ["git", "clone", src_git_url, tmprepo],
         cwd=os.path.dirname(tmprepo))
     arvados.util.run_command(
         ["git", "checkout", "-B", dst_branch],
         cwd=tmprepo)
-    arvados.util.run_command(["git", "pull", src_git_url], cwd=tmprepo)
-    arvados.util.run_command(["git", "push", dst_git_push_url], cwd=tmprepo)
+    arvados.util.run_comment(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
+    arvados.util.run_command(["git", "push", "dst"], cwd=tmprepo)
 
 # uuid_type(api, object_uuid)
 #
