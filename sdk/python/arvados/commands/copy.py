@@ -204,6 +204,14 @@ def copy_pipeline_instance(obj_uuid, dst_git_repo, src=None, dst=None):
     pi['pipeline_template_uuid'] = new_pt
     del pi['owner_uuid']
 
+    # Rename the repositories named in the components to the dst_git_repo
+    for c in pi['components']:
+        component = pi['components'][c]
+        if 'repository' in component:
+            component['repository'] = dst_git_repo
+        if 'job' in component and 'repository' in component['job']:
+            component['job']['repository'] = dst_git_repo
+
     # Create the new pipeline instance at the destination Arvados.
     new_pi = dst.pipeline_instances().create(pipeline_instance=pi).execute()
     return new_pi
