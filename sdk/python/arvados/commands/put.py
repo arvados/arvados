@@ -348,7 +348,7 @@ def progress_writer(progress_func, outfile=sys.stderr):
 def exit_signal_handler(sigcode, frame):
     sys.exit(-sigcode)
 
-def check_project_exists(api_client, project_uuid):
+def desired_project_uuid(api_client, project_uuid):
     if project_uuid:
         if arvados.util.user_uuid_pattern.match(project_uuid):
             api_client.users().get(uuid=project_uuid).execute()
@@ -357,7 +357,7 @@ def check_project_exists(api_client, project_uuid):
             api_client.groups().get(uuid=project_uuid).execute()
             return project_uuid
         else:
-            raise Exception("Not a valid project uuid: {}".format(project_uuid))
+            raise ValueError("Not a valid project uuid: {}".format(project_uuid))
     else:
         return api_client.users().current().execute()['uuid']
 
@@ -387,9 +387,9 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     # Determine the parent project
     try:
-        project_uuid = check_project_exists(api_client, args.project_uuid)
-    except Exception as error:
-        print >>stderr, "Project {} not found: {}".format(args.project_uuid, error)
+        project_uuid = desired_project_uuid(api_client, args.project_uuid)
+    except (apiclient.errors.Error, ValueError) as error:
+        print >>stderr, error
         sys.exit(1)
 
     if args.progress:
@@ -467,7 +467,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
         except apiclient.errors.Error as error:
             print >>stderr, (
-                "arv-put: Error adding Collection to project: {}.".format(
+                "arv-put: Error creating Collection on project: {}.".format(
                     error))
             status = 1
 

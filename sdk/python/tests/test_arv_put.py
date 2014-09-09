@@ -440,18 +440,24 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
 
     def test_check_real_project_found(self):
         self.authorize_with('active')
-        self.assertTrue(arv_put.check_project_exists(arv_put.api_client, self.PROJECT_UUID),
+        self.assertTrue(arv_put.desired_project_uuid(arv_put.api_client, self.PROJECT_UUID),
                         "did not correctly find test fixture project")
 
-    def test_check_error_finding_nonexistent_project(self):
+    def test_check_error_finding_nonexistent_uuid(self):
         BAD_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
         self.authorize_with('active')
         try:
-            result = arv_put.check_project_exists(arv_put.api_client, BAD_UUID)
+            result = arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID)
         except ValueError as error:
             self.assertIn(BAD_UUID, error.message)
         else:
             self.assertFalse(result, "incorrectly found nonexistent project")
+
+    def test_check_error_finding_nonexistent_project(self):
+        BAD_UUID = 'zzzzz-tpzed-zzzzzzzzzzzzzzz'
+        self.authorize_with('active')
+        with self.assertRaises(apiclient.errors.HttpError):
+            result = arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID)
 
     def test_short_put_from_stdin(self):
         # Have to run this as an integration test since arv-put can't
