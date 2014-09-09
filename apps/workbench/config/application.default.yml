@@ -95,6 +95,10 @@ common:
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
 
+  # Configuration for diagnostics testing. Use this to enable diagnostics testing for an env.
+  diagnostics_testing_active_user_token: false
+  # End configuration for diagnostics testing
+
   # Set user_profile_form_fields to enable and configure the user profile page.
   # Default is set to false. A commented setting with full description is provided below.
   user_profile_form_fields: false
