@@ -23,12 +23,6 @@ class PipelineTest < DiagnosticsTest
         page.find('.glyphicon-search').click
       end
 
-#      within '.modal-content' do
-#        find('.selectable', text: pipeline_config['template_name']).click
-#        find(:xpath, "//div[./span[contains(.,'zzzzz-p5p6p-rxj8d71854j9idn')]]").click
-#        click_button 'Show'
-#      end
-
       # Run the pipeline
       find('a,button', text: 'Run').click
 
@@ -38,23 +32,34 @@ class PipelineTest < DiagnosticsTest
         find('button', text: 'Choose').click
       end
 
+      if pipeline_config['input_names'].andand.any?
         # This pipeline needs input. So, Run should be disabled
         page.assert_selector 'a.disabled,button.disabled', text: 'Run'
 
-        # Choose input for the pipeline
-        find('.btn', text: 'Choose').click
-        within('.modal-dialog') do
-          find('.selectable', text: pipeline_config['input_names'][0]).click
-          find('button', text: 'OK').click
+        inputs = page.all('.btn', text: 'Choose')
+        inputs.each_with_index do |input, index|
+          # Choose input for the pipeline
+          input.click
+          within('.modal-dialog') do
+            input_found = page.has_text?(pipeline_config['input_names'][index])
+            if input_found
+              find('.selectable', text: pipeline_config['input_names'][index]).click
+            else
+              fill_in('Search', with: pipeline_config['input_names'][index], exact: true)
+              wait_for_ajax
+              find('.selectable', text: pipeline_config['input_names'][index]).click
+            end
+            find('button', text: 'OK').click
+            wait_for_ajax
+          end
+
+          # Run this pipeline instance
+          find('a,button', text: 'Run').click
+          # Pipeline is running. We have a "Stop" button instead now.
+          page.assert_selector 'a,button', text: 'Stop'
         end
-        wait_for_ajax
-
-        # Run this pipeline instance
-        find('a,button', text: 'Run').click
-
-        # Pipeline is running. We have a "Stop" button instead now.
-        page.assert_selector 'a,button', text: 'Stop'
       end
+    end
   end
 
 end
