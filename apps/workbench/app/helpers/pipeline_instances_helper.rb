@@ -94,10 +94,13 @@ module PipelineInstancesHelper
         pj[:result] = 'none'
         pj[:labeltype] = 'default'
       end
+
       pj[:job_id] = pj[:job][:uuid]
       pj[:script] = pj[:job][:script] || c[:script]
+      pj[:repository] = pj[:job][:script] || c[:repository]
       pj[:script_parameters] = pj[:job][:script_parameters] || c[:script_parameters]
       pj[:script_version] = pj[:job][:script_version] || c[:script_version]
+      pj[:nondeterministic] = pj[:job][:nondeterministic] || c[:nondeterministic]
       pj[:output] = pj[:job][:output]
       pj[:output_uuid] = c[:output_uuid]
       pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
@@ -152,5 +155,34 @@ module PipelineInstancesHelper
       ret << pj
     end
     ret
+  end
+
+  def runtime duration, long
+    hours = 0
+    minutes = 0
+    seconds = 0
+    if duration >= 3600
+      hours = (duration / 3600).floor
+      duration -= hours * 3600
+    end
+    if duration >= 60
+      minutes = (duration / 60).floor
+      duration -= minutes * 60
+    end
+    duration = duration.floor
+
+    if long
+      s = ""
+      if hours > 0 then
+        s += "#{hours} hour#{'s' if hours != 1} "
+      end
+      if minutes > 0 then
+        s += "#{minutes} minute#{'s' if minutes != 1} "
+      end
+      s += "#{duration} second#{'s' if duration != 1}"
+    else
+      s = "#{hours}:#{minutes.to_s.rjust(2, '0')}:#{duration.to_s.rjust(2, '0')}"
+    end
+    s
   end
 end

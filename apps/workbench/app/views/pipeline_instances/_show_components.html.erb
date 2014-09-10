@@ -1,7 +1,13 @@
 <% if !@object.state.in? ['New', 'Ready'] %>
 
   <div class="pull-right">
-    Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>"><%= @object.state.sub('OnServer', '') %></span>&nbsp;
+    Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>">
+      <% if @object.state == "RunningOnServer" %>
+        Active
+      <% else %>
+        <%= @object.state %>
+      <% end %>
+    </span>&nbsp;
   </div>
 
   <%= render_pipeline_components("running", :json) %>
