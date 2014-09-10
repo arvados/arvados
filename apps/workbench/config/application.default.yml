@@ -150,15 +150,18 @@ common:
   # Configure test user tokens as "diagnostics_testing_user_tokens".
   #   At this time the tests need an "active" user token.
   # Also, configure the pipelines to be executed as "diagnostics_testing_pipeline_fields".
-  # For each of the pipeline fields:
-  #   You 
+  # For each of the pipelines identified by the name of your choice
+  #     ("tutorial pipeline" and "tutorial pipeline 2" in this sample):
+  #   template_uuid: is the uuid of the template to be executed
+  #   input_paths: an array of inputs for the pipeline. Use either a collection's "uuid"
+  #     or a file's "uuid/file_name" path in this array. If the pipeline does not require
+  #     any inputs, this can be omitted. 
   #diagnostics_testing_user_tokens:
   #  active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
-  #  admin: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
   #diagnostics_testing_pipeline_fields:
   #  tutorial pipeline:
   #    template_uuid: zzzzz-p5p6p-rxj8d71854j9idn
-  #    input_names: ['Diagnostic testing - Tutorial pipeline input']
+  #    input_paths: [zzzzz-4zz18-u9pmni8msw9zm9n]
   #  tutorial pipeline 2:
   #    template_uuid: zzzzz-p5p6p-kfwus81of6y3ezs
-  #    input_names: ['Diagnostic testing - Tutorial pipeline input']
+  #    input_paths: [zzzzz-4zz18-u9pmni8msw9zm9n]

@@ -32,33 +32,35 @@ class PipelineTest < DiagnosticsTest
         find('button', text: 'Choose').click
       end
 
-      if pipeline_config['input_names'].andand.any?
+      # Choose input for the pipeline
+      if pipeline_config['input_paths'].andand.any?
         # This pipeline needs input. So, Run should be disabled
         page.assert_selector 'a.disabled,button.disabled', text: 'Run'
 
-        inputs = page.all('.btn', text: 'Choose')
-        inputs.each_with_index do |input, index|
-          # Choose input for the pipeline
-          input.click
+        inputs_needed = page.all('.btn', text: 'Choose')
+        inputs_needed.each_with_index do |input_needed, index|
+          input_needed.click
           within('.modal-dialog') do
-            input_found = page.has_text?(pipeline_config['input_names'][index])
-            if input_found
-              find('.selectable', text: pipeline_config['input_names'][index]).click
+            look_for = pipeline_config['input_paths'][index]
+            found = page.has_text?(look_for)
+            if found
+              find('.selectable').click
             else
-              fill_in('Search', with: pipeline_config['input_names'][index], exact: true)
+              fill_in('Search', with: look_for, exact: true)
               wait_for_ajax
-              find('.selectable', text: pipeline_config['input_names'][index]).click
+              find('.selectable').click
             end
             find('button', text: 'OK').click
             wait_for_ajax
           end
-
-          # Run this pipeline instance
-          find('a,button', text: 'Run').click
-          # Pipeline is running. We have a "Stop" button instead now.
-          page.assert_selector 'a,button', text: 'Stop'
         end
       end
+
+      # Run this pipeline instance
+      find('a,button', text: 'Run').click
+
+      # Pipeline is running. We have a "Stop" button instead now.
+      page.assert_selector 'a,button', text: 'Stop'
     end
   end
 
