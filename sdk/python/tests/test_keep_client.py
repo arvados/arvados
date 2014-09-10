@@ -312,15 +312,10 @@ class KeepClientRetryGetTestCase(unittest.TestCase, KeepClientRetryTestMixin):
             self.check_success(locator=self.HINTED_LOCATOR)
 
     def test_try_next_server_after_timeout(self):
-        responses = iter([None, (fake_httplib2_response(200),
-                                 self.DEFAULT_EXPECT)])
-        def side_effect(*args, **kwargs):
-            response = next(responses)
-            if response is None:
-                raise socket.timeout("timed out")
-            else:
-                return response
-        with mock.patch('httplib2.Http.request', side_effect=side_effect):
+        side_effects = [socket.timeout("timed out"),
+                        (fake_httplib2_response(200), self.DEFAULT_EXPECT)]
+        with mock.patch('httplib2.Http.request',
+                        side_effect=iter(side_effects)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
 
