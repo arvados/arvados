@@ -40,6 +40,7 @@ class Job < ArvadosModel
     t.add :repository
     t.add :supplied_script_version
     t.add :docker_image_locator
+    t.add :queue_position
   end
 
   def assert_finished
@@ -52,6 +53,16 @@ class Job < ArvadosModel
     self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ? and success is ?',
                nil, nil, nil, nil).
       order('priority desc, created_at')
+  end
+
+  def queue_position
+    i = 0
+    Job::queue.each do |j|
+      if j[:uuid] == self.uuid
+        return i
+      end
+    end
+    nil
   end
 
   def self.running
