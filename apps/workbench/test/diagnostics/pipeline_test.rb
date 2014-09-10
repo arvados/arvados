@@ -34,7 +34,7 @@ class PipelineTest < DiagnosticsTest
 
       # Choose input for the pipeline
       if pipeline_config['input_paths'].andand.any?
-        # This pipeline needs input. So, Run should be disabled
+        # This pipeline needs input. So, Run button should be disabled
         page.assert_selector 'a.disabled,button.disabled', text: 'Run'
 
         index = 0
@@ -45,14 +45,9 @@ class PipelineTest < DiagnosticsTest
           inputs_needed[0].click
           within('.modal-dialog') do
             look_for = pipeline_config['input_paths'][index]
-            found = page.has_text?(look_for)
-            if found
-              find('.selectable').click
-            else
-              fill_in('Search', with: look_for, exact: true)
-              wait_for_ajax
-              find('.selectable').click
-            end
+            fill_in('Search', with: look_for, exact: true)
+            wait_for_ajax
+            find('.selectable').click
             find('button', text: 'OK').click
             wait_for_ajax
             index += 1
