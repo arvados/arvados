@@ -95,10 +95,6 @@ common:
   default_openid_prefix: https://www.google.com/accounts/o8/id
   send_user_setup_notification_email: true
 
-  # Configuration for diagnostics testing. Use this to enable diagnostics testing for an env.
-  diagnostics_testing_active_user_token: false
-  # End configuration for diagnostics testing
-
   # Set user_profile_form_fields to enable and configure the user profile page.
   # Default is set to false. A commented setting with full description is provided below.
   user_profile_form_fields: false
@@ -145,3 +141,24 @@ common:
   issue_reporter_email_from: arvados@example.com
   issue_reporter_email_to: arvados@example.com
   support_email_address: arvados@example.com
+
+  # Configuration for diagnostics testing. Use this to enable diagnostics testing for an env.
+  diagnostics_testing_user_tokens: false
+  diagnostics_testing_pipeline_fields: false
+
+  # Below is a sample setting for diagnostics testing.
+  # Configure test user tokens as "diagnostics_testing_user_tokens".
+  #   At this time the tests need an "active" user token.
+  # Also, configure the pipelines to be executed as "diagnostics_testing_pipeline_fields".
+  # For each of the pipeline fields:
+  #   You 
+  #diagnostics_testing_user_tokens:
+  #  active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
+  #  admin: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
+  #diagnostics_testing_pipeline_fields:
+  #  tutorial pipeline:
+  #    template_uuid: zzzzz-p5p6p-rxj8d71854j9idn
+  #    input_names: ['Diagnostic testing - Tutorial pipeline input']
+  #  tutorial pipeline 2:
+  #    template_uuid: zzzzz-p5p6p-kfwus81of6y3ezs
+  #    input_names: ['Diagnostic testing - Tutorial pipeline input']
