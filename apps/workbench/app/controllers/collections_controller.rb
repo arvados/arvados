@@ -145,7 +145,7 @@ class CollectionsController < ApplicationController
     end
     if usable_token.nil?
       return  # Response already rendered.
-    elsif params[:file].nil? or not file_in_collection?(coll, params[:file])
+    elsif params[:file].nil? or not coll.manifest.has_file?(params[:file])
       return render_not_found
     end
     opts = params.merge(arvados_api_token: usable_token)
@@ -275,13 +275,6 @@ class CollectionsController < ApplicationController
       render_not_found(*most_specific_error)
     end
     return nil
-  end
-
-  def file_in_collection?(collection, filename)
-    target = CollectionsHelper.file_path(File.split(filename))
-    collection.manifest.each_file.any? do |file_spec|
-      CollectionsHelper.file_path(file_spec) == target
-    end
   end
 
   def file_enumerator(opts)
