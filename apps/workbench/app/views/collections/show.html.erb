@@ -1,21 +1,3 @@
-<% content_for :tab_line_buttons do %>
-  <%= link_to(
-      choose_projects_path(
-       title: 'Copy to project...',
-       action_name: 'Copy',
-       action_href: actions_path,
-       action_method: 'post',
-       action_data: {
-         copy_selections_into_project: true,
-         selection: @name_link.andand.uuid || @object.uuid,
-         selection_param: 'uuid',
-         success: 'redirect-to-created-object'
-       }.to_json),
-      { class: "btn btn-sm btn-primary arv-move-to-project", remote: true, method: 'get' }) do %>
-    <i class="fa fa-fw fa-copy"></i> Copy to project...
-  <% end %>
-<% end %>
-
 <div class="row row-fill-height">
   <div class="col-md-6">
     <div class="panel panel-info">

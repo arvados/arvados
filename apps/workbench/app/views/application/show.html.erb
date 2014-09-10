@@ -6,6 +6,43 @@
 
 <% content_for :content_top do %>
 
+<% if @object.class.goes_in_projects? && @object.uuid != current_user.uuid # Not the "Home" project %>
+  <% content_for :tab_line_buttons do %>
+    <%= link_to(
+        choose_projects_path(
+         title: 'Copy to project...',
+         action_name: 'Copy',
+         action_href: actions_path,
+         action_method: 'post',
+         action_data: {
+           copy_selections_into_project: true,
+           selection: @name_link.andand.uuid || @object.uuid,
+           selection_param: 'uuid',
+           success: 'redirect-to-created-object'
+         }.to_json),
+        { class: "btn btn-sm btn-primary", remote: true, method: 'get' }) do %>
+      <i class="fa fa-fw fa-copy"></i> Copy to project...
+    <% end %>
+    <% if @object.owner_uuid == current_user.uuid or (Group.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
+      <%= link_to(
+          choose_projects_path(
+           title: 'Move to project...',
+           action_name: 'Move',
+           action_href: actions_path,
+           action_method: 'post',
+           action_data: {
+             move_selections_into_project: true,
+             selection: @name_link.andand.uuid || @object.uuid,
+             selection_param: 'uuid',
+             success: 'redirect-to-created-object'
+           }.to_json),
+          { class: "btn btn-sm btn-primary", remote: true, method: 'get' }) do %>
+        <i class="fa fa-fw fa-truck"></i> Move to project...
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>
+
 <% if @object.respond_to? :properties and !@object.properties.nil? %>
   <% if @object.properties[:page_content] %>
     <% content_for :page_content do %>
