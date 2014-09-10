@@ -42,8 +42,11 @@ def main():
     parser.add_argument(
         '--no-recursive', dest='recursive', action='store_false')
     parser.add_argument(
-        '--dest-git-repo', dest='dest_git_repo',
+        '--dst-git-repo', dest='dst_git_repo',
         help='The name of the destination git repository.')
+    parser.add_argument(
+        '--project_uuid', dest='project_uuid',
+        help='The UUID of the project at the destination to which the pipeline should be copied.')
     parser.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
@@ -66,7 +69,11 @@ def main():
     if t == 'Collection':
         result = copy_collection(args.object_uuid, src=src_arv, dst=dst_arv)
     elif t == 'PipelineInstance':
-        result = copy_pipeline_instance(args.object_uuid, args.dest_git_repo, src=src_arv, dst=dst_arv)
+        result = copy_pipeline_instance(args.object_uuid,
+                                        dst_git_repo=args.dst_git_repo,
+                                        dst_project=args.project_uuid,
+                                        recursive=args.recursive,
+                                        src=src_arv, dst=dst_arv)
     elif t == 'PipelineTemplate':
         result = copy_pipeline_template(args.object_uuid, src=src_arv, dst=dst_arv)
     else:
@@ -141,11 +148,11 @@ def copy_collection(obj_uuid, src=None, dst=None):
     dst_keep.put(manifest)
     return dst.collections().create(body={"manifest_text": manifest}).execute()
 
-# copy_pipeline_instance(obj_uuid, dst_git_repo, src, dst)
+# copy_pipeline_instance(obj_uuid, dst_git_repo, dst_project, recursive, src, dst)
 #
 #    Copies a pipeline instance identified by obj_uuid from src to dst.
 #
-#    If the recursive option is on:
+#    If the 'recursive' option evaluates to True:
 #      1. Copies all input collections
 #           * For each component in the pipeline, include all collections
 #             listed as job dependencies for that component)
@@ -160,57 +167,65 @@ def copy_collection(obj_uuid, src=None, dst=None):
 #      3. The owner_uuid of the instance is changed to the user who
 #         copied it.
 #
-def copy_pipeline_instance(obj_uuid, dst_git_repo, src=None, dst=None):
+def copy_pipeline_instance(obj_uuid, dst_git_repo=None, dst_project=None, recursive=True, src=None, dst=None):
     # Fetch the pipeline instance record.
     pi = src.pipeline_instances().get(uuid=obj_uuid).execute()
 
-    # Copy input collections and docker images:
-    # For each component c in the pipeline, add any
-    # collection hashes found in c['job']['dependencies']
-    # and c['job']['docker_image_locator'].
-    #
-    input_collections = sets.Set()
-    for cname in pi['components']:
-        if 'job' not in pi['components'][cname]:
-            continue
-        job = pi['components'][cname]['job']
-        for dep in job['dependencies']:
-            input_collections.add(dep)
-        docker = job.get('docker_image_locator', None)
-        if docker:
-            input_collections.add(docker)
+    if recursive:
+        # Copy input collections and docker images:
+        # For each component c in the pipeline, add any
+        # collection hashes found in c['job']['dependencies']
+        # and c['job']['docker_image_locator'].
+        #
+        input_collections = sets.Set()
+        for cname in pi['components']:
+            if 'job' not in pi['components'][cname]:
+                continue
+            job = pi['components'][cname]['job']
+            for dep in job['dependencies']:
+                input_collections.add(dep)
+            docker = job.get('docker_image_locator', None)
+            if docker:
+                input_collections.add(docker)
 
-    for c in input_collections:
-        copy_collection(c, src, dst)
+        for c in input_collections:
+            copy_collection(c, src, dst)
 
-    # Copy the git repositorie(s)
-    repos = sets.Set()
-    for c in pi['components']:
-        component = pi['components'][c]
-        if 'repository' in component:
-            repos.add(component['repository'])
-        if 'job' in component and 'repository' in component['job']:
-            repos.add(component['job']['repository'])
+        # Copy the git repositorie(s)
+        repos = sets.Set()
+        for c in pi['components']:
+            component = pi['components'][c]
+            if 'repository' in component:
+                repos.add(component['repository'])
+            if 'job' in component and 'repository' in component['job']:
+                repos.add(component['job']['repository'])
 
-    for r in repos:
-        dst_branch = '{}_{}'.format(obj_uuid, r)
-        copy_git_repo(r, dst_git_repo, dst_branch, src, dst)
+        for r in repos:
+            dst_branch = '{}_{}'.format(obj_uuid, r)
+            copy_git_repo(r, dst_git_repo, dst_branch, src, dst)
 
-    # Copy the pipeline template and save the uuid of the copy
-    new_pt = copy_pipeline_template(pi['pipeline_template_uuid'], src, dst)
+        # Copy the pipeline template and save the uuid of the copy
+        new_pt = copy_pipeline_template(pi['pipeline_template_uuid'], src, dst)
 
-    # Update the fields of the pipeline instance
-    pi['properties']['copied_from_pipeline_instance_uuid'] = obj_uuid
-    pi['pipeline_template_uuid'] = new_pt
-    del pi['owner_uuid']
+        # Update the fields of the pipeline instance
+        pi['properties']['copied_from_pipeline_instance_uuid'] = obj_uuid
+        pi['pipeline_template_uuid'] = new_pt
+        if dst_project:
+            pi['owner_uuid'] = dst_project
+        else:
+            del pi['owner_uuid']
 
-    # Rename the repositories named in the components to the dst_git_repo
-    for c in pi['components']:
-        component = pi['components'][c]
-        if 'repository' in component:
-            component['repository'] = dst_git_repo
-        if 'job' in component and 'repository' in component['job']:
-            component['job']['repository'] = dst_git_repo
+        # Rename the repositories named in the components to the dst_git_repo
+        for c in pi['components']:
+            component = pi['components'][c]
+            if 'repository' in component:
+                component['repository'] = dst_git_repo
+            if 'job' in component and 'repository' in component['job']:
+                component['job']['repository'] = dst_git_repo
+    else:
+        # not recursive
+        print >>sys.stderr, "Copying only pipeline instance {}.".format(obj_uuid)
+        print >>sys.stderr, "You are responsible for making sure all pipeline dependencies have been updated."
 
     # Create the new pipeline instance at the destination Arvados.
     new_pi = dst.pipeline_instances().create(pipeline_instance=pi).execute()
