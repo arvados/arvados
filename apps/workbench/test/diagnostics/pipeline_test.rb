@@ -37,9 +37,12 @@ class PipelineTest < DiagnosticsTest
         # This pipeline needs input. So, Run should be disabled
         page.assert_selector 'a.disabled,button.disabled', text: 'Run'
 
-        inputs_needed = page.all('.btn', text: 'Choose')
-        inputs_needed.each_with_index do |input_needed, index|
-          input_needed.click
+        index = 0
+        while true
+          inputs_needed = page.all('.btn', text: 'Choose')
+          break if !inputs_needed.any?
+
+          inputs_needed[0].click
           within('.modal-dialog') do
             look_for = pipeline_config['input_paths'][index]
             found = page.has_text?(look_for)
@@ -52,15 +55,19 @@ class PipelineTest < DiagnosticsTest
             end
             find('button', text: 'OK').click
             wait_for_ajax
+            index += 1
           end
         end
       end
 
-      # Run this pipeline instance
+      # All needed input are filled in. Run this pipeline now
       find('a,button', text: 'Run').click
 
       # Pipeline is running. We have a "Stop" button instead now.
       page.assert_selector 'a,button', text: 'Stop'
+
+      # Wait for pipeline run to complete
+      wait_until_page_has 'Complete', pipeline_config['max_wait_seconds']
     end
   end
 
