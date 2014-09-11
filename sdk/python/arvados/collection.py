@@ -135,6 +135,9 @@ class CollectionReader(object):
                     uuid=self._manifest_locator).execute()
                 self._manifest_text = c['manifest_text']
             except Exception as e:
+                if not util.portable_data_hash_pattern.match(
+                      self._manifest_locator):
+                    raise
                 _logger.warning("API lookup failed for collection %s (%s: %s)",
                                 self._manifest_locator, type(e), str(e))
                 if self._keep_client is None:
