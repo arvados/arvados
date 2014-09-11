@@ -206,9 +206,6 @@ class StreamReader(object):
         self._stream_name = None
         self._data_locators = []
         self._files = collections.OrderedDict()
-
-        if keep is None:
-            keep = KeepClient()
         self._keep = keep
 
         streamoffset = 0L
@@ -261,6 +258,8 @@ class StreamReader(object):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
         if size == 0:
             return ''
+        if self._keep is None:
+            self._keep = KeepClient()
         data = ''
         for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self._data_locators, start, size):
             data += self._keep.get(locator)[segmentoffset:segmentoffset+segmentsize]
