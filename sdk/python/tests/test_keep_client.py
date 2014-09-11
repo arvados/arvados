@@ -312,6 +312,12 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
                         side_effect=iter(side_effects)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
+    def test_retry_data_with_wrong_checksum(self):
+        side_effects = ((tutil.fake_httplib2_response(200), s)
+                        for s in ['baddata', self.TEST_DATA])
+        with mock.patch('httplib2.Http.request', side_effect=side_effects):
+            self.check_success(locator=self.HINTED_LOCATOR)
+
 
 @tutil.skip_sleep
 class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
