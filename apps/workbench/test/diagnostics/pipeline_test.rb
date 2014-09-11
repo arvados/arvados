@@ -44,10 +44,28 @@ class PipelineTest < DiagnosticsTest
 
           inputs_needed[0].click
           within('.modal-dialog') do
+            look_for_uuid = nil
+            look_for_file = nil
             look_for = pipeline_config['input_paths'][index]
-            fill_in('Search', with: look_for, exact: true)
+            if look_for.index('/').andand.>0
+              partitions = look_for.partition('/')
+              look_for_uuid = partitions[0]
+              look_for_file = partitions[2]
+            else
+              look_for_uuid = look_for
+              look_for_file = nil
+            end
+
+            fill_in('Search', with: look_for_uuid, exact: true)
             wait_for_ajax
-            find('.selectable').click
+              selectables = page.all('.selectable')
+              selectables[0].click
+            if look_for_file
+              wait_for_ajax
+              within('.collection_files_name', text: look_for_file) do
+                find('.fa-file').click
+              end
+            end
             find('button', text: 'OK').click
             wait_for_ajax
             index += 1

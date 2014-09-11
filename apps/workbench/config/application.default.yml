@@ -161,13 +161,13 @@ common:
   #diagnostics_testing_user_tokens:
   #  active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
   #diagnostics_testing_pipeline_fields:
-  #  pipeline with one input:
+  #  pipeline with collection input:
   #    template_uuid: 4xphq-p5p6p-gsw68qb7owx1q2h
   #    input_paths: [qr1hi-4zz18-n1o4i1j5fvz6npu]
   #    max_wait_seconds: 100
-  #  pipeline with two inputs:
+  #  pipeline with file as input:
   #    template_uuid: 4xphq-p5p6p-gsw68qb7owx1q2h
-  #    input_paths: [2051b5d448fbd489ab00bbdedbee1ffa+91, e5e440c9c486df057e1bf6a7feac25be+77/alignment_summary_metrics.txt]
+  #    input_paths: [440e201c0141cb8a551b61fd7d07d2a1+83/qr1hi-8i9sb-j2tp8q1m2uf6a1o.log.txt]
   #    max_wait_seconds: 200
   #  pipeline with no inputs:
   #    template_uuid: 4xphq-p5p6p-gsw68qb7owx1q2h
