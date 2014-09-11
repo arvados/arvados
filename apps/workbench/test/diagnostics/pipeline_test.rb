@@ -32,46 +32,13 @@ class PipelineTest < DiagnosticsTest
         find('button', text: 'Choose').click
       end
 
+      page.assert_selector('a.disabled,button.disabled', text: 'Run') if pipeline_config['input_paths'].any?
+
       # Choose input for the pipeline
-      if pipeline_config['input_paths'].andand.any?
-        # This pipeline needs input. So, Run button should be disabled
-        page.assert_selector 'a.disabled,button.disabled', text: 'Run'
-
-        index = 0
-        while true
-          inputs_needed = page.all('.btn', text: 'Choose')
-          break if !inputs_needed.any?
-
-          inputs_needed[0].click
-          within('.modal-dialog') do
-            look_for_uuid = nil
-            look_for_file = nil
-            look_for = pipeline_config['input_paths'][index]
-            if look_for.index('/').andand.>0
-              partitions = look_for.partition('/')
-              look_for_uuid = partitions[0]
-              look_for_file = partitions[2]
-            else
-              look_for_uuid = look_for
-              look_for_file = nil
-            end
-
-            fill_in('Search', with: look_for_uuid, exact: true)
-            wait_for_ajax
-              selectables = page.all('.selectable')
-              selectables[0].click
-            if look_for_file
-              wait_for_ajax
-              within('.collection_files_name', text: look_for_file) do
-                find('.fa-file').click
-              end
-            end
-            find('button', text: 'OK').click
-            wait_for_ajax
-            index += 1
-          end
-        end
+      pipeline_config['input_paths'].each do |look_for|
+        select_inut look_for
       end
+      wait_for_ajax
 
       # All needed input are filled in. Run this pipeline now
       find('a,button', text: 'Run').click
@@ -84,4 +51,43 @@ class PipelineTest < DiagnosticsTest
     end
   end
 
+  def select_inut look_for
+    inputs_needed = page.all('.btn', text: 'Choose')
+    return if (!inputs_needed || !inputs_needed.any?)
+
+    inputs_needed[0].click
+    within('.modal-dialog') do
+      look_for_uuid = nil
+      look_for_file = nil
+
+      if look_for.andand.index('/').andand.>0
+        partitions = look_for.partition('/')
+        look_for_uuid = partitions[0]
+        look_for_file = partitions[2]
+     else
+       look_for_uuid = look_for
+       look_for_file = nil
+     end
+
+     if look_for_uuid
+       fill_in('Search', with: look_for_uuid, exact: true)
+     end
+           
+     wait_for_ajax
+     page.all('.selectable').first.click
+     wait_for_ajax
+     page.all('.selectable').first.click  # don't ask why
+     wait_for_ajax
+     
+    if look_for_file
+      wait_for_ajax
+      within('.collection_files_name', text: look_for_file) do
+        find('.fa-file').click
+      end
+    end
+    
+    find('button', text: 'OK').click
+      wait_for_ajax
+    end
+  end
 end
