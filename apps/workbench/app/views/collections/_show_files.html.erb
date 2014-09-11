@@ -1,4 +1,5 @@
 <div class="selection-action-container" style="padding-left: 1em">
+  <% if !defined? no_checkboxes or !no_checkboxes %>
   <div class="row">
     <div class="pull-left">
       <div class="btn-group btn-group-sm">
@@ -16,6 +17,7 @@
     </div>
   </div>
   <p/>
+  <% end %>
 
 <% file_tree = @object.andand.files_tree %>
 <% if file_tree.nil? or file_tree.empty? %>
@@ -41,17 +43,6 @@
        <div class="collection_files_row">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
-          <% if !defined? no_checkboxes or !no_checkboxes %>
-          <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
-                :class => 'persistent-selection',
-                :friendly_type => "File",
-                :friendly_name => "#{@object.uuid}/#{file_path}",
-                :href => url_for(controller: 'collections', action: 'show_file',
-                                 uuid: @object.portable_data_hash, file: file_path),
-                :title => "Include #{file_path} in your selections",
-              } %>
-          <% end %>
-
           <% if Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1] %>
           <%= link_to(raw('<i class="fa fa-search"></i>'),
                       link_params.merge(disposition: 'inline'),
@@ -62,8 +53,20 @@
                       link_params.merge(disposition: 'attachment'),
                       {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
         </div>
+
+        <div class="collection_files_name">
+          <% if !defined? no_checkboxes or !no_checkboxes %>
+          <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
+                :class => 'persistent-selection',
+                :friendly_type => "File",
+                :friendly_name => "#{@object.uuid}/#{file_path}",
+                :href => url_for(controller: 'collections', action: 'show_file',
+                                 uuid: @object.portable_data_hash, file: file_path),
+                :title => "Include #{file_path} in your selections",
+              } %>
+          <% end %>
       <% if CollectionsHelper::is_image(filename) %>
-        <div class="collection_files_name"><i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
+          <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
        </div>
         <div class="collection_files_inline">
           <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
@@ -71,7 +74,7 @@
                       {title: file_path}) %>
         </div>
       <% else %>
-        <div class="collection_files_name"><i class="fa fa-fw fa-file"></i> <%= filename %></div>
+          <i class="fa fa-fw fa-file"></i> <%= filename %></div>
        </div>
       <% end %>
       </li>
