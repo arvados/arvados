@@ -158,6 +158,7 @@ class ActionsController < ApplicationController
 
     normalized = arv_normalize combined
     newc = Collection.new({:manifest_text => normalized})
+    newc.name = newc.name || "Collection created at #{Time.now.localtime}"
     newc.save!
 
     chash.each do |k,v|
