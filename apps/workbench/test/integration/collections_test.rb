@@ -70,7 +70,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      click_link 'Combine selections into a new collection'
+      click_link 'Combine selected collections into a new collection'
     end
 
     # now in the newly created collection page
@@ -96,7 +96,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      click_link 'Combine selections into a new collection'
+      click_link 'Combine selected files into a new collection'
     end
 
     # now in the newly created collection page
