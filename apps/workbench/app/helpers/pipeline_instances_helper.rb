@@ -22,6 +22,56 @@ module PipelineInstancesHelper
     pj
   end
 
+  def merge_range timestamps, started_at, finished_at
+    timestamps.each_index do |i|
+      if started_at
+        if started_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
+          # 'j' started and ended during 'i'
+          return timestamps
+        end
+
+        if started_at < timestamps[i][0] and finished_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
+          # 'j' started before 'i' and finished during 'i'
+          # re-merge range between when 'j' started and 'i' finished
+          finished_at = timestamps[i][1]
+          timestamps.delete_at i
+          return merge_range timestamps, started_at, finished_at
+        end
+
+        if started_at >= timestamps[i][0] and started_at <= timestamps[i][1]
+          # 'j' started during 'i' and finished sometime after
+          # move end time of 'i' back
+          # re-merge range between when 'i' started and 'j' finished
+          started_at = timestamps[i][0]
+          timestamps.delete_at i
+          return merge_range timestamps, started_at, finished_at
+        end
+
+        if finished_at < timestamps[i][0]
+          # 'j' finished before 'i' started, so insert before 'i'
+          timestamps.insert i, [started_at, finished_at]
+          return timestamps
+        end
+      end
+    end
+
+    timestamps << [started_at, finished_at]
+  end
+
+  def determine_wallclock_runtime jobs
+    puts "Begin #{jobs}"
+    timestamps = []
+    jobs.each do |j|
+      insert_at = 0
+      started_at = j[:started_at]
+      finished_at = (if j[:finished_at] then j[:finished_at] else Time.now end)
+      if started_at
+        timestamps = merge_range timestamps, started_at, finished_at
+      end
+    end
+    timestamps.map { |t| t[1] - t[0] }.reduce(:+)
+  end
+
   protected
 
   def pipeline_jobs_newschool object
@@ -186,54 +236,4 @@ module PipelineInstancesHelper
     s
   end
 
-  def determine_wallclock_runtime jobs
-    timestamps = []
-    jobs.each do |j|
-      insert_at = 0
-      timestamps.each_index do |i|
-        if started_at = j[:started_at]
-          finished_at = (if j[:finished_at] then j[:finished_at] else Time.now end)
-
-          if started_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
-            # 'j' started and ended during 'i'
-            insert_at = -1
-            break
-          end
-
-          if started_at < timestamps[i][0] and finished_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
-            # 'j' started before 'i' and ended during 'i'
-            # move start time of 'i' back
-            timestamps[i][0] = started_at
-            insert_at = -1
-            break
-          end
-
-          if started_at >= timestamps[i][0] and started_at <= timestamps[i][1]
-            # 'j' started during 'i'
-            # move end time of 'i' back
-            timestamps[i][1] = finished_at
-            insert_at = -1
-            break
-          end
-
-          if finished_at < timestamps[i][0]
-            # 'j' finished before 'i' started, so insert before 'i'
-            insert_at = i
-            break
-          end
-
-          if started_at > timestamps[i][1]
-            # 'j' started after 'i' finished, so insert after 'i'
-            insert_at = i
-            break
-          end
-
-        end
-      end
-      if insert_at > -1
-        timestamps.insert insert_at, [started_at, finished_at]
-      end
-    end
-    timestamps.map { |t| t[1] - t[0] }.reduce(:+)
-  end
 end
