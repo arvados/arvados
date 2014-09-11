@@ -7,6 +7,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = Capybara.javascript_driver
   end
 
+  test 'Check collection count for A Project in the tab pane titles' do
+    project_uuid = api_fixture('groups')['aproject']['uuid']
+    collection_fixture_count = api_fixture('collections').select{|k,v| v['owner_uuid'] == project_uuid}.count
+    visit page_with_token 'active', '/projects/' + project_uuid
+    assert_selector '#Data_collections-tab span', text: "(#{collection_fixture_count})"
+  end
+
   test 'Find a project and edit its description' do
     visit page_with_token 'active', '/'
     find('.arv-project-list a,button', text: 'A Project').
