@@ -13,46 +13,15 @@
 
 <% content_for :tab_line_buttons do %>
 
-  <% if @object.state.in? ['Complete', 'Failed', 'Cancelled'] %>
-
-  <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'script' => "use_latest", "components" => "use_latest", "pipeline_instance[state]" => "RunningOnServer"),
-      class: 'btn btn-primary',
-      #data: {toggle: :tooltip, placement: :top}, title: 'Re-run',
-      method: :post,
-      ) do %>
-    <i class="fa fa-fw fa-play"></i> Re-run with latest
-  <% end %>
-
-  <%= link_to raw('<i class="fa fa-fw fa-cogs"></i> Re-run options'),
-      "#",
-      {class: 'btn btn-primary', 'data-toggle' =>  "modal",
-        'data-target' => '#clone-and-edit-modal-window'}  %>
-  <% end %>
-
-  <% if @object.state.in? ['New', 'Ready'] %>
-    <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
-        class: 'btn btn-primary run-pipeline-button',
-        method: :patch
-        ) do %>
-      <i class="fa fa-fw fa-play"></i> Run
-    <% end %>
-  <% else %>
-    <% if @object.state.in? ['RunningOnClient', 'RunningOnServer'] %>
-      <%= link_to(url_for('pipeline_instance[state]' => 'Paused'),
-          class: 'btn btn-primary run-pipeline-button',
-          method: :patch
-          ) do %>
-        <i class="fa fa-fw fa-pause"></i> Pause
-      <% end %>
-    <% elsif @object.state == 'Paused' %>
-      <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
-          class: 'btn btn-primary run-pipeline-button',
-          method: :patch
-          ) do %>
-        <i class="fa fa-fw fa-play"></i> Resume
-      <% end %>
-    <% end %>
-  <% end %>
+  <div id="pipeline-instance-tab-buttons"
+       class="pane-anchor loaded"
+       href="#pipeline-instance-tab-buttons-pane"
+       data-pane-content-url="<%= url_for(params.merge(tab_pane: "tab_buttons")) %>"
+       >
+    <div id="pipeline-instance-tab-buttons-pane" class="active">
+      <%= render partial: 'show_tab_buttons', locals: {object: @object}%>
+    </div>
+  </div>
 <% end %>
 
 <%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.show_pane_list }%>

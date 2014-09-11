@@ -33,8 +33,8 @@ class PipelineInstancesController < ApplicationController
     if params['script'] == 'use_same'
       # Go through each component and copy the script_version from each job.
       @object.components.each do |cname, component|
-        if source.components['cname'][:job]
-          component.script_version = source.components[cname][:job].script_version
+        if source.components[cname][:job]
+          component[:script_version] = source.components[cname][:job][:script_version]
         end
       end
     end

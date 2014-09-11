@@ -69,7 +69,7 @@ module PipelineInstancesHelper
         timestamps = merge_range timestamps, started_at, finished_at
       end
     end
-    timestamps.map { |t| t[1] - t[0] }.reduce(:+)
+    timestamps.map { |t| t[1] - t[0] }.reduce(:+) || 0
   end
 
   protected
