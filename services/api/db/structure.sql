@@ -428,7 +428,8 @@ CREATE TABLE jobs (
     repository character varying(255),
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
-    priority integer DEFAULT 0 NOT NULL
+    priority integer DEFAULT 0 NOT NULL,
+    description text
 );
 
 
@@ -1981,9 +1982,13 @@ INSERT INTO schema_migrations (version) VALUES ('20140423133559');
 
 INSERT INTO schema_migrations (version) VALUES ('20140501165548');
 
+INSERT INTO schema_migrations (version) VALUES ('20140509143351');
+
 INSERT INTO schema_migrations (version) VALUES ('20140519205916');
 
 INSERT INTO schema_migrations (version) VALUES ('20140527152921');
+
+INSERT INTO schema_migrations (version) VALUES ('20140528143351');
 
 INSERT INTO schema_migrations (version) VALUES ('20140530200539');
 
@@ -1991,9 +1996,17 @@ INSERT INTO schema_migrations (version) VALUES ('20140601022548');
 
 INSERT INTO schema_migrations (version) VALUES ('20140602143352');
 
+INSERT INTO schema_migrations (version) VALUES ('20140602143353');
+
 INSERT INTO schema_migrations (version) VALUES ('20140607150616');
 
+INSERT INTO schema_migrations (version) VALUES ('20140610210836');
+
+INSERT INTO schema_migrations (version) VALUES ('20140610210837');
+
 INSERT INTO schema_migrations (version) VALUES ('20140611173003');
+
+INSERT INTO schema_migrations (version) VALUES ('20140613210837');
 
 INSERT INTO schema_migrations (version) VALUES ('20140627210837');
 
@@ -2003,8 +2016,6 @@ INSERT INTO schema_migrations (version) VALUES ('20140714184006');
 
 INSERT INTO schema_migrations (version) VALUES ('20140811184643');
 
-INSERT INTO schema_migrations (version) VALUES ('20140815171049');
-
 INSERT INTO schema_migrations (version) VALUES ('20140817035914');
 
 INSERT INTO schema_migrations (version) VALUES ('20140818125735');
@@ -2012,3 +2023,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140818125735');
 INSERT INTO schema_migrations (version) VALUES ('20140826180337');
 
 INSERT INTO schema_migrations (version) VALUES ('20140828141043');
+
+INSERT INTO schema_migrations (version) VALUES ('20140911221252');

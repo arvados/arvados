@@ -22,6 +22,7 @@ class PipelineInstance < ArvadosModel
     t.add :properties
     t.add :state
     t.add :components_summary
+    t.add :description
   end
 
   # Supported states for a pipeline instance
