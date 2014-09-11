@@ -119,10 +119,11 @@ for s in inp.all_streams():
                     splitfastq(p)
                 else:
                     for i in xrange(0, len(p)):
-                        m = p[i]["reader"].as_manifest()[1:]
-                        manifest_list.append(["./_" + str(piece), m[:-1]])
+                        m = p[i]["reader"].as_manifest().split()
+                        m[0] = "./_" + str(piece)
+                        manifest_list.append(m)
                     piece += 1
 
-manifest_text = "\n".join(" ".join(m) for m in manifest_list)
+manifest_text = "\n".join(" ".join(m) for m in manifest_list) + "\n"
 
 arvados.current_task().set_output(manifest_text)

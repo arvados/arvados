@@ -7,52 +7,56 @@ end
 
 class ManifestTest < Minitest::Test
   SIMPLEST_MANIFEST = ". #{random_block(9)} 0:9:simple.txt\n"
+  MULTIBLOCK_FILE_MANIFEST =
+    [". #{random_block(8)} 0:4:repfile 4:4:uniqfile",
+     "./s1 #{random_block(6)} 0:3:repfile 3:3:uniqfile",
+     ". #{random_block(8)} 0:7:uniqfile2 7:1:repfile\n"].join("\n")
   MULTILEVEL_MANIFEST =
     [". #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n",
      "./dir1 #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n",
      "./dir1/subdir #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n",
      "./dir2 #{random_block(9)} 0:3:file1 3:3:file2 6:3:file3\n"].join("")
 
-  def test_simple_each_stream_array
+  def test_simple_each_line_array
     manifest = Keep::Manifest.new(SIMPLEST_MANIFEST)
     stream_name, block_s, file = SIMPLEST_MANIFEST.strip.split
-    stream_a = manifest.each_stream.to_a
+    stream_a = manifest.each_line.to_a
     assert_equal(1, stream_a.size, "wrong number of streams")
     assert_equal(stream_name, stream_a[0][0])
     assert_equal([block_s], stream_a[0][1].map(&:to_s))
     assert_equal([file], stream_a[0][2])
   end
 
-  def test_simple_each_stream_block
+  def test_simple_each_line_block
     manifest = Keep::Manifest.new(SIMPLEST_MANIFEST)
     result = []
-    manifest.each_stream do |stream, blocks, files|
+    manifest.each_line do |stream, blocks, files|
       result << files
     end
     assert_equal([[SIMPLEST_MANIFEST.split.last]], result,
-                 "wrong result from each_stream block")
+                 "wrong result from each_line block")
   end
 
-  def test_multilevel_each_stream
+  def test_multilevel_each_line
     manifest = Keep::Manifest.new(MULTILEVEL_MANIFEST)
     seen = []
-    manifest.each_stream do |stream, blocks, files|
+    manifest.each_line do |stream, blocks, files|
       refute(seen.include?(stream),
-             "each_stream already yielded stream #{stream}")
+             "each_line already yielded stream #{stream}")
       seen << stream
       assert_equal(3, files.size, "wrong file count for stream #{stream}")
     end
     assert_equal(4, seen.size, "wrong number of streams")
   end
 
-  def test_empty_each_stream
-    assert_empty(Keep::Manifest.new("").each_stream.to_a)
+  def test_empty_each_line
+    assert_empty(Keep::Manifest.new("").each_line.to_a)
   end
 
   def test_backslash_escape_parsing
     m_text = "./dir\\040name #{random_block} 0:0:file\\\\name\\011\\here.txt\n"
     manifest = Keep::Manifest.new(m_text)
-    streams = manifest.each_stream.to_a
+    streams = manifest.each_line.to_a
     assert_equal(1, streams.size, "wrong number of streams with whitespace")
     assert_equal("./dir name", streams.first.first,
                  "wrong stream name with whitespace")
@@ -60,15 +64,15 @@ class ManifestTest < Minitest::Test
                  "wrong filename(s) with whitespace")
   end
 
-  def test_simple_each_file_array
+  def test_simple_files
     manifest = Keep::Manifest.new(SIMPLEST_MANIFEST)
-    assert_equal([[".", "simple.txt", 9]], manifest.each_file.to_a)
+    assert_equal([[".", "simple.txt", 9]], manifest.files)
   end
 
-  def test_multilevel_each_file
+  def test_multilevel_files
     manifest = Keep::Manifest.new(MULTILEVEL_MANIFEST)
     seen = Hash.new { |this, key| this[key] = [] }
-    manifest.each_file do |stream, basename, size|
+    manifest.files.each do |stream, basename, size|
       refute(seen[stream].include?(basename),
              "each_file repeated #{stream}/#{basename}")
       seen[stream] << basename
@@ -80,8 +84,57 @@ class ManifestTest < Minitest::Test
     end
   end
 
-  def test_each_file_handles_filenames_with_colons
+  def test_files_with_colons_in_names
     manifest = Keep::Manifest.new(". #{random_block(9)} 0:9:file:test.txt\n")
-    assert_equal([[".", "file:test.txt", 9]], manifest.each_file.to_a)
+    assert_equal([[".", "file:test.txt", 9]], manifest.files)
+  end
+
+  def test_files_spanning_multiple_blocks
+    manifest = Keep::Manifest.new(MULTIBLOCK_FILE_MANIFEST)
+    assert_equal([[".", "repfile", 5],
+                  [".", "uniqfile", 4],
+                  [".", "uniqfile2", 7],
+                  ["./s1", "repfile", 3],
+                  ["./s1", "uniqfile", 3]],
+                 manifest.files.sort)
+  end
+
+  def test_minimum_file_count_simple
+    manifest = Keep::Manifest.new(SIMPLEST_MANIFEST)
+    assert(manifest.minimum_file_count?(1), "real minimum file count false")
+    refute(manifest.minimum_file_count?(2), "fake minimum file count true")
+  end
+
+  def test_minimum_file_count_multiblock
+    manifest = Keep::Manifest.new(MULTIBLOCK_FILE_MANIFEST)
+    assert(manifest.minimum_file_count?(2), "low minimum file count false")
+    assert(manifest.minimum_file_count?(5), "real minimum file count false")
+    refute(manifest.minimum_file_count?(6), "fake minimum file count true")
+  end
+
+  def test_exact_file_count_simple
+    manifest = Keep::Manifest.new(SIMPLEST_MANIFEST)
+    assert(manifest.exact_file_count?(1), "exact file count false")
+    refute(manifest.exact_file_count?(0), "-1 file count true")
+    refute(manifest.exact_file_count?(2), "+1 file count true")
+  end
+
+  def test_exact_file_count_multiblock
+    manifest = Keep::Manifest.new(MULTIBLOCK_FILE_MANIFEST)
+    assert(manifest.exact_file_count?(5), "exact file count false")
+    refute(manifest.exact_file_count?(4), "-1 file count true")
+    refute(manifest.exact_file_count?(6), "+1 file count true")
+  end
+
+  def test_has_file
+    manifest = Keep::Manifest.new(MULTIBLOCK_FILE_MANIFEST)
+    assert(manifest.has_file?("./repfile"), "one-arg repfile not found")
+    assert(manifest.has_file?(".", "repfile"), "two-arg repfile not found")
+    assert(manifest.has_file?("./s1/repfile"), "one-arg s1/repfile not found")
+    assert(manifest.has_file?("./s1", "repfile"), "two-arg s1/repfile not found")
+    refute(manifest.has_file?("./s1/uniqfile2"), "one-arg missing file found")
+    refute(manifest.has_file?("./s1", "uniqfile2"), "two-arg missing file found")
+    refute(manifest.has_file?("./s2/repfile"), "one-arg missing stream found")
+    refute(manifest.has_file?("./s2", "repfile"), "two-arg missing stream found")
   end
 end

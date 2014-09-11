@@ -20,6 +20,7 @@ import threading
 import timer
 import datetime
 import ssl
+import socket
 
 _logger = logging.getLogger('arvados.keep')
 global_client_object = None
@@ -204,7 +205,7 @@ class KeepClient(object):
     class KeepService(object):
         # Make requests to a single Keep service, and track results.
         HTTP_ERRORS = (httplib2.HttpLib2Error, httplib.HTTPException,
-                       ssl.SSLError)
+                       socket.error, ssl.SSLError)
 
         def __init__(self, root, **headers):
             self.root = root
@@ -324,7 +325,7 @@ class KeepClient(object):
                               self.service.last_result[1])
 
 
-    def __init__(self, api_client=None, proxy=None, timeout=60,
+    def __init__(self, api_client=None, proxy=None, timeout=300,
                  api_token=None, local_store=None):
         """Initialize a new KeepClient.
 
@@ -337,7 +338,7 @@ class KeepClient(object):
           of the ARVADOS_KEEP_PROXY configuration setting.  If you want to
           ensure KeepClient does not use a proxy, pass in an empty string.
         * timeout: The timeout for all HTTP requests, in seconds.  Default
-          60.
+          300.
         * api_token: If you're not using an API client, but only talking
           directly to a Keep proxy, this parameter specifies an API token
           to authenticate Keep requests.  It is an error to specify both
