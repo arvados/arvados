@@ -63,6 +63,13 @@ class ProjectsController < ApplicationController
     pane_list << { :name => 'Advanced' }
   end
 
+  def tab_counts
+    @tab_counts = {}
+    show_pane_list.each do |pane|
+      @tab_counts[pane[:name]] = @object.contents(filters: pane[:filters]).count if pane[:filters]
+    end
+  end
+
   def remove_item
     params[:item_uuids] = [params[:item_uuid]]
     remove_items
