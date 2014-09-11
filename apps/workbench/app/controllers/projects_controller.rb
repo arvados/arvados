@@ -32,12 +32,35 @@ class ProjectsController < ApplicationController
     %w(Projects)
   end
 
+  # Returning an array of hashes instead of an array of strings will allow
+  # us to tell the interface to get counts for each pane (using :filters).
+  # It also seems to me that something like these could be used to configure the contents of the panes.
   def show_pane_list
-    if @user_is_manager
-      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Sharing Advanced)
-    else
-      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Advanced)
-    end
+    pane_list = [
+      {
+        :name => 'Data_collections',
+        :filters => [%w(uuid is_a arvados#collection)]
+      },
+      {
+        :name => 'Jobs_and_pipelines',
+        :filters => [%w(uuid is_a) + [%w(arvados#job arvados#pipelineInstance)]]
+      },
+      {
+        :name => 'Pipeline_templates',
+        :filters => [%w(uuid is_a arvados#pipelineTemplate)]
+      },
+      {
+        :name => 'Subprojects',
+        :filters => [%w(uuid is_a arvados#group)]
+      },
+      { :name => 'Other_objects',
+        :filters => [%w(uuid is_a) + [%w(arvados#human arvados#specimen arvados#trait)]]
+      }
+    ]
+    # Note that adding :filters to 'Sharing' won't help show the count for it because @user_is_manager is only set in #show
+    # Therefore if a count were desired there we'd want to set @user_is_manager in a before_filter or somesuch.
+    pane_list << { :name => 'Sharing' } if @user_is_manager
+    pane_list << { :name => 'Advanced' }
   end
 
   def remove_item

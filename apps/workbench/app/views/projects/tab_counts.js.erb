@@ -1,0 +1,3 @@
+<% @tab_counts.each do |pane_name, tab_count| %>
+  $('span#<%= pane_name %>-count').html(' (<%= tab_count %>)');
+<% end %>
