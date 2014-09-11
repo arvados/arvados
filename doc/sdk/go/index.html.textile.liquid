@@ -66,35 +66,6 @@ Get the User object for the current user:
 
 Print all returned fields for collections:
 
-<notextile>
-<pre><code class="userinput">	var collections map[string]interface{}
-
-	params := arvadosclient.Dict{"limit": 10}
-
-	err = arv.Call("GET", "collections", "", "", params, &collections)
-	if err != nil {
-		log.Fatalf("error querying collections", err.Error())
-	}
-
-	for key, value := range collections {
-		if key == "items" {
-			items := value.([]interface{})
-			for index, item := range items {
-				fmt.Println("===========  ", index, "  ===========")
-				item_map := item.(map[string]interface{})
-				if len(item_map) == 0 {
-					fmt.Println("item", index, ": empty map")
-				} else {
-					for k,v := range item_map {
-						fmt.Println(index, k, ":", v)
-					}
-				}
-			}
-		} else {
-			fmt.Println(key, ":", value)
-		}
-	}
-</code></pre>
-</notextile>
+{% code 'example_sdk_go_collection_list' as go %}
 
 A few more usage examples can be found in the services/keepproxy and sdk/go/keepclient directories in the arvados source tree.
