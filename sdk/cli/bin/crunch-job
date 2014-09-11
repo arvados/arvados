@@ -448,9 +448,10 @@ else
   if ($treeish =~ m{^\d{1,4}$}) {
     my $gitlog = `git --git-dir=\Q$repo\E log --pretty="format:%H" --grep="git-svn-id:.*\@"\Q$treeish\E" " master`;
     chomp $gitlog;
-    if ($gitlog =~ /^[a-f0-9]{40}$/) {
+    Log(undef, "git Subversion search exited $?");
+    if (($? == 0) && ($gitlog =~ /^[a-f0-9]{40}$/)) {
       $commit = $gitlog;
-      Log (undef, "Using commit $commit for script_version $treeish");
+      Log(undef, "Using commit $commit for Subversion revision $treeish");
     }
   }
 
@@ -459,21 +460,19 @@ else
   if (!defined $commit) {
     my $found = `git --git-dir=\Q$repo\E rev-list -1 ''\Q$treeish\E`;
     chomp $found;
-    if ($found =~ /^[0-9a-f]{40}$/s) {
+    Log(undef, "git rev-list exited $? with result '$found'");
+    if (($? == 0) && ($found =~ /^[0-9a-f]{40}$/s)) {
       $commit = $found;
+      Log(undef, "Using commit $commit for tree-ish $treeish");
       if ($commit ne $treeish) {
 	# Make sure we record the real commit id in the database,
 	# frozentokey, logs, etc. -- instead of an abbreviation or a
 	# branch name which can become ambiguous or point to a
 	# different commit in the future.
-	$ENV{"CRUNCH_SRC_COMMIT"} = $commit;
-	Log (undef, "Using commit $commit for tree-ish $treeish");
-        if ($commit ne $treeish) {
-          $Job->{'script_version'} = $commit;
-          !$job_has_uuid or
-              $Job->update_attributes('script_version' => $commit) or
-              croak("Error while updating job");
-        }
+        $Job->{'script_version'} = $commit;
+        !$job_has_uuid or
+            $Job->update_attributes('script_version' => $commit) or
+            croak("Error while updating job");
       }
     }
   }
@@ -483,6 +482,7 @@ else
     @execargs = ("sh", "-c",
 		 "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
     $git_archive = `git --git-dir=\Q$repo\E archive ''\Q$commit\E`;
+    croak("git archive failed: exit " . ($? >> 8)) if ($? != 0);
   }
   else {
     croak ("could not figure out commit id for $treeish");

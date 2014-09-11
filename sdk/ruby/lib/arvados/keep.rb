@@ -94,9 +94,10 @@ module Keep
     # Class to parse a manifest text and provide common views of that data.
     def initialize(manifest_text)
       @text = manifest_text
+      @files = nil
     end
 
-    def each_stream
+    def each_line
       return to_enum(__method__) unless block_given?
       @text.each_line do |line|
         tokens = line.split
@@ -110,17 +111,8 @@ module Keep
       end
     end
 
-    def each_file
-      return to_enum(__method__) unless block_given?
-      each_stream do |streamname, blocklist, filelist|
-        filelist.each do |filespec|
-          start_pos, filesize, filename = filespec.split(':', 3)
-          yield [streamname, filename, filesize.to_i]
-        end
-      end
-    end
-
     def unescape(s)
+      # Parse backslash escapes in a Keep manifest stream or file name.
       s.gsub(/\\(\\|[0-7]{3})/) do |_|
         case $1
         when '\\'
@@ -129,6 +121,69 @@ module Keep
           $1.to_i(8).chr
         end
       end
+    end
+
+    def each_file_spec(speclist)
+      return to_enum(__method__, speclist) unless block_given?
+      speclist.each do |filespec|
+        start_pos, filesize, filename = filespec.split(':', 3)
+        yield [start_pos.to_i, filesize.to_i, filename]
+      end
+    end
+
+    def files
+      if @files.nil?
+        file_sizes = Hash.new(0)
+        each_line do |streamname, blocklist, filelist|
+          each_file_spec(filelist) do |_, filesize, filename|
+            file_sizes[[streamname, filename]] += filesize
+          end
+        end
+        @files = file_sizes.each_pair.map do |(streamname, filename), size|
+          [streamname, filename, size]
+        end
+      end
+      @files
+    end
+
+    def files_count(stop_after=nil)
+      # Return the number of files represented in this manifest.
+      # If stop_after is provided, files_count will read the manifest
+      # incrementally, and return immediately when it counts that number of
+      # files.  This can help you avoid parsing the entire manifest if you
+      # just want to check if a small number of files are specified.
+      if stop_after.nil? or not @files.nil?
+        return files.size
+      end
+      seen_files = {}
+      each_line do |streamname, blocklist, filelist|
+        each_file_spec(filelist) do |_, _, filename|
+          seen_files[[streamname, filename]] = true
+          return stop_after if (seen_files.size >= stop_after)
+        end
+      end
+      seen_files.size
+    end
+
+    def exact_file_count?(want_count)
+      files_count(want_count + 1) == want_count
+    end
+
+    def minimum_file_count?(want_count)
+      files_count(want_count) >= want_count
+    end
+
+    def has_file?(want_stream, want_file=nil)
+      if want_file.nil?
+        want_stream, want_file = File.split(want_stream)
+      end
+      each_line do |stream_name, _, filelist|
+        if (stream_name == want_stream) and
+            each_file_spec(filelist).any? { |_, _, name| name == want_file }
+          return true
+        end
+      end
+      false
     end
   end
 end
