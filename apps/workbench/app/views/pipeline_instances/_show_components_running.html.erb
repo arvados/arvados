@@ -9,13 +9,20 @@
 
 <p>
   This pipeline
+  <% if @object.started_at %>
+    started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span> and
+  <% else %>
+    has not started.
+  <% end %>
+
   <% if @object.state == 'Complete' %>
     completed in
   <% elsif @object.state == 'Failed' %>
     failed after
   <% else %>
-    has been active for
+    and has been active for
   <% end %>
+
   <% walltime = if @object.started_at
         if @object.finished_at
           @object.finished_at - @object.started_at
@@ -26,16 +33,23 @@
         0
       end
       %>
-  <%= runtime(walltime, true) %>, running for
 
+  <%= runtime(walltime, true) %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
+</p>
+
+<p>
+  This pipeline
     <% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
-
-    <%# want to buy: algorithm that calculates wall clock runtime that takes into account
-        concurrent jobs.  %>
     <% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
 
-    <%= runtime(runningtime, true) %><% if tasks.size == 0 %>.<% else %>,
-      using
+    <% if @object.state.start_with? == 'Running' %>
+      has run
+      <% else %>
+      ran
+    <% end %>
+    for
+    <%= runtime(runningtime, true) %><% if tasks.size == 0 %>.<% else %> (<%= runtime(walltime - runningtime, true) %> queued),
+      and used
       <% cputime = tasks.map { |task|
            puts "started at #{task.started_at}"
                   if task.started_at
@@ -111,15 +125,13 @@
             <div class="col-md-5">
               <% queuetime = Time.now - current_job[:created_at] %>
               Queued for <%= runtime(queuetime, true) %>.
-                There
               <% if current_job.queue_position == 0 %>
-                are no jobs
+                This job is next in the queue to run.
               <% elsif current_job.queue_position == 1 %>
-                is 1 job
+                There is 1 job in the queue ahead of this one.
               <% else  %>
-                <%= current_job.queue_position %> jobs
+                There are <%= current_job.queue_position %> jobs in the queue ahead of this one.
               <% end %>
-                ahead of this one.
             </div>
           <% end %>
         <% else %>
@@ -131,7 +143,7 @@
 </div>
 </div>
 
-<div id="collapse<%= i %>" class="panel-collapse collapse in">
+<div id="collapse<%= i %>" class="panel-collapse collapse">
   <div class="panel-body">
     <div class="container">
         <% current_component = (if current_job then current_job else pj end) %>
@@ -187,6 +199,8 @@
                   <td>
                     <% if k.to_s.end_with? 'uuid' %>
                       <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
+                    <% elsif k.to_s.end_with? '_at' %>
+                      <span data-utc-date="<%= current_component[k] %>"><%= current_component[k] %></span>
                     <% else %>
                       <%= current_component[k] %>
                     <% end %>

@@ -31,7 +31,7 @@ $(document).on('arv:pane:reload', function(e) {
                     }
                 });
                 $pane.html(tmp);
-                e.target.addClass('loaded');
+                $(e.target).addClass('loaded');
                 $pane.trigger('arv:pane:loaded');
             }).fail(function(jqxhr, status, error) {
                 var errhtml;

@@ -1,6 +1,6 @@
 <% if !@object.state.in? ['New', 'Ready'] %>
 
-  <div class="pull-right">
+  <div class="pull-right" style="padding-left: 2em">
     Current state: <span class="badge badge-info" data-pipeline-state="<%= @object.state %>">
       <% if @object.state == "RunningOnServer" %>
         Active
