@@ -64,21 +64,22 @@ class PipelineTest < DiagnosticsTest
         partitions = look_for.partition('/')
         look_for_uuid = partitions[0]
         look_for_file = partitions[2]
-     else
-       look_for_uuid = look_for
-       look_for_file = nil
-     end
+    else
+      look_for_uuid = look_for
+      look_for_file = nil
+    end
 
-     if look_for_uuid
-       fill_in('Search', with: look_for_uuid, exact: true)
-     end
+    if look_for_uuid
+      fill_in('Search', with: look_for_uuid, exact: true)
+    end
            
-     wait_for_ajax
-     page.all('.selectable').first.click
-     wait_for_ajax
-     page.all('.selectable').first.click  # don't ask why
-     wait_for_ajax
-     
+    wait_for_ajax
+    page.all('.selectable').first.click
+    wait_for_ajax
+    # it appears that ajax reload is wiping out input selection after search results; so, select one more time.
+    page.all('.selectable').first.click
+    wait_for_ajax
+
     if look_for_file
       wait_for_ajax
       within('.collection_files_name', text: look_for_file) do
