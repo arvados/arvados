@@ -185,4 +185,55 @@ module PipelineInstancesHelper
     end
     s
   end
+
+  def determine_wallclock_runtime jobs
+    timestamps = []
+    jobs.each do |j|
+      insert_at = 0
+      timestamps.each_index do |i|
+        if started_at = j[:started_at]
+          finished_at = (if j[:finished_at] then j[:finished_at] else Time.now end)
+
+          if started_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
+            # 'j' started and ended during 'i'
+            insert_at = -1
+            break
+          end
+
+          if started_at < timestamps[i][0] and finished_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
+            # 'j' started before 'i' and ended during 'i'
+            # move start time of 'i' back
+            timestamps[i][0] = started_at
+            insert_at = -1
+            break
+          end
+
+          if started_at >= timestamps[i][0] and started_at <= timestamps[i][1]
+            # 'j' started during 'i'
+            # move end time of 'i' back
+            timestamps[i][1] = finished_at
+            insert_at = -1
+            break
+          end
+
+          if finished_at < timestamps[i][0]
+            # 'j' finished before 'i' started, so insert before 'i'
+            insert_at = i
+            break
+          end
+
+          if started_at > timestamps[i][1]
+            # 'j' started after 'i' finished, so insert after 'i'
+            insert_at = i
+            break
+          end
+
+        end
+      end
+      if insert_at > -1
+        timestamps.insert insert_at, [started_at, finished_at]
+      end
+    end
+    timestamps.map { |t| t[1] - t[0] }.reduce(:+)
+  end
 end
