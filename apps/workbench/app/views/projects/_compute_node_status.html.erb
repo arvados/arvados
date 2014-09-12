@@ -2,7 +2,7 @@
 
   <% nodes = Node.all %>
 
-  <div class="col-sm-4 compute-summary-numbers">
+  <div class="col-sm-3 compute-summary-numbers">
     <div class="panel panel-default">
     <table>
       <colgroup>
@@ -26,7 +26,7 @@
     </table>
     </div>
   </div>
-  <div class="col-sm-8">
+  <div class="col-sm-9">
     <div class="clearfix" style="margin-top:0.5em; margin-bottom:0.5em">
       <% nodes.sort_by { |n| n.hostname || "" }.each do |n| %>
         <% if n.crunch_worker_state.in? ["busy", "idle"] %>

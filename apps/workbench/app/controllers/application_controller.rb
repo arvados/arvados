@@ -694,7 +694,22 @@ class ApplicationController < ActionController::Base
 
   helper_method :running_pipelines
   def running_pipelines
-    PipelineInstance.where(state: "RunningOnServer").sort_by { |x| x.started_at }.reverse
+    PipelineInstance.filter([["state", "=", "RunningOnServer"]]).sort_by { |x| (x.started_at rescue x.modified_at) }
+  end
+
+  helper_method :finished_pipelines
+  def finished_pipelines lim
+    PipelineInstance.limit(lim).filter([["state", "in", ["Completed", "Failed", "Cancelled"]]]).sort_by { |x| (x.finished_at rescue x.modified_at) }.reverse
+  end
+
+  helper_method :recent_collections
+  def recent_collections lim
+    c = Collection.limit(lim).filter([["owner_uuid", "is_a", "arvados#group"]]).sort_by { |x| x.modified_at }.reverse
+    own = {}
+    Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
+      own[g[:uuid]] = g
+    end
+    {collections: c, owners: own}
   end
 
   helper_method :my_project_tree

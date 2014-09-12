@@ -53,12 +53,17 @@
   <%= render partial: 'compute_node_status' %>
 
   <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <div class="panel panel-default">
         <div class="panel-heading">Pipelines running</div>
         <div class="panel-body">
           <% running_pipelines.each do |p| %>
-            <%= p %>
+            <div>
+            <%= link_to_if_arvados_object p, friendly_name: true %>
+            </div>
+            <div>
+              [Progress] <span class="pull-right"><%= p[:modified_at] %></span>
+            </div>
           <% end %>
         </div>
       </div>
@@ -67,13 +72,28 @@
       <div class="panel panel-default">
         <div class="panel-heading">Recently finished pipelines</div>
         <div class="panel-body">
+          <% finished_pipelines(8).each do |p| %>
+            <div>
+              <%= link_to_if_arvados_object p, friendly_name: true %>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-5">
       <div class="panel panel-default">
         <div class="panel-heading">Recent collections</div>
-        <div class="panel-body">
+        <div class="panel-body" style="overflow-x: scroll;">
+          <% r = recent_collections(8) %>
+          <% r[:collections].each do |p| %>
+            <div>
+              <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object r[:owners][p[:owner_uuid]], friendly_name: true %>/
+              <span class="pull-right"><%= p[:modified_at] %></span>
+            </div>
+            <div style="margin-left: 1em">
+              <i class="fa fa-fw fa-archive"></i><%= link_to_if_arvados_object p, friendly_name: true %>
+            </div>
+          <% end %>
         </div>
       </div>
     </div>
