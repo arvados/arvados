@@ -353,7 +353,9 @@ CREATE TABLE job_tasks (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     created_by_job_task_uuid character varying(255),
-    qsequence bigint
+    qsequence bigint,
+    started_at timestamp without time zone,
+    finished_at timestamp without time zone
 );
 
 
@@ -679,7 +681,9 @@ CREATE TABLE pipeline_instances (
     properties text,
     state character varying(255),
     components_summary text,
-    description text
+    description text,
+    started_at timestamp without time zone,
+    finished_at timestamp without time zone
 );
 
 
@@ -2023,5 +2027,7 @@ INSERT INTO schema_migrations (version) VALUES ('20140818125735');
 INSERT INTO schema_migrations (version) VALUES ('20140826180337');
 
 INSERT INTO schema_migrations (version) VALUES ('20140828141043');
+
+INSERT INTO schema_migrations (version) VALUES ('20140909183946');
 
 INSERT INTO schema_migrations (version) VALUES ('20140911221252');
