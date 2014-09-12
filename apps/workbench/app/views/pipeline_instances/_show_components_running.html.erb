@@ -8,19 +8,18 @@
 <% end %>
 
 <p>
-  This pipeline
   <% if @object.started_at %>
-    started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span> and
+    Started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span> and
   <% else %>
-    has not started.
+    Has not started.
   <% end %>
 
   <% if @object.state == 'Complete' %>
     completed in
   <% elsif @object.state == 'Failed' %>
     failed after
-  <% else %>
-    and has been active for
+  <% elsif @object.started_at %>
+    has been active for
   <% end %>
 
   <% walltime = if @object.started_at
@@ -35,20 +34,23 @@
       %>
 
   <%= runtime(walltime, true) %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
+
+  <% if @object.state == 'Failed' %>
+    Check the Log tab for more detail about why this pipeline failed.
+  <% end %>
 </p>
 
 <p>
-  This pipeline
     <% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
     <% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
 
-    <% if @object.state.start_with? == 'Running' %>
-      has run
+    <% if @object.state.start_with? 'Running' %>
+      Has run
       <% else %>
-      ran
+      Ran
     <% end %>
     for
-    <%= runtime(runningtime, true) %><% if tasks.size == 0 %>.<% else %> (<%= runtime(walltime - runningtime, true) %> queued),
+    <%= runtime(runningtime, true) %> (<%= runtime(walltime - runningtime, true) %> queued)<% if tasks.size == 0 %>.<% else %>
       and used
       <% cputime = tasks.map { |task|
            puts "started at #{task.started_at}"
@@ -150,7 +152,7 @@
         <div class="row">
           <div class="col-md-6">
             <table>
-              <% [:script, :repository, :supplied_script_version, :script_version, :nondeterministic].each do |k| %>
+              <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic].each do |k| %>
                 <tr>
                   <td style="padding-right: 1em">
                     <%= k.to_s %>:
