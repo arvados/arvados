@@ -88,7 +88,7 @@ title "Deploying API server complete"
 # Install updated debian packages
 title "Deploying updated arvados debian packages"
 
-ssh -p2222 $IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get install arvados-src python-arvados-fuse python-arvados-python-client"
+ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "apt-get update && apt-get install arvados-src python-arvados-fuse python-arvados-python-client"
 
 if [[ "$ECODE" != "0" ]]; then
   title "!!!!!! DEPLOYING DEBIAN PACKAGES FAILED !!!!!!"
@@ -97,6 +97,19 @@ if [[ "$ECODE" != "0" ]]; then
 fi
 
 title "Deploying updated arvados debian packages complete"
+
+# Install updated arvados gems
+title "Deploying updated arvados gems"
+
+ssh -p2222 root@$IDENTIFIER.arvadosapi.com -C "/usr/local/rvm/bin/rvm default do gem install arvados arvados-cli && /usr/local/rvm/bin/rvm default do gem clean arvados arvados-cli"
+
+if [[ "$ECODE" != "0" ]]; then
+  title "!!!!!! DEPLOYING ARVADOS GEMS FAILED !!!!!!"
+  EXITCODE=$(($EXITCODE + $ECODE))
+  exit $EXITCODE
+fi
+
+title "Deploying updated arvados gems complete"
 
 # Deploy Workbench
 title "Deploying workbench"
