@@ -339,7 +339,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      page.assert_selector 'li.disabled', text: 'Combine selected collections into a new collection'
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_selector 'li.disabled', text: 'Move selected'
@@ -357,8 +357,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      page.assert_no_selector 'li.disabled', text: 'Combine selected collections into a new collection'
-      page.assert_selector 'li', text: 'Combine selected collections into a new collection'
+      page.assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
+      page.assert_selector 'li', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_no_selector 'li.disabled', text: 'Copy selected'
       page.assert_selector 'li', text: 'Copy selected'
@@ -381,7 +381,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      page.assert_selector 'li.disabled', text: 'Combine selected collections into a new collection'
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_no_selector 'li.disabled', text: 'Move selected'
@@ -410,7 +410,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      page.assert_selector 'li.disabled', text: 'Combine selected collections into a new collection'
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_no_selector 'li.disabled', text: 'Move selected'
@@ -434,7 +434,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      click_link 'Combine selected collections into a new collection'
+      click_link 'Create new collection with selected collections'
     end
 
     # back in project page

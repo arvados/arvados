@@ -5,7 +5,7 @@
       <div class="btn-group btn-group-sm">
         <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Selection... <span class="caret"></span></button>
         <ul class="dropdown-menu" role="menu">
-          <li><%= link_to "Combine selected files into a new collection", '#',
+          <li><%= link_to "Create new collection with selected files", '#',
                   'data-href' => combine_selected_path,
                   'data-selection-param-name' => 'selection[]',
                   'data-selection-action' => 'combine-collections',
@@ -43,12 +43,10 @@
        <div class="collection_files_row">
         <div class="collection_files_buttons pull-right">
           <%= raw(human_readable_bytes_html(size)) %>
-          <% if Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1] %>
+          <% disable_search = (Rails.configuration.filename_suffixes_with_view_icon.include? file_path.split('.')[-1]) ? false : true %>
           <%= link_to(raw('<i class="fa fa-search"></i>'),
                       link_params.merge(disposition: 'inline'),
-                      {title: "View #{file_path}", class: "btn btn-info btn-sm"}) %>
-          <% end %>
-
+                      {title: "View #{file_path}", class: "btn btn-info btn-sm", disabled: disable_search}) %>
           <%= link_to(raw('<i class="fa fa-download"></i>'),
                       link_params.merge(disposition: 'attachment'),
                       {title: "Download #{file_path}", class: "btn btn-info btn-sm"}) %>
@@ -64,6 +62,7 @@
                                  uuid: @object.portable_data_hash, file: file_path),
                 :title => "Include #{file_path} in your selections",
               } %>
+          <span>&nbsp;</span>
           <% end %>
       <% if CollectionsHelper::is_image(filename) %>
           <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>

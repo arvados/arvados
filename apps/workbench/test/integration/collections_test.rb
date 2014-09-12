@@ -70,7 +70,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      click_link 'Combine selected collections into a new collection'
+      click_link 'Create new collection with selected collections'
     end
 
     # now in the newly created collection page
@@ -81,7 +81,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?('bar'), "Collection page did not include bar file")
   end
 
-  test "combine selected collection contents into new collection" do
+  test "combine selected collection files into new collection" do
     foo_collection = api_fixture('collections')['foo_file']
 
     visit page_with_token('active', "/collections")
@@ -96,7 +96,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
-      click_link 'Combine selected files into a new collection'
+      click_link 'Create new collection with selected files'
     end
 
     # now in the newly created collection page
