@@ -194,5 +194,32 @@ class CheckHTTPResponseSuccessTestCase(unittest.TestCase):
         self.check_is(None, 0, 99, 600, -200)
 
 
+class RetryMethodTestCase(unittest.TestCase):
+    class Tester(object):
+        def __init__(self):
+            self.num_retries = 1
+
+        @arv_retry.retry_method
+        def check(self, a, num_retries=None, z=0):
+            return (a, num_retries, z)
+
+
+    def test_positional_arg_passed(self):
+        self.assertEqual((3, 2, 0), self.Tester().check(3, 2))
+
+    def test_keyword_arg_passed(self):
+        self.assertEqual((4, 3, 0), self.Tester().check(num_retries=3, a=4))
+
+    def test_not_specified(self):
+        self.assertEqual((0, 1, 0), self.Tester().check(0))
+
+    def test_not_specified_with_other_kwargs(self):
+        self.assertEqual((1, 1, 1), self.Tester().check(1, z=1))
+
+    def test_bad_call(self):
+        with self.assertRaises(TypeError):
+            self.Tester().check(num_retries=2)
+
+
 if __name__ == '__main__':
     unittest.main()
