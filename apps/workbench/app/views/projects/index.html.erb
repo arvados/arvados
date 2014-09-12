@@ -49,6 +49,36 @@
       </div>
     </div>
   </div>
+
+  <%= render partial: 'compute_node_status' %>
+
+  <div class="row">
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">Pipelines running</div>
+        <div class="panel-body">
+          <% running_pipelines.each do |p| %>
+            <%= p %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">Recently finished pipelines</div>
+        <div class="panel-body">
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="panel panel-default">
+        <div class="panel-heading">Recent collections</div>
+        <div class="panel-body">
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row">
     <div class="col-sm-12">
       <div class="panel panel-default">

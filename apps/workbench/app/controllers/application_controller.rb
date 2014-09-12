@@ -692,6 +692,11 @@ class ApplicationController < ActionController::Base
     end.reverse
   end
 
+  helper_method :running_pipelines
+  def running_pipelines
+    PipelineInstance.where(state: "RunningOnServer").sort_by { |x| x.started_at }.reverse
+  end
+
   helper_method :my_project_tree
   def my_project_tree
     build_project_trees

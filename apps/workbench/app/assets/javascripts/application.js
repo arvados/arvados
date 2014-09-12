@@ -205,4 +205,9 @@ jQuery(function($){
         });
     });
 
+    $(document).on('click', '.compute-detail', function(e) {
+        console.log("woble");
+        $(e.target).collapse('hide');
+    });
+
 });

@@ -1,0 +1,48 @@
+<div class="row">
+
+  <% nodes = Node.all %>
+
+  <div class="col-sm-4 compute-summary-numbers">
+    <div class="panel panel-default">
+    <table>
+      <colgroup>
+        <col width="25%">
+        <col width="25%">
+        <col width="25%">
+        <col width="25%">
+      </colgroup>
+      <tr>
+        <td>0</td>
+        <td><%= nodes.select {|n| n.crunch_worker_state.in? ["busy", "idle"] }.size %></td>
+        <td><%= nodes.select {|n| n.crunch_worker_state == "busy" }.size %></td>
+        <td><%= nodes.select {|n| n.crunch_worker_state == "idle" }.size %></td>
+      </tr>
+      <tr>
+        <th>Queue</th>
+        <th>Nodes</th>
+        <th>Busy</th>
+        <th>Idle</th>
+      </tr>
+    </table>
+    </div>
+  </div>
+  <div class="col-sm-8">
+    <div class="clearfix" style="margin-top:0.5em; margin-bottom:0.5em">
+      <% nodes.sort_by { |n| n.hostname || "" }.each do |n| %>
+        <% if n.crunch_worker_state.in? ["busy", "idle"] %>
+          <div class="pull-left compute-summary">
+            <a data-toggle="collapse" href="#detail_<%= n.hostname %>" class="compute-summary-head label label-<%= if n.crunch_worker_state == 'busy' then 'primary' else 'default' end %>">
+              <%= n.hostname %>
+            </a>
+            <div id="detail_<%= n.hostname %>" class="collapse compute-detail">
+              state: <%= n.crunch_worker_state %><br>
+              <% [:total_cpu_cores, :total_ram_mb, :total_scratch_mb].each do |i| %>
+                <%= i.to_s.gsub '_', ' ' %>: <%= n.info[i] %><br>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

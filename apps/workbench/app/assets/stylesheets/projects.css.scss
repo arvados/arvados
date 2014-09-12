@@ -10,3 +10,28 @@ div.scroll-20em {
     height: 20em;
     overflow-y: scroll;
 }
+
+.compute-summary {
+    margin: 0.1em;
+}
+
+.compute-summary-head {
+    margin-left: 0.3em;
+}
+
+.compute-detail {
+    border: 1px solid;
+    border-color: #DDD;
+    border-radius: 3px;
+    padding: 0.2em;
+    position: absolute;
+    z-index: 1;
+    background: white;
+}
+
+.compute-summary-numbers table {
+  width: 100%;
+  td,th {
+    text-align: center;
+  }
+}
