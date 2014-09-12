@@ -349,8 +349,9 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
     class MockStreamReader(object):
         def __init__(self, content):
             self.content = content
+            self.num_retries = 0
 
-        def readfrom(self, start, size):
+        def readfrom(self, start, size, num_retries=0):
             return self.content[start:start+size]
 
     def test_file_stream(self):
@@ -422,7 +423,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         def __init__(self, content, num_retries=0):
             self.content = content
 
-        def get(self, locator):
+        def get(self, locator, num_retries=0):
             return self.content[locator]
 
     def test_stream_reader(self):
