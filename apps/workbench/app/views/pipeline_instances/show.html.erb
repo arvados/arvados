@@ -1,14 +1,18 @@
 <% template = PipelineTemplate.find?(@object.pipeline_template_uuid) %>
 <%= content_for :content_top do %>
-  <h2>
-    <%= render_editable_attribute @object, 'name', nil %>
-  </h2>
-  <% if template %>
-  <blockquote><span class="deemphasize">From template:</span><br />
-    <%= link_to_if_arvados_object template, friendly_name: true %><br />
-    <%= template.description %>
-  </blockquote>
-  <% end %>
+  <div class="row">
+    <div class="col-sm-6">
+      <%= render partial: 'name_and_description' %>
+    </div>
+    <% if template %>
+      <div class="alert alert-info col-sm-6">
+        This pipeline has been created from the template <%= link_to_if_arvados_object template, friendly_name: true %><br />
+        <% if template.modified_at && (template.modified_at > @object.created_at) %>
+        Note: This template has been modified since this instance was created.
+        <% end %>
+      </div>
+    <% end %>
+  </div>
 <% end %>
 
 <% content_for :tab_line_buttons do %>
