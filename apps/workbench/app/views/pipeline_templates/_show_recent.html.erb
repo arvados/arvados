@@ -35,6 +35,7 @@
                                      action_method: 'post',
                                      action_data: {selection_param: 'pipeline_instance[owner_uuid]',
                                                    'pipeline_instance[pipeline_template_uuid]' => ob.uuid,
+                                                   'pipeline_instance[description]' => "Created using the pipeline template *#{ob.name}* at #{Time.now.localtime}",
                                                    'success' => 'redirect-to-created-object'
                                                   }.to_json),
                 { class: "btn btn-default btn-xs", title: "Run #{ob.name}", remote: true, method: 'get' }
