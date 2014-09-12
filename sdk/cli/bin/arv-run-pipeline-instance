@@ -486,6 +486,7 @@ class WhRunPipelineInstance
                  }
                },
                pipeline_template_uuid: @template[:uuid],
+               description: "Created at #{Time.now.localtime}" + (@template[:name].andand.size>0 ? " using the pipeline template *#{@template[:name]}*" : ""),
                state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
     end
     self
