@@ -31,26 +31,23 @@ class SafeApi(object):
 
     def __init__(self, config):
         self.host = config.get('ARVADOS_API_HOST')
-        self.token = config.get('ARVADOS_API_TOKEN')
+        self.api_token = config.get('ARVADOS_API_TOKEN')
         self.insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
         self.local = threading.local()
 
     def localapi(self):
         if 'api' not in self.local.__dict__:
-            self.local.api = arvados.api('v1', False, self.host, self.token, self.insecure)
+            self.local.api = arvados.api('v1', False, self.host,
+                                         self.api_token, self.insecure)
         return self.local.api
 
-    def collections(self):
-        return self.localapi().collections()
+    def __getattr__(self, name):
+        # Proxy nonexistent attributes to the local API client.
+        try:
+            return getattr(self.localapi(), name)
+        except AttributeError:
+            return super(SafeApi, self).__getattr__(name)
 
-    def links(self):
-        return self.localapi().links()
-
-    def groups(self):
-        return self.localapi().groups()
-
-    def users(self):
-        return self.localapi().users()
 
 def convertTime(t):
     '''Parse Arvados timestamp to unix time.'''
