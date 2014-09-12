@@ -118,7 +118,7 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   case subcommand
   when 'keep'
     @sub = remaining_opts.shift
-    if ['get', 'put', 'ls', 'normalize'].index @sub then
+    if ['get', 'put', 'ls', 'normalize', 'copy'].index @sub then
       # Native Arvados
       exec `which arv-#{@sub}`.strip, *remaining_opts
     elsif ['less', 'check'].index @sub then
