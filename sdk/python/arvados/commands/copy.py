@@ -138,7 +138,7 @@ def copy_pipeline_instance(pi_uuid, dst_git_repo=None, dst_project=None, recursi
         # Copy the pipeline template and save the copied template.
         pt = copy_pipeline_template(pi['pipeline_template_uuid'],
                                     recursive=True,
-                                    src, dst)
+                                    src=src, dst=dst)
 
         # Copy input collections, docker images and git repos.
         pi = copy_collections(pi, src, dst)
@@ -197,7 +197,7 @@ def copy_pipeline_template(pt_uuid, recursive=True, src=None, dst=None):
 #    the new ones.
 #
 def copy_collections(obj, src, dst):
-    if type(obj) == str:
+    if type(obj) in [str, unicode]:
         if uuid_type(src, obj) == 'Collection':
             newc = copy_collection(obj, src, dst)
             if obj != newc['uuid'] and obj != newc['portable_data_hash']:
@@ -222,19 +222,18 @@ def copy_collections(obj, src, dst):
 #
 def copy_git_repos(p, dst_repo, src=None, dst=None):
     copied = set()
+    dst_branch = p['uuid']
     for c in p['components']:
         component = p['components'][c]
         if 'repository' in component:
             repo = component['repository']
             if repo not in copied:
-                dst_branch = p['uuid']
                 copy_git_repo(repo, dst_repo, dst_branch, src, dst)
                 copied.add(repo)
             component['repository'] = dst_repo
         if 'job' in component and 'repository' in component['job']:
             repo = component['job']['repository']
             if repo not in copied:
-                dst_branch = p['uuid']
                 copy_git_repo(repo, dst_repo, dst_branch, src, dst)
                 copied.add(repo)
             component['job']['repository'] = dst_repo
@@ -348,13 +347,15 @@ def copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src=None, dst=None):
 #    Special case: if handed a Keep locator hash, return 'Collection'.
 #
 def uuid_type(api, object_uuid):
-    if re.match(r'^[a-f0-9]{32}(\+[A-Za-z0-9+-]+)?$', object_uuid):
+    if re.match(r'^[a-f0-9]{32}\+[0-9]+(\+[A-Za-z0-9+-]+)?$', object_uuid):
         return 'Collection'
-    type_prefix = object_uuid.split('-')[1]
-    for k in api._schema.schemas:
-        obj_class = api._schema.schemas[k].get('uuidPrefix', None)
-        if type_prefix == obj_class:
-            return k
+    p = object_uuid.split('-')
+    if len(p) == 3:
+        type_prefix = p[1]
+        for k in api._schema.schemas:
+            obj_class = api._schema.schemas[k].get('uuidPrefix', None)
+            if type_prefix == obj_class:
+                return k
     return None
 
 def abort(msg, code=1):
