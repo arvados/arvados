@@ -339,7 +339,7 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
     # If there is a /scratch partition available, attempt to use it
     # to check out the git repo (which can be quite large)
     if os.path.exists('/scratch'):
-        tempfile.tmpdir = '/scratch/{}'.format(getpass.getuser())
+        tempfile.tempdir = '/scratch/{}'.format(getpass.getuser())
         os.mkdir(tempfile.tempdir)
     tmprepo = tempfile.mkdtemp()
 
