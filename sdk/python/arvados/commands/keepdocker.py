@@ -47,7 +47,7 @@ keepdocker_parser.add_argument(
 # --progress/--no-progress/--batch-progress and --resume/--no-resume.
 arg_parser = argparse.ArgumentParser(
         description="Upload or list Docker images in Arvados",
-        parents=[keepdocker_parser, arv_put.run_opts])
+        parents=[keepdocker_parser, arv_put.run_opts, arv_cmd.retry_opt])
 
 class DockerError(Exception):
     pass
@@ -152,9 +152,10 @@ def prep_image_file(filename):
         image_file = open(file_path, 'w+b' if need_save else 'rb')
     return image_file, need_save
 
-def make_link(link_class, link_name, **link_attrs):
+def make_link(api_client, num_retries, link_class, link_name, **link_attrs):
     link_attrs.update({'link_class': link_class, 'name': link_name})
-    return arvados.api('v1').links().create(body=link_attrs).execute()
+    return api_client.links().create(body=link_attrs).execute(
+        num_retries=num_retries)
 
 def ptimestamp(t):
     s = t.split(".")
@@ -162,8 +163,10 @@ def ptimestamp(t):
         t = s[0] + s[1][-1:]
     return datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ")
 
-def list_images_in_arv():
-    existing_links = arvados.api('v1').links().list(filters=[['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']]]).execute()['items']
+def list_images_in_arv(api_client, num_retries):
+    existing_links = api_client.links().list(
+        filters=[['link_class', 'in', ['docker_image_hash', 'docker_image_repo+tag']]]
+        ).execute(num_retries=num_retries)['items']
     images = {}
     for link in existing_links:
         collection_uuid = link["head_uuid"]
@@ -196,9 +199,10 @@ def list_images_in_arv():
 
 def main(arguments=None):
     args = arg_parser.parse_args(arguments)
+    api = arvados.api('v1')
 
     if args.image is None or args.image == 'images':
-        list_images_in_arv()
+        list_images_in_arv(api, args.retries)
         sys.exit(0)
 
     # Pull the image if requested, unless the image is specified as a hash
@@ -222,30 +226,35 @@ def main(arguments=None):
     else:
         collection_name = args.name
 
-    api = arvados.api('v1')
-
     if not args.force:
         # Check if this image is already in Arvados.
 
         # Project where everything should be owned
-        parent_project_uuid = args.project_uuid if args.project_uuid else api.users().current().execute()['uuid']
+        if args.project_uuid:
+            parent_project_uuid = args.project_uuid
+        else:
+            parent_project_uuid = api.users().current().execute(
+                num_retries=args.retries)['uuid']
 
         # Find image hash tags
         existing_links = api.links().list(
             filters=[['link_class', '=', 'docker_image_hash'],
-                     ['name', '=', image_hash]]).execute()['items']
+                     ['name', '=', image_hash]]
+            ).execute(num_retries=args.retries)['items']
         if existing_links:
             # get readable collections
             collections = api.collections().list(
                 filters=[['uuid', 'in', [link['head_uuid'] for link in existing_links]]],
-                select=["uuid", "owner_uuid", "name", "manifest_text"]).execute()['items']
+                select=["uuid", "owner_uuid", "name", "manifest_text"]
+                ).execute(num_retries=args.retries)['items']
 
             if collections:
                 # check for repo+tag links on these collections
                 existing_repo_tag = (api.links().list(
                     filters=[['link_class', '=', 'docker_image_repo+tag'],
                              ['name', '=', image_repo_tag],
-                             ['head_uuid', 'in', collections]]).execute()['items']) if image_repo_tag else []
+                             ['head_uuid', 'in', collections]]
+                    ).execute(num_retries=args_retries)['items']) if image_repo_tag else []
 
                 # Filter on elements owned by the parent project
                 owned_col = [c for c in collections if c['owner_uuid'] == parent_project_uuid]
@@ -257,21 +266,25 @@ def main(arguments=None):
                     coll_uuid = owned_col[0]['uuid']
                 else:
                     # create new collection owned by the project
-                    coll_uuid = api.collections().create(body={"manifest_text": collections[0]['manifest_text'],
-                                                               "name": collection_name,
-                                                               "owner_uuid": parent_project_uuid},
-                                                         ensure_unique_name=True).execute()['uuid']
+                    coll_uuid = api.collections().create(
+                        body={"manifest_text": collections[0]['manifest_text'],
+                              "name": collection_name,
+                              "owner_uuid": parent_project_uuid},
+                        ensure_unique_name=True
+                        ).execute(num_retries=args.retries)['uuid']
 
                 link_base = {'owner_uuid': parent_project_uuid,
                              'head_uuid':  coll_uuid }
 
                 if not owned_img:
                     # create image link owned by the project
-                    make_link('docker_image_hash', image_hash, **link_base)
+                    make_link(api, args.retries,
+                              'docker_image_hash', image_hash, **link_base)
 
                 if not owned_rep and image_repo_tag:
                     # create repo+tag link owned by the project
-                    make_link('docker_image_repo+tag', image_repo_tag, **link_base)
+                    make_link(api, args.retries, 'docker_image_repo+tag',
+                              image_repo_tag, **link_base)
 
                 print(coll_uuid)
 
@@ -306,10 +319,10 @@ def main(arguments=None):
     if args.project_uuid is not None:
         link_base['owner_uuid'] = args.project_uuid
 
-    make_link('docker_image_hash', image_hash, **link_base)
+    make_link(api, args.retries, 'docker_image_hash', image_hash, **link_base)
     if image_repo_tag:
-        make_link('docker_image_repo+tag', image_repo_tag,
-                  **link_base)
+        make_link(api, args.retries,
+                  'docker_image_repo+tag', image_repo_tag, **link_base)
 
     # Clean up.
     image_file.close()

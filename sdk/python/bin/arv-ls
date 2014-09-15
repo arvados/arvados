@@ -1,27 +1,20 @@
 #!/usr/bin/env python
 
 import argparse
-import hashlib
-import os
-import re
-import string
-import sys
+
+import arvados
+import arvados.commands._util as arv_cmd
 
 parser = argparse.ArgumentParser(
-    description='List contents of a manifest')
+    description='List contents of a manifest',
+    parents=[arv_cmd.retry_opt])
 
 parser.add_argument('locator', type=str,
-                    help="""
-Collection locator
-""")
-
+                    help="Collection UUID or locator")
 parser.add_argument('-s', action='store_true', help="""List file sizes, in KiB.""")
 
 args = parser.parse_args()
-
-import arvados
-
-cr = arvados.CollectionReader(args.locator)
+cr = arvados.CollectionReader(args.locator, num_retries=args.retries)
 
 for f in cr.all_files():
     if args.s:
