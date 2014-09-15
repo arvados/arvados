@@ -334,7 +334,7 @@ def copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src=None, dst=None):
         ["git", "checkout", "-B", dst_branch],
         cwd=tmprepo)
     arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
-    arvados.util.run_command(["git", "push", "dst"], cwd=tmprepo)
+    arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
 
 # uuid_type(api, object_uuid)
 #
