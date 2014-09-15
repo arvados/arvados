@@ -52,6 +52,10 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "combine selected collections into new collection" do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+
     foo_collection = api_fixture('collections')['foo_file']
     bar_collection = api_fixture('collections')['bar_file']
 
@@ -79,9 +83,15 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?('foo'), "Collection page did not include foo file")
     assert(page.has_no_text?(bar_collection['name']), "Collection page did not include foo file")
     assert(page.has_text?('bar'), "Collection page did not include bar file")
+
+    headless.stop
   end
 
   test "combine selected collection files into new collection" do
+    headless = Headless.new
+    headless.start
+    Capybara.current_driver = :selenium
+
     foo_collection = api_fixture('collections')['foo_file']
 
     visit page_with_token('active', "/collections")
@@ -103,5 +113,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?('Copy to project'), "Copy to project text not found in new collection page")
     assert(page.has_no_text?(foo_collection['name']), "Collection page did not include foo file")
     assert(page.has_text?('foo'), "Collection page did not include foo file")
+
+    headless.stop
   end
 end
