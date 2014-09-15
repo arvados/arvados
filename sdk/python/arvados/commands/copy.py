@@ -309,7 +309,11 @@ def copy_collection(obj_uuid, src, dst):
     # Copy the manifest and save the collection.
     logger.debug('saving {} manifest: {}'.format(obj_uuid, manifest))
     dst_keep.put(manifest)
-    return dst.collections().create(body={"manifest_text": manifest}).execute()
+
+    del c['uuid']
+    del c['owner_uuid']
+    c['ensure_unique_name'] = True
+    return dst.collections().create(body=c).execute()
 
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo)
 #
