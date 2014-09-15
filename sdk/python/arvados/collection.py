@@ -166,8 +166,10 @@ class CollectionReader(CollectionBase):
                 if not util.portable_data_hash_pattern.match(
                       self._manifest_locator):
                     raise
-                _logger.warning("API lookup failed for collection %s (%s: %s)",
-                                self._manifest_locator, type(e), str(e))
+                _logger.warning(
+                    "API server did not return Collection '%s'. " +
+                    "Trying to fetch directly from Keep (deprecated).",
+                    self._manifest_locator)
                 self._manifest_text = self._my_keep().get(
                     self._manifest_locator, num_retries=self.num_retries)
         self._streams = [sline.split()
