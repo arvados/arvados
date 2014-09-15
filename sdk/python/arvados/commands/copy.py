@@ -209,7 +209,7 @@ def copy_collections(obj, src, dst):
         return [copy_collections(v, src, dst) for v in obj]
     return obj
 
-# copy_git_repos(p, dst_repo, dst_branch, src, dst)
+# copy_git_repos(p, dst_repo, src, dst)
 #
 #    Copy all git repositories referenced by pipeline instance or
 #    template 'p' from src to dst.
@@ -222,19 +222,18 @@ def copy_collections(obj, src, dst):
 #
 def copy_git_repos(p, dst_repo, src=None, dst=None):
     copied = set()
-    dst_branch = p['uuid']
     for c in p['components']:
         component = p['components'][c]
         if 'repository' in component:
             repo = component['repository']
             if repo not in copied:
-                copy_git_repo(repo, dst_repo, dst_branch, src, dst)
+                copy_git_repo(repo, dst_repo, src, dst)
                 copied.add(repo)
             component['repository'] = dst_repo
         if 'job' in component and 'repository' in component['job']:
             repo = component['job']['repository']
             if repo not in copied:
-                copy_git_repo(repo, dst_repo, dst_branch, src, dst)
+                copy_git_repo(repo, dst_repo, src, dst)
                 copied.add(repo)
             component['job']['repository'] = dst_repo
     return repos
@@ -294,12 +293,12 @@ def copy_collection(obj_uuid, src=None, dst=None):
     dst_keep.put(manifest)
     return dst.collections().create(body={"manifest_text": manifest}).execute()
 
-# copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src, dst)
+# copy_git_repo(src_git_repo, dst_git_repo, src, dst)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
-#    instance 'src' to 'dst_git_repo' on 'dst'. A branch 'dst_branch'
-#    is created at the destination repository, and commits from
-#    src_git_repo are merged onto that branch.
+#    instance 'src' to 'dst_git_repo' on 'dst'.  All commits will be
+#    copied to a destination branch named for the source repository
+#    URL.
 #
 #    Because users cannot create their own repositories, the
 #    destination repository must already exist.
@@ -307,7 +306,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
 #    The user running this command must be authenticated
 #    to both repositories.
 #
-def copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src=None, dst=None):
+def copy_git_repo(src_git_repo, dst_git_repo, src=None, dst=None):
     # Identify the fetch and push URLs for the git repositories.
     r = src.repositories().list(
         filters=[['name', '=', src_git_repo]]).execute()
@@ -327,11 +326,12 @@ def copy_git_repo(src_git_repo, dst_git_repo, dst_branch, src=None, dst=None):
 
     tmprepo = tempfile.mkdtemp()
 
+    dst_branch = re.sub(r'\W+', '_', src_git_url)
     arvados.util.run_command(
         ["git", "clone", src_git_url, tmprepo],
         cwd=os.path.dirname(tmprepo))
     arvados.util.run_command(
-        ["git", "checkout", "-B", dst_branch],
+        ["git", "checkout", "-b", dst_branch],
         cwd=tmprepo)
     arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
     arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
