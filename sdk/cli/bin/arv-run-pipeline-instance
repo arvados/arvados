@@ -159,7 +159,7 @@ p = Trollop::Parser.new do
       :short => :none,
       :type => :boolean)
   opt(:run_jobs_here,
-      "Manage the pipeline instance in-process. Find/run/watch jobs until the pipeline finishes (or fails). Implies --run-pipeline-here.",
+      "Run jobs in the local terminal session instead of submitting them to Crunch. Implies --run-pipeline-here. Note: this results in a significantly different job execution environment, and some Crunch features are not supported. It can be necessary to modify a pipeline in order to make it run this way.",
       :short => :none,
       :type => :boolean)
   opt(:run_here,
