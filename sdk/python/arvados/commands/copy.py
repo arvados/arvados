@@ -84,7 +84,14 @@ def main():
     else:
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
 
-    print result
+    # If no exception was thrown and the response does not have an
+    # error_token field, presume success
+    if 'error_token' in result or 'uuid' not in result:
+        logger.error("API server returned an error result: {}".format(result))
+        exit(1)
+
+    logger.info("")
+    logger.info("Success: created copy with uuid {}".format(result['uuid']))
     exit(0)
 
 # api_for_instance(instance_name)
@@ -151,20 +158,22 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
         # pipeline template.
         if pi.get('pipeline_template_uuid', None):
             pi['pipeline_template_uuid'] = pt['uuid']
-        if dst_project:
-            pi['owner_uuid'] = dst_project
-        else:
-            del pi['owner_uuid']
 
     else:
         # not recursive
         print >>sys.stderr, "Copying only pipeline instance {}.".format(pi_uuid)
         print >>sys.stderr, "You are responsible for making sure all pipeline dependencies have been updated."
 
-    # Create the new pipeline instance at the destination Arvados.
+    # Update the pipeline instance properties, and create the new
+    # instance at dst.
     pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
+    if dst_project:
+        pi['owner_uuid'] = dst_project
+    else:
+        del pi['owner_uuid']
     del pi['uuid']
     pi['ensure_unique_name'] = True
+
     new_pi = dst.pipeline_instances().create(body=pi).execute()
     return new_pi
 
