@@ -71,14 +71,14 @@ def main():
         result = copy_collection(args.object_uuid, src=src_arv, dst=dst_arv)
     elif t == 'PipelineInstance':
         result = copy_pipeline_instance(args.object_uuid,
-                                        dst_git_repo=args.dst_git_repo,
+                                        src_arv, dst_arv,
+                                        args.dst_git_repo,
                                         dst_project=args.project_uuid,
-                                        recursive=args.recursive,
-                                        src=src_arv, dst=dst_arv)
+                                        recursive=args.recursive)
     elif t == 'PipelineTemplate':
         result = copy_pipeline_template(args.object_uuid,
-                                        recursive=args.recursive,
-                                        src=src_arv, dst=dst_arv)
+                                        src_arv, dst_arv,
+                                        recursive=args.recursive)
     else:
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
 
@@ -129,7 +129,7 @@ def api_for_instance(instance_name):
 #      3. The owner_uuid of the instance is changed to the user who
 #         copied it.
 #
-def copy_pipeline_instance(pi_uuid, dst_git_repo=None, dst_project=None, recursive=True, src=None, dst=None):
+def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, recursive=True):
     # Fetch the pipeline instance record.
     pi = src.pipeline_instances().get(uuid=pi_uuid).execute()
     pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
@@ -137,12 +137,12 @@ def copy_pipeline_instance(pi_uuid, dst_git_repo=None, dst_project=None, recursi
     if recursive:
         # Copy the pipeline template and save the copied template.
         pt = copy_pipeline_template(pi['pipeline_template_uuid'],
-                                    recursive=True,
-                                    src=src, dst=dst)
+                                    src, dst,
+                                    recursive=True)
 
         # Copy input collections, docker images and git repos.
         pi = copy_collections(pi, src, dst)
-        copy_git_repos(pi, dst_git_repo, src, dst)
+        copy_git_repos(pi, src, dst, dst_git_repo)
 
         # Update the fields of the pipeline instance with the copied
         # pipeline template.
@@ -161,7 +161,7 @@ def copy_pipeline_instance(pi_uuid, dst_git_repo=None, dst_project=None, recursi
     new_pi = dst.pipeline_instances().create(pipeline_instance=pi).execute()
     return new_pi
 
-# copy_pipeline_template(pt_uuid, recursive, src, dst)
+# copy_pipeline_template(pt_uuid, src, dst, recursive)
 #
 #    Copies a pipeline template identified by pt_uuid from src to dst.
 #
@@ -173,14 +173,14 @@ def copy_pipeline_instance(pi_uuid, dst_git_repo=None, dst_project=None, recursi
 #
 #    Returns the copied pipeline template object.
 #
-def copy_pipeline_template(pt_uuid, recursive=True, src=None, dst=None):
+def copy_pipeline_template(pt_uuid, src, dst, recursive=True):
     # fetch the pipeline template from the source instance
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute()
 
     if recursive:
         # Copy input collections, docker images and git repos.
         pt = copy_collections(pt, src, dst)
-        copy_git_repos(pt, dst_git_repo, src, dst)
+        copy_git_repos(pt, src, dst, dst_git_repo)
 
     pt['name'] = pt['name'] + ' copy'
     del pt['uuid']
@@ -209,7 +209,7 @@ def copy_collections(obj, src, dst):
         return [copy_collections(v, src, dst) for v in obj]
     return obj
 
-# copy_git_repos(p, dst_repo, src, dst)
+# copy_git_repos(p, src, dst, dst_repo)
 #
 #    Copies all git repositories referenced by pipeline instance or
 #    template 'p' from src to dst.
@@ -222,20 +222,20 @@ def copy_collections(obj, src, dst):
 #    The pipeline object is updated in place with the new repository
 #    names.  The return value is undefined.
 #
-def copy_git_repos(p, dst_repo, src=None, dst=None):
+def copy_git_repos(p, src, dst, dst_repo):
     copied = set()
     for c in p['components']:
         component = p['components'][c]
         if 'repository' in component:
             repo = component['repository']
             if repo not in copied:
-                copy_git_repo(repo, dst_repo, src, dst)
+                copy_git_repo(repo, src, dst, dst_repo)
                 copied.add(repo)
             component['repository'] = dst_repo
         if 'job' in component and 'repository' in component['job']:
             repo = component['job']['repository']
             if repo not in copied:
-                copy_git_repo(repo, dst_repo, src, dst)
+                copy_git_repo(repo, src, dst, dst_repo)
                 copied.add(repo)
             component['job']['repository'] = dst_repo
 
@@ -251,7 +251,7 @@ def copy_git_repos(p, dst_repo, src=None, dst=None):
 #    the manifest block, ensures that the collection's manifest
 #    hash will not change.
 #
-def copy_collection(obj_uuid, src=None, dst=None):
+def copy_collection(obj_uuid, src, dst):
     c = src.collections().get(uuid=obj_uuid).execute()
 
     # Check whether a collection with this hash already exists
@@ -294,7 +294,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
     dst_keep.put(manifest)
     return dst.collections().create(body={"manifest_text": manifest}).execute()
 
-# copy_git_repo(src_git_repo, dst_git_repo, src, dst)
+# copy_git_repo(src_git_repo, src, dst, dst_git_repo)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
 #    instance 'src' to 'dst_git_repo' on 'dst'.  Both src_git_repo
@@ -310,7 +310,7 @@ def copy_collection(obj_uuid, src=None, dst=None):
 #    The user running this command must be authenticated
 #    to both repositories.
 #
-def copy_git_repo(src_git_repo, dst_git_repo, src=None, dst=None):
+def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
     # Identify the fetch and push URLs for the git repositories.
     r = src.repositories().list(
         filters=[['name', '=', src_git_repo]]).execute()
