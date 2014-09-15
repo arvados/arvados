@@ -44,10 +44,11 @@ the entire collection with wget, try:</p>
 
 <h2>File Listing</h2>
 
-<% if @object.andand.files_tree.andand.any? %>
+<% file_tree = @object.andand.files_tree %>
+<% if file_tree.andand.any? %>
   <ul id="collection_files" class="collection_files">
-  <% dirstack = [@object.files_tree.first.first] %>
-  <% @object.files_tree.each_with_index do |(dirname, filename, size), index| %>
+  <% dirstack = [file_tree.first.first] %>
+  <% file_tree.take(10000).each_with_index do |(dirname, filename, size), index| %>
     <% file_path = CollectionsHelper::file_path([dirname, filename]) %>
     <% while dirstack.any? and (dirstack.last != dirname) %>
       <% dirstack.pop %></ul></li>

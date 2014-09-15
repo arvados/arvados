@@ -4,8 +4,8 @@
 
 import os
 import sys
-
 import llfuse
+from llfuse import FUSEError
 import errno
 import stat
 import threading
@@ -16,44 +16,106 @@ import re
 import apiclient
 import json
 import logging
+import time
+import calendar
+import threading
+from arvados.util import portable_data_hash_pattern, uuid_pattern, collection_uuid_pattern, group_uuid_pattern, user_uuid_pattern, link_uuid_pattern
 
 _logger = logging.getLogger('arvados.arvados_fuse')
 
-from time import time
-from llfuse import FUSEError
+class SafeApi(object):
+    '''Threadsafe wrapper for API object.  This stores and returns a different api
+    object per thread, because httplib2 which underlies apiclient is not
+    threadsafe.
+    '''
+
+    def __init__(self, config):
+        self.host = config.get('ARVADOS_API_HOST')
+        self.token = config.get('ARVADOS_API_TOKEN')
+        self.insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
+        self.local = threading.local()
+
+    def localapi(self):
+        if 'api' not in self.local.__dict__:
+            self.local.api = arvados.api('v1', False, self.host, self.token, self.insecure)
+        return self.local.api
+
+    def collections(self):
+        return self.localapi().collections()
+
+    def links(self):
+        return self.localapi().links()
+
+    def groups(self):
+        return self.localapi().groups()
+
+    def users(self):
+        return self.localapi().users()
+
+def convertTime(t):
+    '''Parse Arvados timestamp to unix time.'''
+    try:
+        return calendar.timegm(time.strptime(t, "%Y-%m-%dT%H:%M:%SZ"))
+    except (TypeError, ValueError):
+        return 0
+
+def sanitize_filename(dirty):
+    '''Remove troublesome characters from filenames.'''
+    # http://www.dwheeler.com/essays/fixing-unix-linux-filenames.html
+    if dirty is None:
+        return None
+
+    fn = ""
+    for c in dirty:
+        if (c >= '\x00' and c <= '\x1f') or c == '\x7f' or c == '/':
+            # skip control characters and /
+            continue
+        fn += c
+
+    # strip leading - or ~ and leading/trailing whitespace
+    stripped = fn.lstrip("-~ ").rstrip()
+    if len(stripped) > 0:
+        return stripped
+    else:
+        return None
+
 
 class FreshBase(object):
     '''Base class for maintaining fresh/stale state to determine when to update.'''
     def __init__(self):
         self._stale = True
         self._poll = False
-        self._last_update = time()
+        self._last_update = time.time()
+        self._atime = time.time()
         self._poll_time = 60
 
     # Mark the value as stale
     def invalidate(self):
         self._stale = True
 
-    # Test if the entries dict is stale
+    # Test if the entries dict is stale.
     def stale(self):
         if self._stale:
             return True
         if self._poll:
-            return (self._last_update + self._poll_time) < time()
+            return (self._last_update + self._poll_time) < self._atime
         return False
 
     def fresh(self):
         self._stale = False
-        self._last_update = time()
+        self._last_update = time.time()
 
+    def atime(self):
+        return self._atime
 
 class File(FreshBase):
     '''Base for file objects.'''
 
-    def __init__(self, parent_inode):
+    def __init__(self, parent_inode, _mtime=0):
         super(File, self).__init__()
         self.inode = None
         self.parent_inode = parent_inode
+        self._mtime = _mtime
 
     def size(self):
         return 0
@@ -61,12 +123,15 @@ class File(FreshBase):
     def readfrom(self, off, size):
         return ''
 
+    def mtime(self):
+        return self._mtime
+
 
 class StreamReaderFile(File):
     '''Wraps a StreamFileReader as a file.'''
 
-    def __init__(self, parent_inode, reader):
-        super(StreamReaderFile, self).__init__(parent_inode)
+    def __init__(self, parent_inode, reader, _mtime):
+        super(StreamReaderFile, self).__init__(parent_inode, _mtime)
         self.reader = reader
 
     def size(self):
@@ -79,20 +144,30 @@ class StreamReaderFile(File):
         return False
 
 
-class ObjectFile(File):
-    '''Wraps a dict as a serialized json object.'''
-
-    def __init__(self, parent_inode, contents):
-        super(ObjectFile, self).__init__(parent_inode)
-        self.contentsdict = contents
-        self.uuid = self.contentsdict['uuid']
-        self.contents = json.dumps(self.contentsdict, indent=4, sort_keys=True)
+class StringFile(File):
+    '''Wrap a simple string as a file'''
+    def __init__(self, parent_inode, contents, _mtime):
+        super(StringFile, self).__init__(parent_inode, _mtime)
+        self.contents = contents
 
     def size(self):
         return len(self.contents)
 
     def readfrom(self, off, size):
         return self.contents[off:(off+size)]
+
+
+class ObjectFile(StringFile):
+    '''Wrap a dict as a serialized json object.'''
+
+    def __init__(self, parent_inode, obj):
+        super(ObjectFile, self).__init__(parent_inode, "", 0)
+        self.uuid = obj['uuid']
+        self.update(obj)
+
+    def update(self, obj):
+        self._mtime = convertTime(obj['modified_at']) if 'modified_at' in obj else 0
+        self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
 
 
 class Directory(FreshBase):
@@ -110,6 +185,7 @@ class Directory(FreshBase):
             raise Exception("parent_inode should be an int")
         self.parent_inode = parent_inode
         self._entries = {}
+        self._mtime = time.time()
 
     #  Overriden by subclasses to implement logic to update the entries dict
     #  when the directory is stale
@@ -145,63 +221,153 @@ class Directory(FreshBase):
         return k in self._entries
 
     def merge(self, items, fn, same, new_entry):
-        '''Helper method for updating the contents of the directory.
+        '''Helper method for updating the contents of the directory.  Takes a list
+        describing the new contents of the directory, reuse entries that are
+        the same in both the old and new lists, create new entries, and delete
+        old entries missing from the new list.
 
-        items: array with new directory contents
+        items: iterable with new directory contents
 
         fn: function to take an entry in 'items' and return the desired file or
-        directory name
+        directory name, or None if this entry should be skipped
 
-        same: function to compare an existing entry with an entry in the items
-        list to determine whether to keep the existing entry.
+        same: function to compare an existing entry (a File or Directory
+        object) with an entry in the items list to determine whether to keep
+        the existing entry.
 
-        new_entry: function to create a new directory entry from array entry.
+        new_entry: function to create a new directory entry (File or Directory
+        object) from an entry in the items list.
+
         '''
 
         oldentries = self._entries
         self._entries = {}
+        changed = False
         for i in items:
-            n = fn(i)
-            if n in oldentries and same(oldentries[n], i):
-                self._entries[n] = oldentries[n]
-                del oldentries[n]
-            else:
-                self._entries[n] = self.inodes.add_entry(new_entry(i))
+            name = sanitize_filename(fn(i))
+            if name:
+                if name in oldentries and same(oldentries[name], i):
+                    # move existing directory entry over
+                    self._entries[name] = oldentries[name]
+                    del oldentries[name]
+                else:
+                    # create new directory entry
+                    ent = new_entry(i)
+                    if ent is not None:
+                        self._entries[name] = self.inodes.add_entry(ent)
+                        changed = True
+
+        # delete any other directory entries that were not in found in 'items'
+        for i in oldentries:
+            llfuse.invalidate_entry(self.inode, str(i))
+            self.inodes.del_entry(oldentries[i])
+            changed = True
+
+        if changed:
+            self._mtime = time.time()
+
+        self.fresh()
+
+    def clear(self):
+        '''Delete all entries'''
+        oldentries = self._entries
+        self._entries = {}
         for n in oldentries:
+            if isinstance(n, Directory):
+                n.clear()
             llfuse.invalidate_entry(self.inode, str(n))
             self.inodes.del_entry(oldentries[n])
-        self.fresh()
+        self.invalidate()
+
+    def mtime(self):
+        return self._mtime
 
 
 class CollectionDirectory(Directory):
     '''Represents the root of a directory tree holding a collection.'''
 
-    def __init__(self, parent_inode, inodes, collection_locator):
+    def __init__(self, parent_inode, inodes, api, collection):
         super(CollectionDirectory, self).__init__(parent_inode)
         self.inodes = inodes
-        self.collection_locator = collection_locator
+        self.api = api
+        self.collection_object_file = None
+        self.collection_object = None
+        if isinstance(collection, dict):
+            self.collection_locator = collection['uuid']
+        else:
+            self.collection_locator = collection
 
     def same(self, i):
         return i['uuid'] == self.collection_locator or i['portable_data_hash'] == self.collection_locator
 
+    def new_collection(self, new_collection_object):
+        self.collection_object = new_collection_object
+
+        if self.collection_object_file is not None:
+            self.collection_object_file.update(self.collection_object)
+
+        self.clear()
+        collection = arvados.CollectionReader(self.collection_object["manifest_text"], self.api)
+        for s in collection.all_streams():
+            cwd = self
+            for part in s.name().split('/'):
+                if part != '' and part != '.':
+                    partname = sanitize_filename(part)
+                    if partname not in cwd._entries:
+                        cwd._entries[partname] = self.inodes.add_entry(Directory(cwd.inode))
+                    cwd = cwd._entries[partname]
+            for k, v in s.files().items():
+                cwd._entries[sanitize_filename(k)] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v, self.mtime()))
+
     def update(self):
         try:
-            collection = arvados.CollectionReader(self.collection_locator)
-            for s in collection.all_streams():
-                cwd = self
-                for part in s.name().split('/'):
-                    if part != '' and part != '.':
-                        if part not in cwd._entries:
-                            cwd._entries[part] = self.inodes.add_entry(Directory(cwd.inode))
-                        cwd = cwd._entries[part]
-                for k, v in s.files().items():
-                    cwd._entries[k] = self.inodes.add_entry(StreamReaderFile(cwd.inode, v))
+            if self.collection_object is not None and portable_data_hash_pattern.match(self.collection_locator):
+                return True
+
+            with llfuse.lock_released:
+                new_collection_object = self.api.collections().get(uuid=self.collection_locator).execute()
+                if "portable_data_hash" not in new_collection_object:
+                    new_collection_object["portable_data_hash"] = new_collection_object["uuid"]
+            # end with llfuse.lock_released, re-acquire lock
+
+            if self.collection_object is None or self.collection_object["portable_data_hash"] != new_collection_object["portable_data_hash"]:
+                self.new_collection(new_collection_object)
+
             self.fresh()
             return True
+        except apiclient.errors.HttpError as e:
+            if e.resp.status == 404:
+                _logger.warn("arv-mount %s: not found", self.collection_locator)
+            else:
+                _logger.error("arv-mount %s: error", self.collection_locator)
+                _logger.exception(detail)
         except Exception as detail:
-            _logger.debug("arv-mount %s: error: %s",
-                          self.collection_locator, detail)
-            return False
+            _logger.error("arv-mount %s: error", self.collection_locator)
+            if self.collection_object is not None and "manifest_text" in self.collection_object:
+                _logger.error("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
+            _logger.exception(detail)
+        return False
+
+    def __getitem__(self, item):
+        self.checkupdate()
+        if item == '.arvados#collection':
+            if self.collection_object_file is None:
+                self.collection_object_file = ObjectFile(self.inode, self.collection_object)
+                self.inodes.add_entry(self.collection_object_file)
+            return self.collection_object_file
+        else:
+            return super(CollectionDirectory, self).__getitem__(item)
+
+    def __contains__(self, k):
+        if k == '.arvados#collection':
+            return True
+        else:
+            return super(CollectionDirectory, self).__contains__(k)
+
+    def mtime(self):
+        self.checkupdate()
+        return convertTime(self.collection_object["modified_at"]) if self.collection_object is not None and 'modified_at' in self.collection_object else 0
+
 
 class MagicDirectory(Directory):
     '''A special directory that logically contains the set of all extant keep
@@ -213,15 +379,39 @@ class MagicDirectory(Directory):
     to readdir().
     '''
 
-    def __init__(self, parent_inode, inodes):
+    def __init__(self, parent_inode, inodes, api):
         super(MagicDirectory, self).__init__(parent_inode)
         self.inodes = inodes
+        self.api = api
+        # Have to defer creating readme_file because at this point we don't
+        # yet have an inode assigned.
+        self.readme_file = None
+
+    def create_readme(self):
+        if self.readme_file is None:
+            text = '''This directory provides access to Arvados collections as subdirectories listed
+by uuid (in the form 'zzzzz-4zz18-1234567890abcde') or portable data hash (in
+the form '1234567890abcdefghijklmnopqrstuv+123').
+
+Note that this directory will appear empty until you attempt to access a
+specific collection subdirectory (such as trying to 'cd' into it), at which
+point the collection will actually be looked up on the server and the directory
+will appear if it exists.
+'''
+            self.readme_file = self.inodes.add_entry(StringFile(self.inode, text, time.time()))
+            self._entries["README"] = self.readme_file
 
     def __contains__(self, k):
+        self.create_readme()
+
         if k in self._entries:
             return True
+
+        if not portable_data_hash_pattern.match(k) and not uuid_pattern.match(k):
+            return False
+
         try:
-            e = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, k))
+            e = self.inodes.add_entry(CollectionDirectory(self.inode, self.inodes, self.api, k))
             if e.update():
                 self._entries[k] = e
                 return True
@@ -231,38 +421,51 @@ class MagicDirectory(Directory):
             _logger.debug('arv-mount exception keep %s', e)
             return False
 
+    def items(self):
+        self.create_readme()
+        return self._entries.items()
+
     def __getitem__(self, item):
         if item in self:
             return self._entries[item]
         else:
             raise KeyError("No collection with id " + item)
 
-class TagsDirectory(Directory):
+
+class RecursiveInvalidateDirectory(Directory):
+    def invalidate(self):
+        if self.inode == llfuse.ROOT_INODE:
+            llfuse.lock.acquire()
+        try:
+            super(RecursiveInvalidateDirectory, self).invalidate()
+            for a in self._entries:
+                self._entries[a].invalidate()
+        except Exception as e:
+            _logger.exception(e)
+        finally:
+            if self.inode == llfuse.ROOT_INODE:
+                llfuse.lock.release()
+
+
+class TagsDirectory(RecursiveInvalidateDirectory):
     '''A special directory that contains as subdirectories all tags visible to the user.'''
 
     def __init__(self, parent_inode, inodes, api, poll_time=60):
         super(TagsDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
-        try:
-            arvados.events.subscribe(self.api, [['object_uuid', 'is_a', 'arvados#link']], lambda ev: self.invalidate())
-        except:
-            self._poll = True
-            self._poll_time = poll_time
-
-    def invalidate(self):
-        with llfuse.lock:
-            super(TagsDirectory, self).invalidate()
-            for a in self._entries:
-                self._entries[a].invalidate()
+        self._poll = True
+        self._poll_time = poll_time
 
     def update(self):
-        tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = True).execute()
+        with llfuse.lock_released:
+            tags = self.api.links().list(filters=[['link_class', '=', 'tag']], select=['name'], distinct = True).execute()
         if "items" in tags:
             self.merge(tags['items'],
-                       lambda i: i['name'],
+                       lambda i: i['name'] if 'name' in i else i['uuid'],
                        lambda a, i: a.tag == i,
                        lambda i: TagDirectory(self.inode, self.inodes, self.api, i['name'], poll=self._poll, poll_time=self._poll_time))
+
 
 class TagDirectory(Directory):
     '''A special directory that contains as subdirectories all collections visible
@@ -278,95 +481,162 @@ class TagDirectory(Directory):
         self._poll_time = poll_time
 
     def update(self):
-        taggedcollections = self.api.links().list(filters=[['link_class', '=', 'tag'],
-                                               ['name', '=', self.tag],
-                                               ['head_uuid', 'is_a', 'arvados#collection']],
-                                      select=['head_uuid']).execute()
+        with llfuse.lock_released:
+            taggedcollections = self.api.links().list(filters=[['link_class', '=', 'tag'],
+                                                   ['name', '=', self.tag],
+                                                   ['head_uuid', 'is_a', 'arvados#collection']],
+                                          select=['head_uuid']).execute()
         self.merge(taggedcollections['items'],
                    lambda i: i['head_uuid'],
                    lambda a, i: a.collection_locator == i['head_uuid'],
-                   lambda i: CollectionDirectory(self.inode, self.inodes, i['head_uuid']))
+                   lambda i: CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid']))
 
 
-class GroupsDirectory(Directory):
-    '''A special directory that contains as subdirectories all groups visible to the user.'''
+class ProjectDirectory(Directory):
+    '''A special directory that contains the contents of a project.'''
 
-    def __init__(self, parent_inode, inodes, api, poll_time=60):
-        super(GroupsDirectory, self).__init__(parent_inode)
+    def __init__(self, parent_inode, inodes, api, project_object, poll=False, poll_time=60):
+        super(ProjectDirectory, self).__init__(parent_inode)
         self.inodes = inodes
         self.api = api
-        try:
-            arvados.events.subscribe(self.api, [], lambda ev: self.invalidate())
-        except:
-            self._poll = True
-            self._poll_time = poll_time
-
-    def invalidate(self):
-        with llfuse.lock:
-            super(GroupsDirectory, self).invalidate()
-            for a in self._entries:
-                self._entries[a].invalidate()
-
-    def update(self):
-        groups = self.api.groups().list(
-            filters=[['group_class','=','project']]).execute()
-        self.merge(groups['items'],
-                   lambda i: i['uuid'],
-                   lambda a, i: a.uuid == i['uuid'],
-                   lambda i: GroupDirectory(self.inode, self.inodes, self.api, i, poll=self._poll, poll_time=self._poll_time))
-
-
-class GroupDirectory(Directory):
-    '''A special directory that contains the contents of a group.'''
-
-    def __init__(self, parent_inode, inodes, api, uuid, poll=False, poll_time=60):
-        super(GroupDirectory, self).__init__(parent_inode)
-        self.inodes = inodes
-        self.api = api
-        self.uuid = uuid['uuid']
-        self._poll = poll
-        self._poll_time = poll_time
-
-    def invalidate(self):
-        with llfuse.lock:
-            super(GroupDirectory, self).invalidate()
-            for a in self._entries:
-                self._entries[a].invalidate()
+        self.project_object = project_object
+        self.project_object_file = None
+        self.uuid = project_object['uuid']
 
     def createDirectory(self, i):
-        if re.match(r'[0-9a-f]{32}\+\d+', i['uuid']):
-            return CollectionDirectory(self.inode, self.inodes, i['uuid'])
-        elif re.match(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}', i['uuid']):
-            return GroupDirectory(self.parent_inode, self.inodes, self.api, i, self._poll, self._poll_time)
-        elif re.match(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}', i['uuid']):
+        if collection_uuid_pattern.match(i['uuid']):
+            return CollectionDirectory(self.inode, self.inodes, self.api, i)
+        elif group_uuid_pattern.match(i['uuid']):
+            return ProjectDirectory(self.inode, self.inodes, self.api, i, self._poll, self._poll_time)
+        elif link_uuid_pattern.match(i['uuid']):
+            if i['head_kind'] == 'arvados#collection' or portable_data_hash_pattern.match(i['head_uuid']):
+                return CollectionDirectory(self.inode, self.inodes, self.api, i['head_uuid'])
+            else:
+                return None
+        elif uuid_pattern.match(i['uuid']):
             return ObjectFile(self.parent_inode, i)
-        return None
+        else:
+            return None
 
     def update(self):
-        contents = self.api.groups().contents(uuid=self.uuid, include_linked=True).execute()
-        links = {}
-        for a in contents['links']:
-            links[a['head_uuid']] = a['name']
+        if self.project_object_file == None:
+            self.project_object_file = ObjectFile(self.inode, self.project_object)
+            self.inodes.add_entry(self.project_object_file)
 
-        def choose_name(i):
-            if i['uuid'] in links:
-                return links[i['uuid']]
+        def namefn(i):
+            if 'name' in i:
+                if i['name'] is None or len(i['name']) == 0:
+                    return None
+                elif collection_uuid_pattern.match(i['uuid']) or group_uuid_pattern.match(i['uuid']):
+                    # collection or subproject
+                    return i['name']
+                elif link_uuid_pattern.match(i['uuid']) and i['head_kind'] == 'arvados#collection':
+                    # name link
+                    return i['name']
+                elif 'kind' in i and i['kind'].startswith('arvados#'):
+                    # something else
+                    return "{}.{}".format(i['name'], i['kind'][8:])
             else:
-                return i['uuid']
+                return None
 
-        def same(a, i):
+        def samefn(a, i):
             if isinstance(a, CollectionDirectory):
                 return a.collection_locator == i['uuid']
-            elif isinstance(a, GroupDirectory):
+            elif isinstance(a, ProjectDirectory):
                 return a.uuid == i['uuid']
             elif isinstance(a, ObjectFile):
                 return a.uuid == i['uuid'] and not a.stale()
             return False
 
-        self.merge(contents['items'],
-                   choose_name,
-                   same,
+        with llfuse.lock_released:
+            if group_uuid_pattern.match(self.uuid):
+                self.project_object = self.api.groups().get(uuid=self.uuid).execute()
+            elif user_uuid_pattern.match(self.uuid):
+                self.project_object = self.api.users().get(uuid=self.uuid).execute()
+
+            contents = arvados.util.list_all(self.api.groups().contents, uuid=self.uuid)
+            # Name links will be obsolete soon, take this out when there are no more pre-#3036 in use.
+            contents += arvados.util.list_all(self.api.links().list, filters=[['tail_uuid', '=', self.uuid], ['link_class', '=', 'name']])
+
+        # end with llfuse.lock_released, re-acquire lock
+
+        self.merge(contents,
+                   namefn,
+                   samefn,
                    self.createDirectory)
+
+    def __getitem__(self, item):
+        self.checkupdate()
+        if item == '.arvados#project':
+            return self.project_object_file
+        else:
+            return super(ProjectDirectory, self).__getitem__(item)
+
+    def __contains__(self, k):
+        if k == '.arvados#project':
+            return True
+        else:
+            return super(ProjectDirectory, self).__contains__(k)
+
+
+class SharedDirectory(Directory):
+    '''A special directory that represents users or groups who have shared projects with me.'''
+
+    def __init__(self, parent_inode, inodes, api, exclude, poll=False, poll_time=60):
+        super(SharedDirectory, self).__init__(parent_inode)
+        self.current_user = api.users().current().execute()
+        self.inodes = inodes
+        self.api = api
+        self._poll = True
+        self._poll_time = poll_time
+
+    def update(self):
+        with llfuse.lock_released:
+            all_projects = arvados.util.list_all(self.api.groups().list, filters=[['group_class','=','project']])
+            objects = {}
+            for ob in all_projects:
+                objects[ob['uuid']] = ob
+
+            roots = []
+            root_owners = {}
+            for ob in all_projects:
+                if ob['owner_uuid'] != self.current_user['uuid'] and ob['owner_uuid'] not in objects:
+                    roots.append(ob)
+                    root_owners[ob['owner_uuid']] = True
+
+            lusers = arvados.util.list_all(self.api.users().list, filters=[['uuid','in', list(root_owners)]])
+            lgroups = arvados.util.list_all(self.api.groups().list, filters=[['uuid','in', list(root_owners)]])
+
+            users = {}
+            groups = {}
+
+            for l in lusers:
+                objects[l["uuid"]] = l
+            for l in lgroups:
+                objects[l["uuid"]] = l
+
+            contents = {}
+            for r in root_owners:
+                if r in objects:
+                    obr = objects[r]
+                    if "name" in obr:
+                        contents[obr["name"]] = obr
+                    if "first_name" in obr:
+                        contents[u"{} {}".format(obr["first_name"], obr["last_name"])] = obr
+
+            for r in roots:
+                if r['owner_uuid'] not in objects:
+                    contents[r['name']] = r
+
+        # end with llfuse.lock_released, re-acquire lock
+
+        try:
+            self.merge(contents.items(),
+                       lambda i: i[0],
+                       lambda a, i: a.uuid == i[1]['uuid'],
+                       lambda i: ProjectDirectory(self.inode, self.inodes, self.api, i[1], poll=self._poll, poll_time=self._poll_time))
+        except Exception as e:
+            _logger.exception(e)
 
 
 class FileHandle(object):
@@ -418,7 +688,7 @@ class Operations(llfuse.Operations):
 
     llfuse has its own global lock which is acquired before calling a request handler,
     so request handlers do not run concurrently unless the lock is explicitly released
-    with llfuse.lock_released.'''
+    using "with llfuse.lock_released:"'''
 
     def __init__(self, uid, gid):
         super(Operations, self).__init__()
@@ -468,13 +738,11 @@ class Operations(llfuse.Operations):
 
         entry.st_size = e.size()
 
-        entry.st_blksize = 1024
-        entry.st_blocks = e.size()/1024
-        if e.size()/1024 != 0:
-            entry.st_blocks += 1
-        entry.st_atime = 0
-        entry.st_mtime = 0
-        entry.st_ctime = 0
+        entry.st_blksize = 512
+        entry.st_blocks = (e.size()/512)+1
+        entry.st_atime = int(e.atime())
+        entry.st_mtime = int(e.mtime())
+        entry.st_ctime = int(e.mtime())
 
         return entry
 
@@ -490,7 +758,7 @@ class Operations(llfuse.Operations):
                 p = self.inodes[parent_inode]
                 if name == '..':
                     inode = p.parent_inode
-                elif name in p:
+                elif isinstance(p, Directory) and name in p:
                     inode = p[name].inode
 
         if inode != None:
@@ -522,6 +790,9 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.EBADF)
 
+        # update atime
+        handle.entry._atime = time.time()
+
         try:
             with llfuse.lock_released:
                 return handle.entry.readfrom(off, size)
@@ -550,6 +821,9 @@ class Operations(llfuse.Operations):
         else:
             raise llfuse.FUSEError(errno.EIO)
 
+        # update atime
+        p._atime = time.time()
+
         self._filehandles[fh] = FileHandle(fh, [('.', p), ('..', parent)] + list(p.items()))
         return fh
 
@@ -574,7 +848,7 @@ class Operations(llfuse.Operations):
 
     def statfs(self):
         st = llfuse.StatvfsData()
-        st.f_bsize = 1024 * 1024
+        st.f_bsize = 64 * 1024
         st.f_blocks = 0
         st.f_files = 0
 

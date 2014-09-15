@@ -167,7 +167,9 @@ class ArvadosBase < ActiveRecord::Base
   def save
     obdata = {}
     self.class.columns.each do |col|
-      obdata[col.name.to_sym] = self.send(col.name.to_sym)
+      unless self.send(col.name.to_sym).nil? and !self.changed.include?(col.name)
+          obdata[col.name.to_sym] = self.send(col.name.to_sym)
+      end
     end
     obdata.delete :id
     postdata = { self.class.to_s.underscore => obdata }

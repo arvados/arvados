@@ -1,3 +1,5 @@
+require 'arvados/keep'
+
 class Collection < ArvadosModel
   include HasUuid
   include KindAndEtag
@@ -9,19 +11,11 @@ class Collection < ArvadosModel
   validate :ensure_hash_matches_manifest_text
 
   api_accessible :user, extend: :common do |t|
-    t.add :data_size
-    t.add :files
     t.add :name
     t.add :description
     t.add :properties
     t.add :portable_data_hash
     t.add :manifest_text
-  end
-
-  def self.attributes_required_columns
-    super.merge({ "data_size" => ["manifest_text"],
-                  "files" => ["manifest_text"],
-                })
   end
 
   def check_signatures
@@ -48,7 +42,7 @@ class Collection < ArvadosModel
             # filenames. Safety first!
           elsif Blob.verify_signature tok, signing_opts
             # OK.
-          elsif Locator.parse(tok).andand.signature
+          elsif Keep::Locator.parse(tok).andand.signature
             # Signature provided, but verify_signature did not like it.
             logger.warn "Invalid signature on locator #{tok}"
             raise ArvadosModel::PermissionDeniedError
@@ -82,7 +76,7 @@ class Collection < ArvadosModel
       self.portable_data_hash = "#{Digest::MD5.hexdigest(manifest_text)}+#{manifest_text.length}"
     elsif portable_data_hash_changed?
       begin
-        loc = Locator.parse!(self.portable_data_hash)
+        loc = Keep::Locator.parse!(self.portable_data_hash)
         loc.strip_hints!
         if loc.size
           self.portable_data_hash = loc.to_s
@@ -125,81 +119,11 @@ class Collection < ArvadosModel
     end
   end
 
-  def data_size
-    inspect_manifest_text if @data_size.nil? or manifest_text_changed?
-    @data_size
-  end
-
-  def files
-    inspect_manifest_text if @files.nil? or manifest_text_changed?
-    @files
-  end
-
-  def inspect_manifest_text
-    if !manifest_text
-      @data_size = false
-      @files = []
-      return
-    end
-
-    @data_size = 0
-    tmp = {}
-
-    manifest_text.split("\n").each do |stream|
-      toks = stream.split(" ")
-
-      stream = toks[0].gsub /\\(\\|[0-7]{3})/ do |escape_sequence|
-        case $1
-        when '\\' '\\'
-        else $1.to_i(8).chr
-        end
-      end
-
-      toks[1..-1].each do |tok|
-        if (re = tok.match /^[0-9a-f]{32}/)
-          blocksize = nil
-          tok.split('+')[1..-1].each do |hint|
-            if !blocksize and hint.match /^\d+$/
-              blocksize = hint.to_i
-            end
-            if (re = hint.match /^GS(\d+)$/)
-              blocksize = re[1].to_i
-            end
-          end
-          @data_size = false if !blocksize
-          @data_size += blocksize if @data_size
-        else
-          if (re = tok.match /^(\d+):(\d+):(\S+)$/)
-            filename = re[3].gsub /\\(\\|[0-7]{3})/ do |escape_sequence|
-              case $1
-              when '\\' '\\'
-              else $1.to_i(8).chr
-              end
-            end
-            fn = stream + '/' + filename
-            i = re[2].to_i
-            if tmp[fn]
-              tmp[fn] += i
-            else
-              tmp[fn] = i
-            end
-          end
-        end
-      end
-    end
-
-    @files = []
-    tmp.each do |k, v|
-      re = k.match(/^(.+)\/(.+)/)
-      @files << [re[1], re[2], v]
-    end
-  end
-
   def self.munge_manifest_locators(manifest)
     # Given a manifest text and a block, yield each locator,
     # and replace it with whatever the block returns.
     manifest.andand.gsub!(/ [[:xdigit:]]{32}(\+[[:digit:]]+)?(\+\S+)/) do |word|
-      if loc = Locator.parse(word.strip)
+      if loc = Keep::Locator.parse(word.strip)
         " " + yield(loc)
       else
         " " + word
@@ -234,12 +158,17 @@ class Collection < ArvadosModel
 
     # If the search term is a Collection locator that contains one file
     # that looks like a Docker image, return it.
-    if loc = Locator.parse(search_term)
+    if loc = Keep::Locator.parse(search_term)
       loc.strip_hints!
       coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
-      if coll_match and (coll_match.files.size == 1) and
-          (coll_match.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
-        return [coll_match]
+      if coll_match
+        # Check if the Collection contains exactly one file whose name
+        # looks like a saved Docker image.
+        manifest = Keep::Manifest.new(coll_match.manifest_text)
+        if manifest.exact_file_count?(1) and
+            (manifest.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
+          return [coll_match]
+        end
       end
     end
 

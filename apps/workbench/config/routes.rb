@@ -70,7 +70,6 @@ ArvadosWorkbench::Application.routes.draw do
   resources :projects do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
     match 'remove_items', on: :member, via: :delete, action: :remove_items
-    get 'move_items', on: :member, action: :move_items
     get 'choose', on: :collection
     post 'share_with', on: :member
   end
@@ -81,6 +80,7 @@ ArvadosWorkbench::Application.routes.draw do
   post 'actions' => 'actions#post'
   get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'
+  post "combine_selected" => 'actions#combine_selected_files_into_collection'
 
   root :to => 'projects#index'
 
