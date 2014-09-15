@@ -1,62 +1,12 @@
 <div>
-  <div class="row">
-    <div class="col-sm-6">
-      <% if my_projects.empty? %>
-        <div class="panel panel-info">
-          <div class="panel-heading">
-            <h3 class="panel-title">
-              Welcome to <b><%= Rails.configuration.site_name %></b>.
-            </h3>
-          </div>
-          <div class="panel-body">
-            <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
-            <p>
-              This site runs Arvados, the open source biomedical analysis platform. <a href="https://arvados.org" target="_blank">Learn more&hellip;</a>
-            </p>
-            <p>
-              <b>To get started,</b> create a project using the "Add new project" button below.
-            </p>
-          </div>
-        </div>
-      <% end %>
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <div class="pull-right">
-            <%= button_to projects_path(method: 'post'), class: 'btn btn-xs btn-primary' do %>
-              <i class="fa fa-fw fa-plus"></i>
-              Add new project
-            <% end %>
-          </div>
-          <h3 class="panel-title">
-            My projects
-          </h3>
-        </div>
-        <div class="panel-body scroll-20em">
-          <%= render partial: 'index_projects', locals: {tree: my_project_tree, show_root_node: true} %>
-        </div>
-      </div>
-    </div>
-    <div class="col-sm-6">
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <h3 class="panel-title">
-            Projects shared with me
-          </h3>
-        </div>
-        <div class="panel-body scroll-20em">
-          <%= render partial: 'index_projects', locals: {tree: shared_project_tree, show_root_node: false} %>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <%= render partial: 'compute_node_status' %>
 
   <div class="row">
-    <div class="col-md-3">
+    <div class="col-md-6">
       <div class="panel panel-default">
         <div class="panel-heading">Pipelines running</div>
-        <div class="panel-body">
+        <div class="panel-body" style="overflow-x: scroll;">
           <% running_pipelines.each do |p| %>
             <div>
             <%= link_to_if_arvados_object p, friendly_name: true %>
@@ -67,11 +17,10 @@
           <% end %>
         </div>
       </div>
-    </div>
-    <div class="col-md-4">
+
       <div class="panel panel-default">
         <div class="panel-heading">Recently finished pipelines</div>
-        <div class="panel-body">
+        <div class="panel-body" style="overflow-x: scroll;">
           <% finished_pipelines(8).each do |p| %>
             <div>
               <%= link_to_if_arvados_object p, friendly_name: true %>
@@ -80,7 +29,7 @@
         </div>
       </div>
     </div>
-    <div class="col-md-5">
+    <div class="col-md-6">
       <div class="panel panel-default">
         <div class="panel-heading">Recent collections</div>
         <div class="panel-body" style="overflow-x: scroll;">
@@ -90,8 +39,7 @@
               <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object r[:owners][p[:owner_uuid]], friendly_name: true %>/
               <span class="pull-right"><%= p[:modified_at] %></span>
             </div>
-            <div style="margin-left: 1em">
-              <i class="fa fa-fw fa-archive"></i><%= link_to_if_arvados_object p, friendly_name: true %>
+            <div style="margin-left: 1em"><%= link_to_if_arvados_object p, friendly_name: true %>
             </div>
           <% end %>
         </div>
