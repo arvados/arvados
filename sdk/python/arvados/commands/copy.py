@@ -163,6 +163,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
     # Create the new pipeline instance at the destination Arvados.
     pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
     del pi['uuid']
+    pi['ensure_unique_name'] = True
     new_pi = dst.pipeline_instances().create(body=pi).execute()
     return new_pi
 
@@ -188,6 +189,7 @@ def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True):
         copy_git_repos(pt, src, dst, dst_git_repo)
 
     pt['name'] = pt['name'] + ' copy'
+    pt['ensure_unique_name'] = True
     del pt['uuid']
     del pt['owner_uuid']
 
