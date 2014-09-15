@@ -211,14 +211,16 @@ def copy_collections(obj, src, dst):
 
 # copy_git_repos(p, dst_repo, src, dst)
 #
-#    Copy all git repositories referenced by pipeline instance or
+#    Copies all git repositories referenced by pipeline instance or
 #    template 'p' from src to dst.
 #
-#    p is updated 
 #    Git repository dependencies are identified by:
 #      * p['components'][c]['repository']
 #      * p['components'][c]['job']['repository']
 #    for each component c in the pipeline.
+#
+#    The pipeline object is updated in place with the new repository
+#    names.  The return value is undefined.
 #
 def copy_git_repos(p, dst_repo, src=None, dst=None):
     copied = set()
@@ -236,11 +238,10 @@ def copy_git_repos(p, dst_repo, src=None, dst=None):
                 copy_git_repo(repo, dst_repo, src, dst)
                 copied.add(repo)
             component['job']['repository'] = dst_repo
-    return repos
 
 # copy_collection(obj_uuid, src, dst)
 #
-#    Copy the collection identified by obj_uuid from src to dst.
+#    Copies the collection identified by obj_uuid from src to dst.
 #    Returns the collection object created at dst.
 #
 #    For this application, it is critical to preserve the
@@ -296,9 +297,12 @@ def copy_collection(obj_uuid, src=None, dst=None):
 # copy_git_repo(src_git_repo, dst_git_repo, src, dst)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
-#    instance 'src' to 'dst_git_repo' on 'dst'.  All commits will be
-#    copied to a destination branch named for the source repository
-#    URL.
+#    instance 'src' to 'dst_git_repo' on 'dst'.  Both src_git_repo
+#    and dst_git_repo are repository names, not UUIDs (i.e. "arvados"
+#    or "jsmith")
+#
+#    All commits will be copied to a destination branch named for the
+#    source repository URL.
 #
 #    Because users cannot create their own repositories, the
 #    destination repository must already exist.
