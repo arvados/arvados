@@ -49,7 +49,7 @@
         <%= render_editable_attribute ob, 'name' %>
       </td><td>
         <% if ob.respond_to?(:description) and ob.description %>
-          <%= ob.description %>
+          <%= render_attribute_as_textile(ob, "description", ob.description, false) %>
           <br />
         <% end %>
         <% ob.components.collect { |k,v| k.to_s }.each do |k| %>
