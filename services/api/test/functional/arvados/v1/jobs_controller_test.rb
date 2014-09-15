@@ -18,6 +18,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     new_job = JSON.parse(@response.body)
     assert_not_nil new_job['uuid']
     assert_not_nil new_job['script_version'].match(/^[0-9a-f]{40}$/)
+    assert_equal 0, new_job['priority']
   end
 
   test "normalize output and log uuids when creating job" do

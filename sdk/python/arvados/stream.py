@@ -134,8 +134,11 @@ class StreamFileReader(object):
             return ''
 
         data = ''
-        for locator, blocksize, segmentoffset, segmentsize in locators_and_ranges(self.segments, self._filepos, size):
-            data += self._stream.readfrom(locator+segmentoffset, segmentsize)
+        available_chunks = locators_and_ranges(self.segments, self._filepos, size)
+        if available_chunks:
+            locator, blocksize, segmentoffset, segmentsize = available_chunks[0]
+            data = self._stream.readfrom(locator+segmentoffset, segmentsize)
+
         self._filepos += len(data)
         return data
 

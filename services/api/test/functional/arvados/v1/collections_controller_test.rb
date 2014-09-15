@@ -26,31 +26,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
            "basic Collections index included manifest_text")
   end
 
-  test "can get non-database fields via index select" do
-    authorize_with :active
-    get(:index, filters: [["uuid", "=", collections(:foo_file).uuid]],
-        select: %w(uuid owner_uuid files))
-    assert_response :success
-    assert_equal(1, json_response["items"].andand.size,
-                 "wrong number of items returned for index")
-    assert_equal([[".", "foo", 3]], json_response["items"].first["files"],
-                 "wrong file list in index result")
-  end
-
-  test "can select only non-database fields for index" do
-    authorize_with :active
-    get(:index, select: %w(data_size files))
-    assert_response :success
-    assert(json_response["items"].andand.any?, "no items found in index")
-    json_response["items"].each do |coll|
-      assert_equal(coll["data_size"],
-                   coll["files"].inject(0) { |size, fspec| size + fspec.last },
-                   "mismatch between data size and file list")
-    end
-  end
-
   test "index with manifest_text selected returns signed locators" do
-    columns = %w(uuid owner_uuid data_size files manifest_text)
+    columns = %w(uuid owner_uuid manifest_text)
     authorize_with :active
     get :index, select: columns
     assert_response :success
@@ -139,29 +116,6 @@ EOS
     # Remove any permission hints in the response before comparing it to the source.
     stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
     assert_equal test_collection[:manifest_text], stripped_manifest
-    assert_equal 9, resp['data_size']
-    assert_equal [['.', 'foo.txt', 0],
-                  ['.', 'bar.txt', 6],
-                  ['./baz', 'bar.txt', 3]], resp['files']
-  end
-
-  test "list of files is correct for empty manifest" do
-    authorize_with :active
-    test_collection = {
-      manifest_text: "",
-      portable_data_hash: "d41d8cd98f00b204e9800998ecf8427e+0"
-    }
-    post :create, {
-      collection: test_collection
-    }
-    assert_response :success
-
-    get :show, {
-      id: "d41d8cd98f00b204e9800998ecf8427e+0"
-    }
-    assert_response :success
-    resp = JSON.parse(@response.body)
-    assert_equal [], resp['files']
   end
 
   test "create with owner_uuid set to owned group" do
@@ -193,6 +147,24 @@ EOS
       }
     }
     assert_response 422
+  end
+
+  test "create succeeds with with duplicate name with ensure_unique_name" do
+    permit_unsigned_manifests
+    authorize_with :admin
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        owner_uuid: 'zzzzz-tpzed-000000000000000',
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        name: "foo_file"
+      },
+      ensure_unique_name: true
+    }
+    assert_response :success
+    resp = JSON.parse(@response.body)
+    assert_equal 'foo_file (2)', resp['name']
   end
 
   test "create with owner_uuid set to group i can_manage" do
@@ -385,7 +357,6 @@ EOS
       assert_not_nil assigns(:object)
       resp = JSON.parse(@response.body)
       assert_equal manifest_uuid, resp['portable_data_hash']
-      assert_equal 48, resp['data_size']
       # All of the locators in the output must be signed.
       resp['manifest_text'].lines.each do |entry|
         m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
@@ -433,7 +404,6 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['portable_data_hash']
-    assert_equal 48, resp['data_size']
     # All of the locators in the output must be signed.
     resp['manifest_text'].lines.each do |entry|
       m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
@@ -522,7 +492,6 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['portable_data_hash']
-    assert_equal 48, resp['data_size']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.
@@ -561,7 +530,6 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['portable_data_hash']
-    assert_equal 48, resp['data_size']
     # All of the locators in the output must be signed.
     # Each line is of the form "path locator locator ... 0:0:file.txt"
     # entry.split[1..-2] will yield just the tokens in the middle of the line

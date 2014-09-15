@@ -1,5 +1,6 @@
 import mock
 import os
+import socket
 import unittest
 
 import arvados
@@ -315,6 +316,18 @@ class KeepClientRetryGetTestCase(unittest.TestCase, KeepClientRetryTestMixin):
 
     def test_hint_server_can_succeed_without_retries(self):
         with self.mock_responses(self.DEFAULT_EXPECT, 404, 200, 500):
+            self.check_success(locator=self.HINTED_LOCATOR)
+
+    def test_try_next_server_after_timeout(self):
+        responses = iter([None, (fake_httplib2_response(200),
+                                 self.DEFAULT_EXPECT)])
+        def side_effect(*args, **kwargs):
+            response = next(responses)
+            if response is None:
+                raise socket.timeout("timed out")
+            else:
+                return response
+        with mock.patch('httplib2.Http.request', side_effect=side_effect):
             self.check_success(locator=self.HINTED_LOCATOR)
 
 
