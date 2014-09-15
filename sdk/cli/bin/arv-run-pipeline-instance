@@ -42,6 +42,8 @@
 # [--status-json path] Print JSON status report to a file or
 #                      fifo. Default: /dev/null
 #
+# [--description] Description for the pipeline instance.
+#
 # == Parameters
 #
 # [param_name=param_value]
@@ -175,6 +177,10 @@ p = Trollop::Parser.new do
       "Manage the pipeline in process.",
       :short => :none,
       :type => :boolean)
+  opt(:description,
+      "Description for the pipeline instance.",
+      :short => :none,
+      :type => :string)
   stop_on [:'--']
 end
 $options = Trollop::with_standard_exception_handling p do
@@ -478,6 +484,8 @@ class WhRunPipelineInstance
         end
       end
     else
+      description = $options[:description]
+      description = ("Created at #{Time.now.localtime}" + (@template[:name].andand.size>0 ? " using the pipeline template *#{@template[:name]}*" : "")) if !description
       @instance = PipelineInstance.
         create(components: @components,
                properties: {
@@ -486,7 +494,7 @@ class WhRunPipelineInstance
                  }
                },
                pipeline_template_uuid: @template[:uuid],
-               description: "Created at #{Time.now.localtime}" + (@template[:name].andand.size>0 ? " using the pipeline template *#{@template[:name]}*" : ""),
+               description: description,
                state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
     end
     self
