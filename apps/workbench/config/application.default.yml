@@ -171,3 +171,6 @@ common:
   #    max_wait_seconds: 200
   #  pipeline with no inputs:
   #    template_uuid: 4xphq-p5p6p-gsw68qb7owx1q2h
+
+  # filename suffixes for which view icon would be shown in collection show page
+  filename_suffixes_with_view_icon: [txt, gif, jpeg, jpg, png, html, htm, pdf]
