@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 
+import argparse
 import errno
 import os
+
+def _pos_int(s):
+    num = int(s)
+    if num < 0:
+        raise ValueError("can't accept negative value: %s" % (num,))
+    return num
+
+retry_opt = argparse.ArgumentParser(add_help=False)
+retry_opt.add_argument('--retries', type=_pos_int, default=3, help="""
+Maximum number of times to retry server requests that encounter temporary
+failures (e.g., server down).  Default 3.""")
 
 def _ignore_error(error):
     return None
