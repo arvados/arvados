@@ -206,8 +206,11 @@ jQuery(function($){
     });
 
     $(document).on('click', '.compute-detail', function(e) {
-        console.log("woble");
         $(e.target).collapse('hide');
+    });
+
+    $(document).on('click', '.compute-node-summary', function(e) {
+        $(e.target.href).collapse('toggle');
     });
 
 });

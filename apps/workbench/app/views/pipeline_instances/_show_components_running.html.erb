@@ -9,17 +9,15 @@
 
 <p>
   <% if @object.started_at %>
-    Started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span> and
-  <% else %>
-    Has not started.
+    Started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span>.
   <% end %>
 
   <% if @object.state == 'Complete' %>
-    completed in
+    Completed in
   <% elsif @object.state == 'Failed' %>
-    failed after
-  <% elsif @object.started_at %>
-    has been active for
+    Failed after
+  <% else %>
+    Has been active for
   <% end %>
 
   <% walltime = if @object.started_at
@@ -76,7 +74,7 @@
         <div class="row">
           <div class="col-md-3">
             <h4 class="panel-title">
-              <a data-toggle="collapse" data-parent="#accordion" href="#collapse<%= i %>">
+              <a data-toggle="collapse" href="#collapse<%= i %>">
                 <%= pj[:name] %> <span class="caret"></span>
               </a>
             </h4>
@@ -127,6 +125,7 @@
             <div class="col-md-5">
               <% queuetime = Time.now - current_job[:created_at] %>
               Queued for <%= runtime(queuetime, true) %>.
+              <% begin %>
               <% if current_job.queue_position == 0 %>
                 This job is next in the queue to run.
               <% elsif current_job.queue_position == 1 %>
@@ -134,6 +133,8 @@
               <% else  %>
                 There are <%= current_job.queue_position %> jobs in the queue ahead of this one.
               <% end %>
+              <% rescue %>
+          <% end %>
             </div>
           <% end %>
         <% else %>

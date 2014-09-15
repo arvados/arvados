@@ -12,7 +12,8 @@ div.scroll-20em {
 }
 
 .compute-summary {
-    margin: 0.1em;
+    margin: 0.15em 0em 0.15em 0em;
+    display: inline-block;
 }
 
 .compute-summary-head {
@@ -29,9 +30,29 @@ div.scroll-20em {
     background: white;
 }
 
+.compute-detail:hover {
+   cursor: pointer;
+}
+
+.compute-node-summary:hover {
+  cursor: pointer;
+}
+
+.compute-summary-numbers .panel {
+  margin-bottom: 0px;
+}
+
 .compute-summary-numbers table {
   width: 100%;
   td,th {
     text-align: center;
   }
+}
+
+.compute-summary-nodelist {
+  margin-bottom: 10px
+}
+
+.dashboard-panel-info-row {
+  margin-bottom: .5em
 }

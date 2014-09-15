@@ -162,6 +162,10 @@ class Arvados::V1::JobsController < ApplicationController
     index
   end
 
+  def queue_size
+    render :json => {:queue_size => Job.queue.size}
+  end
+
   def self._create_requires_parameters
     (super rescue {}).
       merge({
