@@ -136,9 +136,10 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
 
     if recursive:
         # Copy the pipeline template and save the copied template.
-        pt = copy_pipeline_template(pi['pipeline_template_uuid'],
-                                    src, dst,
-                                    recursive=True)
+        if pi.get('pipeline_template_uuid', None):
+            pt = copy_pipeline_template(pi['pipeline_template_uuid'],
+                                        src, dst,
+                                        recursive=True)
 
         # Copy input collections, docker images and git repos.
         pi = copy_collections(pi, src, dst)
@@ -146,7 +147,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
 
         # Update the fields of the pipeline instance with the copied
         # pipeline template.
-        pi['pipeline_template_uuid'] = pt['uuid']
+        if pi.get('pipeline_template_uuid', None):
+            pi['pipeline_template_uuid'] = pt['uuid']
         if dst_project:
             pi['owner_uuid'] = dst_project
         else:
