@@ -1,66 +1,238 @@
-  <table class="table pipeline-components-table">
-    <colgroup>
-      <col style="width: 15%" />
-      <col style="width: 25%" />
-      <col style="width: 8%" />
-      <col style="width: 13%" />
-      <col style="width: 12%" />
-      <col style="width: 14%" />
-      <col style="width: 13%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th colspan="2">
-          component
-        </th><th colspan="5">
-          job
-          <%# format:'js' here helps browsers avoid using the cached js
-          content in html context (e.g., duplicate tab -> see
-          javascript) %>
-          <%= link_to '(refresh)', {format: :js}, {class: 'refresh hide', remote: true, method: 'get'} %>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <% render_pipeline_jobs.each do |pj| %>
-        <tr data-object-uuid="<%= pj[:job].andand[:uuid] %>">
-          <td>
-            <%= pj[:name] %>
-          </td><td>
-            <%= pj[:script] %>
-            <br /><span class="deemphasize"><%= pj[:script_version] %></span>
-          </td><td>
-            <%= render(partial: 'job_status_label', locals: { j: pj[:job] }) %>
-          </td><td>
-            <%= pj[:progress_bar] %>
-          </td>
-          <% current_job = pj[:job] rescue nil %>
-          <td>
-            <% if current_job.is_a? Job %>
-              <%= render partial: 'show_object_button', locals: {object: current_job, size: 'xs', link_text: 'Show job details'} %>
-            <% end %>
-          </td><td>
-            <% if current_job.andand[:log] %>
-              <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
-              <% Collection.limit(1).where(portable_data_hash: fixup[1]).each do |c| %>
-                <% c.files.first.andand do |file| %>
-                  <%= link_to url_for(controller: 'collections', action: 'show_file', uuid: current_job[:log], file: "#{file[0]}/#{file[1]}", disposition: 'inline', size: file[2]), class: 'btn btn-default btn-xs' do %>
-                    <i class="fa fa-fw fa-info"></i> Show log messages
-                  <% end %>
-                <% end %>
+<%# Summary %>
+
+<% if @object.state == 'Paused' %>
+  <p>
+    This pipeline is paused.  Jobs that are
+    already running will continue to run, but no new jobs will be submitted.
+  </p>
+<% end %>
+
+<p>
+  <% if @object.started_at %>
+    Started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span> and
+  <% else %>
+    Has not started.
+  <% end %>
+
+  <% if @object.state == 'Complete' %>
+    completed in
+  <% elsif @object.state == 'Failed' %>
+    failed after
+  <% elsif @object.started_at %>
+    has been active for
+  <% end %>
+
+  <% walltime = if @object.started_at
+        if @object.finished_at
+          @object.finished_at - @object.started_at
+        else
+          Time.now - @object.started_at
+        end
+      else
+        0
+      end
+      %>
+
+  <%= runtime(walltime, true) %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
+
+  <% if @object.state == 'Failed' %>
+    Check the Log tab for more detail about why this pipeline failed.
+  <% end %>
+</p>
+
+<p>
+    <% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
+    <% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
+
+    <% if @object.state.start_with? 'Running' %>
+      Has run
+      <% else %>
+      Ran
+    <% end %>
+    for
+    <%= runtime(runningtime, true) %> (<%= runtime(walltime - runningtime, true) %> queued)<% if tasks.size == 0 %>.<% else %>
+      and used
+      <% cputime = tasks.map { |task|
+           puts "started at #{task.started_at}"
+                  if task.started_at
+                    (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
+                  else
+                    0
+                  end
+                }.reduce(:+) %>
+    <%= runtime(cputime, true) %>
+    of CPU time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
+    <% end %>
+</p>
+
+<%# Components %>
+
+<% render_pipeline_jobs.each_index do |i| %>
+  <% pj = render_pipeline_jobs[i] %>
+  <% current_job = pj[:job] if pj[:job] != {} %>
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-3">
+            <h4 class="panel-title">
+              <a data-toggle="collapse" data-parent="#accordion" href="#collapse<%= i %>">
+                <%= pj[:name] %> <span class="caret"></span>
+              </a>
+            </h4>
+          </div>
+
+          <% puts current_job.inspect %>
+
+          <% if current_job %>
+            <div class="col-md-1">
+              <%= render(partial: 'job_status_label', locals: { j: current_job }) %>
+            </div>
+
+            <div class="col-md-3">
+              <% if current_job[:started_at] %>
+                <% walltime = ((if current_job.finished_at then current_job.finished_at else Time.now() end) - current_job.started_at) %>
+                <% cputime = tasks.map { |task|
+                     if task.started_at and task.job_uuid == current_job.uuid
+                       (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
+                     else
+                       0
+                     end
+                   }.reduce(:+) %>
+                <%= runtime(walltime, false) %> / <%= runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)
               <% end %>
+            </div>
+
+            <% if Job::state(current_job).in? ["Completed", "Failed", "Canceled"] %>
+              <div class="col-md-3">
+                <% if pj[:output_uuid] %>
+                  <%= link_to_if_arvados_object pj[:output_uuid] %>
+                <% elsif current_job.andand[:output] %>
+                  <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
+                <% else %>
+                  No output.
+                <% end %>
+              </div>
+            <% elsif Job::state(current_job) == "Running" %>
+              <div class="col-md-3 pipeline-instance-spacing">
+                <%= pj[:progress_bar] %>
+              </div>
+              <div class="col-md-1 pipeline-instance-spacing">
+                <%= form_tag "/jobs/#{current_job.uuid}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
+                <%= hidden_field_tag :return_to, url_for(@object) %>
+                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
+            </div>
             <% end %>
-          </td><td>
-            <% if pj[:output_uuid] %>
-                <%= link_to_if_arvados_object pj[:output_uuid], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
-            <% elsif current_job.andand[:output] %>
-                <%= link_to_if_arvados_object current_job[:output], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
-            <% end %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-    <tfoot>
-      <tr><td colspan="7"></td></tr>
-    </tfoot>
-  </table>
+          <% elsif Job::state(current_job) == "Queued" %>
+            <div class="col-md-5">
+              <% queuetime = Time.now - current_job[:created_at] %>
+              Queued for <%= runtime(queuetime, true) %>.
+              <% if current_job.queue_position == 0 %>
+                This job is next in the queue to run.
+              <% elsif current_job.queue_position == 1 %>
+                There is 1 job in the queue ahead of this one.
+              <% else  %>
+                There are <%= current_job.queue_position %> jobs in the queue ahead of this one.
+              <% end %>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="col-md-3 col-md-offset-3">
+            <span class="label label-default">Not ready</span>
+          </div>
+<% end %>
+</div>
+</div>
+</div>
+
+<div id="collapse<%= i %>" class="panel-collapse collapse">
+  <div class="panel-body">
+    <div class="container">
+        <% current_component = (if current_job then current_job else pj end) %>
+        <div class="row">
+          <div class="col-md-6">
+            <table>
+              <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic].each do |k| %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    <%= k.to_s %>:
+                  </td>
+                  <td>
+                    <%= current_component[k] %>
+                  </td>
+                </tr>
+              <% end %>
+              <% if current_component[:runtime_constraints].andand[:docker_image] and current_component[:docker_image_locator] %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    docker_image:
+                  </td>
+                  <td>
+                    <%= current_component[:runtime_constraints][:docker_image] %>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-right: 1em">
+                    docker_image_locator:
+                  </td>
+                  <td>
+                    <%= link_to_if_arvados_object current_component[:docker_image_locator] %>
+                  </td>
+                </tr>
+              <% else %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    docker_image:
+                  </td>
+                  <td>
+                    Not run in Docker
+                  </td>
+                </tr>
+              <% end %>
+            </table>
+          </div>
+          <div class="col-md-5">
+            <table>
+              <% [:uuid, :modified_by_user_uuid, :priority, :created_at, :started_at, :finished_at].each do |k| %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    <%= k.to_s %>:
+                  </td>
+                  <td>
+                    <% if k.to_s.end_with? 'uuid' %>
+                      <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
+                    <% elsif k.to_s.end_with? '_at' %>
+                      <span data-utc-date="<%= current_component[k] %>"><%= current_component[k] %></span>
+                    <% else %>
+                      <%= current_component[k] %>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </table>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <p>script_parameters:</p>
+            <pre><%= JSON.pretty_generate(current_component[:script_parameters]) rescue nil %></pre>
+          </div>
+          <% if current_component[:tasks_summary] %>
+          <div class="col-md-3">
+            <table>
+              <% [:done, :running, :failed, :todo].each do |d| %>
+              <tr>
+                <td style="padding-right: 1em"><%= 'tasks:' if d == :done %></td>
+                <td style="padding-right: 1em"><%= d.to_s %></td>
+                <td><%= current_component[:tasks_summary][d] %></td>
+              </tr>
+              <% end %>
+            </table>
+          </div>
+          <% end %>
+        </div>
+    </div>
+  </div>
+</div>
+</div>
+<% end %>

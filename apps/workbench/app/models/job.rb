@@ -33,4 +33,25 @@ class Job < ArvadosBase
   def cancel
     arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {}
   end
+
+  def state
+    Job::state(self)
+  end
+
+  def self.state job
+    if not job[:cancelled_at].nil?
+      "Canceled"
+    elsif not job[:finished_at].nil? or not job[:success].nil?
+      if job[:success]
+        "Completed"
+      else
+        "Failed"
+      end
+    elsif job[:running]
+      "Running"
+    else
+      "Queued"
+    end
+  end
+
 end
