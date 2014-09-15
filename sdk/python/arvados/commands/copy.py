@@ -133,7 +133,6 @@ def api_for_instance(instance_name):
 def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, recursive=True):
     # Fetch the pipeline instance record.
     pi = src.pipeline_instances().get(uuid=pi_uuid).execute()
-    pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
 
     if recursive:
         # Copy the pipeline template and save the copied template.
@@ -162,6 +161,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
         print >>sys.stderr, "You are responsible for making sure all pipeline dependencies have been updated."
 
     # Create the new pipeline instance at the destination Arvados.
+    pi['properties']['copied_from_pipeline_instance_uuid'] = pi_uuid
+    del pi['uuid']
     new_pi = dst.pipeline_instances().create(body=pi).execute()
     return new_pi
 
