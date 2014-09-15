@@ -78,6 +78,7 @@ def main():
     elif t == 'PipelineTemplate':
         result = copy_pipeline_template(args.object_uuid,
                                         src_arv, dst_arv,
+                                        args.dst_git_repo,
                                         recursive=args.recursive)
     else:
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
@@ -139,6 +140,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
         if pi.get('pipeline_template_uuid', None):
             pt = copy_pipeline_template(pi['pipeline_template_uuid'],
                                         src, dst,
+                                        dst_git_repo,
                                         recursive=True)
 
         # Copy input collections, docker images and git repos.
@@ -160,10 +162,10 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
         print >>sys.stderr, "You are responsible for making sure all pipeline dependencies have been updated."
 
     # Create the new pipeline instance at the destination Arvados.
-    new_pi = dst.pipeline_instances().create(pipeline_instance=pi).execute()
+    new_pi = dst.pipeline_instances().create(body=pi).execute()
     return new_pi
 
-# copy_pipeline_template(pt_uuid, src, dst, recursive)
+# copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive)
 #
 #    Copies a pipeline template identified by pt_uuid from src to dst.
 #
@@ -175,7 +177,7 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
 #
 #    Returns the copied pipeline template object.
 #
-def copy_pipeline_template(pt_uuid, src, dst, recursive=True):
+def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True):
     # fetch the pipeline template from the source instance
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute()
 
