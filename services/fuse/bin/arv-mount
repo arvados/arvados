@@ -59,29 +59,20 @@ with "--".
     else:
         daemon_ctx = None
 
-    # Configure a logger based on command-line switches.
-    # If we're using a contemporary Python SDK (mid-August 2014),
-    # configure the arvados hierarchy logger.
-    # Otherwise, configure the program root logger.
-    base_logger = getattr(arvados, 'logger', None)
-
+    # Configure a log handler based on command-line switches.
     if args.logfile:
         log_handler = logging.FileHandler(args.logfile)
     elif daemon_ctx:
         log_handler = logging.NullHandler()
-    elif base_logger:
-        log_handler = arvados.log_handler
     else:
-        log_handler = logging.StreamHandler()
+        log_handler = None
 
-    if base_logger is None:
-        base_logger = logging.getLogger()
-    else:
-        base_logger.removeHandler(arvados.log_handler)
-    base_logger.addHandler(log_handler)
+    if log_handler is not None:
+        arvados.logger.removeHandler(arvados.log_handler)
+        arvados.logger.addHandler(log_handler)
 
     if args.debug:
-        base_logger.setLevel(logging.DEBUG)
+        arvados.logger.setLevel(logging.DEBUG)
         logger.debug("arv-mount debugging enabled")
 
     try:
@@ -103,7 +94,7 @@ with "--".
         elif args.collection != None:
             # Set up the request handler with the collection at the root
             operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, api, args.collection))
-        elif args.project != None:            
+        elif args.project != None:
             operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, api.groups().get(uuid=args.project).execute()))
         else:
             e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
@@ -114,8 +105,8 @@ with "--".
             e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(e.inode, operations.inodes, api))
 
             text = '''
-Welcome to Arvados!  This directory provides file system access to files and objects 
-available on the Arvados installation located at '{}' 
+Welcome to Arvados!  This directory provides file system access to files and objects
+available on the Arvados installation located at '{}'
 using credentials for user '{}'.
 
 From here, the following directories are available:
