@@ -158,6 +158,31 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'script_version'
   end
 
+  test 'pipeline description' do
+    visit page_with_token('active_trustedclient')
+
+    visit '/pipeline_instances'
+    assert page.has_text? 'pipeline_with_template'
+
+    find('a', text: 'pipeline_with_job').click
+
+    within('.arv-description-as-subtitle') do
+      find('.fa-pencil').click
+      find('.editable-input textarea').set('*Textile description for pipeline instance* - "link to template":' + api_fixture('pipeline_templates')['two_part']['uuid'])
+      find('.editable-submit').click
+    end
+    wait_for_ajax
+
+    # verify description
+    assert page.has_no_text? '*Textile description for pipeline instance*'
+    assert page.has_text? 'Textile description for pipeline instance'
+    assert page.has_link? 'link to template'
+    click_link 'link to template'
+
+    # in template page
+    assert page.has_text? 'Two Part Pipeline Template'
+  end
+
   test "JSON popup available for strange components" do
     uuid = api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]
     visit page_with_token("active", "/pipeline_instances/#{uuid}")
@@ -179,7 +204,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       find(".selectable", text: proj_name).click
       click_on "Choose"
     end
-    assert(has_text?("From template"), "did not land on pipeline instance page")
+    assert(has_text?("This pipeline has been created from the template"), "did not land on pipeline instance page")
     first("a.btn,button", text: "Choose").click
     within(".modal-body") do
       if (proj_name != PROJECT_WITH_SEARCH_COLLECTION)
