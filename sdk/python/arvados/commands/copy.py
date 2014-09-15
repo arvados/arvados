@@ -336,11 +336,6 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
     dst_git_push_url  = r['items'][0]['push_url']
     logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
 
-    # If there is a /scratch partition available, attempt to use it
-    # to check out the git repo (which can be quite large)
-    if os.path.exists('/scratch'):
-        tempfile.tempdir = '/scratch/{}'.format(getpass.getuser())
-        os.mkdir(tempfile.tempdir)
     tmprepo = tempfile.mkdtemp()
 
     dst_branch = re.sub(r'\W+', '_', src_git_url)
