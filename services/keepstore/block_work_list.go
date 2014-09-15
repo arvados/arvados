@@ -2,17 +2,42 @@ package main
 
 /* A BlockWorkList concurrently processes blocks needing attention.
 
+   The BlockWorkList object itself manages a list of generic objects,
+   replacing the list when new data is available, and delivering items
+   from the list to consumers when requested.  The overall work flow
+   is as follows:
+
+     1. A BlockWorkList is created with NewBlockWorkList().  This
+        function instantiates a new BlockWorkList and starts a manager
+        goroutine.  The manager listens on an input channel
+        (manager.newlist) and an output channel (manager.NextItem).
+
+     2. The manager first waits for a new list of requests on the
+        newlist channel.  When another goroutine calls
+        manager.ReplaceList(lst), it sends lst over the newlist
+        channel to the manager.  The manager goroutine now has
+        ownership of the list.
+
+     3. Once the manager has this initial list, it listens on both the
+        input and output channels for one of the following to happen:
+
+          a. A worker attempts to read an item from the NextItem
+             channel.  The manager sends the next item from the list
+             over this channel to the worker, and loops.
+
+          b. New data is sent to the manager on the newlist channel.
+             This happens when another goroutine calls
+             manager.ReplaceItem() with a new list.  The manager
+             discards the current list, replaces it with the new one,
+             and begins looping again.
+
+          c. The input channel is closed.  The manager closes its
+             output channel (signalling any workers to quit) and
+             terminates.
+
    Tasks currently handled by BlockWorkList:
      * the pull list
      * the trash list
-
-   A BlockWorkList is instantiated with NewBlockWorkList(), which
-   launches a manager in a goroutine.  The manager listens on a
-   channel for data to be assigned to it via the ReplaceList() method.
-
-   A worker gets items to process from a BlockWorkList by reading the
-   NextItem channel.  The list manager continuously writes items to
-   this channel.
 
    Example (simplified) implementation of a trash collector:
 
@@ -26,14 +51,16 @@ package main
 
 		// Start a concurrent worker to read items from the NextItem
 		// channel until it is closed, deleting each one.
-		go func(list BlockWorkList) {
-			for i := range list.NextItem {
-				req := i.(DeleteRequest)
-				if time.Now() > req.age {
-					deleteBlock(req.hash)
+		if diskFull() {
+			go func(list BlockWorkList) {
+				for i := range list.NextItem {
+					req := i.(DeleteRequest)
+					if time.Now() > req.age {
+						deleteBlock(req.hash)
+					}
 				}
-			}
-		}(trashList)
+			}(trashList)
+		}
 
 		// Set up a HTTP handler for PUT /trash
 		router.HandleFunc(`/trash`,
