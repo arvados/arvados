@@ -151,7 +151,7 @@ p = Trollop::Parser.new do
       :short => :none,
       :type => :string)
   opt(:submit,
-      "Submit the pipeline instance to the server, and exit. Let the Crunch dispatch service to satisfy the components by finding/running jobs.",
+      "Submit the pipeline instance to the server, and exit. Let the Crunch dispatch service satisfy the components by finding/running jobs.",
       :short => :none,
       :type => :boolean)
   opt(:run_pipeline_here,
