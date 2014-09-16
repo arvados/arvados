@@ -44,7 +44,7 @@ class PipelineInstance < ArvadosBase
   end
 
   def attribute_editable? attr, *args
-    super && (attr.to_sym == :name ||
+    super && (attr.to_sym == :name || attr.to_sym == :description ||
               (attr.to_sym == :components and
                (self.state == 'New' || self.state == 'Ready')))
   end
@@ -66,5 +66,9 @@ class PipelineInstance < ArvadosBase
     else
       "\"#{input_name.to_s}\" parameter for #{component[:script]} script in #{component_name} component"
     end
+  end
+
+  def textile_attributes
+    [ 'description' ]
   end
 end
