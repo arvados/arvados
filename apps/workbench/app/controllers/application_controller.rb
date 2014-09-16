@@ -694,17 +694,17 @@ class ApplicationController < ActionController::Base
 
   helper_method :running_pipelines
   def running_pipelines
-    PipelineInstance.order([["started_at", "asc"]]).filter([["state", "=", "RunningOnServer"]]).all.results.reverse
+    PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
   end
 
   helper_method :finished_pipelines
   def finished_pipelines lim
-    PipelineInstance.limit(lim).order([["finished_at", "asc"]]).filter([["state", "in", ["Completed", "Failed", "Cancelled"]]])
+    PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
   end
 
   helper_method :recent_collections
   def recent_collections lim
-    c = Collection.limit(lim).order([["modified_at", "asc"]]).filter([["owner_uuid", "is_a", "arvados#group"]])
+    c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])
     own = {}
     Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
       own[g[:uuid]] = g

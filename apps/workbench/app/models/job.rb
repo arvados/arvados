@@ -34,6 +34,10 @@ class Job < ArvadosBase
     arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {}
   end
 
+  def self.queue_size
+    arvados_api_client.api("jobs/", "queue_size", {"_method"=> "GET"})[:queue_size] rescue 0
+  end
+
   def state
     Job::state(self)
   end

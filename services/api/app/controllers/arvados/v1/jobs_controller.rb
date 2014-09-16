@@ -2,8 +2,8 @@ class Arvados::V1::JobsController < ApplicationController
   accept_attribute_as_json :script_parameters, Hash
   accept_attribute_as_json :runtime_constraints, Hash
   accept_attribute_as_json :tasks_summary, Hash
-  skip_before_filter :find_object_by_uuid, :only => :queue
-  skip_before_filter :render_404_if_no_object, :only => :queue
+  skip_before_filter :find_object_by_uuid, :only => [:queue, :queue_size]
+  skip_before_filter :render_404_if_no_object, :only => [:queue, :queue_size]
 
   def create
     [:repository, :script, :script_version, :script_parameters].each do |r|
@@ -163,7 +163,7 @@ class Arvados::V1::JobsController < ApplicationController
   end
 
   def queue_size
-    render :json => {:queue_size => Job.queue.size}
+          render :json => {:queue_size => Job.queue.size}
   end
 
   def self._create_requires_parameters

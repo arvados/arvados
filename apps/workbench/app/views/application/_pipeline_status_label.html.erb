@@ -4,6 +4,8 @@
   <span class="label label-danger">failed</span>
 <% elsif p.state == 'RunningOnServer' || p.state == 'RunningOnClient' %>
   <span class="label label-info">running</span>
+<% elsif p.state == 'Paused'  %>
+  <span class="label label-default">paused</span>
 <% else %>
   <% if not p.components.values.any? { |c| c[:job] rescue false } %>
     <span class="label label-default">not started</span>

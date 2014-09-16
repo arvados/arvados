@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col-md-6">
       <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title">Pipelines running</span>
+        <div class="panel-heading"><span class="panel-title">Active pipelines</span>
           <span class="pull-right">
     <%= link_to(
 	  choose_pipeline_templates_path(
@@ -17,7 +17,7 @@
     </span>
         </div>
 
-        <div class="panel-body" style="overflow-x: scroll;">
+        <div class="panel-body">
           <% if running_pipelines.empty? %>
             No pipelines are currently running.
           <% end %>
@@ -67,7 +67,8 @@
               </div>
 
               <div class="clearfix">
-                Started at <span class="utc-date" data-utc-date="<%= p[:started_at] || p[:created_at] %>"><%= p[:created_at] %></span>.
+                Started at <span class="utc-date" data-utc-date="<%= p[:started_at] || p[:created_at] %>"
+                                 data-utc-date-opts="noseconds"><%= p[:created_at] %></span>.
                 <% pipeline_time = Time.now - (p[:started_at] || p[:created_at]) %>
                 Active for <%= runtime(pipeline_time, false) %>.
 
@@ -87,44 +88,64 @@
 
       <div class="panel panel-default">
         <div class="panel-heading"><span class="panel-title">Recently finished pipelines</span></div>
-        <div class="panel-body" style="overflow-x: scroll;">
+        <div class="panel-body">
           <% finished_pipelines(8).each do |p| %>
             <div class="dashboard-panel-info-row">
               <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-6 x-ellip">
                 <%= link_to_if_arvados_object p, friendly_name: true %>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-2">
                 <%= render partial: "pipeline_status_label", locals: {p: p}%>
               </div>
               <div class="col-md-4">
-                <% outputs = [] %>
-                <% p.components.each do |k, c| %>
-                  <% outputs << c[:output_uuid] if c[:output_uuid] %>
-                <% end %>
-                <%= outputs %>
+                <span class="utc-date" data-utc-date="<%= p[:finished_at] || p[:modified_at] %>"
+                      data-utc-date-opts="noseconds"><%= p[:modified_at] %></span>
               </div>
               </div>
-
               <div class="row">
                 <div class="col-md-12">
-                  Finished at <span class="utc-date" data-utc-date="<%= p[:finished_at] || p[:modified_at] %>"><%= p[:modified_at] %></span>.
                   <% if p[:started_at] and p[:finished_at] %>
                     <% pipeline_time = p[:finished_at] - p[:started_at] %>
-                    Active for <%= runtime(pipeline_time, false) %>.
+                    Active for <%= runtime(pipeline_time, false) %>
                   <% end %>
+
+                  <span class="pull-right">
+                    <% outputs = [] %>
+                    <% p.components.each do |k, c| %>
+                      <% outputs << c[:output_uuid] if c[:output_uuid] %>
+                    <% end %>
+                    <% if outputs.size == 0 %>
+                      No output.
+                    <% elsif outputs.size == 1 %>
+                      <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object outputs[0], friendly_name: true %>
+                    <% else %>
+                      <a href="#<%= p[:uuid] %>" data-toggle="collapse">Outputs <span class="caret"></span></a>
+                    <% end %>
+                  </span>
                 </div>
               </div>
+
+                <div class="row collapse" id="<%= p[:uuid] %>" >
+                  <div class="col-md-offset-3 col-md-10">
+                    <% outputs.each do |out| %>
+                      <div>
+                        <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object out, friendly_name: true %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+
             </div>
           <% end %>
         </div>
       </div>
-        </div>
+    </div>
 
     <div class="col-md-6">
       <% nodes = Node.all %>
       <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title"><a data-toggle="collapse" href="#compute_node_status">Compute node status</a></span></div>
+        <div class="panel-heading"><span class="panel-title"><a data-toggle="collapse" href="#compute_node_status">Compute node status <span class="caret"></span></a></span></div>
         <div class="panel-body">
           <div class="compute-node-summary" data-toggle="collapse" href="#compute_node_status">
             <%= render partial: 'compute_node_summary', locals: {nodes: nodes} %>
@@ -136,15 +157,17 @@
       </div>
       <div class="panel panel-default">
         <div class="panel-heading"><span class="panel-title">Recent collections</span></div>
-        <div class="panel-body" style="overflow-x: scroll;">
+        <div class="panel-body">
           <% r = recent_collections(8) %>
           <% r[:collections].each do |p| %>
             <div class="dashboard-panel-info-row">
             <div>
               <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object r[:owners][p[:owner_uuid]], friendly_name: true %>/
-              <span class="pull-right"><span class="utc-date" data-utc-date="<%= p[:modified_at] %>">p[:modified_at]</span></span>
+              <span class="pull-right"><span class="utc-date"
+                                             data-utc-date="<%= p[:modified_at] %>"
+                                             data-utc-date-opts="noseconds"><%= p[:modified_at]%></span></span>
             </div>
-            <div style="margin-left: 1em"><%= link_to_if_arvados_object p, friendly_name: true %>
+            <div class="x-ellip" style="margin-left: 1em"><%= link_to_if_arvados_object p, friendly_name: true %>
             </div>
             </div>
           <% end %>
