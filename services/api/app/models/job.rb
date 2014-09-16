@@ -40,6 +40,7 @@ class Job < ArvadosModel
     t.add :repository
     t.add :supplied_script_version
     t.add :docker_image_locator
+    t.add :description
   end
 
   def assert_finished

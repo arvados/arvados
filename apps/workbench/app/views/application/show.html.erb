@@ -5,6 +5,9 @@
 <% end %>
 
 <% content_for :content_top do %>
+  <% if !['Group','User', 'Collection'].include? @object.class.to_s # projects and collections handle it themselves %>
+    <%= render partial: 'name_and_description' %>
+  <% end %>
 
 <% if @object.respond_to? :properties and !@object.properties.nil? %>
   <% if @object.properties[:page_content] %>
