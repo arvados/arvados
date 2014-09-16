@@ -419,7 +419,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
 
 
     class MockKeep(object):
-        def __init__(self, content):
+        def __init__(self, content, num_retries=0):
             self.content = content
 
         def get(self, locator):
