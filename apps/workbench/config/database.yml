@@ -23,3 +23,10 @@ production:
   database: db/production.sqlite3
   pool: 5
   timeout: 5000
+
+diagnostics:
+  adapter: sqlite3
+  database: db/diagnostics.sqlite3
+  pool: 5
+  timeout: 5000
+

@@ -4,12 +4,11 @@ require 'yaml'
 class DiagnosticsTest < ActionDispatch::IntegrationTest
 
   def visit_page_with_token token_name, path='/'
+    if !path.start_with? Rails.configuration.arvados_workbench_url
+      path = Rails.configuration.arvados_workbench_url + path
+    end
     tokens = Rails.configuration.diagnostics_testing_user_tokens
     visit page_with_token(tokens[token_name], path)
-  end
-
-  def diagnostic_test_pipeline_config pipeline_to_run
-    Rails.configuration.diagnostics_testing_pipeline_fields[pipeline_to_run]
   end
 
   def wait_until_page_has text_to_look_for, max_time=30

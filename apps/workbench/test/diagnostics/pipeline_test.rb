@@ -6,16 +6,15 @@ class PipelineTest < DiagnosticsTest
   pipelines_to_run = Rails.configuration.diagnostics_testing_pipeline_fields.andand.keys
 
   setup do
-    headless = Headless.new
-    headless.start
+#    headless = Headless.new
+#    headless.start
     Capybara.current_driver = :selenium
   end
 
   pipelines_to_run.andand.each do |pipeline_to_run|
     test "visit home page for user #{pipeline_to_run}" do
       visit_page_with_token 'active'
-
-      pipeline_config = diagnostic_test_pipeline_config pipeline_to_run
+      pipeline_config = Rails.configuration.diagnostics_testing_pipeline_fields[pipeline_to_run]
 
       # Search for tutorial template
       within('.navbar-fixed-top') do
@@ -36,7 +35,7 @@ class PipelineTest < DiagnosticsTest
 
       # Choose input for the pipeline
       pipeline_config['input_paths'].each do |look_for|
-        select_inut look_for
+        select_input look_for
       end
       wait_for_ajax
 
@@ -51,43 +50,43 @@ class PipelineTest < DiagnosticsTest
     end
   end
 
-  def select_inut look_for
+  def select_input look_for
     inputs_needed = page.all('.btn', text: 'Choose')
     return if (!inputs_needed || !inputs_needed.any?)
 
-    inputs_needed[0].click
-    within('.modal-dialog') do
-      look_for_uuid = nil
-      look_for_file = nil
-
-      if look_for.andand.index('/').andand.>0
-        partitions = look_for.partition('/')
-        look_for_uuid = partitions[0]
-        look_for_file = partitions[2]
+    look_for_uuid = nil
+    look_for_file = nil
+    if look_for.andand.index('/').andand.>0
+      partitions = look_for.partition('/')
+      look_for_uuid = partitions[0]
+      look_for_file = partitions[2]
     else
       look_for_uuid = look_for
       look_for_file = nil
     end
 
-    if look_for_uuid
-      fill_in('Search', with: look_for_uuid, exact: true)
-    end
-           
-    wait_for_ajax
-    page.all('.selectable').first.click
-    wait_for_ajax
-    # it appears that ajax reload is wiping out input selection after search results; so, select one more time.
-    page.all('.selectable').first.click
-    wait_for_ajax
+    inputs_needed[0].click
 
-    if look_for_file
-      wait_for_ajax
-      within('.collection_files_name', text: look_for_file) do
-        find('.fa-file').click
+    within('.modal-dialog') do
+      if look_for_uuid
+        fill_in('Search', with: look_for_uuid, exact: true)
+        wait_for_ajax
       end
-    end
-    
-    find('button', text: 'OK').click
+             
+      page.all('.selectable').first.click
+      wait_for_ajax
+      # it appears that ajax reload is wiping out input selection after search results; so, select one more time.
+      page.all('.selectable').first.click
+      wait_for_ajax
+
+      if look_for_file
+        wait_for_ajax
+        within('.collection_files_name', text: look_for_file) do
+          find('.fa-file').click
+        end
+      end
+      
+      find('button', text: 'OK').click
       wait_for_ajax
     end
   end
