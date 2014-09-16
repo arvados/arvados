@@ -34,4 +34,17 @@ fi
 
 title "docker build complete"
 
+title "Starting docker java-bwa-samtools build"
+
+./build.sh java-bwa-samtools-image
+
+ECODE=$?
+
+if [[ "$ECODE" != "0" ]]; then
+  title "!!!!!! docker java-bwa-samtools BUILD FAILED !!!!!!"
+  EXITCODE=$(($EXITCODE + $ECODE))
+fi
+
+title "docker build java-bwa-samtools complete"
+
 exit $EXITCODE
