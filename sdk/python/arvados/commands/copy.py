@@ -39,10 +39,10 @@ def main():
 
     parser.add_argument(
         '--src', dest='source_arvados', required=True,
-        help='The name of the source Arvados instance. May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
+        help='The name of the source Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
     parser.add_argument(
         '--dst', dest='destination_arvados', required=True,
-        help='The name of the destination Arvados instance (interpreted as in --src)')
+        help='The name of the destination Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
     parser.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object. (default)')
