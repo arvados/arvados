@@ -9,6 +9,7 @@ import signal
 import subprocess
 import time
 
+import arvados.commands._util as arv_cmd
 from arvados_fuse import *
 
 logger = logging.getLogger('arvados.arv-mount')
@@ -16,6 +17,7 @@ logger = logging.getLogger('arvados.arv-mount')
 if __name__ == '__main__':
     # Handle command line parameters
     parser = argparse.ArgumentParser(
+        parents=[arv_cmd.retry_opt],
         description='''Mount Keep data under the local filesystem.  Default mode is --home''',
         epilog="""
 Note: When using the --exec feature, you must either specify the
@@ -80,29 +82,42 @@ with "--".
         operations = Operations(os.getuid(), os.getgid())
         api = SafeApi(arvados.config)
 
-        usr = api.users().current().execute()
+        usr = api.users().current().execute(num_retries=args.retries)
         now = time.time()
+        dir_class = None
+        dir_args = [llfuse.ROOT_INODE, operations.inodes, api, args.retries]
         if args.by_id:
             # Set up the request handler with the 'magic directory' at the root
-            operations.inodes.add_entry(MagicDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+            dir_class = MagicDirectory
         elif args.by_tag:
-            operations.inodes.add_entry(TagsDirectory(llfuse.ROOT_INODE, operations.inodes, api))
+            dir_class = TagsDirectory
         elif args.shared:
-            operations.inodes.add_entry(SharedDirectory(llfuse.ROOT_INODE, operations.inodes, api, usr))
+            dir_class = SharedDirectory
+            dir_args.append(usr)
         elif args.home:
-            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, usr))
-        elif args.collection != None:
+            dir_class = ProjectDirectory
+            dir_args.append(usr)
+        elif args.collection is not None:
             # Set up the request handler with the collection at the root
-            operations.inodes.add_entry(CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, api, args.collection))
-        elif args.project != None:
-            operations.inodes.add_entry(ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, api, api.groups().get(uuid=args.project).execute()))
+            dir_class = CollectionDirectory
+            dir_args.append(args.collection)
+        elif args.project is not None:
+            dir_class = ProjectDirectory
+            dir_args.append(api.groups().get(uuid=args.project).execute(
+                    num_retries=args.retries))
+
+        if dir_class is not None:
+            operations.inodes.add_entry(dir_class(*dir_args))
         else:
             e = operations.inodes.add_entry(Directory(llfuse.ROOT_INODE))
+            dir_args[0] = e.inode
 
-            e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(e.inode, operations.inodes, api, usr))
-            e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(e.inode, operations.inodes, api, usr))
-            e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(e.inode, operations.inodes, api))
-            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(e.inode, operations.inodes, api))
+            e._entries['by_id'] = operations.inodes.add_entry(MagicDirectory(*dir_args))
+            e._entries['by_tag'] = operations.inodes.add_entry(TagsDirectory(*dir_args))
+
+            dir_args.append(usr)
+            e._entries['home'] = operations.inodes.add_entry(ProjectDirectory(*dir_args))
+            e._entries['shared'] = operations.inodes.add_entry(SharedDirectory(*dir_args))
 
             text = '''
 Welcome to Arvados!  This directory provides file system access to files and objects
