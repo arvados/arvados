@@ -122,11 +122,15 @@ func (b *BlockWorkList) Close() {
 // listen is run in a goroutine. It reads new pull lists from its
 // input queue until the queue is closed.
 // listen takes ownership of the list that is passed to it.
+//
+// Note that the routine does not ever need to access the list
+// itself once the current_item has been initialized, so we do
+// not bother to keep a pointer to the list. Because it is a
+// doubly linked list, holding on to the current item will keep
+// it from garbage collection.
+//
 func (b *BlockWorkList) listen() {
-	var (
-		current_list *list.List
-		current_item *list.Element
-	)
+	var current_item *list.Element
 
 	// When we're done, close the output channel to shut down any
 	// workers.
@@ -137,18 +141,16 @@ func (b *BlockWorkList) listen() {
 		// even checking if workers are ready.
 		if current_item == nil {
 			if p, ok := <-b.newlist; ok {
-				current_list = p
+				current_item = p.Front()
 			} else {
 				// The channel was closed; shut down.
 				return
 			}
-			current_item = current_list.Front()
 		}
 		select {
 		case p, ok := <-b.newlist:
 			if ok {
-				current_list = p
-				current_item = current_list.Front()
+				current_item = p.Front()
 			} else {
 				// The input channel is closed; time to shut down
 				return
