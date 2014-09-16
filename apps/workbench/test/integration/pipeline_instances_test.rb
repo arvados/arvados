@@ -162,13 +162,13 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     visit page_with_token('active_trustedclient')
 
     visit '/pipeline_instances'
-    assert page.has_text? 'pipeline_with_template'
+    assert page.has_text? 'pipeline_with_job'
 
     find('a', text: 'pipeline_with_job').click
 
     within('.arv-description-as-subtitle') do
       find('.fa-pencil').click
-      find('.editable-input textarea').set('*Textile description for pipeline instance* - "link to template":' + api_fixture('pipeline_templates')['two_part']['uuid'])
+      find('.editable-input textarea').set('*Textile description for pipeline instance*')
       find('.editable-submit').click
     end
     wait_for_ajax
@@ -176,11 +176,6 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # verify description
     assert page.has_no_text? '*Textile description for pipeline instance*'
     assert page.has_text? 'Textile description for pipeline instance'
-    assert page.has_link? 'link to template'
-    click_link 'link to template'
-
-    # in template page
-    assert page.has_text? 'Two Part Pipeline Template'
   end
 
   test "JSON popup available for strange components" do
