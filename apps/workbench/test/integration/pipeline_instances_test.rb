@@ -204,7 +204,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       find(".selectable", text: proj_name).click
       click_on "Choose"
     end
-    assert(has_text?("This pipeline has been created from the template"), "did not land on pipeline instance page")
+    assert(has_text?("This pipeline was created from the template"), "did not land on pipeline instance page")
     first("a.btn,button", text: "Choose").click
     within(".modal-body") do
       if (proj_name != PROJECT_WITH_SEARCH_COLLECTION)
