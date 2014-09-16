@@ -137,7 +137,7 @@ do_test() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
-            go test "git.curoverse.com/arvados.git/$1"
+            go test -timeout 20s "git.curoverse.com/arvados.git/$1"
         else
             "test_$1"
         fi
@@ -155,6 +155,7 @@ do_install() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
+            pip install pyyaml
             go get -t "git.curoverse.com/arvados.git/$1"
         else
             "install_$1"
@@ -214,14 +215,14 @@ do_test ruby_sdk
 install_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
         && gem build arvados.gemspec \
-        && gem install --no-ri --no-rdoc arvados-*.gem
+        && gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install ruby_sdk
 
 install_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && gem build arvados-cli.gemspec \
-        && gem install --no-ri --no-rdoc arvados-cli-*.gem
+        && gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
 do_install cli
 
