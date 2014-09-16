@@ -5,7 +5,7 @@
 <% end %>
 
 <% content_for :content_top do %>
-  <% if !['Group','User'].include? @object.class.to_s # not a project %>
+  <% if !['Group','User', 'Collection'].include? @object.class.to_s # projects and collections handle it themselves %>
     <%= render partial: 'name_and_description' %>
   <% end %>
 

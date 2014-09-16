@@ -110,4 +110,8 @@ class Collection < ArvadosBase
     end
   end
 
+  def textile_attributes
+    [ 'description' ]
+  end
+
 end
