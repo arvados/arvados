@@ -15,5 +15,9 @@ namespace :config do
         end
       end
     end
+    # default_trash_lifetime cannot be less than 24 hours
+    if $application_config['default_trash_lifetime'] < 86400 then
+      raise "default_trash_lifetime is %d, must be at least 86400" % $application_config['default_trash_lifetime']
+    end
   end
 end

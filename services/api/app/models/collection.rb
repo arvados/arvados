@@ -11,7 +11,7 @@ class Collection < ArvadosModel
   validate :ensure_hash_matches_manifest_text
 
   # Query only undeleted collections by default.
-  default_scope { where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP") }
+  default_scope where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP")
 
   api_accessible :user, extend: :common do |t|
     t.add :name

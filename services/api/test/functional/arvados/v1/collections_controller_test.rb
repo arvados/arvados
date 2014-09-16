@@ -560,7 +560,6 @@ EOS
   end
 
   test 'Expired collections are not returned' do
-    permit_unsigned_manifests
     authorize_with :active
     get :index, {
       where: {name: 'expired_collection'},
@@ -568,15 +567,40 @@ EOS
     assert_response :success
     found = assigns(:objects)
     assert_equal 0, found.count
+
+    get :show, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+    }
+    assert_response 404
+
+    post :update, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+      collection: {
+        name: "still expired"
+      }
+    }
+    assert_response 404
   end
 
   test 'Collection with future expiration time is returned' do
-    permit_unsigned_manifests
     authorize_with :active
     get :index, {
       where: {name: 'collection_expires_in_future'},
     }
     found = assigns(:objects)
     assert_equal 1, found.count
+
+    get :show, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+    }
+    assert_success
+
+    post :update, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+      collection: {
+        name: "still not expired"
+      }
+    }
+    assert_success
   end
 end
