@@ -559,4 +559,24 @@ EOS
     "Collection should not exist in database after failed create"
   end
 
+  test 'Expired collections are not returned' do
+    permit_unsigned_manifests
+    authorize_with :active
+    get :index, {
+      where: {name: 'expired_collection'},
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_equal 0, found.count
+  end
+
+  test 'Collection with future expiration time is returned' do
+    permit_unsigned_manifests
+    authorize_with :active
+    get :index, {
+      where: {name: 'collection_expires_in_future'},
+    }
+    found = assigns(:objects)
+    assert_equal 1, found.count
+  end
 end
