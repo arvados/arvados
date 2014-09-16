@@ -38,6 +38,12 @@ def main():
         description='Copy a pipeline instance from one Arvados instance to another.')
 
     parser.add_argument(
+        '--src', dest='source_arvados', required=True,
+        help='The name of the source Arvados instance.')
+    parser.add_argument(
+        '--dst', dest='destination_arvados', required=True,
+        help='The name of the destination Arvados instance.')
+    parser.add_argument(
         '--recursive', dest='recursive', action='store_true',
         help='Recursively copy any dependencies for this object. (default)')
     parser.add_argument(
@@ -45,20 +51,13 @@ def main():
         help='Do not copy any dependencies. NOTE: if this option is given, the copied object will need to be updated manually in order to be functional.')
     parser.add_argument(
         '--dst-git-repo', dest='dst_git_repo',
-        required=True,
-        help='The name of the destination git repository.')
+        help='The name of the destination git repository. Required when copying a pipeline recursively.')
     parser.add_argument(
         '--project_uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the pipeline should be copied.')
     parser.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
-    parser.add_argument(
-        'source_arvados',
-        help='The name of the source Arvados instance.')
-    parser.add_argument(
-        'destination_arvados',
-        help='The name of the destination Arvados instance.')
     parser.set_defaults(recursive=True)
 
     args = parser.parse_args()
@@ -98,13 +97,21 @@ def main():
 # api_for_instance(instance_name)
 #
 #     Creates an API client for the Arvados instance identified by
-#     instance_name.  Credentials must be stored in
+#     instance_name.
+#
+#     If instance_name contains a slash, it is presumed to be a path
+#     (either local or absolute) to a file with Arvados configuration
+#     settings.
+#
+#     Otherwise, it is presumed to be the name of a file in
 #     $HOME/.config/arvados/instance_name.conf
 #
 def api_for_instance(instance_name):
     if '/' in instance_name:
-        abort('illegal instance name {}'.format(instance_name))
-    config_file = os.path.join(os.environ['HOME'], '.config', 'arvados', "{}.conf".format(instance_name))
+        config_file = instance_name
+    else:
+        config_file = os.path.join(os.environ['HOME'], '.config', 'arvados', "{}.conf".format(instance_name))
+
     try:
         cfg = arvados.config.load(config_file)
     except (IOError, OSError) as e:
@@ -151,6 +158,8 @@ def copy_pipeline_instance(pi_uuid, src, dst, dst_git_repo, dst_project=None, re
     pi = src.pipeline_instances().get(uuid=pi_uuid).execute()
 
     if recursive:
+        if not dst_git_repo:
+            abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy the pipeline template and save the copied template.
         if pi.get('pipeline_template_uuid', None):
             pt = copy_pipeline_template(pi['pipeline_template_uuid'],
@@ -202,6 +211,8 @@ def copy_pipeline_template(pt_uuid, src, dst, dst_git_repo, recursive=True):
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute()
 
     if recursive:
+        if not dst_git_repo:
+            abort('--dst-git-repo is required when copying a pipeline recursively.')
         # Copy input collections, docker images and git repos.
         pt = copy_collections(pt, src, dst)
         copy_git_repos(pt, src, dst, dst_git_repo)
