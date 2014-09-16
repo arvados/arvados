@@ -26,6 +26,17 @@ class ProjectsController < ApplicationController
     else
       super
     end
+
+    @user_is_manager = false
+    @share_links = []
+    if @object.uuid != current_user.uuid
+      begin
+        @share_links = Link.permissions_for(@object)
+        @user_is_manager = true
+      rescue ArvadosApiClient::AccessForbiddenException,
+        ArvadosApiClient::NotFoundException
+      end
+    end
   end
 
   def index_pane_list
@@ -59,14 +70,27 @@ class ProjectsController < ApplicationController
     ]
     # Note that adding :filters to 'Sharing' won't help show the count for it because @user_is_manager is only set in #show
     # Therefore if a count were desired there we'd want to set @user_is_manager in a before_filter or somesuch.
-    pane_list << { :name => 'Sharing' } if @user_is_manager
+    pane_list << { :name => 'Sharing',
+                   :count => @share_links.count } if @user_is_manager
     pane_list << { :name => 'Advanced' }
   end
 
+  # Called via AJAX and returns Javascript that populates tab counts into tab titles.
+  # References #show_pane_list action which should return an array of hashes each with :name 
+  # and then optionally a :filters to run or a straight up :count
+  #
+  # This action could easily be moved to the ApplicationController to genericize the tab_counts behaviour,
+  # but one or more new routes would have to be created, the js.erb would also have to be moved
   def tab_counts
     @tab_counts = {}
     show_pane_list.each do |pane|
-      @tab_counts[pane[:name]] = @object.contents(filters: pane[:filters]).count if pane[:filters]
+      if pane.is_a?(Hash)
+        if pane[:count]
+          @tab_counts[pane[:name]] = pane[:count]
+        elsif pane[:filters]
+          @tab_counts[pane[:name]] = @object.contents(filters: pane[:filters]).items_available
+        end
+      end
     end
   end
 
@@ -188,17 +212,6 @@ class ProjectsController < ApplicationController
   def show
     if !@object
       return render_not_found("object not found")
-    end
-
-    @user_is_manager = false
-    @share_links = []
-    if @object.uuid != current_user.uuid
-      begin
-        @share_links = Link.permissions_for(@object)
-        @user_is_manager = true
-      rescue ArvadosApiClient::AccessForbiddenException,
-        ArvadosApiClient::NotFoundException
-      end
     end
 
     if params[:partial]
