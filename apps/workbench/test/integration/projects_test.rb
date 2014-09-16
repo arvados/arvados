@@ -9,9 +9,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   test 'Check collection count for A Project in the tab pane titles' do
     project_uuid = api_fixture('groups')['aproject']['uuid']
-    collection_fixture_count = api_fixture('collections').select{|k,v| v['owner_uuid'] == project_uuid}.count
     visit page_with_token 'active', '/projects/' + project_uuid
-    assert_selector '#Data_collections-tab span', text: "(#{collection_fixture_count})"
+    collection_count = page.all("[data-pk*='collection']").count
+    assert_selector '#Data_collections-tab span', text: "(#{collection_count})"
   end
 
   test 'Find a project and edit its description' do
