@@ -236,8 +236,13 @@ class KeepClientRetryTestMixin(object):
     TEST_DATA = 'testdata'
     TEST_LOCATOR = 'ef654c40ab4f1747fc699915d4f70902+8'
 
-    def new_client(self):
-        return arvados.KeepClient(proxy=self.PROXY_ADDR, local_store='')
+    def setUp(self):
+        self.client_kwargs = {'proxy': self.PROXY_ADDR, 'local_store': ''}
+
+    def new_client(self, **caller_kwargs):
+        kwargs = self.client_kwargs.copy()
+        kwargs.update(caller_kwargs)
+        return arvados.KeepClient(**kwargs)
 
     def run_method(self, *args, **kwargs):
         raise NotImplementedError("test subclasses must define run_method")
@@ -271,6 +276,11 @@ class KeepClientRetryTestMixin(object):
     def test_error_after_retries_exhausted(self):
         with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 500, 200):
             self.check_exception(num_retries=1)
+
+    def test_num_retries_instance_fallback(self):
+        self.client_kwargs['num_retries'] = 3
+        with tutil.mock_responses(self.DEFAULT_EXPECT, 500, 200):
+            self.check_success()
 
 
 @tutil.skip_sleep
