@@ -597,12 +597,12 @@ class WhRunPipelineInstance
               # succeeded. (At the top of this loop, I was still
               # waiting for it to finish.)
 
-              debuglog "names: #{@instance[:name]} #{@template[:name]}", 0
-              if (not @instance[:name].nil?) and (not @instance[:name].empty?)
+              if @instance[:name].andand.length > 0
                 pipeline_name = @instance[:name]
-              else
-                fetch_template(@instance[:pipeline_template_uuid])
+              elsif @template.andand[:name].andand.length > 0
                 pipeline_name = @template[:name]
+              else
+                pipeline_name = @instance[:uuid]
               end
               if c[:output_name] != false
                 # Create a collection located in the same project as the pipeline with the contents of the output.
