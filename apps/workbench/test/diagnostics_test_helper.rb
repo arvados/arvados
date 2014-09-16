@@ -7,7 +7,7 @@ class DiagnosticsTest < ActionDispatch::IntegrationTest
     if !path.start_with? Rails.configuration.arvados_workbench_url
       path = Rails.configuration.arvados_workbench_url + path
     end
-    tokens = Rails.configuration.diagnostics_testing_user_tokens
+    tokens = Rails.configuration.user_tokens
     visit page_with_token(tokens[token_name], path)
   end
 

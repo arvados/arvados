@@ -1,6 +1,32 @@
 # Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
 
+# Below is a sample setting for diagnostics testing.
+# Configure workbench URL as "arvados_workbench_url"
+# Configure test user tokens as "user_tokens".
+#   At this time the tests need an "active" user token.
+# Also, configure the pipelines to be executed as "pipelines_to_test".
+# For each of the pipelines identified by the name of your choice
+#     ("pipeline_1" and "pipeline_2" in this sample), provide the following:
+#   template_uuid: is the uuid of the template to be executed
+#   input_paths: an array of inputs for the pipeline. Use either a collection's "uuid"
+#     or a file's "uuid/file_name" path in this array. If the pipeline does not require
+#     any inputs, this can be omitted. 
+#   max_wait_seconds: max time in seconds to wait for the pipeline run to complete.
+#     Default value of 30 seconds is used when this value is not provided.
+diagnostics:
+  arvados_workbench_url: https://localhost:3000/
+  user_tokens:
+    active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
+  pipelines_to_test:
+    pipeline_1:
+      template_uuid: zzzzz-p5p6p-rxj8d71854j9idn
+      input_paths: [zzzzz-4zz18-nz98douzhaa3jh2]
+      max_wait_seconds: 10
+    pipeline_2:
+      template_uuid: zzzzz-p5p6p-1xbobfobk94ppbv
+      input_paths: [zzzzz-4zz18-nz98douzhaa3jh2, zzzzz-4zz18-gpw9o5wpcti3nib]
+
 development:
   cache_classes: false
   eager_load: true
@@ -142,36 +168,5 @@ common:
   issue_reporter_email_to: arvados@example.com
   support_email_address: arvados@example.com
 
-#  # Configuration for diagnostics testing. See the "diagnostics" section for more explanation.
-#  arvados_workbench_url: false
-#  diagnostics_testing_user_tokens: false
-#  diagnostics_testing_pipeline_fields: false
-
   # filename suffixes for which view icon would be shown in collection show page
   filename_suffixes_with_view_icon: [txt, gif, jpeg, jpg, png, html, htm, pdf]
-
-# Below is a sample setting for diagnostics testing.
-# Configure test user tokens as "diagnostics_testing_user_tokens".
-#   At this time the tests need an "active" user token.
-# Also, configure the pipelines to be executed as "diagnostics_testing_pipeline_fields".
-# For each of the pipelines identified by the name of your choice
-#     ("tutorial pipeline" and "tutorial pipeline 2" in this sample):
-#   template_uuid: is the uuid of the template to be executed
-#   input_paths: an array of inputs for the pipeline. Use either a collection's "uuid"
-#     or a file's "uuid/file_name" path in this array. If the pipeline does not require
-#     any inputs, this can be omitted. 
-#   max_wait_seconds: max time in seconds to wait for the pipeline run to complete.
-#     Default value of 30 seconds is used when this value is not provided.
-
-diagnostics:
-  arvados_workbench_url: https://localhost:3000/
-  diagnostics_testing_user_tokens:
-    active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
-  diagnostics_testing_pipeline_fields:
-    tutorial pipeline 1:
-      template_uuid: zzzzz-p5p6p-rxj8d71854j9idn
-      input_paths: [zzzzz-4zz18-nz98douzhaa3jh2]
-      max_wait_seconds: 10
-    tutorial pipeline 2:
-      template_uuid: zzzzz-p5p6p-1xbobfobk94ppbv
-      input_paths: [zzzzz-4zz18-nz98douzhaa3jh2, zzzzz-4zz18-gpw9o5wpcti3nib]

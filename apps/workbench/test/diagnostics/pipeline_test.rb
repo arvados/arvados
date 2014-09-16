@@ -3,18 +3,18 @@ require 'selenium-webdriver'
 require 'headless'
 
 class PipelineTest < DiagnosticsTest
-  pipelines_to_run = Rails.configuration.diagnostics_testing_pipeline_fields.andand.keys
+  pipelines_to_test = Rails.configuration.pipelines_to_test.andand.keys
 
   setup do
-#    headless = Headless.new
-#    headless.start
+    headless = Headless.new
+    headless.start
     Capybara.current_driver = :selenium
   end
 
-  pipelines_to_run.andand.each do |pipeline_to_run|
-    test "visit home page for user #{pipeline_to_run}" do
+  pipelines_to_test.andand.each do |pipeline_to_test|
+    test "visit home page for user #{pipeline_to_test}" do
       visit_page_with_token 'active'
-      pipeline_config = Rails.configuration.diagnostics_testing_pipeline_fields[pipeline_to_run]
+      pipeline_config = Rails.configuration.pipelines_to_test[pipeline_to_test]
 
       # Search for tutorial template
       within('.navbar-fixed-top') do
@@ -75,7 +75,7 @@ class PipelineTest < DiagnosticsTest
              
       page.all('.selectable').first.click
       wait_for_ajax
-      # it appears that ajax reload is wiping out input selection after search results; so, select one more time.
+      # ajax reload is wiping out input selection after search results; so, select again.
       page.all('.selectable').first.click
       wait_for_ajax
 

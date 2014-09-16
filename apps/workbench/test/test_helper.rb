@@ -1,4 +1,4 @@
-ENV["RAILS_ENV"] = "test" if !ENV["RAILS_ENV"]
+ENV["RAILS_ENV"] = "test" if (ENV["RAILS_ENV"] != "diagnostics")
 
 unless ENV["NO_COVERAGE_TEST"]
   begin
