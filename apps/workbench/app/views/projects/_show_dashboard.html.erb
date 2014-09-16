@@ -1,0 +1,179 @@
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading"><span class="panel-title">Active pipelines</span>
+          <span class="pull-right">
+    <%= link_to(
+	  choose_pipeline_templates_path(
+	    title: 'Choose a pipeline to run:',
+	    action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
+	    action_href: pipeline_instances_path,
+	    action_method: 'post',
+	    action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => current_user.uuid, 'success' => 'redirect-to-created-object'}.to_json),
+	  { class: "btn btn-primary btn-xs", remote: true, method: 'get' }) do %>
+      <i class="fa fa-fw fa-gear"></i> Run a pipeline...
+    <% end %>
+    </span>
+        </div>
+
+        <div class="panel-body">
+          <% if running_pipelines.empty? %>
+            No pipelines are currently running.
+          <% end %>
+          <% running_pipelines.each do |p| %>
+            <div class="dashboard-panel-info-row">
+              <div class="clearfix">
+                <%= link_to_if_arvados_object p, friendly_name: true %>
+
+                <div class="pull-right" style="width: 40%">
+                  <div class="progress" style="margin-bottom: 0px">
+                    <% running = [] %>
+                    <% failed = [] %>
+                    <% completed = [] %>
+                    <% queued = [] %>
+                    <% p.components.each do |k, v| %>
+                      <% if v[:job] %>
+                        <% if Job::state(v[:job]) == "Running" %>
+                          <% running << k %>
+                        <% elsif Job::state(v[:job]) == "Failed" or Job::state(v[:job]) == "Canceled" %>
+                          <% failed << k %>
+                        <% elsif Job::state(v[:job]) == "Completed" %>
+                          <% completed << k %>
+                        <% elsif Job::state(v[:job]) == "Queued" %>
+                          <% queued << k %>
+                        <% end %>
+                      <% end %>
+                    <% end %>
+                    <% completed_pct = (completed.size * 100) / p.components.size %>
+                    <% failed_pct = (failed.size * 100) / p.components.size %>
+                    <% running_pct = (running.size * 100) / p.components.size %>
+                    <% queued_pct = (queued.size * 100) / p.components.size %>
+
+                    <div class="progress-bar progress-bar-success" style="width: <%= completed_pct %>%">
+                      <span class="sr-only"></span>
+                    </div>
+                    <div class="progress-bar progress-bar-warning" style="width: <%= failed_pct %>%">
+                      <span class="sr-only"></span>
+                    </div>
+                    <div class="progress-bar progress-bar-primary" style="width: <%= running_pct %>%">
+                      <span class="sr-only"></span>
+                    </div>
+                    <div class="progress-bar progress-bar-default" style="width: <%= queued_pct %>%">
+                      <span class="sr-only"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="clearfix">
+                Started at <span class="utc-date" data-utc-date="<%= p[:started_at] || p[:created_at] %>"
+                                 data-utc-date-opts="noseconds"><%= p[:created_at] %></span>.
+                <% pipeline_time = Time.now - (p[:started_at] || p[:created_at]) %>
+                Active for <%= runtime(pipeline_time, false) %>.
+
+                <div class="pull-right">
+                  <% running.each do |k| %>
+                    <span class="label label-primary"><%= k %></span>
+                  <% end %>
+                  <% queued.each do |k| %>
+                    <span class="label label-default"><%= k %></span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+          </div>
+      </div>
+
+      <div class="panel panel-default">
+        <div class="panel-heading"><span class="panel-title">Recently finished pipelines</span></div>
+        <div class="panel-body">
+          <% finished_pipelines(8).each do |p| %>
+            <div class="dashboard-panel-info-row">
+              <div class="row">
+                <div class="col-md-6 x-ellip">
+                <%= link_to_if_arvados_object p, friendly_name: true %>
+              </div>
+              <div class="col-md-2">
+                <%= render partial: "pipeline_status_label", locals: {p: p}%>
+              </div>
+              <div class="col-md-4">
+                <span class="utc-date" data-utc-date="<%= p[:finished_at] || p[:modified_at] %>"
+                      data-utc-date-opts="noseconds"><%= p[:modified_at] %></span>
+              </div>
+              </div>
+              <div class="row">
+                <div class="col-md-12">
+                  <% if p[:started_at] and p[:finished_at] %>
+                    <% pipeline_time = p[:finished_at] - p[:started_at] %>
+                    Active for <%= runtime(pipeline_time, false) %>
+                  <% end %>
+
+                  <span class="pull-right">
+                    <% outputs = [] %>
+                    <% p.components.each do |k, c| %>
+                      <% outputs << c[:output_uuid] if c[:output_uuid] %>
+                    <% end %>
+                    <% if outputs.size == 0 %>
+                      No output.
+                    <% elsif outputs.size == 1 %>
+                      <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object outputs[0], friendly_name: true %>
+                    <% else %>
+                      <a href="#<%= p[:uuid] %>" data-toggle="collapse">Outputs <span class="caret"></span></a>
+                    <% end %>
+                  </span>
+                </div>
+              </div>
+
+                <div class="row collapse" id="<%= p[:uuid] %>" >
+                  <div class="col-md-offset-3 col-md-10">
+                    <% outputs.each do |out| %>
+                      <div>
+                        <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object out, friendly_name: true %>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <% nodes = Node.all %>
+      <div class="panel panel-default">
+        <div class="panel-heading"><span class="panel-title"><a data-toggle="collapse" href="#compute_node_status">Compute node status <span class="caret"></span></a></span></div>
+        <div class="panel-body">
+          <div class="compute-node-summary" data-toggle="collapse" href="#compute_node_status">
+            <%= render partial: 'compute_node_summary', locals: {nodes: nodes} %>
+          </div>
+          <div id="compute_node_status" class="collapse">
+            <%= render partial: 'compute_node_status', locals: {nodes: nodes} %>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading"><span class="panel-title">Recent collections</span></div>
+        <div class="panel-body">
+          <% r = recent_collections(8) %>
+          <% r[:collections].each do |p| %>
+            <div class="dashboard-panel-info-row">
+            <div>
+              <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object r[:owners][p[:owner_uuid]], friendly_name: true %>/
+              <span class="pull-right"><span class="utc-date"
+                                             data-utc-date="<%= p[:modified_at] %>"
+                                             data-utc-date-opts="noseconds"><%= p[:modified_at]%></span></span>
+            </div>
+            <div class="x-ellip" style="margin-left: 1em"><%= link_to_if_arvados_object p, friendly_name: true %>
+            </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
