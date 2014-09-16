@@ -666,7 +666,7 @@ func TestPullHandler(t *testing.T) {
 	var output_list = make([]PullRequest, 3)
 	for i := 0; i < 3; i++ {
 		item := <-pullmgr.NextItem
-		if pr, ok := item.Value.(PullRequest); ok {
+		if pr, ok := item.(PullRequest); ok {
 			output_list[i] = pr
 		} else {
 			t.Errorf("item %v could not be parsed as a PullRequest", item)

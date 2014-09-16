@@ -1,11 +1,10 @@
 package main
 
-/* A BlockWorkList concurrently processes blocks needing attention.
+/* A BlockWorkList is an asynchronous thread-safe queue manager.  It
+   provides a channel from which items can be read off the queue, and
+   permits replacing the contents of the queue at any time.
 
-   The BlockWorkList object itself manages a list of generic objects,
-   replacing the list when new data is available, and delivering items
-   from the list to consumers when requested.  The overall work flow
-   is as follows:
+   The overall work flow for a BlockWorkList is as follows:
 
      1. A BlockWorkList is created with NewBlockWorkList().  This
         function instantiates a new BlockWorkList and starts a manager
@@ -39,37 +38,34 @@ package main
      * the pull list
      * the trash list
 
-   Example (simplified) implementation of a trash collector:
+   Example usage:
 
-		type DeleteRequest struct {
-			hash string
-			age time.Time
+        // Any kind of user-defined type can be used with the
+        // BlockWorkList.
+		type FrobRequest struct {
+			frob string
 		}
 
 		// Make a work list.
-		trashList := NewBlockWorkList()
+		froblist := NewBlockWorkList()
 
 		// Start a concurrent worker to read items from the NextItem
 		// channel until it is closed, deleting each one.
-		if diskFull() {
-			go func(list BlockWorkList) {
-				for i := range list.NextItem {
-					req := i.(DeleteRequest)
-					if time.Now() > req.age {
-						deleteBlock(req.hash)
-					}
-				}
-			}(trashList)
-		}
+		go func(list BlockWorkList) {
+			for i := range list.NextItem {
+				req := i.(FrobRequest)
+				frob.Run(req)
+			}
+		}(froblist)
 
-		// Set up a HTTP handler for PUT /trash
-		router.HandleFunc(`/trash`,
+		// Set up a HTTP handler for PUT /frob
+		router.HandleFunc(`/frob`,
 			func(w http.ResponseWriter, req *http.Request) {
 				// Parse the request body into a list.List
-				// of DeleteRequests, and give this list to the
-				// trash collector.
-				trash := parseBody(req.Body)
-				trashList.ReplaceList(trash)
+				// of FrobRequests, and give this list to the
+				// frob manager.
+				newfrobs := parseBody(req.Body)
+				froblist.ReplaceList(newfrobs)
 			}).Methods("PUT")
 
    Methods available on a BlockWorkList:
@@ -82,7 +78,8 @@ package main
             finishes processing before receiving items from the new
             list.
 		Close()
-			Shuts down the manager and the worker cleanly.
+			Shuts down the manager goroutine. When Close is called,
+			the manager closes the NextItem channel.
 */
 
 import "container/list"
@@ -90,7 +87,7 @@ import "container/list"
 type BlockWorkList struct {
 	items    *list.List
 	newlist  chan *list.List
-	NextItem chan *list.Element
+	NextItem chan interface{}
 }
 
 // NewBlockWorkList returns a new worklist, and launches a listener
@@ -100,7 +97,7 @@ func NewBlockWorkList() *BlockWorkList {
 	b := BlockWorkList{
 		items:    nil,
 		newlist:  make(chan *list.List),
-		NextItem: make(chan *list.Element),
+		NextItem: make(chan interface{}),
 	}
 	go b.listen()
 	return &b
@@ -124,6 +121,7 @@ func (b *BlockWorkList) Close() {
 
 // listen is run in a goroutine. It reads new pull lists from its
 // input queue until the queue is closed.
+// listen takes ownership of the list that is passed to it.
 func (b *BlockWorkList) listen() {
 	var (
 		current_list *list.List
@@ -155,7 +153,7 @@ func (b *BlockWorkList) listen() {
 				// The input channel is closed; time to shut down
 				return
 			}
-		case b.NextItem <- current_item:
+		case b.NextItem <- current_item.Value:
 			current_item = current_item.Next()
 		}
 	}

@@ -13,16 +13,15 @@ func makeTestWorkList(ary []int) *list.List {
 	return l
 }
 
-func compareSlice(l1, l2 []int) bool {
-	if len(l1) != len(l2) {
-		return false
+// peek returns the next item available from the channel, or
+// nil if the channel is empty or closed.
+func peek(c <-chan interface{}) interface{} {
+	select {
+	case item := <-c:
+		return item
+	default:
+		return nil
 	}
-	for i := range l1 {
-		if l1[i] != l2[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // Create a BlockWorkList, generate a list for it, and instantiate a worker.
@@ -32,18 +31,19 @@ func TestBlockWorkListReadWrite(t *testing.T) {
 	b := NewBlockWorkList()
 	b.ReplaceList(makeTestWorkList(input))
 
-	output := make([]int, len(input))
 	var i = 0
 	for item := range b.NextItem {
-		output[i] = item.Value.(int)
+		if item.(int) != input[i] {
+			t.Fatalf("expected %d, got %d", input[i], item.(int))
+		}
 		i++
-		if i >= len(output) {
-			b.Close()
+		if i >= len(input) {
+			break
 		}
 	}
 
-	if !compareSlice(output, input) {
-		t.Fatalf("output %v does not match input %v\n", output, input)
+	if item := peek(b.NextItem); item != nil {
+		t.Fatalf("unexpected output %v", item)
 	}
 }
 
@@ -53,20 +53,31 @@ func TestBlockWorkListEarlyRead(t *testing.T) {
 
 	b := NewBlockWorkList()
 
+	// First, demonstrate that nothing is available on the NextItem
+	// channel.
+	if item := peek(b.NextItem); item != nil {
+		t.Fatalf("unexpected output %v", item)
+	}
+
 	// Start a reader in a goroutine. The reader will block until the
 	// block work list has been initialized.
-	output := make([]int, len(input))
+	// Note that the worker closes itself: once it has read as many
+	// elements as it expects, it calls b.Close(), which causes the
+	// manager to close the b.NextItem channel.
+	//
 	done := make(chan int)
 	go func() {
 		var i = 0
+		defer func() { done <- 1 }()
 		for item := range b.NextItem {
-			output[i] = item.Value.(int)
+			if item.(int) != input[i] {
+				t.Fatalf("expected %d, got %d", input[i], item.(int))
+			}
 			i++
-			if i >= len(output) {
+			if i >= len(input) {
 				b.Close()
 			}
 		}
-		done <- 1
 	}()
 
 	// Feed the blocklist a new worklist, and wait for the worker to
@@ -74,9 +85,52 @@ func TestBlockWorkListEarlyRead(t *testing.T) {
 	b.ReplaceList(makeTestWorkList(input))
 	<-done
 
-	if !compareSlice(output, input) {
-		t.Fatalf("output %v does not match input %v\n", output, input)
+	if item := peek(b.NextItem); item != nil {
+		t.Fatalf("unexpected output %v", item)
 	}
+}
+
+// Show that a reader may block when the manager's list is exhausted,
+// and that the reader resumes automatically when new data is
+// available.
+func TestBlockWorkListReaderBlocks(t *testing.T) {
+	var input = []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+	b := NewBlockWorkList()
+	sendmore := make(chan int)
+	done := make(chan int)
+	go func() {
+		i := 0
+		for item := range b.NextItem {
+			if item.(int) != input[i] {
+				t.Fatalf("expected %d, got %d", input[i], item.(int))
+			}
+			i++
+			if i == 5 {
+				sendmore <- 1
+			}
+			if i == 10 {
+				b.Close()
+			}
+		}
+		done <- 1
+	}()
+
+	// Write a slice of the first five elements and wait for a signal
+	// from the reader.
+	b.ReplaceList(makeTestWorkList(input[0:5]))
+	<-sendmore
+
+	// Confirm that no more data is available on the NextItem channel
+	// (and therefore any readers are blocked) before writing the
+	// final five elements.
+	if item := peek(b.NextItem); item != nil {
+		t.Fatalf("unexpected output %v", item)
+	}
+	b.ReplaceList(makeTestWorkList(input[5:]))
+
+	// Wait for the reader to complete.
+	<-done
 }
 
 // Replace one active work list with another.
@@ -89,28 +143,19 @@ func TestBlockWorkListReplaceList(t *testing.T) {
 
 	// Read the first five elements from the work list.
 	//
-	output := make([]int, len(input1))
 	for i := 0; i < 5; i++ {
 		item := <-b.NextItem
-		output[i] = item.Value.(int)
-	}
-
-	// Replace the work list and read the remaining elements.
-	b.ReplaceList(makeTestWorkList(input2))
-	i := 5
-	for item := range b.NextItem {
-		output[i] = item.Value.(int)
-		i++
-		if i >= len(output) {
-			b.Close()
-			break
+		if item.(int) != input1[i] {
+			t.Fatalf("expected %d, got %d", input1[i], item.(int))
 		}
 	}
 
-	if !compareSlice(output[0:5], input1[0:5]) {
-		t.Fatal("first half of output does not match")
-	}
-	if !compareSlice(output[5:], input2[0:4]) {
-		t.Fatal("second half of output does not match")
+	// Replace the work list and read five more elements.
+	b.ReplaceList(makeTestWorkList(input2))
+	for i := 0; i < 5; i++ {
+		item := <-b.NextItem
+		if item.(int) != input2[i] {
+			t.Fatalf("expected %d, got %d", input2[i], item.(int))
+		}
 	}
 }
