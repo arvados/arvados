@@ -45,6 +45,7 @@ def main():
         help='Do not copy any dependencies. NOTE: if this option is given, the copied object will need to be updated manually in order to be functional.')
     parser.add_argument(
         '--dst-git-repo', dest='dst_git_repo',
+        required=True,
         help='The name of the destination git repository.')
     parser.add_argument(
         '--project_uuid', dest='project_uuid',
@@ -104,7 +105,14 @@ def api_for_instance(instance_name):
     if '/' in instance_name:
         abort('illegal instance name {}'.format(instance_name))
     config_file = os.path.join(os.environ['HOME'], '.config', 'arvados', "{}.conf".format(instance_name))
-    cfg = arvados.config.load(config_file)
+    try:
+        cfg = arvados.config.load(config_file)
+    except (IOError, OSError) as e:
+        abort(("Could not open config file {}: {}\n" +
+               "You must make sure that your configuration tokens\n" +
+               "for Arvados instance {} are in {} and that this\n" +
+               "file is readable.").format(
+                   config_file, e, instance_name, config_file))
 
     if 'ARVADOS_API_HOST' in cfg and 'ARVADOS_API_TOKEN' in cfg:
         api_is_insecure = (
@@ -310,8 +318,10 @@ def copy_collection(obj_uuid, src, dst):
     logger.debug('saving {} manifest: {}'.format(obj_uuid, manifest))
     dst_keep.put(manifest)
 
-    del c['uuid']
-    del c['owner_uuid']
+    if 'uuid' in c:
+        del c['uuid']
+    if 'owner_uuid' in c:
+        del c['owner_uuid']
     c['ensure_unique_name'] = True
     return dst.collections().create(body=c).execute()
 
@@ -344,7 +354,7 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
     r = dst.repositories().list(
         filters=[['name', '=', dst_git_repo]]).execute()
     if r['items_available'] != 1:
-        raise Exception('cannot identify source repo {}; {} repos found'
+        raise Exception('cannot identify destination repo {}; {} repos found'
                         .format(dst_git_repo, r['items_available']))
     dst_git_push_url  = r['items'][0]['push_url']
     logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
