@@ -20,9 +20,9 @@ def fake_httplib2_response(code, **headers):
                    reason=httplib.responses.get(code, "Unknown Response"))
     return httplib2.Response(headers)
 
-def mock_responses(body, *codes):
+def mock_responses(body, *codes, **headers):
     return mock.patch('httplib2.Http.request', side_effect=(
-            (fake_httplib2_response(code), body) for code in codes))
+            (fake_httplib2_response(code, **headers), body) for code in codes))
 
 class ArvadosBaseTestCase(unittest.TestCase):
     # This class provides common utility functions for our tests.
