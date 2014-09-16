@@ -34,11 +34,17 @@ class SafeApi(object):
         self.token = config.get('ARVADOS_API_TOKEN')
         self.insecure = config.flag_is_true('ARVADOS_API_HOST_INSECURE')
         self.local = threading.local()
+        self.block_cache = arvados.KeepBlockCache()
 
     def localapi(self):
         if 'api' not in self.local.__dict__:
             self.local.api = arvados.api('v1', False, self.host, self.token, self.insecure)
         return self.local.api
+
+    def localkeep(self):
+        if 'keep' not in self.local.__dict__:
+            self.local.keep = arvados.KeepClient(api_client=self.localapi(), block_cache=self.block_cache)
+        return self.local.keep
 
     def collections(self):
         return self.localapi().collections()
@@ -307,7 +313,7 @@ class CollectionDirectory(Directory):
             self.collection_object_file.update(self.collection_object)
 
         self.clear()
-        collection = arvados.CollectionReader(self.collection_object["manifest_text"], self.api)
+        collection = arvados.CollectionReader(self.collection_object["manifest_text"], self.api, self.api.localkeep())
         for s in collection.all_streams():
             cwd = self
             for part in s.name().split('/'):
@@ -341,6 +347,10 @@ class CollectionDirectory(Directory):
             else:
                 _logger.error("arv-mount %s: error", self.collection_locator)
                 _logger.exception(detail)
+        except arvados.errors.ArgumentError as detail:
+            _logger.warning("arv-mount %s: error %s", self.collection_locator, detail)
+            if self.collection_object is not None and "manifest_text" in self.collection_object:
+                _logger.warning("arv-mount manifest_text is: %s", self.collection_object["manifest_text"])
         except Exception as detail:
             _logger.error("arv-mount %s: error", self.collection_locator)
             if self.collection_object is not None and "manifest_text" in self.collection_object:
@@ -796,7 +806,11 @@ class Operations(llfuse.Operations):
         try:
             with llfuse.lock_released:
                 return handle.entry.readfrom(off, size)
-        except:
+        except arvados.errors.NotFoundError as e:
+            _logger.warning("Block not found: " + str(e))
+            raise llfuse.FUSEError(errno.EIO)
+        except Exception as e:
+            _logger.exception(e)
             raise llfuse.FUSEError(errno.EIO)
 
     def release(self, fh):

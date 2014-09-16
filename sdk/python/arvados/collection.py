@@ -92,9 +92,9 @@ def normalize(collection):
 
 
 class CollectionReader(object):
-    def __init__(self, manifest_locator_or_text, api_client=None):
+    def __init__(self, manifest_locator_or_text, api_client=None, keep_client=None):
         self._api_client = api_client
-        self._keep_client = None
+        self._keep_client = keep_client
         if re.match(r'[a-f0-9]{32}(\+\d+)?(\+\S+)*$', manifest_locator_or_text):
             self._manifest_locator = manifest_locator_or_text
             self._manifest_text = None
@@ -153,7 +153,7 @@ class CollectionReader(object):
         # now regenerate the manifest text based on the normalized stream
 
         #print "normalizing", self._manifest_text
-        self._manifest_text = ''.join([StreamReader(stream).manifest_text() for stream in self._streams])
+        self._manifest_text = ''.join([StreamReader(stream, keep=self._keep_client).manifest_text() for stream in self._streams])
         #print "result", self._manifest_text
 
 
@@ -161,7 +161,7 @@ class CollectionReader(object):
         self._populate()
         resp = []
         for s in self._streams:
-            resp.append(StreamReader(s))
+            resp.append(StreamReader(s, keep=self._keep_client))
         return resp
 
     def all_files(self):
@@ -172,7 +172,7 @@ class CollectionReader(object):
     def manifest_text(self, strip=False):
         self._populate()
         if strip:
-            m = ''.join([StreamReader(stream).manifest_text(strip=True) for stream in self._streams])
+            m = ''.join([StreamReader(stream, keep=self._keep_client).manifest_text(strip=True) for stream in self._streams])
             return m
         else:
             return self._manifest_text
