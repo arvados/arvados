@@ -31,6 +31,14 @@ import arvados.keep
 
 logger = logging.getLogger('arvados.arv-copy')
 
+# local_repo_dir records which git repositories from the Arvados source
+# instance have been checked out locally during this run, and to which
+# directories.
+# e.g. if repository 'twp' from src_arv has been cloned into
+# /tmp/gitfHkV9lu44A then local_repo_dir['twp'] = '/tmp/gitfHkV9lu44A'
+#
+local_repo_dir = {}
+
 def main():
     logger.setLevel(logging.DEBUG)
 
@@ -250,10 +258,14 @@ def copy_collections(obj, src, dst):
 #    Copies all git repositories referenced by pipeline instance or
 #    template 'p' from src to dst.
 #
-#    Git repository dependencies are identified by:
-#      * p['components'][c]['repository']
-#      * p['components'][c]['job']['repository']
-#    for each component c in the pipeline.
+#    For each component c in the pipeline:
+#      * Copy git repositories named in c['repository'] and c['job']['repository'] if present
+#      * Rename script versions:
+#          * c['script_version']
+#          * c['job']['script_version']
+#          * c['job']['supplied_script_version']
+#        to the commit hashes they resolve to, since any symbolic
+#        names (tags, branches) are not preserved in the destination repo.
 #
 #    The pipeline object is updated in place with the new repository
 #    names.  The return value is undefined.
@@ -268,12 +280,22 @@ def copy_git_repos(p, src, dst, dst_repo):
                 copy_git_repo(repo, src, dst, dst_repo)
                 copied.add(repo)
             component['repository'] = dst_repo
-        if 'job' in component and 'repository' in component['job']:
-            repo = component['job']['repository']
-            if repo not in copied:
-                copy_git_repo(repo, src, dst, dst_repo)
-                copied.add(repo)
-            component['job']['repository'] = dst_repo
+            if 'script_version' in component:
+                repo_dir = local_repo_dir[repo]
+                component['script_version'] = git_rev_parse(component['script_version'], repo_dir)
+        if 'job' in component:
+            j = component['job']
+            if 'repository' in j:
+                repo = j['repository']
+                if repo not in copied:
+                    copy_git_repo(repo, src, dst, dst_repo)
+                    copied.add(repo)
+                j['repository'] = dst_repo
+                repo_dir = local_repo_dir[repo]
+                if 'script_version' in j:
+                    j['script_version'] = git_rev_parse(j['script_version'], repo_dir)
+                if 'supplied_script_version' in j:
+                    j['supplied_script_version'] = git_rev_parse(j['supplied_script_version'], repo_dir)
 
 # copy_collection(obj_uuid, src, dst)
 #
@@ -381,6 +403,18 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
         cwd=tmprepo)
     arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
     arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
+    repository_map[src_git_repo] = tmprepo
+
+# git_rev_parse(rev, repo)
+#
+#    Returns the 40-character commit hash corresponding to 'rev' in
+#    git repository 'repo' (which must be the path of a local git
+#    repository)
+#
+def git_rev_parse(rev, repo):
+    gitout, giterr = arvados.util.run_command(
+        ['git', 'rev-parse', rev], cwd=repo)
+    return gitout.strip()
 
 # uuid_type(api, object_uuid)
 #
