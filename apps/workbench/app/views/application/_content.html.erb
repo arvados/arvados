@@ -4,7 +4,15 @@
 
 <ul class="nav nav-tabs">
   <% pane_list.each_with_index do |pane, i| %>
-    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab" data-pane-content-url="<%= url_for(params.merge(tab_pane: pane)) %>"> <%= pane.gsub('_', ' ') %></a></li>
+    <li class="<%= 'active' if i==0 %>">
+      <a href="#<%= pane %>" 
+         data-toggle="tab" 
+         id="<%= pane %>-tab" 
+         data-tab-history=true
+         data-pane-content-url="<%= url_for(params.merge(tab_pane: pane)) %>">
+        <%= pane.gsub('_', ' ') %>
+      </a>
+    </li>
   <% end %>
 </ul>
 <div class="tab-content">

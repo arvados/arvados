@@ -21,6 +21,7 @@
 //= require bootstrap/modal
 //= require bootstrap/button
 //= require bootstrap3-editable/bootstrap-editable
+//= require bootstrap-tab-history
 //= require wiselinks
 //= require_tree .
 
