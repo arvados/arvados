@@ -427,8 +427,6 @@ class KeepClient(object):
         if local_store is None:
             local_store = os.environ.get('KEEP_LOCAL_STORE')
 
-        if block_cache is None:
-            raise Exception()
         self.block_cache = block_cache if block_cache else KeepBlockCache()
 
         if local_store:
@@ -708,6 +706,7 @@ class KeepClient(object):
         os.rename(os.path.join(self.local_store, md5 + '.tmp'),
                   os.path.join(self.local_store, md5))
         return locator
+
     def local_store_get(self, loc_s):
         try:
             locator = KeepLocator(loc_s)
