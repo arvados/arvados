@@ -205,12 +205,6 @@ class ArvadosModel < ActiveRecord::Base
                head_uuid: target_uuid).any?
   end
 
-  # can this class of object go into a project?
-  # default to false, override to true on individual model classes
-  def self.goes_in_projects?
-    false
-  end
-
   protected
 
   def ensure_ownership_path_leads_to_user
