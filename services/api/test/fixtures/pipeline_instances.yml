@@ -62,11 +62,3 @@ components_is_jobspec:
         dataclass: Collection
         title: "Foo/bar pair"
         description: "Provide a collection containing at least two files."
-
-pipeline_with_template:
-  state: New
-  uuid: zzzzz-d1hrv-1234eyn6br1abcd
-  name: pipeline_with_template
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  created_at: <%= 1.minute.ago.to_s(:db) %>
-  pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
