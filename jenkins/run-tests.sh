@@ -268,6 +268,10 @@ install_apiserver() {
         && git add tmp \
         && git commit -m 'initial commit'
 
+    # Clear out any lingering postgresql connections to arvados_test, so that we can drop it
+    # This assumes the current user is a postgresql superuser
+    psql arvados_test -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'arvados_test';" 2>/dev/null
+
     cd "$WORKSPACE/services/api" \
         && bundle exec rake db:drop \
         && bundle exec rake db:create \
