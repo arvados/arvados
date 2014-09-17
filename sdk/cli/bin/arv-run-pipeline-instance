@@ -597,7 +597,7 @@ class WhRunPipelineInstance
               # succeeded. (At the top of this loop, I was still
               # waiting for it to finish.)
 
-              if @instance[:name].andand.length > 0
+              if @instance[:name].andand.length.andand > 0
                 pipeline_name = @instance[:name]
               elsif @template.andand[:name].andand.length.andand > 0
                 pipeline_name = @template[:name]
