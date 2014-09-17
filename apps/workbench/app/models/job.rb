@@ -8,7 +8,11 @@ class Job < ArvadosBase
   end
 
   def attribute_editable? attr, *args
-    false
+    if attr.to_sym == :description
+      super && attr.to_sym == :description
+    else
+      false
+    end
   end
 
   def self.creatable?
@@ -58,4 +62,7 @@ class Job < ArvadosBase
     end
   end
 
+  def textile_attributes
+    [ 'description' ]
+  end
 end

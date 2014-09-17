@@ -10,10 +10,10 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"container/list"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"git.curoverse.com/arvados.git/services/keepstore/pull_list"
 	"github.com/gorilla/mux"
 	"io"
 	"log"
@@ -436,6 +436,11 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
    If the JSON unmarshalling fails, return 400 Bad Request.
 */
 
+type PullRequest struct {
+	Locator string   `json:"locator"`
+	Servers []string `json:"servers"`
+}
+
 func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
 	api_token := GetApiToken(req)
@@ -446,9 +451,9 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	// Parse the request body.
-	var plist []pull_list.PullRequest
+	var pr []PullRequest
 	r := json.NewDecoder(req.Body)
-	if err := r.Decode(&plist); err != nil {
+	if err := r.Decode(&pr); err != nil {
 		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
 		log.Printf("%s %s: %s\n", req.Method, req.URL, err.Error())
 		return
@@ -457,15 +462,20 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// We have a properly formatted pull list sent from the data
 	// manager.  Report success and send the list to the pull list
 	// manager for further handling.
-	log.Printf("%s %s: received %v\n", req.Method, req.URL, plist)
+	log.Printf("%s %s: received %v\n", req.Method, req.URL, pr)
 	resp.WriteHeader(http.StatusOK)
 	resp.Write([]byte(
-		fmt.Sprintf("Received %d pull requests\n", len(plist))))
+		fmt.Sprintf("Received %d pull requests\n", len(pr))))
+
+	plist := list.New()
+	for _, p := range pr {
+		plist.PushBack(p)
+	}
 
 	if pullmgr == nil {
-		pullmgr = pull_list.NewManager()
+		pullmgr = NewBlockWorkList()
 	}
-	pullmgr.SetList(plist)
+	pullmgr.ReplaceList(plist)
 }
 
 // ==============================

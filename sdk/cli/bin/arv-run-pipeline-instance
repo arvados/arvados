@@ -42,6 +42,8 @@
 # [--status-json path] Print JSON status report to a file or
 #                      fifo. Default: /dev/null
 #
+# [--description] Description for the pipeline instance.
+#
 # == Parameters
 #
 # [param_name=param_value]
@@ -175,6 +177,10 @@ p = Trollop::Parser.new do
       "Manage the pipeline in process.",
       :short => :none,
       :type => :boolean)
+  opt(:description,
+      "Description for the pipeline instance.",
+      :short => :none,
+      :type => :string)
   stop_on [:'--']
 end
 $options = Trollop::with_standard_exception_handling p do
@@ -478,6 +484,8 @@ class WhRunPipelineInstance
         end
       end
     else
+      description = $options[:description]
+      description = ("Created at #{Time.now.localtime}" + (@template[:name].andand.size>0 ? " using the pipeline template *#{@template[:name]}*" : "")) if !description
       @instance = PipelineInstance.
         create(components: @components,
                properties: {
@@ -486,6 +494,7 @@ class WhRunPipelineInstance
                  }
                },
                pipeline_template_uuid: @template[:uuid],
+               description: description,
                state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
     end
     self
@@ -569,9 +578,11 @@ class WhRunPipelineInstance
               debuglog "names: #{@instance[:name]} #{@template[:name]}", 0
               if (not @instance[:name].nil?) and (not @instance[:name].empty?)
                 pipeline_name = @instance[:name]
-              else
+              elsif @instance[:pipeline_template_uuid]
                 fetch_template(@instance[:pipeline_template_uuid])
                 pipeline_name = @template[:name]
+              else
+                pipeline_name = "pipeline started #{@instance[:started_at]}"
               end
               if c[:output_name] != false
                 # Create a collection located in the same project as the pipeline with the contents of the output.
