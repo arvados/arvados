@@ -559,4 +559,61 @@ EOS
     "Collection should not exist in database after failed create"
   end
 
+  test 'List expired collection returns empty list' do
+    authorize_with :active
+    get :index, {
+      where: {name: 'expired_collection'},
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_equal 0, found.count
+  end
+
+  test 'Show expired collection returns 404' do
+    authorize_with :active
+    get :show, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+    }
+    assert_response 404
+  end
+
+  test 'Update expired collection returns 404' do
+    authorize_with :active
+    post :update, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+      collection: {
+        name: "still expired"
+      }
+    }
+    assert_response 404
+  end
+
+  test 'List collection with future expiration time succeeds' do
+    authorize_with :active
+    get :index, {
+      where: {name: 'collection_expires_in_future'},
+    }
+    found = assigns(:objects)
+    assert_equal 1, found.count
+  end
+
+
+  test 'Show collection with future expiration time succeeds' do
+    authorize_with :active
+    get :show, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+    }
+    assert_response :success
+  end
+
+  test 'Update collection with future expiration time succeeds' do
+    authorize_with :active
+    post :update, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+      collection: {
+        name: "still not expired"
+      }
+    }
+    assert_response :success
+  end
 end

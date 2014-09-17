@@ -7,7 +7,7 @@
                                      action_method: 'post',
                                      action_data: {selection_param: 'pipeline_instance[owner_uuid]',
                                                    'pipeline_instance[pipeline_template_uuid]' => @object.uuid,
-                                                   'pipeline_instance[description]' => "Created at #{Time.now.localtime}" + (@object.name.andand.size>0 ? " using the pipeline template *#{@object.name}*" : ""),
+                                                   'pipeline_instance[description]' => "Created at #{Time.now.localtime}" + (@object.name.andand.size.andand>0 ? " using the pipeline template *#{@object.name}*" : ""),
                                                    'success' => 'redirect-to-created-object'
                                                   }.to_json),
                 { class: "btn btn-primary btn-sm", remote: true, method: 'get' }
