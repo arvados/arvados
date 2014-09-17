@@ -212,11 +212,13 @@ function enable_disable_selection_actions() {
         toggleClass('disabled',
                     ($checked.filter('[value*=-d1hrv-]').length < 2) ||
                     ($checked.not('[value*=-d1hrv-]').length > 0));
-    $('[data-selection-action=copy]').
-        closest('li').
-        toggleClass('disabled',
-                    ($checked.filter('[value*=-j7d0g-]').length > 0) ||
-                    ($checked.length < 1));
+    <% unless Group.copies_to_projects? %>
+        $('[data-selection-action=copy]').
+            closest('li').
+            toggleClass('disabled',
+                        ($checked.filter('[value*=-j7d0g-]').length > 0) ||
+                        ($checked.length < 1));
+    <% end %>
 }
 
 $(document).
