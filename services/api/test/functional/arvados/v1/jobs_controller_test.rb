@@ -284,18 +284,37 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  [:active, :admin].each do |which_token|
+  [:spectator, :admin].each_index do |i|
+    which_token = [:spectator, :admin][i]
     test "get job queue as #{which_token} user" do
       authorize_with which_token
       get :queue
       assert_response :success
-      assert_operator 1, :<=, assigns(:objects).count
+      assert_equal i, assigns(:objects).count
     end
-    test "get job queue as #{which_token} user, with a filter" do
+  end
+
+  test "get job queue as with a = filter" do
+    authorize_with :admin
+    get :queue, { filters: [['script','=','foo']] }
+    assert_response :success
+    assert_equal ['foo'], assigns(:objects).collect(&:script).uniq
+    assert_equal 0, assigns(:objects)[0].queue_position
+  end
+
+  test "get job queue as with a != filter" do
+    authorize_with :admin
+    get :queue, { filters: [['script','!=','foo']] }
+    assert_response :success
+    assert_equal 0, assigns(:objects).count
+  end
+
+  [:spectator, :admin].each do |which_token|
+    test "get queue_size as #{which_token} user" do
       authorize_with which_token
-      get :queue, { filters: [['script','=','foo']] }
+      get :queue_size
       assert_response :success
-      assert_equal ['foo'], assigns(:objects).collect(&:script).uniq
+      assert_equal 1, JSON.parse(@response.body)["queue_size"]
     end
   end
 
