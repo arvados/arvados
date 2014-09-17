@@ -599,7 +599,7 @@ class WhRunPipelineInstance
 
               if @instance[:name].andand.length > 0
                 pipeline_name = @instance[:name]
-              elsif @template.andand[:name].andand.length > 0
+              elsif @template.andand[:name].andand.length.andand > 0
                 pipeline_name = @template[:name]
               else
                 pipeline_name = @instance[:uuid]
