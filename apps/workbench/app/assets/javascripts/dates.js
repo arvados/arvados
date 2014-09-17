@@ -1,5 +1,4 @@
 $(document).on('ajax:complete arv:pane:loaded ready', function() {
-    console.log("woble!");
     $('[data-utc-date]').each(function(i, elm) {
         var re = /(\d\d\d\d)-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d) UTC/;
         var v = $(elm).attr('data-utc-date').match(re);
