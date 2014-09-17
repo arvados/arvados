@@ -1,4 +1,4 @@
-  <% if @object.state.in? ['Complete', 'Failed', 'Cancelled'] %>
+  <% if @object.state.in? ['Complete', 'Failed', 'Cancelled', 'Paused'] %>
 
   <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'script' => "use_latest", "components" => "use_latest", "pipeline_instance[state]" => "RunningOnServer"),
       class: 'btn btn-primary',

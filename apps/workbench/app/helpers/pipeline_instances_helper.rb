@@ -59,7 +59,6 @@ module PipelineInstancesHelper
   end
 
   def determine_wallclock_runtime jobs
-    puts "Begin #{jobs}"
     timestamps = []
     jobs.each do |j|
       insert_at = 0

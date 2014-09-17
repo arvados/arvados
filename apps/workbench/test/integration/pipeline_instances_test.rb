@@ -74,14 +74,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     first('a,button', text: 'Run').click
 
-    # Pipeline is running. We have a "Stop" button instead now.
-    page.assert_selector 'a,button', text: 'Stop'
-    find('a,button', text: 'Stop').click
+    # Pipeline is running. We have a "Pause" button instead now.
+    page.assert_selector 'a,button', text: 'Pause'
+    find('a,button', text: 'Pause').click
 
     # Pipeline is stopped. It should now be in paused state and Runnable again.
     assert page.has_text? 'Paused'
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
-    page.assert_selector 'a,button', text: 'Clone and edit'
+    page.assert_selector 'a,button', text: 'Re-run with latest'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
     assert_not page.has_text? 'Graph'
@@ -136,9 +136,9 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
     first('a,button', text: 'Run').click
 
-    # Pipeline is running. We have a "Stop" button instead now.
+    # Pipeline is running. We have a "Pause" button instead now.
     page.assert_no_selector 'a,button', text: 'Run'
-    page.assert_selector 'a,button', text: 'Stop'
+    page.assert_selector 'a,button', text: 'Pause'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
     assert_not page.has_text? 'Graph'
