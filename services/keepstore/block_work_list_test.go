@@ -33,7 +33,7 @@ func expectChannelNotEmpty(t *testing.T, c <-chan interface{}) {
 func expectChannelClosed(t *testing.T, c <-chan interface{}) {
 	received, ok := <-c
 	if ok {
-		t.Fatalf("Expected channel to be closed, but received %s instead", received)
+		t.Fatalf("Expected channel to be closed, but received %v instead", received)
 	}
 }
 
@@ -44,7 +44,7 @@ func expectFromChannel(t *testing.T, c <-chan interface{}, expected []int) {
 		if !ok {
 			t.Fatalf("Expected %v but channel was closed after receiving the first %d elements correctly.", expected, i)
 		} else if actual.(int) != expected[i] {
-			t.Fatalf("Expected %v but received '%d' after receiving the first %d elements correctly.", expected[i], actual.(int), i)
+			t.Fatalf("Expected %v but received '%v' after receiving the first %d elements correctly.", expected[i], actual, i)
 		}
 	}
 }
