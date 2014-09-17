@@ -26,6 +26,7 @@ class Arvados::V1::SchemaController < ApplicationController
         rootUrl: root_url,
         servicePath: "arvados/v1/",
         batchPath: "batch",
+        defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
         parameters: {
           alt: {
             type: "string",
