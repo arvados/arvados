@@ -137,7 +137,7 @@ do_test() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
-            go test -timeout 20s "git.curoverse.com/arvados.git/$1"
+            go test "git.curoverse.com/arvados.git/$1"
         else
             "test_$1"
         fi
@@ -155,7 +155,6 @@ do_install() {
         timer_reset
         if [[ "$2" == "go" ]]
         then
-            pip install pyyaml
             go get -t "git.curoverse.com/arvados.git/$1"
         else
             "install_$1"
