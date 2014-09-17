@@ -85,7 +85,6 @@ package main
 import "container/list"
 
 type BlockWorkList struct {
-	items    *list.List
 	newlist  chan *list.List
 	NextItem chan interface{}
 }
@@ -95,7 +94,6 @@ type BlockWorkList struct {
 //
 func NewBlockWorkList() *BlockWorkList {
 	b := BlockWorkList{
-		items:    nil,
 		newlist:  make(chan *list.List),
 		NextItem: make(chan interface{}),
 	}
