@@ -537,7 +537,7 @@ class WhRunPipelineInstance
           end
         end
 
-        if c[:job] and c[:run_in_process]
+        if c[:job] and c[:run_in_process] and c[:job][:success].nil?
           report_status
           begin
             require 'open3'
