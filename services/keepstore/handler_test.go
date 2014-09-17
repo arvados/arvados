@@ -663,11 +663,14 @@ func TestPullHandler(t *testing.T) {
 
 	// The Keep pull manager should have received one good list with 3
 	// requests on it.
-	var saved_pull_list = pullmgr.GetList()
-	if len(saved_pull_list) != 3 {
-		t.Errorf(
-			"saved_pull_list: expected 3 elements, got %d\nsaved_pull_list = %v",
-			len(saved_pull_list), saved_pull_list)
+	var output_list = make([]PullRequest, 3)
+	for i := 0; i < 3; i++ {
+		item := <-pullmgr.NextItem
+		if pr, ok := item.(PullRequest); ok {
+			output_list[i] = pr
+		} else {
+			t.Errorf("item %v could not be parsed as a PullRequest", item)
+		}
 	}
 }
 
