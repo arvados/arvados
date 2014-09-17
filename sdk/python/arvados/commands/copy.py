@@ -403,7 +403,7 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
         cwd=tmprepo)
     arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
     arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
-    repository_map[src_git_repo] = tmprepo
+    local_repo_dir[src_git_repo] = tmprepo
 
 # git_rev_parse(rev, repo)
 #
