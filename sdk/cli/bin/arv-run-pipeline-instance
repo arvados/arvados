@@ -485,7 +485,7 @@ class WhRunPipelineInstance
       end
     else
       description = $options[:description]
-      description = ("Created at #{Time.now.localtime}" + (@template[:name].andand.size>0 ? " using the pipeline template *#{@template[:name]}*" : "")) if !description
+      description = ("Created at #{Time.now.localtime}" + (@template[:name].andand.size.andand>0 ? " using the pipeline template *#{@template[:name]}*" : "")) if !description
       @instance = PipelineInstance.
         create(components: @components,
                properties: {
