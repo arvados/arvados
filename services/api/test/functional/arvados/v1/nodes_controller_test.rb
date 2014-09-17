@@ -76,6 +76,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
   end
 
   test "ping adds node stats to info" do
+    authorize_with :admin
     node = nodes(:idle)
     post :ping, {
       id: node.uuid,

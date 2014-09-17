@@ -20,16 +20,19 @@ class Node < ArvadosModel
     t.add :slot_number
     t.add :status
     t.add :crunch_worker_state
+    t.add :info
   end
   api_accessible :superuser, :extend => :user do |t|
     t.add :first_ping_at
-    t.add :info
     t.add lambda { |x| @@nameservers }, :as => :nameservers
   end
 
   def info
-    @info ||= Hash.new
-    super
+    if current_user.andand.current_user.is_admin
+      super
+    else
+      super.select { |k| not k.to_s.include? "secret" }
+    end
   end
 
   def domain

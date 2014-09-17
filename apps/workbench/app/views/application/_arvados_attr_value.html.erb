@@ -3,7 +3,7 @@
     <%= message %><br />
   <% end %>
 <% else %>
-      <% if obj.attribute_editable?(attr) and (!defined?(editable) || editable) %>
+      <% if attr and obj.attribute_editable?(attr) and (!defined?(editable) || editable) %>
         <% if resource_class_for_uuid(attrvalue, {referring_object: obj, referring_attr: attr}) %>
           <%= link_to_if_arvados_object attrvalue, {referring_attr: attr, referring_object: obj, with_class_name: true, friendly_name: true} %>
           <br>
