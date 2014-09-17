@@ -40,8 +40,6 @@ logger = logging.getLogger('arvados.arv-copy')
 local_repo_dir = {}
 
 def main():
-    logger.setLevel(logging.DEBUG)
-
     parser = argparse.ArgumentParser(
         description='Copy a pipeline instance from one Arvados instance to another.')
 
@@ -61,7 +59,7 @@ def main():
         '--dst-git-repo', dest='dst_git_repo',
         help='The name of the destination git repository. Required when copying a pipeline recursively.')
     parser.add_argument(
-        '--project_uuid', dest='project_uuid',
+        '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the pipeline should be copied.')
     parser.add_argument(
         'object_uuid',
@@ -322,12 +320,13 @@ def copy_collection(obj_uuid, src, dst):
         filters=[['portable_data_hash', '=', colhash]]
     ).execute()
     if dstcol['items_available'] > 0:
+        logger.info("Skipping collection %s (already at dst)", obj_uuid)
         return dstcol['items'][0]
+
+    logger.info("Copying collection %s", obj_uuid)
 
     # Fetch the collection's manifest.
     manifest = c['manifest_text']
-    logging.debug('copying collection %s', obj_uuid)
-    logging.debug('manifest_text = %s', manifest)
 
     # Enumerate the block locators found in the manifest.
     collection_blocks = sets.Set()
@@ -342,9 +341,9 @@ def copy_collection(obj_uuid, src, dst):
     # Copy each block from src_keep to dst_keep.
     dst_keep = arvados.keep.KeepClient(dst)
     for locator in collection_blocks:
+        parts = locator.split('+')
+        logger.info("Copying block %s (%s bytes)", locator, parts[1])
         data = src_keep.get(locator)
-        logger.debug('copying block %s', locator)
-        logger.info("Retrieved %d bytes", len(data))
         dst_keep.put(data)
 
     # Copy the manifest and save the collection.
