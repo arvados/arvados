@@ -578,9 +578,11 @@ class WhRunPipelineInstance
               debuglog "names: #{@instance[:name]} #{@template[:name]}", 0
               if (not @instance[:name].nil?) and (not @instance[:name].empty?)
                 pipeline_name = @instance[:name]
-              else
+              elsif @instance[:pipeline_template_uuid]
                 fetch_template(@instance[:pipeline_template_uuid])
                 pipeline_name = @template[:name]
+              else
+                pipeline_name = "pipeline started #{@instance[:started_at]}"
               end
               if c[:output_name] != false
                 # Create a collection located in the same project as the pipeline with the contents of the output.
