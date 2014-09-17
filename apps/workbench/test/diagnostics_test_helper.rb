@@ -1,14 +1,19 @@
 require 'integration_helper'
 require 'yaml'
 
+# Diagnostics tests are executed when "RAILS_ENV=diagnostics" is used.
+# When "RAILS_ENV=test" is used, tests in the "diagnostics" directory
+# will not be executed.
+
 class DiagnosticsTest < ActionDispatch::IntegrationTest
 
   def visit_page_with_token token_name, path='/'
-    if !path.start_with? Rails.configuration.arvados_workbench_url
-      path = Rails.configuration.arvados_workbench_url + path
+    workbench_url = Rails.configuration.arvados_workbench_url
+    if workbench_url.end_with? '/'
+      workbench_url = workbench_url[0, workbench_url.size-1]
     end
     tokens = Rails.configuration.user_tokens
-    visit page_with_token(tokens[token_name], path)
+    visit page_with_token(tokens[token_name], (workbench_url + path))
   end
 
   def wait_until_page_has text_to_look_for, max_time=30

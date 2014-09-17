@@ -15,7 +15,7 @@
 #   max_wait_seconds: max time in seconds to wait for the pipeline run to complete.
 #     Default value of 30 seconds is used when this value is not provided.
 diagnostics:
-  arvados_workbench_url: https://localhost:3000/
+  arvados_workbench_url: https://localhost:3000
   user_tokens:
     active: eu33jurqntstmwo05h1jr3eblmi961e802703y6657s8zb14r
   pipelines_to_test:
