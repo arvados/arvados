@@ -20,7 +20,7 @@ import argparse
 import getpass
 import os
 import re
-import sets
+import shutil
 import sys
 import logging
 import tempfile
@@ -43,6 +43,9 @@ def main():
     parser = argparse.ArgumentParser(
         description='Copy a pipeline instance from one Arvados instance to another.')
 
+    parser.add_argument(
+        '-v', '--verbose', dest='verbose', action='store_true',
+        help='Verbose output.')
     parser.add_argument(
         '--src', dest='source_arvados', required=True,
         help='The name of the source Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
@@ -68,6 +71,11 @@ def main():
 
     args = parser.parse_args()
 
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
     # Create API clients for the source and destination instances
     src_arv = api_for_instance(args.source_arvados)
     dst_arv = api_for_instance(args.destination_arvados)
@@ -89,6 +97,10 @@ def main():
                                         recursive=args.recursive)
     else:
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
+
+    # Clean up any outstanding temp git repositories.
+    for d in local_repo_dir.values():
+        shutil.rmtree(d, ignore_errors=True)
 
     # If no exception was thrown and the response does not have an
     # error_token field, presume success
@@ -329,7 +341,7 @@ def copy_collection(obj_uuid, src, dst):
     manifest = c['manifest_text']
 
     # Enumerate the block locators found in the manifest.
-    collection_blocks = sets.Set()
+    collection_blocks = set()
     src_keep = arvados.keep.KeepClient(src)
     for line in manifest.splitlines():
         try:
@@ -391,18 +403,24 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo):
     dst_git_push_url  = r['items'][0]['push_url']
     logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
 
-    tmprepo = tempfile.mkdtemp()
-
     dst_branch = re.sub(r'\W+', '_', src_git_url)
-    arvados.util.run_command(
-        ["git", "clone", src_git_url, tmprepo],
-        cwd=os.path.dirname(tmprepo))
-    arvados.util.run_command(
-        ["git", "checkout", "-b", dst_branch],
-        cwd=tmprepo)
-    arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
-    arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
-    local_repo_dir[src_git_repo] = tmprepo
+
+    # Copy git commits from src repo to dst repo (but only if
+    # we have not already copied this repo in this session).
+    #
+    if src_git_repo in local_repo_dir:
+        logger.debug('already copied src repo %s, skipping', src_git_repo)
+    else:
+        tmprepo = tempfile.mkdtemp()
+        local_repo_dir[src_git_repo] = tmprepo
+        arvados.util.run_command(
+            ["git", "clone", src_git_url, tmprepo],
+            cwd=os.path.dirname(tmprepo))
+        arvados.util.run_command(
+            ["git", "checkout", "-b", dst_branch],
+            cwd=tmprepo)
+        arvados.util.run_command(["git", "remote", "add", "dst", dst_git_push_url], cwd=tmprepo)
+        arvados.util.run_command(["git", "push", "dst", dst_branch], cwd=tmprepo)
 
 # git_rev_parse(rev, repo)
 #
