@@ -318,6 +318,12 @@ class ArvadosBase < ActiveRecord::Base
     false
   end
 
+  # can this class of object be copied into a project?
+  # override to false on indivudal model classes for which this should not be true
+  def self.copies_to_projects?
+    self.goes_in_projects?
+  end
+
   def editable?
     (current_user and current_user.is_active and
      (current_user.is_admin or
