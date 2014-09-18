@@ -1,4 +1,6 @@
 class ProjectsController < ApplicationController
+  before_filter :set_share_links, if: -> { defined? @object }
+
   def model_class
     Group
   end
@@ -26,7 +28,9 @@ class ProjectsController < ApplicationController
     else
       super
     end
+  end
 
+  def set_share_links
     @user_is_manager = false
     @share_links = []
     if @object.uuid != current_user.uuid
@@ -68,15 +72,13 @@ class ProjectsController < ApplicationController
         :filters => [%w(uuid is_a) + [%w(arvados#human arvados#specimen arvados#trait)]]
       }
     ]
-    # Note that adding :filters to 'Sharing' won't help show the count for it because @user_is_manager is only set in #show
-    # Therefore if a count were desired there we'd want to set @user_is_manager in a before_filter or somesuch.
     pane_list << { :name => 'Sharing',
                    :count => @share_links.count } if @user_is_manager
     pane_list << { :name => 'Advanced' }
   end
 
   # Called via AJAX and returns Javascript that populates tab counts into tab titles.
-  # References #show_pane_list action which should return an array of hashes each with :name 
+  # References #show_pane_list action which should return an array of hashes each with :name
   # and then optionally a :filters to run or a straight up :count
   #
   # This action could easily be moved to the ApplicationController to genericize the tab_counts behaviour,
