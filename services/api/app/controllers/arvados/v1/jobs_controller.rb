@@ -163,7 +163,10 @@ class Arvados::V1::JobsController < ApplicationController
   end
 
   def queue_size
-          render :json => {:queue_size => Job.queue.size}
+    # Users may not be allowed to see all the jobs in the queue, so provide a
+    # method to get just the queue size in order to get a gist of how busy the
+    # cluster is.
+    render :json => {:queue_size => Job.queue.size}
   end
 
   def self._create_requires_parameters

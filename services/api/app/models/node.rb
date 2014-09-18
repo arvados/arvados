@@ -3,6 +3,7 @@ class Node < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   serialize :info, Hash
+  serialize :properties, Hash
   before_validation :ensure_ping_secret
   after_update :dnsmasq_update
 
@@ -20,19 +21,12 @@ class Node < ArvadosModel
     t.add :slot_number
     t.add :status
     t.add :crunch_worker_state
-    t.add :info
+    t.add :properties
   end
   api_accessible :superuser, :extend => :user do |t|
     t.add :first_ping_at
+    t.add :info
     t.add lambda { |x| @@nameservers }, :as => :nameservers
-  end
-
-  def info
-    if current_user.andand.current_user.is_admin
-      super
-    else
-      super.select { |k| not k.to_s.include? "secret" }
-    end
   end
 
   def domain
@@ -121,9 +115,9 @@ class Node < ArvadosModel
     # Record other basic stats
     ['total_cpu_cores', 'total_ram_mb', 'total_scratch_mb'].each do |key|
       if value = (o[key] or o[key.to_sym])
-        self.info[key] = value
+        self.properties[key] = value.to_i
       else
-        self.info.delete(key)
+        self.properties.delete(key)
       end
     end
 

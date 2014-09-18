@@ -639,7 +639,8 @@ CREATE TABLE nodes (
     first_ping_at timestamp without time zone,
     last_ping_at timestamp without time zone,
     info text,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    properties text
 );
 
 
@@ -872,7 +873,7 @@ ALTER SEQUENCE traits_id_seq OWNED BY traits.id;
 CREATE TABLE users (
     id integer NOT NULL,
     uuid character varying(255),
-    owner_uuid character varying(255),
+    owner_uuid character varying(255) NOT NULL,
     created_at timestamp without time zone NOT NULL,
     modified_by_client_uuid character varying(255),
     modified_by_user_uuid character varying(255),
@@ -2019,3 +2020,8 @@ INSERT INTO schema_migrations (version) VALUES ('20140828141043');
 INSERT INTO schema_migrations (version) VALUES ('20140909183946');
 
 INSERT INTO schema_migrations (version) VALUES ('20140911221252');
+
+INSERT INTO schema_migrations (version) VALUES ('20140918141529');
+
+INSERT INTO schema_migrations (version) VALUES ('20140918153541');
+

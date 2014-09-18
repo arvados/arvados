@@ -87,9 +87,10 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     }
     assert_response :success
     info = JSON.parse(@response.body)['info']
+    properties = JSON.parse(@response.body)['properties']
     assert_equal(node.info['ping_secret'], info['ping_secret'])
-    assert_equal(32, info['total_cpu_cores'].to_i)
-    assert_equal(1024, info['total_ram_mb'].to_i)
-    assert_equal(2048, info['total_scratch_mb'].to_i)
+    assert_equal(32, properties['total_cpu_cores'].to_i)
+    assert_equal(1024, properties['total_ram_mb'].to_i)
+    assert_equal(2048, properties['total_scratch_mb'].to_i)
   end
 end
