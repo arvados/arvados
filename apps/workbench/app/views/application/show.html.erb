@@ -5,6 +5,9 @@
 <% end %>
 
 <% content_for :content_top do %>
+  <% if !['Group','User', 'Collection'].include? @object.class.to_s # projects and collections handle it themselves %>
+    <%= render partial: 'name_and_description' %>
+  <% end %>
 
 <% if @object.class.goes_in_projects? && @object.uuid != current_user.uuid # Not the "Home" project %>
   <% content_for :tab_line_buttons do %>

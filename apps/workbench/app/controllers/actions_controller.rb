@@ -158,6 +158,7 @@ class ActionsController < ApplicationController
 
     normalized = arv_normalize combined
     newc = Collection.new({:manifest_text => normalized})
+    newc.name = newc.name || "Collection created at #{Time.now.localtime}"
     newc.save!
 
     chash.each do |k,v|
@@ -170,7 +171,12 @@ class ActionsController < ApplicationController
       l.save!
     end
 
-    redirect_to controller: 'collections', action: :show, id: newc.uuid
+    action_data = JSON.parse(params['action_data']) if params['action_data']
+    if action_data && action_data['selection_param'].eql?('project')
+      redirect_to :back
+    else
+      redirect_to url_for(controller: 'collections', action: :show, id: newc.uuid)
+    end
   end
 
   def report_issue_popup

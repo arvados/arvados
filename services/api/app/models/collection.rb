@@ -10,6 +10,9 @@ class Collection < ArvadosModel
   before_validation :set_portable_data_hash
   validate :ensure_hash_matches_manifest_text
 
+  # Query only undeleted collections by default.
+  default_scope where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP")
+
   api_accessible :user, extend: :common do |t|
     t.add :name
     t.add :description
@@ -163,11 +166,10 @@ class Collection < ArvadosModel
       coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
       if coll_match
         # Check if the Collection contains exactly one file whose name
-        # looks like a saved Docker image.  We only take up to two
-        # files, because any number >1 means there's no match.
-        coll_files = Keep::Manifest.new(coll_match.manifest_text).each_file.take(2)
-        if (coll_files.size == 1) and
-            (coll_files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
+        # looks like a saved Docker image.
+        manifest = Keep::Manifest.new(coll_match.manifest_text)
+        if manifest.exact_file_count?(1) and
+            (manifest.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
           return [coll_match]
         end
       end

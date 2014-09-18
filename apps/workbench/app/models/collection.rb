@@ -21,17 +21,17 @@ class Collection < ArvadosBase
   end
 
   def manifest
-    Keep::Manifest.new(manifest_text || "")
+    if @manifest.nil? or manifest_text_changed?
+      @manifest = Keep::Manifest.new(manifest_text || "")
+    end
+    @manifest
   end
 
   def files
     # This method provides backwards compatibility for code that relied on
     # the old files field in API results.  New code should use manifest
     # methods directly.
-    if @files.nil? or manifest_text_changed?
-      @files = manifest.each_file.to_a
-    end
-    @files
+    manifest.files
   end
 
   def content_summary
@@ -39,11 +39,11 @@ class Collection < ArvadosBase
   end
 
   def total_bytes
-    manifest.each_file.inject(0) { |sum, filespec| sum + filespec.last }
+    manifest.files.inject(0) { |sum, filespec| sum + filespec.last }
   end
 
   def files_tree
-    tree = manifest.each_file.group_by do |file_spec|
+    tree = manifest.files.group_by do |file_spec|
       File.split(file_spec.first)
     end
     return [] if tree.empty?
@@ -108,6 +108,10 @@ class Collection < ArvadosBase
     else
       self.portable_data_hash
     end
+  end
+
+  def textile_attributes
+    [ 'description' ]
   end
 
 end

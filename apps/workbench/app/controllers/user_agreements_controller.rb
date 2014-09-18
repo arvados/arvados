@@ -15,7 +15,7 @@ class UserAgreementsController < ApplicationController
 
   def sign
     params[:checked].each do |checked|
-      if r = checked.match(/^([0-9a-f]+[^\/]*)/)
+      if (r = CollectionsHelper.match_uuid_with_optional_filepath(checked))
         UserAgreement.sign uuid: r[1]
       end
     end

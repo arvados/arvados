@@ -1,3 +1,4 @@
+$(document).trigger('count-change');
 $('[data-object-uuid=<%= @object.uuid %>]').hide('slow', function() {
     $(this).remove();
 });

@@ -15,6 +15,9 @@
 	</h3>
       </div>
       <div class="panel-body">
+        <div class="arv-description-as-subtitle">
+          <%= render_editable_attribute @object, 'description', nil, { 'data-emptytext' => "(No description provided)", 'data-toggle' => 'manual' } %>
+        </div>
         <img src="/favicon.ico" class="pull-right" alt="" style="opacity: 0.3"/>
         <% if defined? @same_pdh %>
           <p>Found in collections:<p>

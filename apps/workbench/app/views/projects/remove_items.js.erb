@@ -1,5 +1,6 @@
+$(document).trigger('count-change');
 <% @removed_uuids.each do |uuid| %>
-$('[data-object-uuid=<%= uuid %>]').hide('slow', function() {
-    $(this).remove();
-});
+	$('[data-object-uuid=<%= uuid %>]').hide('slow', function() {
+	    $(this).remove();
+	});
 <% end %>
