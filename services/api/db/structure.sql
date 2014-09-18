@@ -636,7 +636,8 @@ CREATE TABLE nodes (
     first_ping_at timestamp without time zone,
     last_ping_at timestamp without time zone,
     info text,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    properties text
 );
 
 
@@ -2012,3 +2013,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140818125735');
 INSERT INTO schema_migrations (version) VALUES ('20140826180337');
 
 INSERT INTO schema_migrations (version) VALUES ('20140828141043');
+
+INSERT INTO schema_migrations (version) VALUES ('20140918153541');
