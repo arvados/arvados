@@ -130,14 +130,17 @@ reader = arvados.CollectionReader(collection, num_retries=args.retries)
 
 if not get_prefix:
     if not args.n:
+        open_flags = os.O_CREAT | os.O_WRONLY
+        if not args.f:
+            open_flags |= os.O_EXCL
         try:
-            manifest = reader.manifest_text()
-        except (arvados.errors.ApiError, arvados.errors.KeepReadError) as e:
-            abort(e)
-        if not args.f and os.path.exists(args.destination):
-            abort('Local file %s already exists.' % (args.destination,))
-        with open(args.destination, 'wb') as f:
-            f.write(manifest)
+            out_fd = os.open(args.destination, open_flags)
+            with os.fdopen(out_fd, 'wb') as out_file:
+                out_file.write(reader.manifest_text())
+        except (IOError, OSError) as error:
+            abort("can't write to '{}': {}".format(args.destination, error))
+        except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
+            abort("failed to download '{}': {}".format(collection, e))
     sys.exit(0)
 
 # Scan the collection. Make an array of (stream, file, local
