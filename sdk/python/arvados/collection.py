@@ -108,6 +108,25 @@ class CollectionBase(object):
 class CollectionReader(CollectionBase):
     def __init__(self, manifest_locator_or_text, api_client=None,
                  keep_client=None, num_retries=0):
+        """Instantiate a CollectionReader.
+
+        This class parses Collection manifests to provide a simple interface
+        to read its underlying files.
+
+        Arguments:
+        * manifest_locator_or_text: One of a Collection UUID, portable data
+          hash, or full manifest text.
+        * api_client: The API client to use to look up Collections.  If not
+          provided, CollectionReader will build one from available Arvados
+          configuration.
+        * keep_client: The KeepClient to use to download Collection data.
+          If not provided, CollectionReader will build one from available
+          Arvados configuration.
+        * num_retries: The default number of times to retry failed
+          service requests.  Default 0.  You may change this value
+          after instantiation, but note those changes may not
+          propagate to related objects like the Keep client.
+        """
         self._api_client = api_client
         self._keep_client = keep_client
         self.num_retries = num_retries
@@ -188,6 +207,22 @@ class CollectionWriter(CollectionBase):
     KEEP_BLOCK_SIZE = 2**26
 
     def __init__(self, api_client=None, num_retries=0):
+        """Instantiate a CollectionWriter.
+
+        CollectionWriter lets you build a new Arvados Collection from scratch.
+        Write files to it.  The CollectionWriter will upload data to Keep as
+        appropriate, and provide you with the Collection manifest text when
+        you're finished.
+
+        Arguments:
+        * api_client: The API client to use to look up Collections.  If not
+          provided, CollectionReader will build one from available Arvados
+          configuration.
+        * num_retries: The default number of times to retry failed
+          service requests.  Default 0.  You may change this value
+          after instantiation, but note those changes may not
+          propagate to related objects like the Keep client.
+        """
         self._api_client = api_client
         self.num_retries = num_retries
         self._keep_client = None
