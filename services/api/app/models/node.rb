@@ -115,7 +115,7 @@ class Node < ArvadosModel
     # Record other basic stats
     ['total_cpu_cores', 'total_ram_mb', 'total_scratch_mb'].each do |key|
       if value = (o[key] or o[key.to_sym])
-        self.properties[key] = value
+        self.properties[key] = value.to_i
       else
         self.properties.delete(key)
       end
