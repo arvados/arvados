@@ -64,6 +64,26 @@ then
     source /etc/profile.d/rvm.sh
 fi
 
+declare -A leave_temp
+clear_temp() {
+    leaving=""
+    for var in VENVDIR GOPATH
+    do
+        if [[ -z "${leave_temp[$var]}" ]]
+        then
+            if [[ -n "${!var}" ]]
+            then
+                rm -rf "${!var}"
+            fi
+        else
+            leaving+=" $var=\"${!var}\""
+        fi
+    done
+    if [[ -z "$leaving" ]]; then
+        echo "Leaving behind temp dirs: $leaving"
+    fi
+}
+
 fatal() {
     clear_temp
     echo >&2 "Fatal: $* in ${FUNCNAME[1]} at ${BASH_SOURCE[1]} line ${BASH_LINENO[0]}"
@@ -72,7 +92,6 @@ fatal() {
 
 declare -a failures
 declare -A skip
-declare -A leave_temp
 
 # Always skip CLI tests. They don't know how to use run_test_server.py.
 skip[cli]=1
@@ -118,14 +137,14 @@ fi
 
 # Set up temporary install dirs (unless existing dirs were supplied)
 if [[ -n "$VENVDIR" ]]; then
-    VENVDIR=$(mktemp -d)
-else
     leave_temp[VENVDIR]=1
+else
+    VENVDIR=$(mktemp -d)
 fi
 if [[ -n "$GOPATH" ]]; then
-    GOPATH=$(mktemp -d)
-else
     leave_temp[GOPATH]=1
+else
+    GOPATH=$(mktemp -d)
 fi
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
@@ -191,21 +210,6 @@ do_install() {
 title () {
     txt="********** $1 **********"
     printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
-}
-
-clear_temp() {
-    for var in VENVDIR GOPATH
-    do
-        if [[ -z "${leave_temp[$var]}" ]]
-        then
-            if [[ -n "${!var}" ]]
-            then
-                rm -rf "${!var}"
-            fi
-        else
-            echo "Leaving $var=\"${!var}\""
-        fi
-    done
 }
 
 test_docs() {
