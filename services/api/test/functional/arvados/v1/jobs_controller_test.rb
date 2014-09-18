@@ -284,8 +284,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_response :success
   end
 
-  [:spectator, :admin].each_index do |i|
-    which_token = [:spectator, :admin][i]
+  [:spectator, :admin].each_with_index do |which_token, i|
     test "get job queue as #{which_token} user" do
       authorize_with which_token
       get :queue
