@@ -261,6 +261,7 @@ class FuseSharedTest(MountTestBase):
                           "Empty collection.link",
                           "Pipeline Template with Input Parameter with Search.pipelineTemplate",
                           "Pipeline Template with Jobspec Components.pipelineTemplate",
+                          "collection_expires_in_future",
                           "pipeline_with_job.pipelineInstance"
                       ], d2)
 

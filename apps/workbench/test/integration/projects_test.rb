@@ -346,6 +346,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_selector 'li.disabled', text: 'Move selected'
@@ -363,6 +364,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
+      page.assert_selector 'li', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_no_selector 'li.disabled', text: 'Copy selected'
       page.assert_selector 'li', text: 'Copy selected'
@@ -385,6 +388,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_no_selector 'li.disabled', text: 'Move selected'
@@ -413,6 +417,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_no_selector 'li.disabled', text: 'Move selected'
@@ -420,6 +425,28 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       page.assert_no_selector 'li.disabled', text: 'Remove selected'
       page.assert_selector 'li', text: 'Remove selected'
     end
+  end
+
+  test "combine selected collections into new collection" do
+    my_project = api_fixture('groups')['aproject']
+    my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+
+    visit page_with_token 'active', '/'
+    find('.arv-project-list a,button', text: my_project['name']).click
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+
+    within('tr', text: my_collection['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Create new collection with selected collections'
+    end
+
+    # back in project page
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+    assert page.has_link?('Jobs and pipelines'), 'Jobs and pipelines link not found in project'
   end
 
 end

@@ -81,6 +81,7 @@ ArvadosWorkbench::Application.routes.draw do
   post 'actions' => 'actions#post'
   get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'
+  post "combine_selected" => 'actions#combine_selected_files_into_collection'
 
   root :to => 'projects#index'
 
