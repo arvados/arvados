@@ -9,6 +9,7 @@ import sys
 import logging
 
 import arvados
+import arvados.commands._util as arv_cmd
 
 logger = logging.getLogger('arvados.arv-get')
 
@@ -17,7 +18,8 @@ def abort(msg, code=1):
     exit(code)
 
 parser = argparse.ArgumentParser(
-    description='Copy data from Keep to a local file or pipe.')
+    description='Copy data from Keep to a local file or pipe.',
+    parents=[arv_cmd.retry_opt])
 parser.add_argument('locator', type=str,
                     help="""
 Collection locator, optionally with a file path or prefix.
@@ -123,36 +125,28 @@ collection = r.group(1)
 get_prefix = r.group(2)
 if args.r and not get_prefix:
     get_prefix = os.sep
-
-todo = []
-todo_bytes = 0
 api_client = arvados.api('v1')
-if not get_prefix:
-    try:
-        if not args.n:
-            if not args.f and os.path.exists(args.destination):
-                abort('Local file %s already exists.' % (args.destination,))
-            with open(args.destination, 'wb') as f:
-                try:
-                    c = api_client.collections().get(uuid=collection).execute()
-                    manifest = c['manifest_text']
-                except Exception as e:
-                    logger.warning(
-                        "Collection %s not found. " +
-                        "Trying to fetch directly from Keep (deprecated).",
-                        collection)
-                    manifest = arvados.KeepClient(
-                        api_client=api_client).get(collection)
-                f.write(manifest)
-        sys.exit(0)
-    except arvados.errors.NotFoundError as e:
-        abort(e)
+reader = arvados.CollectionReader(collection, num_retries=args.retries)
 
-reader = arvados.CollectionReader(collection)
+if not get_prefix:
+    if not args.n:
+        open_flags = os.O_CREAT | os.O_WRONLY
+        if not args.f:
+            open_flags |= os.O_EXCL
+        try:
+            out_fd = os.open(args.destination, open_flags)
+            with os.fdopen(out_fd, 'wb') as out_file:
+                out_file.write(reader.manifest_text())
+        except (IOError, OSError) as error:
+            abort("can't write to '{}': {}".format(args.destination, error))
+        except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
+            abort("failed to download '{}': {}".format(collection, e))
+    sys.exit(0)
 
 # Scan the collection. Make an array of (stream, file, local
 # destination filename) tuples, and add up total size to extract.
-
+todo = []
+todo_bytes = 0
 try:
     for s in reader.all_streams():
         for f in s.all_files():

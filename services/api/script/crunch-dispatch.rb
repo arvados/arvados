@@ -246,17 +246,25 @@ class Dispatcher
         $stderr.puts `mkdir -p #{arvados_internal.shellescape} && cd #{arvados_internal.shellescape} && git init --bare`
       end
 
-      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository + '.git')
-      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository, '.git') unless File.exists? src_repo
-
-      unless src_repo
-        $stderr.puts "dispatch: #{File.join Rails.configuration.git_repositories_dir, job.repository} doesn't exist"
-        sleep 1
-        untake(job)
-        next
+      repo_root = Rails.configuration.git_repositories_dir
+      src_repo = File.join(repo_root, job.repository + '.git')
+      if not File.exists? src_repo
+        src_repo = File.join(repo_root, job.repository, '.git')
+        if not File.exists? src_repo
+          $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
+          sleep 1
+          untake job
+          next
+        end
       end
 
       $stderr.puts `cd #{arvados_internal.shellescape} && git fetch-pack --all #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
+      unless $? == 0
+        $stderr.puts "dispatch: git fetch-pack && tag failed"
+        sleep 1
+        untake job
+        next
+      end
 
       cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
@@ -342,12 +350,16 @@ class Dispatcher
             $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
             $stderr.puts line
             pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
-            j[:stderr_buf_to_flush] << pub_msg
+            if not j[:log_truncated]
+              j[:stderr_buf_to_flush] << pub_msg
+            end
           end
 
-          if (Rails.configuration.crunch_log_bytes_per_event < j[:stderr_buf_to_flush].size or
-              (j[:stderr_flushed_at] + Rails.configuration.crunch_log_seconds_between_events < Time.now.to_i))
-            write_log j
+          if not j[:log_truncated]
+            if (Rails.configuration.crunch_log_bytes_per_event < j[:stderr_buf_to_flush].size or
+                (j[:stderr_flushed_at] + Rails.configuration.crunch_log_seconds_between_events < Time.now.to_i))
+              write_log j
+            end
           end
         end
       end
@@ -512,36 +524,32 @@ class Dispatcher
 
   # send message to log table. we want these records to be transient
   def write_log running_job
+    return if running_job[:log_truncated]
+    return if running_job[:stderr_buf_to_flush] == ''
     begin
-      if (running_job && running_job[:stderr_buf_to_flush] != '')
-        # Truncate logs if they exceed crunch_limit_log_event_bytes_per_job
-        # or crunch_limit_log_events_per_job.
-        if (too_many_bytes_logged_for_job(running_job))
-          return if running_job[:log_truncated]
-          running_job[:log_truncated] = true
-          running_job[:stderr_buf_to_flush] =
-              "Server configured limit reached (crunch_limit_log_event_bytes_per_job: #{Rails.configuration.crunch_limit_log_event_bytes_per_job}). Subsequent logs truncated"
-        elsif (too_many_events_logged_for_job(running_job))
-          return if running_job[:log_truncated]
-          running_job[:log_truncated] = true
-          running_job[:stderr_buf_to_flush] =
-              "Server configured limit reached (crunch_limit_log_events_per_job: #{Rails.configuration.crunch_limit_log_events_per_job}). Subsequent logs truncated"
-        end
-        log = Log.new(object_uuid: running_job[:job].uuid,
-                      event_type: 'stderr',
-                      owner_uuid: running_job[:job].owner_uuid,
-                      properties: {"text" => running_job[:stderr_buf_to_flush]})
-        log.save!
-        running_job[:bytes_logged] += running_job[:stderr_buf_to_flush].size
-        running_job[:events_logged] += 1
-        running_job[:stderr_buf_to_flush] = ''
-        running_job[:stderr_flushed_at] = Time.now.to_i
+      # Truncate logs if they exceed crunch_limit_log_event_bytes_per_job
+      # or crunch_limit_log_events_per_job.
+      if (too_many_bytes_logged_for_job(running_job))
+        running_job[:log_truncated] = true
+        running_job[:stderr_buf_to_flush] =
+          "Server configured limit reached (crunch_limit_log_event_bytes_per_job: #{Rails.configuration.crunch_limit_log_event_bytes_per_job}). Subsequent logs truncated"
+      elsif (too_many_events_logged_for_job(running_job))
+        running_job[:log_truncated] = true
+        running_job[:stderr_buf_to_flush] =
+          "Server configured limit reached (crunch_limit_log_events_per_job: #{Rails.configuration.crunch_limit_log_events_per_job}). Subsequent logs truncated"
       end
+      log = Log.new(object_uuid: running_job[:job].uuid,
+                    event_type: 'stderr',
+                    owner_uuid: running_job[:job].owner_uuid,
+                    properties: {"text" => running_job[:stderr_buf_to_flush]})
+      log.save!
+      running_job[:bytes_logged] += running_job[:stderr_buf_to_flush].size
+      running_job[:events_logged] += 1
     rescue
-      running_job[:stderr_buf] = "Failed to write logs \n"
-      running_job[:stderr_buf_to_flush] = ''
-      running_job[:stderr_flushed_at] = Time.now.to_i
+      running_job[:stderr_buf] = "Failed to write logs\n" + running_job[:stderr_buf]
     end
+    running_job[:stderr_buf_to_flush] = ''
+    running_job[:stderr_flushed_at] = Time.now.to_i
   end
 
 end

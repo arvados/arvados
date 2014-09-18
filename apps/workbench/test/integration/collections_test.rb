@@ -4,7 +4,24 @@ require 'headless'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
   setup do
+    Capybara.current_driver = :rack_test
+  end
+
+  test "Can copy a collection to a project" do
     Capybara.current_driver = Capybara.javascript_driver
+
+    collection_uuid = api_fixture('collections')['foo_file']['uuid']
+    collection_name = api_fixture('collections')['foo_file']['name']
+    project_uuid = api_fixture('groups')['aproject']['uuid']
+    project_name = api_fixture('groups')['aproject']['name']
+    visit page_with_token('active', "/collections/#{collection_uuid}")
+    click_link 'Copy to project...'
+    find('.selectable', text: project_name).click
+    find('.modal-footer a,button', text: 'Copy').click
+    wait_for_ajax
+    # It should navigate to the project after copying...
+    assert(page.has_text?(project_name))
+    assert(page.has_text?("Copy of #{collection_name}"))
   end
 
   test "Collection page renders name" do
@@ -18,8 +35,6 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "can download an entire collection with a reader token" do
-    Capybara.current_driver = :rack_test
-
     uuid = api_fixture('collections')['foo_file']['uuid']
     token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
     url_head = "/collections/download/#{uuid}/#{token}/"

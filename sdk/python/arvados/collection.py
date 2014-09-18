@@ -91,10 +91,45 @@ def normalize(collection):
     return normalized_streams
 
 
-class CollectionReader(object):
-    def __init__(self, manifest_locator_or_text, api_client=None):
+class CollectionBase(object):
+    def __enter__(self):
+        pass
+
+    def __exit__(self):
+        pass
+
+    def _my_keep(self):
+        if self._keep_client is None:
+            self._keep_client = KeepClient(api_client=self._api_client,
+                                           num_retries=self.num_retries)
+        return self._keep_client
+
+
+class CollectionReader(CollectionBase):
+    def __init__(self, manifest_locator_or_text, api_client=None,
+                 keep_client=None, num_retries=0):
+        """Instantiate a CollectionReader.
+
+        This class parses Collection manifests to provide a simple interface
+        to read its underlying files.
+
+        Arguments:
+        * manifest_locator_or_text: One of a Collection UUID, portable data
+          hash, or full manifest text.
+        * api_client: The API client to use to look up Collections.  If not
+          provided, CollectionReader will build one from available Arvados
+          configuration.
+        * keep_client: The KeepClient to use to download Collection data.
+          If not provided, CollectionReader will build one from available
+          Arvados configuration.
+        * num_retries: The default number of times to retry failed
+          service requests.  Default 0.  You may change this value
+          after instantiation, but note those changes may not
+          propagate to related objects like the Keep client.
+        """
         self._api_client = api_client
-        self._keep_client = None
+        self._keep_client = keep_client
+        self.num_retries = num_retries
         if re.match(r'[a-f0-9]{32}(\+\d+)?(\+\S+)*$', manifest_locator_or_text):
             self._manifest_locator = manifest_locator_or_text
             self._manifest_text = None
@@ -109,12 +144,6 @@ class CollectionReader(object):
                 "Argument to CollectionReader must be a manifest or a collection UUID")
         self._streams = None
 
-    def __enter__(self):
-        pass
-
-    def __exit__(self):
-        pass
-
     def _populate(self):
         if self._streams is not None:
             return
@@ -128,41 +157,37 @@ class CollectionReader(object):
                 # just like any other Collection lookup failure.
                 if self._api_client is None:
                     self._api_client = arvados.api('v1')
-                    self._keep_client = KeepClient(api_client=self._api_client)
-                if self._keep_client is None:
-                    self._keep_client = KeepClient(api_client=self._api_client)
+                    self._keep_client = None  # Make a new one with the new api.
                 c = self._api_client.collections().get(
-                    uuid=self._manifest_locator).execute()
+                    uuid=self._manifest_locator).execute(
+                    num_retries=self.num_retries)
                 self._manifest_text = c['manifest_text']
             except Exception as e:
                 if not util.portable_data_hash_pattern.match(
                       self._manifest_locator):
                     raise
-                _logger.warning("API lookup failed for collection %s (%s: %s)",
-                                self._manifest_locator, type(e), str(e))
-                if self._keep_client is None:
-                    self._keep_client = KeepClient(api_client=self._api_client)
-                self._manifest_text = self._keep_client.get(self._manifest_locator)
-        self._streams = []
-        for stream_line in self._manifest_text.split("\n"):
-            if stream_line != '':
-                stream_tokens = stream_line.split()
-                self._streams += [stream_tokens]
+                _logger.warning(
+                    "API server did not return Collection '%s'. " +
+                    "Trying to fetch directly from Keep (deprecated).",
+                    self._manifest_locator)
+                self._manifest_text = self._my_keep().get(
+                    self._manifest_locator, num_retries=self.num_retries)
+        self._streams = [sline.split()
+                         for sline in self._manifest_text.split("\n")
+                         if sline]
         self._streams = normalize(self)
 
         # now regenerate the manifest text based on the normalized stream
 
         #print "normalizing", self._manifest_text
-        self._manifest_text = ''.join([StreamReader(stream).manifest_text() for stream in self._streams])
+        self._manifest_text = ''.join([StreamReader(stream, keep=self._my_keep()).manifest_text() for stream in self._streams])
         #print "result", self._manifest_text
 
 
     def all_streams(self):
         self._populate()
-        resp = []
-        for s in self._streams:
-            resp.append(StreamReader(s))
-        return resp
+        return [StreamReader(s, self._my_keep(), num_retries=self.num_retries)
+                for s in self._streams]
 
     def all_files(self):
         for s in self.all_streams():
@@ -172,16 +197,34 @@ class CollectionReader(object):
     def manifest_text(self, strip=False):
         self._populate()
         if strip:
-            m = ''.join([StreamReader(stream).manifest_text(strip=True) for stream in self._streams])
+            m = ''.join([StreamReader(stream, keep=self._my_keep()).manifest_text(strip=True) for stream in self._streams])
             return m
         else:
             return self._manifest_text
 
-class CollectionWriter(object):
+
+class CollectionWriter(CollectionBase):
     KEEP_BLOCK_SIZE = 2**26
 
-    def __init__(self, api_client=None):
+    def __init__(self, api_client=None, num_retries=0):
+        """Instantiate a CollectionWriter.
+
+        CollectionWriter lets you build a new Arvados Collection from scratch.
+        Write files to it.  The CollectionWriter will upload data to Keep as
+        appropriate, and provide you with the Collection manifest text when
+        you're finished.
+
+        Arguments:
+        * api_client: The API client to use to look up Collections.  If not
+          provided, CollectionReader will build one from available Arvados
+          configuration.
+        * num_retries: The default number of times to retry failed
+          service requests.  Default 0.  You may change this value
+          after instantiation, but note those changes may not
+          propagate to related objects like the Keep client.
+        """
         self._api_client = api_client
+        self.num_retries = num_retries
         self._keep_client = None
         self._data_buffer = []
         self._data_buffer_len = 0
@@ -197,15 +240,8 @@ class CollectionWriter(object):
         self._queued_dirents = deque()
         self._queued_trees = deque()
 
-    def __enter__(self):
-        pass
-
     def __exit__(self):
         self.finish()
-
-    def _prep_keep_client(self):
-        if self._keep_client is None:
-            self._keep_client = KeepClient(api_client=self._api_client)
 
     def do_queued_work(self):
         # The work queue consists of three pieces:
@@ -303,7 +339,7 @@ class CollectionWriter(object):
             for s in newdata:
                 self.write(s)
             return
-        self._data_buffer += [newdata]
+        self._data_buffer.append(newdata)
         self._data_buffer_len += len(newdata)
         self._current_stream_length += len(newdata)
         while self._data_buffer_len >= self.KEEP_BLOCK_SIZE:
@@ -311,10 +347,9 @@ class CollectionWriter(object):
 
     def flush_data(self):
         data_buffer = ''.join(self._data_buffer)
-        if data_buffer != '':
-            self._prep_keep_client()
+        if data_buffer:
             self._current_stream_locators.append(
-                self._keep_client.put(data_buffer[0:self.KEEP_BLOCK_SIZE]))
+                self._my_keep().put(data_buffer[0:self.KEEP_BLOCK_SIZE]))
             self._data_buffer = [data_buffer[self.KEEP_BLOCK_SIZE:]]
             self._data_buffer_len = len(self._data_buffer[0])
 
@@ -342,9 +377,10 @@ class CollectionWriter(object):
                 (self._current_stream_length - self._current_file_pos,
                  self._current_file_pos,
                  self._current_stream_name))
-        self._current_stream_files += [[self._current_file_pos,
-                                        self._current_stream_length - self._current_file_pos,
-                                        self._current_file_name]]
+        self._current_stream_files.append([
+                self._current_file_pos,
+                self._current_stream_length - self._current_file_pos,
+                self._current_file_name])
         self._current_file_pos = self._current_stream_length
 
     def start_new_stream(self, newstreamname='.'):
@@ -363,18 +399,18 @@ class CollectionWriter(object):
     def finish_current_stream(self):
         self.finish_current_file()
         self.flush_data()
-        if len(self._current_stream_files) == 0:
+        if not self._current_stream_files:
             pass
-        elif self._current_stream_name == None:
+        elif self._current_stream_name is None:
             raise errors.AssertionError(
                 "Cannot finish an unnamed stream (%d bytes in %d files)" %
                 (self._current_stream_length, len(self._current_stream_files)))
         else:
-            if len(self._current_stream_locators) == 0:
-                self._current_stream_locators += [config.EMPTY_BLOCK_LOCATOR]
-            self._finished_streams += [[self._current_stream_name,
-                                        self._current_stream_locators,
-                                        self._current_stream_files]]
+            if not self._current_stream_locators:
+                self._current_stream_locators.append(config.EMPTY_BLOCK_LOCATOR)
+            self._finished_streams.append([self._current_stream_name,
+                                           self._current_stream_locators,
+                                           self._current_stream_files])
         self._current_stream_files = []
         self._current_stream_length = 0
         self._current_stream_locators = []
@@ -384,8 +420,7 @@ class CollectionWriter(object):
 
     def finish(self):
         # Store the manifest in Keep and return its locator.
-        self._prep_keep_client()
-        return self._keep_client.put(self.manifest_text())
+        return self._my_keep().put(self.manifest_text())
 
     def stripped_manifest(self):
         """
@@ -414,8 +449,8 @@ class CollectionWriter(object):
             manifest += ' ' + ' '.join("%d:%d:%s" % (sfile[0], sfile[1], sfile[2].replace(' ', '\\040')) for sfile in stream[2])
             manifest += "\n"
 
-        if len(manifest) > 0:
-            return CollectionReader(manifest).manifest_text()
+        if manifest:
+            return CollectionReader(manifest, self._api_client).manifest_text()
         else:
             return ""
 
@@ -433,9 +468,10 @@ class ResumableCollectionWriter(CollectionWriter):
                    '_data_buffer', '_dependencies', '_finished_streams',
                    '_queued_dirents', '_queued_trees']
 
-    def __init__(self, api_client=None):
+    def __init__(self, api_client=None, num_retries=0):
         self._dependencies = {}
-        super(ResumableCollectionWriter, self).__init__(api_client)
+        super(ResumableCollectionWriter, self).__init__(
+            api_client, num_retries=num_retries)
 
     @classmethod
     def from_state(cls, state, *init_args, **init_kwargs):
