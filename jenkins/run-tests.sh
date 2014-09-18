@@ -48,8 +48,8 @@ unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 
 COLUMNS=80
 
-export GOPATH=$(mktemp -d)
-VENVDIR=$(mktemp -d)
+GOPATH=
+VENVDIR=
 cli_test=
 workbench_test=
 apiserver_test=
@@ -72,6 +72,7 @@ fatal() {
 
 declare -a failures
 declare -A skip
+declare -A leave_temp
 
 # Always skip CLI tests. They don't know how to use run_test_server.py.
 skip[cli]=1
@@ -91,7 +92,8 @@ do
             skip_install=1
             ;;
         --leave-temp)
-            leave_temp=1
+            leave_temp[VENVDIR]=1
+            leave_temp[GOPATH]=1
             ;;
         *=*)
             eval $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
@@ -114,7 +116,18 @@ if [[ -n "$CONFIGSRC" ]]; then
     fi
 fi
 
-# Set up temporary install dirs
+# Set up temporary install dirs (unless existing dirs were supplied)
+if [[ -n "$VENVDIR" ]]; then
+    VENVDIR=$(mktemp -d)
+else
+    leave_temp[VENVDIR]=1
+fi
+if [[ -n "$GOPATH" ]]; then
+    GOPATH=$(mktemp -d)
+else
+    leave_temp[GOPATH]=1
+fi
+export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
@@ -181,19 +194,18 @@ title () {
 }
 
 clear_temp() {
-    if [[ -z "$leave_temp" ]]
-    then
-        for t in "$VENVDIR" "$GOPATH"
-        do
-            if [[ -n "$t" ]]
+    for var in VENVDIR GOPATH
+    do
+        if [[ -z "${leave_temp[$var]}" ]]
+        then
+            if [[ -n "${!var}" ]]
             then
-                rm -rf "$t"
+                rm -rf "${!var}"
             fi
-        done
-    else
-        echo "Leaving VENVDIR=\"$VENVDIR\""
-        echo "Leaving GOPATH=\"$GOPATH\""
-    fi
+        else
+            echo "Leaving $var=\"${!var}\""
+        fi
+    done
 }
 
 test_docs() {
