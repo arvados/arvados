@@ -7,6 +7,8 @@
 # Arguments:
 # --skip FOO     Do not test the FOO component.
 # --only FOO     Do not test anything except the FOO component.
+# WORKSPACE=path Arvados source tree to test.
+# CONFIGSRC=path Dir with api server config files to copy into source tree.
 # envvar=value   Set $envvar to value
 #
 # Regardless of which components are tested, install all components in
@@ -68,18 +70,6 @@ fatal() {
     exit 1
 }
 
-# Sanity check
-echo "WORKSPACE=$WORKSPACE"
-[[ -n "$WORKSPACE" ]] || fatal "WORKSPACE not set"
-
-# Set up temporary install dirs
-mkdir -p "$GOPATH/src/git.curoverse.com"
-ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
-    || fatal "symlink failed"
-
-virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
-PATH="$VENVDIR/bin:$PATH"
-
 declare -a failures
 declare -A skip
 
@@ -112,6 +102,25 @@ do
             ;;
     esac
 done
+
+# Sanity check
+echo "WORKSPACE=$WORKSPACE"
+[[ -n "$WORKSPACE" ]] || fatal "WORKSPACE not set"
+
+if [[ -n "$CONFIGSRC" ]]; then
+    if [[ -d "$HOME/arvados-api-server" ]]; then
+        # Jenkins expects us to use this by default.
+        CONFIGSRC="$HOME/arvados-api-server"
+    fi
+fi
+
+# Set up temporary install dirs
+mkdir -p "$GOPATH/src/git.curoverse.com"
+ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
+    || fatal "symlink failed"
+
+virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
+PATH="$VENVDIR/bin:$PATH"
 
 checkexit() {
     if [[ "$?" != "0" ]]; then
@@ -241,8 +250,13 @@ install_apiserver() {
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
 
-    cp $HOME/arvados-api-server/database.yml config/ || fatal "database.yml"
-    cp $HOME/arvados-api-server/application.yml config/ || fatal "application.yml"
+    if [ -n "$CONFIGSRC" ]
+    then
+        for f in database.yml application.yml
+        do
+            cp "$CONFIGSRC/$f" config/ || fatal "$f"
+        done
+    fi
 
     # Fill in a random secret_token and blob_signing_key for testing
     SECRET_TOKEN=`echo 'puts rand(2**512).to_s(36)' |ruby`
