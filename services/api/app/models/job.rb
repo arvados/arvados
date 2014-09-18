@@ -11,6 +11,9 @@ class Job < ArvadosModel
   before_validation :set_priority
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
+  before_validation :verify_status
+  before_create :set_state_before_save
+  before_save :set_state_before_save
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
 
@@ -31,6 +34,7 @@ class Job < ArvadosModel
     t.add :output
     t.add :success
     t.add :running
+    t.add :state
     t.add :is_locked_by_uuid
     t.add :log
     t.add :runtime_constraints
@@ -43,6 +47,15 @@ class Job < ArvadosModel
     t.add :queue_position
     t.add :description
   end
+
+  # Supported states for a job
+  States = [
+            (Queued = 'Queued'),
+            (Running = 'Running'),
+            (Cancelled = 'Cancelled'),
+            (Failed = 'Failed'),
+            (Complete = 'Complete'),
+           ]
 
   def assert_finished
     update_attributes(finished_at: finished_at || Time.now,
@@ -228,4 +241,76 @@ class Job < ArvadosModel
       end
     end
   end
+
+  def verify_status
+    changed_attributes = self.changed
+
+    if new_record?
+      self.state = Queued
+    elsif 'state'.in? changed_attributes
+      case self.state
+      when Queued
+        self.running = false
+        self.success = nil
+      when Running
+        if !self.started_at
+          self.started_at = Time.now
+        end
+        self.running = true
+        self.success = nil
+      when Cancelled
+        if !self.cancelled_at
+          self.cancelled_at = Time.now
+        end
+        self.running = false
+        self.success = false
+      when Failed
+        if !self.finished_at
+          self.finished_at = Time.now
+        end
+        self.running = false
+        self.success = false
+      when Complete
+        if !self.finished_at
+          self.finished_at = Time.now
+        end
+        self.running = false
+        self.success = true
+      end
+    elsif 'running'.in? changed_attributes
+      self.state = Running
+    elsif 'success'.in? changed_attributes
+      if success
+        self.state = Complete
+      else
+        self.state = Failed
+      end
+    elsif 'cancelled_at'.in? changed_attributes
+      self.state = Cancelled
+    end
+  end
+
+  def set_state_before_save
+    if !self.state
+      if self.cancelled_at
+        self.state = Cancelled
+      elsif self.success
+        self.state = Complete
+      elsif (!self.success.nil? && !self.success)
+        self.state = Failed
+      elsif (self.running && self.success.nil? && !self.cencelled_at)
+        self.state = Running
+      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid && self.success.nil?
+        self.state = Queued
+      end
+    end
+
+    if self.state.in?(States)
+      true
+    else
+      errors.add :state, "'#{state.inspect} must be one of: [#{States.join ', '}]"
+      false
+    end
+  end
+
 end
