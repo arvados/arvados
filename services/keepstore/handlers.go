@@ -59,10 +59,12 @@ func MakeRESTRouter() *mux.Router {
 		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
-	// The PullHandler processes "PUT /pull" commands from Data Manager.
-	// It parses the JSON list of pull requests in the request body, and
-	// delivers them to the pull list manager for replication.
+	// The PullHandler and TrashHandler process "PUT /pull" and "PUT
+	// /trash" requests from Data Manager.  Each handler parses the
+	// JSON list of block management requests in the message body, and
+	// delivers them to the pull queue or trash queue, respectively.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
+	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
@@ -476,6 +478,48 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 		pullq = NewWorkQueue()
 	}
 	pullq.ReplaceQueue(plist)
+}
+
+type TrashRequest struct {
+	Locator    string `json:"locator"`
+	BlockMtime int64  `json:"block_mtime"`
+}
+
+func TrashHandler(resp http.ResponseWriter, req *http.Request) {
+	// Reject unauthorized requests.
+	api_token := GetApiToken(req)
+	if !IsDataManagerToken(api_token) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
+		return
+	}
+
+	// Parse the request body.
+	var trash []TrashRequest
+	r := json.NewDecoder(req.Body)
+	if err := r.Decode(&trash); err != nil {
+		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		log.Printf("%s %s: %s\n", req.Method, req.URL, err.Error())
+		return
+	}
+
+	// We have a properly formatted trash list sent from the data
+	// manager.  Report success and send the list to the trash work
+	// queue for further handling.
+	log.Printf("%s %s: received %v\n", req.Method, req.URL, trash)
+	resp.WriteHeader(http.StatusOK)
+	resp.Write([]byte(
+		fmt.Sprintf("Received %d trash requests\n", len(trash))))
+
+	tlist := list.New()
+	for _, t := range trash {
+		tlist.PushBack(t)
+	}
+
+	if trashq == nil {
+		trashq = NewWorkQueue()
+	}
+	trashq.ReplaceQueue(tlist)
 }
 
 // ==============================

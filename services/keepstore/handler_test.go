@@ -630,25 +630,25 @@ func TestPullHandler(t *testing.T) {
 	}
 	var testcases = []pullTest{
 		{
-			"user token, good request",
+			"pull: user token, good request",
 			RequestTester{"/pull", user_token, "PUT", good_json},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
-			"user token, bad request",
+			"pull: user token, bad request",
 			RequestTester{"/pull", user_token, "PUT", bad_json},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
-			"data manager token, good request",
+			"pull: data manager token, good request",
 			RequestTester{"/pull", data_manager_token, "PUT", good_json},
 			http.StatusOK,
 			"Received 3 pull requests\n",
 		},
 		{
-			"data manager token, bad request",
+			"pull: data manager token, bad request",
 			RequestTester{"/pull", data_manager_token, "PUT", bad_json},
 			http.StatusBadRequest,
 			"Bad Request\n",
@@ -670,6 +670,112 @@ func TestPullHandler(t *testing.T) {
 			output_list[i] = pr
 		} else {
 			t.Errorf("item %v could not be parsed as a PullRequest", item)
+		}
+	}
+}
+
+// TestTrashHandler
+//
+// Test cases:
+//
+// Cases tested: syntactically valid and invalid trash lists, from the
+// data manager and from unprivileged users:
+//
+//   1. Valid trash list from an ordinary user
+//      (expected result: 401 Unauthorized)
+//
+//   2. Invalid trash list from an ordinary user
+//      (expected result: 401 Unauthorized)
+//
+//   3. Valid trash list from the data manager
+//      (expected result: 200 OK with request body "Received 3 trash
+//      requests"
+//
+//   4. Invalid trash list from the data manager
+//      (expected result: 400 Bad Request)
+//
+// Test that in the end, the trash collector received a good list
+// trash list with the expected number of requests.
+//
+// TODO(twp): test concurrency: launch 100 goroutines to update the
+// pull list simultaneously.  Make sure that none of them return 400
+// Bad Request and that replica.Dump() returns a valid list.
+//
+func TestTrashHandler(t *testing.T) {
+	defer teardown()
+
+	// Set up a REST router for testing the handlers.
+	rest := MakeRESTRouter()
+
+	var user_token = "USER TOKEN"
+	data_manager_token = "DATA MANAGER TOKEN"
+
+	good_json := []byte(`[
+		{
+			"locator":"block1",
+			"block_mtime":1409082153
+		},
+		{
+			"locator":"block2",
+			"block_mtime":1409082153
+		},
+		{
+			"locator":"block3",
+			"block_mtime":1409082153
+		}
+	]`)
+
+	bad_json := []byte(`I am not a valid JSON string`)
+
+	type trashTest struct {
+		name          string
+		req           RequestTester
+		response_code int
+		response_body string
+	}
+
+	var testcases = []trashTest{
+		{
+			"trash: user token, good request",
+			RequestTester{"/trash", user_token, "PUT", good_json},
+			http.StatusUnauthorized,
+			"Unauthorized\n",
+		},
+		{
+			"trash: user token, bad request",
+			RequestTester{"/trash", user_token, "PUT", bad_json},
+			http.StatusUnauthorized,
+			"Unauthorized\n",
+		},
+		{
+			"trash: data manager token, good request",
+			RequestTester{"/trash", data_manager_token, "PUT", good_json},
+			http.StatusOK,
+			"Received 3 trash requests\n",
+		},
+		{
+			"trash: data manager token, bad request",
+			RequestTester{"/trash", data_manager_token, "PUT", bad_json},
+			http.StatusBadRequest,
+			"Bad Request\n",
+		},
+	}
+
+	for _, tst := range testcases {
+		response := IssueRequest(rest, &tst.req)
+		ExpectStatusCode(t, tst.name, tst.response_code, response)
+		ExpectBody(t, tst.name, tst.response_body, response)
+	}
+
+	// The trash collector should have received one good list with 3
+	// requests on it.
+	var output_list = make([]TrashRequest, 3)
+	for i := 0; i < 3; i++ {
+		item := <-trashq.NextItem
+		if tr, ok := item.(TrashRequest); ok {
+			output_list[i] = tr
+		} else {
+			t.Errorf("item %v could not be parsed as a TrashRequest", item)
 		}
 	}
 }
