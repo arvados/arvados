@@ -49,12 +49,12 @@ func expectFromChannel(t *testing.T, c <-chan interface{}, expected []int) {
 	}
 }
 
-// Create a BlockWorkList, generate a list for it, and instantiate a worker.
-func TestBlockWorkListReadWrite(t *testing.T) {
+// Create a WorkQueue, generate a list for it, and instantiate a worker.
+func TestWorkQueueReadWrite(t *testing.T) {
 	var input = []int{1, 1, 2, 3, 5, 8, 13, 21, 34}
 
-	b := NewBlockWorkList()
-	b.ReplaceList(makeTestWorkList(input))
+	b := NewWorkQueue()
+	b.ReplaceQueue(makeTestWorkList(input))
 
 	expectFromChannel(t, b.NextItem, input)
 	expectChannelEmpty(t, b.NextItem)
@@ -62,10 +62,10 @@ func TestBlockWorkListReadWrite(t *testing.T) {
 }
 
 // Start a worker before the list has any input.
-func TestBlockWorkListEarlyRead(t *testing.T) {
+func TestWorkQueueEarlyRead(t *testing.T) {
 	var input = []int{1, 1, 2, 3, 5, 8, 13, 21, 34}
 
-	b := NewBlockWorkList()
+	b := NewWorkQueue()
 
 	// First, demonstrate that nothing is available on the NextItem
 	// channel.
@@ -83,7 +83,7 @@ func TestBlockWorkListEarlyRead(t *testing.T) {
 
 	// Feed the blocklist a new worklist, and wait for the worker to
 	// finish.
-	b.ReplaceList(makeTestWorkList(input))
+	b.ReplaceQueue(makeTestWorkList(input))
 	<-done
 
 	expectChannelClosed(t, b.NextItem)
@@ -92,13 +92,13 @@ func TestBlockWorkListEarlyRead(t *testing.T) {
 // Show that a reader may block when the manager's list is exhausted,
 // and that the reader resumes automatically when new data is
 // available.
-func TestBlockWorkListReaderBlocks(t *testing.T) {
+func TestWorkQueueReaderBlocks(t *testing.T) {
 	var (
 		inputBeforeBlock = []int{1, 2, 3, 4, 5}
 		inputAfterBlock  = []int{6, 7, 8, 9, 10}
 	)
 
-	b := NewBlockWorkList()
+	b := NewWorkQueue()
 	sendmore := make(chan int)
 	done := make(chan int)
 	go func() {
@@ -117,22 +117,22 @@ func TestBlockWorkListReaderBlocks(t *testing.T) {
 
 	// Write a slice of the first five elements and wait for the
 	// reader to signal that it's ready for us to send more input.
-	b.ReplaceList(makeTestWorkList(inputBeforeBlock))
+	b.ReplaceQueue(makeTestWorkList(inputBeforeBlock))
 	<-sendmore
 
-	b.ReplaceList(makeTestWorkList(inputAfterBlock))
+	b.ReplaceQueue(makeTestWorkList(inputAfterBlock))
 
 	// Wait for the reader to complete.
 	<-done
 }
 
 // Replace one active work list with another.
-func TestBlockWorkListReplaceList(t *testing.T) {
+func TestWorkQueueReplaceQueue(t *testing.T) {
 	var firstInput = []int{1, 1, 2, 3, 5, 8, 13, 21, 34}
 	var replaceInput = []int{1, 4, 9, 16, 25, 36, 49, 64, 81}
 
-	b := NewBlockWorkList()
-	b.ReplaceList(makeTestWorkList(firstInput))
+	b := NewWorkQueue()
+	b.ReplaceQueue(makeTestWorkList(firstInput))
 
 	// Read just the first five elements from the work list.
 	// Confirm that the channel is not empty.
@@ -142,7 +142,7 @@ func TestBlockWorkListReplaceList(t *testing.T) {
 	// Replace the work list and read five more elements.
 	// The old list should have been discarded and all new
 	// elements come from the new list.
-	b.ReplaceList(makeTestWorkList(replaceInput))
+	b.ReplaceQueue(makeTestWorkList(replaceInput))
 	expectFromChannel(t, b.NextItem, replaceInput[0:5])
 
 	b.Close()

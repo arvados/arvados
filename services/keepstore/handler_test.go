@@ -591,7 +591,7 @@ func TestDeleteHandler(t *testing.T) {
 //
 // TODO(twp): test concurrency: launch 100 goroutines to update the
 // pull list simultaneously.  Make sure that none of them return 400
-// Bad Request and that pullmgr.GetList() returns a valid list.
+// Bad Request and that pullq.GetList() returns a valid list.
 //
 func TestPullHandler(t *testing.T) {
 	defer teardown()
@@ -665,7 +665,7 @@ func TestPullHandler(t *testing.T) {
 	// requests on it.
 	var output_list = make([]PullRequest, 3)
 	for i := 0; i < 3; i++ {
-		item := <-pullmgr.NextItem
+		item := <-pullq.NextItem
 		if pr, ok := item.(PullRequest); ok {
 			output_list[i] = pr
 		} else {
