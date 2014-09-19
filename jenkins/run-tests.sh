@@ -51,6 +51,7 @@ COLUMNS=80
 GITDIR=
 GOPATH=
 VENVDIR=
+PYTHONPATH=
 cli_test=
 workbench_test=
 apiserver_test=
