@@ -456,7 +456,7 @@ class Dispatcher
       pipe_auth = (@pipe_auth_tokens[p.uuid] ||= ApiClientAuthorization.
                    create(user: User.where('uuid=?', p.modified_by_user_uuid).first,
                           api_client_id: 0))
-      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --instance #{p.uuid}`
+      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-pipeline-here --no-wait --instance #{p.uuid}`
       expire_tokens.delete p.uuid
     end
 
