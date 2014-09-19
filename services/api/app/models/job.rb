@@ -290,6 +290,9 @@ class Job < ArvadosModel
       else
         self.state = Failed
       end
+      if !self.finished_at
+        self.finished_at = Time.now
+      end
       self.running = false
     elsif 'cancelled_at'.in? changed_attributes
       self.state = Cancelled
