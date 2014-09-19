@@ -72,7 +72,8 @@ build_and_scp_deb () {
   # Because, bash sucks.
   VENDOR=${3// /_}
   PACKAGE_TYPE=$4
-  EXTRA_ARGUMENTS=$5
+  VERSION=$5
+  EXTRA_ARGUMENTS=$6
 
   if [[ "$PACKAGE_NAME" == "" ]]; then
     PACKAGE_NAME=$PACKAGE
@@ -91,6 +92,11 @@ build_and_scp_deb () {
   if [[ "$VENDOR" != "" ]]; then
     COMMAND_ARR+=('--vendor' "$VENDOR")
   fi
+
+  if [[ "$VERSION" != "" ]]; then
+    COMMAND_ARR+=('-v' "$VERSION")
+  fi
+
   for a in $EXTRA_ARGUMENTS; do
     COMMAND_ARR+=("$a")
   done
@@ -104,7 +110,7 @@ build_and_scp_deb () {
     if [[ "$FPM_EXIT_CODE" != "0" ]]; then
       echo "Error building debian package for $1:\n $FPM_RESULTS"
     else
-      scp -P2222 $PACKAGE_NAME*.deb $APTUSER@$APTSERVER:tmp/
+      scp -P2222 "$PACKAGE_NAME"_"$VERSION"*.deb $APTUSER@$APTSERVER:tmp/
       CALL_PRM=1
     fi
   else
@@ -136,7 +142,7 @@ git checkout `git log --format=format:%h -n1 .`
 cd $WORKSPACE
 
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH -x 'usr/local/arvados/src/.git*'"
+build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "-x 'usr/local/arvados/src/.git*'"
 
 # clean up, check out master and step away from detached-head state
 cd "$WORKSPACE/src-build-dir"
@@ -150,19 +156,19 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 # Keep -> keepstore
 go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
 
 # Keep proxy
 
 # Keep -> keepproxy
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
 
 # crunchstat
 go get "git.curoverse.com/arvados.git/services/crunchstat"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "-v 0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
 
 # The Python SDK
 cd $WORKSPACE/sdk/python
@@ -176,7 +182,7 @@ cd $WORKSPACE/debs
 # prefix from only one of the dependencies of a package...  Maybe I could
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
-build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "-v 0.1.${GIT_HASH}"
+build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}"
 
 # The FUSE driver
 cd $WORKSPACE/services/fuse
@@ -186,7 +192,7 @@ cd $WORKSPACE/debs
 
 # Please seem comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
-build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "-v 0.1.${GIT_HASH}"
+build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}"
 
 # A few dependencies
 build_and_scp_deb python-gflags
