@@ -163,8 +163,8 @@ class JobTest < ActiveSupport::TestCase
     [['state', 'Running', 'error']],  # is_locked_by_uuid is not set
     [['is_locked_by_uuid', 'use_current_user_uuid', [['state', 'Queued']]], ['state', 'Running', [['running', true], ['started_at', 'not_nil'], ['success', 'nil']]]],
     [['running', false, [['state', 'Queued']]], ['state', 'Complete', [['success', true]]]],
-    [['running', true, [['state', 'Running']]], ['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false]]]],
-    [['running', true, [['state', 'Running']]], ['state', 'Cancelled', [['running', false],['cancelled_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false],['started_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['state', 'Cancelled', [['running', false],['cancelled_at', 'not_nil'],['started_at', 'not_nil']]]],
     [['running', true, [['state', 'Running']]], ['success', true, [['state', 'Complete'],['running', false],['finished_at', 'not_nil']]]],
     [['running', true, [['state', 'Running']]], ['success', 'false', [['state', 'Failed'],['running', false],['finished_at', 'not_nil']]]],
     [['running', true, [['state', 'Running']]], ['state', 'Complete', [['success', true],['running', false],['finished_at', 'not_nil']]]],
