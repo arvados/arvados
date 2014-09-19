@@ -33,7 +33,7 @@
                     <% completed = [] %>
                     <% queued = [] %>
                     <% p.components.each do |k, v| %>
-                      <% if v[:job] %>
+                      <% if v.is_a? Hash and v[:job] %>
                         <% if Job::state(v[:job]) == "Running" %>
                           <% running << k %>
                         <% elsif Job::state(v[:job]) == "Failed" or Job::state(v[:job]) == "Canceled" %>

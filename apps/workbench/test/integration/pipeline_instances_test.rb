@@ -38,7 +38,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     # Add this collection to the project
     visit '/projects'
-    find('.arv-project-list a,button', text: 'A Project').click
+    find("#projects-menu").click
+    find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
     within('.modal-dialog') do
       wait_for_ajax
@@ -100,7 +101,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     # Add this collection to the project using collections menu from top nav
     visit '/projects'
-    find('.arv-project-list a,button', text: 'A Project').click
+    find("#projects-menu").click
+    find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
     within('.modal-dialog') do
       wait_for_ajax
