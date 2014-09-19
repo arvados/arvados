@@ -1,4 +1,6 @@
 class AddStateToJob < ActiveRecord::Migration
+  include CurrentApiClient
+
   def up
     if !column_exists?(:jobs, :state)
       add_column :jobs, :state, :string
