@@ -48,6 +48,7 @@ unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 
 COLUMNS=80
 
+GITDIR=
 GOPATH=
 VENVDIR=
 cli_test=
@@ -67,7 +68,7 @@ fi
 declare -A leave_temp
 clear_temp() {
     leaving=""
-    for var in VENVDIR GOPATH
+    for var in VENVDIR GOPATH GITDIR
     do
         if [[ -z "${leave_temp[$var]}" ]]
         then
@@ -284,7 +285,7 @@ install_apiserver() {
     export RAILS_ENV=test
 
     # Set up empty git repo (for git tests)
-    GITDIR="$WORKSPACE/tmpgit"
+    GITDIR=$(mktemp -d)
     sed -i'' -e "s:/var/cache/git:$GITDIR:" config/application.default.yml
 
     rm -rf $GITDIR
