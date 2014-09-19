@@ -39,12 +39,12 @@ class Job < ArvadosBase
   end
 
   def self.state job
-    if job.responds_to? :state
+    if job.respond_to? :state and job.state
       return job.state
     end
 
     if not job[:cancelled_at].nil?
-      "Canceled"
+      "Cancelled"
     elsif not job[:finished_at].nil? or not job[:success].nil?
       if job[:success]
         "Completed"
