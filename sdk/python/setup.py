@@ -32,5 +32,5 @@ setup(name='arvados-python-client',
         'ws4py'
         ],
       test_suite='tests',
-      tests_require=['mock', 'PyYAML'],
+      tests_require=['mock>=1.0', 'PyYAML'],
       zip_safe=False)

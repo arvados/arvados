@@ -1207,7 +1207,8 @@ sub collate_output
   Log (undef, "collate");
 
   my ($child_out, $child_in);
-  my $pid = open2($child_out, $child_in, 'arv-put', '--raw');
+  my $pid = open2($child_out, $child_in, 'arv-put', '--raw',
+                  '--retries', put_retry_count());
   my $joboutput;
   for (@jobstep)
   {
@@ -1347,8 +1348,9 @@ sub save_meta
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
   $local_logfile->flush;
-  my $cmd = "arv-put --portable-data-hash --filename ''\Q$keep_logfile\E "
-      . quotemeta($local_logfile->filename);
+  my $retry_count = put_retry_count();
+  my $cmd = "arv-put --portable-data-hash --retries $retry_count " .
+      "--filename ''\Q$keep_logfile\E " . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;
   chomp($loglocator);
@@ -1492,6 +1494,20 @@ sub find_docker_image {
   } else {
     return (undef, undef);
   }
+}
+
+sub put_retry_count {
+  # Calculate a --retries argument for arv-put that will have it try
+  # approximately as long as this Job has been running.
+  my $stoptime = shift || time;
+  my $starttime = $jobstep[0]->{starttime};
+  my $timediff = defined($starttime) ? ($stoptime - $starttime) : 1;
+  my $retries = 0;
+  while ($timediff >= 2) {
+    $retries++;
+    $timediff /= 2;
+  }
+  return ($retries > 3) ? $retries : 3;
 }
 
 __DATA__

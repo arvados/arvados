@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import functools
+import inspect
 import time
 
 from collections import deque
@@ -138,3 +140,19 @@ def check_http_response_success(result):
         return False
     else:
         return None  # Get well soon, server.
+
+def retry_method(orig_func):
+    """Provide a default value for a method's num_retries argument.
+
+    This is a decorator for instance and class methods that accept a
+    num_retries argument, with a None default.  When the method is called
+    without a value for num_retries, it will be set from the underlying
+    instance or class' num_retries attribute.
+    """
+    @functools.wraps(orig_func)
+    def num_retries_setter(self, *args, **kwargs):
+        arg_vals = inspect.getcallargs(orig_func, self, *args, **kwargs)
+        if arg_vals['num_retries'] is None:
+            kwargs['num_retries'] = self.num_retries
+        return orig_func(self, *args, **kwargs)
+    return num_retries_setter

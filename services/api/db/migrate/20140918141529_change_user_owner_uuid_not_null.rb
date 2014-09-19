@@ -1,4 +1,6 @@
 class ChangeUserOwnerUuidNotNull < ActiveRecord::Migration
+  include CurrentApiClient
+
   def up
     User.update_all({owner_uuid: system_user_uuid}, 'owner_uuid is null')
     change_column :users, :owner_uuid, :string, :null => false

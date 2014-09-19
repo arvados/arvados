@@ -3,15 +3,26 @@
 import errno
 import httplib
 import httplib2
+import mock
 import os
 import shutil
 import tempfile
 import unittest
 
+# Use this hostname when you want to make sure the traffic will be
+# instantly refused.  100::/64 is a dedicated black hole.
+TEST_HOST = '100::'
+
+skip_sleep = mock.patch('time.sleep', lambda n: None)  # clown'll eat me
+
 def fake_httplib2_response(code, **headers):
     headers.update(status=str(code),
                    reason=httplib.responses.get(code, "Unknown Response"))
     return httplib2.Response(headers)
+
+def mock_responses(body, *codes, **headers):
+    return mock.patch('httplib2.Http.request', side_effect=(
+            (fake_httplib2_response(code, **headers), body) for code in codes))
 
 class ArvadosBaseTestCase(unittest.TestCase):
     # This class provides common utility functions for our tests.

@@ -246,17 +246,25 @@ class Dispatcher
         $stderr.puts `mkdir -p #{arvados_internal.shellescape} && cd #{arvados_internal.shellescape} && git init --bare`
       end
 
-      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository + '.git')
-      src_repo = File.join(Rails.configuration.git_repositories_dir, job.repository, '.git') unless File.exists? src_repo
-
-      unless src_repo
-        $stderr.puts "dispatch: #{File.join Rails.configuration.git_repositories_dir, job.repository} doesn't exist"
-        sleep 1
-        untake(job)
-        next
+      repo_root = Rails.configuration.git_repositories_dir
+      src_repo = File.join(repo_root, job.repository + '.git')
+      if not File.exists? src_repo
+        src_repo = File.join(repo_root, job.repository, '.git')
+        if not File.exists? src_repo
+          $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
+          sleep 1
+          untake job
+          next
+        end
       end
 
       $stderr.puts `cd #{arvados_internal.shellescape} && git fetch-pack --all #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
+      unless $? == 0
+        $stderr.puts "dispatch: git fetch-pack && tag failed"
+        sleep 1
+        untake job
+        next
+      end
 
       cmd_args << crunch_job_bin
       cmd_args << '--job-api-token'
@@ -448,7 +456,7 @@ class Dispatcher
       pipe_auth = (@pipe_auth_tokens[p.uuid] ||= ApiClientAuthorization.
                    create(user: User.where('uuid=?', p.modified_by_user_uuid).first,
                           api_client_id: 0))
-      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-here --no-wait --instance #{p.uuid}`
+      puts `export ARVADOS_API_TOKEN=#{pipe_auth.api_token} && arv-run-pipeline-instance --run-pipeline-here --no-wait --instance #{p.uuid}`
       expire_tokens.delete p.uuid
     end
 

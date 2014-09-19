@@ -81,3 +81,11 @@ $(document).on('arv:pane:reload', function(e) {
 $(document).on('arv-log-event arv:pane:reload:all', function() {
     $('.pane-anchor.loaded').trigger('arv:pane:reload');
 });
+
+// If there is a 'tab counts url' in the nav-tabs element then use it to get some javascript that will update them
+$(document).on('ready count-change', function() {
+    var tabCountsUrl = $('ul.nav-tabs').data('tab-counts-url');
+    if( tabCountsUrl && tabCountsUrl.length ) {
+        $.get( tabCountsUrl );
+    }
+});
