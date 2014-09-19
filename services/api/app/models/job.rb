@@ -266,7 +266,7 @@ class Job < ArvadosModel
           self.cancelled_at = Time.now
         end
         self.running = false
-        self.success = nil
+        self.success = false
       when Failed
         if !self.finished_at
           self.finished_at = Time.now
@@ -280,25 +280,35 @@ class Job < ArvadosModel
         self.running = false
         self.success = true
       end
-    elsif 'success'.in? changed_attributes
-      if self.success
-        self.state = Complete
-      else
-        self.state = Failed
-      end
-      if !self.finished_at
-        self.finished_at = Time.now
-      end
-      self.running = false
     elsif 'cancelled_at'.in? changed_attributes
       self.state = Cancelled
       self.running = false
+      self.success = false
+    elsif 'success'.in? changed_attributes
+      if self.cancelled_at
+        self.state = Cancelled
+        self.running = false
+        self.success = false
+      else
+        if self.success
+          self.state = Complete
+        else
+          self.state = Failed
+        end
+        if !self.finished_at
+          self.finished_at = Time.now
+        end
+        self.running = false
+      end
     elsif 'running'.in? changed_attributes
       if self.running
         self.state = Running
         if !self.started_at
           self.started_at = Time.now
         end
+      else
+        self.state = nil # let set_state_before_save determine what the state should be
+        self.started_at = nil
       end
     end
     true
@@ -314,8 +324,7 @@ class Job < ArvadosModel
         self.state = Failed
       elsif (self.running && self.success.nil? && !self.cancelled_at)
         self.state = Running
-      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid &&
-            self.success.nil? && self.running.nil?
+      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid && self.success.nil?
         self.state = Queued
       end
     end
