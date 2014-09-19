@@ -154,4 +154,70 @@ class JobTest < ActiveSupport::TestCase
       assert_not_empty job.errors, "validation failure did not provide errors"
     end
   end
+
+  [
+    # Each test case is of the following format
+    # Array of parameters where each parameter is of the format:
+    #     attr name to be changed, attr value, and array of expectations (where each expectation is an array) OR the string "error"
+    [['running', false, [['state', 'Queued']]]],
+    [['state', 'Running', 'error']],  # is_locked_by_uuid is not set
+    [['is_locked_by_uuid', 'use_current_user_uuid', [['state', 'Queued']]], ['state', 'Running', [['running', true], ['started_at', 'not_nil'], ['success', 'nil']]]],
+    [['running', false, [['state', 'Queued']]], ['state', 'Complete', [['success', true]]]],
+    [['running', true, [['state', 'Running']]], ['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false],['started_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['state', 'Cancelled', [['running', false],['cancelled_at', 'not_nil'],['started_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['success', true, [['state', 'Complete'],['running', false],['finished_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['success', false, [['state', 'Failed'],['running', false],['finished_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['state', 'Complete', [['success', true],['running', false],['finished_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['state', 'Failed', [['success', false],['running', false],['finished_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running'], ['started_at', 'not_nil']]], ['running', false, [['state', 'Queued']]]],
+    [['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false]]], ['success', false, [['state', 'Cancelled'],['running', false],['finished_at', 'nil'], ['cancelled_at', 'not_nil']]]],
+    [['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false]]], ['success', true, [['state', 'Cancelled'],['running', false],['finished_at', 'nil'],['cancelled_at', 'not_nil']]]],
+    # potential migration cases
+    [['state', nil, [['state', 'Queued']]]],
+    [['state', nil, [['state', 'Queued']]], ['cancelled_at', Time.now, [['state', 'Cancelled']]]],
+    [['running', true, [['state', 'Running'], ['started_at', 'not_nil']]], ['state', nil, [['state', 'Running']]]],
+    # bogus initial status (started_at but not running), to produce error while setting state
+    [['started_at', Time.now, [['state', 'Queued']]], ['state', nil, 'error']],
+  ].each do |parameters|
+    test "verify job status #{parameters}" do
+      job = Job.create! job_attrs
+      assert job.valid?, job.errors.full_messages.to_s
+      assert_equal job.state, 'Queued'
+
+      parameters.each do |parameter|
+        expectations = parameter[2]
+        if parameter[1] == 'use_current_user_uuid'
+          parameter[1] = Thread.current[:user].uuid
+        end
+
+        if expectations.instance_of? Array
+          job[parameter[0]] = parameter[1]
+          job.save!
+          expectations.each do |expectation|
+            if expectation[1] == 'not_nil'
+              assert_not_nil job[expectation[0]]
+            elsif expectation[1] == 'nil'
+              assert_nil job[expectation[0]]
+            else
+              assert_equal expectation[1], job[expectation[0]]
+            end
+          end
+        else # String expectation, looking for error
+          if expectations == 'error'
+            rescued = false
+            begin
+              job[parameter[0]] = parameter[1]
+              job.save!
+            rescue
+              rescued = true
+            end
+            assert rescued, 'Expected error'
+          else
+            raise 'I do not know how to handle this expectation'
+          end
+        end
+      end
+    end
+  end
+
 end

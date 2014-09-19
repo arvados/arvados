@@ -1,19 +1,19 @@
 package main
 
-/* A BlockWorkList is an asynchronous thread-safe queue manager.  It
+/* A WorkQueue is an asynchronous thread-safe queue manager.  It
    provides a channel from which items can be read off the queue, and
    permits replacing the contents of the queue at any time.
 
-   The overall work flow for a BlockWorkList is as follows:
+   The overall work flow for a WorkQueue is as follows:
 
-     1. A BlockWorkList is created with NewBlockWorkList().  This
-        function instantiates a new BlockWorkList and starts a manager
+     1. A WorkQueue is created with NewWorkQueue().  This
+        function instantiates a new WorkQueue and starts a manager
         goroutine.  The manager listens on an input channel
         (manager.newlist) and an output channel (manager.NextItem).
 
      2. The manager first waits for a new list of requests on the
         newlist channel.  When another goroutine calls
-        manager.ReplaceList(lst), it sends lst over the newlist
+        manager.ReplaceQueue(lst), it sends lst over the newlist
         channel to the manager.  The manager goroutine now has
         ownership of the list.
 
@@ -34,24 +34,24 @@ package main
              output channel (signalling any workers to quit) and
              terminates.
 
-   Tasks currently handled by BlockWorkList:
+   Tasks currently handled by WorkQueue:
      * the pull list
      * the trash list
 
    Example usage:
 
         // Any kind of user-defined type can be used with the
-        // BlockWorkList.
+        // WorkQueue.
 		type FrobRequest struct {
 			frob string
 		}
 
 		// Make a work list.
-		froblist := NewBlockWorkList()
+		froblist := NewWorkQueue()
 
 		// Start a concurrent worker to read items from the NextItem
 		// channel until it is closed, deleting each one.
-		go func(list BlockWorkList) {
+		go func(list WorkQueue) {
 			for i := range list.NextItem {
 				req := i.(FrobRequest)
 				frob.Run(req)
@@ -65,16 +65,16 @@ package main
 				// of FrobRequests, and give this list to the
 				// frob manager.
 				newfrobs := parseBody(req.Body)
-				froblist.ReplaceList(newfrobs)
+				froblist.ReplaceQueue(newfrobs)
 			}).Methods("PUT")
 
-   Methods available on a BlockWorkList:
+   Methods available on a WorkQueue:
 
-		ReplaceList(list)
+		ReplaceQueue(list)
 			Replaces the current item list with a new one.  The list
             manager discards any unprocessed items on the existing
             list and replaces it with the new one. If the worker is
-            processing a list item when ReplaceList is called, it
+            processing a list item when ReplaceQueue is called, it
             finishes processing before receiving items from the new
             list.
 		Close()
@@ -84,16 +84,16 @@ package main
 
 import "container/list"
 
-type BlockWorkList struct {
+type WorkQueue struct {
 	newlist  chan *list.List
 	NextItem chan interface{}
 }
 
-// NewBlockWorkList returns a new worklist, and launches a listener
+// NewWorkQueue returns a new worklist, and launches a listener
 // goroutine that waits for work and farms it out to workers.
 //
-func NewBlockWorkList() *BlockWorkList {
-	b := BlockWorkList{
+func NewWorkQueue() *WorkQueue {
+	b := WorkQueue{
 		newlist:  make(chan *list.List),
 		NextItem: make(chan interface{}),
 	}
@@ -101,11 +101,11 @@ func NewBlockWorkList() *BlockWorkList {
 	return &b
 }
 
-// ReplaceList sends a new list of pull requests to the manager goroutine.
+// ReplaceQueue sends a new list of pull requests to the manager goroutine.
 // The manager will discard any outstanding pull list and begin
 // working on the new list.
 //
-func (b *BlockWorkList) ReplaceList(list *list.List) {
+func (b *WorkQueue) ReplaceQueue(list *list.List) {
 	b.newlist <- list
 }
 
@@ -113,7 +113,7 @@ func (b *BlockWorkList) ReplaceList(list *list.List) {
 // completes any pull request in progress and abandons any pending
 // requests.
 //
-func (b *BlockWorkList) Close() {
+func (b *WorkQueue) Close() {
 	close(b.newlist)
 }
 
@@ -127,7 +127,7 @@ func (b *BlockWorkList) Close() {
 // doubly linked list, holding on to the current item will keep
 // it from garbage collection.
 //
-func (b *BlockWorkList) listen() {
+func (b *WorkQueue) listen() {
 	var current_item *list.Element
 
 	// When we're done, close the output channel to shut down any
