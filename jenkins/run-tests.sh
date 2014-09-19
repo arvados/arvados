@@ -214,7 +214,7 @@ title () {
     printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
 }
 
-test_docs() {
+install_docs() {
     cd "$WORKSPACE/doc"
     bundle install --no-deployment
     rm -rf .site
@@ -223,20 +223,7 @@ test_docs() {
     PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
     unset ARVADOS_API_HOST
 }
-do_test docs
-
-test_doclinkchecker() {
-    cd "$WORKSPACE/doc"
-    bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
-}
-do_test doclinkchecker
-
-test_ruby_sdk() {
-    cd "$WORKSPACE/sdk/ruby" \
-        && bundle install --no-deployment \
-        && bundle exec rake test
-}
-do_test ruby_sdk
+do_install docs
 
 install_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
@@ -252,14 +239,25 @@ install_cli() {
 }
 do_install cli
 
-test_cli() {
-    title "Starting SDK CLI tests"
-    cd "$WORKSPACE/sdk/cli" \
-        && bundle install --no-deployment \
-        && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test $cli_test
+install_python_sdk() {
+    # Install the Python SDK early. Various other test suites (like
+    # keepproxy) bring up run_test_server.py, which imports the arvados
+    # module. We can't actually *test* the Python SDK yet though, because
+    # its own test suite brings up some of those other programs (like
+    # keepproxy).
+
+    cd "$WORKSPACE/sdk/python" \
+        && python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz \
+        && pip install dist/arvados-python-client-0.1.*.tar.gz
 }
-do_test cli
+do_install python_sdk
+
+install_fuse() {
+    cd "$WORKSPACE/services/fuse" \
+        && python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz \
+        && pip install dist/arvados_fuse-0.1.*.tar.gz
+}
+do_install fuse
 
 install_apiserver() {
     cd "$WORKSPACE/services/api"
@@ -310,12 +308,6 @@ install_apiserver() {
 }
 do_install apiserver
 
-test_apiserver() {
-    cd "$WORKSPACE/services/api"
-    bundle exec rake test $apiserver_test
-}
-do_test apiserver
-
 declare -a gostuff
 gostuff=(
     services/keepstore
@@ -329,25 +321,33 @@ do
     do_install "$g" go
 done
 
-install_python_sdk() {
-    # Install the Python SDK early. Various other test suites (like
-    # keepproxy) bring up run_test_server.py, which imports the arvados
-    # module. We can't actually *test* the Python SDK yet though, because
-    # its own test suite brings up some of those other programs (like
-    # keepproxy).
-
-    cd "$WORKSPACE/sdk/python" \
-        && python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz \
-        && pip install dist/arvados-python-client-0.1.*.tar.gz
+test_doclinkchecker() {
+    cd "$WORKSPACE/doc"
+    bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
 }
-do_install python_sdk
+do_test doclinkchecker
 
-install_fuse() {
-    cd "$WORKSPACE/services/fuse" \
-        && python setup.py egg_info -b ".$(git log --format=format:%ct.%h -n1 .)" sdist rotate --keep=1 --match .tar.gz \
-        && pip install dist/arvados_fuse-0.1.*.tar.gz
+test_ruby_sdk() {
+    cd "$WORKSPACE/sdk/ruby" \
+        && bundle install --no-deployment \
+        && bundle exec rake test
 }
-do_install fuse
+do_test ruby_sdk
+
+test_cli() {
+    title "Starting SDK CLI tests"
+    cd "$WORKSPACE/sdk/cli" \
+        && bundle install --no-deployment \
+        && mkdir -p /tmp/keep \
+        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test $cli_test
+}
+do_test cli
+
+test_apiserver() {
+    cd "$WORKSPACE/services/api"
+    bundle exec rake test $apiserver_test
+}
+do_test apiserver
 
 test_python_sdk() {
     # Python SDK. We test this before testing keepproxy: keepproxy runs
