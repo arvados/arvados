@@ -160,7 +160,8 @@ class JobTest < ActiveSupport::TestCase
     # Array of parameters where each parameter is of the format:
     #     attr name to be changed, attr value, (array of array of expectations OR the string "error")
     [['running', false, [['state', 'Queued']]]],
-    [['state', 'Running', [['running', true], ['started_at', 'not_nil'], ['success', 'nil']]]],
+    [['state', 'Running', 'error']],  # is_locked_by_uuid is not set
+    [['is_locked_by_uuid', 'use_current_user_uuid', [['state', 'Queued']]], ['state', 'Running', [['running', true], ['started_at', 'not_nil'], ['success', 'nil']]]],
     [['running', false, [['state', 'Queued']]], ['state', 'Complete', [['success', true]]]],
     [['running', true, [['state', 'Running']]], ['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false]]]],
     [['running', true, [['state', 'Running']]], ['state', 'Cancelled', [['running', false],['cancelled_at', 'not_nil']]]],
@@ -182,6 +183,10 @@ class JobTest < ActiveSupport::TestCase
 
       parameters.each do |parameter|
         expectations = parameter[2]
+        if parameter[1] == 'use_current_user_uuid'
+          parameter[1] = Thread.current[:user].uuid
+        end
+
         if expectations.instance_of? Array
           job[parameter[0]] = parameter[1]
           job.save!

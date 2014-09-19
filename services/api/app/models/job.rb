@@ -253,6 +253,9 @@ class Job < ArvadosModel
         self.running = false
         self.success = nil
       when Running
+        if !self.is_locked_by_uuid
+          return false
+        end
         if !self.started_at
           self.started_at = Time.now
         end
