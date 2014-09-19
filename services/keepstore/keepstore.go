@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/services/keepstore/pull_list"
 	"io/ioutil"
 	"log"
 	"net"
@@ -97,7 +96,7 @@ var KeepVM VolumeManager
 // keepstore servers in order to increase data replication) with
 // atomic update methods that are safe to use from multiple
 // goroutines.
-var pullmgr *pull_list.Manager
+var pullmgr *BlockWorkList
 
 // TODO(twp): continue moving as much code as possible out of main
 // so it can be effectively tested. Esp. handling and postprocessing

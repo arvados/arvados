@@ -22,6 +22,7 @@ class PipelineInstance < ArvadosModel
     t.add :properties
     t.add :state
     t.add :components_summary
+    t.add :description
     t.add :started_at
     t.add :finished_at
   end

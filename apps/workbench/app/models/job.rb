@@ -8,7 +8,11 @@ class Job < ArvadosBase
   end
 
   def attribute_editable? attr, *args
-    false
+    if attr.to_sym == :description
+      super && attr.to_sym == :description
+    else
+      false
+    end
   end
 
   def self.creatable?
@@ -34,11 +38,11 @@ class Job < ArvadosBase
     arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {}
   end
 
-  def state
-    Job::state(self)
-  end
-
   def self.state job
+    if job.responds_to? :state
+      return job.state
+    end
+
     if not job[:cancelled_at].nil?
       "Canceled"
     elsif not job[:finished_at].nil? or not job[:success].nil?
@@ -54,4 +58,7 @@ class Job < ArvadosBase
     end
   end
 
+  def textile_attributes
+    [ 'description' ]
+  end
 end
