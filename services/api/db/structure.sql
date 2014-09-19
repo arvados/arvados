@@ -431,7 +431,8 @@ CREATE TABLE jobs (
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
-    description text
+    description text,
+    state character varying(255)
 );
 
 
@@ -682,9 +683,9 @@ CREATE TABLE pipeline_instances (
     properties text,
     state character varying(255),
     components_summary text,
+    description text,
     started_at timestamp without time zone,
-    finished_at timestamp without time zone,
-    description text
+    finished_at timestamp without time zone
 );
 
 
@@ -2024,3 +2025,5 @@ INSERT INTO schema_migrations (version) VALUES ('20140911221252');
 INSERT INTO schema_migrations (version) VALUES ('20140918141529');
 
 INSERT INTO schema_migrations (version) VALUES ('20140918153541');
+
+INSERT INTO schema_migrations (version) VALUES ('20140918153705');
