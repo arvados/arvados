@@ -241,14 +241,14 @@ do_test ruby_sdk
 install_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
         && gem build arvados.gemspec \
-        && gem install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
+        && gem install --user-install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install ruby_sdk
 
 install_cli() {
     cd "$WORKSPACE/sdk/cli" \
         && gem build arvados-cli.gemspec \
-        && gem install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
+        && gem install --user-install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
 do_install cli
 
