@@ -32,24 +32,6 @@
       Add a subproject
     <% end %>
   <% end %>
-  <% if @object.owner_uuid == current_user.uuid or (Group.find(@object.owner_uuid).writable_by.include?(current_user.uuid) rescue nil) %>
-    <% if @object.uuid != current_user.uuid # Not the "Home" project %>
-      <%= link_to(
-          choose_projects_path(
-           title: 'Move this project to...',
-           editable: true,
-           action_name: 'Move',
-           action_href: project_path(@object.uuid),
-           action_method: 'put',
-           action_data: {selection_param: 'project[owner_uuid]', success: 'page-refresh'}.to_json),
-          { class: "btn btn-sm btn-primary arv-move-to-project", remote: true, method: 'get' }) do %>
-        <i class="fa fa-fw fa-truck"></i> Move project...
-      <% end %>
-      <%= link_to(project_path(id: @object.uuid), method: 'delete', class: 'btn btn-sm btn-primary', data: {confirm: "Really delete project '#{@object.name}'?"}) do %>
-        <i class="fa fa-fw fa-trash-o"></i> Delete project
-      <% end %>
-    <% end %>
-  <% end %>
 <% end %>
 
 <%= render file: 'application/show.html.erb', locals: local_assigns %>

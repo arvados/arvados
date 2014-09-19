@@ -3,6 +3,10 @@ class Group < ArvadosBase
     true
   end
 
+  def self.copies_to_projects?
+    false
+  end
+
   def self.contents params={}
     res = arvados_api_client.api self, "/contents", {
       _method: 'GET'
