@@ -280,13 +280,6 @@ class Job < ArvadosModel
         self.running = false
         self.success = true
       end
-    elsif 'running'.in? changed_attributes
-      if self.running
-        self.state = Running
-        if !self.started_at
-          self.started_at = Time.now
-        end
-      end
     elsif 'success'.in? changed_attributes
       if self.success
         self.state = Complete
@@ -300,6 +293,13 @@ class Job < ArvadosModel
     elsif 'cancelled_at'.in? changed_attributes
       self.state = Cancelled
       self.running = false
+    elsif 'running'.in? changed_attributes
+      if self.running
+        self.state = Running
+        if !self.started_at
+          self.started_at = Time.now
+        end
+      end
     end
     true
   end
