@@ -263,7 +263,7 @@ class Job < ArvadosModel
           self.cancelled_at = Time.now
         end
         self.running = false
-        self.success = false
+        self.success = nil
       when Failed
         if !self.finished_at
           self.finished_at = Time.now
@@ -278,16 +278,24 @@ class Job < ArvadosModel
         self.success = true
       end
     elsif 'running'.in? changed_attributes
-      self.state = Running
+      if self.running
+        self.state = Running
+        if !self.started_at
+          self.started_at = Time.now
+        end
+      end
     elsif 'success'.in? changed_attributes
-      if success
+      if self.success
         self.state = Complete
       else
         self.state = Failed
       end
+      self.running = false
     elsif 'cancelled_at'.in? changed_attributes
       self.state = Cancelled
+      self.running = false
     end
+    true
   end
 
   def set_state_before_save
@@ -298,13 +306,14 @@ class Job < ArvadosModel
         self.state = Complete
       elsif (!self.success.nil? && !self.success)
         self.state = Failed
-      elsif (self.running && self.success.nil? && !self.cencelled_at)
+      elsif (self.running && self.success.nil? && !self.cancelled_at)
         self.state = Running
-      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid && self.success.nil?
+      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid &&
+            self.success.nil? && self.running.nil?
         self.state = Queued
       end
     end
-
+ 
     if self.state.in?(States)
       true
     else

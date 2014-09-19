@@ -154,4 +154,60 @@ class JobTest < ActiveSupport::TestCase
       assert_not_empty job.errors, "validation failure did not provide errors"
     end
   end
+
+  [
+    # Each test case is of the following format
+    # Array of parameters where each parameter is of the format:
+    #     attr name to be changed, attr value, (array of array of expectations OR the string "error")
+    [['running', false, [['state', 'Queued']]]],
+    [['state', 'Running', [['running', true], ['started_at', 'not_nil'], ['success', 'nil']]]],
+    [['running', false, [['state', 'Queued']]], ['state', 'Complete', [['success', true]]]],
+    [['running', true, [['state', 'Running']]], ['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false]]]],
+    [['running', true, [['state', 'Running']]], ['state', 'Cancelled', [['running', false],['cancelled_at', 'not_nil']]]],
+    [['running', true, [['state', 'Running']]], ['success', true, [['state', 'Complete'],['running', false]]]],
+    [['running', true, [['state', 'Running']]], ['success', 'false', [['state', 'Failed'],['running', false]]]],
+    [['running', true, [['state', 'Running']]], ['state', 'Complete', [['success', true],['running', false]]]],
+    [['running', true, [['state', 'Running']]], ['state', 'Failed', [['success', false],['running', false]]]],
+    # potential migration cases
+    [['state', nil, [['state', 'Queued']]]],
+    [['state', nil, [['state', 'Queued']]], ['cancelled_at', Time.now, [['state', 'Cancelled']]]],
+    [['running', true, [['state', 'Running'], ['started_at', 'not_nil']]], ['state', nil, [['state', 'Running']]]],
+    # bogus initial status (started_at but not running), to produce error while setting state
+    [['started_at', Time.now, [['state', 'Queued']]], ['state', nil, 'error']],
+  ].each do |parameters|
+    test "verify job status #{parameters}" do
+      job = Job.create! job_attrs
+      assert job.valid?, job.errors.full_messages.to_s
+      assert_equal job.state, 'Queued'
+
+      parameters.each do |parameter|
+        expectations = parameter[2]
+        if expectations.instance_of? Array
+          job[parameter[0]] = parameter[1]
+          job.save!
+          expectations.each do |expectation|
+            if expectation[1] == 'not_nil'
+              assert_not_nil job[expectation[0]]
+            elsif expectation[1] == 'nil'
+              assert_nil job[expectation[0]]
+            else
+              assert_equal expectation[1], job[expectation[0]]
+            end
+          end
+        else # String expectation, looking for error
+          if expectations == 'error'
+            rescued = false
+            begin
+              job[parameter[0]] = parameter[1]
+              job.save!
+            rescue
+              rescued = true
+            end
+            assert rescued, 'Expected error'
+          end
+        end
+      end
+    end
+  end
+
 end
