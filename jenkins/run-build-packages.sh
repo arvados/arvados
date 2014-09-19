@@ -1,7 +1,7 @@
 #!/bin/bash
 
 EXITCODE=0
-CALL_PRM=0
+CALL_FREIGHT=0
 
 APTUSER=$1
 APTSERVER=$2
@@ -106,24 +106,32 @@ build_and_scp_deb () {
   FPM_RESULTS=$(${COMMAND_ARR[@]})
   FPM_EXIT_CODE=$?
   echo ${COMMAND_ARR[@]}
-  if [[ ! $FPM_RESULTS =~ "File already exists" ]]; then
-    if [[ "$FPM_EXIT_CODE" != "0" ]]; then
-      echo "Error building debian package for $1:\n $FPM_RESULTS"
-    else
-      scp -P2222 "$PACKAGE_NAME"_"$VERSION"*.deb $APTUSER@$APTSERVER:tmp/
-      CALL_PRM=1
-    fi
+
+  FPM_PACKAGE_NAME=''
+  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\-.]*.deb) ]]; then
+    FPM_PACKAGE_NAME=${BASH_REMATCH[1]}
+  fi
+
+  if [[ "$FPM_PACKAGE_NAME" == "" ]]; then
+    EXITCODE=1
+    echo "Error: Unabled figure out package name from fpm results:\n $FPM_RESULTS"
   else
-    echo "Debian package for $1 exists, not rebuilding"
+    if [[ ! $FPM_RESULTS =~ "File already exists" ]]; then
+      if [[ "$FPM_EXIT_CODE" != "0" ]]; then
+        echo "Error building debian package for $1:\n $FPM_RESULTS"
+      else
+        scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:tmp/
+        CALL_FREIGHT=1
+      fi
+    else
+      echo "Debian package $FPM_PACKAGE_NAME exists, not rebuilding"
+    fi
   fi
 }
 
 if [[ ! -d "$WORKSPACE/debs" ]]; then
   mkdir -p $WORKSPACE/debs
 fi
-
-# Make sure our destination directory on $APTSERVER exists - prm can delete it when invoked improperly
-ssh -p2222 $APTUSER@$APTSERVER mkdir tmp
 
 # Arvados-src
 # We use $WORKSPACE/src-build-dir as the clean directory from which to build the src package
@@ -153,14 +161,12 @@ export GOPATH=$(mktemp -d)
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 
-# Keep -> keepstore
+# keepstore
 go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
 
-# Keep proxy
-
-# Keep -> keepproxy
+# keepproxy
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
 build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
@@ -203,11 +209,13 @@ build_and_scp_deb ws4py
 build_and_scp_deb virtualenv
 
 # Finally, publish the packages, if necessary
-if [[ "$CALL_PRM" != "0" ]]; then
-  ssh -p2222 $APTUSER@$APTSERVER -t "cd /var/www/$APTSERVER; /usr/local/rvm/bin/rvm default do prm --type deb -p . --component main --release wheezy --arch amd64  -d /home/$APTUSER/tmp/ --gpg 1078ECD7"
+if [[ "$CALL_FREIGHT" != "0" ]]; then
+  ssh -p2222 $APTUSER@$APTSERVER -t "cd tmp && ls -laF *deb && freight add *deb apt/wheezy && freight cache && rm -f *deb"
 else
-  echo "No new packages generated. No PRM run necessary."
+  echo "No new packages generated. No freight run necessary."
 fi
 
 # clean up temporary GOPATH
 rm -rf "$GOPATH"
+
+exit $EXITCODE
