@@ -472,10 +472,10 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 		plist.PushBack(p)
 	}
 
-	if pullmgr == nil {
-		pullmgr = NewBlockWorkList()
+	if pullq == nil {
+		pullq = NewWorkQueue()
 	}
-	pullmgr.ReplaceList(plist)
+	pullq.ReplaceQueue(plist)
 }
 
 // ==============================
