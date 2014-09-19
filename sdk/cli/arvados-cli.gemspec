@@ -5,10 +5,10 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados-cli'
-  s.version     = '0.1.' + `/usr/bin/git log --pretty=format:'%ci' -n 1`[0..18].gsub(/[ \-:]/,'')
-  s.date        = `/usr/bin/git log --pretty=format:'%ci' -n 1`[0..9]
-  s.summary     = "Arvados SDK CLI"
-  s.description = "This is the Arvados SDK CLI gem, git revision " + `/usr/bin/git log --pretty=format:'%H' -n 1`
+  s.version     = '0.1.' + `git log --pretty=format:'%ci' -n 1 .`[0..18].gsub(/[ \-:]/,'')
+  s.date        = `git log --pretty=format:'%ci' -n 1 .`[0..9]
+  s.summary     = "Arvados CLI tools"
+  s.description = "Arvados command line tools, git commit " + `git log --pretty=format:'%H' -n 1 .`
   s.authors     = ["Arvados Authors"]
   s.email       = 'gem-dev@curoverse.com'
   #s.bindir      = '.'
@@ -29,5 +29,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'curb', '~> 0.8'
   s.add_runtime_dependency('jwt', '>= 0.1.5', '< 1.0.0')
   s.homepage    =
-    'http://arvados.org'
+    'https://arvados.org'
 end
