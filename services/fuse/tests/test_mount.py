@@ -73,7 +73,7 @@ class FuseMountTest(MountTestBase):
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, self.testcollection))
+        e = operations.inodes.add_entry(fuse.CollectionDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, self.testcollection))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -128,7 +128,7 @@ class FuseMagicTest(MountTestBase):
     def runTest(self):
         # Create the request handler
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes, self.api))
+        e = operations.inodes.add_entry(fuse.MagicDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0))
 
         self.mounttmp = tempfile.mkdtemp()
 
@@ -163,7 +163,7 @@ class FuseMagicTest(MountTestBase):
 class FuseTagsTest(MountTestBase):
     def runTest(self):
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api))
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -188,7 +188,7 @@ class FuseTagsTest(MountTestBase):
 class FuseTagsUpdateTest(MountTestBase):
     def runRealTest(self):
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, poll_time=1))
+        e = operations.inodes.add_entry(fuse.TagsDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, poll_time=1))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -241,7 +241,7 @@ class FuseTagsUpdateTest(MountTestBase):
 class FuseSharedTest(MountTestBase):
     def runTest(self):
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.SharedDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, self.api.users().current().execute()['uuid']))
+        e = operations.inodes.add_entry(fuse.SharedDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, self.api.users().current().execute()['uuid']))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())
@@ -261,6 +261,7 @@ class FuseSharedTest(MountTestBase):
                           "Empty collection.link",
                           "Pipeline Template with Input Parameter with Search.pipelineTemplate",
                           "Pipeline Template with Jobspec Components.pipelineTemplate",
+                          "collection_expires_in_future",
                           "pipeline_with_job.pipelineInstance"
                       ], d2)
 
@@ -280,7 +281,7 @@ class FuseSharedTest(MountTestBase):
 class FuseHomeTest(MountTestBase):
     def runTest(self):
         operations = fuse.Operations(os.getuid(), os.getgid())
-        e = operations.inodes.add_entry(fuse.ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, self.api.users().current().execute()))
+        e = operations.inodes.add_entry(fuse.ProjectDirectory(llfuse.ROOT_INODE, operations.inodes, self.api, 0, self.api.users().current().execute()))
 
         llfuse.init(operations, self.mounttmp, [])
         t = threading.Thread(None, lambda: llfuse.main())

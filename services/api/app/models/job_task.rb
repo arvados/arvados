@@ -15,6 +15,8 @@ class JobTask < ArvadosModel
     t.add :output
     t.add :progress
     t.add :success
+    t.add :started_at
+    t.add :finished_at
   end
 
   protected

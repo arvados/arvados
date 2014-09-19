@@ -13,4 +13,11 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
                  "discovery document was generated >#{MAX_SCHEMA_AGE}s ago")
   end
 
+  test "discovery document has defaultTrashLifetime" do
+    get :index
+    assert_response :success
+    discovery_doc = JSON.parse(@response.body)
+    assert_includes discovery_doc, 'defaultTrashLifetime'
+    assert_equal discovery_doc['defaultTrashLifetime'], Rails.application.config.default_trash_lifetime
+  end
 end

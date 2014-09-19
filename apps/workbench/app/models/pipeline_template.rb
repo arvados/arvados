@@ -6,4 +6,8 @@ class PipelineTemplate < ArvadosBase
   def self.creatable?
     false
   end
+
+  def textile_attributes
+    [ 'description' ]
+  end
 end

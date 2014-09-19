@@ -196,3 +196,6 @@ common:
   # source_version
   source_version: "<%= `git log -n 1 --format=%h` %>"
   local_modified: false
+
+  # Default lifetime for ephemeral collections: 2 weeks.
+  default_trash_lifetime: 1209600
