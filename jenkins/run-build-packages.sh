@@ -108,7 +108,7 @@ build_and_scp_deb () {
   echo ${COMMAND_ARR[@]}
 
   FPM_PACKAGE_NAME=''
-  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\-.]*.deb) ]]; then
+  if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\-.]*\.deb) ]]; then
     FPM_PACKAGE_NAME=${BASH_REMATCH[1]}
   fi
 
