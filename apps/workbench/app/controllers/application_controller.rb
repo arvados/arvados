@@ -212,8 +212,8 @@ class ApplicationController < ActionController::Base
         render json: @object.attributes.merge(extra_attrs)
       end
       f.html {
-        if params['tab_pane']
-          render_pane params['tab_pane']
+        if params['tab_pane']          
+          render_pane(if params.is_a? Hash then params['tab_pane']["name"] else params['tab_pane'] end)
         elsif request.method.in? ['GET', 'HEAD']
           render
         else
