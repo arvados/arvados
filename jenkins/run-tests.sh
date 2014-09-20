@@ -1,49 +1,48 @@
 #!/bin/bash
 
-# Install and test Arvados components.
-#
-# Exit non-zero if any tests fail.
-#
-# Arguments:
-# --skip FOO     Do not test the FOO component.
-# --only FOO     Do not test anything except the FOO component.
-# WORKSPACE=path Arvados source tree to test.
-# CONFIGSRC=path Dir with api server config files to copy into source tree.
-# envvar=value   Set $envvar to value
-#
-# Regardless of which components are tested, install all components in
-# the usual sequence. (Many test suites depend on other components
-# being installed.)
-#
-# To run a specific Ruby test, set $workbench_test, $apiserver_test or
-# $cli_test on the command line:
-#
-# $ run-tests.sh --only workbench workbench_test=TEST=test/integration/pipeline_instances_test.rb
-#
-#
-# To run a specific Python test set $python_sdk_test or $fuse_test.
-#
-# $ run-tests.sh --only python_sdk python_sdk_test="--test-suite tests.test_keep_locator"
-#
-#
-# You can also pass "export ARVADOS_DEBUG=1" to enable additional debugging output:
-#
-# $ run-tests.sh "export ARVADOS_DEBUG=1"
-#
-#
-# Finally, you can skip the installation steps on subsequent runs this way:
-#
-## First run
-# $ run-tests.sh --leave-temp
-#
-## Subsequent runs: record the values of VENVDIR and GOPATH from the first run, and
-# provide them on the command line in subsequent runs:
-#
-# $ run-tests.sh --skip-install VENVDIR="/tmp/tmp.y3tsTmigio" GOPATH="/tmp/tmp.3r4sSA9F3l"
+read -rd "\000" helpmessage <<EOF
+$(basename $0): Install and test Arvados components.
 
+Exit non-zero if any tests fail.
 
-# First make sure to remove any ARVADOS_ variables from the calling environment
-# that could interfer with the tests.
+Syntax:
+        $(basename $0) WORKSPACE=/path/to/arvados [options]
+
+Options:
+
+--skip FOO     Do not test the FOO component.
+--only FOO     Do not test anything except the FOO component.
+--leave-temp   Do not remove GOPATH, virtualenv, and other temp dirs at exit.
+               Instead, show which directories were used this time so they
+               can be reused in subsequent invocations.
+--skip-install Do not run any install steps. Just run tests.
+               You should provide GOPATH, GEMHOME, and VENVDIR options
+               from a previous invocation if you use this option.
+WORKSPACE=path Arvados source tree to test.
+CONFIGSRC=path Dir with api server config files to copy into source tree.
+apiserver_test="TEST=test/functional/arvados/v1/collections_test.rb"
+               Restrict apiserver tests to the given file
+python_sdk_test="--test-suite test.test_keep_locator"
+               Restrict Python SDK tests to the given class
+workbench_test="TEST=test/integration/pipeline_instances_test.rb"
+               Restrict Workbench tests to the given file
+ARVADOS_DEBUG=1
+               Print more debug messages
+envvar=value   Set \$envvar to value. Primarily useful for WORKSPACE,
+               *_test, and other examples shown above.
+
+Assuming --skip-install is not given, all components are installed
+into \$GOPATH, \$VENDIR, and \$GEMHOME before running any tests. Many
+test suites depend on other components being installed, and installing
+everything tends to be quicker than debugging dependencies.
+
+More information and background:
+
+https://arvados.org/projects/arvados/wiki/Running_tests
+EOF
+
+# First make sure to remove any ARVADOS_ variables from the calling
+# environment that could interfere with the tests.
 unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 
 COLUMNS=80
@@ -106,6 +105,11 @@ do
             skipwhat="$1"; shift
             skip[$skipwhat]=1
             ;;
+        --help)
+            echo >&2 "$helpmessage"
+            echo >&2
+            exit 1
+            ;;
         --only)
             only="$1"; shift
             ;;
@@ -120,7 +124,7 @@ do
             eval $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
             ;;
         *)
-            echo >&2 "$0: Unrecognized option: '$arg'"
+            echo >&2 "$0: Unrecognized option: '$arg'. Try: $0 --help"
             exit 1
             ;;
     esac
