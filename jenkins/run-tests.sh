@@ -45,12 +45,16 @@ EOF
 # environment that could interfere with the tests.
 unset $(env | cut -d= -f1 | grep \^ARVADOS_)
 
-COLUMNS=80
-
+# Reset other variables that could affect our [tests'] behavior by
+# accident.
 GITDIR=
 GOPATH=
 VENVDIR=
 PYTHONPATH=
+GEMHOME=
+
+COLUMNS=80
+
 cli_test=
 workbench_test=
 apiserver_test=
@@ -68,7 +72,7 @@ fi
 declare -A leave_temp
 clear_temp() {
     leaving=""
-    for var in VENVDIR GOPATH GITDIR
+    for var in VENVDIR GOPATH GITDIR GEMHOME
     do
         if [[ -z "${leave_temp[$var]}" ]]
         then
@@ -101,14 +105,14 @@ while [[ -n "$1" ]]
 do
     arg="$1"; shift
     case "$arg" in
-        --skip)
-            skipwhat="$1"; shift
-            skip[$skipwhat]=1
-            ;;
         --help)
             echo >&2 "$helpmessage"
             echo >&2
             exit 1
+            ;;
+        --skip)
+            skipwhat="$1"; shift
+            skip[$skipwhat]=1
             ;;
         --only)
             only="$1"; shift
@@ -119,6 +123,7 @@ do
         --leave-temp)
             leave_temp[VENVDIR]=1
             leave_temp[GOPATH]=1
+            leave_temp[GEMHOME]=1
             ;;
         *=*)
             eval $(echo $arg | cut -d= -f1)=\"$(echo $arg | cut -d= -f2-)\"
@@ -142,16 +147,15 @@ if [[ -n "$CONFIGSRC" ]]; then
 fi
 
 # Set up temporary install dirs (unless existing dirs were supplied)
-if [[ -n "$VENVDIR" ]]; then
-    leave_temp[VENVDIR]=1
-else
-    VENVDIR=$(mktemp -d)
-fi
-if [[ -n "$GOPATH" ]]; then
-    leave_temp[GOPATH]=1
-else
-    GOPATH=$(mktemp -d)
-fi
+for tmpdir in VENVDIR GOPATH GEMHOME
+do
+    if [[ -n "${!tmpdir}" ]]; then
+        leave_temp[$tmpdir]=1
+    else
+        eval $tmpdir=$(mktemp -d)
+    fi
+done
+PATH="$GEMHOME/.gem/ruby/2.1.0/bin:$PATH"
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
@@ -220,26 +224,28 @@ title () {
 
 install_docs() {
     cd "$WORKSPACE/doc"
-    bundle install --no-deployment
+    HOME="$GEMHOME" bundle install --no-deployment
     rm -rf .site
     # Make sure python-epydoc is installed or the next line won't do much good!
     ARVADOS_API_HOST=qr1hi.arvadosapi.com
-    PYTHONPATH=$WORKSPACE/sdk/python/ bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
+    PYTHONPATH=$WORKSPACE/sdk/python/ HOME="$GEMHOME" bundle exec rake generate baseurl=file://$WORKSPACE/doc/.site/ arvados_workbench_host=workbench.$ARVADOS_API_HOST arvados_api_host=$ARVADOS_API_HOST
     unset ARVADOS_API_HOST
 }
 do_install docs
 
 install_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
+        && HOME="$GEMHOME" bundle install --no-deployment \
         && gem build arvados.gemspec \
-        && gem install --user-install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
+        && HOME="$GEMHOME" gem install --user-install --no-ri --no-rdoc `ls -t arvados-*.gem|head -n1`
 }
 do_install ruby_sdk
 
 install_cli() {
     cd "$WORKSPACE/sdk/cli" \
+        && HOME="$GEMHOME" bundle install --no-deployment \
         && gem build arvados-cli.gemspec \
-        && gem install --user-install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
+        && HOME="$GEMHOME" gem install --user-install --no-ri --no-rdoc `ls -t arvados-cli-*.gem|head -n1`
 }
 do_install cli
 
@@ -265,7 +271,8 @@ do_install fuse
 
 install_apiserver() {
     cd "$WORKSPACE/services/api"
-    bundle install --no-deployment
+    export RAILS_ENV=test
+    HOME="$GEMHOME" bundle install --no-deployment
 
     rm -f config/environments/test.rb
     cp config/environments/test.rb.example config/environments/test.rb
@@ -284,8 +291,6 @@ install_apiserver() {
 
     sed -i'' -e "s:SECRET_TOKEN:$SECRET_TOKEN:" config/application.yml
     sed -i'' -e "s:BLOB_SIGNING_KEY:$BLOB_SIGNING_KEY:" config/application.yml
-
-    export RAILS_ENV=test
 
     # Set up empty git repo (for git tests)
     GITDIR=$(mktemp -d)
@@ -306,9 +311,9 @@ install_apiserver() {
     psql arvados_test -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'arvados_test';" 2>/dev/null
 
     cd "$WORKSPACE/services/api" \
-        && bundle exec rake db:drop \
-        && bundle exec rake db:create \
-        && bundle exec rake db:setup
+        && HOME="$GEMHOME" bundle exec rake db:drop \
+        && HOME="$GEMHOME" bundle exec rake db:create \
+        && HOME="$GEMHOME" bundle exec rake db:setup
 }
 do_install apiserver
 
@@ -327,29 +332,29 @@ done
 
 test_doclinkchecker() {
     cd "$WORKSPACE/doc"
-    bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
+    HOME="$GEMHOME" bundle exec rake linkchecker baseurl=file://$WORKSPACE/doc/.site/
 }
 do_test doclinkchecker
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
-        && bundle install --no-deployment \
-        && bundle exec rake test
+        && HOME="$GEMHOME" bundle install --no-deployment \
+        && HOME="$GEMHOME" bundle exec rake test
 }
 do_test ruby_sdk
 
 test_cli() {
     title "Starting SDK CLI tests"
     cd "$WORKSPACE/sdk/cli" \
-        && bundle install --no-deployment \
+        && HOME="$GEMHOME" bundle install --no-deployment \
         && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep bundle exec rake test $cli_test
+        && KEEP_LOCAL_STORE=/tmp/keep HOME="$GEMHOME" bundle exec rake test $cli_test
 }
 do_test cli
 
 test_apiserver() {
     cd "$WORKSPACE/services/api"
-    bundle exec rake test $apiserver_test
+    HOME="$GEMHOME" bundle exec rake test $apiserver_test
 }
 do_test apiserver
 
@@ -385,8 +390,8 @@ done
 
 test_workbench() {
     cd "$WORKSPACE/apps/workbench" \
-        && bundle install --no-deployment \
-        && bundle exec rake test $workbench_test
+        && HOME="$GEMHOME" bundle install --no-deployment \
+        && HOME="$GEMHOME" bundle exec rake test $workbench_test
 }
 do_test workbench
 
