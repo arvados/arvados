@@ -326,7 +326,7 @@ class Job < ArvadosModel
         self.state = Failed
       elsif (self.running && self.success.nil? && !self.cancelled_at)
         self.state = Running
-      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid && self.success.nil?
+      elsif !self.started_at && !self.cancelled_at && self.success.nil?
         self.state = Queued
       end
     end
