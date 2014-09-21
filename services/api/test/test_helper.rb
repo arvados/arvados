@@ -80,6 +80,49 @@ class ActiveSupport::TestCase
   end
 end
 
+class ActionController::TestCase
+  def reset_counter
+    $counter = 0
+  end
+
+  def check_counter action
+    $counter += 1
+    if $counter > 1
+      raise "Too many actions on a single instance of ActionController::TestCase #{action}"
+    end
+  end
+
+  alias original_run_callbacks run_callbacks
+  def run_callbacks(kind, &block)
+    reset_counter
+    original_run_callbacks(kind, &block)
+  end
+
+  alias original_get get
+  def get(action, *args)
+    check_counter action
+    original_get(action, *args)
+  end
+
+  alias original_post post
+  def post(action, *args)
+    check_counter action
+    original_post(action, *args)
+  end
+
+  alias original_put put
+  def put(action, *args)
+    check_counter action
+    original_put(action, *args)
+  end
+
+  alias original_delete delete
+  def delete(action, *args)
+    check_counter action
+    original_delete(action, *args)
+  end
+end
+
 class ActionDispatch::IntegrationTest
   teardown do
     Thread.current[:api_client_ip_address] = nil
