@@ -93,4 +93,76 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     assert_equal(1024, properties['total_ram_mb'].to_i)
     assert_equal(2048, properties['total_scratch_mb'].to_i)
   end
+
+  test "active user can see their assigned job" do
+    authorize_with :active
+    get :show, {id: nodes(:busy).uuid}
+    assert_response :success
+    assert_equal(jobs(:nearly_finished_job).uuid, json_response["job_uuid"])
+  end
+
+  test "user without job read permission can't see job" do
+    authorize_with :spectator
+    get :show, {id: nodes(:busy).uuid}
+    assert_response :success
+    assert_nil(json_response["job"], "spectator can see node's assigned job")
+  end
+
+  test "admin can associate a job with a node" do
+    changed_node = nodes(:idle)
+    assigned_job = jobs(:queued)
+    authorize_with :admin
+    post :update, {
+      id: changed_node.uuid,
+      node: {job_uuid: assigned_job.uuid},
+    }
+    assert_response :success
+    assert_equal(changed_node.hostname, json_response["hostname"],
+                 "hostname mismatch after defining job")
+    assert_equal(assigned_job.uuid, json_response["job_uuid"],
+                 "mismatch in node's assigned job UUID")
+  end
+
+  test "non-admin can't associate a job with a node" do
+    authorize_with :active
+    post :update, {
+      id: nodes(:idle).uuid,
+      node: {job_uuid: jobs(:queued).uuid},
+    }
+    assert_response 403
+  end
+
+  test "admin can unassign a job from a node" do
+    changed_node = nodes(:busy)
+    authorize_with :admin
+    post :update, {
+      id: changed_node.uuid,
+      node: {job_uuid: nil},
+    }
+    assert_response :success
+    assert_equal(changed_node.hostname, json_response["hostname"],
+                 "hostname mismatch after defining job")
+    assert_nil(json_response["job_uuid"],
+               "node still has job assignment after update")
+  end
+
+  test "non-admin can't unassign a job from a node" do
+    authorize_with :project_viewer
+    post :update, {
+      id: nodes(:busy).uuid,
+      node: {job_uuid: nil},
+    }
+    assert_response 403
+  end
+
+  test "job readable after updating other attributes" do
+    authorize_with :admin
+    post :update, {
+      id: nodes(:busy).uuid,
+      node: {last_ping_at: 1.second.ago},
+    }
+    assert_response :success
+    assert_equal(jobs(:nearly_finished_job).uuid, json_response["job_uuid"],
+                 "mismatched job UUID after ping update")
+  end
 end
