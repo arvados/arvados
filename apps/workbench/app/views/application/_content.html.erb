@@ -8,7 +8,7 @@
     <li class="<%= 'active' if i==0 %>">
       <a href="#<%= pane_name %>" data-toggle="tab"
          class="pane-anchor"
-         id="<%= pane %>-tab"
+         id="<%= pane_name %>-tab"
          data-pane-content-url="<%= url_for(params.merge(tab_pane: pane)) %>">
         <%= pane_name.gsub('_', ' ') %> <span id="<%= pane_name %>-count"></span>
       </a>
