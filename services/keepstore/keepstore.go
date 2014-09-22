@@ -94,6 +94,11 @@ var KeepVM VolumeManager
 // The pull list manager and trash queue are threadsafe queues which
 // support atomic update operations. The PullHandler and TrashHandler
 // store results from Data Manager /pull and /trash requests here.
+//
+// See the Keep and Data Manager design documents for more details:
+// https://arvados.org/projects/arvados/wiki/Keep_Design_Doc
+// https://arvados.org/projects/arvados/wiki/Data_Manager_Design_Doc
+//
 var pullq *WorkQueue
 var trashq *WorkQueue
 

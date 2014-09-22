@@ -62,7 +62,7 @@ func MakeRESTRouter() *mux.Router {
 	// The PullHandler and TrashHandler process "PUT /pull" and "PUT
 	// /trash" requests from Data Manager.  These requests instruct
 	// Keep to replicate or delete blocks; see
-	// https://arvados.org/projects/orvos-private/wiki/Keep_Design_Doc
+	// https://arvados.org/projects/arvados/wiki/Keep_Design_Doc
 	// for more details.
 	//
 	// Each handler parses the JSON list of block management requests
@@ -450,8 +450,7 @@ type PullRequest struct {
 
 func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	api_token := GetApiToken(req)
-	if !IsDataManagerToken(api_token) {
+	if api_token := GetApiToken(req); !IsDataManagerToken(api_token) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
@@ -492,8 +491,7 @@ type TrashRequest struct {
 
 func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	api_token := GetApiToken(req)
-	if !IsDataManagerToken(api_token) {
+	if api_token := GetApiToken(req); !IsDataManagerToken(api_token) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
