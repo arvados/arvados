@@ -9,16 +9,17 @@
 
 <p>
   <% if @object.started_at %>
-    Started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span>.
+    This pipeline started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span>.
   <% end %>
 
   <% if @object.started_at %>
+    This pipeline
     <% if @object.state == 'Complete' %>
-      Completed in
+      completed in
     <% elsif @object.state == 'Failed' %>
-      Failed after
+      failed after
     <% else %>
-      Has been active for
+      has been active for
     <% end %>
 
     <% walltime = if @object.finished_at then
@@ -29,7 +30,7 @@
     
     <%= runtime(walltime, true) %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
   <% else %>
-    Pipeline is <%= @object.state.downcase %>.
+    This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
     <% walltime = 0%>
   <% end %>
 
@@ -41,26 +42,23 @@
 <p>
     <% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
     <% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
-
+    It
     <% if @object.state.start_with? 'Running' %>
-      Has run
-      <% else %>
-      Ran
+      has run
+    <% else %>
+      ran
     <% end %>
     for
-    <%= runtime(runningtime, true) %> 
-    <% if walltime - runningtime > 0 %>
-      (<%= runtime(walltime - runningtime, true) %> queued)<% end %><% if tasks.size == 0 %>.<% else %>
-      and used
-      <% cputime = tasks.map { |task|
-           puts "started at #{task.started_at}"
+    <%= render_runtime(runningtime, true, false) %><% cputime = tasks.map { |task|
                   if task.started_at
                     (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
                   else
                     0
                   end
-                }.reduce(:+) %>
-    <%= runtime(cputime, true) %>
+                }.reduce(:+) %><% if walltime - runningtime > 0 %>
+      (<%= render_runtime(walltime - runningtime, true) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+      and used
+    <%= render_runtime(cputime, true) %>
     of CPU time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
     <% end %>
 </p>
@@ -82,8 +80,6 @@
             </h4>
           </div>
 
-          <% puts current_job.inspect %>
-
           <% if current_job %>
             <div class="col-md-1">
               <%= render(partial: 'job_status_label', locals: { j: current_job }) %>
@@ -99,7 +95,8 @@
                        0
                      end
                    }.reduce(:+) %>
-                <%= runtime(walltime, false) %> / <%= runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)
+                <%= render_runtime(walltime, false, false) %>
+                <% if cputime > 0 %> / <%= render_runtime(cputime, false, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
               <% end %>
             </div>
 
@@ -126,7 +123,7 @@
           <% elsif Job::state(current_job) == "Queued" %>
             <div class="col-md-5">
               <% queuetime = Time.now - current_job[:created_at] %>
-              Queued for <%= runtime(queuetime, true) %>.
+              Queued for <%= render_runtime(queuetime, true) %>.
               <% begin %>
               <% if current_job.queue_position == 0 %>
                 This job is next in the queue to run.
@@ -161,7 +158,11 @@
                     <%= k.to_s %>:
                   </td>
                   <td>
-                    <%= current_component[k] %>
+                    <% if current_component[k].nil? %>
+                      (none)
+                    <% else %>
+                      <%= current_component[k] %>
+                    <% end %>
                   </td>
                 </tr>
               <% end %>
@@ -179,7 +180,7 @@
                     docker_image_locator:
                   </td>
                   <td>
-                    <%= link_to_if_arvados_object current_component[:docker_image_locator] %>
+                    <%= link_to_if_arvados_object current_component[:docker_image_locator], friendly_name: true %>
                   </td>
                 </tr>
               <% else %>
@@ -202,7 +203,9 @@
                     <%= k.to_s %>:
                   </td>
                   <td>
-                    <% if k.to_s.end_with? 'uuid' %>
+                    <% if k == :uuid %>
+                      <%= link_to_if_arvados_object current_component[k], link_text: current_component[k] %>
+                    <% elsif k.to_s.end_with? 'uuid' %>
                       <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
                     <% elsif k.to_s.end_with? '_at' %>
                       <span data-utc-date="<%= current_component[k] %>"><%= current_component[k] %></span>

@@ -36,7 +36,7 @@
                       <% if v.is_a? Hash and v[:job] %>
                         <% if Job::state(v[:job]) == "Running" %>
                           <% running << k %>
-                        <% elsif Job::state(v[:job]) == "Failed" or Job::state(v[:job]) == "Canceled" %>
+                        <% elsif Job::state(v[:job]) == "Failed" or Job::state(v[:job]) == "Cancelled" %>
                           <% failed << k %>
                         <% elsif Job::state(v[:job]) == "Completed" %>
                           <% completed << k %>
@@ -70,7 +70,7 @@
                 Started at <span class="utc-date" data-utc-date="<%= p[:started_at] || p[:created_at] %>"
                                  data-utc-date-opts="noseconds"><%= p[:created_at] %></span>.
                 <% pipeline_time = Time.now - (p[:started_at] || p[:created_at]) %>
-                Active for <%= runtime(pipeline_time, false) %>.
+                Active for <%= render_runtime(pipeline_time, false) %>.
 
                 <div class="pull-right">
                   <% running.each do |k| %>
@@ -107,7 +107,7 @@
                 <div class="col-md-12">
                   <% if p[:started_at] and p[:finished_at] %>
                     <% pipeline_time = p[:finished_at] - p[:started_at] %>
-                    Active for <%= runtime(pipeline_time, false) %>
+                    Active for <%= render_runtime(pipeline_time, false) %>
                   <% end %>
 
                   <span class="pull-right x-ellip" style="max-width: 100%">
