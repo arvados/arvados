@@ -61,6 +61,10 @@ class Dispatcher
     end
   end
 
+  def crunch_wrapper_is_slurm?
+    Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
+  end
+
   def sinfo
     @@slurm_version ||= Gem::Version.new(`sinfo --version`.match(/\b[\d\.]+\b/)[0])
     if Gem::Version.new('2.3') <= @@slurm_version
@@ -85,7 +89,7 @@ class Dispatcher
   end
 
   def update_node_status
-    if Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
+    if crunch_wrapper_is_slurm?
       @node_state ||= {}
       node_seen = {}
       begin
@@ -108,6 +112,9 @@ class Dispatcher
             if node
               $stderr.puts "dispatch: update #{node_name} state to #{node_state}"
               node.info['slurm_state'] = node_state
+              if node_state == "idle"
+                node.job = nil
+              end
               if not node.save
                 $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
               end
@@ -141,7 +148,7 @@ class Dispatcher
   def nodes_available_for_job_now(job)
     # Find Nodes that satisfy a Job's runtime constraints (by building
     # a list of Procs and using them to test each Node).  If there
-    # enough to run the Job, return an array of their names.
+    # enough to run the Job, return an array of usable node objects.
     # Otherwise, return nil.
     need_procs = NODE_CONSTRAINT_MAP.each_pair.map do |job_key, node_key|
       Proc.new do |node|
@@ -157,7 +164,7 @@ class Dispatcher
       if good_node
         usable_nodes << node
         if usable_nodes.count >= min_node_count
-          return usable_nodes.map { |node| node.hostname }
+          return usable_nodes
         end
       end
     end
@@ -183,6 +190,16 @@ class Dispatcher
       @node_wait_deadline = Time.now + 5.minutes
     end
     nodelist
+  end
+
+  def assign_job_to_nodes(assigned_job, nodes)
+    nodes.each do |node|
+      node.job = assigned_job
+      if not node.save
+        $stderr.puts("dispatch: failed to save #{node.uuid} assignment to " +
+                     "job #{assigned_job.uuid}: #{node.errors.messages}")
+      end
+    end
   end
 
   def start_jobs
@@ -212,7 +229,7 @@ class Dispatcher
                     "--exclusive",
                     "--no-kill",
                     "--job-name=#{job.uuid}",
-                    "--nodelist=#{nodelist.join(',')}"]
+                    "--nodelist=#{nodelist.map(&:hostname).join(',')}"]
       else
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
@@ -306,7 +323,10 @@ class Dispatcher
         log_truncated: false
       }
       i.close
-      update_node_status
+      if crunch_wrapper_is_slurm?
+        assign_job_to_nodes(job, nodelist)
+        update_node_status
+      end
     end
   end
 
