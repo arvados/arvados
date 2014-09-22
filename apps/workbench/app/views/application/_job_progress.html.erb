@@ -21,24 +21,9 @@
      if defined? scaleby
        percent_total_tasks *= scaleby
      end
-     failed_percent = (failed * percent_total_tasks).ceil
-     success_percent = (done * percent_total_tasks).ceil
-     running_percent = (running * percent_total_tasks).ceil
-
-     # We used ceil instead of round to compute percents to handle the situation
-     # where one of them is much larger than the other(s). However, this may
-     # have resulted in total percent > 100, hence we need to account for that.
-     if (failed_percent + success_percent + running_percent) > 100
-        overflow = failed_percent + success_percent + running_percent - 100
-        # decrease the biggest by the overlow amount
-        if (failed_percent > success_percent) && (failed_percent > running_percent)
-          failed_percent -= overflow
-        elsif (success_percent > failed_percent) && (success_percent > running_percent)
-          success_percent -= overflow
-        else
-          running_percent -= overflow
-        end
-     end
+     failed_percent = failed * percent_total_tasks
+     success_percent = done * percent_total_tasks
+     running_percent = running * percent_total_tasks
    end
 %>
 
