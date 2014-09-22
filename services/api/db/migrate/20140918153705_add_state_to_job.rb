@@ -9,8 +9,8 @@ class AddStateToJob < ActiveRecord::Migration
       Job.update_all({state: 'Failed'}, ['state is null and success = ?', false])
       Job.update_all({state: 'Complete'}, ['state is null and success = ?', true])
       Job.update_all({state: 'Running'}, ['state is null and running = ?', true])
-      # Locked, but not Running/Failed/Complete? Let's assume it failed.
-      Job.update_all({state: 'Failed'}, ['state is null and is_locked_by_uuid is not null', true])
+      # Locked/started, but not Running/Failed/Complete? Let's assume it failed.
+      Job.update_all({state: 'Failed'}, ['state is null and (is_locked_by_uuid is not null or started_at is not null)'])
       Job.update_all({state: 'Queued'}, ['state is null'])
     end
   end
