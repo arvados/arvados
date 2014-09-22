@@ -16,38 +16,59 @@
 <% end %>
 
 <% content_for :tab_line_buttons do %>
-  <%= link_to(copy_pipeline_instance_path('id' => @object.uuid, 'pipeline_instance[state]' => 'New'),
-      class: 'btn btn-primary',
-      #data: {toggle: :tooltip, placement: :top}, title: 'copy and modify',
-      method: :post,
-      ) do %>
-    Clone and edit <i class="fa fa-fw fa-copy"></i>
-  <% end %>
 
-  <% if @object.state.in? ['New', 'Ready'] %>
-    <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
-        class: 'btn btn-primary run-pipeline-button',
-        method: :patch
-        ) do %>
-      Run <i class="fa fa-fw fa-play"></i>
-    <% end %>
-  <% else %>
-    <% if @object.state.in? ['RunningOnClient', 'RunningOnServer'] %>
-      <%= link_to(url_for('pipeline_instance[state]' => 'Paused'),
-          class: 'btn btn-primary run-pipeline-button',
-          method: :patch
-          ) do %>
-        Stop <i class="fa fa-fw fa-stop"></i>
-      <% end %>
-    <% elsif @object.state == 'Paused' %>
-      <%= link_to(url_for('pipeline_instance[state]' => 'RunningOnServer'),
-          class: 'btn btn-primary run-pipeline-button',
-          method: :patch
-          ) do %>
-        Resume <i class="fa fa-fw fa-play"></i>
-      <% end %>
-    <% end %>
-  <% end %>
+  <div id="pipeline-instance-tab-buttons"
+       class="pane-anchor loaded"
+       href="#pipeline-instance-tab-buttons-pane"
+       data-pane-content-url="<%= url_for(params.merge(tab_pane: "tab_buttons")) %>"
+       >
+    <div id="pipeline-instance-tab-buttons-pane" class="active">
+      <%= render partial: 'show_tab_buttons', locals: {object: @object}%>
+    </div>
+  </div>
 <% end %>
 
 <%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.show_pane_list }%>
+
+<div id="clone-and-edit-modal-window" class="modal fade" role="dialog"
+     aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+    <%= form_tag copy_pipeline_instance_path do |f| %>
+
+      <div class="modal-header">
+        <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <div>
+          <div class="col-sm-6"> <h4 class="modal-title">Re-run pipeline</h4> </div>
+        </div>
+        <br/>
+      </div>
+
+      <div class="modal-body">
+              <%= radio_button_tag(:script, "use_latest", true) %>
+              <%= label_tag(:script_use_latest, "Use latest script versions") %>
+              <br>
+              <%= radio_button_tag(:script, "use_same") %>
+              <%= label_tag(:script_use_same, "Use same script versions as this run") %>
+              <br>
+              <% if template %>
+              <br>
+              <%= radio_button_tag(:components, "use_latest", true) %>
+              <%= label_tag(:components_use_latest, "Update components against template") %>
+              <br>
+              <%= radio_button_tag(:components, "use_same") %>
+              <%= label_tag(:components_use_same, "Use same components as this run") %>
+              <% end %>
+      </div>
+
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" name="pipeline_instance[state]" value="New">Copy and edit inputs</button>
+        <button type="submit" class="btn btn-primary" name="pipeline_instance[state]" value="RunningOnServer">Run now</button>
+        <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+      </div>
+
+    </div>
+    <% end %>
+  </div>
+</div>

@@ -7,10 +7,12 @@
     <% pipelines = PipelineInstance.filter([["components", "like", "%#{@object.uuid}%"]]).each do |pipeline| %>
       <% pipeline.components.each do |cname, c| %>
         <% if c[:output_uuid] == @object.uuid %>
-          <b><%= cname %></b> component of pipeline <b><%= link_to_if_arvados_object(pipeline, friendly_name: true) %></b>
+          <b><%= cname %></b> component of <b><%= link_to_if_arvados_object(pipeline, friendly_name: true) %></b>
           <% if c.andand[:job].andand[:finished_at] %>
-            <b>finished at <%= c[:job][:finished_at] %></b>
+            finished at <span class="utc-date"
+                                 data-utc-date="<%= c[:job][:finished_at] %>"><%= c[:job][:finished_at] %></span>
           <% end %>
+          <br>
         <% end %>
       <% end %>
     <% end %>

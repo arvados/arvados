@@ -1,0 +1,23 @@
+<div class="compute-summary-numbers">
+    <table>
+      <colgroup>
+        <col width="25%">
+        <col width="25%">
+        <col width="25%">
+        <col width="25%">
+
+      </colgroup>
+      <tr>
+        <td><%= Job.queue_size %></td>
+        <td><%= nodes.select {|n| n.crunch_worker_state.in? ["busy", "idle"] }.size %></td>
+        <td><%= nodes.select {|n| n.crunch_worker_state == "busy" }.size %></td>
+        <td><%= nodes.select {|n| n.crunch_worker_state == "idle" }.size %></td>
+      </tr>
+      <tr>
+        <th>Queue</th>
+        <th>Nodes</th>
+        <th>Busy</th>
+        <th>Idle</th>
+      </tr>
+    </table>
+</div>

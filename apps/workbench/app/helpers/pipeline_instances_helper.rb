@@ -22,6 +22,55 @@ module PipelineInstancesHelper
     pj
   end
 
+  def merge_range timestamps, started_at, finished_at
+    timestamps.each_index do |i|
+      if started_at
+        if started_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
+          # 'j' started and ended during 'i'
+          return timestamps
+        end
+
+        if started_at < timestamps[i][0] and finished_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
+          # 'j' started before 'i' and finished during 'i'
+          # re-merge range between when 'j' started and 'i' finished
+          finished_at = timestamps[i][1]
+          timestamps.delete_at i
+          return merge_range timestamps, started_at, finished_at
+        end
+
+        if started_at >= timestamps[i][0] and started_at <= timestamps[i][1]
+          # 'j' started during 'i' and finished sometime after
+          # move end time of 'i' back
+          # re-merge range between when 'i' started and 'j' finished
+          started_at = timestamps[i][0]
+          timestamps.delete_at i
+          return merge_range timestamps, started_at, finished_at
+        end
+
+        if finished_at < timestamps[i][0]
+          # 'j' finished before 'i' started, so insert before 'i'
+          timestamps.insert i, [started_at, finished_at]
+          return timestamps
+        end
+      end
+    end
+
+    timestamps << [started_at, finished_at]
+  end
+
+  def determine_wallclock_runtime jobs
+    timestamps = []
+    jobs.each do |j|
+      insert_at = 0
+      started_at = j[:started_at]
+      finished_at = (if j[:finished_at] then j[:finished_at] else Time.now end)
+      if started_at
+        timestamps = merge_range timestamps, started_at, finished_at
+      end
+    end
+    timestamps.map { |t| t[1] - t[0] }.reduce(:+) || 0
+  end
+
   protected
 
   def pipeline_jobs_newschool object
@@ -94,10 +143,13 @@ module PipelineInstancesHelper
         pj[:result] = 'none'
         pj[:labeltype] = 'default'
       end
+
       pj[:job_id] = pj[:job][:uuid]
       pj[:script] = pj[:job][:script] || c[:script]
+      pj[:repository] = pj[:job][:script] || c[:repository]
       pj[:script_parameters] = pj[:job][:script_parameters] || c[:script_parameters]
       pj[:script_version] = pj[:job][:script_version] || c[:script_version]
+      pj[:nondeterministic] = pj[:job][:nondeterministic] || c[:nondeterministic]
       pj[:output] = pj[:job][:output]
       pj[:output_uuid] = c[:output_uuid]
       pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
@@ -153,4 +205,34 @@ module PipelineInstancesHelper
     end
     ret
   end
+
+  def runtime duration, long
+    hours = 0
+    minutes = 0
+    seconds = 0
+    if duration >= 3600
+      hours = (duration / 3600).floor
+      duration -= hours * 3600
+    end
+    if duration >= 60
+      minutes = (duration / 60).floor
+      duration -= minutes * 60
+    end
+    duration = duration.floor
+
+    if long
+      s = ""
+      if hours > 0 then
+        s += "#{hours} hour#{'s' if hours != 1} "
+      end
+      if minutes > 0 then
+        s += "#{minutes} minute#{'s' if minutes != 1} "
+      end
+      s += "#{duration} second#{'s' if duration != 1}"
+    else
+      s = "#{hours}:#{minutes.to_s.rjust(2, '0')}:#{duration.to_s.rjust(2, '0')}"
+    end
+    s
+  end
+
 end

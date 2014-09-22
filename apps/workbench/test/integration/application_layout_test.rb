@@ -21,7 +21,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       if profile_config && !has_profile
         assert page.has_text?('Save profile'), 'No text - Save profile'
       else
-        assert page.has_text?('My projects'), 'Not found text - My projects'
+        assert page.has_link?("Projects"), 'Not found link - Projects'
+        page.find("#projects-menu").click
         assert page.has_text?('Projects shared with me'), 'Not found text - Project shared with me'
       end
     elsif invited

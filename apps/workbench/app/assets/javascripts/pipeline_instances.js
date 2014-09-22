@@ -114,6 +114,6 @@ showhide_compare();
 
 setInterval(function(){
     if ($('[data-pipeline-state=RunningOnServer],[data-pipeline-state=RunningOnClient]').length > 0) {
-        $('#Components.tab-pane,#Graph.tab-pane').trigger('arv:pane:reload');
+        $('#Components-tab,#Graph-tab,#pipeline-instance-tab-buttons').trigger('arv:pane:reload');
     }
 }, 15000);
