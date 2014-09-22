@@ -16,6 +16,7 @@ class Job < ArvadosModel
   before_save :set_state_before_save
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
+  has_many :nodes
 
   class SubmitIdReused < StandardError
   end
@@ -45,8 +46,12 @@ class Job < ArvadosModel
     t.add :supplied_script_version
     t.add :docker_image_locator
     t.add :queue_position
+    t.add :nodes
     t.add :description
   end
+  # Nodes have a superuser template for accessing sensitive information.
+  # We need one too so those requests can see associated Job information.
+  api_accessible :superuser, extend: :user
 
   # Supported states for a job
   States = [

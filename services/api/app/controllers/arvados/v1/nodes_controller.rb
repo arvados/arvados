@@ -10,6 +10,20 @@ class Arvados::V1::NodesController < ApplicationController
     show
   end
 
+  def update
+    # Translate a job UUID to its numeric ID for the association,
+    # and mark the job readable if we found anything.
+    if resource_attrs[:job_id]
+      search_key = (resource_attrs[:job_id] =~ /\D/) ? :uuid : :id
+      resource_attrs[:job_id] = Job.
+        readable_by(*@read_users).
+        where(search_key => resource_attrs.delete(:job_id)).
+        first.andand.id
+      @object.job_readable = !!resource_attrs[:job_id]
+    end
+    super
+  end
+
   def self._ping_requires_parameters
     { ping_secret: true }
   end
@@ -44,6 +58,13 @@ class Arvados::V1::NodesController < ApplicationController
       # active non-admin users can list nodes that are (or were
       # recently) working
       @objects = model_class.where('last_ping_at >= ?', Time.now - 1.hours)
+    end
+    assoc_jobs = Job.
+      readable_by(*@read_users).
+      where(id: @objects.map(&:job_id)).
+      map(&:id)
+    @objects.select(&:job_id).each do |node|
+      node.job_readable = assoc_jobs.include?(node.job_id)
     end
   end
 end

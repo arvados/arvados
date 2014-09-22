@@ -7,6 +7,13 @@ class Node < ArvadosModel
   before_validation :ensure_ping_secret
   after_update :dnsmasq_update
 
+  # Only a controller can figure out whether or not the current API tokens
+  # have access to the associated Job.  They're expected to set
+  # job_readable=true if they want full Job information to be included in the
+  # API response.
+  belongs_to :job
+  attr_accessor :job_readable
+
   MAX_SLOTS = 64
 
   @@confdir = Rails.configuration.dnsmasq_conf_dir
@@ -20,6 +27,7 @@ class Node < ArvadosModel
     t.add :last_ping_at
     t.add :slot_number
     t.add :status
+    t.add :job
     t.add :crunch_worker_state
     t.add :properties
   end
@@ -31,6 +39,15 @@ class Node < ArvadosModel
 
   def domain
     super || @@domain
+  end
+
+  def job
+    db_job = super
+    if db_job and not job_readable
+      {"running" => true}
+    else
+      db_job
+    end
   end
 
   def crunch_worker_state
