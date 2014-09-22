@@ -156,11 +156,9 @@ done
 echo "WORKSPACE=$WORKSPACE"
 [[ -n "$WORKSPACE" ]] || fatal "WORKSPACE not set"
 
-if [[ -n "$CONFIGSRC" ]]; then
-    if [[ -d "$HOME/arvados-api-server" ]]; then
-        # Jenkins expects us to use this by default.
-        CONFIGSRC="$HOME/arvados-api-server"
-    fi
+if [[ -z "$CONFIGSRC" ]] && [[ -d "$HOME/arvados-api-server" ]]; then
+    # Jenkins expects us to use this by default.
+    CONFIGSRC="$HOME/arvados-api-server"
 fi
 
 # Set up temporary install dirs (unless existing dirs were supplied)
