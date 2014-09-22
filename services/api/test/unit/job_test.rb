@@ -182,7 +182,7 @@ class JobTest < ActiveSupport::TestCase
     test "verify job status #{parameters}" do
       job = Job.create! job_attrs
       assert job.valid?, job.errors.full_messages.to_s
-      assert_equal job.state, 'Queued'
+      assert_equal 'Queued', job.state, "job.state"
 
       parameters.each do |parameter|
         expectations = parameter[2]
@@ -192,26 +192,23 @@ class JobTest < ActiveSupport::TestCase
 
         if expectations.instance_of? Array
           job[parameter[0]] = parameter[1]
-          job.save!
+          assert_equal true, job.save, job.errors.full_messages.to_s
           expectations.each do |expectation|
             if expectation[1] == 'not_nil'
-              assert_not_nil job[expectation[0]]
+              assert_not_nil job[expectation[0]], expectation[0]
             elsif expectation[1] == 'nil'
-              assert_nil job[expectation[0]]
+              assert_nil job[expectation[0]], expectation[0]
             else
-              assert_equal expectation[1], job[expectation[0]]
+              assert_equal expectation[1], job[expectation[0]], expectation[0]
             end
           end
         else # String expectation, looking for error
           if expectations == 'error'
-            rescued = false
-            begin
+            assert_raise ActiveRecord::RecordInvalid do
               job[parameter[0]] = parameter[1]
+              assert job.valid?, job.errors.full_messages.to_s
               job.save!
-            rescue
-              rescued = true
             end
-            assert rescued, 'Expected error'
           else
             raise 'I do not know how to handle this expectation'
           end
