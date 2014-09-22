@@ -11,7 +11,8 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 cmd_opts = {'egg_info': {}}
 try:
     git_tag = subprocess.check_output(
-        ['git', 'log', '--format=format:%ci %h', '-n1', SETUP_DIR])
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%ci %h', SETUP_DIR])
 except (OSError, subprocess.CalledProcessError):
     pass
 else:
