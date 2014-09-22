@@ -328,8 +328,11 @@ class Job < ArvadosModel
         self.state = Failed
       elsif (self.running && self.success.nil? && !self.cancelled_at)
         self.state = Running
-      elsif !self.started_at && !self.cancelled_at && self.success.nil?
+      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid && self.success.nil?
         self.state = Queued
+      elsif !self.started_at && !self.cancelled_at && self.is_locked_by_uuid
+        # race condition for jobs that have just been grabbed by crunch-dispatch but haven't been marked as started yet...
+        self.state = Failed
       end
     end
  
