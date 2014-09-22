@@ -60,9 +60,14 @@ func MakeRESTRouter() *mux.Router {
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
 	// The PullHandler and TrashHandler process "PUT /pull" and "PUT
-	// /trash" requests from Data Manager.  Each handler parses the
-	// JSON list of block management requests in the message body, and
-	// delivers them to the pull queue or trash queue, respectively.
+	// /trash" requests from Data Manager.  These requests instruct
+	// Keep to replicate or delete blocks; see
+	// https://arvados.org/projects/orvos-private/wiki/Keep_Design_Doc
+	// for more details.
+	//
+	// Each handler parses the JSON list of block management requests
+	// in the message body, and delivers them to the pull queue or
+	// trash queue, respectively.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
 	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 

@@ -630,25 +630,25 @@ func TestPullHandler(t *testing.T) {
 	}
 	var testcases = []pullTest{
 		{
-			"pull: user token, good request",
+			"Valid pull list from an ordinary user",
 			RequestTester{"/pull", user_token, "PUT", good_json},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
-			"pull: user token, bad request",
+			"Invalid pull request from an ordinary user",
 			RequestTester{"/pull", user_token, "PUT", bad_json},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
-			"pull: data manager token, good request",
+			"Valid pull request from the data manager",
 			RequestTester{"/pull", data_manager_token, "PUT", good_json},
 			http.StatusOK,
 			"Received 3 pull requests\n",
 		},
 		{
-			"pull: data manager token, bad request",
+			"Invalid pull request from the data manager",
 			RequestTester{"/pull", data_manager_token, "PUT", bad_json},
 			http.StatusBadRequest,
 			"Bad Request\n",
@@ -663,12 +663,9 @@ func TestPullHandler(t *testing.T) {
 
 	// The Keep pull manager should have received one good list with 3
 	// requests on it.
-	var output_list = make([]PullRequest, 3)
 	for i := 0; i < 3; i++ {
 		item := <-pullq.NextItem
-		if pr, ok := item.(PullRequest); ok {
-			output_list[i] = pr
-		} else {
+		if _, ok := item.(PullRequest); !ok {
 			t.Errorf("item %v could not be parsed as a PullRequest", item)
 		}
 	}
@@ -736,25 +733,25 @@ func TestTrashHandler(t *testing.T) {
 
 	var testcases = []trashTest{
 		{
-			"trash: user token, good request",
+			"Valid trash list from an ordinary user",
 			RequestTester{"/trash", user_token, "PUT", good_json},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
-			"trash: user token, bad request",
+			"Invalid trash list from an ordinary user",
 			RequestTester{"/trash", user_token, "PUT", bad_json},
 			http.StatusUnauthorized,
 			"Unauthorized\n",
 		},
 		{
-			"trash: data manager token, good request",
+			"Valid trash list from the data manager",
 			RequestTester{"/trash", data_manager_token, "PUT", good_json},
 			http.StatusOK,
 			"Received 3 trash requests\n",
 		},
 		{
-			"trash: data manager token, bad request",
+			"Invalid trash list from the data manager",
 			RequestTester{"/trash", data_manager_token, "PUT", bad_json},
 			http.StatusBadRequest,
 			"Bad Request\n",
@@ -769,12 +766,9 @@ func TestTrashHandler(t *testing.T) {
 
 	// The trash collector should have received one good list with 3
 	// requests on it.
-	var output_list = make([]TrashRequest, 3)
 	for i := 0; i < 3; i++ {
 		item := <-trashq.NextItem
-		if tr, ok := item.(TrashRequest); ok {
-			output_list[i] = tr
-		} else {
+		if _, ok := item.(TrashRequest); !ok {
 			t.Errorf("item %v could not be parsed as a TrashRequest", item)
 		}
 	}
