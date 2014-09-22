@@ -2,23 +2,18 @@ class AddStateToJob < ActiveRecord::Migration
   include CurrentApiClient
 
   def up
-    if !column_exists?(:jobs, :state)
+    ActiveRecord::Base.transaction do
       add_column :jobs, :state, :string
-    end
-
-    Job.reset_column_information
-
-    act_as_system_user do
-      Job.all.each do |job|
-        # before_save filter will set state based on job status
-        job.save!
-      end
+      Job.reset_column_information
+      Job.update_all({state: 'Cancelled'}, ['state is null and cancelled_at is not null'])
+      Job.update_all({state: 'Failed'}, ['state is null and success = ?', false])
+      Job.update_all({state: 'Complete'}, ['state is null and success = ?', true])
+      Job.update_all({state: 'Running'}, ['state is null and running = ?', true])
+      Job.update_all({state: 'Queued'}, ['state is null'])
     end
   end
 
   def down
-    if column_exists?(:jobs, :state)
-      remove_column :jobs, :state
-    end
+    remove_column :jobs, :state
   end
 end
