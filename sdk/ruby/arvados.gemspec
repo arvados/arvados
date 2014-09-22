@@ -5,8 +5,8 @@ end
 
 Gem::Specification.new do |s|
   s.name        = 'arvados'
-  s.version     = '0.1.' + `git log --pretty=format:'%ci' -n 1 .`[0..18].gsub(/[ \-:]/,'')
-  s.date        = `git log --pretty=format:'%ci' -n 1 .`[0..9]
+  s.version     = '0.1.' + `git log --first-parent --pretty=format:'%ci' -n 1 .`[0..18].gsub(/[ \-:]/,'')
+  s.date        = `git log --first-parent --pretty=format:'%ci' -n 1 .`[0..9]
   s.summary     = "Arvados client library"
   s.description = "Arvados client library, git commit " + `git log --pretty=format:'%H' -n 1 .`
   s.authors     = ["Arvados Authors"]
