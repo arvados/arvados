@@ -9,11 +9,11 @@ class Job < ArvadosModel
   before_create :ensure_unique_submit_id
   after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
   before_validation :set_priority
+  before_validation :update_timestamps_when_state_changes
+  before_validation :update_state_from_old_state_attrs
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
-  before_validation :verify_status
-  before_create :set_state_before_save
-  before_save :set_state_before_save
+  validate :validate_status
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
 
@@ -134,6 +134,8 @@ class Job < ArvadosModel
   end
 
   def find_docker_image_locator
+    # Do nothing if docker_image_locator is already set
+    return true if not self.docker_image_locator.nil?
     # Find the Collection that holds the Docker image specified in the
     # runtime constraints, and store its locator in docker_image_locator.
     unless runtime_constraints.is_a? Hash
@@ -242,97 +244,71 @@ class Job < ArvadosModel
     end
   end
 
-  def verify_status
-    changed_attributes = self.changed
+  def update_timestamps_when_state_changes
+    return if not (state_changed? or new_record?)
+    case state
+    when Running
+      self.started_at ||= Time.now
+    when Failed, Complete
+      self.finished_at ||= Time.now
+    when Cancelled
+      self.cancelled_at ||= Time.now
+    end
 
-    if new_record?
-      self.state = Queued
-    elsif 'state'.in? changed_attributes
-      case self.state
-      when Queued
-        self.running = false
-        self.success = nil
-      when Running
-        if !self.is_locked_by_uuid
-          return false
-        end
-        if !self.started_at
-          self.started_at = Time.now
-        end
-        self.running = true
-        self.success = nil
-      when Cancelled
-        if !self.cancelled_at
-          self.cancelled_at = Time.now
-        end
-        self.running = false
-        self.success = false
-      when Failed
-        if !self.finished_at
-          self.finished_at = Time.now
-        end
-        self.running = false
-        self.success = false
-      when Complete
-        if !self.finished_at
-          self.finished_at = Time.now
-        end
-        self.running = false
-        self.success = true
-      end
-    elsif 'cancelled_at'.in? changed_attributes
-      self.state = Cancelled
+    # TODO: Remove the following case block when old "success" and
+    # "running" attrs go away. Until then, this ensures we still
+    # expose correct success/running flags to older clients, even if
+    # some new clients are writing only the new state attribute.
+    case state
+    when Queued
+      self.running = false
+      self.success = nil
+    when Running
+      self.running = true
+      self.success = nil
+    when Cancelled, Failed
       self.running = false
       self.success = false
-    elsif 'success'.in? changed_attributes
-      if self.cancelled_at
+    when Complete
+      self.running = false
+      self.success = true
+    end
+    self.running ||= false # Default to false instead of nil.
+
+    true
+  end
+
+  def update_state_from_old_state_attrs
+    # If a client has touched the legacy state attrs, update the
+    # "state" attr to agree with the updated values of the legacy
+    # attrs.
+    #
+    # TODO: Remove this method when old "success" and "running" attrs
+    # go away.
+    if cancelled_at_changed? or
+        success_changed? or
+        running_changed? or
+        state.nil?
+      if cancelled_at
         self.state = Cancelled
-        self.running = false
-        self.success = false
-      else
-        if self.success
-          self.state = Complete
-        else
-          self.state = Failed
-        end
-        if !self.finished_at
-          self.finished_at = Time.now
-        end
-        self.running = false
-      end
-    elsif 'running'.in? changed_attributes
-      if self.running
+      elsif success == false
+        self.state = Failed
+      elsif success == true
+        self.state = Complete
+      elsif running == true
         self.state = Running
-        if !self.started_at
-          self.started_at = Time.now
-        end
       else
-        self.state = nil # let set_state_before_save determine what the state should be
-        self.started_at = nil
+        self.state = Queued
       end
     end
     true
   end
 
-  def set_state_before_save
-    if !self.state
-      if self.cancelled_at
-        self.state = Cancelled
-      elsif self.success
-        self.state = Complete
-      elsif (!self.success.nil? && !self.success)
-        self.state = Failed
-      elsif (self.running && self.success.nil? && !self.cancelled_at)
-        self.state = Running
-      elsif !self.started_at && !self.cancelled_at && !self.is_locked_by_uuid && self.success.nil?
-        self.state = Queued
-      end
-    end
- 
+  def validate_status
     if self.state.in?(States)
       true
     else
-      errors.add :state, "'#{state.inspect} must be one of: [#{States.join ', '}]"
+      errors.add :state, "#{state.inspect} must be one of: #{States.inspect}"
       false
     end
   end
