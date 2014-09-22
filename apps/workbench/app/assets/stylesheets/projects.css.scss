@@ -59,8 +59,9 @@ div.scroll-20em {
 }
 
 .x-ellip {
-  overflow-x: hide;
+  overflow-x: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dashboard-panel-info-row:hover {

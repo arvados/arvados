@@ -53,7 +53,7 @@
                     <div class="progress-bar progress-bar-success" style="width: <%= completed_pct %>%">
                       <span class="sr-only"></span>
                     </div>
-                    <div class="progress-bar progress-bar-warning" style="width: <%= failed_pct %>%">
+                    <div class="progress-bar progress-bar-danger" style="width: <%= failed_pct %>%">
                       <span class="sr-only"></span>
                     </div>
                     <div class="progress-bar progress-bar-primary" style="width: <%= running_pct %>%">
@@ -93,15 +93,15 @@
             <div class="dashboard-panel-info-row">
               <div class="row">
                 <div class="col-md-6 x-ellip">
-                <%= link_to_if_arvados_object p, friendly_name: true %>
-              </div>
-              <div class="col-md-2">
-                <%= render partial: "pipeline_status_label", locals: {p: p}%>
-              </div>
-              <div class="col-md-4">
-                <span class="utc-date" data-utc-date="<%= p[:finished_at] || p[:modified_at] %>"
-                      data-utc-date-opts="noseconds"><%= p[:modified_at] %></span>
-              </div>
+                  <%= link_to_if_arvados_object p, friendly_name: true %>
+                </div>
+                <div class="col-md-2">
+                  <%= render partial: "pipeline_status_label", locals: {p: p}%>
+                </div>
+                <div class="col-md-4">
+                  <span class="utc-date" data-utc-date="<%= p[:finished_at] || p[:modified_at] %>"
+                        data-utc-date-opts="noseconds"><%= p[:modified_at] %></span>
+                </div>
               </div>
               <div class="row">
                 <div class="col-md-12">
@@ -110,7 +110,7 @@
                     Active for <%= runtime(pipeline_time, false) %>
                   <% end %>
 
-                  <span class="pull-right">
+                  <span class="pull-right x-ellip" style="max-width: 100%">
                     <% outputs = [] %>
                     <% p.components.each do |k, c| %>
                       <% outputs << c[:output_uuid] if c[:output_uuid] %>
@@ -120,22 +120,23 @@
                     <% elsif outputs.size == 1 %>
                       <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object outputs[0], friendly_name: true %>
                     <% else %>
-                      <a href="#<%= p[:uuid] %>" data-toggle="collapse">Outputs <span class="caret"></span></a>
+                      <a href="#<%= p[:uuid] %>-outputs" data-toggle="collapse">Outputs <span class="caret"></span></a>
                     <% end %>
                   </span>
                 </div>
               </div>
 
-                <div class="row collapse" id="<%= p[:uuid] %>" >
-                  <div class="col-md-offset-3 col-md-10">
+              <div class="row collapse" id="<%= p[:uuid] %>-outputs" >
+                <div class="col-md-12">
+                  <div class="pull-right" style="max-width: 100%">
                     <% outputs.each do |out| %>
-                      <div>
+                      <div class="x-ellip">
                         <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object out, friendly_name: true %>
                       </div>
                     <% end %>
                   </div>
                 </div>
-
+              </div>              
             </div>
           <% end %>
         </div>
@@ -167,7 +168,7 @@
                                              data-utc-date="<%= p[:modified_at] %>"
                                              data-utc-date-opts="noseconds"><%= p[:modified_at]%></span></span>
             </div>
-            <div class="x-ellip" style="margin-left: 1em"><%= link_to_if_arvados_object p, friendly_name: true %>
+            <div class="x-ellip" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, friendly_name: true %>
             </div>
             </div>
           <% end %>

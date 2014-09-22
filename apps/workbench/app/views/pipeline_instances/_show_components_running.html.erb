@@ -12,26 +12,26 @@
     Started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span>.
   <% end %>
 
-  <% if @object.state == 'Complete' %>
-    Completed in
-  <% elsif @object.state == 'Failed' %>
-    Failed after
+  <% if @object.started_at %>
+    <% if @object.state == 'Complete' %>
+      Completed in
+    <% elsif @object.state == 'Failed' %>
+      Failed after
+    <% else %>
+      Has been active for
+    <% end %>
+
+    <% walltime = if @object.finished_at then
+                    @object.finished_at - @object.started_at
+                  else
+                    Time.now - @object.started_at
+                  end %>
+    
+    <%= runtime(walltime, true) %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
   <% else %>
-    Has been active for
+    Pipeline is <%= @object.state.downcase %>.
+    <% walltime = 0%>
   <% end %>
-
-  <% walltime = if @object.started_at
-        if @object.finished_at
-          @object.finished_at - @object.started_at
-        else
-          Time.now - @object.started_at
-        end
-      else
-        0
-      end
-      %>
-
-  <%= runtime(walltime, true) %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
 
   <% if @object.state == 'Failed' %>
     Check the Log tab for more detail about why this pipeline failed.
@@ -48,7 +48,9 @@
       Ran
     <% end %>
     for
-    <%= runtime(runningtime, true) %> (<%= runtime(walltime - runningtime, true) %> queued)<% if tasks.size == 0 %>.<% else %>
+    <%= runtime(runningtime, true) %> 
+    <% if walltime - runningtime > 0 %>
+      (<%= runtime(walltime - runningtime, true) %> queued)<% end %><% if tasks.size == 0 %>.<% else %>
       and used
       <% cputime = tasks.map { |task|
            puts "started at #{task.started_at}"
@@ -104,7 +106,7 @@
             <% if Job::state(current_job).in? ["Completed", "Failed", "Canceled"] %>
               <div class="col-md-3">
                 <% if pj[:output_uuid] %>
-                  <%= link_to_if_arvados_object pj[:output_uuid] %>
+                  <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
                 <% elsif current_job.andand[:output] %>
                   <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
                 <% else %>
