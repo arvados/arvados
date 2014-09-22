@@ -213,7 +213,7 @@ class ApplicationController < ActionController::Base
       end
       f.html {
         if params['tab_pane']
-          render_pane params['tab_pane']
+          render_pane(if params['tab_pane'].is_a? Hash then params['tab_pane']["name"] else params['tab_pane'] end)
         elsif request.method.in? ['GET', 'HEAD']
           render
         else
@@ -690,6 +690,26 @@ class ApplicationController < ActionController::Base
       sort_by do |x|
       (x.finished_at || x.started_at rescue nil) || x.modified_at || x.created_at
     end.reverse
+  end
+
+  helper_method :running_pipelines
+  def running_pipelines
+    PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
+  end
+
+  helper_method :finished_pipelines
+  def finished_pipelines lim
+    PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
+  end
+
+  helper_method :recent_collections
+  def recent_collections lim
+    c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])
+    own = {}
+    Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
+      own[g[:uuid]] = g
+    end
+    {collections: c, owners: own}
   end
 
   helper_method :my_project_tree

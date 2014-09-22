@@ -18,4 +18,5 @@ module JobsHelper
     end
     return results
   end
+
 end
