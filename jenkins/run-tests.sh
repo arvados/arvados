@@ -20,6 +20,7 @@ Options:
                from a previous invocation if you use this option.
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with api server config files to copy into source tree.
+               (If none given, leave config files alone in source tree.)
 apiserver_test="TEST=test/functional/arvados/v1/collections_test.rb"
                Restrict apiserver tests to the given file
 python_sdk_test="--test-suite test.test_keep_locator"
@@ -35,6 +36,9 @@ Assuming --skip-install is not given, all components are installed
 into \$GOPATH, \$VENDIR, and \$GEMHOME before running any tests. Many
 test suites depend on other components being installed, and installing
 everything tends to be quicker than debugging dependencies.
+
+As a special concession to the current CI server config, CONFIGSRC
+defaults to $HOME/arvados-api-server if that directory exists.
 
 More information and background:
 
