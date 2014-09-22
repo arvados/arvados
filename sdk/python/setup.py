@@ -1,10 +1,26 @@
 #!/usr/bin/env python
 
 import os
+import subprocess
 
 from setuptools import setup, find_packages
 
-README = os.path.join(os.path.dirname(__file__), 'README.rst')
+SETUP_DIR = os.path.dirname(__file__)
+README = os.path.join(SETUP_DIR, 'README.rst')
+
+cmd_opts = {'egg_info': {}}
+try:
+    git_tag = subprocess.check_output(
+        ['git', 'log', '--format=format:%ci %h', '-n1', SETUP_DIR])
+except (OSError, subprocess.CalledProcessError):
+    pass
+else:
+    git_tags = git_tag.split()
+    del git_tags[-2]   # Remove timezone
+    for ii in [0, 1]:  # Remove non-digits from other datetime fields
+        git_tags[ii] = ''.join(c for c in git_tags[ii] if c.isdigit())
+    cmd_opts['egg_info']['tag_build'] = '.{}{}.{}'.format(*git_tags)
+
 
 setup(name='arvados-python-client',
       version='0.1',
@@ -33,4 +49,6 @@ setup(name='arvados-python-client',
         ],
       test_suite='tests',
       tests_require=['mock>=1.0', 'PyYAML'],
-      zip_safe=False)
+      zip_safe=False,
+      options=cmd_opts,
+      )
