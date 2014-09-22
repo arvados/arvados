@@ -95,6 +95,23 @@ fatal() {
     exit 1
 }
 
+report_outcomes() {
+    for x in "${successes[@]}"
+    do
+        echo "Pass: $x"
+    done
+
+    if [[ ${#failures[@]} == 0 ]]
+    then
+        echo "All test suites passed."
+    else
+        echo "Failures (${#failures[@]}):"
+        for x in "${failures[@]}"
+        do
+            echo "Fail: $x"
+        done
+    fi
+}
 declare -a failures
 declare -A skip
 
@@ -395,21 +412,7 @@ test_workbench() {
 }
 do_test workbench
 
+report_outcomes
 clear_temp
 
-for x in "${successes[@]}"
-do
-    echo "Pass: $x"
-done
-
-if [[ ${#failures[@]} == 0 ]]
-then
-    echo "All test suites passed."
-else
-    echo "Failures (${#failures[@]}):"
-    for x in "${failures[@]}"
-    do
-        echo "Fail: $x"
-    done
-fi
 exit ${#failures}
