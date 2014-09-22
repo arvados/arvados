@@ -134,8 +134,6 @@ class Job < ArvadosModel
   end
 
   def find_docker_image_locator
-    # Do nothing if docker_image_locator is already set
-    return true if not self.docker_image_locator.nil?
     # Find the Collection that holds the Docker image specified in the
     # runtime constraints, and store its locator in docker_image_locator.
     unless runtime_constraints.is_a? Hash
