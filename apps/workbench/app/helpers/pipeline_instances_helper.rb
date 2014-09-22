@@ -218,7 +218,6 @@ module PipelineInstancesHelper
   HOUR = 60 * MINUTE
   DAY = 24 * HOUR
 
-
   def render_runtime duration, use_words, round_to_min=true
     days = 0
     hours = 0
@@ -244,12 +243,12 @@ module PipelineInstancesHelper
 
     if round_to_min and seconds >= 30
       minutes += 1
-    end
+    end    
 
     if use_words
       s = ""
       if days > 0 then
-        s += "#{day} day#{'s' if days != 1}"
+        s += "#{days} day#{'s' if days != 1}"
       end
       if hours > 0 then
         s += " #{hours} hour#{'s' if hours != 1}"
@@ -263,22 +262,21 @@ module PipelineInstancesHelper
     else
       s = ""
       if days > 0
-        s += "#{days}d#{hours.to_s.rjust(2, '0')}h"
-      elsif (hours > 0)
-        s += "#{hours}h"
+        s += "#{days}<span class='time-label-divider'>d</span> "
       end
 
       if (hours > 0)
-        s += "#{minutes.to_s.rjust(2, '0')}m"
-      else
-        s += "#{minutes}m"
+        s += "#{hours}<span class='time-label-divider'>h</span>"
       end
+
+      s += "#{minutes}<span class='time-label-divider'>m</span>"
+
       if not round_to_min
-        s += "#{seconds.to_s.rjust(2, '0')}s"
+        s += "#{seconds}<span class='time-label-divider'>s</span>"
       end
     end
 
-    s
+    raw(s)
   end
 
 end

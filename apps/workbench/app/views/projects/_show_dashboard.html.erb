@@ -92,7 +92,7 @@
           <% finished_pipelines(8).each do |p| %>
             <div class="dashboard-panel-info-row">
               <div class="row">
-                <div class="col-md-6 x-ellip">
+                <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, friendly_name: true %>
                 </div>
                 <div class="col-md-2">
@@ -110,7 +110,7 @@
                     Active for <%= render_runtime(pipeline_time, false) %>
                   <% end %>
 
-                  <span class="pull-right x-ellip" style="max-width: 100%">
+                  <span class="pull-right text-overflow-ellipsis" style="max-width: 100%">
                     <% outputs = [] %>
                     <% p.components.each do |k, c| %>
                       <% outputs << c[:output_uuid] if c[:output_uuid] %>
@@ -130,7 +130,7 @@
                 <div class="col-md-12">
                   <div class="pull-right" style="max-width: 100%">
                     <% outputs.each do |out| %>
-                      <div class="x-ellip">
+                      <div class="text-overflow-ellipsis">
                         <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object out, friendly_name: true %>
                       </div>
                     <% end %>
@@ -168,7 +168,7 @@
                                              data-utc-date="<%= p[:modified_at] %>"
                                              data-utc-date-opts="noseconds"><%= p[:modified_at]%></span></span>
             </div>
-            <div class="x-ellip" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, friendly_name: true %>
+            <div class="text-overflow-ellipsis" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, friendly_name: true %>
             </div>
             </div>
           <% end %>

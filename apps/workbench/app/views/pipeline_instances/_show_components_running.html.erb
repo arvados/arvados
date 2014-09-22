@@ -7,13 +7,13 @@
   </p>
 <% end %>
 
+<% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
+<% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
+
 <p>
   <% if @object.started_at %>
     This pipeline started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span>.
-  <% end %>
-
-  <% if @object.started_at %>
-    This pipeline
+    It 
     <% if @object.state == 'Complete' %>
       completed in
     <% elsif @object.state == 'Failed' %>
@@ -28,11 +28,15 @@
                     Time.now - @object.started_at
                   end %>
     
-    <%= runtime(walltime, true) %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
-  <% else %>
-    This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
-    <% walltime = 0%>
-  <% end %>
+    <%= if walltime > runningtime 
+          render_runtime(walltime, true) 
+        else 
+          render_runtime(runningtime, true) 
+        end %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
+    <% else %>
+      This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
+        <% walltime = 0%>
+    <% end %>
 
   <% if @object.state == 'Failed' %>
     Check the Log tab for more detail about why this pipeline failed.
@@ -40,9 +44,7 @@
 </p>
 
 <p>
-    <% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
-    <% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
-    It
+    This pipeline
     <% if @object.state.start_with? 'Running' %>
       has run
     <% else %>
@@ -74,7 +76,7 @@
         <div class="row">
           <div class="col-md-3">
             <h4 class="panel-title">
-              <a data-toggle="collapse" href="#collapse<%= i %>">
+              <a data-toggle="collapse" href="#collapse<%= i %>" style="white-space: nowrap;">
                 <%= pj[:name] %> <span class="caret"></span>
               </a>
             </h4>
@@ -101,7 +103,7 @@
             </div>
 
             <% if Job::state(current_job).in? ["Completed", "Failed", "Canceled"] %>
-              <div class="col-md-3">
+              <div class="col-md-5 text-overflow-ellipsis">
                 <% if pj[:output_uuid] %>
                   <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
                 <% elsif current_job.andand[:output] %>
