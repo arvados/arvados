@@ -333,6 +333,8 @@ class Job < ArvadosModel
       elsif !self.started_at && !self.cancelled_at && self.is_locked_by_uuid
         # race condition for jobs that have just been grabbed by crunch-dispatch but haven't been marked as started yet...
         self.state = Failed
+      else
+        self.state = Failed
       end
     end
  
