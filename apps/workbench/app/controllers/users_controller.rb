@@ -240,7 +240,7 @@ class UsersController < ApplicationController
     Link.filter([['head_uuid', 'is_a', 'arvados#repository'],
                  ['tail_uuid', '=', current_user.uuid],
                  ['link_class', '=', 'permission'],
-                 ['name', 'in', ['can_write', 'can_read']],
+                 ['name', 'in', ['can_write', 'can_read', 'can_manage']],
                ]).
           each do |perm_link|
             repo_links << perm_link[:head_uuid]
