@@ -4,10 +4,10 @@
 
 <% queue.each do |j| %>
   <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-3 text-overflow-ellipsis">
       <%= link_to_if_arvados_object j, friendly_name: true %>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
       <%= render_localized_date(j[:created_at]) %>
     </div>
     <div class="col-md-3">
@@ -19,10 +19,10 @@
   </div>
 <% end %>
   <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-3">
       <b>Job</b>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
       <b>Submitted</b>
     </div>
     <div class="col-md-3">
