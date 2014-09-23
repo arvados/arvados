@@ -88,7 +88,7 @@ clear_temp() {
             leaving+=" $var=\"${!var}\""
         fi
     done
-    if [[ -z "$leaving" ]]; then
+    if [[ -n "$leaving" ]]; then
         echo "Leaving behind temp dirs: $leaving"
     fi
 }
