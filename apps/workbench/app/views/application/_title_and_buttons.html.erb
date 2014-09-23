@@ -8,6 +8,7 @@
   <% if !['Group','User', 'Collection'].include? @object.class.to_s # projects and collections handle it themselves %>
     <%= render partial: 'name_and_description' %>
   <% end %>
+<% end %>
 
 <% if @object.class.goes_in_projects? && @object.uuid != current_user.uuid # Not the "Home" project %>
   <% content_for :tab_line_buttons do %>
@@ -48,22 +49,3 @@
   <% end %>
 <% end %>
 
-<% if @object.respond_to? :properties and !@object.properties.nil? %>
-  <% if @object.properties[:page_content] %>
-    <% content_for :page_content do %>
-      <h1>
-        <%= render_markup(@object.properties[:page_title] || @object.uuid) %>
-      </h1>
-
-      <% if @object.properties[:page_subtitle] %>
-        <h4>
-          <%= render_markup @object.properties[:page_subtitle] %>
-        </h4>
-      <% end %>
-
-      <%= render_markup @object.properties[:page_content] %>
-    <% end %>
-  <% end %>
-<% end %>
-
-<% end %>

@@ -694,7 +694,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :running_pipelines
   def running_pipelines
-    pi = PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer"]]])
+    pi = PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
     jobs = {}
     pi.each do |pl|
       pl.components.each do |k,v|

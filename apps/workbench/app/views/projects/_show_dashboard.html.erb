@@ -142,7 +142,7 @@
     </div>
 
     <div class="col-md-6">
-      <% nodes = Node.all.select { |n| (Time.now - n[:last_ping_at]) < 3600 } %>
+      <% nodes = Node.all %>
       <div class="panel panel-default" style="min-height: 10em">
         <div class="panel-heading"><span class="panel-title">Compute status</span></div>
         <div class="panel-body">
