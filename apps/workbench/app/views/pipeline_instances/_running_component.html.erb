@@ -31,7 +31,7 @@
               <% end %>
             </div>
 
-            <% if Job::state(current_job).in? ["Completed", "Failed", "Canceled"] %>
+            <% if Job::state(current_job).in? ["Complete", "Failed", "Canceled"] %>
               <div class="col-md-5 text-overflow-ellipsis">
                 <% if pj[:output_uuid] %>
                   <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>

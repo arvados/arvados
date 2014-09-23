@@ -256,7 +256,7 @@ module PipelineInstancesHelper
       if minutes > 0 then
         s << "#{minutes} minute#{'s' if minutes != 1}"
       end
-      if seconds > 0 and not round_to_min 
+      if not round_to_min or s.size == 0
         s << "#{seconds} second#{'s' if seconds != 1}"
       end
       s = s * " "

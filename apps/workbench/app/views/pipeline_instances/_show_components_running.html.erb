@@ -29,9 +29,9 @@
                   end %>
     
     <%= if walltime > runningtime 
-          render_runtime(walltime, true) 
+          render_runtime(walltime, true, false) 
         else 
-          render_runtime(runningtime, true) 
+          render_runtime(runningtime, true, false) 
         end %><% if @object.finished_at %> at <%= render_localized_date(@object.finished_at) %><% end %>.
     <% else %>
       This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
@@ -61,7 +61,7 @@
     <%= render_runtime(runningtime, true, false) %><% if (walltime - runningtime) > 0 %>
       (<%= render_runtime(walltime - runningtime, true, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
       and used
-    <%= render_runtime(cputime, true) %>
+    <%= render_runtime(cputime, true, false) %>
     of CPU time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
     <% end %>
 </p>

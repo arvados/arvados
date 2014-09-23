@@ -38,7 +38,7 @@
                           <% running << k %>
                         <% elsif Job::state(v[:job]) == "Failed" or Job::state(v[:job]) == "Cancelled" %>
                           <% failed << k %>
-                        <% elsif Job::state(v[:job]) == "Completed" %>
+                        <% elsif Job::state(v[:job]) == "Complete" %>
                           <% completed << k %>
                         <% elsif Job::state(v[:job]) == "Queued" %>
                           <% queued << k %>
