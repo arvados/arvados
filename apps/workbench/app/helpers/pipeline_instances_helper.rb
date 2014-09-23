@@ -246,19 +246,20 @@ module PipelineInstancesHelper
     end    
 
     if use_words
-      s = ""
+      s = []
       if days > 0 then
-        s += "#{days} day#{'s' if days != 1}"
+        s << "#{days} day#{'s' if days != 1}"
       end
       if hours > 0 then
-        s += " #{hours} hour#{'s' if hours != 1}"
+        s << "#{hours} hour#{'s' if hours != 1}"
       end
       if minutes > 0 then
-        s += " #{minutes} minute#{'s' if minutes != 1}"
+        s << "#{minutes} minute#{'s' if minutes != 1}"
       end
       if seconds > 0 and not round_to_min 
-        s += " #{seconds} second#{'s' if seconds != 1}"
+        s << "#{seconds} second#{'s' if seconds != 1}"
       end
+      s = s * " "
     else
       s = ""
       if days > 0

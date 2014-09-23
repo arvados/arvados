@@ -1,4 +1,4 @@
-  <% current_job = pj[:job] if pj[:job] != {} %>
+  <% current_job = pj[:job] if pj[:job] != {} and pj[:job][:uuid] %>
   <div class="panel panel-default">
     <div class="panel-heading">
       <div class="container-fluid">

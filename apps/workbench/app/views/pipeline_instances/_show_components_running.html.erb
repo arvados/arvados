@@ -58,8 +58,8 @@
          0
        end
        }.reduce(:+) || 0 %>
-    <%= render_runtime(runningtime, true, false) %><% if walltime - runningtime > 0 %>
-      (<%= render_runtime(walltime - runningtime, true) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+    <%= render_runtime(runningtime, true, false) %><% if (walltime - runningtime) > 0 %>
+      (<%= render_runtime(walltime - runningtime, true, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
       and used
     <%= render_runtime(cputime, true) %>
     of CPU time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
