@@ -181,7 +181,7 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 
 virtualenv --setuptools "$VENVDIR" || fatal "virtualenv $VENVDIR failed"
-PATH="$VENVDIR/bin:$PATH"
+. "$VENVDIR/bin/activate"
 
 checkexit() {
     if [[ "$?" != "0" ]]; then
