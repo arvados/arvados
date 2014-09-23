@@ -159,4 +159,16 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     }
     assert_response 403
   end
+
+  test "job readable after updating other attributes" do
+    authorize_with :admin
+    post :update, {
+      id: nodes(:busy).uuid,
+      node: {last_ping_at: 1.second.ago},
+    }
+    assert_response :success
+    assert_equal(jobs(:nearly_finished_job).uuid,
+                 json_response["job"].andand["uuid"],
+                 "mismatched job UUID after ping update")
+  end
 end
