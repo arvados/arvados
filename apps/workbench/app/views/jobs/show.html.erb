@@ -1,0 +1,32 @@
+<% content_for :tab_line_buttons do %>
+    <% if @object.running %>
+    <%= form_tag "/jobs/#{@object.uuid}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
+      <%= button_tag "Cancel running job", {class: 'btn btn-sm btn-danger', id: "cancel-job-button"} %>
+    <% end %>
+  <% else %>
+    <%= form_tag '/jobs', style: "display:inline; padding-left: 1em" do |f| %>
+      <% [:script, :script_version, :repository, :supplied_script_version, :nondeterministic].each do |d| %>
+        <%= hidden_field :job, d, :value => @object[d] %>
+      <% end %>
+      <% [:script_parameters, :runtime_constraints].each do |d| %>
+        <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
+      <% end %>
+      <%= button_tag "Re-run same version", {class: 'btn btn-sm btn-primary', id: "re-run-same-job-button"} %>
+    <% end %>
+  <% if @object.respond_to? :supplied_script_version and !@object.supplied_script_version.nil? and !@object.supplied_script_version.empty? and @object.script_version != @object.supplied_script_version%>
+      <%= form_tag '/jobs', style: "display:inline" do |f| %>
+      <% [:script, :repository, :supplied_script_version, :nondeterministic].each do |d| %>
+        <%= hidden_field :job, d, :value => @object[d] %>
+      <% end %>
+      <%= hidden_field :job, :script_version, :value => @object[:supplied_script_version] %>
+      <% [:script_parameters, :runtime_constraints].each do |d| %>
+        <%= hidden_field :job, d, :value => JSON.dump(@object[d]) %>
+      <% end %>
+      <%= button_tag "Re-run latest version", {class: 'btn btn-sm btn-primary', id: "re-run-latest-job-button"} %>
+    <% end %>
+  <% end %>
+<% end %>
+<% end %>
+
+<%= render partial: 'title_and_buttons' %>
+<%= render partial: 'content', layout: 'content_layout', locals: {pane_list: controller.show_pane_list }%>
