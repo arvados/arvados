@@ -12,7 +12,7 @@
 
 <p>
   <% if @object.started_at %>
-    This pipeline started at <span data-utc-date="<%= @object.started_at %>"><%= @object.started_at %></span>.
+    This pipeline started at <%= render_localized_date(@object.started_at) %>.
     It 
     <% if @object.state == 'Complete' %>
       completed in
@@ -32,7 +32,7 @@
           render_runtime(walltime, true) 
         else 
           render_runtime(runningtime, true) 
-        end %><% if @object.finished_at %> at <span data-utc-date="<%= @object.finished_at %>"><%= @object.finished_at %></span><% end %>.
+        end %><% if @object.finished_at %> at <%= render_localized_date(@object.finished_at) %><% end %>.
     <% else %>
       This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
         <% walltime = 0%>

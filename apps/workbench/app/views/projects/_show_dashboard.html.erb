@@ -1,7 +1,7 @@
 
   <div class="row">
     <div class="col-md-6">
-      <div class="panel panel-default">
+      <div class="panel panel-default" style="min-height: 10em">
         <div class="panel-heading"><span class="panel-title">Active pipelines</span>
           <span class="pull-right">
     <%= link_to(
@@ -67,8 +67,7 @@
               </div>
 
               <div class="clearfix">
-                Started at <span class="utc-date" data-utc-date="<%= p[:started_at] || p[:created_at] %>"
-                                 data-utc-date-opts="noseconds"><%= p[:created_at] %></span>.
+                Started at <%= render_localized_date(p[:started_at] || p[:created_at], "noseconds") %>.
                 <% pipeline_time = Time.now - (p[:started_at] || p[:created_at]) %>
                 Active for <%= render_runtime(pipeline_time, false) %>.
 
@@ -99,8 +98,7 @@
                   <%= render partial: "pipeline_status_label", locals: {p: p}%>
                 </div>
                 <div class="col-md-4">
-                  <span class="utc-date" data-utc-date="<%= p[:finished_at] || p[:modified_at] %>"
-                        data-utc-date-opts="noseconds"><%= p[:modified_at] %></span>
+                  <%= render_localized_date(p[:finished_at] || p[:modified_at], "noseconds") %>
                 </div>
               </div>
               <div class="row">
@@ -144,12 +142,15 @@
     </div>
 
     <div class="col-md-6">
-      <% nodes = Node.all %>
-      <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title"><a data-toggle="collapse" href="#compute_node_status">Compute node status <span class="caret"></span></a></span></div>
+      <% nodes = Node.all.select { |n| (Time.now - n[:last_ping_at]) < 3600 } %>
+      <div class="panel panel-default" style="min-height: 10em">
+        <div class="panel-heading"><span class="panel-title">Compute status</span></div>
         <div class="panel-body">
           <div>
             <%= render partial: 'compute_node_summary', locals: {nodes: nodes} %>
+            <div style="text-align: center">
+              <a data-toggle="collapse" href="#compute_node_status">Details <span class="caret"></span></a>
+            </div>
           </div>
           <div id="compute_node_status" class="collapse">
             <%= render partial: 'compute_node_status', locals: {nodes: nodes} %>
@@ -164,9 +165,7 @@
             <div class="dashboard-panel-info-row">
             <div>
               <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object r[:owners][p[:owner_uuid]], friendly_name: true %>/
-              <span class="pull-right"><span class="utc-date"
-                                             data-utc-date="<%= p[:modified_at] %>"
-                                             data-utc-date-opts="noseconds"><%= p[:modified_at]%></span></span>
+              <span class="pull-right"><%= render_localized_date(p[:modified_at], "noseconds") %></span>
             </div>
             <div class="text-overflow-ellipsis" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, friendly_name: true %>
             </div>

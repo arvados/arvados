@@ -1,7 +1,50 @@
+<h4>Queue</h4>
+<% queue = Job.queue %>
+<% if queue.any? %>
 
+<% queue.each do |j| %>
+  <div class="row">
+    <div class="col-md-4">
+      <%= link_to_if_arvados_object j, friendly_name: true %>
+    </div>
+    <div class="col-md-3">
+      <%= render_localized_date(j[:created_at]) %>
+    </div>
+    <div class="col-md-3">
+      <%= render_runtime(Time.now - j[:created_at], false) %>
+    </div>
+    <div class="col-md-2">
+      <%= j[:priority] %>
+    </div>
+  </div>
+<% end %>
+  <div class="row">
+    <div class="col-md-4">
+      <b>Job</b>
+    </div>
+    <div class="col-md-3">
+      <b>Submitted</b>
+    </div>
+    <div class="col-md-3">
+      <b>Queued</b>
+    </div>
+    <div class="col-md-2">
+      <b>Priority</b>
+    </div>
+  </div>
+  <% if Job.queue_size > queue.size %>
+    <i>Note: some items in the queue are not visible to you.</i>
+  <% end %>
+  <div>    
+  </div>
+<% else %>
+  There are currently no job is the queue.
+<% end %>
+
+<h4>Node status</h4>
 <div class="compute-summary-nodelist">
     <% nodes.sort_by { |n| n.hostname || "" }.each do |n| %>
-      <% if n.crunch_worker_state.in? ["busy", "idle"] %>
+      <% if n.crunch_worker_state.in? ["busy", "idle"] and (Time.now - n[:last_ping_at]) < 3600 %>
         <div class="compute-summary">
           <a data-toggle="collapse" href="#detail_<%= n.hostname %>" class="compute-summary-head label label-<%= if n.crunch_worker_state == 'busy' then 'primary' else 'default' end %>">
             <%= n.hostname %>

@@ -16,7 +16,7 @@
     <% if v[:job] and v[:job][:uuid] == @object.uuid %>
       <div>
       <b><%= k %></b> component of <%= link_to_if_arvados_object pipeline, friendly_name: true %> 
-      created at <span data-utc-date="<%= pipeline.created_at %>"><%= pipeline.created_at %></span>.
+      created at <%= render_localized_date(pipeline.created_at) %>.
       </div>
     <% end %>
   <% end %>

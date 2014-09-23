@@ -139,7 +139,7 @@
                     <% elsif k.to_s.end_with? 'uuid' %>
                       <%= link_to_if_arvados_object current_component[k], friendly_name: true %>
                     <% elsif k.to_s.end_with? '_at' %>
-                      <span data-utc-date="<%= current_component[k] %>"><%= current_component[k] %></span>
+                      <%= render_localized_date(current_component[k]) %>
                     <% else %>
                       <%= current_component[k] %>
                     <% end %>
