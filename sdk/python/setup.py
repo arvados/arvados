@@ -10,14 +10,14 @@ README = os.path.join(SETUP_DIR, 'README.rst')
 
 cmd_opts = {'egg_info': {}}
 try:
-    git_tag = subprocess.check_output(
+    git_tags = subprocess.check_output(
         ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%ci %h', SETUP_DIR])
-except (OSError, subprocess.CalledProcessError):
+         '--format=format:%ci %h', SETUP_DIR]).split()
+    assert len(git_tags) == 4
+except (AssertionError, OSError, subprocess.CalledProcessError):
     pass
 else:
-    git_tags = git_tag.split()
-    del git_tags[-2]   # Remove timezone
+    del git_tags[2]    # Remove timezone
     for ii in [0, 1]:  # Remove non-digits from other datetime fields
         git_tags[ii] = ''.join(c for c in git_tags[ii] if c.isdigit())
     cmd_opts['egg_info']['tag_build'] = '.{}{}.{}'.format(*git_tags)
