@@ -297,10 +297,16 @@ class CollectionsController < ApplicationController
       env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
       env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
 
+      maxbytes = @opts[:maxbytes] || 1000000
+      bytesleft = maxbytes
       IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
                'rb') do |io|
-        while buf = io.read(2**16)
+        while bytesleft > 0 && buf = io.read(bytesleft)
+          bytesleft = bytesleft - buf.length
           yield buf
+        end
+        if bytesleft == 0 then
+          yield "Log truncated (exceeded #{maxbytes} bytes). To retrieve the full log: arv-get #{@opts[:uuid]}/#{@opts[:file]}"
         end
       end
       Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: #{$?}") if $? != 0
