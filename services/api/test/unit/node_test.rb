@@ -20,4 +20,10 @@ class NodeTest < ActiveSupport::TestCase
     refute_includes(node.properties, 'total_cpu_cores')
     assert_equal(256, node.properties['total_ram_mb'])
   end
+
+  test "worker state is down for node with no slot" do
+    node = nodes(:was_idle_now_down)
+    assert_nil node.slot_number, "fixture is not what I expected"
+    assert_equal 'down', node.crunch_worker_state, "wrong worker state"
+  end
 end
