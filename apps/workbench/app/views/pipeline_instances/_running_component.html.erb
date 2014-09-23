@@ -25,7 +25,7 @@
                      else
                        0
                      end
-                   }.reduce(:+) %>
+                   }.reduce(:+) || 0 %>
                 <%= render_runtime(walltime, false, false) %>
                 <% if cputime > 0 %> / <%= render_runtime(cputime, false, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
               <% end %>

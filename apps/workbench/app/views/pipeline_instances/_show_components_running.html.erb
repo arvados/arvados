@@ -51,13 +51,14 @@
       ran
     <% end %>
     for
-    <%= render_runtime(runningtime, true, false) %><% cputime = tasks.map { |task|
-                  if task.started_at
-                    (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
-                  else
-                    0
-                  end
-                }.reduce(:+) %><% if walltime - runningtime > 0 %>
+    <% cputime = tasks.map { |task|
+         if task.started_at
+           (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
+           else
+         0
+       end
+       }.reduce(:+) || 0 %>
+    <%= render_runtime(runningtime, true, false) %><% if walltime - runningtime > 0 %>
       (<%= render_runtime(walltime - runningtime, true) %> queued)<% end %><% if cputime == 0 %>.<% else %>
       and used
     <%= render_runtime(cputime, true) %>
