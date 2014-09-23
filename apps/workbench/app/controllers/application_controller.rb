@@ -698,7 +698,7 @@ class ApplicationController < ActionController::Base
     jobs = {}
     pi.each do |pl|
       pl.components.each do |k,v|
-        if v[:job]
+        if v.is_a? Hash and v[:job]
           jobs[v[:job][:uuid]] = {}
         end
       end
@@ -710,7 +710,7 @@ class ApplicationController < ActionController::Base
 
     pi.each do |pl|
       pl.components.each do |k,v|
-        if v[:job]
+        if v.is_a? Hash and v[:job]
           v[:job] = jobs[v[:job][:uuid]]
         end
       end
