@@ -1037,11 +1037,12 @@ sub check_refresh_wanted
       my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
       for my $attr ('cancelled_at',
                     'cancelled_by_user_uuid',
-                    'cancelled_by_client_uuid') {
+                    'cancelled_by_client_uuid',
+                    'state') {
         $Job->{$attr} = $Job2->{$attr};
       }
-      if ($Job->{'cancelled_at'}) {
-        Log (undef, "Job cancelled at " . $Job->{cancelled_at} .
+      if ($Job->{'state'} ne "Running") {
+        Log (undef, "Job state changed to " . $Job->{'state'} . " at " . $Job->{cancelled_at} .
              " by user " . $Job->{cancelled_by_user_uuid});
         $main::success = 0;
         $main::please_freeze = 1;
