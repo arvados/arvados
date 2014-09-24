@@ -669,6 +669,8 @@ func TestPullHandler(t *testing.T) {
 			t.Errorf("item %v could not be parsed as a PullRequest", item)
 		}
 	}
+
+	expectChannelEmpty(t, pullq.NextItem)
 }
 
 // TestTrashHandler
@@ -772,6 +774,8 @@ func TestTrashHandler(t *testing.T) {
 			t.Errorf("item %v could not be parsed as a TrashRequest", item)
 		}
 	}
+
+	expectChannelEmpty(t, trashq.NextItem)
 }
 
 // ====================

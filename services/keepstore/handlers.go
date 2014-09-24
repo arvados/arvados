@@ -66,8 +66,9 @@ func MakeRESTRouter() *mux.Router {
 	// for more details.
 	//
 	// Each handler parses the JSON list of block management requests
-	// in the message body, and delivers them to the pull queue or
-	// trash queue, respectively.
+	// in the message body, and replaces any existing pull queue or
+	// trash queue with their contentes.
+	//
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
 	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
@@ -450,7 +451,7 @@ type PullRequest struct {
 
 func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if api_token := GetApiToken(req); !IsDataManagerToken(api_token) {
+	if !IsDataManagerToken(GetApiToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
@@ -491,7 +492,7 @@ type TrashRequest struct {
 
 func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if api_token := GetApiToken(req); !IsDataManagerToken(api_token) {
+	if !IsDataManagerToken(GetApiToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
