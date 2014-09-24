@@ -106,7 +106,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     click_link 'Back to work!'
 
     # profile saved and in home page now
-    assert page.has_text?('Active pipelines'), 'No text - My projects'
+    assert page.has_text?('Active pipelines'), 'No text - Active pipelines'
   end
 
   [

@@ -42,6 +42,10 @@ class Job < ArvadosBase
     arvados_api_client.api("jobs/", "queue_size", {"_method"=> "GET"})[:queue_size] rescue 0
   end
 
+  def self.queue 
+    arvados_api_client.unpack_api_response arvados_api_client.api("jobs/", "queue", {"_method"=> "GET"})
+  end
+
   def self.state job
     if job.respond_to? :state and job.state
       return job.state
