@@ -642,7 +642,7 @@ CREATE TABLE nodes (
     info text,
     updated_at timestamp without time zone NOT NULL,
     properties text,
-    job_id integer
+    job_uuid character varying(255)
 );
 
 
@@ -2029,4 +2029,4 @@ INSERT INTO schema_migrations (version) VALUES ('20140918153541');
 
 INSERT INTO schema_migrations (version) VALUES ('20140918153705');
 
-INSERT INTO schema_migrations (version) VALUES ('20140919152716');
+INSERT INTO schema_migrations (version) VALUES ('20140924091559');

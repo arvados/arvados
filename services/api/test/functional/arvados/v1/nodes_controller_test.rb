@@ -98,19 +98,14 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     authorize_with :active
     get :show, {id: nodes(:busy).uuid}
     assert_response :success
-    assert_equal(jobs(:nearly_finished_job).uuid,
-                 json_response["job"].andand["uuid"])
+    assert_equal(jobs(:nearly_finished_job).uuid, json_response["job_uuid"])
   end
 
-  test "user without job read permission only sees job running state" do
+  test "user without job read permission can't see job" do
     authorize_with :spectator
     get :show, {id: nodes(:busy).uuid}
     assert_response :success
-    node_job = json_response["job"] || {}
-    assert(node_job.delete("running"),
-           "spectator can't see that node has a job assigned")
-    assert_empty(node_job,
-                 "spectator can see details about node's assigned job")
+    assert_nil(json_response["job"], "spectator can see node's assigned job")
   end
 
   test "admin can associate a job with a node" do
@@ -119,12 +114,12 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     authorize_with :admin
     post :update, {
       id: changed_node.uuid,
-      node: {job_id: assigned_job.uuid},
+      node: {job_uuid: assigned_job.uuid},
     }
     assert_response :success
     assert_equal(changed_node.hostname, json_response["hostname"],
                  "hostname mismatch after defining job")
-    assert_equal(assigned_job.uuid, json_response["job"].andand["uuid"],
+    assert_equal(assigned_job.uuid, json_response["job_uuid"],
                  "mismatch in node's assigned job UUID")
   end
 
@@ -132,7 +127,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     authorize_with :active
     post :update, {
       id: nodes(:idle).uuid,
-      node: {job_id: jobs(:queued).uuid},
+      node: {job_uuid: jobs(:queued).uuid},
     }
     assert_response 403
   end
@@ -142,12 +137,12 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     authorize_with :admin
     post :update, {
       id: changed_node.uuid,
-      node: {job_id: nil},
+      node: {job_uuid: nil},
     }
     assert_response :success
     assert_equal(changed_node.hostname, json_response["hostname"],
                  "hostname mismatch after defining job")
-    assert_nil(json_response["job"],
+    assert_nil(json_response["job_uuid"],
                "node still has job assignment after update")
   end
 
@@ -155,7 +150,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     authorize_with :project_viewer
     post :update, {
       id: nodes(:busy).uuid,
-      node: {job_id: nil},
+      node: {job_uuid: nil},
     }
     assert_response 403
   end
@@ -167,8 +162,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
       node: {last_ping_at: 1.second.ago},
     }
     assert_response :success
-    assert_equal(jobs(:nearly_finished_job).uuid,
-                 json_response["job"].andand["uuid"],
+    assert_equal(jobs(:nearly_finished_job).uuid, json_response["job_uuid"],
                  "mismatched job UUID after ping update")
   end
 end

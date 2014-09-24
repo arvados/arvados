@@ -22,7 +22,7 @@ table(table table-bordered table-condensed).
 |hostname|string|||
 |domain|string|||
 |ip_address|string|||
-|job|hash|The job that this node is assigned to work on.  This field is null if the node is idle.  Refer to the "Job schema":{{site.baseurl}}/api/schema/Job.html for details.  If you do not have permission to read the job, you will only see its @running@ attribute.||
+|job_uuid|string|The UUID of the job that this node is assigned to work on.  If you do not have permission to read the job, this will be null.||
 |first_ping_at|datetime|||
 |last_ping_at|datetime|||
 |info|hash|||

@@ -317,27 +317,10 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     end
   end
 
-  test "node assignments with basic info available for the job" do
+  test "job includes assigned nodes" do
     authorize_with :active
     get :show, {id: jobs(:nearly_finished_job).uuid}
     assert_response :success
-    nodes = json_response["nodes"]
-    assert_equal([nodes(:busy).uuid], nodes.map { |n| n["uuid"] })
-    # Make sure the node information does not include superuser fields.
-    refute(nodes.any? { |n| n.has_key?("info") },
-           "non-admin can see privileged node information")
-  end
-
-  test "admin has access to superuser fields in node assignment list" do
-    authorize_with :admin
-    get :show, {id: jobs(:nearly_finished_job).uuid}
-    assert_response :success
-    node_fixture = nodes(:busy)
-    busy_node = json_response["nodes"].
-      select { |n| n["uuid"] == node_fixture.uuid }.first
-    assert_not_nil(busy_node, "assigned node not found in response")
-    assert_not_nil(busy_node["info"], "node info field missing in response")
-    assert_equal(node_fixture.info["ping_secret"],
-                 busy_node["info"]["ping_secret"])
+    assert_equal([nodes(:busy).uuid], json_response["node_uuids"])
   end
 end
