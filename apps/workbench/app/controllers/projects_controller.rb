@@ -140,6 +140,8 @@ class ProjectsController < ApplicationController
             updates[:owner_uuid] = current_user.uuid
             item.update_attributes updates
             @removed_uuids << item.uuid
+          else
+            raise
           end
         end
       end
