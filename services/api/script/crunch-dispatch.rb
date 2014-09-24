@@ -61,70 +61,43 @@ class Dispatcher
     end
   end
 
-  def crunch_wrapper_is_slurm?
-    Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
-  end
-
-  def sinfo
-    @@slurm_version ||= Gem::Version.new(`sinfo --version`.match(/\b[\d\.]+\b/)[0])
-    if Gem::Version.new('2.3') <= @@slurm_version
-      `sinfo --noheader -o '%n:%t'`.strip
-    else
-      # Expand rows with hostname ranges (like "foo[1-3,5,9-12]:idle")
-      # into multiple rows with one hostname each.
-      `sinfo --noheader -o '%N:%t'`.split("\n").collect do |line|
-        tokens = line.split ":"
-        if (re = tokens[0].match /^(.*?)\[([-,\d]+)\]$/)
-          re[2].split(",").collect do |range|
-            range = range.split("-").collect(&:to_i)
-            (range[0]..range[-1]).collect do |n|
-              [re[1] + n.to_s, tokens[1..-1]].join ":"
-            end
-          end
-        else
-          tokens.join ":"
-        end
-      end.flatten.join "\n"
+  def slurm_status
+    slurm_nodes = {}
+    `sinfo --noheader -o %n:%t`.each_line do |sinfo_line|
+      hostname, state = sinfo_line.chomp.split(":", 2)
+      state.sub!(/\W+$/, "")
+      state = "down" unless %w(idle alloc down).include? state
+      slurm_nodes[hostname] = {state: state, job: nil}
     end
+    `squeue --noheader -o %n:%j`.each_line do |squeue_line|
+      hostname, job_uuid = squeue_line.chomp.split(":", 2)
+      next unless slurm_nodes[hostname]
+      slurm_nodes[hostname][:job] = job_uuid
+    end
+    slurm_nodes
   end
 
   def update_node_status
-    if crunch_wrapper_is_slurm?
-      @node_state ||= {}
-      node_seen = {}
+    return unless Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
+    @node_state ||= {}
+    slurm_status.each_pair do |hostname, slurmdata|
+      next if @node_state[hostname] == slurmdata
       begin
-        sinfo.split("\n").
-          each do |line|
-          re = line.match /(\S+?):+(idle|alloc|down)?/
-          next if !re
-
-          _, node_name, node_state = *re
-          node_state = 'down' unless %w(idle alloc down).include? node_state
-
-          # sinfo tells us about a node N times if it is shared by N partitions
-          next if node_seen[node_name]
-          node_seen[node_name] = true
-
-          # update our database (and cache) when a node's state changes
-          if @node_state[node_name] != node_state
-            @node_state[node_name] = node_state
-            node = Node.where('hostname=?', node_name).order(:last_ping_at).last
-            if node
-              $stderr.puts "dispatch: update #{node_name} state to #{node_state}"
-              node.info['slurm_state'] = node_state
-              if node_state == "idle"
-                node.job = nil
-              end
-              if not node.save
-                $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
-              end
-            elsif node_state != 'down'
-              $stderr.puts "dispatch: sinfo reports '#{node_name}' is not down, but no node has that name"
-            end
+        node = Node.where('hostname=?', hostname).order(:last_ping_at).last
+        if node
+          $stderr.puts "dispatch: update #{hostname} state to #{slurmdata}"
+          node.info["slurm_state"] = slurmdata[:state]
+          node.job_uuid = slurmdata[:job]
+          if node.save
+            @node_state[hostname] = slurmdata
+          else
+            $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
           end
+        elsif slurmdata[:state] != 'down'
+          $stderr.puts "dispatch: SLURM reports '#{hostname}' is not down, but no node has that name"
         end
       rescue => error
-        $stderr.puts "dispatch: error updating node status: #{error}"
+        $stderr.puts "dispatch: error updating #{hostname} node status: #{error}"
       end
     end
   end
@@ -323,10 +296,7 @@ class Dispatcher
         log_truncated: false
       }
       i.close
-      if crunch_wrapper_is_slurm?
-        assign_job_to_nodes(job, nodelist)
-        update_node_status
-      end
+      update_node_status
     end
   end
 
