@@ -509,7 +509,7 @@ class WhRunPipelineInstance
         # the job's current state")
         c_already_finished = (c[:job] &&
                               c[:job][:uuid] &&
-                              ["Complete", "Failed", "Cancelled"].include? c[:job][:state])
+                              ["Complete", "Failed", "Cancelled"].include?(c[:job][:state]))
         if !c[:job] and
             c[:script_parameters].select { |pname, p| p.is_a? Hash and p[:output_of]}.empty?
           # No job yet associated with this component and is component inputs
@@ -526,7 +526,7 @@ class WhRunPipelineInstance
             :owner_uuid => owner_uuid,
             :is_locked_by_uuid => (@options[:run_jobs_here] ? owner_uuid : nil),
             :submit_id => my_submit_id,
-            :state => (if @options[:run_jobs_here] then "Running" else "Queued")
+            :state => (if @options[:run_jobs_here] then "Running" else "Queued" end)
           }, {
             # This is the right place to put these attributes when
             # dealing with new API servers.
@@ -582,8 +582,8 @@ class WhRunPipelineInstance
         end
 
         if c[:job] and c[:job][:uuid]
-          if c[:job][:state] == "Running"
-            # Job is running so update copy of job record
+          if ["Running", "Queued"].include?(c[:job][:state])
+            # Job is running (or may be soon) so update copy of job record
             c[:job] = JobCache.get(c[:job][:uuid])
           end
 
@@ -655,8 +655,11 @@ class WhRunPipelineInstance
           elsif c[:job][:state] == "Running"
             # Job is still running
             moretodo = true
-          elsif c[:job][:cancelled_at]
+          elsif c[:job][:state] == "Cancelled"
             debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
+            moretodo = false
+          elsif c[:job][:state] == "Failed"
+            moretodo = false
           end
         end
       end
@@ -759,16 +762,18 @@ class WhRunPipelineInstance
         @components.each do |cname, c|
           jstatus = if !c[:job]
                       "-"
-                    elsif c[:job][:state] == "Running"
-                      "#{c[:job][:tasks_summary].inspect}"
-                    elsif c[:job][:state] == "Complete"
-                      c[:job][:output]
-                    elsif c[:job][:state] == "Cancelled"
-                      "cancelled #{c[:job][:cancelled_at]}"
-                    elsif c[:job][:state] == "Failed"
-                      "failed #{c[:job][:finished_at]}"
-                    elsif c[:job][:state] == "Queued"
-                      "queued #{c[:job][:created_at]}"
+                    else case c[:job][:state]
+                         when "Running"
+                           "#{c[:job][:tasks_summary].inspect}"
+                         when "Complete"
+                           c[:job][:output]
+                         when "Cancelled"
+                           "cancelled #{c[:job][:cancelled_at]}"
+                         when "Failed"
+                           "failed #{c[:job][:finished_at]}"
+                         when "Queued"
+                           "queued #{c[:job][:created_at]}"
+                         end
                     end
           f.puts "#{cname.to_s.ljust namewidth} #{c[:job] ? c[:job][:uuid] : '-'.ljust(27)} #{jstatus}"
         end
