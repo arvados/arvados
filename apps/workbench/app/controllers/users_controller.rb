@@ -236,16 +236,18 @@ class UsersController < ApplicationController
 
   def manage_account
     # repositories current user can read / write
-    repo_links = []
-    Link.filter([['head_uuid', 'is_a', 'arvados#repository'],
-                 ['tail_uuid', '=', current_user.uuid],
-                 ['link_class', '=', 'permission'],
-                 ['name', 'in', ['can_write', 'can_read']],
-               ]).
-          each do |perm_link|
-            repo_links << perm_link[:head_uuid]
-          end
-    @my_repositories = Repository.where(uuid: repo_links)
+    repo_links = Link.
+      filter([['head_uuid', 'is_a', 'arvados#repository'],
+              ['tail_uuid', '=', current_user.uuid],
+              ['link_class', '=', 'permission'],
+             ])
+    @my_repositories = Repository.where uuid: repo_links.collect(&:head_uuid)
+    @repo_writable = {}
+    repo_links.each do |link|
+      if link.name.in? ['can_write', 'can_manage']
+        @repo_writable[link.head_uuid] = true
+      end
+    end
 
     # virtual machines the current user can login into
     @my_vm_logins = {}
