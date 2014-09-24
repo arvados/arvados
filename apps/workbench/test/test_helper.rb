@@ -131,7 +131,7 @@ class ApiServerForTests
       make_ssl_cert
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
-      _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3001',
+      _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
               '--pid-file', SERVER_PID_PATH,
               '--ssl',
               '--ssl-certificate', 'self-signed.pem',
