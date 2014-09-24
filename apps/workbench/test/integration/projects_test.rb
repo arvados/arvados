@@ -304,7 +304,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find(".dropdown-menu a", text: "Home").click
         assert page.has_text?(my_collection['name']), 'Collection not found in home project after remove'
         if expect_name_change
-          assert page.has_text?(my_collection['name']+' removed from'), 'Collection not found in home project after remove'
+          assert page.has_text?(my_collection['name']+' removed from ' + src['name']),
+            'Collection with update name is not found in home project after remove'
         end
       end
     end
