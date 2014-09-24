@@ -470,6 +470,10 @@ module ApplicationHelper
     end
   end
 
+  def render_localized_date(date, opts="")
+    raw("<span class='utc-date' data-utc-date='#{date}' data-utc-date-opts='noseconds'>#{date}</span>")
+  end
+
 private
   def is_textile?( object, attr )
     is_textile = object.textile_attributes.andand.include?(attr)
