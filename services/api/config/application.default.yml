@@ -17,6 +17,9 @@ development:
   assets.debug: true
   local_modified: <%= '-modified' if `git status -s` %>
 
+  # Visitors to the API server will be redirected to the workbench
+  workbench_address: ~
+
 production:
   force_ssl: true
   cache_classes: true
@@ -26,6 +29,9 @@ production:
   assets.compress: true
   assets.compile: false
   assets.digest: true
+
+  # Visitors to the API server will be redirected to the workbench
+  workbench_address: ~
 
 test:
   force_ssl: false
@@ -46,6 +52,9 @@ test:
 
   # email address to which mail should be sent when the user creates profile for the first time
   user_profile_notification_address: arvados@example.com
+
+  # Visitors to the API server will be redirected to the workbench
+  workbench_address: https://localhost:3001/
 
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
@@ -117,9 +126,6 @@ common:
   user_notifier_email_from: arvados@example.com
   new_user_notification_recipients: [ ]
   new_inactive_user_notification_recipients: [ ]
-
-  # Visitors to the API server will be redirected to the workbench
-  workbench_address: https://workbench.local:3001/
 
   # The e-mail address of the user you would like to become marked as an admin
   # user on their first login.
