@@ -7,7 +7,7 @@ class LoginsTest < ActionDispatch::IntegrationTest
 
   test "login with api_token works after redirect" do
     visit page_with_token('active_trustedclient')
-    assert page.has_text?('Recent jobs'), "Missing 'Recent jobs' from page"
+    assert page.has_text?('Active pipelines'), "Missing 'Active pipelines' from page"
     assert_no_match(/\bapi_token=/, current_path)
   end
 

@@ -23,7 +23,6 @@ class JobsTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Textile description for job'
     assert page.has_link? 'Go to dashboard'
     click_link 'Go to dashboard'
-    assert page.has_text? 'My projects'
-    assert page.has_text? 'Projects shared with me'
+    assert page.has_text? 'Active pipelines'
   end
 end

@@ -205,4 +205,12 @@ jQuery(function($){
         });
     });
 
+    $(document).on('click', '.compute-detail', function(e) {
+        $(e.target).collapse('hide');
+    });
+
+    $(document).on('click', '.compute-node-summary', function(e) {
+        $(e.target.href).collapse('toggle');
+    });
+
 });
