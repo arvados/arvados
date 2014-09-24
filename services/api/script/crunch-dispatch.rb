@@ -61,18 +61,43 @@ class Dispatcher
     end
   end
 
+  def each_slurm_line(cmd, outfmt, max_fields=nil)
+    max_fields ||= outfmt.split(":").size
+    max_fields += 1  # To accommodate the node field we add
+    @@slurm_version ||= Gem::Version.new(`sinfo --version`.match(/\b[\d\.]+\b/)[0])
+    if Gem::Version.new('2.3') <= @@slurm_version
+      `#{cmd} --noheader -o '%n:#{outfmt}'`.each_line do |line|
+        yield line.chomp.split(":", max_fields)
+      end
+    else
+      # Expand rows with hostname ranges (like "foo[1-3,5,9-12]:idle")
+      # into multiple rows with one hostname each.
+      `#{cmd} --noheader -o '%N:#{outfmt}'`.each_line do |line|
+        tokens = line.chomp.split(":", max_fields)
+        if (re = tokens[0].match /^(.*?)\[([-,\d]+)\]$/)
+          tokens.shift
+          re[2].split(",").each do |range|
+            range = range.split("-").collect(&:to_i)
+            (range[0]..range[-1]).each do |n|
+              yield [re[1] + n.to_s] + tokens
+            end
+          end
+        else
+          yield tokens
+        end
+      end
+    end
+  end
+
   def slurm_status
     slurm_nodes = {}
-    `sinfo --noheader -o %n:%t`.each_line do |sinfo_line|
-      hostname, state = sinfo_line.chomp.split(":", 2)
+    each_slurm_line("sinfo", "%t") do |hostname, state|
       state.sub!(/\W+$/, "")
-      state = "down" unless %w(idle alloc down).include? state
+      state = "down" unless %w(idle alloc down).include?(state)
       slurm_nodes[hostname] = {state: state, job: nil}
     end
-    `squeue --noheader -o %n:%j`.each_line do |squeue_line|
-      hostname, job_uuid = squeue_line.chomp.split(":", 2)
-      next unless slurm_nodes[hostname]
-      slurm_nodes[hostname][:job] = job_uuid
+    each_slurm_line("squeue", "%j") do |hostname, job_uuid|
+      slurm_nodes[hostname][:job] = job_uuid if slurm_nodes[hostname]
     end
     slurm_nodes
   end
