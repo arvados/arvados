@@ -266,15 +266,16 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    'Move',
-    'Remove',
-    'Copy',
-  ].each do |action|
-    test "selection #{action} for project" do
-      src = api_fixture('groups')['aproject']
-      dest = api_fixture('groups')['asubproject']
-      my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
-
+    ['Move',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject'],api_fixture('groups')['asubproject']],
+    ['Remove',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject']],
+    ['Copy',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject'],api_fixture('groups')['asubproject']],
+    ['Remove',api_fixture('collections')['collection_in_aproject_with_same_name_as_in_home_project'],
+      api_fixture('groups')['aproject'],nil,true],
+  ].each do |action, my_collection, src, dest=nil, expect_name_change=nil|
+    test "selection #{action} #{expect_name_change} for project" do
       perform_selection_action src, dest, my_collection, action
 
       case action
@@ -302,6 +303,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
         find("#projects-menu").click
         find(".dropdown-menu a", text: "Home").click
         assert page.has_text?(my_collection['name']), 'Collection not found in home project after remove'
+        if expect_name_change
+          assert page.has_text?(my_collection['name']+' removed from'), 'Collection not found in home project after remove'
+        end
       end
     end
   end
