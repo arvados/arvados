@@ -18,7 +18,7 @@ development:
   local_modified: <%= '-modified' if `git status -s` %>
 
   # Visitors to the API server will be redirected to the workbench
-  workbench_address: https://localhost:3031/
+  workbench_address: ~
 
 production:
   force_ssl: true

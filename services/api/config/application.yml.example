@@ -31,9 +31,6 @@ test:
   # Tests should be able to run without further configuration, but if you do
   # want to change your local test configuration, this is where to do it.
 
-  # Visitors to the API server will be redirected to the workbench.
-  workbench_address: https://workbench.local:3001/
-
 common:
   # Settings in this section will be used in all environments
   # (development, production, test) except when overridden in the

@@ -41,9 +41,9 @@ development:
   local_modified: <%= '-modified' if `git status -s` %>
 
   # API server configuration
-  arvados_login_base: https://localhost:3030/login
-  arvados_v1_base: https://localhost:3030/arvados/v1
-  arvados_insecure_https: true
+  arvados_login_base: ~
+  arvados_v1_base: ~
+  arvados_insecure_https: ~
 
 production:
   force_ssl: true
