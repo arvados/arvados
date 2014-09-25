@@ -239,16 +239,14 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items_available']
   end
 
-  test "get all pages of group-owned objects" do
-    authorize_with :active
-    limit = 5
-    offset = 0
-    items_available = nil
-    uuid_received = {}
-    owner_received = {}
-    while true
-      # Behaving badly here, using the same controller multiple
-      # times within a test.
+  [0, 5, 10, 15, 20].each do |offset|
+    test "get pages of group-owned objects with offset #{offset}" do
+      authorize_with :active
+      limit = 5
+      items_available = nil
+      uuid_received = {}
+      owner_received = {}
+
       @json_response = nil
       get :contents, {
         id: groups(:aproject).uuid,
@@ -257,23 +255,28 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
         format: :json,
       }
       assert_response :success
-      assert_operator(0, :<, json_response['items'].count,
-                      "items_available=#{items_available} but received 0 "\
-                      "items with offset=#{offset}")
       items_available ||= json_response['items_available']
-      assert_equal(items_available, json_response['items_available'],
-                   "items_available changed between page #{offset/limit} "\
-                   "and page #{1+offset/limit}")
-      json_response['items'].each do |item|
-        uuid = item['uuid']
-        assert_equal(nil, uuid_received[uuid],
-                     "Received '#{uuid}' again on page #{1+offset/limit}")
-        uuid_received[uuid] = true
-        owner_received[item['owner_uuid']] = true
-        offset += 1
-        assert_equal groups(:aproject).uuid, item['owner_uuid']
+      if offset >= items_available
+        assert_equal(0, json_response['items'].count,
+                      "items_available=#{items_available} but received #{json_response['items']} "\
+                      "items with offset=#{offset}")
+      else
+        assert_operator(0, :<, json_response['items'].count,
+                        "items_available=#{items_available} but received  "\
+                        "items with offset=#{offset}")
+        assert_equal(items_available, json_response['items_available'],
+                     "items_available changed between page #{offset/limit} "\
+                     "and page #{1+offset/limit}")
+        json_response['items'].each do |item|
+          uuid = item['uuid']
+          assert_equal(nil, uuid_received[uuid],
+                       "Received '#{uuid}' again on page #{1+offset/limit}")
+          uuid_received[uuid] = true
+          owner_received[item['owner_uuid']] = true
+          offset += 1
+          assert_equal groups(:aproject).uuid, item['owner_uuid']
+        end
       end
-      break if offset >= items_available
     end
   end
 
