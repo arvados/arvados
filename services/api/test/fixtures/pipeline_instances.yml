@@ -74,3 +74,36 @@ pipeline_with_tagged_collection_input:
       script_parameters:
         input:
           value: zzzzz-4zz18-znfnqtbbv4spc3w
+
+pipeline_to_merge_params:
+  name: pipeline_to_merge_params
+  state: Ready
+  uuid: zzzzz-d1hrv-1yfj6dcba4321k3
+  pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  components:
+    part-one:
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: "Foo/bar pair"
+          description: "Provide a collection containing at least two files."
+    part-two:
+      script_parameters:
+        input:
+          output_of: part-one
+        integer_with_default:
+          default: 123
+        integer_with_value:
+          value: 123
+        string_with_default:
+          default: baz
+        string_with_value:
+          value: baz
+        plain_string: qux
+        array_with_default:
+          default: [1,1,2,3,5]
+        array_with_value:
+          value: [1,1,2,3,5]

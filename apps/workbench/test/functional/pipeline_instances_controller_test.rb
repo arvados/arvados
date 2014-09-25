@@ -31,9 +31,9 @@ class PipelineInstancesControllerTest < ActionController::TestCase
   end
 
   test "update script_parameters one at a time using merge param" do
-    create_instance_long_enough_to do |new_instance_uuid, template_fixture|
+      template_fixture = api_fixture('pipeline_templates')['two_part']
       post :update, {
-        id: new_instance_uuid,
+        id: api_fixture("pipeline_instances")["pipeline_to_merge_params"]["uuid"],
         pipeline_instance: {
           components: {
             "part-two" => {
@@ -60,7 +60,6 @@ class PipelineInstancesControllerTest < ActionController::TestCase
           assert_equal orig_params[k].to_json, new_params[k.to_sym].to_json
         end
       end
-    end
   end
 
   test "component rendering copes with unexpeceted components format" do
