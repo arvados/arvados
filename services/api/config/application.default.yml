@@ -18,7 +18,8 @@ development:
   local_modified: <%= '-modified' if `git status -s` %>
 
   # Visitors to the API server will be redirected to the workbench
-  workbench_address: ~
+  # By default, workbench_address is unset.
+  #workbench_address: https://workbench.local:3031/
 
 production:
   force_ssl: true
@@ -31,7 +32,8 @@ production:
   assets.digest: true
 
   # Visitors to the API server will be redirected to the workbench
-  workbench_address: ~
+  # By default, workbench_address is unset.
+  #workbench_address: <%= "https://workbench." + `hostname`.strip %>
 
 test:
   force_ssl: false
