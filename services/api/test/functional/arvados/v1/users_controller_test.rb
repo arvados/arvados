@@ -586,50 +586,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
-  test "setup and unsetup user" do
-    authorize_with :admin
-
-    post :setup, {
-      repo_name: 'test_repo',
-      vm_uuid: @vm_uuid,
-      user: {email: 'foo@example.com'},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
-    }
-
-    assert_response :success
-    response_items = JSON.parse(@response.body)['items']
-    created = find_obj_in_resp response_items, 'User', nil
-    assert_not_nil created['uuid'], 'expected uuid for the new user'
-    assert_equal created['email'], 'foo@example.com', 'expected given email'
-
-    # five extra links: system_group, login, group, repo and vm
-    verify_num_links @all_links_at_start, 5
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
-
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
-        'All users', created['uuid'], 'arvados#group', true, 'Group'
-
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
-
-    verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
-        @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
-
-    verify_link_existence created['uuid'], created['email'], true, true, true, true, false
-
-    # now unsetup this user
-    post :unsetup, id: created['uuid']
-    assert_response :success
-
-    created2 = JSON.parse(@response.body)
-    assert_not_nil created2['uuid'], 'expected uuid for the newly created user'
-    assert_equal created['uuid'], created2['uuid'], 'expected uuid not found'
-
-    verify_link_existence created['uuid'], created['email'], false, false, false, false, false
-  end
-
   test "unsetup active user" do
     active_user = users(:active)
     assert_not_nil active_user['uuid'], 'expected uuid for the active user'
