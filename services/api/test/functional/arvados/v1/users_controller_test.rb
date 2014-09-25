@@ -360,7 +360,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 5
   end
 
-  test "setup user with an exising user email and check different object is created" do
+  test "setup user with an existing user email and check different object is created" do
     authorize_with :admin
     inactive_user = users(:inactive)
 
