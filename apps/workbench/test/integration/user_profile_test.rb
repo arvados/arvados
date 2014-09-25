@@ -25,7 +25,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
         assert page.has_text?('Save profile'), 'No text - Save profile'
         add_profile user
       else
-        assert page.has_text?('My projects'), 'Not found text - My projects'
+        assert page.has_text?('Active pipelines'), 'Not found text - Active pipelines'
         assert page.has_no_text?('Save profile'), 'Found text - Save profile'
       end
     elsif invited
@@ -106,8 +106,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     click_link 'Back to work!'
 
     # profile saved and in home page now
-    assert page.has_text?('My projects'), 'No text - My projects'
-    assert page.has_text?('Projects shared with me'), 'No text - Projects shared with me'
+    assert page.has_text?('Active pipelines'), 'No text - Active pipelines'
   end
 
   [
