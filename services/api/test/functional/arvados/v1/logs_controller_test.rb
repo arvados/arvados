@@ -3,15 +3,20 @@ require 'test_helper'
 class Arvados::V1::LogsControllerTest < ActionController::TestCase
   fixtures :logs
 
-  test "non-admins can read their own logs" do
+  test "non-admins can create their own logs" do
     authorize_with :active
     post :create, log: {summary: "test log"}
     assert_response :success
     uuid = JSON.parse(@response.body)['uuid']
     assert_not_nil uuid
-    get :show, {id: uuid}
+  end
+
+  test "non-admins can read their own logs" do
+    authorize_with :active
+    my_log = logs(:log_owned_by_active)
+    get :show, {id: my_log[:uuid]}
     assert_response(:success, "failed to load created log")
-    assert_equal("test log", assigns(:object).summary,
+    assert_equal(my_log[:summary], assigns(:object).summary,
                  "loaded wrong log after creation")
   end
 
