@@ -56,6 +56,8 @@ production:
   action_mailer.raise_delivery_errors: false
   action_mailer.perform_deliveries: false
 
+  workbench_address: @@API_WORKBENCH_ADDRESS@@
+
 test:
   uuid_prefix: zzzzz
   secret_token: <%= rand(2**512).to_s(36) %>

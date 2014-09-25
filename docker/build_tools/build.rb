@@ -84,6 +84,7 @@ def main options
       config['API_AUTO_ADMIN_USER'] = admin_email_address
       config['ARVADOS_USER_NAME'] = user_name
       config['API_HOSTNAME'] = generate_api_hostname
+      config['API_WORKBENCH_ADDRESS'] = 'http://localhost:9899'
       config['PUBLIC_KEY_PATH'] = find_or_create_ssh_key(config['API_HOSTNAME'])
       config.each_key do |var|
         config_out.write "#{var}: #{config[var]}\n"
