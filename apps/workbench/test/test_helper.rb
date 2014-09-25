@@ -152,6 +152,32 @@ class ApiServerForTests
   end
 end
 
+class ActionController::TestCase
+  setup do
+    @counter = 0
+  end
+
+  def check_counter action
+    @counter += 1
+    if @counter == 2
+      # TODO: when existing mistakes are fixed, start failing broken
+      # test cases like this:
+      #
+      # assert_equal 1, 2, "Multiple actions in functional test"
+      #
+      # Meanwhile, just warn (just once per test case):
+      $stderr.puts " [WARNING: Multiple actions in functional test]"
+    end
+  end
+
+  [:get, :post, :put, :patch, :delete].each do |method|
+    define_method method do |action, *args|
+      check_counter action
+      super action, *args
+    end
+  end
+end
+
 if ENV["RAILS_ENV"].eql? 'test'
   ApiServerForTests.run
 end
