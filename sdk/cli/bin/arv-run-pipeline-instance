@@ -686,17 +686,12 @@ class WhRunPipelineInstance
       end
     end
 
-    ended = @components.map { |cname, c| 
-      if c[:job] and ["Complete", "Failed", "Cancelled"].include? c[:job][:state] then 1 else 0 end 
-    }.reduce(:+) || 0
-
-    succeeded = @components.map { |cname, c| 
-      if c[:job] and ["Complete"].include? c[:job][:state] then 1 else 0 end 
-    }.reduce(:+) || 0
-
-    failed = @components.map { |cname, c| 
-      if c[:job] and ["Failed", "Cancelled"].include? c[:job][:state] then 1 else 0  end 
-    }.reduce(:+) || 0
+    c_in_state = @components.values.group_by { |c| 
+      c[:job] and c[:job][:state]
+    }
+    succeeded = c_in_state["Complete"].count
+    failed = c_in_state["Failed"].count + c_in_state["Cancelled"].count
+    ended = succeeded + failed
 
     success = (succeeded == @components.length)
 

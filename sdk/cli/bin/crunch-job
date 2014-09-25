@@ -1042,8 +1042,11 @@ sub check_refresh_wanted
         $Job->{$attr} = $Job2->{$attr};
       }
       if ($Job->{'state'} ne "Running") {
-        Log (undef, "Job state changed to " . $Job->{'state'} . " at " . $Job->{cancelled_at} .
-             " by user " . $Job->{cancelled_by_user_uuid});
+        if ($Job->{'state'} eq "Cancelled") {
+          Log (undef, "Job cancelled at " . $Job->{'cancelled_at'} . " by user " . $Job->{'cancelled_by_user_uuid'});
+        } else {
+          Log (undef, "Job state unexpectedly changed to " . $Job->{'state'});
+        }
         $main::success = 0;
         $main::please_freeze = 1;
       }
@@ -1341,9 +1344,8 @@ sub croak
 sub cleanup
 {
   return if !$job_has_uuid;
-  if ($Job->{'cancelled_at'}) {
-    $Job->update_attributes('state' => 'Cancelled',
-                            'finished_at' => scalar gmtime);
+  if ($Job->{'state'} eq 'Cancelled') {
+    $Job->update_attributes('finished_at' => scalar gmtime);
   } else {
     $Job->update_attributes('state' => 'Failed');
   }
