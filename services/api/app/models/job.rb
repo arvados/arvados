@@ -14,7 +14,6 @@ class Job < ArvadosModel
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
   validate :validate_status
-  validate :validate_state_change
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
@@ -331,18 +330,4 @@ class Job < ArvadosModel
     end
   end
 
-  def validate_state_change
-    if self.state_changed?
-      if self.state_was.in? [Complete, Failed, Cancelled]
-        # Once in a finished state, don't permit any changes
-        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
-        return false
-      elsif self.state_was == Running and not self.state.in? [Complete, Failed, Cancelled]
-        # From running, can only transition to a finished state
-        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
-        return false
-      end
-    end
-    true
-  end
 end
