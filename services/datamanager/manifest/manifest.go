@@ -12,39 +12,40 @@ import (
 	"strings"
 )
 
-var locatorPattern = regexp.MustCompile("^[0-9a-fA-F]{32}\\+[0-9]+(\\+[^+]+)*$")
+var LocatorPattern = regexp.MustCompile(
+	"^[0-9a-fA-F]{32}\\+[0-9]+(\\+[A-Z][A-Za-z0-9@_-]+)*$")
 
 type Manifest struct {
 	Text string
 }
 
 type BlockLocator struct {
-	digest  string
-	size    int
-	hints   []string
+	Digest  string
+	Size    int
+	Hints   []string
 }
 
 type ManifestLine struct {
-	streamName  string
-	blocks       []string
-	files        []string
+	StreamName  string
+	Blocks       []string
+	Files        []string
 }
 
 func parseBlockLocator(s string) (b BlockLocator, err error) {
-	if !locatorPattern.MatchString(s) {
+	if !LocatorPattern.MatchString(s) {
 		fmt.Errorf("String \"%s\" does not match BlockLocator pattern \"%s\".",
 			s,
-			locatorPattern.String())
+			LocatorPattern.String())
 	} else {
 		tokens := strings.Split(s, "+")
 		var blockSize int64
-		// We expect ParseInt to succeed since locatorPattern restricts
+		// We expect ParseInt to succeed since LocatorPattern restricts
 		// tokens[1] to contain exclusively digits.
 		blockSize, err = strconv.ParseInt(tokens[1], 10, 0)
 		if err == nil {
-			b.digest = tokens[0]
-			b.size = int(blockSize)
-			b.hints = tokens[2:]
+			b.Digest = tokens[0]
+			b.Size = int(blockSize)
+			b.Hints = tokens[2:]
 		}
 	}
 	return
@@ -52,17 +53,17 @@ func parseBlockLocator(s string) (b BlockLocator, err error) {
 
 func parseManifestLine(s string) (m ManifestLine) {
 	tokens := strings.Split(s, " ")
-	m.streamName = tokens[0]
+	m.StreamName = tokens[0]
 	tokens = tokens[1:]
 	var i int
 	var token string
 	for i, token = range tokens {
-		if !locatorPattern.MatchString(token) {
+		if !LocatorPattern.MatchString(token) {
 			break
 		}
 	}
-	m.blocks = tokens[:i]
-	m.files = tokens[i:]
+	m.Blocks = tokens[:i]
+	m.Files = tokens[i:]
 	return
 }
 
@@ -84,11 +85,15 @@ func (m *Manifest) LineIter() <-chan ManifestLine {
 	return ch
 }
 
-func (m *Manifest) BlockIter() <-chan BlockLocator {
+
+// Blocks may appear mulitple times within the same manifest if they
+// are used by multiple files. In that case this Iterator will output
+// the same block multiple times.
+func (m *Manifest) DuplicateBlockIter() <-chan BlockLocator {
 	blockChannel := make(chan BlockLocator)
 	go func(lineChannel <-chan ManifestLine) {
 		for m := range lineChannel {
-			for _, block := range m.blocks {
+			for _, block := range m.Blocks {
 				if b, err := parseBlockLocator(block); err == nil {
 					blockChannel <- b
 				} else {

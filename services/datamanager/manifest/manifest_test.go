@@ -56,19 +56,19 @@ func expectStringSlicesEqual(t *testing.T, actual []string, expected []string) {
 }
 
 func expectManifestLine(t *testing.T, actual ManifestLine, expected ManifestLine) {
-	expectEqual(t, actual.streamName, expected.streamName)
-	expectStringSlicesEqual(t, actual.blocks, expected.blocks)
-	expectStringSlicesEqual(t, actual.files, expected.files)
+	expectEqual(t, actual.StreamName, expected.StreamName)
+	expectStringSlicesEqual(t, actual.Blocks, expected.Blocks)
+	expectStringSlicesEqual(t, actual.Files, expected.Files)
 }
 
 func expectBlockLocator(t *testing.T, actual BlockLocator, expected BlockLocator) {
-	expectEqual(t, actual.digest, expected.digest)
-	expectEqual(t, actual.size, expected.size)
-	expectStringSlicesEqual(t, actual.hints, expected.hints)
+	expectEqual(t, actual.Digest, expected.Digest)
+	expectEqual(t, actual.Size, expected.Size)
+	expectStringSlicesEqual(t, actual.Hints, expected.Hints)
 }
 
 func expectLocatorPatternMatch(t *testing.T, s string) {
-	if !locatorPattern.MatchString(s) {
+	if !LocatorPattern.MatchString(s) {
 		t.Fatalf("Expected \"%s\" to match locator pattern but it did not.",
 			s)
 	}
@@ -80,9 +80,9 @@ func TestLocatorPatternBasic(t *testing.T) {
 
 func TestParseManifestLineSimple(t *testing.T) {
 	m := parseManifestLine(". 365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf 0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt")
-	expectManifestLine(t, m, ManifestLine{streamName: ".",
-		blocks: []string{"365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"},
-		files: []string{"0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt"}})
+	expectManifestLine(t, m, ManifestLine{StreamName: ".",
+		Blocks: []string{"365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"},
+		Files: []string{"0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt"}})
 }
 
 func TestParseBlockLocatorSimple(t *testing.T) {
@@ -90,8 +90,8 @@ func TestParseBlockLocatorSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error parsing block locator: %v", err)
 	}
-	expectBlockLocator(t, b, BlockLocator{digest: "365f83f5f808896ec834c8b595288735",
-		size: 2310,
-		hints: []string{"K@qr1hi",
+	expectBlockLocator(t, b, BlockLocator{Digest: "365f83f5f808896ec834c8b595288735",
+		Size: 2310,
+		Hints: []string{"K@qr1hi",
 			"Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
 }

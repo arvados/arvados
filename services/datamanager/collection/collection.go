@@ -9,12 +9,10 @@ import (
 )
 
 type Collection struct {
-	// TODO(misha): Consider whether we need BlockLocator.hints, and if
-	// not, perhaps we should use a custom struct here.
-	Blocks []manifest.BlockLocator
+	BlockDigestToSize map[string]int
 	ReplicationLevel int
 	Uuid string
-	ownerUuid string
+	OwnerUuid string
 }
 
 type readCollections struct {
@@ -26,6 +24,7 @@ func GetCollections(arv arvadosclient.ArvadosClient) (results readCollections) {
 	fieldsWanted := []string{"manifest_text",
 		"owner_uuid",
 		"uuid",
+		// TODO(misha): Start using the redundancy field.
 		"redundancy"}
 
 	// TODO(misha): Set the limit param with a flag.
@@ -41,10 +40,10 @@ func GetCollections(arv arvadosclient.ArvadosClient) (results readCollections) {
 
 	if value, ok := collections["items"]; ok {
 		items := value.([]interface{})
-		
+
 		{
-			itemsAvailable, ok := collections["items_available"]
-			if !ok {
+			var itemsAvailable interface{}
+			if itemsAvailable, ok = collections["items_available"]; !ok {
 				log.Fatalf("API server did not return the number of items available")
 			}
 			numReceived := len(items)
@@ -52,8 +51,11 @@ func GetCollections(arv arvadosclient.ArvadosClient) (results readCollections) {
 			results.ReadAllCollections = numReceived == numAvailable
 
 			if (!results.ReadAllCollections) {
-				log.Printf("ERROR: Did not receive all collections. Received %d of %d available collections.",
-					numReceived, numAvailable)
+				log.Printf(
+					"ERROR: Did not receive all collections. " +
+						"Received %d of %d available collections.",
+					numReceived,
+					numAvailable)
 			}
 		}
 
@@ -61,11 +63,21 @@ func GetCollections(arv arvadosclient.ArvadosClient) (results readCollections) {
 		for _, item := range items {
 			item_map := item.(map[string]interface{})
 			collection := Collection{Uuid: item_map["uuid"].(string),
-				ownerUuid: item_map["owner_uuid"].(string)}
+				OwnerUuid: item_map["owner_uuid"].(string),
+				BlockDigestToSize: make(map[string]int)}
 			manifest := manifest.Manifest{item_map["manifest_text"].(string)}
-			blockChannel := manifest.BlockIter()
+			blockChannel := manifest.DuplicateBlockIter()
 			for block := range blockChannel {
-				collection.Blocks = append(collection.Blocks, block)
+				if stored_size, stored := collection.BlockDigestToSize[block.Digest];
+				stored && stored_size != block.Size {
+					log.Fatalf(
+						"Collection %s contains multiple sizes (%d and %d) for block %s",
+						collection.Uuid,
+						stored_size,
+						block.Size,
+						block.Digest)
+				}
+				collection.BlockDigestToSize[block.Digest] = block.Size
 			}
 			results.UuidToCollection[collection.Uuid] = collection
 		}
