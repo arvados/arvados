@@ -11,7 +11,7 @@ class StaticController < ApplicationController
         if Rails.configuration.workbench_address
           redirect_to Rails.configuration.workbench_address
         else
-          render_not_found "Path not found."
+          render_not_found "Oops, this is an API endpoint. You probably want to point your browser to an Arvados Workbench site instead."
         end
       end
       f.json do
