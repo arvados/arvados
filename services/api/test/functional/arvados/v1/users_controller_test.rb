@@ -671,14 +671,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     check_non_admin_show
   end
 
-  test "non-admin user can limit index" do
-    g = act_as_system_user do
-      create :group
-    end
-    users = create_list :active_user, 4, join_groups: [g]
-    token = create :token, user: users[0]
+  [2, 4].each do |limit|
+    test "non-admin user can limit index to #{limit}" do
+      g = act_as_system_user do
+        create :group
+      end
+      users = create_list :active_user, 4, join_groups: [g]
+      token = create :token, user: users[0]
 
-    [2, 4].each do |limit|
       authorize_with_token token
       get(:index, limit: limit)
       check_non_admin_index
