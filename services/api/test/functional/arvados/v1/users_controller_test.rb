@@ -305,7 +305,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 5
   end
 
-  test "setup user with valid email, no vm and repo as input" do
+  test "setup user with valid email, no vm and no repo as input" do
     authorize_with :admin
 
     post :setup, {
@@ -321,6 +321,18 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     # three extra links; system_group, login, and group
     verify_num_links @all_links_at_start, 3
+
+    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
+        response_object['uuid'], response_object['email'], 'arvados#user', false, 'User'
+
+    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
+        'All users', response_object['uuid'], 'arvados#group', true, 'Group'
+
+    verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
+        'test_repo', response_object['uuid'], 'arvados#repository', true, 'Repository'
+
+    verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
+        nil, response_object['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
   test "setup user with email, first name, repo name and vm uuid" do
@@ -500,44 +512,14 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
           'Expected Forbidden error'
   end
 
-  test "setup user in multiple steps and verify response" do
+  test "setup active user with repo and no vm" do
     authorize_with :admin
+    active_user = users(:active)
 
+    # invoke setup with a repository
     post :setup, {
-      openid_prefix: 'http://www.example.com/account',
-      user: {
-        email: "foo@example.com"
-      }
-    }
-
-    assert_response :success
-    response_items = JSON.parse(@response.body)['items']
-    created = find_obj_in_resp response_items, 'User', nil
-
-    assert_not_nil created['uuid'], 'expected uuid for new user'
-    assert_not_nil created['email'], 'expected non-nil email'
-    assert_equal created['email'], 'foo@example.com', 'expected input email'
-
-    # three new links: system_group, arvados#user, and 'All users' group.
-    verify_num_links @all_links_at_start, 3
-
-    verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
-        created['uuid'], created['email'], 'arvados#user', false, 'User'
-
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
-        'All users', created['uuid'], 'arvados#group', true, 'Group'
-
-    verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
-        'test_repo', created['uuid'], 'arvados#repository', true, 'Repository'
-
-    verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
-        nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
-
-   # invoke setup with a repository
-    post :setup, {
-      openid_prefix: 'http://www.example.com/account',
       repo_name: 'new_repo',
-      uuid: created['uuid']
+      uuid: active_user['uuid']
     }
 
     assert_response :success
@@ -545,7 +527,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     created = find_obj_in_resp response_items, 'User', nil
 
-    assert_equal 'foo@example.com', created['email'], 'expected input email'
+    assert_equal active_user[:email], created['email'], 'expected input email'
 
      # verify links
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
@@ -556,15 +538,17 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     verify_link response_items, 'arvados#virtualMachine', false, 'permission', 'can_login',
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
+  end
 
-    # invoke setup with a vm_uuid
+  test "setup active user with vm and no repo" do
+    authorize_with :admin
+    active_user = users(:active)
+
+    # invoke setup with a repository
     post :setup, {
       vm_uuid: @vm_uuid,
-      openid_prefix: 'http://www.example.com/account',
-      user: {
-        email: 'junk_email'
-      },
-      uuid: created['uuid']
+      uuid: active_user['uuid'],
+      email: 'junk_email'
     }
 
     assert_response :success
@@ -572,13 +556,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     created = find_obj_in_resp response_items, 'User', nil
 
-    assert_equal created['email'], 'foo@example.com', 'expected original email'
+    assert_equal active_user['email'], created['email'], 'expected original email'
 
     # verify links
     verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
         'All users', created['uuid'], 'arvados#group', true, 'Group'
 
-    # since no repo name in input, we won't get any; even though user has one
     verify_link response_items, 'arvados#repository', false, 'permission', 'can_manage',
         'new_repo', created['uuid'], 'arvados#repository', true, 'Repository'
 
