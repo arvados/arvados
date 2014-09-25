@@ -46,20 +46,23 @@ class Job < ArvadosBase
     arvados_api_client.unpack_api_response arvados_api_client.api("jobs/", "queue", {"_method"=> "GET"})
   end
 
+  # The 'job' parameter can be either a Job model object, or a hash containing
+  # the same fields as a Job object (such as the :job entry of a pipeline
+  # component).
   def self.state job
+    # This has a valid state method on it so call that
     if job.respond_to? :state and job.state
       return job.state
     end
 
-    if not job[:cancelled_at].nil?
+    # Figure out the state based on the other fields.
+    if job[:cancelled_at]
       "Cancelled"
-    elsif not job[:finished_at].nil? or not job[:success].nil?
-      if job[:success]
-        "Completed"
-      else
-        "Failed"
-      end
-    elsif job[:running]
+    elsif job[:success] == false
+      "Failed"
+    elsif job[:success] == true
+      "Complete"
+    elsif job[:running] == true
       "Running"
     else
       "Queued"
