@@ -10,10 +10,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
   test "activate a user after signing UA" do
     authorize_with :inactive_but_signed_user_agreement
-    get :current
-    assert_response :success
-    me = JSON.parse(@response.body)
-    post :activate, id: me['uuid']
+    post :activate, id: users(:inactive_but_signed_user_agreement).uuid
     assert_response :success
     assert_not_nil assigns(:object)
     me = JSON.parse(@response.body)
@@ -44,26 +41,16 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     authorize_with :inactive
 
-    get :current
-    assert_response :success
-    me = JSON.parse(@response.body)
-    assert_equal false, me['is_active']
-
-    post :activate, id: me['uuid']
+    post :activate, id: users(:inactive).uuid
     assert_response 403
 
-    get :current
-    assert_response :success
-    me = JSON.parse(@response.body)
-    assert_equal false, me['is_active']
+    response_body = JSON.parse(@response.body)
+    assert response_body['errors'].first.include? 'Cannot activate without user agreements'
   end
 
   test "activate an already-active user" do
     authorize_with :active
-    get :current
-    assert_response :success
-    me = JSON.parse(@response.body)
-    post :activate, id: me['uuid']
+    post :activate, id: users(:active).uuid
     assert_response :success
     me = JSON.parse(@response.body)
     assert_equal true, me['is_active']
@@ -131,43 +118,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         nil, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
 
     verify_system_group_permission_link_for created['uuid']
-
-    # invoke setup again with the same data
-    post :setup, {
-      repo_name: repo_name,
-      vm_uuid: @vm_uuid,
-      openid_prefix: 'https://www.google.com/accounts/o8/id',
-      user: {
-        uuid: 'zzzzz-tpzed-abcdefghijklmno',
-        first_name: "in_create_test_first_name",
-        last_name: "test_last_name",
-        email: "foo@example.com"
-      }
-    }
-    assert_response :success
-
-    response_items = JSON.parse(@response.body)['items']
-
-    created = find_obj_in_resp response_items, 'User', nil
-    assert_equal 'in_create_test_first_name', created['first_name']
-    assert_not_nil created['uuid'], 'expected non-null uuid for the new user'
-    assert_equal 'zzzzz-tpzed-abcdefghijklmno', created['uuid']
-    assert_not_nil created['email'], 'expected non-nil email'
-    assert_nil created['identity_url'], 'expected no identity_url'
-
-    # arvados#user, repo link and link add user to 'All users' group
-    verify_num_links @all_links_at_start, 5
-
-    verify_link response_items, 'arvados#repository', true, 'permission', 'can_manage',
-        repo_name, created['uuid'], 'arvados#repository', true, 'Repository'
-
-    verify_link response_items, 'arvados#group', true, 'permission', 'can_read',
-        'All users', created['uuid'], 'arvados#group', true, 'Group'
-
-    verify_link response_items, 'arvados#virtualMachine', true, 'permission', 'can_login',
-        @vm_uuid, created['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
-
-    verify_system_group_permission_link_for created['uuid']
   end
 
   test "setup user with bogus uuid and expect error" do
@@ -232,15 +182,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   test "invoke setup with existing uuid, vm and repo and verify links" do
-    authorize_with :inactive
-    get :current
-    assert_response :success
-    inactive_user = JSON.parse(@response.body)
-
     authorize_with :admin
+    inactive_user = users(:inactive)
 
     post :setup, {
-      uuid: inactive_user['uuid'],
+      uuid: users(:inactive).uuid,
       repo_name: 'test_repo',
       vm_uuid: @vm_uuid
     }
@@ -264,12 +210,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   test "invoke setup with existing uuid in user, verify response" do
-    authorize_with :inactive
-    get :current
-    assert_response :success
-    inactive_user = JSON.parse(@response.body)
-
     authorize_with :admin
+    inactive_user = users(:inactive)
 
     post :setup, {
       user: {uuid: inactive_user['uuid']},
@@ -288,12 +230,8 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   test "invoke setup with existing uuid but different email, expect original email" do
-    authorize_with :inactive
-    get :current
-    assert_response :success
-    inactive_user = JSON.parse(@response.body)
-
     authorize_with :admin
+    inactive_user = users(:inactive)
 
     post :setup, {
       uuid: inactive_user['uuid'],
@@ -410,14 +348,15 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     verify_num_links @all_links_at_start, 5
   end
 
-  test "setup user twice with email and check two different objects created" do
+  test "setup user with an exising user email and check different object is created" do
     authorize_with :admin
+    inactive_user = users(:inactive)
 
     post :setup, {
       openid_prefix: 'https://www.google.com/accounts/o8/id',
       repo_name: 'test_repo',
       user: {
-        email: 'foo@example.com'
+        email: inactive_user['email']
       }
     }
 
@@ -425,28 +364,11 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     response_items = JSON.parse(@response.body)['items']
     response_object = find_obj_in_resp response_items, 'User', nil
     assert_not_nil response_object['uuid'], 'expected uuid for new user'
-    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
+    assert_not_equal response_object['uuid'], inactive_user['uuid'],
+        'expected different uuid after create operation'
+    assert_equal inactive_user['email'], response_object['email'], 'expected given email'
     # system_group, openid, group, and repo. No vm link.
     verify_num_links @all_links_at_start, 4
-
-    # create again
-    post :setup, {
-      user: {email: 'foo@example.com'},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
-    }
-
-    assert_response :success
-    response_items = JSON.parse(@response.body)['items']
-    response_object2 = find_obj_in_resp response_items, 'User', nil
-    assert_not_equal response_object['uuid'], response_object2['uuid'],
-        'expected same uuid as first create operation'
-    assert_equal response_object['email'], 'foo@example.com', 'expected given email'
-
-    # +1 extra can_read 'all users' group link
-    # +1 extra system_group can_manage link pointing to the new User
-    # +1 extra can_login permission link
-    # no repo link, no vm link
-    verify_num_links @all_links_at_start, 7
   end
 
   test "setup user with openid prefix" do
@@ -709,13 +631,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   test "unsetup active user" do
-    authorize_with :active
-    get :current
-    assert_response :success
-    active_user = JSON.parse(@response.body)
+    active_user = users(:active)
     assert_not_nil active_user['uuid'], 'expected uuid for the active user'
     assert active_user['is_active'], 'expected is_active for active user'
-    assert active_user['is_invited'], 'expected is_invited for active user'
 
     verify_link_existence active_user['uuid'], active_user['email'],
           false, true, false, true, true
