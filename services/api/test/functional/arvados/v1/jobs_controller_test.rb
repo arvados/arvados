@@ -81,9 +81,19 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_equal(true,
                  File.exists?(Rails.configuration.crunch_refresh_trigger),
                  'trigger file should be created when job is cancelled')
+  end
 
+  test "cancelling a cancelled jobs stays cancelled" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
     put :update, {
-      id: jobs(:running).uuid,
+      id: jobs(:running_cancelled).uuid,
       job: {
         cancelled_at: nil
       }
