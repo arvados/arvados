@@ -282,18 +282,17 @@ my $jobmanager_id;
 if ($job_has_uuid)
 {
   # Claim this job, and make sure nobody else does
-  unless ($Job->update_attributes('is_locked_by_uuid' => $User->{'uuid'}) &&
-          $Job->{'is_locked_by_uuid'} == $User->{'uuid'}) {
+  unless ($arv->{'jobs'}->{'lock'}->execute('uuid' => $Job->{'uuid'})) {
     Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
-    exit EX_TEMPFAIL;
-  }
-  $Job->update_attributes('started_at' => scalar gmtime,
-                          'running' => 1,
-                          'success' => undef,
-                          'tasks_summary' => { 'failed' => 0,
-                                               'todo' => 1,
-                                               'running' => 0,
-                                               'done' => 0 });
+    exit EX_TEMPFAIL;    
+  };
+
+  # lock() above sets is_locked_by_uuid and changes state to Running.
+  $Job->update_attributes(
+    'tasks_summary' => { 'failed' => 0,
+                         'todo' => 1,
+                         'running' => 0,
+                         'done' => 0 });
 }
 
 
