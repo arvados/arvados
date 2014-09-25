@@ -102,8 +102,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test "reader token Collection links end with trailing slash" do
     # Testing the fix for #2937.
-    show_collection(:foo_file, :active_trustedclient)
-    post(:share, collection_params(:foo_file))
+    session = session_for(:active_trustedclient)
+    post(:share, collection_params(:foo_file), session)
     assert(@controller.download_link.ends_with? '/',
            "Collection share link does not end with slash for wget")
   end
