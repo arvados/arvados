@@ -422,34 +422,31 @@ class Dispatcher
     exit_status = j_done[:wait_thr].value.exitstatus
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status != 0
-      # crunch-job exited with some kind of failure.
-      if exit_status != 75 and jobrecord.started_at
-        # Clean up state fields in case crunch-job exited without
-        # putting the job in a suitable "finished" state.
-        jobrecord.running = false
-        jobrecord.finished_at ||= Time.now
-        if jobrecord.success.nil?
-          jobrecord.success = false
-        end
-        jobrecord.save!
-      else
-        # Don't fail the job if crunch-job didn't even get as far as
-        # starting it. If the job failed to run due to an infrastructure
-        # issue with crunch-job or slurm, we want the job to stay in the
-        # queue. If crunch-job exited after losing a race to another
-        # crunch-job process, it exits 75 and we should leave the job
-        # record alone so the winner of the race do its thing.
-        #
-        # There is still an unhandled race condition: If our crunch-job
-        # process is about to lose a race with another crunch-job
-        # process, but crashes before getting to its "exit 75" (for
-        # example, "cannot fork" or "cannot reach API server") then we
-        # will assume incorrectly that it's our process's fault
-        # jobrecord.started_at is non-nil, and mark the job as failed
-        # even though the winner of the race is probably still doing
-        # fine.
+    if exit_status != 75 and jobrecord.started_at
+      # Clean up state fields in case crunch-job exited without
+      # putting the job in a suitable "finished" state.
+      jobrecord.running = false
+      jobrecord.finished_at ||= Time.now
+      if jobrecord.success.nil?
+        jobrecord.success = false
       end
+      jobrecord.save!
+    else
+      # Don't fail the job if crunch-job didn't even get as far as
+      # starting it. If the job failed to run due to an infrastructure
+      # issue with crunch-job or slurm, we want the job to stay in the
+      # queue. If crunch-job exited after losing a race to another
+      # crunch-job process, it exits 75 and we should leave the job
+      # record alone so the winner of the race do its thing.
+      #
+      # There is still an unhandled race condition: If our crunch-job
+      # process is about to lose a race with another crunch-job
+      # process, but crashes before getting to its "exit 75" (for
+      # example, "cannot fork" or "cannot reach API server") then we
+      # will assume incorrectly that it's our process's fault
+      # jobrecord.started_at is non-nil, and mark the job as failed
+      # even though the winner of the race is probably still doing
+      # fine.
     end
 
     # Invalidate the per-job auth token
