@@ -44,13 +44,31 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
 
     # Make sure version doesn't get mangled by normalize
     assert_not_nil version.match(/^[0-9a-f]{40}$/)
+    assert_equal 'master', JSON.parse(@response.body)['supplied_script_version']
+  end
+
+  test "normalize output and log uuids when updating job" do
+    authorize_with :active
+
+    job = jobs(:job_with_unnormalized_output_and_log)
+
     put :update, {
-      id: new_job['uuid'],
+      id: job['uuid'],
       job: {
-        log: new_job['log']
+        log: job['log']
       }
     }
-    assert_equal version, JSON.parse(@response.body)['script_version']
+
+    updated_job = JSON.parse(@response.body)
+    assert_not_equal job['log'], updated_job['log']
+    assert_equal job[:log][0,job['log'].rindex('+')], updated_job['log']
+    assert_not_equal job['output'], updated_job['output']
+    assert_equal job[:output][0,job['output'].rindex('+')], updated_job['output']
+
+    # Make sure version doesn't get mangled by normalize
+    updated_version = updated_job['script_version']
+    assert_not_nil updated_version.match(/^[0-9a-f]{40}$/)
+    assert_equal job['script_version'], updated_version
   end
 
   test "cancel a running job" do
