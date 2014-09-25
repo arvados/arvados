@@ -91,12 +91,16 @@ func (e *KeepError) Error() string {
 // Initialized by the --volumes flag (or by FindKeepVolumes).
 var KeepVM VolumeManager
 
-// The pull list queue is a singleton pull list (a list of blocks
-// that the current keepstore process should be pulling from remote
-// keepstore servers in order to increase data replication) with
-// atomic update methods that are safe to use from multiple
-// goroutines.
+// The pull list manager and trash queue are threadsafe queues which
+// support atomic update operations. The PullHandler and TrashHandler
+// store results from Data Manager /pull and /trash requests here.
+//
+// See the Keep and Data Manager design documents for more details:
+// https://arvados.org/projects/arvados/wiki/Keep_Design_Doc
+// https://arvados.org/projects/arvados/wiki/Data_Manager_Design_Doc
+//
 var pullq *WorkQueue
+var trashq *WorkQueue
 
 // TODO(twp): continue moving as much code as possible out of main
 // so it can be effectively tested. Esp. handling and postprocessing

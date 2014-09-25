@@ -61,63 +61,68 @@ class Dispatcher
     end
   end
 
-  def sinfo
+  def each_slurm_line(cmd, outfmt, max_fields=nil)
+    max_fields ||= outfmt.split(":").size
+    max_fields += 1  # To accommodate the node field we add
     @@slurm_version ||= Gem::Version.new(`sinfo --version`.match(/\b[\d\.]+\b/)[0])
     if Gem::Version.new('2.3') <= @@slurm_version
-      `sinfo --noheader -o '%n:%t'`.strip
+      `#{cmd} --noheader -o '%n:#{outfmt}'`.each_line do |line|
+        yield line.chomp.split(":", max_fields)
+      end
     else
       # Expand rows with hostname ranges (like "foo[1-3,5,9-12]:idle")
       # into multiple rows with one hostname each.
-      `sinfo --noheader -o '%N:%t'`.split("\n").collect do |line|
-        tokens = line.split ":"
+      `#{cmd} --noheader -o '%N:#{outfmt}'`.each_line do |line|
+        tokens = line.chomp.split(":", max_fields)
         if (re = tokens[0].match /^(.*?)\[([-,\d]+)\]$/)
-          re[2].split(",").collect do |range|
+          tokens.shift
+          re[2].split(",").each do |range|
             range = range.split("-").collect(&:to_i)
-            (range[0]..range[-1]).collect do |n|
-              [re[1] + n.to_s, tokens[1..-1]].join ":"
+            (range[0]..range[-1]).each do |n|
+              yield [re[1] + n.to_s] + tokens
             end
           end
         else
-          tokens.join ":"
+          yield tokens
         end
-      end.flatten.join "\n"
+      end
     end
   end
 
+  def slurm_status
+    slurm_nodes = {}
+    each_slurm_line("sinfo", "%t") do |hostname, state|
+      state.sub!(/\W+$/, "")
+      state = "down" unless %w(idle alloc down).include?(state)
+      slurm_nodes[hostname] = {state: state, job: nil}
+    end
+    each_slurm_line("squeue", "%j") do |hostname, job_uuid|
+      slurm_nodes[hostname][:job] = job_uuid if slurm_nodes[hostname]
+    end
+    slurm_nodes
+  end
+
   def update_node_status
-    if Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
-      @node_state ||= {}
-      node_seen = {}
+    return unless Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
+    @node_state ||= {}
+    slurm_status.each_pair do |hostname, slurmdata|
+      next if @node_state[hostname] == slurmdata
       begin
-        sinfo.split("\n").
-          each do |line|
-          re = line.match /(\S+?):+(idle|alloc|down)?/
-          next if !re
-
-          _, node_name, node_state = *re
-          node_state = 'down' unless %w(idle alloc down).include? node_state
-
-          # sinfo tells us about a node N times if it is shared by N partitions
-          next if node_seen[node_name]
-          node_seen[node_name] = true
-
-          # update our database (and cache) when a node's state changes
-          if @node_state[node_name] != node_state
-            @node_state[node_name] = node_state
-            node = Node.where('hostname=?', node_name).order(:last_ping_at).last
-            if node
-              $stderr.puts "dispatch: update #{node_name} state to #{node_state}"
-              node.info['slurm_state'] = node_state
-              if not node.save
-                $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
-              end
-            elsif node_state != 'down'
-              $stderr.puts "dispatch: sinfo reports '#{node_name}' is not down, but no node has that name"
-            end
+        node = Node.where('hostname=?', hostname).order(:last_ping_at).last
+        if node
+          $stderr.puts "dispatch: update #{hostname} state to #{slurmdata}"
+          node.info["slurm_state"] = slurmdata[:state]
+          node.job_uuid = slurmdata[:job]
+          if node.save
+            @node_state[hostname] = slurmdata
+          else
+            $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
           end
+        elsif slurmdata[:state] != 'down'
+          $stderr.puts "dispatch: SLURM reports '#{hostname}' is not down, but no node has that name"
         end
       rescue => error
-        $stderr.puts "dispatch: error updating node status: #{error}"
+        $stderr.puts "dispatch: error updating #{hostname} node status: #{error}"
       end
     end
   end
