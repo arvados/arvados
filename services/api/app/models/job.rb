@@ -64,9 +64,7 @@ class Job < ArvadosModel
   end
 
   def self.queue
-    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ? and success is ?',
-               nil, nil, nil, nil).
-      order('priority desc, created_at')
+    self.where('state = ?', Queued).order('priority desc, created_at')
   end
 
   def queue_position
