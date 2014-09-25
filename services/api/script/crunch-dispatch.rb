@@ -263,12 +263,45 @@ class Dispatcher
         end
       end
 
-      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch-pack --all #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
-      unless $? == 0
-        $stderr.puts "dispatch: git fetch-pack && tag failed"
-        sleep 1
-        untake job
-        next
+      git = "git --git-dir=#{arvados_internal.shellescape}"
+
+      # check if the commit needs to be fetched or not
+      commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
+      unless $? == 0 and commit_rev == job.script_version
+        # commit does not exist in internal repository, so import the source repository using git fetch-pack
+        cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git fetch-pack failed"
+          sleep 1
+          untake job
+          next
+        end        
+      end
+
+      # check if the commit needs to be tagged with this job uuid
+      tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+      if $? != 0
+        # no job tag found, so create one
+        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git tag failed"
+          sleep 1
+          untake job
+          next
+        end
+      else
+        # job tag found, check that it has the expected revision
+        unless tag_rev == job.script_version
+          # uh oh, the tag doesn't point to the revision we were expecting.
+          $stderr.puts "dispatch: Already a tag #{job.script_version} pointing to commit #{tag_rev} but expected commit #{job.script_version}"
+          sleep 1
+          untake job
+          next
+        end
       end
 
       cmd_args << crunch_job_bin
