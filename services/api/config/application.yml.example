@@ -15,17 +15,11 @@ development:
   secret_token: ~
   blob_signing_key: ~
 
-  # Visitors to the API server will be redirected to the workbench.
-  workbench_address: https://workbench.local:3031/
-
 production:
   # Mandatory site secrets. See application.default.yml for more info.
   secret_token: ~
   blob_signing_key: ~
   uuid_prefix: bogus
-
-  # Visitors to the API server will be redirected to the workbench.
-  workbench_address: ~
 
 test:
   # Tests should be able to run without further configuration, but if you do
