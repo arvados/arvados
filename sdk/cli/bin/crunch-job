@@ -282,7 +282,10 @@ my $jobmanager_id;
 if ($job_has_uuid)
 {
   # Claim this job, and make sure nobody else does
-  if (eval {$arv->{'jobs'}->{'lock'}->execute('uuid' => $Job->{'uuid'})}) {
+  eval {
+    $arv->{'jobs'}->{'lock'}->execute('uuid' => $Job->{'uuid'})
+  };
+  if ($@) {
     Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
     exit EX_TEMPFAIL;    
   };
