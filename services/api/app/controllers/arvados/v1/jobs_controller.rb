@@ -100,6 +100,11 @@ class Arvados::V1::JobsController < ApplicationController
     show
   end
 
+  def lock
+    @object.lock current_user.uuid
+    show
+  end
+
   class LogStreamer
     Q_UPDATE_INTERVAL = 12
     def initialize(job, opts={})

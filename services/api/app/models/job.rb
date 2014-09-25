@@ -14,6 +14,7 @@ class Job < ArvadosModel
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
   validate :validate_status
+  validate :validate_state_change
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
   has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
@@ -90,6 +91,18 @@ class Job < ArvadosModel
       order('priority desc, created_at')
   end
 
+  def lock locked_by_uuid
+    transaction do
+      self.reload
+      unless self.state == Queued and self.is_locked_by_uuid.nil?
+        raise ConflictError.new
+      end
+      self.state = Running
+      self.is_locked_by_uuid = locked_by_uuid
+      self.save!
+    end
+  end
+
   protected
 
   def foreign_key_attributes
@@ -112,7 +125,7 @@ class Job < ArvadosModel
   end
 
   def ensure_script_version_is_commit
-    if self.is_locked_by_uuid and self.started_at
+    if self.state == Running
       # Apparently client has already decided to go for it. This is
       # needed to run a local job using a local working directory
       # instead of a commit-ish.
@@ -199,7 +212,8 @@ class Job < ArvadosModel
           success_changed? or
           output_changed? or
           log_changed? or
-          tasks_summary_changed?
+          tasks_summary_changed? or
+          state_changed?
         logger.warn "User #{current_user.uuid if current_user} tried to change protected job attributes on locked #{self.class.to_s} #{uuid_was}"
         return false
       end
@@ -317,4 +331,18 @@ class Job < ArvadosModel
     end
   end
 
+  def validate_state_change
+    if self.state_changed?
+      if self.state_was.in? [Complete, Failed, Cancelled]
+        # Once in a finished state, don't permit any changes
+        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
+        return false
+      elsif self.state_was == Running and not self.state.in? [Complete, Failed, Cancelled]
+        # From running, can only transition to a finished state
+        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
+        return false
+      end
+    end
+    true
+  end
 end

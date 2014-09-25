@@ -42,6 +42,13 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  class ConflictError < StandardError
+    def http_status
+      409
+    end
+  end
+
+
   def self.kind_class(kind)
     kind.match(/^arvados\#(.+)$/)[1].classify.safe_constantize rescue nil
   end
