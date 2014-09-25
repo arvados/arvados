@@ -104,17 +104,16 @@ EOS
     assert_response :success
     assert_nil assigns(:objects)
 
-    get :show, {
-      id: test_collection[:portable_data_hash]
-    }
-    assert_response :success
-    assert_not_nil assigns(:object)
-    resp = JSON.parse(@response.body)
-    assert_equal test_collection[:portable_data_hash], resp['portable_data_hash']
+    created = JSON.parse(@response.body)
+
+    retrieved_collection = Collection.select([:uuid, :portable_data_hash, :manifest_text]).
+      where(portable_data_hash: created['portable_data_hash']).first
+
+    assert_equal test_collection[:portable_data_hash], retrieved_collection['portable_data_hash']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.
-    stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+    stripped_manifest = retrieved_collection['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
     assert_equal test_collection[:manifest_text], stripped_manifest
   end
 
