@@ -62,3 +62,15 @@ components_is_jobspec:
         dataclass: Collection
         title: "Foo/bar pair"
         description: "Provide a collection containing at least two files."
+
+pipeline_with_tagged_collection_input:
+  name: pipeline_with_tagged_collection_input
+  state: Ready
+  uuid: zzzzz-d1hrv-1yfj61234abcdk3
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  components:
+    part-one:
+      script_parameters:
+        input:
+          value: zzzzz-4zz18-znfnqtbbv4spc3w

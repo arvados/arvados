@@ -13,11 +13,6 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     pi_uuid = assigns(:object).uuid
     assert_not_nil assigns(:object)
     yield pi_uuid, pt_fixture
-    post :destroy, {
-      id: pi_uuid,
-      format: :json
-    }
-    assert_response :success
   end
 
   test "pipeline instance components populated after create" do
@@ -28,15 +23,11 @@ class PipelineInstancesControllerTest < ActionController::TestCase
   end
 
   test "can render pipeline instance with tagged collections" do
-    # Make sure to pass in a tagged collection to test that part of the
-    # rendering behavior.
-    attrs = {components: {'part-one' => {script_parameters: {input:
-            {value: api_fixture('collections')['foo_file']['uuid']}
-            }}}}
-    create_instance_long_enough_to(attrs) do |new_instance_uuid, template_fixture|
-      get(:show, {id: new_instance_uuid}, session_for(:active))
-      assert_response :success
-    end
+    # Make sure to pass in a tagged collection to test that part of the rendering behavior.
+    get(:show,
+        {id: api_fixture("pipeline_instances")["pipeline_with_tagged_collection_input"]["uuid"]},
+        session_for(:active))
+    assert_response :success
   end
 
   test "update script_parameters one at a time using merge param" do
