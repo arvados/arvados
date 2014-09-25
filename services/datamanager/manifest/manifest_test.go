@@ -74,8 +74,36 @@ func expectLocatorPatternMatch(t *testing.T, s string) {
 	}
 }
 
+func expectLocatorPatternFail(t *testing.T, s string) {
+	if LocatorPattern.MatchString(s) {
+		t.Fatalf("Expected \"%s\" to fail locator pattern but it passed.",
+			s)
+	}
+}
+
 func TestLocatorPatternBasic(t *testing.T) {
 	expectLocatorPatternMatch(t, "12345678901234567890123456789012+12345")
+	expectLocatorPatternMatch(t, "A2345678901234abcdefababdeffdfdf+12345")
+	expectLocatorPatternMatch(t, "12345678901234567890123456789012+12345+A1")
+	expectLocatorPatternMatch(t,
+		"12345678901234567890123456789012+12345+A1+B123wxyz@_-")
+	expectLocatorPatternMatch(t,
+		"12345678901234567890123456789012+12345+A1+B123wxyz@_-+C@")
+
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+")
+	expectLocatorPatternFail(t,  "1234567890123456789012345678901+12345")
+	expectLocatorPatternFail(t,  "123456789012345678901234567890123+12345")
+	expectLocatorPatternFail(t,  "g2345678901234abcdefababdeffdfdf+12345")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345 ")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+1")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+1A")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+A")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+a1")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+A1+")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+A1+B")
+	expectLocatorPatternFail(t,  "12345678901234567890123456789012+12345+A+B2")
 }
 
 func TestParseManifestLineSimple(t *testing.T) {

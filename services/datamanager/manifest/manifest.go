@@ -5,6 +5,7 @@
 package manifest
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"regexp"
@@ -56,9 +57,8 @@ func parseManifestLine(s string) (m ManifestLine) {
 	m.StreamName = tokens[0]
 	tokens = tokens[1:]
 	var i int
-	var token string
-	for i, token = range tokens {
-		if !LocatorPattern.MatchString(token) {
+	for i = range tokens {
+		if !LocatorPattern.MatchString(tokens[i]) {
 			break
 		}
 	}
@@ -69,16 +69,12 @@ func parseManifestLine(s string) (m ManifestLine) {
 
 func (m *Manifest) LineIter() <-chan ManifestLine {
 	ch := make(chan ManifestLine)
-	go func(remaining string) {
-		for {
+	go func(input string) {
+		scanner := bufio.NewScanner(strings.NewReader(input))
+		for scanner.Scan() {
 			// We parse one line at a time, to save effort if we only need
 			// the first few lines.
-			splitsies := strings.SplitN(remaining, "\n", 2)
-			ch <- parseManifestLine(splitsies[0])
-			if len(splitsies) == 1 {
-				break
-			}
-			remaining = splitsies[1]
+			ch <- parseManifestLine(scanner.Text())
 		}
 		close(ch)
 	}(m.Text)
@@ -89,7 +85,7 @@ func (m *Manifest) LineIter() <-chan ManifestLine {
 // Blocks may appear mulitple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.
-func (m *Manifest) DuplicateBlockIter() <-chan BlockLocator {
+func (m *Manifest) BlockIterWithDuplicates() <-chan BlockLocator {
 	blockChannel := make(chan BlockLocator)
 	go func(lineChannel <-chan ManifestLine) {
 		for m := range lineChannel {

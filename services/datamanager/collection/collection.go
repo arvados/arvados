@@ -66,7 +66,7 @@ func GetCollections(arv arvadosclient.ArvadosClient) (results readCollections) {
 				OwnerUuid: item_map["owner_uuid"].(string),
 				BlockDigestToSize: make(map[string]int)}
 			manifest := manifest.Manifest{item_map["manifest_text"].(string)}
-			blockChannel := manifest.DuplicateBlockIter()
+			blockChannel := manifest.BlockIterWithDuplicates()
 			for block := range blockChannel {
 				if stored_size, stored := collection.BlockDigestToSize[block.Digest];
 				stored && stored_size != block.Size {
