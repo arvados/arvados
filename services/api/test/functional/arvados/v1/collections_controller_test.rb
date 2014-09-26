@@ -104,17 +104,42 @@ EOS
     assert_response :success
     assert_nil assigns(:objects)
 
-    created = JSON.parse(@response.body)
+    response_collection = assigns(:object)
 
-    retrieved_collection = Collection.select([:uuid, :portable_data_hash, :manifest_text]).
-      where(portable_data_hash: created['portable_data_hash']).first
+    stored_collection = Collection.select([:uuid, :portable_data_hash, :manifest_text]).
+      where(portable_data_hash: response_collection['portable_data_hash']).first
 
-    assert_equal test_collection[:portable_data_hash], retrieved_collection['portable_data_hash']
+    assert_equal test_collection[:portable_data_hash], stored_collection['portable_data_hash']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.
-    stripped_manifest = retrieved_collection['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+    stripped_manifest = stored_collection['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
     assert_equal test_collection[:manifest_text], stripped_manifest
+
+    # TBD: create action should add permission signatures to manifest_text in the response,
+    # and we need to check those permission signatures here.
+  end
+
+  [:admin, :active].each do |user|
+    test "#{user} can get collection using portable data hash" do
+      authorize_with user
+
+      foo_collection = collections(:foo_file)
+
+      # Get foo_file using it's portable data has
+      get :show, {
+        id: foo_collection[:portable_data_hash]
+      }
+      assert_response :success
+      assert_not_nil assigns(:object)
+      resp = assigns(:object)
+      assert_equal foo_collection[:portable_data_hash], resp['portable_data_hash']
+
+      # The manifest in the response will have had permission hints added.
+      # Remove any permission hints in the response before comparing it to the source.
+      stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+      assert_equal foo_collection[:manifest_text], stripped_manifest
+    end
   end
 
   test "create with owner_uuid set to owned group" do

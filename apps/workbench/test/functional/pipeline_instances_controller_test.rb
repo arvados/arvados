@@ -2,6 +2,7 @@ require 'test_helper'
 
 class PipelineInstancesControllerTest < ActionController::TestCase
   def create_instance_long_enough_to(instance_attrs={})
+    # create 'two_part' pipeline with the given instance attributes
     pt_fixture = api_fixture('pipeline_templates')['two_part']
     post :create, {
       pipeline_instance: instance_attrs.merge({
@@ -12,7 +13,13 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     assert_response :success
     pi_uuid = assigns(:object).uuid
     assert_not_nil assigns(:object)
+
+    # yield
     yield pi_uuid, pt_fixture
+
+    # delete the pipeline instance
+    use_token :active
+    PipelineInstance.where(uuid: pi_uuid).first.destroy
   end
 
   test "pipeline instance components populated after create" do
