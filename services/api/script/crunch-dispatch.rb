@@ -446,14 +446,11 @@ class Dispatcher
     exit_status = j_done[:wait_thr].value
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status.to_i != 75 and jobrecord.started_at
-      # Clean up state fields in case crunch-job exited without
-      # putting the job in a suitable "finished" state.
-      jobrecord.running = false
-      jobrecord.finished_at ||= Time.now
-      if jobrecord.success.nil?
-        jobrecord.success = false
-      end
+    if exit_status.to_i != 75 and jobrecord.state == "Running"
+      # crunch-job did not return exit code 75 (see below) and left the job in
+      # the "Running" state, which means there was an unhandled error.  Fail
+      # the job.
+      jobrecord.state = "Failed"
       jobrecord.save!
     else
       # Don't fail the job if crunch-job didn't even get as far as
