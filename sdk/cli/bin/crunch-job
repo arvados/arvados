@@ -112,7 +112,9 @@ my $jobspec;
 my $job_api_token;
 my $no_clear_tmp;
 my $resume_stash;
+my $local_job;
 GetOptions('force-unlock' => \$force_unlock,
+           'local-job' => \$local_job,
            'git-dir=s' => \$git_dir,
            'job=s' => \$jobspec,
            'job-api-token=s' => \$job_api_token,
@@ -126,7 +128,9 @@ if (defined $job_api_token) {
 
 my $have_slurm = exists $ENV{SLURM_JOBID} && exists $ENV{SLURM_NODELIST};
 my $job_has_uuid = $jobspec =~ /^[-a-z\d]+$/;
-my $local_job = !$job_has_uuid;
+if (!$local_job) {
+  $local_job = !$job_has_uuid;
+}
 
 
 $SIG{'USR1'} = sub

@@ -551,7 +551,7 @@ class WhRunPipelineInstance
           report_status
           begin
             require 'open3'
-            Open3.popen3("arv-crunch-job", "--force-unlock",
+            Open3.popen3("arv-crunch-job", "--force-unlock", "--local-job",
                          "--job", c[:job][:uuid]) do |stdin, stdout, stderr, wait_thr|
               debuglog "arv-crunch-job pid #{wait_thr.pid} started", 0
               stdin.close
@@ -652,7 +652,7 @@ class WhRunPipelineInstance
                 end
               end
             end
-          elsif c[:job][:state] == "Running"
+          elsif ["Queued", "Running"].include? c[:job][:state]
             # Job is still running
             moretodo = true
           elsif c[:job][:state] == "Cancelled"
@@ -689,8 +689,8 @@ class WhRunPipelineInstance
     c_in_state = @components.values.group_by { |c| 
       c[:job] and c[:job][:state]
     }
-    succeeded = c_in_state["Complete"].count
-    failed = c_in_state["Failed"].count + c_in_state["Cancelled"].count
+    succeeded = c_in_state["Complete"].andand.count || 0
+    failed = (c_in_state["Failed"].andand.count || 0) + (c_in_state["Cancelled"].andand.count || 0)
     ended = succeeded + failed
 
     success = (succeeded == @components.length)
