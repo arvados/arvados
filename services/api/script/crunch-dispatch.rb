@@ -222,8 +222,6 @@ class Dispatcher
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
 
-      next if !take(job)
-
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
                          Server::Application.config.crunch_job_user,
@@ -239,7 +237,6 @@ class Dispatcher
             api_client_id: 0)
       if not job_auth.save
         $stderr.puts "dispatch: job_auth.save failed"
-        untake job
         next
       end
 
@@ -262,7 +259,6 @@ class Dispatcher
         if not File.exists? src_repo
           $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
           sleep 1
-          untake job
           next
         end
       end
@@ -279,7 +275,6 @@ class Dispatcher
         unless $? == 0
           $stderr.puts "dispatch: git fetch-pack failed"
           sleep 1
-          untake job
           next
         end        
       end
@@ -294,7 +289,6 @@ class Dispatcher
         unless $? == 0
           $stderr.puts "dispatch: git tag failed"
           sleep 1
-          untake job
           next
         end
       else
@@ -306,7 +300,6 @@ class Dispatcher
           job.state = "Failed"
           if not job.save
             $stderr.puts "dispatch: job.save failed"
-            untake job
             next
           end
           next
@@ -328,7 +321,6 @@ class Dispatcher
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
         sleep 1
-        untake(job)
         next
       end
 
@@ -355,16 +347,6 @@ class Dispatcher
       i.close
       update_node_status
     end
-  end
-
-  def take(job)
-    # no-op -- let crunch-job take care of locking.
-    true
-  end
-
-  def untake(job)
-    # no-op -- let crunch-job take care of locking.
-    true
   end
 
   def read_pipes
