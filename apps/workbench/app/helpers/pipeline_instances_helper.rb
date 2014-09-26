@@ -90,7 +90,7 @@ module PipelineInstancesHelper
     }.compact
     job = {}
     Job.where(uuid: jobuuids).each do |j|
-      job[j[:uuid]] = j
+      #job[j[:uuid]] = j
     end
 
     object.components.each do |cname, c|
@@ -105,18 +105,18 @@ module PipelineInstancesHelper
       else
         pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
 
-        # Figure out the state based on the other fields.
-        pj[:job][:state] = if pj[:job][:cancelled_at]
-          "Cancelled"
-        elsif pj[:job][:success] == false
-          "Failed"
-        elsif pj[:job][:success] == true
-          "Complete"
-        elsif pj[:job][:running] == true
-          "Running"
-        else
-          "Queued"
-        end
+        # If necessary, figure out the state based on the other fields.
+        pj[:job][:state] ||= if pj[:job][:cancelled_at]
+                               "Cancelled"
+                             elsif pj[:job][:success] == false
+                               "Failed"
+                             elsif pj[:job][:success] == true
+                               "Complete"
+                             elsif pj[:job][:running] == true
+                               "Running"
+                             else
+                               "Queued"
+                             end
       end
       pj[:percent_done] = 0
       pj[:percent_running] = 0
