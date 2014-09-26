@@ -237,7 +237,7 @@ class Dispatcher
       job_auth = ApiClientAuthorization.
         new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
             api_client_id: 0)
-      job_auth.save
+      job_auth.save!
 
       crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
       if crunch_job_bin == ''
@@ -296,10 +296,11 @@ class Dispatcher
       else
         # job tag found, check that it has the expected revision
         unless tag_rev == job.script_version
-          # uh oh, the tag doesn't point to the revision we were expecting.
+          # Uh oh, the tag doesn't point to the revision we were expecting.
+          # Someone has been monkeying with the job record and/or git.
           $stderr.puts "dispatch: Already a tag #{job.script_version} pointing to commit #{tag_rev} but expected commit #{job.script_version}"
-          sleep 1
-          untake job
+          job.state = "Failed"
+          job.save!
           next
         end
       end
