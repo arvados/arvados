@@ -31,7 +31,7 @@
               <% end %>
             </div>
 
-            <% if Job::state(current_job).in? ["Complete", "Failed", "Cancelled"] %>
+            <% if current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
               <div class="col-md-5 text-overflow-ellipsis">
                 <% if pj[:output_uuid] %>
                   <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
@@ -41,7 +41,7 @@
                   No output.
                 <% end %>
               </div>
-            <% elsif Job::state(current_job) == "Running" %>
+            <% elsif current_job[:state] == "Running" %>
               <div class="col-md-3 pipeline-instance-spacing">
                 <%= pj[:progress_bar] %>
               </div>
@@ -51,7 +51,7 @@
                 <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
             </div>
             <% end %>
-          <% elsif Job::state(current_job) == "Queued" %>
+          <% elsif current_job[:state] == "Queued" %>
             <div class="col-md-5">
               <% queuetime = Time.now - current_job[:created_at] %>
               Queued for <%= render_runtime(queuetime, true) %>.
