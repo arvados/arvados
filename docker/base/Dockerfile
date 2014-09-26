@@ -23,7 +23,7 @@ RUN apt-get update && \
     /bin/mkdir -p /usr/src/arvados
 
 ADD apt.arvados.org.list /etc/apt/sources.list.d/
-RUN apt-key adv --keyserver pgp.mit.edu --recv 1078ECD7
+RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
 RUN apt-get update && apt-get -qqy install python-arvados-python-client
 
 ADD generated/arvados.tar.gz /usr/src/arvados/

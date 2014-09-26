@@ -10,10 +10,10 @@ A new user has been created<%=add_to_message%>:
 
 This user is <%= @user.is_active ? '' : 'NOT ' %>active.
 
-<% if not @wb_address.empty? -%>
+<% if Rails.configuration.workbench_address -%>
 Please see workbench for more information:
 
-  <%= @wb_address %>
+  <%= Rails.configuration.workbench_address %>
 
 <% end -%>
 Thanks,
