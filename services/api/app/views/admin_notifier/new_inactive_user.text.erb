@@ -3,10 +3,10 @@ A new user landed on the inactive user page:
 
   <%= @user.full_name %> <<%= @user.email %>>
 
-<% if not @wb_address.empty? -%>
+<% if Rails.configuration.workbench_address -%>
 Please see workbench for more information:
 
-  <%= @wb_address %>
+  <%= Rails.configuration.workbench_address %>
 
 <% end -%>
 Thanks,

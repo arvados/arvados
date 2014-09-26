@@ -104,6 +104,19 @@ module PipelineInstancesHelper
         pj[:job] = job[c[:job][:uuid]]
       else
         pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
+
+        # If necessary, figure out the state based on the other fields.
+        pj[:job][:state] ||= if pj[:job][:cancelled_at]
+                               "Cancelled"
+                             elsif pj[:job][:success] == false
+                               "Failed"
+                             elsif pj[:job][:success] == true
+                               "Complete"
+                             elsif pj[:job][:running] == true
+                               "Running"
+                             else
+                               "Queued"
+                             end
       end
       pj[:percent_done] = 0
       pj[:percent_running] = 0
@@ -132,19 +145,25 @@ module PipelineInstancesHelper
           pj[:progress] = 0.0
         end
       end
-      if pj[:job][:success]
+
+      case pj[:job][:state]
+        when 'Complete'
         pj[:result] = 'complete'
         pj[:labeltype] = 'success'
         pj[:complete] = true
         pj[:progress] = 1.0
-      elsif pj[:job][:finished_at]
+      when 'Failed'
         pj[:result] = 'failed'
         pj[:labeltype] = 'danger'
         pj[:failed] = true
-      elsif pj[:job][:started_at]
+      when 'Cancelled'
+        pj[:result] = 'cancelled'
+        pj[:labeltype] = 'danger'
+        pj[:failed] = true
+      when 'Running'
         pj[:result] = 'running'
         pj[:labeltype] = 'primary'
-      elsif pj[:job][:uuid]
+      when 'Queued'
         pj[:result] = 'queued'
         pj[:labeltype] = 'default'
       else
