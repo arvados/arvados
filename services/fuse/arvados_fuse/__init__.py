@@ -728,12 +728,13 @@ class Operations(llfuse.Operations):
     so request handlers do not run concurrently unless the lock is explicitly released
     using "with llfuse.lock_released:"'''
 
-    def __init__(self, uid, gid):
+    def __init__(self, uid, gid, encoding="utf-8"):
         super(Operations, self).__init__()
 
         self.inodes = Inodes()
         self.uid = uid
         self.gid = gid
+        self.encoding = encoding
 
         # dict of inode to filehandle
         self._filehandles = {}
@@ -785,7 +786,7 @@ class Operations(llfuse.Operations):
         return entry
 
     def lookup(self, parent_inode, name):
-        name = unicode(name, 'utf-8')
+        name = unicode(name, self.encoding)
         _logger.debug("arv-mount lookup: parent_inode %i name %s",
                       parent_inode, name)
         inode = None
@@ -883,7 +884,10 @@ class Operations(llfuse.Operations):
         e = off
         while e < len(handle.entry):
             if handle.entry[e][1].inode in self.inodes:
-                yield (handle.entry[e][0].encode('utf-8'), self.getattr(handle.entry[e][1].inode), e+1)
+                try:
+                    yield (handle.entry[e][0].encode(self.encoding), self.getattr(handle.entry[e][1].inode), e+1)
+                except UnicodeEncodeError:
+                    pass
             e += 1
 
     def releasedir(self, fh):
