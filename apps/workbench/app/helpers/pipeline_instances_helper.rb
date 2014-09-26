@@ -102,9 +102,14 @@ module PipelineInstancesHelper
       end
       if c[:job] and c[:job][:uuid] and job[c[:job][:uuid]]
         pj[:job] = job[c[:job][:uuid]]
-      else
-        pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
-
+      elsif c[:job].is_a?(Hash)
+        pj[:job] = c[:job]
+        if pj[:job][:started_at].is_a? String
+          pj[:job][:started_at] = Time.parse(pj[:job][:started_at])
+        end
+        if pj[:job][:finished_at].is_a? String
+          pj[:job][:finished_at] = Time.parse(pj[:job][:finished_at])
+        end
         # If necessary, figure out the state based on the other fields.
         pj[:job][:state] ||= if pj[:job][:cancelled_at]
                                "Cancelled"
@@ -117,6 +122,8 @@ module PipelineInstancesHelper
                              else
                                "Queued"
                              end
+      else
+        pj[:job] = {}
       end
       pj[:percent_done] = 0
       pj[:percent_running] = 0
@@ -179,7 +186,7 @@ module PipelineInstancesHelper
       pj[:nondeterministic] = pj[:job][:nondeterministic] || c[:nondeterministic]
       pj[:output] = pj[:job][:output]
       pj[:output_uuid] = c[:output_uuid]
-      pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
+      pj[:finished_at] = pj[:job][:finished_at]
       ret << pj
     end
     ret
