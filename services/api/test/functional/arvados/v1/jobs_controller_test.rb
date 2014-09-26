@@ -37,38 +37,38 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response :success
     assert_not_nil assigns(:object)
-    new_job = JSON.parse(@response.body)
+    new_job = assigns(:object)
     assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['log']
     assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['output']
     version = new_job['script_version']
 
     # Make sure version doesn't get mangled by normalize
     assert_not_nil version.match(/^[0-9a-f]{40}$/)
-    assert_equal 'master', JSON.parse(@response.body)['supplied_script_version']
+    assert_equal 'master', json_response['supplied_script_version']
   end
 
   test "normalize output and log uuids when updating job" do
     authorize_with :active
 
-    job = jobs(:job_with_unnormalized_output_and_log)
+    foobar_job = jobs(:foobar)
 
+    new_output = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
+    new_log = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
     put :update, {
-      id: job['uuid'],
+      id: foobar_job['uuid'],
       job: {
-        log: job['log']
+        output: new_output,
+        log: new_log
       }
     }
 
-    updated_job = JSON.parse(@response.body)
-    assert_not_equal job['log'], updated_job['log']
-    assert_equal job[:log][0,job['log'].rindex('+')], updated_job['log']
-    assert_not_equal job['output'], updated_job['output']
-    assert_equal job[:output][0,job['output'].rindex('+')], updated_job['output']
-
-    # Make sure version doesn't get mangled by normalize
-    updated_version = updated_job['script_version']
-    assert_not_nil updated_version.match(/^[0-9a-f]{40}$/)
-    assert_equal job['script_version'], updated_version
+    updated_job = json_response
+    assert_not_equal foobar_job['log'], updated_job['log']
+    assert_not_equal new_log, updated_job['log']  # normalized during update
+    assert_equal new_log[0,new_log.rindex('+')], updated_job['log']
+    assert_not_equal foobar_job['output'], updated_job['output']
+    assert_not_equal new_output, updated_job['output']  # normalized during update
+    assert_equal new_output[0,new_output.rindex('+')], updated_job['output']
   end
 
   test "cancel a running job" do

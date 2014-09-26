@@ -223,28 +223,3 @@ queued:
   tasks_summary: {}
   runtime_constraints: {}
   state: Queued
-
-job_with_unnormalized_output_and_log:
-  uuid: zzzzz-8i9sb-abcd2bnq7jt7kon
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  cancelled_at: ~
-  cancelled_by_user_uuid: ~
-  cancelled_by_client_uuid: ~
-  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
-  script_parameters:
-    input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
-  finished_at: <%= 2.minute.ago.to_s(:db) %>
-  running: false
-  success: true
-  output: fa7aeb5140e2848d39b416daeef4ffc5+45+K@xyzzy
-  priority: 0
-  log: ea10d51bcf88862dbcc36eb292017dfd+45+K@xyzzy
-  is_locked_by_uuid: ~
-  tasks_summary:
-    failed: 0
-    todo: 0
-    running: 0
-    done: 1
-  runtime_constraints: {}
