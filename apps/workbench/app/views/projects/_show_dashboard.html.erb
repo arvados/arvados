@@ -1,7 +1,7 @@
 
   <div class="row">
     <div class="col-md-6">
-      <div class="panel panel-default" style="min-height: 10em">
+      <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Active pipelines</span>
           <span class="pull-right">
     <%= link_to(
@@ -86,7 +86,13 @@
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title">Recently finished pipelines</span></div>
+        <div class="panel-heading"><span class="panel-title">Recently finished pipelines</span>
+          <span class="pull-right">
+            <%= link_to pipeline_instances_path, class: 'btn btn-default btn-xs' do %>
+              All pipelines <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+          </span>
+        </div>
         <div class="panel-body">
           <% finished_pipelines(8).each do |p| %>
             <div class="dashboard-panel-info-row">
@@ -143,8 +149,14 @@
 
     <div class="col-md-6">
       <% nodes = Node.all %>
-      <div class="panel panel-default" style="min-height: 10em">
-        <div class="panel-heading"><span class="panel-title">Compute status</span></div>
+      <div class="panel panel-default" style="min-height: 10.5em">
+        <div class="panel-heading"><span class="panel-title">Compute status</span>
+          <span class="pull-right">
+            <%= link_to jobs_path, class: 'btn btn-default btn-xs' do %>
+              All jobs <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+          </span>
+        </div>
         <div class="panel-body">
           <div>
             <%= render partial: 'compute_node_summary', locals: {nodes: nodes} %>
@@ -158,7 +170,13 @@
         </div>
       </div>
       <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title">Recent collections</span></div>
+        <div class="panel-heading"><span class="panel-title">Recent collections</span>
+          <span class="pull-right">
+            <%= link_to collections_path, class: 'btn btn-default btn-xs' do %>
+              All collections <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+          </span>
+        </div>
         <div class="panel-body">
           <% r = recent_collections(8) %>
           <% r[:collections].each do |p| %>
