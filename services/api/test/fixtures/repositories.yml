@@ -13,6 +13,11 @@ repository2:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   name: foo2
 
+repository3:
+  uuid: zzzzz-s0uqq-38orljkqpyo1j61
+  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f # admin user
+  name: foo3
+
 auto_setup_repository:
   uuid: zzzzz-s0uqq-382brabc8rp3667
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user

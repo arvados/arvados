@@ -16,6 +16,7 @@ class Job < ArvadosModel
   validate :validate_status
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
+  has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
 
   class SubmitIdReused < StandardError
   end
@@ -45,6 +46,7 @@ class Job < ArvadosModel
     t.add :supplied_script_version
     t.add :docker_image_locator
     t.add :queue_position
+    t.add :node_uuids
     t.add :description
   end
 
@@ -61,6 +63,10 @@ class Job < ArvadosModel
     update_attributes(finished_at: finished_at || Time.now,
                       success: success.nil? ? false : success,
                       running: false)
+  end
+
+  def node_uuids
+    nodes.map(&:uuid)
   end
 
   def self.queue

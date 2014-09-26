@@ -17,9 +17,6 @@ development:
   assets.debug: true
   local_modified: <%= '-modified' if `git status -s` %>
 
-  # Visitors to the API server will be redirected to the workbench
-  workbench_address: ~
-
 production:
   force_ssl: true
   cache_classes: true
@@ -29,9 +26,6 @@ production:
   assets.compress: true
   assets.compile: false
   assets.digest: true
-
-  # Visitors to the API server will be redirected to the workbench
-  workbench_address: ~
 
 test:
   force_ssl: false
@@ -49,15 +43,17 @@ test:
   uuid_prefix: zzzzz
   secret_token: <%= rand(2**512).to_s(36) %>
   blob_signing_key: zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc
-
-  # email address to which mail should be sent when the user creates profile for the first time
   user_profile_notification_address: arvados@example.com
-
-  # Visitors to the API server will be redirected to the workbench
   workbench_address: https://localhost:3001/
 
 common:
   uuid_prefix: <%= Digest::MD5.hexdigest(`hostname`).to_i(16).to_s(36)[0..4] %>
+
+  # If this is not false, HTML requests at the API server's root URL
+  # are redirected to this location, and it is provided in the text of
+  # user activation notification email messages to remind them where
+  # to log in.
+  workbench_address: false
 
   # Git repositories must be readable by api server, or you won't be
   # able to submit crunch jobs. To pass the test suites, put a clone

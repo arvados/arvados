@@ -29,4 +29,15 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :redirect
     assert_match /\/users\/welcome/, @response.redirect_url
   end
+
+  test "show repositories with read, write, or manage permission" do
+    get :manage_account, {}, session_for(:active)
+    assert_response :success
+    repos = assigns(:my_repositories)
+    assert repos
+    assert_not_empty repos, "my_repositories should not be empty"
+    editables = repos.collect { |r| !!assigns(:repo_writable)[r.uuid] }
+    assert_includes editables, true, "should have a writable repository"
+    assert_includes editables, false, "should have a readonly repository"
+  end
 end
