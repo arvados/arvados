@@ -785,6 +785,7 @@ class Operations(llfuse.Operations):
         return entry
 
     def lookup(self, parent_inode, name):
+        name = unicode(name, 'utf-8')
         _logger.debug("arv-mount lookup: parent_inode %i name %s",
                       parent_inode, name)
         inode = None
@@ -882,7 +883,7 @@ class Operations(llfuse.Operations):
         e = off
         while e < len(handle.entry):
             if handle.entry[e][1].inode in self.inodes:
-                yield (handle.entry[e][0], self.getattr(handle.entry[e][1].inode), e+1)
+                yield (handle.entry[e][0].encode('utf-8'), self.getattr(handle.entry[e][1].inode), e+1)
             e += 1
 
     def releasedir(self, fh):
