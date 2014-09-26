@@ -156,10 +156,13 @@ class CollectionsController < ApplicationController
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
     self.response.headers['Content-Length'] = params[:size] if params[:size]
     self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
-    file_enumerator(opts).each do |bytes|
-      response.stream.write bytes
+    begin
+      file_enumerator(opts).each do |bytes|
+        response.stream.write bytes
+      end
+    ensure
+      response.stream.close
     end
-    response.stream.close
   end
 
   def sharing_scopes
