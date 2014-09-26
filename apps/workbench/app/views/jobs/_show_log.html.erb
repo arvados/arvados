@@ -53,7 +53,7 @@ var makeFilter = function() {
 <% if @object.log %>
   <% logcollection = Collection.find @object.log %>
   <% if logcollection %>
-    $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>').
+    $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>?size=1000000').
 	done(function(data, status, jqxhr) {
 	    logViewer.filter();
 	    addToLogViewer(logViewer, data.split("\n"), taskState);
