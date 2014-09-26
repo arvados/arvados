@@ -35,7 +35,8 @@ RUN /usr/local/rvm/bin/rvm-exec default bundle install --gemfile=/usr/src/arvado
     rm /tmp/config_databases.sh && \
     /etc/init.d/postgresql start && \
     cd /usr/src/arvados/services/api && \
-    /usr/local/rvm/bin/rvm-exec default bundle exec rake db:setup && \
+    /usr/local/rvm/bin/rvm-exec default bundle exec rake db:structure:load && \
+    /usr/local/rvm/bin/rvm-exec default bundle exec rake db:seed && \
     /usr/local/rvm/bin/rvm-exec default bundle exec rake assets:precompile && \
     /usr/local/rvm/bin/rvm-exec default ./script/create_superuser_token.rb $(cat /tmp/superuser_token) && \
     chown www-data:www-data config.ru && \

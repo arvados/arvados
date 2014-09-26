@@ -68,7 +68,7 @@ def start():
     run_test_server.run_keep()
 
 def put(files):
-    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
     run_test_server.authorize_with('active')
     for v in ["ARVADOS_API_HOST",
               "ARVADOS_API_HOST_INSECURE",
@@ -84,7 +84,7 @@ def put(files):
         manifest_uuid = arv_cmd(ARV_PUT_PATH, c)
 
 def get(blocks):
-    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
 
     run_test_server.authorize_with('active')
     for v in ["ARVADOS_API_HOST",

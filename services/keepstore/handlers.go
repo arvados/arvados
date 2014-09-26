@@ -59,10 +59,18 @@ func MakeRESTRouter() *mux.Router {
 		`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
-	// The PullHandler processes "PUT /pull" commands from Data Manager.
-	// It parses the JSON list of pull requests in the request body, and
-	// delivers them to the pull list manager for replication.
+	// The PullHandler and TrashHandler process "PUT /pull" and "PUT
+	// /trash" requests from Data Manager.  These requests instruct
+	// Keep to replicate or delete blocks; see
+	// https://arvados.org/projects/arvados/wiki/Keep_Design_Doc
+	// for more details.
+	//
+	// Each handler parses the JSON list of block management requests
+	// in the message body, and replaces any existing pull queue or
+	// trash queue with their contentes.
+	//
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
+	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
@@ -110,8 +118,6 @@ func FindKeepVolumes() []string {
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
-	log.Printf("%s %s", req.Method, hash)
-
 	hints := mux.Vars(req)["hints"]
 
 	// Parse the locator string and hints from the request.
@@ -130,6 +136,7 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 				// presumed to be valid and ignored, to permit forward compatibility.
 			} else {
 				// Unknown format; not a valid locator.
+				log.Printf("%s %s %d %s", req.Method, hash, BadRequestError.HTTPCode, "-")
 				http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
 				return
 			}
@@ -140,14 +147,17 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// request's permission signature.
 	if enforce_permissions {
 		if signature == "" || timestamp == "" {
+			log.Printf("%s %s %d %s", req.Method, hash, PermissionError.HTTPCode, "-")
 			http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 			return
 		} else if IsExpired(timestamp) {
+			log.Printf("%s %s %d %s", req.Method, hash, ExpiredError.HTTPCode, "-")
 			http.Error(resp, ExpiredError.Error(), ExpiredError.HTTPCode)
 			return
 		} else {
 			req_locator := req.URL.Path[1:] // strip leading slash
 			if !VerifySignature(req_locator, GetApiToken(req)) {
+				log.Printf("%s %s %d %s", req.Method, hash, PermissionError.HTTPCode, "-")
 				http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 				return
 			}
@@ -168,6 +178,7 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		if err == NotFoundError {
 			log.Printf("%s: not found, giving up\n", hash)
 		}
+		log.Printf("%s %s %d %s", req.Method, hash, err.(*KeepError).HTTPCode, "-")
 		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 		return
 	}
@@ -176,7 +187,9 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 	_, err = resp.Write(block)
 	if err != nil {
-		log.Printf("GetBlockHandler: writing response: %s", err)
+		log.Printf("%s %s %d %s", req.Method, hash, err.(*KeepError).HTTPCode, len(block), "-")
+	} else {
+		log.Printf("%s %s %d %d", req.Method, hash, 200, len(block))
 	}
 
 	return
@@ -189,12 +202,11 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 
 	hash := mux.Vars(req)["hash"]
 
-	log.Printf("%s %s", req.Method, hash)
-
 	// Read the block data to be stored.
 	// If the request exceeds BLOCKSIZE bytes, issue a HTTP 500 error.
 	//
 	if req.ContentLength > BLOCKSIZE {
+		log.Printf("%s %s %d %d", req.Method, hash, TooLongError.HTTPCode, req.ContentLength)
 		http.Error(resp, TooLongError.Error(), TooLongError.HTTPCode)
 		return
 	}
@@ -202,8 +214,10 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	buf := make([]byte, req.ContentLength)
 	nread, err := io.ReadFull(req.Body, buf)
 	if err != nil {
+		log.Printf("%s %s %d %d", req.Method, hash, 500, req.ContentLength)
 		http.Error(resp, err.Error(), 500)
 	} else if int64(nread) < req.ContentLength {
+		log.Printf("%s %s %d %d", req.Method, hash, 500, req.ContentLength)
 		http.Error(resp, "request truncated", 500)
 	} else {
 		if err := PutBlock(buf, hash); err == nil {
@@ -215,9 +229,11 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 				expiry := time.Now().Add(permission_ttl)
 				return_hash = SignLocator(return_hash, api_token, expiry)
 			}
+			log.Printf("%s %s %d %d", req.Method, hash, 200, req.ContentLength)
 			resp.Write([]byte(return_hash + "\n"))
 		} else {
 			ke := err.(*KeepError)
+			log.Printf("%s %s %d %d", req.Method, hash, ke.HTTPCode, req.ContentLength)
 			http.Error(resp, ke.Error(), ke.HTTPCode)
 		}
 	}
@@ -443,8 +459,7 @@ type PullRequest struct {
 
 func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	api_token := GetApiToken(req)
-	if !IsDataManagerToken(api_token) {
+	if !IsDataManagerToken(GetApiToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
 		return
@@ -476,6 +491,47 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 		pullq = NewWorkQueue()
 	}
 	pullq.ReplaceQueue(plist)
+}
+
+type TrashRequest struct {
+	Locator    string `json:"locator"`
+	BlockMtime int64  `json:"block_mtime"`
+}
+
+func TrashHandler(resp http.ResponseWriter, req *http.Request) {
+	// Reject unauthorized requests.
+	if !IsDataManagerToken(GetApiToken(req)) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		log.Printf("%s %s: %s\n", req.Method, req.URL, UnauthorizedError.Error())
+		return
+	}
+
+	// Parse the request body.
+	var trash []TrashRequest
+	r := json.NewDecoder(req.Body)
+	if err := r.Decode(&trash); err != nil {
+		http.Error(resp, BadRequestError.Error(), BadRequestError.HTTPCode)
+		log.Printf("%s %s: %s\n", req.Method, req.URL, err.Error())
+		return
+	}
+
+	// We have a properly formatted trash list sent from the data
+	// manager.  Report success and send the list to the trash work
+	// queue for further handling.
+	log.Printf("%s %s: received %v\n", req.Method, req.URL, trash)
+	resp.WriteHeader(http.StatusOK)
+	resp.Write([]byte(
+		fmt.Sprintf("Received %d trash requests\n", len(trash))))
+
+	tlist := list.New()
+	for _, t := range trash {
+		tlist.PushBack(t)
+	}
+
+	if trashq == nil {
+		trashq = NewWorkQueue()
+	}
+	trashq.ReplaceQueue(tlist)
 }
 
 // ==============================

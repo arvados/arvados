@@ -114,8 +114,8 @@ def run(websockets=False, reuse_server=False):
             subprocess.call(['bundle', 'exec', 'rails', 'server', '-d',
                              '--pid',
                              os.path.join(os.getcwd(), SERVER_PID_PATH),
-                             '-p3001'])
-            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+                             '-p3000'])
+            os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
 
         pid = find_server_pid(SERVER_PID_PATH)
 
@@ -176,7 +176,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False):
     _start_keep(0, keep_args)
     _start_keep(1, keep_args)
 
-    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
     os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
 
     authorize_with("admin")
@@ -210,7 +210,7 @@ def run_keep_proxy(auth):
     if not os.path.exists(TEST_TMPDIR):
         os.mkdir(TEST_TMPDIR)
 
-    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3001"
+    os.environ["ARVADOS_API_HOST"] = "127.0.0.1:3000"
     os.environ["ARVADOS_API_HOST_INSECURE"] = "true"
     os.environ["ARVADOS_API_TOKEN"] = fixture("api_client_authorizations")[auth]["api_token"]
 

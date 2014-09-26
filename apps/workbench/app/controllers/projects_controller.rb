@@ -127,8 +127,23 @@ class ProjectsController < ApplicationController
       if item.owner_uuid == @object.uuid
         # Object is owned by this project. Remove it from the project by
         # changing owner to the current user.
-        item.update_attributes owner_uuid: current_user.uuid
-        @removed_uuids << item.uuid
+        begin
+          item.update_attributes owner_uuid: current_user.uuid
+          @removed_uuids << item.uuid
+        rescue ArvadosApiClient::ApiErrorResponseException => e
+          if e.message.include? 'collection_owner_uuid_name_unique'
+            rename_to = item.name + ' removed from ' +
+                        (@object.name ? @object.name : @object.uuid) +
+                        ' at ' + Time.now.to_s
+            updates = {}
+            updates[:name] = rename_to
+            updates[:owner_uuid] = current_user.uuid
+            item.update_attributes updates
+            @removed_uuids << item.uuid
+          else
+            raise
+          end
+        end
       end
     end
   end

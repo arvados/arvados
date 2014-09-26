@@ -140,7 +140,7 @@ if not get_prefix:
         except (IOError, OSError) as error:
             abort("can't write to '{}': {}".format(args.destination, error))
         except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
-            abort("failed to download '{}': {}".format(collection, e))
+            abort("failed to download '{}': {}".format(collection, error))
     sys.exit(0)
 
 # Scan the collection. Make an array of (stream, file, local
@@ -188,8 +188,8 @@ for s,f,outfilename in todo:
             arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
         try:
             outfile = open(outfilename, 'wb')
-        except Exception as e:
-            abort('Open(%s) failed: %s' % (outfilename, e))
+        except Exception as error:
+            abort('Open(%s) failed: %s' % (outfilename, error))
     if args.hash:
         digestor = hashlib.new(args.hash)
     try:

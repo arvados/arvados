@@ -43,7 +43,7 @@ class PipelineTest < DiagnosticsTest
       find('a,button', text: 'Run').click
 
       # Pipeline is running. We have a "Stop" button instead now.
-      page.assert_selector 'a,button', text: 'Stop'
+      page.assert_selector 'a,button', text: 'Pause'
 
       # Wait for pipeline run to complete
       wait_until_page_has 'Complete', pipeline_config['max_wait_seconds']

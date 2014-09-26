@@ -25,6 +25,26 @@ has_component_with_empty_script_parameters:
     script: foo
     script_version: master
 
+has_component_with_completed_jobs:
+  # Test that the job "started_at" and "finished_at" fields are
+  # parsed into Time fields when rendering. This job must *not*
+  # have its own fixture; the point is to force the
+  # pipeline_instances_controller_test in Workbench to parse
+  # the "components" field.
+  state: Complete
+  uuid: zzzzz-d1hrv-i3e77t9z5y8j9cc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-rft1xdewxkwgxnz
+      script_version: master
+      started_at: <%= 10.minute.ago.to_s(:db) %>
+      finished_at: <%= 9.minute.ago.to_s(:db) %>
+
 has_job:
   name: pipeline_with_job
   state: Ready

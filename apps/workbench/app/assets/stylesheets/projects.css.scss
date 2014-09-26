@@ -58,11 +58,10 @@ div.scroll-20em {
   border-radius: .3em;
 }
 
-.x-ellip {
-  overflow-x: hide;
-  text-overflow: ellipsis;
-}
-
 .dashboard-panel-info-row:hover {
   background-color: #D9EDF7;
+}
+
+.progress-bar.progress-bar-default {
+  background-color: #999;
 }

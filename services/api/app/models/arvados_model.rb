@@ -198,13 +198,6 @@ class ArvadosModel < ActiveRecord::Base
     attributes
   end
 
-  def has_permission? perm_type, target_uuid
-    Link.where(link_class: "permission",
-               name: perm_type,
-               tail_uuid: uuid,
-               head_uuid: target_uuid).any?
-  end
-
   protected
 
   def ensure_ownership_path_leads_to_user

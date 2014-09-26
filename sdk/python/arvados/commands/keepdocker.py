@@ -254,7 +254,7 @@ def main(arguments=None):
                     filters=[['link_class', '=', 'docker_image_repo+tag'],
                              ['name', '=', image_repo_tag],
                              ['head_uuid', 'in', collections]]
-                    ).execute(num_retries=args_retries)['items']) if image_repo_tag else []
+                    ).execute(num_retries=args.retries)['items']) if image_repo_tag else []
 
                 # Filter on elements owned by the parent project
                 owned_col = [c for c in collections if c['owner_uuid'] == parent_project_uuid]

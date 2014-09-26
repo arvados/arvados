@@ -76,7 +76,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
+	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
@@ -600,7 +600,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestPutGetHead(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
+	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 

@@ -35,19 +35,19 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestMakeArvadosClient(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
+	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
 
 	kc, err := MakeArvadosClient()
-	c.Check(kc.ApiServer, Equals, "localhost:3001")
+	c.Check(kc.ApiServer, Equals, "localhost:3000")
 	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	c.Check(kc.ApiInsecure, Equals, false)
 
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 
 	kc, err = MakeArvadosClient()
-	c.Check(kc.ApiServer, Equals, "localhost:3001")
+	c.Check(kc.ApiServer, Equals, "localhost:3000")
 	c.Check(kc.ApiToken, Equals, "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	c.Check(kc.ApiInsecure, Equals, true)
 	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
@@ -56,7 +56,7 @@ func (s *ServerRequiredSuite) TestMakeArvadosClient(c *C) {
 }
 
 func (s *ServerRequiredSuite) TestCreatePipelineTemplate(c *C) {
-	os.Setenv("ARVADOS_API_HOST", "localhost:3001")
+	os.Setenv("ARVADOS_API_HOST", "localhost:3000")
 	os.Setenv("ARVADOS_API_TOKEN", "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
 

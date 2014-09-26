@@ -32,6 +32,11 @@ API_HOSTNAME:           # e.g. qr1hi
 # should be an address associated with a Google account.
 API_AUTO_ADMIN_USER:
 
+# The location of the Workbench application where users should be
+# redirected if they point their browsers at the API server, e.g.,
+# https://localhost:9899
+API_WORKBENCH_ADDRESS:
+
 # If a _PW variable is set to an empty string, a password
 # will be chosen randomly at build time. This is the
 # recommended setting.

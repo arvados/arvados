@@ -317,4 +317,10 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     end
   end
 
+  test "job includes assigned nodes" do
+    authorize_with :active
+    get :show, {id: jobs(:nearly_finished_job).uuid}
+    assert_response :success
+    assert_equal([nodes(:busy).uuid], json_response["node_uuids"])
+  end
 end

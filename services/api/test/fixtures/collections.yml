@@ -199,3 +199,27 @@ collection_expires_in_future:
   expires_at: 2038-01-01T00:00:00Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: collection_expires_in_future
+
+collection_in_home_project_with_same_name_as_in_aproject:
+  uuid: zzzzz-4zz18-12342x4u7ftabcd
+  portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
+  name: collection_with_same_name_in_aproject_and_home_project
+
+collection_in_aproject_with_same_name_as_in_home_project:
+  uuid: zzzzz-4zz18-56782x4u7ftefgh
+  portable_data_hash: ea10d51bcf88862dbcc36eb292017dfd+45
+  owner_uuid: zzzzz-j7d0g-v955i6s2oi1cbso
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 73feffa4b7f6bb68e44cf984c85f6e88+3 0:3:baz\n"
+  name: collection_with_same_name_in_aproject_and_home_project

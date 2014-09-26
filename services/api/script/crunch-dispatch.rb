@@ -61,63 +61,68 @@ class Dispatcher
     end
   end
 
-  def sinfo
+  def each_slurm_line(cmd, outfmt, max_fields=nil)
+    max_fields ||= outfmt.split(":").size
+    max_fields += 1  # To accommodate the node field we add
     @@slurm_version ||= Gem::Version.new(`sinfo --version`.match(/\b[\d\.]+\b/)[0])
     if Gem::Version.new('2.3') <= @@slurm_version
-      `sinfo --noheader -o '%n:%t'`.strip
+      `#{cmd} --noheader -o '%n:#{outfmt}'`.each_line do |line|
+        yield line.chomp.split(":", max_fields)
+      end
     else
       # Expand rows with hostname ranges (like "foo[1-3,5,9-12]:idle")
       # into multiple rows with one hostname each.
-      `sinfo --noheader -o '%N:%t'`.split("\n").collect do |line|
-        tokens = line.split ":"
+      `#{cmd} --noheader -o '%N:#{outfmt}'`.each_line do |line|
+        tokens = line.chomp.split(":", max_fields)
         if (re = tokens[0].match /^(.*?)\[([-,\d]+)\]$/)
-          re[2].split(",").collect do |range|
+          tokens.shift
+          re[2].split(",").each do |range|
             range = range.split("-").collect(&:to_i)
-            (range[0]..range[-1]).collect do |n|
-              [re[1] + n.to_s, tokens[1..-1]].join ":"
+            (range[0]..range[-1]).each do |n|
+              yield [re[1] + n.to_s] + tokens
             end
           end
         else
-          tokens.join ":"
+          yield tokens
         end
-      end.flatten.join "\n"
+      end
     end
   end
 
+  def slurm_status
+    slurm_nodes = {}
+    each_slurm_line("sinfo", "%t") do |hostname, state|
+      state.sub!(/\W+$/, "")
+      state = "down" unless %w(idle alloc down).include?(state)
+      slurm_nodes[hostname] = {state: state, job: nil}
+    end
+    each_slurm_line("squeue", "%j") do |hostname, job_uuid|
+      slurm_nodes[hostname][:job] = job_uuid if slurm_nodes[hostname]
+    end
+    slurm_nodes
+  end
+
   def update_node_status
-    if Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
-      @node_state ||= {}
-      node_seen = {}
+    return unless Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
+    @node_state ||= {}
+    slurm_status.each_pair do |hostname, slurmdata|
+      next if @node_state[hostname] == slurmdata
       begin
-        sinfo.split("\n").
-          each do |line|
-          re = line.match /(\S+?):+(idle|alloc|down)?/
-          next if !re
-
-          _, node_name, node_state = *re
-          node_state = 'down' unless %w(idle alloc down).include? node_state
-
-          # sinfo tells us about a node N times if it is shared by N partitions
-          next if node_seen[node_name]
-          node_seen[node_name] = true
-
-          # update our database (and cache) when a node's state changes
-          if @node_state[node_name] != node_state
-            @node_state[node_name] = node_state
-            node = Node.where('hostname=?', node_name).order(:last_ping_at).last
-            if node
-              $stderr.puts "dispatch: update #{node_name} state to #{node_state}"
-              node.info['slurm_state'] = node_state
-              if not node.save
-                $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
-              end
-            elsif node_state != 'down'
-              $stderr.puts "dispatch: sinfo reports '#{node_name}' is not down, but no node has that name"
-            end
+        node = Node.where('hostname=?', hostname).order(:last_ping_at).last
+        if node
+          $stderr.puts "dispatch: update #{hostname} state to #{slurmdata}"
+          node.info["slurm_state"] = slurmdata[:state]
+          node.job_uuid = slurmdata[:job]
+          if node.save
+            @node_state[hostname] = slurmdata
+          else
+            $stderr.puts "dispatch: failed to update #{node.uuid}: #{node.errors.messages}"
           end
+        elsif slurmdata[:state] != 'down'
+          $stderr.puts "dispatch: SLURM reports '#{hostname}' is not down, but no node has that name"
         end
       rescue => error
-        $stderr.puts "dispatch: error updating node status: #{error}"
+        $stderr.puts "dispatch: error updating #{hostname} node status: #{error}"
       end
     end
   end
@@ -217,8 +222,6 @@ class Dispatcher
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
 
-      next if !take(job)
-
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
                          Server::Application.config.crunch_job_user,
@@ -232,7 +235,10 @@ class Dispatcher
       job_auth = ApiClientAuthorization.
         new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
             api_client_id: 0)
-      job_auth.save
+      if not job_auth.save
+        $stderr.puts "dispatch: job_auth.save failed"
+        next
+      end
 
       crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
       if crunch_job_bin == ''
@@ -253,17 +259,51 @@ class Dispatcher
         if not File.exists? src_repo
           $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
           sleep 1
-          untake job
           next
         end
       end
 
-      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch-pack --all #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
-      unless $? == 0
-        $stderr.puts "dispatch: git fetch-pack && tag failed"
-        sleep 1
-        untake job
-        next
+      git = "git --git-dir=#{arvados_internal.shellescape}"
+
+      # check if the commit needs to be fetched or not
+      commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
+      unless $? == 0 and commit_rev == job.script_version
+        # commit does not exist in internal repository, so import the source repository using git fetch-pack
+        cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git fetch-pack failed"
+          sleep 1
+          next
+        end        
+      end
+
+      # check if the commit needs to be tagged with this job uuid
+      tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+      if $? != 0
+        # no job tag found, so create one
+        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git tag failed"
+          sleep 1
+          next
+        end
+      else
+        # job tag found, check that it has the expected revision
+        unless tag_rev == job.script_version
+          # Uh oh, the tag doesn't point to the revision we were expecting.
+          # Someone has been monkeying with the job record and/or git.
+          $stderr.puts "dispatch: Already a tag #{job.script_version} pointing to commit #{tag_rev} but expected commit #{job.script_version}"
+          job.state = "Failed"
+          if not job.save
+            $stderr.puts "dispatch: job.save failed"
+            next
+          end
+          next
+        end
       end
 
       cmd_args << crunch_job_bin
@@ -281,7 +321,6 @@ class Dispatcher
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
         sleep 1
-        untake(job)
         next
       end
 
@@ -308,16 +347,6 @@ class Dispatcher
       i.close
       update_node_status
     end
-  end
-
-  def take(job)
-    # no-op -- let crunch-job take care of locking.
-    true
-  end
-
-  def untake(job)
-    # no-op -- let crunch-job take care of locking.
-    true
   end
 
   def read_pipes
@@ -417,14 +446,11 @@ class Dispatcher
     exit_status = j_done[:wait_thr].value
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status.to_i != 75 and jobrecord.started_at
-      # Clean up state fields in case crunch-job exited without
-      # putting the job in a suitable "finished" state.
-      jobrecord.running = false
-      jobrecord.finished_at ||= Time.now
-      if jobrecord.success.nil?
-        jobrecord.success = false
-      end
+    if exit_status.to_i != 75 and jobrecord.state == "Running"
+      # crunch-job did not return exit code 75 (see below) and left the job in
+      # the "Running" state, which means there was an unhandled error.  Fail
+      # the job.
+      jobrecord.state = "Failed"
       jobrecord.save!
     else
       # Don't fail the job if crunch-job didn't even get as far as
