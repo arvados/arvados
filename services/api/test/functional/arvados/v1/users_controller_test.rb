@@ -34,18 +34,20 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                                 name: 'click',
                                 tail_uuid: users(:inactive).uuid,
                                 head_uuid: required_uuids).
-        collect(&:head_uuid)
+                          collect(&:head_uuid)
 
       assert_equal 0, signed_uuids.length
     end
 
     authorize_with :inactive
+    assert_equal false, users(:inactive).is_active
 
     post :activate, id: users(:inactive).uuid
     assert_response 403
 
-    response_body = JSON.parse(@response.body)
-    assert response_body['errors'].first.include? 'Cannot activate without user agreements'
+    resp = json_response
+    assert resp['errors'].first.include? 'Cannot activate without user agreements'
+    assert_nil resp['is_active']
   end
 
   test "activate an already-active user" do

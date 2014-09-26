@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class GroupTest < ActionDispatch::IntegrationTest
+class GroupsTest < ActionDispatch::IntegrationTest
 
   test "get all pages of group-owned objects" do
     limit = 5
