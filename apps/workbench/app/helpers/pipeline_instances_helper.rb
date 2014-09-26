@@ -90,7 +90,7 @@ module PipelineInstancesHelper
     }.compact
     job = {}
     Job.where(uuid: jobuuids).each do |j|
-      #job[j[:uuid]] = j
+      job[j[:uuid]] = j
     end
 
     object.components.each do |cname, c|
