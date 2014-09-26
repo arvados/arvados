@@ -222,8 +222,6 @@ class Dispatcher
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
 
-      next if !take(job)
-
       if Server::Application.config.crunch_job_user
         cmd_args.unshift("sudo", "-E", "-u",
                          Server::Application.config.crunch_job_user,
@@ -237,7 +235,10 @@ class Dispatcher
       job_auth = ApiClientAuthorization.
         new(user: User.where('uuid=?', job.modified_by_user_uuid).first,
             api_client_id: 0)
-      job_auth.save
+      if not job_auth.save
+        $stderr.puts "dispatch: job_auth.save failed"
+        next
+      end
 
       crunch_job_bin = (ENV['CRUNCH_JOB_BIN'] || `which arv-crunch-job`.strip)
       if crunch_job_bin == ''
@@ -258,17 +259,51 @@ class Dispatcher
         if not File.exists? src_repo
           $stderr.puts "dispatch: No #{job.repository}.git or #{job.repository}/.git at #{repo_root}"
           sleep 1
-          untake job
           next
         end
       end
 
-      $stderr.puts `cd #{arvados_internal.shellescape} && git fetch-pack --all #{src_repo.shellescape} && git tag #{job.uuid.shellescape} #{job.script_version.shellescape}`
-      unless $? == 0
-        $stderr.puts "dispatch: git fetch-pack && tag failed"
-        sleep 1
-        untake job
-        next
+      git = "git --git-dir=#{arvados_internal.shellescape}"
+
+      # check if the commit needs to be fetched or not
+      commit_rev = `#{git} rev-list -n1 #{job.script_version.shellescape} 2>/dev/null`.chomp
+      unless $? == 0 and commit_rev == job.script_version
+        # commit does not exist in internal repository, so import the source repository using git fetch-pack
+        cmd = "#{git} fetch-pack --no-progress --all #{src_repo.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git fetch-pack failed"
+          sleep 1
+          next
+        end        
+      end
+
+      # check if the commit needs to be tagged with this job uuid
+      tag_rev = `#{git} rev-list -n1 #{job.uuid.shellescape} 2>/dev/null`.chomp
+      if $? != 0
+        # no job tag found, so create one
+        cmd = "#{git} tag #{job.uuid.shellescape} #{job.script_version.shellescape}"
+        $stderr.puts cmd
+        $stderr.puts `#{cmd}`
+        unless $? == 0
+          $stderr.puts "dispatch: git tag failed"
+          sleep 1
+          next
+        end
+      else
+        # job tag found, check that it has the expected revision
+        unless tag_rev == job.script_version
+          # Uh oh, the tag doesn't point to the revision we were expecting.
+          # Someone has been monkeying with the job record and/or git.
+          $stderr.puts "dispatch: Already a tag #{job.script_version} pointing to commit #{tag_rev} but expected commit #{job.script_version}"
+          job.state = "Failed"
+          if not job.save
+            $stderr.puts "dispatch: job.save failed"
+            next
+          end
+          next
+        end
       end
 
       cmd_args << crunch_job_bin
@@ -286,7 +321,6 @@ class Dispatcher
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
         sleep 1
-        untake(job)
         next
       end
 
@@ -313,16 +347,6 @@ class Dispatcher
       i.close
       update_node_status
     end
-  end
-
-  def take(job)
-    # no-op -- let crunch-job take care of locking.
-    true
-  end
-
-  def untake(job)
-    # no-op -- let crunch-job take care of locking.
-    true
   end
 
   def read_pipes
