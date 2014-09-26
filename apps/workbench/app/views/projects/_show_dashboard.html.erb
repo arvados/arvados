@@ -34,13 +34,13 @@
                     <% queued = [] %>
                     <% p.components.each do |k, v| %>
                       <% if v.is_a? Hash and v[:job] %>
-                        <% if Job::state(v[:job]) == "Running" %>
+                        <% if v[:job][:state] == "Running" %>
                           <% running << k %>
-                        <% elsif Job::state(v[:job]) == "Failed" or Job::state(v[:job]) == "Cancelled" %>
+                        <% elsif v[:job][:state] == "Failed" or v[:job][:state] == "Cancelled" %>
                           <% failed << k %>
-                        <% elsif Job::state(v[:job]) == "Complete" %>
+                        <% elsif v[:job][:state] == "Complete" %>
                           <% completed << k %>
-                        <% elsif Job::state(v[:job]) == "Queued" %>
+                        <% elsif v[:job][:state] == "Queued" %>
                           <% queued << k %>
                         <% end %>
                       <% end %>

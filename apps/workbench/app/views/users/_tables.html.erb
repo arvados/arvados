@@ -59,7 +59,7 @@
 
             <td>
               <small>
-                <% if j.success and j.output %>
+                <% if j.state == "Complete" and j.output %>
                   <a href="<%= collection_path(j.output) %>">
                     <% collections = collections_for_object(j.output) %>
                       <% if collections && !collections.empty? %>

@@ -1,5 +1,5 @@
 <% content_for :tab_line_buttons do %>
-    <% if @object.running %>
+    <% if @object.state == "Running" %>
     <%= form_tag "/jobs/#{@object.uuid}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
       <%= button_tag "Cancel running job", {class: 'btn btn-sm btn-danger', id: "cancel-job-button"} %>
     <% end %>

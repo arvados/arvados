@@ -14,9 +14,6 @@ RUN /usr/bin/apt-get install -q -y python-dev python-llfuse python-pip \
 # Install Arvados packages.
 RUN (find /usr/src/arvados/sdk -name '*.gem' -print0 | \
       xargs -0rn 1 /usr/local/rvm/bin/rvm-exec default gem install) && \
-    cd /usr/src/arvados/services/fuse && \
-    python setup.py install && \
-    cd /usr/src/arvados/sdk/python && \
-    python setup.py install
+     apt-get -qqy install python-arvados-fuse
 
 USER crunch

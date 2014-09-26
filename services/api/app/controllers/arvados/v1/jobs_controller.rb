@@ -151,12 +151,7 @@ class Arvados::V1::JobsController < ApplicationController
     params[:order] ||= ['priority desc', 'created_at']
     load_limit_offset_order_params
     load_where_param
-    @where.merge!({
-                    started_at: nil,
-                    is_locked_by_uuid: nil,
-                    cancelled_at: nil,
-                    success: nil
-                  })
+    @where.merge!({state: Job::Queued})
     return if false.equal?(load_filters_param)
     find_objects_for_index
     index
