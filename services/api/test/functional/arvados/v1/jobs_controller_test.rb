@@ -120,16 +120,18 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_not_nil job['cancelled_at'], 'un-cancelled job stays cancelled'
   end
 
-  ['admin', 'active'].each do |user|
-    test "#{user} update a job without failing script_version check" do
+  ['abc.py', 'hash.py'].each do |script|
+    test "update job script attribute to #{script} without failing script_version check" do
       authorize_with :admin
       put :update, {
         id: jobs(:uses_nonexistent_script_version).uuid,
         job: {
-          owner_uuid: users(user).uuid
+          script: script
         }
       }
       assert_response :success
+      resp = assigns(:object)
+      assert_equal jobs(:uses_nonexistent_script_version).script_version, resp['script_version']
     end
   end
 
