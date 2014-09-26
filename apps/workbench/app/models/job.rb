@@ -46,26 +46,6 @@ class Job < ArvadosBase
     arvados_api_client.unpack_api_response arvados_api_client.api("jobs/", "queue", {"_method"=> "GET"})
   end
 
-  def self.state job
-    if job.respond_to? :state and job.state
-      return job.state
-    end
-
-    if not job[:cancelled_at].nil?
-      "Cancelled"
-    elsif not job[:finished_at].nil? or not job[:success].nil?
-      if job[:success]
-        "Completed"
-      else
-        "Failed"
-      end
-    elsif job[:running]
-      "Running"
-    else
-      "Queued"
-    end
-  end
-
   def textile_attributes
     [ 'description' ]
   end
