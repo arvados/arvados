@@ -239,47 +239,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items_available']
   end
 
-  [0, 5, 10, 15, 20].each do |offset|
-    test "get pages of group-owned objects with offset #{offset}" do
-      authorize_with :active
-      limit = 5
-      items_available = nil
-      uuid_received = {}
-      owner_received = {}
-
-      @json_response = nil
-      get :contents, {
-        id: groups(:aproject).uuid,
-        limit: limit,
-        offset: offset,
-        format: :json,
-      }
-      assert_response :success
-      items_available ||= json_response['items_available']
-      if offset >= items_available
-        assert_equal(0, json_response['items'].count,
-                      "items_available=#{items_available} but received #{json_response['items']} "\
-                      "items with offset=#{offset}")
-      else
-        assert_operator(0, :<, json_response['items'].count,
-                        "items_available=#{items_available} but received  "\
-                        "items with offset=#{offset}")
-        assert_equal(items_available, json_response['items_available'],
-                     "items_available changed between page #{offset/limit} "\
-                     "and page #{1+offset/limit}")
-        json_response['items'].each do |item|
-          uuid = item['uuid']
-          assert_equal(nil, uuid_received[uuid],
-                       "Received '#{uuid}' again on page #{1+offset/limit}")
-          uuid_received[uuid] = true
-          owner_received[item['owner_uuid']] = true
-          offset += 1
-          assert_equal groups(:aproject).uuid, item['owner_uuid']
-        end
-      end
-    end
-  end
-
   %w(offset limit).each do |arg|
     ['foo', '', '1234five', '0x10', '-8'].each do |val|
       test "Raise error on bogus #{arg} parameter #{val.inspect}" do
