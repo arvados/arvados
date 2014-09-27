@@ -75,4 +75,15 @@ class PipelineInstancesControllerTest < ActionController::TestCase
         session_for(:active))
     assert_response :success
   end
+
+  test "dates in JSON components are parsed" do
+    get(:show,
+        {id: api_fixture('pipeline_instances')['has_component_with_completed_jobs']['uuid']},
+        session_for(:active))
+    assert_response :success
+    assert_not_nil assigns(:object)
+    assert_not_nil assigns(:object).components[:foo][:job]
+    assert assigns(:object).components[:foo][:job][:started_at].is_a? Time
+    assert assigns(:object).components[:foo][:job][:finished_at].is_a? Time
+  end
 end
