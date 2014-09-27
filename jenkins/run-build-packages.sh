@@ -16,6 +16,12 @@ if [[ "$APTSERVER" == '' ]]; then
   exit 1
 fi
 
+# Sanity check
+if ! [[ -n "$WORKSPACE" ]]; then
+  echo "WORKSPACE environment variable not set"
+  exit 1
+fi
+
 source /etc/profile.d/rvm.sh
 echo $WORKSPACE
 
@@ -67,13 +73,15 @@ python setup.py egg_info -b ".$GIT_HASH" sdist upload
 
 build_and_scp_deb () {
   PACKAGE=$1
-  PACKAGE_NAME=$2
-  # Put spaces in $3 and you will regret it. Despite the use of arrays below.
-  # Because, bash sucks.
-  VENDOR=${3// /_}
-  PACKAGE_TYPE=$4
-  VERSION=$5
-  EXTRA_ARGUMENTS=$6
+  shift
+  PACKAGE_NAME=$1
+  shift
+  VENDOR=$1
+  shift
+  PACKAGE_TYPE=$1
+  shift
+  VERSION=$1
+  shift
 
   if [[ "$PACKAGE_NAME" == "" ]]; then
     PACKAGE_NAME=$PACKAGE
@@ -83,7 +91,7 @@ build_and_scp_deb () {
     PACKAGE_TYPE='python'
   fi
 
-  COMMAND_ARR=("fpm" "-s" "$PACKAGE_TYPE" "-t" "deb")
+  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "deb")
 
   if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
@@ -97,15 +105,14 @@ build_and_scp_deb () {
     COMMAND_ARR+=('-v' "$VERSION")
   fi
 
-  for a in $EXTRA_ARGUMENTS; do
-    COMMAND_ARR+=("$a")
+  for i; do
+    COMMAND_ARR+=("$i")
   done
 
   COMMAND_ARR+=("$PACKAGE")
 
-  FPM_RESULTS=$(${COMMAND_ARR[@]})
+  FPM_RESULTS=$("${COMMAND_ARR[@]}")
   FPM_EXIT_CODE=$?
-  echo ${COMMAND_ARR[@]}
 
   FPM_PACKAGE_NAME=''
   if [[ $FPM_RESULTS =~ ([A-Za-z0-9_\-.]*\.deb) ]]; then
@@ -150,7 +157,7 @@ git checkout `git log --format=format:%h -n1 .`
 cd $WORKSPACE
 
 cd $WORKSPACE/debs
-build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "-x 'usr/local/arvados/src/.git*'"
+build_and_scp_deb $WORKSPACE/src-build-dir/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "-x 'usr/local/arvados/src/.git*'" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
 # clean up, check out master and step away from detached-head state
 cd "$WORKSPACE/src-build-dir"
@@ -164,17 +171,17 @@ ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 # keepstore
 go get "git.curoverse.com/arvados.git/services/keepstore"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/keepstore=/usr/bin/keepstore keepstore 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepstore is the Keep storage daemon, accessible to clients on the LAN"
 
 # keepproxy
 go get "git.curoverse.com/arvados.git/services/keepproxy"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/keepproxy=/usr/bin/keepproxy keepproxy 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Keepproxy makes a Keep cluster accessible to clients that are not on the LAN"
 
 # crunchstat
 go get "git.curoverse.com/arvados.git/services/crunchstat"
 cd $WORKSPACE/debs
-build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH"
+build_and_scp_deb $GOPATH/bin/crunchstat=/usr/bin/crunchstat crunchstat 'Curoverse, Inc.' 'dir' "0.1.$GIT_HASH" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=Crunchstat gathers cpu/memory/network statistics of running Crunch jobs"
 
 # The Python SDK
 cd $WORKSPACE/sdk/python
@@ -188,7 +195,7 @@ cd $WORKSPACE/debs
 # prefix from only one of the dependencies of a package...  Maybe I could
 # whip up a patch and send it upstream, but that will be for another day. Ward,
 # 2014-05-15
-build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}"
+build_and_scp_deb $WORKSPACE/sdk/python python-arvados-python-client 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}" "--url=https://arvados.org" "--description=The Arvados Python SDK"
 
 # The FUSE driver
 cd $WORKSPACE/services/fuse
@@ -198,7 +205,7 @@ cd $WORKSPACE/debs
 
 # Please seem comment about --no-python-fix-name above; we stay consistent and do
 # not omit the python- prefix first.
-build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}"
+build_and_scp_deb $WORKSPACE/services/fuse python-arvados-fuse 'Curoverse, Inc.' 'python' "0.1.${GIT_HASH}" "--url=https://arvados.org" "--description=The Keep FUSE driver"
 
 # A few dependencies
 build_and_scp_deb python-gflags
