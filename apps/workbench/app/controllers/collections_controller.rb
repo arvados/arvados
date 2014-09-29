@@ -308,8 +308,13 @@ class CollectionsController < ApplicationController
           end
           yield buf
         end
-        if @opts.include? :size and bytesleft == 0 then
-          yield "Log truncated (exceeded #{@opts[:size]} bytes). To retrieve the full log: arv-get #{@opts[:uuid]}/#{@opts[:file]}"
+        if buf and @opts.include? :size and bytesleft == 0 then
+          unless buf[-1] == "\n"
+            yield "\n"
+          end
+          # This line should match the regex in
+          # app/assets/javascripts/log_viewer.js:addToLogViewer()
+          yield Time.now.strftime("%F_%T zzzzz-zzzzz-zzzzzzzzzzzzzzz 0  File truncated (exceeded #{@opts[:size]} bytes). To retrieve the full file: arv-get #{@opts[:uuid]}/#{@opts[:file]}\n")
         end
       end
       Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: #{$?}") if $? != 0
