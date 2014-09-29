@@ -150,12 +150,17 @@ class CollectionsController < ApplicationController
     end
 
     opts = params.merge(arvados_api_token: usable_token)
+
+    # Handle Range requests. Currently we support only 'bytes=0-....'
     if request.headers.include? 'HTTP_RANGE'
-      # Currently only 'bytes=0-....' is supported.
       if m = /^bytes=0-(\d+)/.match(request.headers['HTTP_RANGE'])
         opts[:maxbytes] = m[1]
+        size = params[:size] || '*'
+        self.response.status = 206
+        self.response.headers['Content-Range'] = "bytes 0-#{m[1]}/#{size}"
       end
     end
+
     ext = File.extname(params[:file])
     self.response.headers['Content-Type'] =
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
@@ -311,7 +316,6 @@ class CollectionsController < ApplicationController
       env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
 
       bytesleft = @opts[:maxbytes].andand.to_i || 2**16
-      Rails.logger.warn "@opts[:maxbytes] = #{@opts[:maxbytes]}, bytesleft = #{bytesleft}"
       IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
                'rb') do |io|
         bytecount = 0
@@ -320,7 +324,6 @@ class CollectionsController < ApplicationController
           # maximum byte count to read
           if @opts.include? :maxbytes
             bytesleft = bytesleft - buf.length
-            Rails.logger.warn "bytesleft now #{bytesleft}"
           end
           yield buf
         end

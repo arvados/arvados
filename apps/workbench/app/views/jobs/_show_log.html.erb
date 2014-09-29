@@ -53,8 +53,11 @@ var makeFilter = function() {
 <% if @object.log %>
   <% logcollection = Collection.find @object.log %>
   <% if logcollection %>
-    var log_maxbytes = <%= Rails.configuration.log_viewer_max_bytes %>
-    $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>',
+    var log_maxbytes = <%= Rails.configuration.log_viewer_max_bytes %>;
+    logcollection_url = '<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>';
+    $("#log-viewer-download-url").attr('href', logcollection_url);
+    $("#log-viewer-download-pane").css('display', 'inline');
+    $.ajax(logcollection_url,
 	   {
 	     headers: {'Range': 'bytes=0-' + log_maxbytes}
 	   }).
@@ -62,14 +65,14 @@ var makeFilter = function() {
 	    logViewer.filter();
 	    addToLogViewer(logViewer, data.split("\n"), taskState);
 	    logViewer.filter(makeFilter());
-	    if (data.length == log_maxbytes) {
+	    var v = jqxhr.getResponseHeader('Content-Range')
+	      .match(/bytes \d+-(\d+)\/(.+)/);
+            short_log = v && (v[2] == '*' || parseInt(v[1]) + 1 < v[2]);
+	    if (jqxhr.status == 206 && short_log) {
 	      $("#log-viewer-overview").html(
-		'<p>The log was truncated after ' + log_maxbytes +
-		' bytes. To view the entire log, run this command' +
-		' from an Arvados shell VM:</p>' +
-		' <p><span style="font-family:monospace">arv-get' +
-		' <%=j logcollection.uuid %>/<%=j logcollection.files[0][1] %>' +
-		'</p>'
+		'<p>Showing only ' + data.length + ' bytes of this log.' +
+		' Timing information is unavailable since' +
+		' the full log was not retrieved.</p>'
 	      );
             } else {
 	      generateJobOverview("#log-viewer-overview", logViewer, taskState);
@@ -132,6 +135,10 @@ $("#set-show-failed-only").on("click", function() {
     <% if !logcollection %>
       The collection containing the job log was not found.
     <% end %>
+  </p>
+
+  <p id="log-viewer-download-pane" style="display:none">
+    <a id="log-viewer-download-url" href="">Download the full log</a>
   </p>
 
   <div class="h3">Log
