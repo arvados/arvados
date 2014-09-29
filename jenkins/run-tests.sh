@@ -275,14 +275,14 @@ install_python_sdk() {
     # keepproxy).
 
     cd "$WORKSPACE/sdk/python" \
-        && python setup.py egg_info -b ".$(git log --first-parent --format=format:%ci.%h -n1 . | tr -dc 0-9a-f. | cut -c 1-14,19-)" sdist rotate --keep=1 --match .tar.gz \
+        && python setup.py sdist rotate --keep=1 --match .tar.gz \
         && pip install dist/arvados-python-client-0.1.*.tar.gz
 }
 do_install python_sdk
 
 install_fuse() {
     cd "$WORKSPACE/services/fuse" \
-        && python setup.py egg_info -b ".$(git log --first-parent --format=format:%ci.%h -n1 . | tr -dc 0-9a-f. | cut -c 1-14,19-)" sdist rotate --keep=1 --match .tar.gz \
+        && python setup.py sdist rotate --keep=1 --match .tar.gz \
         && pip install dist/arvados_fuse-0.1.*.tar.gz
 }
 do_install fuse
