@@ -4,7 +4,7 @@ package collection
 
 import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/services/datamanager/manifest"
+	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"log"
 )
 
