@@ -276,7 +276,7 @@ class Dispatcher
           $stderr.puts "dispatch: git fetch-pack failed"
           sleep 1
           next
-        end        
+        end
       end
 
       # check if the commit needs to be tagged with this job uuid
@@ -334,7 +334,7 @@ class Dispatcher
         stderr: e,
         wait_thr: t,
         job: job,
-        stderr_buf: '',
+        buf: {:stdout => '', :stderr => ''},
         started: false,
         sent_int: 0,
         job_auth: job_auth,
@@ -353,41 +353,37 @@ class Dispatcher
     @running.each do |job_uuid, j|
       job = j[:job]
 
-      # Throw away child stdout
-      begin
-        j[:stdout].read_nonblock(2**20)
-      rescue Errno::EAGAIN, EOFError
-      end
+      [:stdout, :stderr].each do |std|
+        # Read whatever is available from child stderr
+        buf = false
+        begin
+          buf = j[std].read_nonblock(2**20)
+        rescue Errno::EAGAIN, EOFError
+        end
 
-      # Read whatever is available from child stderr
-      stderr_buf = false
-      begin
-        stderr_buf = j[:stderr].read_nonblock(2**20)
-      rescue Errno::EAGAIN, EOFError
-      end
-
-      if stderr_buf
-        j[:stderr_buf] << stderr_buf
-        if j[:stderr_buf].index "\n"
-          lines = j[:stderr_buf].lines("\n").to_a
-          if j[:stderr_buf][-1] == "\n"
-            j[:stderr_buf] = ''
-          else
-            j[:stderr_buf] = lines.pop
-          end
-          lines.each do |line|
-            $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
-            $stderr.puts line
-            pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
-            if not j[:log_truncated]
-              j[:stderr_buf_to_flush] << pub_msg
+        if buf
+          j[:buf][std] << buf
+          if j[:buf][std].index "\n"
+            lines = j[:buf][std].lines("\n").to_a
+            if j[:buf][std][-1] == "\n"
+              j[:buf][std] = ''
+            else
+              j[:buf][std] = lines.pop
             end
-          end
+            lines.each do |line|
+              $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
+              $stderr.puts line
+              pub_msg = "#{Time.now.ctime.to_s} #{line.strip} \n"
+              if not j[:log_truncated]
+                j[:stderr_buf_to_flush] << pub_msg
+              end
+            end
 
-          if not j[:log_truncated]
-            if (Rails.configuration.crunch_log_bytes_per_event < j[:stderr_buf_to_flush].size or
-                (j[:stderr_flushed_at] + Rails.configuration.crunch_log_seconds_between_events < Time.now.to_i))
-              write_log j
+            if not j[:log_truncated]
+              if (Rails.configuration.crunch_log_bytes_per_event < j[:stderr_buf_to_flush].size or
+                  (j[:stderr_flushed_at] + Rails.configuration.crunch_log_seconds_between_events < Time.now.to_i))
+                write_log j
+              end
             end
           end
         end
@@ -438,8 +434,10 @@ class Dispatcher
     read_pipes
     write_log j_done # write any remaining logs
 
-    if j_done[:stderr_buf] and j_done[:stderr_buf] != ''
-      $stderr.puts j_done[:stderr_buf] + "\n"
+    [:stdout, :stderr].each do |std|
+      if j_done[:buf][std] and j_done[:buf][std] != ''
+        $stderr.puts j_done[:buf][std] + "\n"
+      end
     end
 
     # Wait the thread (returns a Process::Status)
@@ -572,7 +570,7 @@ class Dispatcher
       running_job[:bytes_logged] += running_job[:stderr_buf_to_flush].size
       running_job[:events_logged] += 1
     rescue
-      running_job[:stderr_buf] = "Failed to write logs\n" + running_job[:stderr_buf]
+      running_job[:buf][:stderr] = "Failed to write logs\n" + running_job[:buf][:stderr]
     end
     running_job[:stderr_buf_to_flush] = ''
     running_job[:stderr_flushed_at] = Time.now.to_i
