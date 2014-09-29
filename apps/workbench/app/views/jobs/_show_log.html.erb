@@ -53,12 +53,27 @@ var makeFilter = function() {
 <% if @object.log %>
   <% logcollection = Collection.find @object.log %>
   <% if logcollection %>
-    $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>?size=1000000').
+    var log_maxbytes = <%= Rails.configuration.log_viewer_max_bytes %>
+    $.ajax('<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>',
+	   {
+	     headers: {'Range': 'bytes=0-' + log_maxbytes}
+	   }).
 	done(function(data, status, jqxhr) {
 	    logViewer.filter();
 	    addToLogViewer(logViewer, data.split("\n"), taskState);
 	    logViewer.filter(makeFilter());
-	    generateJobOverview("#log-viewer-overview", logViewer, taskState);
+	    if (data.length == log_maxbytes) {
+	      $("#log-viewer-overview").html(
+		'<p>The log was truncated after ' + log_maxbytes +
+		' bytes. To view the entire log, run this command' +
+		' from an Arvados shell VM:</p>' +
+		' <p><span style="font-family:monospace">arv-get' +
+		' <%=j logcollection.uuid %>/<%=j logcollection.files[0][1] %>' +
+		'</p>'
+	      );
+            } else {
+	      generateJobOverview("#log-viewer-overview", logViewer, taskState);
+	    }
 	    $("#log-viewer .spinner").detach();
 	}).
 	fail(function(jqxhr, status, error) {
@@ -217,6 +232,7 @@ $("#set-show-failed-only").on("click", function() {
     <span class="log-viewer-paging"></span>
     <a href="#" class="log-viewer-page-down"><span class='glyphicon glyphicon-arrow-down'></span></a>
   </div>
+
 </div>
 
 <% end %>

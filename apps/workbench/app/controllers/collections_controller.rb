@@ -148,11 +148,24 @@ class CollectionsController < ApplicationController
     elsif params[:file].nil? or not coll.manifest.has_file?(params[:file])
       return render_not_found
     end
+
     opts = params.merge(arvados_api_token: usable_token)
+    if request.headers.include? 'HTTP_RANGE'
+      # Currently only 'bytes=0-....' is supported.
+      if m = /^bytes=0-(\d+)/.match(request.headers['HTTP_RANGE'])
+        opts[:maxbytes] = m[1]
+      end
+    end
     ext = File.extname(params[:file])
     self.response.headers['Content-Type'] =
       Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
-    self.response.headers['Content-Length'] = params[:size] if params[:size]
+    if params[:size]
+      size = params[:size].to_i
+      if opts[:maxbytes]
+        size = [size, opts[:maxbytes].to_i].min
+      end
+      self.response.headers['Content-Length'] = size.to_s
+    end
     self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
     self.response_body = file_enumerator opts
   end
@@ -297,24 +310,19 @@ class CollectionsController < ApplicationController
       env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
       env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
 
-      bytesleft = @opts[:size].andand.to_i || 2**16
+      bytesleft = @opts[:maxbytes].andand.to_i || 2**16
+      Rails.logger.warn "@opts[:maxbytes] = #{@opts[:maxbytes]}, bytesleft = #{bytesleft}"
       IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"],
                'rb') do |io|
+        bytecount = 0
         while bytesleft > 0 && buf = io.read(bytesleft)
           # shrink the bytesleft count, if we were given a
           # maximum byte count to read
-          if @opts.include? :size
+          if @opts.include? :maxbytes
             bytesleft = bytesleft - buf.length
+            Rails.logger.warn "bytesleft now #{bytesleft}"
           end
           yield buf
-        end
-        if buf and @opts.include? :size and bytesleft == 0 then
-          unless buf[-1] == "\n"
-            yield "\n"
-          end
-          # This line should match the regex in
-          # app/assets/javascripts/log_viewer.js:addToLogViewer()
-          yield Time.now.strftime("%F_%T zzzzz-zzzzz-zzzzzzzzzzzzzzz 0  File truncated (exceeded #{@opts[:size]} bytes). To retrieve the full file: arv-get #{@opts[:uuid]}/#{@opts[:file]}\n")
         end
       end
       Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: #{$?}") if $? != 0
