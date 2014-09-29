@@ -88,13 +88,7 @@ class ActionController::TestCase
   def check_counter action
     @counter += 1
     if @counter == 2
-      # TODO: when existing mistakes are fixed, start failing broken
-      # test cases like this:
-      #
-      # assert_equal 1, 2, "Multiple actions in functional test"
-      #
-      # Meanwhile, just warn (just once per test case):
-      $stderr.puts " [WARNING: Multiple actions in functional test]"
+     # assert_equal 1, 2, "Multiple actions in functional test"
     end
   end
 

@@ -263,7 +263,9 @@ class FuseSharedTest(MountTestBase):
                           "Pipeline Template with Jobspec Components.pipelineTemplate",
                           "collection_expires_in_future",
                           "collection_with_same_name_in_aproject_and_home_project",
-                          "pipeline_with_job.pipelineInstance"
+                          "pipeline_to_merge_params.pipelineInstance",
+                          "pipeline_with_job.pipelineInstance",
+                          "pipeline_with_tagged_collection_input.pipelineInstance"
                       ], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Active User', 'A Project'))

@@ -16,18 +16,16 @@ class Arvados::V1::KeepDisksControllerTest < ActionController::TestCase
     assert_not_equal '', new_keep_disk['ping_secret']
   end
 
-  test "add keep disk with no filesystem_uuid" do
-    authorize_with :admin
-    opts = {
-      ping_secret: '',
-    }
-    post :ping, opts
-    assert_response :success
-    assert_not_nil JSON.parse(@response.body)['uuid']
-
-    post :ping, opts.merge(filesystem_uuid: '')
-    assert_response :success
-    assert_not_nil JSON.parse(@response.body)['uuid']
+  [
+    {ping_secret: ''},
+    {ping_secret: '', filesystem_uuid: ''},
+  ].each do |opts|
+    test "add keep disk with no filesystem_uuid #{opts}" do
+      authorize_with :admin
+      post :ping, opts
+      assert_response :success
+      assert_not_nil JSON.parse(@response.body)['uuid']
+    end
   end
 
   test "refuse to add keep disk without admin token" do
