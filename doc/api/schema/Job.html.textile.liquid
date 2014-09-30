@@ -34,6 +34,7 @@ See "Script versions":#script_version below for more detail about acceptable way
 |running|boolean|Whether the job is running||
 |success|boolean|Whether the job indicated successful completion|Is null if job has not finished|
 |is_locked_by_uuid|string|UUID of the user who has locked this job|Is null if job is not locked. The system user locks the job when starting the job, in order to prevent job attributes from being altered.|
+|node_uuids|array|List of UUID strings for node objects that have been assigned to this job||
 |log|string|Collection UUID|Is null if the job has not finished. After the job runs, the given collection contains a text file with log messages provided by the @arv-crunch-job@ task scheduler as well as the standard error streams provided by the task processes.|
 |tasks_summary|hash|Summary of task completion states.|Example: @{"done":0,"running":4,"todo":2,"failed":0}@|
 |output|string|Collection UUID|Is null if the job has not finished.|

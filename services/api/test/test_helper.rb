@@ -80,6 +80,26 @@ class ActiveSupport::TestCase
   end
 end
 
+class ActionController::TestCase
+  setup do
+    @counter = 0
+  end
+
+  def check_counter action
+    @counter += 1
+    if @counter == 2
+     # assert_equal 1, 2, "Multiple actions in functional test"
+    end
+  end
+
+  [:get, :post, :put, :patch, :delete].each do |method|
+    define_method method do |action, *args|
+      check_counter action
+      super action, *args
+    end
+  end
+end
+
 class ActionDispatch::IntegrationTest
   teardown do
     Thread.current[:api_client_ip_address] = nil

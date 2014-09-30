@@ -36,7 +36,11 @@ class JobsController < ApplicationController
 
   def cancel
     @object.cancel
-    redirect_to @object
+    if params[:return_to]
+      redirect_to params[:return_to]
+    else
+      redirect_to @object
+    end
   end
 
   def show

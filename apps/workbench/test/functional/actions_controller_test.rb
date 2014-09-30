@@ -26,16 +26,12 @@ class ActionsControllerTest < ActionController::TestCase
          session_for(:active))
 
     assert_response 302   # collection created and redirected to new collection page
+
+    assert response.headers['Location'].include? '/collections/'
     new_collection_uuid = response.headers['Location'].split('/')[-1]
 
-    @controller = CollectionsController.new
-
-    get :show, {
-      id: new_collection_uuid
-    }
-    assert_response :success
-
-    collection = assigns(:object)
+    use_token :active
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: new_collection_uuid).first
     manifest_text = collection['manifest_text']
     assert manifest_text.include?('foo'), 'Not found foo in new collection manifest text'
     assert manifest_text.include?('bar'), 'Not found bar in new collection manifest text'

@@ -161,6 +161,10 @@ if ($job_has_uuid)
       Log(undef, "Job is locked by " . $Job->{'is_locked_by_uuid'});
       exit EX_TEMPFAIL;
     }
+    if ($Job->{'state'} ne 'Queued') {
+      Log(undef, "Job state is " . $Job->{'state'} . ", but I can only start queued jobs.");
+      exit EX_TEMPFAIL;
+    }
     if ($Job->{'success'} ne undef) {
       Log(undef, "Job 'success' flag (" . $Job->{'success'} . ") is not null");
       exit EX_TEMPFAIL;
@@ -287,9 +291,7 @@ if ($job_has_uuid)
     Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
     exit EX_TEMPFAIL;
   }
-  $Job->update_attributes('started_at' => scalar gmtime,
-                          'running' => 1,
-                          'success' => undef,
+  $Job->update_attributes('state' => 'Running',
                           'tasks_summary' => { 'failed' => 0,
                                                'todo' => 1,
                                                'running' => 0,
@@ -876,12 +878,14 @@ Log (undef, "finish");
 save_meta();
 
 if ($job_has_uuid) {
-  $Job->update_attributes('running' => 0,
-                          'success' => $collated_output && $main::success,
-                          'finished_at' => scalar gmtime)
+  if ($collated_output && $main::success) {
+    $Job->update_attributes('state' => 'Complete')
+  } else {
+    $Job->update_attributes('state' => 'Failed')
+  }
 }
 
-exit ($Job->{'success'} ? 1 : 0);
+exit ($Job->{'state'} != 'Complete' ? 1 : 0);
 
 
 
@@ -1033,12 +1037,16 @@ sub check_refresh_wanted
       my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
       for my $attr ('cancelled_at',
                     'cancelled_by_user_uuid',
-                    'cancelled_by_client_uuid') {
+                    'cancelled_by_client_uuid',
+                    'state') {
         $Job->{$attr} = $Job2->{$attr};
       }
-      if ($Job->{'cancelled_at'}) {
-        Log (undef, "Job cancelled at " . $Job->{cancelled_at} .
-             " by user " . $Job->{cancelled_by_user_uuid});
+      if ($Job->{'state'} ne "Running") {
+        if ($Job->{'state'} eq "Cancelled") {
+          Log (undef, "Job cancelled at " . $Job->{'cancelled_at'} . " by user " . $Job->{'cancelled_by_user_uuid'});
+        } else {
+          Log (undef, "Job state unexpectedly changed to " . $Job->{'state'});
+        }
         $main::success = 0;
         $main::please_freeze = 1;
       }
@@ -1336,9 +1344,11 @@ sub croak
 sub cleanup
 {
   return if !$job_has_uuid;
-  $Job->update_attributes('running' => 0,
-                          'success' => 0,
-                          'finished_at' => scalar gmtime);
+  if ($Job->{'state'} eq 'Cancelled') {
+    $Job->update_attributes('finished_at' => scalar gmtime);
+  } else {
+    $Job->update_attributes('state' => 'Failed');
+  }
 }
 
 

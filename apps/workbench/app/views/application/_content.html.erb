@@ -7,8 +7,9 @@
       <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
       <li class="<%= 'active' if i==0 %>">
         <a href="#<%= pane_name %>"
-           data-toggle="tab"
+           class="pane-anchor"
            id="<%= pane_name %>-tab"
+           data-toggle="tab"
            data-tab-history=true
            data-pane-content-url="<%= url_for(params.merge(tab_pane: pane_name)) %>">
           <%= pane_name.gsub('_', ' ') %> <span id="<%= pane_name %>-count"></span>

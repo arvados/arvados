@@ -431,7 +431,8 @@ CREATE TABLE jobs (
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
     priority integer DEFAULT 0 NOT NULL,
-    description text
+    description text,
+    state character varying(255)
 );
 
 
@@ -640,7 +641,8 @@ CREATE TABLE nodes (
     last_ping_at timestamp without time zone,
     info text,
     updated_at timestamp without time zone NOT NULL,
-    properties text
+    properties text,
+    job_uuid character varying(255)
 );
 
 
@@ -2025,3 +2027,6 @@ INSERT INTO schema_migrations (version) VALUES ('20140918141529');
 
 INSERT INTO schema_migrations (version) VALUES ('20140918153541');
 
+INSERT INTO schema_migrations (version) VALUES ('20140918153705');
+
+INSERT INTO schema_migrations (version) VALUES ('20140924091559');

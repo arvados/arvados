@@ -1,13 +1,10 @@
-<% if j[:success] %>
-  <span class="label label-success"><%= if defined? title then title else 'success' end %></span>
-<% elsif j[:success] == false %>
-  <span class="label label-danger"><%= if defined? title then title else 'failed' end %></span>
-<% elsif j[:finished_at] %>
-  <span class="label label-default"><%= if defined? title then title else 'finished' end %></span>
-<% elsif j[:started_at] %>
-  <span class="label label-info"><%= if defined? title then title else 'running' end %></span>
-<% elsif not j.nil? %>
-  <span class="label label-default"><%= if defined? title then title else 'queued' end %></span>
-<% else %>
-  <span class="label label-default"><%= if defined? title then title else 'not ready' end %></span>
-<% end %>
+<% to_label = {
+     "Cancelled" => "danger",
+     "Complete" => "success",
+     "Running" => "info",
+     "Failed" => "danger",
+     "Queued" => "default",
+     nil => "default"
+   } %>
+
+  <span class="label label-<%= to_label[j[:state]] %>"><%= if defined? title then title else j[:state].downcase end %></span>

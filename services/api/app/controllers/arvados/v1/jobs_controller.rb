@@ -151,12 +151,7 @@ class Arvados::V1::JobsController < ApplicationController
     params[:order] ||= ['priority desc', 'created_at']
     load_limit_offset_order_params
     load_where_param
-    @where.merge!({
-                    started_at: nil,
-                    is_locked_by_uuid: nil,
-                    cancelled_at: nil,
-                    success: nil
-                  })
+    @where.merge!({state: Job::Queued})
     return if false.equal?(load_filters_param)
     find_objects_for_index
     index
@@ -164,7 +159,8 @@ class Arvados::V1::JobsController < ApplicationController
 
   def queue_size
     # Users may not be allowed to see all the jobs in the queue, so provide a
-    # method to get the actual queue length.
+    # method to get just the queue size in order to get a gist of how busy the
+    # cluster is.
     render :json => {:queue_size => Job.queue.size}
   end
 

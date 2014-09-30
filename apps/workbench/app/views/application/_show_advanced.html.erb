@@ -1,9 +1,9 @@
 <div class="panel-group" id="arv-adv-accordion">
-  <% ['Metadata',
-     'API response',
-     'Python example',
-     'CLI example',
-     'curl example'].each do |section| %>
+  <% ['API response',
+      'Metadata',
+      'Python example',
+      'CLI example',
+      'curl example'].each do |section| %>
     <% section_id = section.gsub(" ","_").downcase %>
     <div class="panel panel-default">
       <div class="panel-heading">
@@ -13,7 +13,7 @@
           </a>
         </h4>
       </div>
-      <div id="advanced_<%=section_id%>" class="panel-collapse collapse">
+      <div id="advanced_<%=section_id%>" class="panel-collapse collapse <%#= 'in' if section == 'API response'%>">
         <div class="panel-body">
           <%= render partial: "show_advanced_#{section_id}", locals: {object: @object} %>
         </div>

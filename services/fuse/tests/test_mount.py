@@ -262,7 +262,10 @@ class FuseSharedTest(MountTestBase):
                           "Pipeline Template with Input Parameter with Search.pipelineTemplate",
                           "Pipeline Template with Jobspec Components.pipelineTemplate",
                           "collection_expires_in_future",
-                          "pipeline_with_job.pipelineInstance"
+                          "collection_with_same_name_in_aproject_and_home_project",
+                          "pipeline_to_merge_params.pipelineInstance",
+                          "pipeline_with_job.pipelineInstance",
+                          "pipeline_with_tagged_collection_input.pipelineInstance"
                       ], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Active User', 'A Project'))
@@ -270,6 +273,7 @@ class FuseSharedTest(MountTestBase):
         self.assertEqual(["A Subproject",
                           "Two Part Pipeline Template.pipelineTemplate",
                           "collection_to_move_around",
+                          "collection_with_same_name_in_aproject_and_home_project",
                           "zzzzz-4zz18-fy296fx3hot09f7 added sometime"
                       ], d3)
 

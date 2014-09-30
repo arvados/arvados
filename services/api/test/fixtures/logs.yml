@@ -35,3 +35,12 @@ log5: # baz collection added, readable by active and spectator through group 'al
   object_uuid: zzzzz-4zz18-y9vne9npefyxh8g # baz file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
   event_at: <%= 5.minute.ago.to_s(:db) %>
+
+log_owned_by_active:
+  id: 6
+  uuid: zzzzz-xxxxx-pshmckwoma12345
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
+  object_uuid: zzzzz-2x53u-382brsig8rp3667 # repository foo
+  object_owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
+  event_at: <%= 2.minute.ago.to_s(:db) %>
+  summary: non-admin use can read own logs
