@@ -39,7 +39,7 @@ class User < ArvadosBase
     (not (self.uuid.andand.match(/000000000000000$/) and self.is_admin)) and super
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     [self.first_name, self.last_name].compact.join ' '
   end
 

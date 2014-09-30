@@ -146,6 +146,47 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert_not page.has_text? 'Graph'
   end
 
+  # Create a pipeline instance from within a project and run
+  test 'Run a pipeline from dashboard' do
+    visit page_with_token('active_trustedclient')
+
+    # create a pipeline instance
+    find('.btn', text: 'Run a pipeline').click
+    within('.modal-dialog') do
+      find('.selectable', text: 'Two Part Pipeline Template').click
+      find('.btn', text: 'Next: choose inputs').click
+    end
+
+    assert find('p', text: 'Provide a value')
+
+    find('div.form-group', text: 'Foo/bar pair').
+      find('.btn', text: 'Choose').
+      click
+
+    within('.modal-dialog') do
+      assert_selector 'button.dropdown-toggle', text: 'Home'
+      wait_for_ajax
+      click_button "Home"
+      click_link "A Project"
+      wait_for_ajax
+      first('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+    wait_for_ajax
+
+    # "Run" button present and enabled
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
+    first('a,button', text: 'Run').click
+
+    # Pipeline is running. We have a "Pause" button instead now.
+    page.assert_no_selector 'a,button', text: 'Run'
+    page.assert_selector 'a,button', text: 'Pause'
+
+    # Since it is test env, no jobs are created to run. So, graph not visible
+    assert_not page.has_text? 'Graph'
+  end
+
+
   test 'view pipeline with job and see graph' do
     visit page_with_token('active_trustedclient')
 
