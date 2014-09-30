@@ -353,22 +353,22 @@ class Dispatcher
     @running.each do |job_uuid, j|
       job = j[:job]
 
-      [:stdout, :stderr].each do |std|
-        # Read whatever is available from child stderr
+      [:stdout, :stderr].each do |stream|
+        # Read whatever is available from child stream
         buf = false
         begin
-          buf = j[std].read_nonblock(2**20)
+          buf = j[stream].read_nonblock(2**20)
         rescue Errno::EAGAIN, EOFError
         end
 
         if buf
-          j[:buf][std] << buf
-          if j[:buf][std].index "\n"
-            lines = j[:buf][std].lines("\n").to_a
-            if j[:buf][std][-1] == "\n"
-              j[:buf][std] = ''
+          j[:buf][stream] << buf
+          if j[:buf][stream].index "\n"
+            lines = j[:buf][stream].lines("\n").to_a
+            if j[:buf][stream][-1] == "\n"
+              j[:buf][stream] = ''
             else
-              j[:buf][std] = lines.pop
+              j[:buf][stream] = lines.pop
             end
             lines.each do |line|
               $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
@@ -434,9 +434,9 @@ class Dispatcher
     read_pipes
     write_log j_done # write any remaining logs
 
-    [:stdout, :stderr].each do |std|
-      if j_done[:buf][std] and j_done[:buf][std] != ''
-        $stderr.puts j_done[:buf][std] + "\n"
+    [:stdout, :stderr].each do |stream|
+      if j_done[:buf][stream] and j_done[:buf][stream] != ''
+        $stderr.puts j_done[:buf][stream] + "\n"
       end
     end
 
