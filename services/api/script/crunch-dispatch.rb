@@ -353,23 +353,32 @@ class Dispatcher
     @running.each do |job_uuid, j|
       job = j[:job]
 
-      [:stdout, :stderr].each do |stream|
-        # Read whatever is available from child stream
+      j[:buf].each do |stream, streambuf|
+        # Read some data from the child stream
         buf = false
         begin
-          buf = j[stream].read_nonblock(2**20)
+          buf = j[stream].read_nonblock(2**16)
         rescue Errno::EAGAIN, EOFError
         end
 
         if buf
-          j[:buf][stream] << buf
-          if j[:buf][stream].index "\n"
-            lines = j[:buf][stream].lines("\n").to_a
-            if j[:buf][stream][-1] == "\n"
-              j[:buf][stream] = ''
-            else
-              j[:buf][stream] = lines.pop
-            end
+          # Add to a the buffer
+          streambuf << buf
+
+          # Check for at least one complete line
+          if streambuf.index "\n"
+            lines = streambuf.lines("\n").to_a
+
+            # check if the last line is partial or not
+            j[:buf][stream] = if streambuf[-1] == "\n"
+                                # nope
+                                ''
+                              else
+                                # Put the partial line back into the buffer
+                                lines.pop
+                              end
+
+            # Now spool the lines to the log output buffer
             lines.each do |line|
               $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
               $stderr.puts line
@@ -379,6 +388,7 @@ class Dispatcher
               end
             end
 
+            # Now actually send the log output to the logs table
             if not j[:log_truncated]
               if (Rails.configuration.crunch_log_bytes_per_event < j[:stderr_buf_to_flush].size or
                   (j[:stderr_flushed_at] + Rails.configuration.crunch_log_seconds_between_events < Time.now.to_i))
@@ -434,9 +444,9 @@ class Dispatcher
     read_pipes
     write_log j_done # write any remaining logs
 
-    [:stdout, :stderr].each do |stream|
-      if j_done[:buf][stream] and j_done[:buf][stream] != ''
-        $stderr.puts j_done[:buf][stream] + "\n"
+    j_done[:buf].each do |stream, streambuf|
+      if streambuf != ''
+        $stderr.puts streambuf + "\n"
       end
     end
 
