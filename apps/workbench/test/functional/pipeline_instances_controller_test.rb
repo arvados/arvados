@@ -86,4 +86,42 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     assert assigns(:object).components[:foo][:job][:started_at].is_a? Time
     assert assigns(:object).components[:foo][:job][:finished_at].is_a? Time
   end
+
+  # The next two tests ensure that a pipeline instance can be copied
+  # when the template has components that do not exist in the
+  # instance (ticket #4000).
+
+  test "copy pipeline instance with components=use_latest" do
+    post(:copy,
+         {
+           id: api_fixture('pipeline_instances')['pipeline_with_newer_template']['uuid'],
+           components: 'use_latest',
+           script: 'use_latest',
+           pipeline_instance: {
+             state: 'RunningOnServer'
+           }
+         },
+         session_for(:active))
+    assert_response 302
+    assert_not_nil assigns(:object)
+    assert_not_nil assigns(:object).components[:foo]
+    assert_not_nil assigns(:object).components[:bar]
+  end
+
+  test "copy pipeline instance on newer template works with script=use_same" do
+    post(:copy,
+         {
+           id: api_fixture('pipeline_instances')['pipeline_with_newer_template']['uuid'],
+           components: 'use_latest',
+           script: 'use_same',
+           pipeline_instance: {
+             state: 'RunningOnServer'
+           }
+         },
+         session_for(:active))
+    assert_response 302
+    assert_not_nil assigns(:object)
+    assert_not_nil assigns(:object).components[:foo]
+    assert_not_nil assigns(:object).components[:bar]
+  end
 end

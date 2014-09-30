@@ -127,3 +127,16 @@ pipeline_to_merge_params:
           default: [1,1,2,3,5]
         array_with_value:
           value: [1,1,2,3,5]
+
+pipeline_with_newer_template:
+  state: Complete
+  uuid: zzzzz-d1hrv-9fm8l10i9z2kqc6
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
+  created_at: 2014-09-15 12:00:00
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters:
+      input: foo_input
