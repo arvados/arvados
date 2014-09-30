@@ -3,6 +3,15 @@ require 'test_helper'
 class CollectionsControllerTest < ActionController::TestCase
   NONEXISTENT_COLLECTION = "ffffffffffffffffffffffffffffffff+0"
 
+  def stub_file_content
+    # For the duration of the current test case, stub file download
+    # content with a randomized (but recognizable) string. Return the
+    # string, the test case can use it in assertions.
+    txt = 'the quick brown fox ' + rand(2**32).to_s
+    @controller.stubs(:file_enumerator).returns([txt])
+    txt
+  end
+
   def collection_params(collection_name, file_name=nil)
     uuid = api_fixture('collections')[collection_name.to_s]['uuid']
     params = {uuid: uuid, id: uuid}
@@ -40,14 +49,6 @@ class CollectionsControllerTest < ActionController::TestCase
     session = session_for(session) if not session.is_a? Hash
     get(:show, params, session)
     assert_response response
-  end
-
-  # Mock the collection file reader to avoid external calls and return
-  # a predictable string.
-  CollectionsController.class_eval do
-    def file_enumerator(opts)
-      [[opts[:arvados_api_token], opts[:uuid], opts[:file]].join('/')]
-    end
   end
 
   test "viewing a collection" do
@@ -111,9 +112,10 @@ class CollectionsControllerTest < ActionController::TestCase
   test "getting a file from Keep" do
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:active)
+    expect_content = stub_file_content
     get(:show_file, params, sess)
     assert_response :success
-    assert_equal(expected_contents(params, sess), @response.body,
+    assert_equal(expect_content, @response.body,
                  "failed to get a correct file from Keep")
   end
 
@@ -135,9 +137,10 @@ class CollectionsControllerTest < ActionController::TestCase
     params = collection_params(:foo_file, 'foo')
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
     params[:reader_token] = read_token
+    expect_content = stub_file_content
     get(:show_file, params)
     assert_response :success
-    assert_equal(expected_contents(params, read_token), @response.body,
+    assert_equal(expect_content, @response.body,
                  "failed to get a correct file from Keep using a reader token")
     assert_not_equal(read_token, session[:arvados_api_token],
                      "using a reader token set the session's API token")
@@ -156,9 +159,10 @@ class CollectionsControllerTest < ActionController::TestCase
     sess = session_for(:expired)
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
     params[:reader_token] = read_token
+    expect_content = stub_file_content
     get(:show_file, params, sess)
     assert_response :success
-    assert_equal(expected_contents(params, read_token), @response.body,
+    assert_equal(expect_content, @response.body,
                  "failed to get a correct file from Keep using a reader token")
     assert_not_equal(read_token, session[:arvados_api_token],
                      "using a reader token set the session's API token")
