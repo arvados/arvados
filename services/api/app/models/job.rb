@@ -330,17 +330,29 @@ class Job < ArvadosModel
   end
 
   def validate_state_change
+    ok = true
     if self.state_changed?
-      if self.state_was.in? [Complete, Failed, Cancelled]
-        # Once in a finished state, don't permit any changes
+      ok = case self.state_was
+           when nil
+             # state isn't set yet
+             true
+           when Queued
+             # Permit going from queued to any state
+             true
+           when Running
+             # From running, may only transition to a finished state
+             [Complete, Failed, Cancelled].include? self.state
+           when Complete, Failed, Cancelled
+             # Once in a finished state, don't permit any more state changes
+             false
+           else
+             # Any other state transition is also invalid
+             false
+           end
+      if not ok
         errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
-        return false
-      elsif self.state_was == Running and not self.state.in? [Complete, Failed, Cancelled]
-        # From running, can only transition to a finished state
-        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
-        return false
       end
     end
-    true
+    ok
   end
 end

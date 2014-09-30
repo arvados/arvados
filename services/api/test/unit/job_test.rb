@@ -169,7 +169,6 @@ class JobTest < ActiveSupport::TestCase
     [['running', true, [['state', 'Running']]], ['success', false, [['state', 'Failed']]]],
     [['running', true, [['state', 'Running']]], ['state', 'Complete', [['success', true],['finished_at', 'not_nil']]]],
     [['running', true, [['state', 'Running']]], ['state', 'Failed', [['success', false],['finished_at', 'not_nil']]]],
-    [['running', true, [['state', 'Running']]], ['running', false, [['state', 'Queued']]]],
     [['cancelled_at', Time.now, [['state', 'Cancelled']]], ['success', false, [['state', 'Cancelled'],['finished_at', 'nil'], ['cancelled_at', 'not_nil']]]],
     [['cancelled_at', Time.now, [['state', 'Cancelled'],['running', false]]], ['success', true, [['state', 'Cancelled'],['running', false],['finished_at', 'nil'],['cancelled_at', 'not_nil']]]],
     # potential migration cases
@@ -205,6 +204,46 @@ class JobTest < ActiveSupport::TestCase
         end
       end
     end
+  end
+
+  test "Test job locking" do
+    set_user_from_auth :active_trustedclient
+    job = Job.create! job_attrs
+
+    assert_equal "Queued", job.state
+
+    # Should be able to lock successfully
+    job.lock current_user.uuid
+    assert_equal "Running", job.state
+
+    assert_raises ArvadosModel::ConflictError do
+      # Can't lock it again
+      job.lock current_user.uuid
+    end
+    job.reload
+    assert_equal "Running", job.state
+
+    set_user_from_auth :project_viewer
+    assert_raises ArvadosModel::ConflictError do
+      # Can't lock it as a different user either
+      job.lock current_user.uuid
+    end
+    job.reload
+    assert_equal "Running", job.state
+
+    assert_raises ArvadosModel::PermissionDeniedError do
+      # Can't update fields as a different user
+      job.update_attributes(state: "Failed")
+    end
+    job.reload
+    assert_equal "Running", job.state
+
+
+    set_user_from_auth :active_trustedclient
+
+    # Can update fields as the locked_by user
+    job.update_attributes(state: "Failed")
+    assert_equal "Failed", job.state
   end
 
 end
