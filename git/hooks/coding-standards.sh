@@ -24,7 +24,7 @@ $broken_commit_message = /Please enter a commit message to explain why this merg
 $wrong_way_merge_master = /Merge( remote-tracking)? branch '([^\/]+\/)?master' into/
 $merge_master = /Merge branch '[^']+'((?! into)| into master)/
 $pull_merge = /Merge branch 'master' of /
-$refs_or_closes_or_no_issue = /(refs #|closes #|no issue #)/i
+$refs_or_closes_or_no_issue = /(refs #|closes #|fixes #|no issue #)/i
 
 # enforced custom commit message format
 def check_message_format
