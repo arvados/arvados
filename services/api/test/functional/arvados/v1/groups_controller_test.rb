@@ -340,6 +340,10 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       },
     }
     assert_response 422
+    response_errors = json_response['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert(response_errors.first.include?('duplicate key'),
+           "Expected 'duplicate key' error in #{response_errors.first}")
   end
 
   test 'creating duplicate named subproject succeeds with ensure_unique_name' do
@@ -353,7 +357,12 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       ensure_unique_name: true
     }
     assert_response :success
-    assert_not_equal json_response['uuid'], groups(:aproject).uuid
-    assert_equal json_response['name'], 'A Project (2)'
+    new_project = json_response
+    assert_not_equal(new_project['uuid'],
+                     groups(:aproject).uuid,
+                     "create returned same uuid as existing project")
+    assert_equal(new_project['name'],
+                 'A Project (2)',
+                 "new project name '#{new_project['name']}' was expected to be 'A Project (2)'")
   end
 end

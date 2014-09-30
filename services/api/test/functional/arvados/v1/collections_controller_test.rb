@@ -147,6 +147,10 @@ EOS
       }
     }
     assert_response 422
+    response_errors = json_response['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert(response_errors.first.include?('duplicate key'),
+           "Expected 'duplicate key' error in #{response_errors.first}")
   end
 
   test "create succeeds with duplicate name with ensure_unique_name" do
@@ -163,8 +167,7 @@ EOS
       ensure_unique_name: true
     }
     assert_response :success
-    resp = JSON.parse(@response.body)
-    assert_equal 'owned_by_active (2)', resp['name']
+    assert_equal 'owned_by_active (2)', json_response['name']
   end
 
   test "create with owner_uuid set to group i can_manage" do
