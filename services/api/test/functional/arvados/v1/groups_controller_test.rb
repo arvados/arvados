@@ -329,4 +329,31 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
                     users(:admin).uuid,
                     "Current user should be included in 'writable_by' field")
   end
+
+  test 'creating subproject with duplicate name fails' do
+    authorize_with :active
+    post :create, {
+      group: {
+        name: 'A Project',
+        owner_uuid: users(:active).uuid,
+        group_class: 'project',
+      },
+    }
+    assert_response 422
+  end
+
+  test 'creating duplicate named subproject succeeds with ensure_unique_name' do
+    authorize_with :active
+    post :create, {
+      group: {
+        name: 'A Project',
+        owner_uuid: users(:active).uuid,
+        group_class: 'project',
+      },
+      ensure_unique_name: true
+    }
+    assert_response :success
+    assert_not_equal json_response['uuid'], groups(:aproject).uuid
+    assert_equal json_response['name'], 'A Project (2)'
+  end
 end
