@@ -57,34 +57,34 @@ var makeFilter = function() {
     log_maxbytes = <%= Rails.configuration.log_viewer_max_bytes %>;
     logcollection_url = '<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>';
     $("#log-viewer-download-url").attr('href', logcollection_url);
-    $("#log-viewer-download-pane").css('display', 'inline');
+    $("#log-viewer-download-pane").show();
     if (log_size > log_maxbytes) {
       range_header = { 'Range': 'bytes=0-' + log_maxbytes };
     } else {
       range_header = null;
     }
     $.ajax(logcollection_url, { headers: range_header }).
-	done(function(data, status, jqxhr) {
-	    logViewer.filter();
-	    addToLogViewer(logViewer, data.split("\n"), taskState);
-	    logViewer.filter(makeFilter());
+        done(function(data, status, jqxhr) {
+            logViewer.filter();
+            addToLogViewer(logViewer, data.split("\n"), taskState);
+            logViewer.filter(makeFilter());
             content_range_hdr = jqxhr.getResponseHeader('Content-Range');
-	    var v = content_range_hdr && content_range_hdr.match(/bytes \d+-(\d+)\/(.+)/);
+            var v = content_range_hdr && content_range_hdr.match(/bytes \d+-(\d+)\/(.+)/);
             short_log = v && (v[2] == '*' || parseInt(v[1]) + 1 < v[2]);
-	    if (jqxhr.status == 206 && short_log) {
-	      $("#log-viewer-overview").html(
-		'<p>Showing only ' + data.length + ' bytes of this log.' +
-		' Timing information is unavailable since' +
-		' the full log was not retrieved.</p>'
-	      );
+            if (jqxhr.status == 206 && short_log) {
+              $("#log-viewer-overview").html(
+                '<p>Showing only ' + data.length + ' bytes of this log.' +
+                ' Timing information is unavailable since' +
+                ' the full log was not retrieved.</p>'
+              );
             } else {
-	      generateJobOverview("#log-viewer-overview", logViewer, taskState);
-	    }
-	    $("#log-viewer .spinner").detach();
-	}).
-	fail(function(jqxhr, status, error) {
-	    $("#log-viewer .spinner").detach();
-	});
+              generateJobOverview("#log-viewer-overview", logViewer, taskState);
+            }
+            $("#log-viewer .spinner").detach();
+        }).
+        fail(function(jqxhr, status, error) {
+            $("#log-viewer .spinner").detach();
+        });
   <% end %>
 <% else %>
   <%# Live log loading not implemented yet. %>

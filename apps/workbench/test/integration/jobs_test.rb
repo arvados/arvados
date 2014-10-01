@@ -13,10 +13,10 @@ class JobsTest < ActionDispatch::IntegrationTest
     #
     ENV['KEEP_LOCAL_STORE'] ||= Dir.mktmpdir
     keepdir = ENV['KEEP_LOCAL_STORE']
-    open(File.join(keepdir, 'b9f7e25b33844d816d8531686f8bf360'), 'w') do |f|
-      f.write("2014-01-01_12:00:01 zzzzz-8i9sb-abcdefghijklmno 0  log message 1\n")
-      f.write("2014-01-01_12:00:02 zzzzz-8i9sb-abcdefghijklmno 0  log message 2\n")
-      f.write("2014-01-01_12:00:03 zzzzz-8i9sb-abcdefghijklmno 0  log message 3\n")
+    open(File.join(keepdir, 'cdd549ae79fe6640fa3d5c6261d8303c'), 'w') do |f|
+      f.write("2014-01-01_12:00:01 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 1\n")
+      f.write("2014-01-01_12:00:02 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 2\n")
+      f.write("2014-01-01_12:00:03 zzzzz-8i9sb-0vsrcqi7whchuil 0  log message 3\n")
     end
 
     @log_viewer_max_bytes = Rails.configuration.log_viewer_max_bytes

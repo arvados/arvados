@@ -229,6 +229,6 @@ job_with_real_log:
   uuid: zzzzz-8i9sb-0vsrcqi7whchuil
   created_at: 2014-09-01 12:00:00
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  log: 3399cbb0953a7823618f3e288a85ee26+81
+  log: 0b9a7787660e1fce4a93f33e01376ba6+81
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
   state: Complete
