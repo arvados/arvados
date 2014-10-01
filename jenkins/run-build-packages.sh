@@ -127,6 +127,7 @@ build_and_scp_deb () {
       if [[ "$FPM_EXIT_CODE" != "0" ]]; then
         echo "Error building debian package for $1:\n $FPM_RESULTS"
       else
+        chmod 644 $FPM_PACKAGE_NAME
         scp -P2222 $FPM_PACKAGE_NAME $APTUSER@$APTSERVER:tmp/
         CALL_FREIGHT=1
       fi
