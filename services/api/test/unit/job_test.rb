@@ -216,7 +216,7 @@ class JobTest < ActiveSupport::TestCase
     job.lock current_user.uuid
     assert_equal "Running", job.state
 
-    assert_raises ArvadosModel::PermissionDeniedError do
+    assert_raises ArvadosModel::AlreadyLockedError do
       # Can't lock it again
       job.lock current_user.uuid
     end
@@ -224,7 +224,7 @@ class JobTest < ActiveSupport::TestCase
     assert_equal "Running", job.state
 
     set_user_from_auth :project_viewer
-    assert_raises ArvadosModel::PermissionDeniedError do
+    assert_raises ArvadosModel::AlreadyLockedError do
       # Can't lock it as a different user either
       job.lock current_user.uuid
     end

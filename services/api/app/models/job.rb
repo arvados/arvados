@@ -93,7 +93,7 @@ class Job < ArvadosModel
     transaction do
       self.reload
       unless self.state == Queued and self.is_locked_by_uuid.nil?
-        raise PermissionDeniedError
+        raise AlreadyLockedError
       end
       self.state = Running
       self.is_locked_by_uuid = locked_by_uuid
