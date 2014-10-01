@@ -199,3 +199,17 @@ collection_expires_in_future:
   expires_at: 2038-01-01T00:00:00Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:expired\n"
   name: collection_expires_in_future
+
+# a collection with a log file that can be parsed by the log viewer
+# This collection hash matches the following log text:
+#    2014-01-01_12:00:01 zzzzz-8i9sb-abcdefghijklmno 0  log message 1
+#    2014-01-01_12:00:02 zzzzz-8i9sb-abcdefghijklmno 0  log message 2
+#    2014-01-01_12:00:03 zzzzz-8i9sb-abcdefghijklmno 0  log message 3
+#
+real_log_collection:
+  uuid: zzzzz-4zz18-op4e2lbej01tcvu
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-09-01 12:00:00
+  portable_data_hash: 3399cbb0953a7823618f3e288a85ee26+81
+  manifest_text: ". b9f7e25b33844d816d8531686f8bf360+195 0:195:zzzzz-8i9sb-abcdefghijklmno.log.txt\n"
+  name: real_log_collection
