@@ -206,6 +206,27 @@ class JobTest < ActiveSupport::TestCase
     end
   end
 
+  test "Test job state changes" do
+    all = ["Queued", "Running", "Complete", "Failed", "Cancelled"]
+    valid = {"Queued" => all, "Running" => ["Complete", "Failed", "Cancelled"]}
+    all.each do |start|
+      all.each do |finish|
+        if start != finish
+          job = Job.create! job_attrs(state: start)
+          assert_equal start, job.state
+          job.state = finish
+          job.save
+          job.reload
+          if valid[start] and valid[start].include? finish
+            assert_equal finish, job.state
+          else
+            assert_equal start, job.state
+          end
+        end
+      end
+    end
+  end
+
   test "Test job locking" do
     set_user_from_auth :active_trustedclient
     job = Job.create! job_attrs
