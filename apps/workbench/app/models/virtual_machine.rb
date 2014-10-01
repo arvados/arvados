@@ -15,7 +15,7 @@ class VirtualMachine < ArvadosBase
             {current_user_logins: {column_heading: "logins", type: 'array'}},
             super]
   end
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     (hostname && !hostname.empty?) ? hostname : uuid
   end
 end
