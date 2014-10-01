@@ -163,6 +163,10 @@ class CollectionsControllerTest < ActionController::TestCase
 
   test "inactive user can retrieve user agreement" do
     ua_collection = api_fixture('collections')['user_agreement']
+    # Here we don't test whether the agreement can be retrieved from
+    # Keep. We only test that show_file decides to send file content,
+    # so we use the file content stub.
+    stub_file_content
     get :show_file, {
       uuid: ua_collection['uuid'],
       file: ua_collection['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
