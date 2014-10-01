@@ -37,20 +37,38 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     }
     assert_response :success
     assert_not_nil assigns(:object)
-    new_job = JSON.parse(@response.body)
+    new_job = assigns(:object)
     assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['log']
     assert_equal 'd41d8cd98f00b204e9800998ecf8427e+0', new_job['output']
     version = new_job['script_version']
 
     # Make sure version doesn't get mangled by normalize
     assert_not_nil version.match(/^[0-9a-f]{40}$/)
+    assert_equal 'master', json_response['supplied_script_version']
+  end
+
+  test "normalize output and log uuids when updating job" do
+    authorize_with :active
+
+    foobar_job = jobs(:foobar)
+
+    new_output = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
+    new_log = 'd41d8cd98f00b204e9800998ecf8427e+0+K@xyzzy'
     put :update, {
-      id: new_job['uuid'],
+      id: foobar_job['uuid'],
       job: {
-        log: new_job['log']
+        output: new_output,
+        log: new_log
       }
     }
-    assert_equal version, JSON.parse(@response.body)['script_version']
+
+    updated_job = json_response
+    assert_not_equal foobar_job['log'], updated_job['log']
+    assert_not_equal new_log, updated_job['log']  # normalized during update
+    assert_equal new_log[0,new_log.rindex('+')], updated_job['log']
+    assert_not_equal foobar_job['output'], updated_job['output']
+    assert_not_equal new_output, updated_job['output']  # normalized during update
+    assert_equal new_output[0,new_output.rindex('+')], updated_job['output']
   end
 
   test "cancel a running job" do
@@ -81,9 +99,19 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_equal(true,
                  File.exists?(Rails.configuration.crunch_refresh_trigger),
                  'trigger file should be created when job is cancelled')
+  end
 
+  test "cancelling a cancelled jobs stays cancelled" do
+    # We need to verify that "cancel" creates a trigger file, so first
+    # let's make sure there is no stale trigger file.
+    begin
+      File.unlink(Rails.configuration.crunch_refresh_trigger)
+    rescue Errno::ENOENT
+    end
+
+    authorize_with :active
     put :update, {
-      id: jobs(:running).uuid,
+      id: jobs(:running_cancelled).uuid,
       job: {
         cancelled_at: nil
       }
@@ -92,22 +120,19 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_not_nil job['cancelled_at'], 'un-cancelled job stays cancelled'
   end
 
-  test "update a job without failing script_version check" do
-    authorize_with :admin
-    put :update, {
-      id: jobs(:uses_nonexistent_script_version).uuid,
-      job: {
-        owner_uuid: users(:admin).uuid
+  ['abc.py', 'hash.py'].each do |script|
+    test "update job script attribute to #{script} without failing script_version check" do
+      authorize_with :admin
+      put :update, {
+        id: jobs(:uses_nonexistent_script_version).uuid,
+        job: {
+          script: script
+        }
       }
-    }
-    assert_response :success
-    put :update, {
-      id: jobs(:uses_nonexistent_script_version).uuid,
-      job: {
-        owner_uuid: users(:active).uuid
-      }
-    }
-    assert_response :success
+      assert_response :success
+      resp = assigns(:object)
+      assert_equal jobs(:uses_nonexistent_script_version).script_version, resp['script_version']
+    end
   end
 
   test "search jobs by uuid with >= query" do

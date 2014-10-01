@@ -25,6 +25,26 @@ has_component_with_empty_script_parameters:
     script: foo
     script_version: master
 
+has_component_with_completed_jobs:
+  # Test that the job "started_at" and "finished_at" fields are
+  # parsed into Time fields when rendering. This job must *not*
+  # have its own fixture; the point is to force the
+  # pipeline_instances_controller_test in Workbench to parse
+  # the "components" field.
+  state: Complete
+  uuid: zzzzz-d1hrv-i3e77t9z5y8j9cc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-rft1xdewxkwgxnz
+      script_version: master
+      started_at: <%= 10.minute.ago.to_s(:db) %>
+      finished_at: <%= 9.minute.ago.to_s(:db) %>
+
 has_job:
   name: pipeline_with_job
   state: Ready
@@ -62,3 +82,48 @@ components_is_jobspec:
         dataclass: Collection
         title: "Foo/bar pair"
         description: "Provide a collection containing at least two files."
+
+pipeline_with_tagged_collection_input:
+  name: pipeline_with_tagged_collection_input
+  state: Ready
+  uuid: zzzzz-d1hrv-1yfj61234abcdk3
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  components:
+    part-one:
+      script_parameters:
+        input:
+          value: zzzzz-4zz18-znfnqtbbv4spc3w
+
+pipeline_to_merge_params:
+  name: pipeline_to_merge_params
+  state: Ready
+  uuid: zzzzz-d1hrv-1yfj6dcba4321k3
+  pipeline_template_uuid: zzzzz-p5p6p-aox0k0ofxrystgw
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 3.1.minute.ago.to_s(:db) %>
+  components:
+    part-one:
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: "Foo/bar pair"
+          description: "Provide a collection containing at least two files."
+    part-two:
+      script_parameters:
+        input:
+          output_of: part-one
+        integer_with_default:
+          default: 123
+        integer_with_value:
+          value: 123
+        string_with_default:
+          default: baz
+        string_with_value:
+          value: baz
+        plain_string: qux
+        array_with_default:
+          default: [1,1,2,3,5]
+        array_with_value:
+          value: [1,1,2,3,5]

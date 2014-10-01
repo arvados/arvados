@@ -2,6 +2,7 @@ require 'test_helper'
 
 class PipelineInstancesControllerTest < ActionController::TestCase
   def create_instance_long_enough_to(instance_attrs={})
+    # create 'two_part' pipeline with the given instance attributes
     pt_fixture = api_fixture('pipeline_templates')['two_part']
     post :create, {
       pipeline_instance: instance_attrs.merge({
@@ -12,12 +13,13 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     assert_response :success
     pi_uuid = assigns(:object).uuid
     assert_not_nil assigns(:object)
+
+    # yield
     yield pi_uuid, pt_fixture
-    post :destroy, {
-      id: pi_uuid,
-      format: :json
-    }
-    assert_response :success
+
+    # delete the pipeline instance
+    use_token :active
+    PipelineInstance.where(uuid: pi_uuid).first.destroy
   end
 
   test "pipeline instance components populated after create" do
@@ -28,21 +30,17 @@ class PipelineInstancesControllerTest < ActionController::TestCase
   end
 
   test "can render pipeline instance with tagged collections" do
-    # Make sure to pass in a tagged collection to test that part of the
-    # rendering behavior.
-    attrs = {components: {'part-one' => {script_parameters: {input:
-            {value: api_fixture('collections')['foo_file']['uuid']}
-            }}}}
-    create_instance_long_enough_to(attrs) do |new_instance_uuid, template_fixture|
-      get(:show, {id: new_instance_uuid}, session_for(:active))
-      assert_response :success
-    end
+    # Make sure to pass in a tagged collection to test that part of the rendering behavior.
+    get(:show,
+        {id: api_fixture("pipeline_instances")["pipeline_with_tagged_collection_input"]["uuid"]},
+        session_for(:active))
+    assert_response :success
   end
 
   test "update script_parameters one at a time using merge param" do
-    create_instance_long_enough_to do |new_instance_uuid, template_fixture|
+      template_fixture = api_fixture('pipeline_templates')['two_part']
       post :update, {
-        id: new_instance_uuid,
+        id: api_fixture("pipeline_instances")["pipeline_to_merge_params"]["uuid"],
         pipeline_instance: {
           components: {
             "part-two" => {
@@ -69,7 +67,6 @@ class PipelineInstancesControllerTest < ActionController::TestCase
           assert_equal orig_params[k].to_json, new_params[k.to_sym].to_json
         end
       end
-    end
   end
 
   test "component rendering copes with unexpeceted components format" do
@@ -77,5 +74,16 @@ class PipelineInstancesControllerTest < ActionController::TestCase
         {id: api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]},
         session_for(:active))
     assert_response :success
+  end
+
+  test "dates in JSON components are parsed" do
+    get(:show,
+        {id: api_fixture('pipeline_instances')['has_component_with_completed_jobs']['uuid']},
+        session_for(:active))
+    assert_response :success
+    assert_not_nil assigns(:object)
+    assert_not_nil assigns(:object).components[:foo][:job]
+    assert assigns(:object).components[:foo][:job][:started_at].is_a? Time
+    assert assigns(:object).components[:foo][:job][:finished_at].is_a? Time
   end
 end
