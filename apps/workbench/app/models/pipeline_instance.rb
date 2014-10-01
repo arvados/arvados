@@ -5,10 +5,14 @@ class PipelineInstance < ArvadosBase
     true
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     pipeline_name = self.name
     if pipeline_name.nil? or pipeline_name.empty?
-      template = PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+      template = if lookup and lookup[self.pipeline_template_uuid]
+                   lookup[self.pipeline_template_uuid]
+                 else
+                   PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+                 end
       if template
         template.name
       else
