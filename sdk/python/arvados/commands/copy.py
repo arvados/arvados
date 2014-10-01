@@ -47,6 +47,9 @@ def main():
         '-v', '--verbose', dest='verbose', action='store_true',
         help='Verbose output.')
     parser.add_argument(
+        '-f', '--force', dest='force', action='store_true',
+        help='Perform copy even if the object appears to exist at the remote destination.')
+    parser.add_argument(
         '--src', dest='source_arvados', required=True,
         help='The name of the source Arvados instance (required). May be either a pathname to a config file, or the basename of a file in $HOME/.config/arvados/instance_name.conf.')
     parser.add_argument(
@@ -83,7 +86,9 @@ def main():
     # Identify the kind of object we have been given, and begin copying.
     t = uuid_type(src_arv, args.object_uuid)
     if t == 'Collection':
-        result = copy_collection(args.object_uuid, src=src_arv, dst=dst_arv)
+        result = copy_collection(args.object_uuid,
+                                 src_arv, dst_arv,
+                                 force=args.force)
     elif t == 'PipelineInstance':
         result = copy_pipeline_instance(args.object_uuid,
                                         src_arv, dst_arv,
@@ -319,21 +324,23 @@ def copy_git_repos(p, src, dst, dst_repo):
 #    the manifest block, ensures that the collection's manifest
 #    hash will not change.
 #
-def copy_collection(obj_uuid, src, dst):
+def copy_collection(obj_uuid, src, dst, force=False):
     c = src.collections().get(uuid=obj_uuid).execute()
 
-    # Check whether a collection with this hash already exists
-    # at the destination.  If so, just return that collection.
-    if 'portable_data_hash' in c:
-        colhash = c['portable_data_hash']
-    else:
-        colhash = c['uuid']
-    dstcol = dst.collections().list(
-        filters=[['portable_data_hash', '=', colhash]]
-    ).execute()
-    if dstcol['items_available'] > 0:
-        logger.info("Skipping collection %s (already at dst)", obj_uuid)
-        return dstcol['items'][0]
+    # If a collection with this hash already exists at the
+    # destination, and 'force' is not true, just return that
+    # collection.
+    if not force:
+        if 'portable_data_hash' in c:
+            colhash = c['portable_data_hash']
+        else:
+            colhash = c['uuid']
+        dstcol = dst.collections().list(
+            filters=[['portable_data_hash', '=', colhash]]
+        ).execute()
+        if dstcol['items_available'] > 0:
+            logger.info("Skipping collection %s (already at dst)", obj_uuid)
+            return dstcol['items'][0]
 
     logger.info("Copying collection %s", obj_uuid)
 
