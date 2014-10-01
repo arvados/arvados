@@ -12,7 +12,7 @@ class JobsApiTest < ActionDispatch::IntegrationTest
 
   test "cancel someone else's visible job" do
     post "/arvados/v1/jobs/#{jobs(:barbaz).uuid}/cancel", {:format => :json}, {'HTTP_AUTHORIZATION' => "OAuth2 #{api_client_authorizations(:spectator).api_token}"}
-    assert_response 403
+    assert_response 422
   end
 
   test "cancel someone else's invisible job" do
