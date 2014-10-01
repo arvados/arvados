@@ -19,13 +19,6 @@ class CollectionsControllerTest < ActionController::TestCase
     params
   end
 
-  def expected_contents(params, token)
-    unless token.is_a? String
-      token = params[:api_token] || token[:arvados_api_token]
-    end
-    [token, params[:uuid], params[:file]].join('/')
-  end
-
   def assert_hash_includes(actual_hash, expected_hash, msg=nil)
     expected_hash.each do |key, value|
       assert_equal(value, actual_hash[key], msg)
