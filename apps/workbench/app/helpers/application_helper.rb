@@ -93,7 +93,7 @@ module ApplicationHelper
 
         if opts[:friendly_name]
           if attrvalue.respond_to? :friendly_link_name
-            link_name = attrvalue.friendly_link_name
+            link_name = attrvalue.friendly_link_name opts[:lookup]
           else
             begin
               if resource_class.name == 'Collection'

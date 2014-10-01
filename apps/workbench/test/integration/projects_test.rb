@@ -462,4 +462,15 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     assert page.has_link?('Jobs and pipelines'), 'Jobs and pipelines link not found in project'
   end
 
+  [["jobs", "/jobs"],
+   ["pipelines", "/pipeline_instances"],
+   ["collections", "/collections"]
+  ].each do |target,path|
+    test "Test dashboard button all #{target}" do
+      visit page_with_token 'active', '/'
+      click_link "All #{target}"
+      assert_equal path, current_path
+    end
+  end
+
 end

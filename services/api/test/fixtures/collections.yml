@@ -10,6 +10,18 @@ user_agreement:
   manifest_text: ". 6a4ff0499484c6c79c95cd8c566bd25f+249025 0:249025:GNU_General_Public_License,_version_3.pdf\n"
   name: user_agreement
 
+collection_owned_by_active:
+  uuid: zzzzz-4zz18-bv31uwvy3neko21
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: owned_by_active
+
 foo_file:
   uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   portable_data_hash: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
