@@ -28,6 +28,7 @@ import tempfile
 import arvados
 import arvados.config
 import arvados.keep
+import arvados.util
 
 logger = logging.getLogger('arvados.arv-copy')
 
@@ -351,11 +352,11 @@ def copy_collection(obj_uuid, src, dst, force=False):
     collection_blocks = set()
     src_keep = arvados.keep.KeepClient(src)
     for line in manifest.splitlines():
-        try:
-            block_hash = line.split()[1]
-            collection_blocks.add(block_hash)
-        except ValueError:
-            abort('bad manifest line in collection {}: {}'.format(obj_uuid, f))
+        for block_hash in line.split()[1:]:
+            if arvados.util.portable_data_hash_pattern.match(block_hash):
+                collection_blocks.add(block_hash)
+            else:
+                break
 
     # Copy each block from src_keep to dst_keep.
     dst_keep = arvados.keep.KeepClient(dst)
