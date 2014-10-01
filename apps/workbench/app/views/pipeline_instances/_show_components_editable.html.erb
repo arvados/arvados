@@ -1,3 +1,12 @@
+<% if @object.components.empty? %>
+  <p>This pipeline template is empty.</p>
+<% end %>
+
+<p>Edit this pipeline template at the command line with:</p>
+<pre>$ <code>arv edit <%= @object.uuid %> name components</code></pre>
+
+<% if @object.components.any? %>
+
 <table class="table pipeline-components-table" style="margin-top: -.1em">
   <colgroup>
     <col style="width: 20%" />
@@ -46,3 +55,4 @@
     <% end %>
   </tbody>
 </table>
+<% end %>
