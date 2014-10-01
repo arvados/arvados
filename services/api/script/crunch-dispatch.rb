@@ -276,7 +276,7 @@ class Dispatcher
           $stderr.puts "dispatch: git fetch-pack failed"
           sleep 1
           next
-        end        
+        end
       end
 
       # check if the commit needs to be tagged with this job uuid
@@ -342,7 +342,10 @@ class Dispatcher
         stderr_flushed_at: 0,
         bytes_logged: 0,
         events_logged: 0,
-        log_truncated: false
+        log_truncated: false,
+        log_throttle_timestamp: 0,
+        log_throttle_bytes_so_far: 0,
+        log_throttle_bytes_skipped: 0,
       }
       i.close
       update_node_status
@@ -553,6 +556,40 @@ class Dispatcher
     return if running_job[:log_truncated]
     return if running_job[:stderr_buf_to_flush] == ''
     begin
+      now = Time.now
+      throttle_period = Rails.configuration.crunch_limit_log_event_throttle_period
+
+      if (now - running_job[:log_throttle_timestamp]) > throttle_period
+        # It has been more than throttle_period seconds since the last checkpoint so reset the
+        # throttle
+        if running_job[:log_throttle_bytes_skipped] > 0
+          running_job[:stderr_buf_to_flush] << "Skipped #{running_job[:log_throttle_bytes_skipped]} bytes of log"
+        end
+
+        running_job[:log_throttle_timestamp] = now
+        running_job[:log_throttle_bytes_so_far] = 0
+        running_job[:log_throttle_bytes_skipped] = 0
+      end
+
+      if running_job[:log_throttle_bytes_skipped] > 0
+        # We've skipped some log in this time period already, so continue to
+        # skip the log
+        running_job[:log_throttle_bytes_skipped] += running_job[:stderr_buf_to_flush].size
+        return
+      end
+
+      # Record bytes logged so far in this period
+      running_job[:log_throttle_bytes_so_far] += running_job[:stderr_buf_to_flush].size
+
+      if running_job[:log_throttle_bytes_so_far] > Rails.configuration.crunch_limit_log_event_throttle_rate
+        # We've exceeded the throttle rate, so start skipping
+        running_job[:log_throttle_bytes_skipped] += running_job[:stderr_buf_to_flush].size
+
+        # Replace the message with a message about skipping the log and log that instead
+        remaining_time = throttle_period - (now - running_job[:log_throttle_timestamp])
+        running_job[:stderr_buf_to_flush] = "Exceeded log rate of #{Rails.configuration.crunch_limit_log_event_throttle_rate} per #{throttle_period} seconds, logging will be silenced for the next #{remaining_time} seconds\n"
+      end
+
       # Truncate logs if they exceed crunch_limit_log_event_bytes_per_job
       # or crunch_limit_log_events_per_job.
       if (too_many_bytes_logged_for_job(running_job))
