@@ -231,3 +231,4 @@ job_with_real_log:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   log: 3399cbb0953a7823618f3e288a85ee26+81
   script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  state: Complete
