@@ -2,6 +2,7 @@ import mock
 import os
 import socket
 import unittest
+import urlparse
 
 import arvados
 import arvados.retry
@@ -226,6 +227,43 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
                          'baz2',
                          'wrong content from Keep.get(md5("baz2"))')
         self.assertTrue(keep_client.using_proxy)
+
+
+class KeepClientServiceTestCase(unittest.TestCase):
+    def mock_keep_services(self, *services):
+        api_client = mock.MagicMock(name='api_client')
+        api_client.keep_services().accessible().execute.return_value = {
+            'items_available': len(services),
+            'items': [{
+                    'uuid': 'zzzzz-bi6l4-mockservice{:04x}'.format(index),
+                    'owner_uuid': 'zzzzz-tpzed-mockownerabcdef',
+                    'service_host': host,
+                    'service_port': port,
+                    'service_ssl_flag': ssl,
+                    'service_type': servtype,
+                    } for index, (host, port, ssl, servtype)
+                      in enumerate(services)],
+            }
+        return api_client
+
+    def get_service_roots(self, *services):
+        api_client = self.mock_keep_services(*services)
+        keep_client = arvados.KeepClient(api_client=api_client)
+        services = keep_client.shuffled_service_roots('000000')
+        return [urlparse.urlparse(url) for url in sorted(services)]
+
+    def test_ssl_flag_respected_in_roots(self):
+        services = self.get_service_roots(('keep', 10, False, 'disk'),
+                                          ('keep', 20, True, 'disk'))
+        self.assertEqual(10, services[0].port)
+        self.assertEqual('http', services[0].scheme)
+        self.assertEqual(20, services[1].port)
+        self.assertEqual('https', services[1].scheme)
+
+    def test_correct_ports_with_ipv6_addresses(self):
+        service = self.get_service_roots(('100::1', 10, True, 'proxy'))[0]
+        self.assertEqual('100::1', service.hostname)
+        self.assertEqual(10, service.port)
 
 
 class KeepClientRetryTestMixin(object):

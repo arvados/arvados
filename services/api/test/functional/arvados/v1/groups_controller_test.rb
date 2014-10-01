@@ -239,44 +239,6 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal 0, json_response['items_available']
   end
 
-  test "get all pages of group-owned objects" do
-    authorize_with :active
-    limit = 5
-    offset = 0
-    items_available = nil
-    uuid_received = {}
-    owner_received = {}
-    while true
-      # Behaving badly here, using the same controller multiple
-      # times within a test.
-      @json_response = nil
-      get :contents, {
-        id: groups(:aproject).uuid,
-        limit: limit,
-        offset: offset,
-        format: :json,
-      }
-      assert_response :success
-      assert_operator(0, :<, json_response['items'].count,
-                      "items_available=#{items_available} but received 0 "\
-                      "items with offset=#{offset}")
-      items_available ||= json_response['items_available']
-      assert_equal(items_available, json_response['items_available'],
-                   "items_available changed between page #{offset/limit} "\
-                   "and page #{1+offset/limit}")
-      json_response['items'].each do |item|
-        uuid = item['uuid']
-        assert_equal(nil, uuid_received[uuid],
-                     "Received '#{uuid}' again on page #{1+offset/limit}")
-        uuid_received[uuid] = true
-        owner_received[item['owner_uuid']] = true
-        offset += 1
-        assert_equal groups(:aproject).uuid, item['owner_uuid']
-      end
-      break if offset >= items_available
-    end
-  end
-
   %w(offset limit).each do |arg|
     ['foo', '', '1234five', '0x10', '-8'].each do |val|
       test "Raise error on bogus #{arg} parameter #{val.inspect}" do
@@ -328,5 +290,41 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_includes(json_response['writable_by'],
                     users(:admin).uuid,
                     "Current user should be included in 'writable_by' field")
+  end
+
+  test 'creating subproject with duplicate name fails' do
+    authorize_with :active
+    post :create, {
+      group: {
+        name: 'A Project',
+        owner_uuid: users(:active).uuid,
+        group_class: 'project',
+      },
+    }
+    assert_response 422
+    response_errors = json_response['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert(response_errors.first.include?('duplicate key'),
+           "Expected 'duplicate key' error in #{response_errors.first}")
+  end
+
+  test 'creating duplicate named subproject succeeds with ensure_unique_name' do
+    authorize_with :active
+    post :create, {
+      group: {
+        name: 'A Project',
+        owner_uuid: users(:active).uuid,
+        group_class: 'project',
+      },
+      ensure_unique_name: true
+    }
+    assert_response :success
+    new_project = json_response
+    assert_not_equal(new_project['uuid'],
+                     groups(:aproject).uuid,
+                     "create returned same uuid as existing project")
+    assert_equal(new_project['name'],
+                 'A Project (2)',
+                 "new project name '#{new_project['name']}' was expected to be 'A Project (2)'")
   end
 end

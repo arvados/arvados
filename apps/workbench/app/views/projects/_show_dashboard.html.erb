@@ -1,7 +1,7 @@
 
   <div class="row">
     <div class="col-md-6">
-      <div class="panel panel-default" style="min-height: 10em">
+      <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Active pipelines</span>
           <span class="pull-right">
     <%= link_to(
@@ -17,14 +17,18 @@
     </span>
         </div>
 
+        <% _running_pipelines = running_pipelines %>
+        <% _finished_pipelines = finished_pipelines(8) %>
+        <% lookup = preload_objects_for_dataclass PipelineTemplate, (_running_pipelines.map(&:pipeline_template_uuid) + _finished_pipelines.map(&:pipeline_template_uuid)) %>
+
         <div class="panel-body">
-          <% if running_pipelines.empty? %>
+          <% if _running_pipelines.empty? %>
             No pipelines are currently running.
-          <% end %>
-          <% running_pipelines.each do |p| %>
+          <% else %>
+          <% _running_pipelines.each do |p| %>
             <div class="dashboard-panel-info-row">
               <div class="clearfix">
-                <%= link_to_if_arvados_object p, friendly_name: true %>
+                <%= link_to_if_arvados_object p, {friendly_name: true, lookup: lookup} %>
 
                 <div class="pull-right" style="width: 40%">
                   <div class="progress" style="margin-bottom: 0px">
@@ -34,13 +38,13 @@
                     <% queued = [] %>
                     <% p.components.each do |k, v| %>
                       <% if v.is_a? Hash and v[:job] %>
-                        <% if Job::state(v[:job]) == "Running" %>
+                        <% if v[:job][:state] == "Running" %>
                           <% running << k %>
-                        <% elsif Job::state(v[:job]) == "Failed" or Job::state(v[:job]) == "Cancelled" %>
+                        <% elsif v[:job][:state] == "Failed" or v[:job][:state] == "Cancelled" %>
                           <% failed << k %>
-                        <% elsif Job::state(v[:job]) == "Complete" %>
+                        <% elsif v[:job][:state] == "Complete" %>
                           <% completed << k %>
-                        <% elsif Job::state(v[:job]) == "Queued" %>
+                        <% elsif v[:job][:state] == "Queued" %>
                           <% queued << k %>
                         <% end %>
                       <% end %>
@@ -82,17 +86,24 @@
               </div>
             </div>
           <% end %>
+          <% end %>
           </div>
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title">Recently finished pipelines</span></div>
+        <div class="panel-heading"><span class="panel-title">Recently finished pipelines</span>
+          <span class="pull-right">
+            <%= link_to pipeline_instances_path, class: 'btn btn-default btn-xs' do %>
+              All pipelines <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+          </span>
+        </div>
         <div class="panel-body">
-          <% finished_pipelines(8).each do |p| %>
+          <% _finished_pipelines.each do |p| %>
             <div class="dashboard-panel-info-row">
               <div class="row">
                 <div class="col-md-6 text-overflow-ellipsis">
-                  <%= link_to_if_arvados_object p, friendly_name: true %>
+                  <%= link_to_if_arvados_object p, {friendly_name: true, lookup: lookup} %>
                 </div>
                 <div class="col-md-2">
                   <%= render partial: "pipeline_status_label", locals: {p: p}%>
@@ -134,7 +145,7 @@
                     <% end %>
                   </div>
                 </div>
-              </div>              
+              </div>
             </div>
           <% end %>
         </div>
@@ -143,8 +154,14 @@
 
     <div class="col-md-6">
       <% nodes = Node.all %>
-      <div class="panel panel-default" style="min-height: 10em">
-        <div class="panel-heading"><span class="panel-title">Compute status</span></div>
+      <div class="panel panel-default" style="min-height: 10.5em">
+        <div class="panel-heading"><span class="panel-title">Compute and job status</span>
+          <span class="pull-right">
+            <%= link_to jobs_path, class: 'btn btn-default btn-xs' do %>
+              All jobs <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+          </span>
+        </div>
         <div class="panel-body">
           <div>
             <%= render partial: 'compute_node_summary', locals: {nodes: nodes} %>
@@ -158,7 +175,13 @@
         </div>
       </div>
       <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title">Recent collections</span></div>
+        <div class="panel-heading"><span class="panel-title">Recent collections</span>
+          <span class="pull-right">
+            <%= link_to collections_path, class: 'btn btn-default btn-xs' do %>
+              All collections <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% end %>
+          </span>
+        </div>
         <div class="panel-body">
           <% r = recent_collections(8) %>
           <% r[:collections].each do |p| %>
@@ -167,7 +190,7 @@
               <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object r[:owners][p[:owner_uuid]], friendly_name: true %>/
               <span class="pull-right"><%= render_localized_date(p[:modified_at], "noseconds") %></span>
             </div>
-            <div class="text-overflow-ellipsis" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, friendly_name: true %>
+            <div class="text-overflow-ellipsis" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, {friendly_name: true, no_tags: true} %>
             </div>
             </div>
           <% end %>

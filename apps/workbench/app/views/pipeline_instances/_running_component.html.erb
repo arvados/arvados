@@ -18,9 +18,9 @@
 
             <div class="col-md-3">
               <% if current_job[:started_at] %>
-                <% walltime = ((if current_job.finished_at then current_job.finished_at else Time.now() end) - current_job.started_at) %>
+                <% walltime = ((if current_job[:finished_at] then current_job[:finished_at] else Time.now() end) - current_job[:started_at]) %>
                 <% cputime = tasks.map { |task|
-                     if task.started_at and task.job_uuid == current_job.uuid
+                     if task.started_at and task.job_uuid == current_job[:uuid]
                        (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
                      else
                        0
@@ -31,37 +31,37 @@
               <% end %>
             </div>
 
-            <% if Job::state(current_job).in? ["Complete", "Failed", "Canceled"] %>
+            <% if current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
               <div class="col-md-5 text-overflow-ellipsis">
                 <% if pj[:output_uuid] %>
                   <%= link_to_if_arvados_object pj[:output_uuid], friendly_name: true %>
-                <% elsif current_job.andand[:output] %>
+                <% elsif current_job[:output] %>
                   <%= link_to_if_arvados_object current_job[:output], link_text: "Output of #{pj[:name]}" %>
                 <% else %>
                   No output.
                 <% end %>
               </div>
-            <% elsif Job::state(current_job) == "Running" %>
+            <% elsif current_job[:state] == "Running" %>
               <div class="col-md-3 pipeline-instance-spacing">
                 <%= pj[:progress_bar] %>
               </div>
               <div class="col-md-1 pipeline-instance-spacing">
-                <%= form_tag "/jobs/#{current_job.uuid}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
+                <%= form_tag "/jobs/#{current_job[:uuid]}/cancel", style: "display:inline; padding-left: 1em" do |f| %>
                 <%= hidden_field_tag :return_to, url_for(@object) %>
                 <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
             </div>
             <% end %>
-          <% elsif Job::state(current_job) == "Queued" %>
+          <% elsif current_job[:state] == "Queued" %>
             <div class="col-md-5">
               <% queuetime = Time.now - current_job[:created_at] %>
               Queued for <%= render_runtime(queuetime, true) %>.
               <% begin %>
-              <% if current_job.queue_position == 0 %>
+              <% if current_job[:queue_position] == 0 %>
                 This job is next in the queue to run.
-              <% elsif current_job.queue_position == 1 %>
+              <% elsif current_job[:queue_position] == 1 %>
                 There is 1 job in the queue ahead of this one.
               <% else  %>
-                There are <%= current_job.queue_position %> jobs in the queue ahead of this one.
+                There are <%= current_job[:queue_position] %> jobs in the queue ahead of this one.
               <% end %>
               <% rescue %>
           <% end %>
