@@ -22,7 +22,12 @@ module PipelineInstancesHelper
     pj
   end
 
+  # Merge (started_at, finished_at) time range into the list of time ranges in
+  # timestamps (timestamps must be sorted and non-overlapping).  
+  # return the updated timestamps list.
   def merge_range timestamps, started_at, finished_at
+    # in the comments below, 'i' is the entry in the timestamps array and 'j'
+    # is the started_at, finished_at range which is passed in.
     timestamps.each_index do |i|
       if started_at
         if started_at >= timestamps[i][0] and finished_at <= timestamps[i][1]
@@ -57,7 +62,10 @@ module PipelineInstancesHelper
 
     timestamps << [started_at, finished_at]
   end
-
+  
+  # Accept a list of objects with [:started_at] and [:finshed_at] keys and
+  # merge overlapping ranges to compute the time spent running after periods of
+  # overlapping execution are factored out.
   def determine_wallclock_runtime jobs
     timestamps = []
     jobs.each do |j|
@@ -94,8 +102,28 @@ module PipelineInstancesHelper
       end
       if c[:job] and c[:job][:uuid] and job[c[:job][:uuid]]
         pj[:job] = job[c[:job][:uuid]]
+      elsif c[:job].is_a?(Hash)
+        pj[:job] = c[:job]
+        if pj[:job][:started_at].is_a? String
+          pj[:job][:started_at] = Time.parse(pj[:job][:started_at])
+        end
+        if pj[:job][:finished_at].is_a? String
+          pj[:job][:finished_at] = Time.parse(pj[:job][:finished_at])
+        end
+        # If necessary, figure out the state based on the other fields.
+        pj[:job][:state] ||= if pj[:job][:cancelled_at]
+                               "Cancelled"
+                             elsif pj[:job][:success] == false
+                               "Failed"
+                             elsif pj[:job][:success] == true
+                               "Complete"
+                             elsif pj[:job][:running] == true
+                               "Running"
+                             else
+                               "Queued"
+                             end
       else
-        pj[:job] = c[:job].is_a?(Hash) ? c[:job] : {}
+        pj[:job] = {}
       end
       pj[:percent_done] = 0
       pj[:percent_running] = 0
@@ -124,19 +152,25 @@ module PipelineInstancesHelper
           pj[:progress] = 0.0
         end
       end
-      if pj[:job][:success]
+
+      case pj[:job][:state]
+        when 'Complete'
         pj[:result] = 'complete'
         pj[:labeltype] = 'success'
         pj[:complete] = true
         pj[:progress] = 1.0
-      elsif pj[:job][:finished_at]
+      when 'Failed'
         pj[:result] = 'failed'
         pj[:labeltype] = 'danger'
         pj[:failed] = true
-      elsif pj[:job][:started_at]
+      when 'Cancelled'
+        pj[:result] = 'cancelled'
+        pj[:labeltype] = 'danger'
+        pj[:failed] = true
+      when 'Running'
         pj[:result] = 'running'
         pj[:labeltype] = 'primary'
-      elsif pj[:job][:uuid]
+      when 'Queued'
         pj[:result] = 'queued'
         pj[:labeltype] = 'default'
       else
@@ -152,7 +186,7 @@ module PipelineInstancesHelper
       pj[:nondeterministic] = pj[:job][:nondeterministic] || c[:nondeterministic]
       pj[:output] = pj[:job][:output]
       pj[:output_uuid] = c[:output_uuid]
-      pj[:finished_at] = (Time.parse(pj[:job][:finished_at]) rescue nil)
+      pj[:finished_at] = pj[:job][:finished_at]
       ret << pj
     end
     ret
@@ -206,33 +240,70 @@ module PipelineInstancesHelper
     ret
   end
 
-  def runtime duration, long
+  MINUTE = 60
+  HOUR = 60 * MINUTE
+  DAY = 24 * HOUR
+
+  def render_runtime duration, use_words, round_to_min=true
+    days = 0
     hours = 0
     minutes = 0
     seconds = 0
-    if duration >= 3600
-      hours = (duration / 3600).floor
-      duration -= hours * 3600
-    end
-    if duration >= 60
-      minutes = (duration / 60).floor
-      duration -= minutes * 60
-    end
-    duration = duration.floor
 
-    if long
-      s = ""
+    if duration >= DAY
+      days = (duration / DAY).floor
+      duration -= days * DAY
+    end
+
+    if duration >= HOUR
+      hours = (duration / HOUR).floor
+      duration -= hours * HOUR
+    end
+
+    if duration >= MINUTE
+      minutes = (duration / MINUTE).floor
+      duration -= minutes * MINUTE
+    end
+
+    seconds = duration.floor
+
+    if round_to_min and seconds >= 30
+      minutes += 1
+    end    
+
+    if use_words
+      s = []
+      if days > 0 then
+        s << "#{days} day#{'s' if days != 1}"
+      end
       if hours > 0 then
-        s += "#{hours} hour#{'s' if hours != 1} "
+        s << "#{hours} hour#{'s' if hours != 1}"
       end
       if minutes > 0 then
-        s += "#{minutes} minute#{'s' if minutes != 1} "
+        s << "#{minutes} minute#{'s' if minutes != 1}"
       end
-      s += "#{duration} second#{'s' if duration != 1}"
+      if not round_to_min or s.size == 0
+        s << "#{seconds} second#{'s' if seconds != 1}"
+      end
+      s = s * " "
     else
-      s = "#{hours}:#{minutes.to_s.rjust(2, '0')}:#{duration.to_s.rjust(2, '0')}"
+      s = ""
+      if days > 0
+        s += "#{days}<span class='time-label-divider'>d</span> "
+      end
+
+      if (hours > 0)
+        s += "#{hours}<span class='time-label-divider'>h</span>"
+      end
+
+      s += "#{minutes}<span class='time-label-divider'>m</span>"
+
+      if not round_to_min
+        s += "#{seconds}<span class='time-label-divider'>s</span>"
+      end
     end
-    s
+
+    raw(s)
   end
 
 end

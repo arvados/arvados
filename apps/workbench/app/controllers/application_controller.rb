@@ -694,7 +694,31 @@ class ApplicationController < ActionController::Base
 
   helper_method :running_pipelines
   def running_pipelines
-    PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
+    pi = PipelineInstance.order(["started_at asc", "created_at asc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
+    jobs = {}
+    pi.each do |pl|
+      pl.components.each do |k,v|
+        if v.is_a? Hash and v[:job]
+          jobs[v[:job][:uuid]] = {}
+        end
+      end
+    end
+
+    if jobs.keys.any?
+      Job.filter([["uuid", "in", jobs.keys]]).each do |j|
+        jobs[j[:uuid]] = j
+      end
+
+      pi.each do |pl|
+        pl.components.each do |k,v|
+          if v.is_a? Hash and v[:job]
+            v[:job] = jobs[v[:job][:uuid]]
+          end
+        end
+      end
+    end
+
+    pi
   end
 
   helper_method :finished_pipelines

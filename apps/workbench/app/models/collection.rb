@@ -102,7 +102,7 @@ class Collection < ArvadosBase
     end
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     if self.respond_to? :name
       self.name
     else

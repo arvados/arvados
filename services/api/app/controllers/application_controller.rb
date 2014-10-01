@@ -101,6 +101,7 @@ class ApplicationController < ActionController::Base
             logger.error "params[:ensure_unique_name] is #{params[:ensure_unique_name]}"
             if params[:ensure_unique_name]
               counter += 1
+              @object.uuid = nil
               @object.name = "#{name_stem} (#{counter})"
               retry_save = true
             end

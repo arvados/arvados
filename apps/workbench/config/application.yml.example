@@ -15,6 +15,6 @@ development:
   secret_token: ~
 
   # You probably also want to point to your API server.
-  arvados_login_base: https://arvados.local:3000/login
-  arvados_v1_base: https://arvados.local:3000/arvados/v1
+  arvados_login_base: https://arvados.local:3030/login
+  arvados_v1_base: https://arvados.local:3030/arvados/v1
   arvados_insecure_https: true

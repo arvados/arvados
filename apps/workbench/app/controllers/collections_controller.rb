@@ -1,4 +1,6 @@
 class CollectionsController < ApplicationController
+  include ActionController::Live
+
   skip_around_filter(:require_thread_api_token,
                      only: [:show_file, :show_file_links])
   skip_before_filter(:find_object_by_uuid,
@@ -172,7 +174,13 @@ class CollectionsController < ApplicationController
       self.response.headers['Content-Length'] = size.to_s
     end
     self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
-    self.response_body = file_enumerator opts
+    begin
+      file_enumerator(opts).each do |bytes|
+        response.stream.write bytes
+      end
+    ensure
+      response.stream.close
+    end
   end
 
   def sharing_scopes
