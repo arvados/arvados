@@ -135,8 +135,11 @@ pipeline_with_newer_template:
   pipeline_template_uuid: zzzzz-p5p6p-vq4wuvy84xvaq2r
   created_at: 2014-09-15 12:00:00
   components:
-   foo:
-    script: foo
-    script_version: master
-    script_parameters:
-      input: foo_input
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo instance input

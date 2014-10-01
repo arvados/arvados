@@ -89,15 +89,19 @@ new_pipeline_template:
   created_at: 2014-09-14 12:00:00
   modified_at: 2014-09-16 12:00:00
   components:
-   foo:
-    script: foo
-    script_version: master
-    script_parameters: {}
-   bar:
-    script: bar
-    script_version: master
-    script_parameters:
-      input:
-        required: true
-        dataclass: Collection
-        title: "bar input"
+    foo:
+      script: foo
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: foo template input
+    bar:
+      script: bar
+      script_version: master
+      script_parameters:
+        input:
+          required: true
+          dataclass: Collection
+          title: bar template input
