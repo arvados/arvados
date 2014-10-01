@@ -149,8 +149,9 @@ module ProvenanceHelper
         end
         unless node == ""
           node += "']"
-          gr += "\"#{node}\" [label=\"#{node}\"];\n"
-          gr += edge(job_uuid(job), node, {:label => prefix})
+          node_value = "#{node}".gsub("\"", "'")
+          gr += "\"#{node_value}\" [label=\"#{node_value}\"];\n"
+          gr += edge(job_uuid(job), node_value, {:label => prefix})
         end
       when String
         return '' if sp.empty?
