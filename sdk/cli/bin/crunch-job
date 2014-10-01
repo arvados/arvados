@@ -877,15 +877,15 @@ Log (undef, "finish");
 
 save_meta();
 
-if ($job_has_uuid) {
-  if ($collated_output && $main::success) {
-    $Job->update_attributes('state' => 'Complete')
-  } else {
-    $Job->update_attributes('state' => 'Failed')
-  }
+my $final_state;
+if ($collated_output && $main::success) {
+  $final_state = 'Complete';
+} else {
+  $final_state = 'Failed';
 }
+$Job->update_attributes('state' => $final_state)
 
-exit ($Job->{'state'} != 'Complete' ? 1 : 0);
+exit (($final_state eq 'Complete') ? 0 : 1);
 
 
 
@@ -972,10 +972,8 @@ sub reapchildren
       $main::success = 0;
       $main::please_freeze = 1;
     }
-    else {
-      # Put this task back on the todo queue
-      push @jobstep_todo, $jobstepid;
-    }
+    # Put this task back on the todo queue
+    push @jobstep_todo, $jobstepid;
     $Job->{'tasks_summary'}->{'failed'}++;
   }
   else
@@ -1396,7 +1394,7 @@ sub freeze_if_want_freeze
     collate_output();
     cleanup();
     save_meta();
-    exit 0;
+    exit 1;
   }
 }
 
