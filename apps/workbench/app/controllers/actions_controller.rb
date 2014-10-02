@@ -164,8 +164,8 @@ class ActionsController < ApplicationController
     current_project_writable = false
     action_data = JSON.parse(params['action_data']) if params['action_data']
     if action_data && action_data['current_project_uuid']
-      current_project = Group.find(action_data['current_project_uuid'])
-      if (current_project.andand.writable_by.include?(current_user.uuid) rescue nil)
+      current_project = Group.find(action_data['current_project_uuid']) rescue nil
+      if (current_project && current_project.writable_by.andand.include?(current_user.uuid))
         newc.owner_uuid = action_data['current_project_uuid']
         current_project_writable = true
       end
