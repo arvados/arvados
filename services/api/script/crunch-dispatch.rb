@@ -334,7 +334,7 @@ class Dispatcher
         stderr: e,
         wait_thr: t,
         job: job,
-        buf: {:stdout => '', :stderr => ''},
+        buf: {stderr: '', stdout: ''},
         started: false,
         sent_int: 0,
         job_auth: job_auth,
