@@ -94,7 +94,7 @@ function addToLogViewer(logViewer, lines, taskState) {
             });
             count += 1;
         } else {
-            console.log("Did not parse: " + lines[a]);
+            console.log("Did not parse line " + a + ": " + lines[a]);
         }
     }
     logViewer.add(items);
