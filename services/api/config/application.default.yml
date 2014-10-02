@@ -81,8 +81,8 @@ common:
   crunch_limit_log_events_per_job: 65536
 
   # These two settings control how frequently log events are flushed to the
-  # database.  Logs lines are buffered until either crunch_log_bytes_per_event
-  # has been reached or crunch_log_seconds_between_events has ellapsed since
+  # database.  Log lines are buffered until either crunch_log_bytes_per_event
+  # has been reached or crunch_log_seconds_between_events has elapsed since
   # the last flush.
   crunch_log_bytes_per_event: 4096
   crunch_log_seconds_between_events: 1

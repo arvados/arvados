@@ -364,8 +364,6 @@ class Dispatcher
     now = Time.now
     throttle_period = Rails.configuration.crunch_log_throttle_period
 
-    #puts "Handle line at #{now - running_job[:log_throttle_timestamp]}, buf bytes #{line.size}, so far #{running_job[:log_throttle_bytes_so_far]}, throttled #{running_job[:log_throttle_bytes_skipped]}"
-
     if running_job[:log_throttle_bytes_skipped] > 0
       # We've skipped some log in the current time period already, so continue to
       # skip the log
