@@ -99,14 +99,14 @@ def expand_item(p, c):
             return expand_list(params, c["command"])
     elif isinstance(c, list):
         return expand_list(p, c)
-    elif isinstance(c, str) or isinstance(c, unicode):
+    elif isinstance(c, basestring):
         return [subst.do_substitution(p, c)]
 
     return []
 
 def expand_list(p, l):
     if isinstance(l, basestring):
-        return [expand_item(p, l)]
+        return expand_item(p, l)
     else:
         return [exp for arg in l for exp in expand_item(p, arg)]
 
