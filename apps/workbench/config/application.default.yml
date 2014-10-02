@@ -180,3 +180,6 @@ common:
 
   # filename suffixes for which view icon would be shown in collection show page
   filename_suffixes_with_view_icon: [txt, gif, jpeg, jpg, png, html, htm, pdf]
+
+  # the maximum number of bytes to load in the log viewer
+  log_viewer_max_bytes: 1000000
