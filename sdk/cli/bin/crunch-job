@@ -1329,7 +1329,7 @@ sub start_output_log($)
   my $logfilename = shift;
   $log_pipe_pid = open2($log_pipe_out, $log_pipe_in,
                         'arv-put', '--portable-data-hash',
-                        '--retries', put_retry_count(),
+                        '--retries', '3',
                         '--filename', $logfilename,
                         '-');
 }
