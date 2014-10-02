@@ -149,7 +149,7 @@ module ProvenanceHelper
         end
         unless node == ""
           node += "']"
-          node_value = "#{node}".gsub("\"", "'")
+          node_value = "#{node}".gsub("\"", "\\\"")
           gr += "\"#{node_value}\" [label=\"#{node_value}\"];\n"
           gr += edge(job_uuid(job), node_value, {:label => prefix})
         end
