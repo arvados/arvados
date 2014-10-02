@@ -36,7 +36,21 @@ func main() {
 		log.Fatalf("Current user is not an admin. Datamanager can only be run by admins.")
 	}
 
-	readCollections := collection.GetCollections(arv)
+	readCollections := collection.GetCollections(
+		collection.GetCollectionsParams{
+			Client: arv, Limit: 50, LogEveryNthCollectionProcessed: 10})
 
-	log.Printf("Read Collections: %v", readCollections)
+	//log.Printf("Read Collections: %v", readCollections)
+
+	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
+	// lots of behaviors can become warnings (and obviously we can't
+	// write anything).
+	// if !readCollections.ReadAllCollections {
+	// 	log.Fatalf("Did not read all collections")
+	// }
+
+	log.Printf("Read and processed %d collections",
+		len(readCollections.UuidToCollection))
+
+	// TODO(misha): Send SDK and Keep requests in parallel
 }
