@@ -122,7 +122,7 @@ def get_items(p, value):
                 p = pattern.match(i)
                 if p:
                     add_to_group(groups, p)
-            return [r[k] for k in r]
+            return [groups[k] for k in groups]
     if isinstance(value, list):
         return expand_list(p, value)
 
