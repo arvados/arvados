@@ -704,14 +704,16 @@ class ApplicationController < ActionController::Base
       end
     end
 
-    Job.filter([["uuid", "in", jobs.keys]]).each do |j|
-      jobs[j[:uuid]] = j
-    end
+    if jobs.keys.any?
+      Job.filter([["uuid", "in", jobs.keys]]).each do |j|
+        jobs[j[:uuid]] = j
+      end
 
-    pi.each do |pl|
-      pl.components.each do |k,v|
-        if v.is_a? Hash and v[:job]
-          v[:job] = jobs[v[:job][:uuid]]
+      pi.each do |pl|
+        pl.components.each do |k,v|
+          if v.is_a? Hash and v[:job]
+            v[:job] = jobs[v[:job][:uuid]]
+          end
         end
       end
     end

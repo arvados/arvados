@@ -16,12 +16,16 @@ class PipelineInstancesController < ApplicationController
       @object.components.each do |cname, component|
         # Go through the script parameters of each component
         # that are marked as user input and copy them over.
-        component[:script_parameters].each do |pname, val|
-          if val.is_a? Hash and val[:dataclass]
-            # this is user-inputtable, so check the value from the source pipeline
-            srcvalue = source.components[cname][:script_parameters][pname]
-            if not srcvalue.nil?
-              component[:script_parameters][pname] = srcvalue
+        # Skip any components that are not present in the
+        # source instance (there's nothing to copy)
+        if source.components.include? cname
+          component[:script_parameters].each do |pname, val|
+            if val.is_a? Hash and val[:dataclass]
+              # this is user-inputtable, so check the value from the source pipeline
+              srcvalue = source.components[cname][:script_parameters][pname]
+              if not srcvalue.nil?
+                component[:script_parameters][pname] = srcvalue
+              end
             end
           end
         end
@@ -33,7 +37,7 @@ class PipelineInstancesController < ApplicationController
     if params['script'] == 'use_same'
       # Go through each component and copy the script_version from each job.
       @object.components.each do |cname, component|
-        if source.components[cname][:job]
+        if source.components.include? cname and source.components[cname][:job]
           component[:script_version] = source.components[cname][:job][:script_version]
         end
       end

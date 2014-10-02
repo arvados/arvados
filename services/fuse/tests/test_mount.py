@@ -266,7 +266,8 @@ class FuseSharedTest(MountTestBase):
                           "owned_by_active",
                           "pipeline_to_merge_params.pipelineInstance",
                           "pipeline_with_job.pipelineInstance",
-                          "pipeline_with_tagged_collection_input.pipelineInstance"
+                          "pipeline_with_tagged_collection_input.pipelineInstance",
+                          "real_log_collection"
                       ], d2)
 
         d3 = os.listdir(os.path.join(self.mounttmp, 'Active User', 'A Project'))
