@@ -1,0 +1,26 @@
+"bwa-mem": {
+    "script": "run-command",
+    "script_version": "master",
+    "repository": "arvados",
+    "script_parameters": {
+        "command": [
+            "bwa",
+            "mem",
+            "-t",
+            "$(node.cores)",
+            "$(glob $(dir $(reference_collection))/*.fasta)",
+            "$(glob $(dir $(sample))/*_1.fastq)",
+            "$(glob $(dir $(sample))/*_2.fastq)"
+        ],
+        "task.foreach": ["samples", "pairs"],
+        "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam"
+        "reference_collection": {
+            "required": true,
+            "dataclass": "Collection"
+        },
+        "samples": {
+            "required": true,
+            "dataclass": "Collection"
+        },
+    }
+}

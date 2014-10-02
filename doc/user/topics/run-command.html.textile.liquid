@@ -1,0 +1,14 @@
+---
+layout: default
+navsection: userguide
+title: "run-command reference"
+...
+
+The @run-command@ crunch script provides a way to run a command over a dataset.  Run-command is controlled through the script_parameters section of a pipeline component.
+
+<notextile>{% code 'run_command_example' as javascript %}</notextile>
+
+The script_parameters section consists of three parts:
+* The @command@ section defining how to build the command line of task
+* Special processing directives @task.foreach@ @task.cwd@ @task.vwd@ @task.stdin@ @task.stdout@
+* User-defined parameters
