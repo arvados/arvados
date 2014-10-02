@@ -386,15 +386,15 @@ class Dispatcher
       # Replace log line with a message about skipping the log
       remaining_time = throttle_period - (now - running_job[:log_throttle_timestamp])
       if running_job[:log_throttle_bytes_so_far] > Rails.configuration.crunch_log_throttle_bytes
-        line.replace "Exceeded crunch_log_throttle_bytes rate of #{Rails.configuration.crunch_log_throttle_bytes} bytes per #{throttle_period} seconds, logging will be silenced for the next #{remaining_time.round} seconds\n"
+        line.replace "Exceeded rate #{Rails.configuration.crunch_log_throttle_bytes} bytes per #{throttle_period} seconds (crunch_log_throttle_bytes), logging will be silenced for the next #{remaining_time.round} seconds\n"
       else
-        line.replace "Exceeded crunch_log_throttle_lines rate of #{Rails.configuration.crunch_log_throttle_lines} lines per #{throttle_period} seconds, logging will be silenced for the next #{remaining_time.round} seconds\n"
+        line.replace "Exceeded rate #{Rails.configuration.crunch_log_throttle_lines} lines per #{throttle_period} seconds (crunch_log_throttle_lines), logging will be silenced for the next #{remaining_time.round} seconds\n"
       end
     end
 
     if running_job[:bytes_logged] > Rails.configuration.crunch_limit_log_bytes_per_job
       # Replace log line with a message about truncating the log
-      line.replace "Exceed hard job log cap crunch_limit_log_bytes_per_job of #{Rails.configuration.crunch_limit_log_bytes_per_job}. Subsequent logs will be truncated."
+      line.replace "Exceeded log limit #{Rails.configuration.crunch_limit_log_bytes_per_job} bytes (crunch_limit_log_bytes_per_job).  Log will be truncated."
     end
 
     true
@@ -622,7 +622,7 @@ class Dispatcher
         # Just reached crunch_limit_log_events_per_job so replace log with notification.
         if running_job[:events_logged] == Rails.configuration.crunch_limit_log_events_per_job
           running_job[:stderr_buf_to_flush] =
-            "Server configured limit reached (crunch_limit_log_events_per_job: #{Rails.configuration.crunch_limit_log_events_per_job}). Subsequent logs truncated"
+            "Exceeded live log limit #{Rails.configuration.crunch_limit_log_events_per_job} events (crunch_limit_log_events_per_job).  Live log will be truncated."
         end
         log = Log.new(object_uuid: running_job[:job].uuid,
                       event_type: 'stderr',
