@@ -149,7 +149,7 @@ module ProvenanceHelper
         end
         unless node == ""
           node += "']"
-          node_value = "#{node}".gsub("\"", "\\\"")
+          node_value = encode_quotes node
           gr += "\"#{node_value}\" [label=\"#{node_value}\"];\n"
           gr += edge(job_uuid(job), node_value, {:label => prefix})
         end
@@ -160,8 +160,9 @@ module ProvenanceHelper
           gr += edge(job_uuid(job), m, {:label => prefix})
           gr += generate_provenance_edges(m)
         elsif @opts[:all_script_parameters]
-          gr += "\"#{sp}\" [label=\"#{sp}\"];\n"
-          gr += edge(job_uuid(job), sp, {:label => prefix})
+          sp_value = encode_quotes sp
+          gr += "\"#{sp_value}\" [label=\"#{sp_value}\"];\n"
+          gr += edge(job_uuid(job), sp_value, {:label => prefix})
         end
       end
       gr
@@ -264,6 +265,9 @@ module ProvenanceHelper
       gr
     end
 
+    def encode_quotes value
+      value.andand.gsub("\"", "\\\"")
+    end
   end
 
   def self.create_provenance_graph(pdata, svgId, opts={})
