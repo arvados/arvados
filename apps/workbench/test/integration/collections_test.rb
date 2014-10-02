@@ -103,34 +103,48 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     headless.stop
   end
 
-  test "combine selected collection files into new collection" do
-    headless = Headless.new
-    headless.start
-    Capybara.current_driver = :selenium
+  [
+    ['active', 'foo_file', false],
+    ['active', 'foo_collection_in_aproject', true],
+    ['project_viewer', 'foo_file', false],
+    ['project_viewer', 'foo_collection_in_aproject', false], #aproject not writable
+  ].each do |user, collection, expect_collection_in_aproject|
+    test "combine selected collection files into new collection #{user} #{collection} #{expect_collection_in_aproject}" do
+      headless = Headless.new
+      headless.start
+      Capybara.current_driver = :selenium
 
-    foo_collection = api_fixture('collections')['foo_file']
+      my_collection = api_fixture('collections')[collection]
 
-    visit page_with_token('active', "/collections")
+      visit page_with_token(user, "/collections")
 
-    # choose file from foo collection
-    within('tr', text: foo_collection['uuid']) do
-      click_link 'Show'
+      # choose file from foo collection
+      within('tr', text: my_collection['uuid']) do
+        click_link 'Show'
+      end
+
+      # now in collection page
+      find('input[type=checkbox]').click
+
+      click_button 'Selection...'
+      within('.selection-action-container') do
+        click_link 'Create new collection with selected files'
+      end
+
+      # now in the newly created collection page
+      assert(page.has_text?('Copy to project'), "Copy to project text not found in new collection page")
+      assert(page.has_no_text?(my_collection['name']), "Collection page did not include foo file")
+      assert(page.has_text?('foo'), "Collection page did not include foo file")
+      if expect_collection_in_aproject
+        aproject = api_fixture('groups')['aproject']
+        assert page.has_text?("Created new collection in the project #{aproject['name']}"),
+                              'Not found flash message that new collection is created in aproject'
+      else
+        assert page.has_text?("Created new collection in your Home project"),
+                              'Not found flash message that new collection is created in Home project'
+      end
+
+      headless.stop
     end
-
-    # now in collection page
-    find('input[type=checkbox]').click
-
-    click_button 'Selection...'
-    within('.selection-action-container') do
-      click_link 'Create new collection with selected files'
-    end
-
-    # now in the newly created collection page
-    assert(page.has_text?('Copy to project'), "Copy to project text not found in new collection page")
-    assert(page.has_no_text?(foo_collection['name']), "Collection page did not include foo file")
-    assert(page.has_text?('foo'), "Collection page did not include foo file")
-    assert(page.has_text?('Created new collection in your Home project'),
-                          'Not found flash message that new collection is created in Home project')
-    headless.stop
   end
 end
