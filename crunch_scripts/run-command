@@ -122,8 +122,12 @@ def get_items(p, value):
                 p = pattern.match(i)
                 if p:
                     add_to_group(groups, p)
-            print groups
             return [groups[k] for k in groups]
+
+        if "extract" in value and "regex" in value:
+            pattern = re.compile(value["regex"])
+            items = get_items(p, value["group"])
+            return [p.groups() for i in items if p = pattern.match(i)]
 
     if isinstance(value, list):
         return expand_list(p, value)
