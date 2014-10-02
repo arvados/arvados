@@ -141,7 +141,6 @@ $SIG{'USR2'} = sub
 
 
 my $arv = Arvados->new('apiVersion' => 'v1');
-my $local_logfile;
 
 my $User = $arv->{'users'}->{'current'}->execute;
 
@@ -199,7 +198,7 @@ else
 $job_id = $Job->{'uuid'};
 
 my $keep_logfile = $job_id . '.log.txt';
-$local_logfile = File::Temp->new();
+start_output_log($keep_logfile);
 
 $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
@@ -1302,6 +1301,73 @@ sub fhbits
 }
 
 
+# Output logging to arv-put.
+#
+# $log_pipe_in and $log_pipe_out are the input and output filehandles to the arv-put pipe.
+# $log_pipe_pid is the pid of the arv-put subprocess.
+#
+# The only functions that should access these variables directly are:
+#
+# start_output_log($logfilename)
+#     Starts an arv-put pipe, reading data on stdin and writing it to
+#     a $logfilename file in an output collection.
+#
+# write_output_log($txt)
+#     Writes $txt to the output log collection.
+#
+# finish_output_log()
+#     Closes the arv-put pipe and returns the output that it produces.
+#
+# output_log_is_active()
+#     Returns a true value if there is currently a live arv-put
+#     process, false otherwise.
+#
+my ($log_pipe_in, $log_pipe_out, $log_pipe_pid);
+
+sub start_output_log($)
+{
+  my $logfilename = shift;
+  $log_pipe_pid = open2($log_pipe_out, $log_pipe_in,
+                        'arv-put', '--portable-data-hash',
+                        '--retries', '3',
+                        '--filename', $logfilename,
+                        '-');
+}
+
+sub write_output_log($)
+{
+  my $txt = shift;
+  print $log_pipe_in $txt;
+}
+
+sub finish_output_log()
+{
+  return unless $log_pipe_pid;
+
+  close($log_pipe_in);
+  my $arv_put_output;
+
+  my $s = IO::Select->new($log_pipe_out);
+  if ($s->can_read(120)) {
+    sysread($log_pipe_out, $arv_put_output, 1024);
+    chomp($arv_put_output);
+  } else {
+    Log (undef, "timed out reading from 'arv-put'");
+  }
+
+  waitpid($log_pipe_pid, 0);
+  $log_pipe_pid = $log_pipe_in = $log_pipe_out = undef;
+  if ($?) {
+    Log("finish_output_log: arv-put returned error $?")
+  }
+
+  return $arv_put_output;
+}
+
+sub output_log_is_active() {
+  return $log_pipe_pid
+}
+
 sub Log				# ($jobstep_id, $logmessage)
 {
   if ($_[1] =~ /\n/) {
@@ -1315,15 +1381,15 @@ sub Log				# ($jobstep_id, $logmessage)
   $message =~ s{([^ -\176])}{"\\" . sprintf ("%03o", ord($1))}ge;
   $message .= "\n";
   my $datetime;
-  if ($local_logfile || -t STDERR) {
+  if (output_log_is_active() || -t STDERR) {
     my @gmtime = gmtime;
     $datetime = sprintf ("%04d-%02d-%02d_%02d:%02d:%02d",
 			 $gmtime[5]+1900, $gmtime[4]+1, @gmtime[3,2,1,0]);
   }
   print STDERR ((-t STDERR) ? ($datetime." ".$message) : $message);
 
-  if ($local_logfile) {
-    print $local_logfile $datetime . " " . $message;
+  if (output_log_is_active()) {
+    write_output_log($datetime . " " . $message);
   }
 }
 
@@ -1336,7 +1402,7 @@ sub croak
   freeze() if @jobstep_todo;
   collate_output() if @jobstep_todo;
   cleanup();
-  save_meta() if $local_logfile;
+  save_meta() if output_log_is_active();
   die;
 }
 
@@ -1357,15 +1423,7 @@ sub save_meta
   my $justcheckpoint = shift; # false if this will be the last meta saved
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
-  $local_logfile->flush;
-  my $retry_count = put_retry_count();
-  my $cmd = "arv-put --portable-data-hash --retries $retry_count " .
-      "--filename ''\Q$keep_logfile\E " . quotemeta($local_logfile->filename);
-  my $loglocator = `$cmd`;
-  die "system $cmd failed: $?" if $?;
-  chomp($loglocator);
-
-  $local_logfile = undef;   # the temp file is automatically deleted
+  my $loglocator = finish_output_log();
   Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
   $Job->update_attributes('log', $loglocator) if $job_has_uuid;
