@@ -443,15 +443,17 @@ class Dispatcher
     end
 
     # Wait the thread (returns a Process::Status)
-    exit_status = j_done[:wait_thr].value
+    exit_status = j_done[:wait_thr].value.exitstatus
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
-    if exit_status.to_i != 75 and jobrecord.state == "Running"
+    if exit_status != 75 and jobrecord.state == "Running"
       # crunch-job did not return exit code 75 (see below) and left the job in
       # the "Running" state, which means there was an unhandled error.  Fail
       # the job.
       jobrecord.state = "Failed"
-      jobrecord.save!
+      if not jobrecord.save
+        $stderr.puts "dispatch: jobrecord.save failed"
+      end
     else
       # Don't fail the job if crunch-job didn't even get as far as
       # starting it. If the job failed to run due to an infrastructure
