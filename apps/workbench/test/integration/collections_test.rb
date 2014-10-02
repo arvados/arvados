@@ -98,7 +98,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?('foo'), "Collection page did not include foo file")
     assert(page.has_no_text?(bar_collection['name']), "Collection page did not include foo file")
     assert(page.has_text?('bar'), "Collection page did not include bar file")
-
+    assert(page.has_text?('Created new collection in your Home project'),
+                          'Not found flash message that new collection is created in Home project')
     headless.stop
   end
 
@@ -128,7 +129,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?('Copy to project'), "Copy to project text not found in new collection page")
     assert(page.has_no_text?(foo_collection['name']), "Collection page did not include foo file")
     assert(page.has_text?('foo'), "Collection page did not include foo file")
-
+    assert(page.has_text?('Created new collection in your Home project'),
+                          'Not found flash message that new collection is created in Home project')
     headless.stop
   end
 end

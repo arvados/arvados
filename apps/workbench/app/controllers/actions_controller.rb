@@ -161,12 +161,13 @@ class ActionsController < ApplicationController
     newc.name = newc.name || "Collection created at #{Time.now.localtime}"
 
     # set owner_uuid to current project, provided it is writable
-    current_project = nil
+    current_project_writable = false
     action_data = JSON.parse(params['action_data']) if params['action_data']
     if action_data && action_data['current_project_uuid']
       current_project = Group.find(action_data['current_project_uuid'])
       if (current_project.andand.writable_by.include?(current_user.uuid) rescue nil)
         newc.owner_uuid = action_data['current_project_uuid']
+        current_project_writable = true
       end
     end
 
@@ -182,8 +183,9 @@ class ActionsController < ApplicationController
       l.save!
     end
 
-    msg = current_project ? "Created new collection in the project #{current_project.name}." :
-                            "Created new collection in your Home project."
+    msg = current_project_writable ?
+              "Created new collection in the project #{current_project.name}." :
+              "Created new collection in your Home project."
 
     redirect_to newc, flash: {'message' => msg}
   end
