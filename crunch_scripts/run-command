@@ -102,10 +102,10 @@ def expand_list(p, l):
     return [exp for arg in l for exp in expand_item(p, arg)]
 
 def add_to_group(gr, match):
-    m = ('^_^').join(match.groups()[1:])
+    m = ('^_^').join(match.groups())
     if m not in gr:
         gr[m] = []
-    gr[m].extend(match.group(0))
+    gr[m].append(match.group(0))
 
 def get_items(p, value):
     if isinstance(value, dict):
@@ -122,7 +122,9 @@ def get_items(p, value):
                 p = pattern.match(i)
                 if p:
                     add_to_group(groups, p)
+            print groups
             return [groups[k] for k in groups]
+
     if isinstance(value, list):
         return expand_list(p, value)
 
