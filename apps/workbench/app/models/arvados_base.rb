@@ -379,7 +379,7 @@ class ArvadosBase < ActiveRecord::Base
     self.class.to_s.underscore
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     (name if self.respond_to? :name) || default_name
   end
 

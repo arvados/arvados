@@ -124,6 +124,34 @@ barbaz:
   runtime_constraints: {}
   state: Complete
 
+runningbarbaz:
+  uuid: zzzzz-8i9sb-cjs4pklxxjykyuj
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  script_version: 7def43a4d3f20789dda4700f703b5514cc3ed250
+  script_parameters:
+    input: fa7aeb5140e2848d39b416daeef4ffc5+45
+    an_integer: 1
+  created_at: <%= 4.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  running: true
+  success: ~
+  repository: foo
+  output: ea10d51bcf88862dbcc36eb292017dfd+45
+  priority: 0
+  log: d41d8cd98f00b204e9800998ecf8427e+0
+  is_locked_by_uuid: ~
+  tasks_summary:
+    failed: 0
+    todo: 0
+    running: 1
+    done: 0
+  runtime_constraints: {}
+  state: Running
+
 previous_job_run:
   uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
   created_at: <%= 14.minute.ago.to_s(:db) %>

@@ -116,8 +116,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
         cancelled_at: nil
       }
     }
-    job = JSON.parse(@response.body)
-    assert_not_nil job['cancelled_at'], 'un-cancelled job stays cancelled'
+    assert_response 422
   end
 
   ['abc.py', 'hash.py'].each do |script|
@@ -347,5 +346,19 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     get :show, {id: jobs(:nearly_finished_job).uuid}
     assert_response :success
     assert_equal([nodes(:busy).uuid], json_response["node_uuids"])
+  end
+
+  test "job lock success" do
+    authorize_with :active
+    post :lock, {id: jobs(:queued).uuid}
+    assert_response :success
+    job = Job.where(uuid: jobs(:queued).uuid).first
+    assert_equal "Running", job.state
+  end
+
+  test "job lock conflict" do
+    authorize_with :active
+    post :lock, {id: jobs(:running).uuid}
+    assert_response 403 # forbidden
   end
 end
