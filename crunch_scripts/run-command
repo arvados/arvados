@@ -101,7 +101,28 @@ def expand_item(p, c):
 def expand_list(p, l):
     return [exp for arg in l for exp in expand_item(p, arg)]
 
+def add_to_group(gr, match):
+    m = ('^_^').join(match.groups()[1:])
+    if m not in gr:
+        gr[m] = []
+    gr[m].extend(match.group(0))
+
 def get_items(p, value):
+    if isinstance(value, dict):
+        if "filter" in value and "regex" in value:
+            pattern = re.compile(value["regex"])
+            items = get_items(p, value["group"])
+            return [i for i in items if pattern.match(i)]
+
+        if "group" in value and "regex" in value:
+            pattern = re.compile(value["regex"])
+            items = get_items(p, value["group"])
+            groups = {}
+            for i in items:
+                p = pattern.match(i)
+                if p:
+                    add_to_group(groups, p)
+            return [r[k] for k in r]
     if isinstance(value, list):
         return expand_list(p, value)
 
