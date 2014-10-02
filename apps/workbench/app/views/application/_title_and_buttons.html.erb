@@ -58,5 +58,5 @@
   end
   if flash_msg != ''
 %>
-<div class="modal-footer-status alert <%= flash_msg_is_error ? 'alert-danger' : 'alert-warning' %>"><%=flash_msg.html_safe%></div>
+<div class="flash-message alert <%= flash_msg_is_error ? 'alert-danger' : 'alert-warning' %>"><%=flash_msg.html_safe%></div>
 <% end %>
