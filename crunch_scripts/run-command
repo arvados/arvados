@@ -96,7 +96,7 @@ def expand_item(p, c):
             items = get_items(p, p[var])
             params = copy.copy(p)
             params[var] = items[int(c["index"])]
-            r.extend(expand_list(params, c["command"]))
+            return expand_list(params, c["command"])
     elif isinstance(c, list):
         return expand_list(p, c)
     elif isinstance(c, str) or isinstance(c, unicode):
