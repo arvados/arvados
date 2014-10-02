@@ -4,11 +4,36 @@ navsection: userguide
 title: "run-command reference"
 ...
 
-The @run-command@ crunch script provides a way to run a command over a dataset.  Run-command is controlled through the script_parameters section of a pipeline component.
+The @run-command@ crunch script enables you run command line programs.
 
-<notextile>{% code 'run_command_example' as javascript %}</notextile>
+h2. Basic usage
 
-The script_parameters section consists of three parts:
-* The @command@ section defining how to build the command line of task
-* Special processing directives @task.foreach@ @task.cwd@ @task.vwd@ @task.stdin@ @task.stdout@
+Run-command is controlled through the script_parameters section of a pipeline component.  The script_parameters of run-command section consists of three parts:
 * User-defined parameters
+* Special processing directives @task.foreach@ @task.cwd@ @task.vwd@ @task.stdin@ @task.stdout@
+* The @command@ section defines the template to actually build the command line of task
+
+h3. Parameter substitution
+
+Any entry in the "script_parameters" object that is not a directive or reserved parameter is a user-defined parameter.  User-defined parameters can be used in parameter substitution and in directives.  String substitution is indicated by wrapping the expression with @$(...)@.  In the following example, using @$(varA)@ for the value of "varB" denotes that it should be replaced with the value of the parameter "varA", which is "ABC".
+
+<pre>
+"script_parameters": {
+  "varA": "ABC",
+  "varB": "$(varA)"
+}
+</pre>
+
+
+
+h3. Directives
+
+h3. Command template
+
+The command section
+
+h2. Examples
+
+<notextile>{% code 'run_command_simple_example' as javascript %}</notextile>
+
+<notextile>{% code 'run_command_foreach_example' as javascript %}</notextile>

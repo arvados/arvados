@@ -12,7 +12,6 @@
             "$(glob $(dir $(sample))/*_1.fastq)",
             "$(glob $(dir $(sample))/*_2.fastq)"
         ],
-        "task.foreach": ["samples", "pairs"],
         "task.stdout": "$(basename $(glob $(dir $(sample))/*_1.fastq)).sam"
         "reference_collection": {
             "required": true,
