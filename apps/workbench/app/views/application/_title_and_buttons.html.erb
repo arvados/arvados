@@ -49,3 +49,12 @@
   <% end %>
 <% end %>
 
+<%
+  flash_msg = ''
+  flash.each do |msg|
+    flash_msg += ('<p class="contain-align-left">' + msg[1] + '</p>')
+  end
+  if flash_msg != ''
+%>
+<div class="modal-footer-status alert alert-warning"><%=flash_msg.html_safe%></div>
+<% end %>

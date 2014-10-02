@@ -159,6 +159,17 @@ class ActionsController < ApplicationController
     normalized = arv_normalize combined
     newc = Collection.new({:manifest_text => normalized})
     newc.name = newc.name || "Collection created at #{Time.now.localtime}"
+
+    # set owner_uuid to current project, provided it is writable
+    current_project = nil
+    action_data = JSON.parse(params['action_data']) if params['action_data']
+    if action_data && action_data['current_project_uuid']
+      current_project = Group.find(action_data['current_project_uuid'])
+      if (current_project.andand.writable_by.include?(current_user.uuid) rescue nil)
+        newc.owner_uuid = action_data['current_project_uuid']
+      end
+    end
+
     newc.save!
 
     chash.each do |k,v|
@@ -171,12 +182,10 @@ class ActionsController < ApplicationController
       l.save!
     end
 
-    action_data = JSON.parse(params['action_data']) if params['action_data']
-    if action_data && action_data['selection_param'].eql?('project')
-      redirect_to :back
-    else
-      redirect_to url_for(controller: 'collections', action: :show, id: newc.uuid)
-    end
+    msg = current_project ? "Created new collection in the project #{current_project.name}." :
+                            "Created new collection in your Home project."
+
+    redirect_to newc, flash: {'message' => msg}
   end
 
   def report_issue_popup
