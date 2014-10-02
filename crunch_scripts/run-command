@@ -91,6 +91,10 @@ def expand_item(p, c):
                 params[var] = i
                 r.extend(expand_list(params, c["command"]))
             return r
+        if "list" in c and "index" in c:
+            var = c["list"]
+            items = get_items(p, p[var])
+            return items[int(c["index"])]
     elif isinstance(c, list):
         return expand_list(p, c)
     elif isinstance(c, str) or isinstance(c, unicode):
