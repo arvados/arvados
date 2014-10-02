@@ -65,9 +65,9 @@ class Arvados::V1::JobsController < ApplicationController
       incomplete_job = nil
       @objects.each do |j|
         if j.nondeterministic != true and
-            ((j.success == true and j.output != nil) or j.running == true) and
+            ["Queued", "Running", "Complete"].include?(j.state) and
             j.script_parameters == resource_attrs[:script_parameters]
-          if j.running && j.owner_uuid == current_user.uuid
+          if j.state != "Complete" && j.owner_uuid == current_user.uuid
             # We'll use this if we don't find a job that has completed
             incomplete_job ||= j
           else
