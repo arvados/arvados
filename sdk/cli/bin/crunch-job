@@ -1423,7 +1423,7 @@ sub save_meta
   my $justcheckpoint = shift; # false if this will be the last meta saved
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
-  $loglocator = finish_output_log();
+  my $loglocator = finish_output_log();
   Log (undef, "log manifest is $loglocator");
   $Job->{'log'} = $loglocator;
   $Job->update_attributes('log', $loglocator) if $job_has_uuid;
