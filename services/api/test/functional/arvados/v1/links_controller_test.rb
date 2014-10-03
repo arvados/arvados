@@ -340,4 +340,22 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_not_nil assigns(:objects)
     assert_empty assigns(:objects)
   end
+
+  # Granting permissions.
+  test "grant can_read on project to other users in group" do
+    authorize_with :user_foo_in_sharing_group
+
+    refute users(:user_bar_in_sharing_group).can?(read: collections(:collection_owned_by_foo).uuid)
+
+    post :create, {
+      link: {
+        tail_uuid: users(:user_bar_in_sharing_group).uuid,
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: collections(:collection_owned_by_foo).uuid,
+      }
+    }
+    assert_response :success
+    assert users(:user_bar_in_sharing_group).can?(read: collections(:collection_owned_by_foo).uuid)
+  end
 end
