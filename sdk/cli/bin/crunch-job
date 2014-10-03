@@ -376,7 +376,7 @@ if (!defined $no_clear_tmp) {
     freeze_if_want_freeze ($cleanpid);
     select (undef, undef, undef, 0.1);
   }
-  Log (undef, "Cleanup command exited $?");
+  Log (undef, "Cleanup command exited ".exit_status_s($?));
 }
 
 
@@ -465,7 +465,7 @@ else {
     # if $local_repo is already initialized:
     `$gitcmd init --bare`;
     if ($?) {
-      croak("Error: $gitcmd init --bare exited $?");
+      croak("Error: $gitcmd init --bare exited ".exit_status_s($?));
     }
 
     # If $treeish looks like a hash (or abbrev hash) we look it up in
@@ -473,10 +473,11 @@ else {
     # do that with tags/branches though -- those change over time, so
     # they should always be resolved by the remote repo.)
     if ($treeish =~ /^[0-9a-f]{3,40}$/s) {
-      my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E`;
+      # Hide stderr because it's normal for this to fail:
+      my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E 2>/dev/null`;
       if ($? == 0 &&
           $sha1 =~ /^$treeish/ && # Don't use commit 123 @ branch abc!
-          $sha1 =~ /^([0-9a-f]{40})$/) {
+          $sha1 =~ /^([0-9a-f]{40})$/s) {
         $commit = $1;
         Log(undef, "Commit $commit already present in $local_repo");
       }
@@ -495,7 +496,7 @@ else {
       Log(undef, "Fetching objects from $repo to $local_repo");
       `$gitcmd fetch --no-progress --tags ''\Q$repo\E \Q+refs/heads/*:refs/heads/*\E`;
       if ($?) {
-        croak("Error: `$gitcmd fetch` exited $?");
+        croak("Error: `$gitcmd fetch` exited ".exit_status_s($?));
       }
     }
 
@@ -507,7 +508,9 @@ else {
   my $gitcmd = "git --git-dir=\Q$repo\E";
   my $sha1 = `$gitcmd rev-list -n1 ''\Q$treeish\E`;
   unless ($? == 0 && $sha1 =~ /^([0-9a-f]{40})$/) {
-    croak("`$gitcmd rev-list` exited $?, '$treeish' not found. Giving up.");
+    croak("`$gitcmd rev-list` exited "
+          .exit_status_s($?)
+          .", '$treeish' not found. Giving up.");
   }
   $commit = $1;
   Log(undef, "Version $treeish is commit $commit");
@@ -524,7 +527,7 @@ else {
   $ENV{"CRUNCH_SRC_COMMIT"} = $commit;
   $git_archive = `$gitcmd archive ''\Q$commit\E`;
   if ($?) {
-    croak("Error: $gitcmd archive exited $?");
+    croak("Error: $gitcmd archive exited ".exit_status_s($?));
   }
 }
 
@@ -557,7 +560,7 @@ else {
     freeze_if_want_freeze ($installpid);
     select (undef, undef, undef, 0.1);
   }
-  Log (undef, "Install script exited $?");
+  Log (undef, "Install script exited ".exit_status_s($?));
 }
 
 if (!$have_slurm)
@@ -596,7 +599,8 @@ fi
   }
   if ($? != 0)
   {
-    croak("Installing Docker image from $docker_locator returned exit code $?");
+    croak("Installing Docker image from $docker_locator exited "
+          .exit_status_s($?));
   }
 }
 
@@ -974,10 +978,7 @@ sub reapchildren
 
   my $childstatus = $?;
   my $exitvalue = $childstatus >> 8;
-  my $exitinfo = sprintf("exit %d signal %d%s",
-                         $exitvalue,
-                         $childstatus & 127,
-                         ($childstatus & 128 ? ' core dump' : ''));
+  my $exitinfo = "exit ".exit_status_s($childstatus);
   $Jobstep->{'arvados_task'}->reload;
   my $task_success = $Jobstep->{'arvados_task'}->{success};
 
@@ -1411,7 +1412,7 @@ sub save_meta
   my $cmd = "arv-put --portable-data-hash --retries $retry_count " .
       "--filename ''\Q$keep_logfile\E " . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
-  die "system $cmd failed: $?" if $?;
+  die "system $cmd exited ".exit_status_s($?) if $?;
   chomp($loglocator);
 
   $local_logfile = undef;   # the temp file is automatically deleted
@@ -1567,6 +1568,20 @@ sub put_retry_count {
     $timediff /= 2;
   }
   return ($retries > 3) ? $retries : 3;
+}
+
+sub exit_status_s {
+  # Given a $?, return a human-readable exit code string like "0" or
+  # "1" or "0 with signal 1" or "1 with signal 11".
+  my $exitcode = shift;
+  my $s = $exitcode >> 8;
+  if ($exitcode & 0x7f) {
+    $s .= " with signal " . ($exitcode & 0x7f);
+  }
+  if ($exitcode & 0x80) {
+    $s .= " with core dump";
+  }
+  return $s;
 }
 
 __DATA__
