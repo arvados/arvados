@@ -424,7 +424,6 @@ else {
       $repo = "$repo/.git";
     }
     $repo_location = 'local';
-    Log(undef, "Using local repository '$repo'");
   } else {
     # $repo is none of the above. It must be the name of a hosted
     # repository.
