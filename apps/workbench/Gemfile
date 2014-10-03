@@ -43,6 +43,7 @@ group :test do
   # still mandatory.
   gem 'simplecov', '~> 0.7.1', require: false
   gem 'simplecov-rcov', require: false
+  gem 'mocha', require: false
 end
 
 gem 'jquery-rails'

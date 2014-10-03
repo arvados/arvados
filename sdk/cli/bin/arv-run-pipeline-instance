@@ -652,8 +652,9 @@ class WhRunPipelineInstance
                 end
               end
             end
-          elsif c[:job][:state] == "Running"
-            # Job is still running
+          elsif ["Queued", "Running"].include? c[:job][:state]
+            # Job is running or queued to run, so indicate that pipeline
+            # should continue to run
             moretodo = true
           elsif c[:job][:state] == "Cancelled"
             debuglog "component #{cname} job #{c[:job][:uuid]} cancelled."
@@ -686,11 +687,11 @@ class WhRunPipelineInstance
       end
     end
 
-    c_in_state = @components.values.group_by { |c| 
+    c_in_state = @components.values.group_by { |c|
       c[:job] and c[:job][:state]
     }
-    succeeded = c_in_state["Complete"].count
-    failed = c_in_state["Failed"].count + c_in_state["Cancelled"].count
+    succeeded = c_in_state["Complete"].andand.count || 0
+    failed = (c_in_state["Failed"].andand.count || 0) + (c_in_state["Cancelled"].andand.count || 0)
     ended = succeeded + failed
 
     success = (succeeded == @components.length)
