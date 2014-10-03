@@ -49,3 +49,15 @@
   <% end %>
 <% end %>
 
+<%
+  # Display any flash messages in an alert. If there is any entry with "error" key, alert-danger is used. 
+  flash_msg = ''
+  flash_msg_is_error = false
+  flash.each do |msg|
+    flash_msg_is_error ||= (msg[0]=='error')
+    flash_msg += ('<p class="contain-align-left">' + msg[1] + '</p>')
+  end
+  if flash_msg != ''
+%>
+<div class="flash-message alert <%= flash_msg_is_error ? 'alert-danger' : 'alert-warning' %>"><%=flash_msg.html_safe%></div>
+<% end %>
