@@ -8,10 +8,16 @@ class Job < ArvadosModel
   serialize :tasks_summary, Hash
   before_create :ensure_unique_submit_id
   after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
+  before_validation :set_priority
+  before_validation :update_timestamps_when_state_changes
+  before_validation :update_state_from_old_state_attrs
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
+  validate :validate_status
+  validate :validate_state_change
 
   has_many :commit_ancestors, :foreign_key => :descendant, :primary_key => :script_version
+  has_many(:nodes, foreign_key: :job_uuid, primary_key: :uuid)
 
   class SubmitIdReused < StandardError
   end
@@ -30,6 +36,7 @@ class Job < ArvadosModel
     t.add :output
     t.add :success
     t.add :running
+    t.add :state
     t.add :is_locked_by_uuid
     t.add :log
     t.add :runtime_constraints
@@ -39,7 +46,19 @@ class Job < ArvadosModel
     t.add :repository
     t.add :supplied_script_version
     t.add :docker_image_locator
+    t.add :queue_position
+    t.add :node_uuids
+    t.add :description
   end
+
+  # Supported states for a job
+  States = [
+            (Queued = 'Queued'),
+            (Running = 'Running'),
+            (Cancelled = 'Cancelled'),
+            (Failed = 'Failed'),
+            (Complete = 'Complete'),
+           ]
 
   def assert_finished
     update_attributes(finished_at: finished_at || Time.now,
@@ -47,15 +66,39 @@ class Job < ArvadosModel
                       running: false)
   end
 
+  def node_uuids
+    nodes.map(&:uuid)
+  end
+
   def self.queue
-    self.where('started_at is ? and is_locked_by_uuid is ? and cancelled_at is ? and success is ?',
-               nil, nil, nil, nil).
-      order('priority desc, created_at')
+    self.where('state = ?', Queued).order('priority desc, created_at')
+  end
+
+  def queue_position
+    i = 0
+    Job::queue.each do |j|
+      if j[:uuid] == self.uuid
+        return i
+      end
+    end
+    nil
   end
 
   def self.running
     self.where('running = ?', true).
       order('priority desc, created_at')
+  end
+
+  def lock locked_by_uuid
+    transaction do
+      self.reload
+      unless self.state == Queued and self.is_locked_by_uuid.nil?
+        raise AlreadyLockedError
+      end
+      self.state = Running
+      self.is_locked_by_uuid = locked_by_uuid
+      self.save!
+    end
   end
 
   protected
@@ -72,8 +115,15 @@ class Job < ArvadosModel
     super + %w(output log)
   end
 
+  def set_priority
+    if self.priority.nil?
+      self.priority = 0
+    end
+    true
+  end
+
   def ensure_script_version_is_commit
-    if self.is_locked_by_uuid and self.started_at
+    if self.state == Running
       # Apparently client has already decided to go for it. This is
       # needed to run a local job using a local working directory
       # instead of a commit-ish.
@@ -160,7 +210,8 @@ class Job < ArvadosModel
           success_changed? or
           output_changed? or
           log_changed? or
-          tasks_summary_changed?
+          tasks_summary_changed? or
+          state_changed?
         logger.warn "User #{current_user.uuid if current_user} tried to change protected job attributes on locked #{self.class.to_s} #{uuid_was}"
         return false
       end
@@ -207,5 +258,101 @@ class Job < ArvadosModel
         # That's all, just create/touch a file for crunch-job to see.
       end
     end
+  end
+
+  def update_timestamps_when_state_changes
+    return if not (state_changed? or new_record?)
+    case state
+    when Running
+      self.started_at ||= Time.now
+    when Failed, Complete
+      self.finished_at ||= Time.now
+    when Cancelled
+      self.cancelled_at ||= Time.now
+    end
+
+    # TODO: Remove the following case block when old "success" and
+    # "running" attrs go away. Until then, this ensures we still
+    # expose correct success/running flags to older clients, even if
+    # some new clients are writing only the new state attribute.
+    case state
+    when Queued
+      self.running = false
+      self.success = nil
+    when Running
+      self.running = true
+      self.success = nil
+    when Cancelled, Failed
+      self.running = false
+      self.success = false
+    when Complete
+      self.running = false
+      self.success = true
+    end
+    self.running ||= false # Default to false instead of nil.
+
+    true
+  end
+
+  def update_state_from_old_state_attrs
+    # If a client has touched the legacy state attrs, update the
+    # "state" attr to agree with the updated values of the legacy
+    # attrs.
+    #
+    # TODO: Remove this method when old "success" and "running" attrs
+    # go away.
+    if cancelled_at_changed? or
+        success_changed? or
+        running_changed? or
+        state.nil?
+      if cancelled_at
+        self.state = Cancelled
+      elsif success == false
+        self.state = Failed
+      elsif success == true
+        self.state = Complete
+      elsif running == true
+        self.state = Running
+      else
+        self.state = Queued
+      end
+    end
+    true
+  end
+
+  def validate_status
+    if self.state.in?(States)
+      true
+    else
+      errors.add :state, "#{state.inspect} must be one of: #{States.inspect}"
+      false
+    end
+  end
+
+  def validate_state_change
+    ok = true
+    if self.state_changed?
+      ok = case self.state_was
+           when nil
+             # state isn't set yet
+             true
+           when Queued
+             # Permit going from queued to any state
+             true
+           when Running
+             # From running, may only transition to a finished state
+             [Complete, Failed, Cancelled].include? self.state
+           when Complete, Failed, Cancelled
+             # Once in a finished state, don't permit any more state changes
+             false
+           else
+             # Any other state transition is also invalid
+             false
+           end
+      if not ok
+        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
+      end
+    end
+    ok
   end
 end

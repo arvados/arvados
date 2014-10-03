@@ -5,7 +5,44 @@ class PipelineInstancesController < ApplicationController
   include PipelineComponentsHelper
 
   def copy
-    @object = @object.dup
+    template = PipelineTemplate.find?(@object.pipeline_template_uuid)
+
+    source = @object
+    @object = PipelineInstance.new
+    @object.pipeline_template_uuid = source.pipeline_template_uuid
+
+    if params['components'] == 'use_latest' and template
+      @object.components = template.components.deep_dup
+      @object.components.each do |cname, component|
+        # Go through the script parameters of each component
+        # that are marked as user input and copy them over.
+        # Skip any components that are not present in the
+        # source instance (there's nothing to copy)
+        if source.components.include? cname
+          component[:script_parameters].each do |pname, val|
+            if val.is_a? Hash and val[:dataclass]
+              # this is user-inputtable, so check the value from the source pipeline
+              srcvalue = source.components[cname][:script_parameters][pname]
+              if not srcvalue.nil?
+                component[:script_parameters][pname] = srcvalue
+              end
+            end
+          end
+        end
+      end
+    else
+      @object.components = source.components.deep_dup
+    end
+
+    if params['script'] == 'use_same'
+      # Go through each component and copy the script_version from each job.
+      @object.components.each do |cname, component|
+        if source.components.include? cname and source.components[cname][:job]
+          component[:script_version] = source.components[cname][:job][:script_version]
+        end
+      end
+    end
+
     @object.components.each do |cname, component|
       component.delete :job
     end

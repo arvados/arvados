@@ -9,6 +9,13 @@ from arvados.collection import *
 
 HEX_RE = re.compile(r'^[0-9a-fA-F]+$')
 
+portable_data_hash_pattern = re.compile(r'[0-9a-f]{32}\+\d+')
+uuid_pattern = re.compile(r'[a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}')
+collection_uuid_pattern = re.compile(r'[a-z0-9]{5}-4zz18-[a-z0-9]{15}')
+group_uuid_pattern = re.compile(r'[a-z0-9]{5}-j7d0g-[a-z0-9]{15}')
+user_uuid_pattern = re.compile(r'[a-z0-9]{5}-tpzed-[a-z0-9]{15}')
+link_uuid_pattern = re.compile(r'[a-z0-9]{5}-o0j2j-[a-z0-9]{15}')
+
 def clear_tmpdir(path=None):
     """
     Ensure the given directory (or TASK_TMPDIR if none given)
@@ -330,3 +337,14 @@ def is_hex(s, *length_args):
     else:
         good_len = True
     return bool(good_len and HEX_RE.match(s))
+
+def list_all(fn, num_retries=0, **kwargs):
+    items = []
+    offset = 0
+    items_available = sys.maxint
+    while len(items) < items_available:
+        c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
+        items += c['items']
+        items_available = c['items_available']
+        offset = c['offset'] + len(c['items'])
+    return items

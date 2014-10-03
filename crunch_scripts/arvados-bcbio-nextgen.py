@@ -6,6 +6,7 @@ import crunchutil.subst as subst
 import shutil
 import os
 import sys
+import time
 
 if len(arvados.current_task()['parameters']) > 0:
     p = arvados.current_task()['parameters']
@@ -121,6 +122,7 @@ if rcode == 0:
     print("arvados-bcbio-nextgen: start writing output to keep")
 
     done = False
+    api = arvados.api('v1')
     while not done:
         try:
             out = arvados.CollectionWriter()

@@ -1,10 +1,26 @@
 #!/usr/bin/env python
 
 import os
+import subprocess
+import time
 
 from setuptools import setup, find_packages
 
-README = os.path.join(os.path.dirname(__file__), 'README.rst')
+SETUP_DIR = os.path.dirname(__file__)
+README = os.path.join(SETUP_DIR, 'README.rst')
+
+cmd_opts = {'egg_info': {}}
+try:
+    git_tags = subprocess.check_output(
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%ct %h', SETUP_DIR]).split()
+    assert len(git_tags) == 2
+except (AssertionError, OSError, subprocess.CalledProcessError):
+    pass
+else:
+    git_tags[0] = time.strftime('%Y%m%d%H%M%S', time.gmtime(int(git_tags[0])))
+    cmd_opts['egg_info']['tag_build'] = '.{}.{}'.format(*git_tags)
+
 
 setup(name='arvados_fuse',
       version='0.1',
@@ -20,10 +36,12 @@ setup(name='arvados_fuse',
         'bin/arv-mount'
         ],
       install_requires=[
-        'arvados-python-client',
+        'arvados-python-client>=0.1.1411069908.8ba7f94',  # 2014-09-18
         'llfuse',
         'python-daemon'
         ],
       test_suite='tests',
       tests_require=['PyYAML'],
-      zip_safe=False)
+      zip_safe=False,
+      options=cmd_opts,
+      )

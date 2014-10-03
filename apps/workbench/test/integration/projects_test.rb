@@ -7,10 +7,17 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     Capybara.current_driver = Capybara.javascript_driver
   end
 
+  test 'Check collection count for A Project in the tab pane titles' do
+    project_uuid = api_fixture('groups')['aproject']['uuid']
+    visit page_with_token 'active', '/projects/' + project_uuid
+    collection_count = page.all("[data-pk*='collection']").count
+    assert_selector '#Data_collections-tab span', text: "(#{collection_count})"
+  end
+
   test 'Find a project and edit its description' do
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: 'A Project').
-      click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: "A Project").click
     within('.container-fluid', text: api_fixture('groups')['aproject']['name']) do
       find('span', text: api_fixture('groups')['aproject']['name']).click
       within('.arv-description-as-subtitle') do
@@ -27,8 +34,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   test 'Find a project and edit description to textile description' do
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: 'A Project').
-      click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: "A Project").click
     within('.container-fluid', text: api_fixture('groups')['aproject']['name']) do
       find('span', text: api_fixture('groups')['aproject']['name']).click
       within('.arv-description-as-subtitle') do
@@ -52,17 +59,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     click_link 'take me home'
 
     # now in dashboard
-    assert(page.has_text?('My projects'), 'My projects - not found on dashboard')
-    assert(page.has_text?('Projects shared with me'), 'Projects shared with me - not found on dashboard')
-    assert(page.has_text?('Textile description for A project'), "Project description not found")
-    assert(page.has_no_text?('*Textile description for A project*'), "Project description is not rendered properly in dashboard")
-    assert(page.has_no_text?('And a new paragraph in description'), "Project description is not truncated after first paragraph")
+    assert(page.has_text?('Active pipelines'), 'Active pipelines - not found on dashboard')
   end
 
   test 'Find a project and edit description to html description' do
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: 'A Project').
-      click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: "A Project").click
     within('.container-fluid', text: api_fixture('groups')['aproject']['name']) do
       find('span', text: api_fixture('groups')['aproject']['name']).click
       within('.arv-description-as-subtitle') do
@@ -79,14 +82,13 @@ class ProjectsTest < ActionDispatch::IntegrationTest
            "Textile description is displayed with uninterpreted formatting characters")
     assert(page.has_link?("take me home"),"link not found in description")
     click_link 'take me home'
-    assert page.has_text?('My projects')
-    assert page.has_text?('Projects shared with me')
+    assert page.has_text?('Active pipelines')
   end
 
   test 'Find a project and edit description to textile description with link to object' do
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: 'A Project').
-      click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: "A Project").click
     within('.container-fluid', text: api_fixture('groups')['aproject']['name']) do
       find('span', text: api_fixture('groups')['aproject']['name']).click
       within('.arv-description-as-subtitle') do
@@ -136,7 +138,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
   test 'Create a project and move it into a different project' do
     visit page_with_token 'active', '/projects'
-    find('.btn', text: "Add new project").click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: "Home").click
+    find('.btn', text: "Add a subproject").click
 
     # within('.editable', text: 'New project') do
     within('h2') do
@@ -147,7 +151,9 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     wait_for_ajax
 
     visit '/projects'
-    find('.btn', text: "Add new project").click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: "Home").click
+    find('.btn', text: "Add a subproject").click
     within('h2') do
       find('.fa-pencil').click
       find('.editable-input input').set('Project 5678')
@@ -155,7 +161,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
     end
     wait_for_ajax
 
-    click_link 'Move project...'
+    click_link 'Move to project...'
     find('.selectable', text: 'Project 1234').click
     find('.modal-footer a,button', text: 'Move').click
     wait_for_ajax
@@ -260,22 +266,24 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    'Move',
-    'Remove',
-    'Copy',
-  ].each do |action|
-    test "selection #{action} for project" do
-      src = api_fixture('groups')['aproject']
-      dest = api_fixture('groups')['asubproject']
-      my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
-
+    ['Move',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject'],api_fixture('groups')['asubproject']],
+    ['Remove',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject']],
+    ['Copy',api_fixture('collections')['collection_to_move_around_in_aproject'],
+      api_fixture('groups')['aproject'],api_fixture('groups')['asubproject']],
+    ['Remove',api_fixture('collections')['collection_in_aproject_with_same_name_as_in_home_project'],
+      api_fixture('groups')['aproject'],nil,true],
+  ].each do |action, my_collection, src, dest=nil, expect_name_change=nil|
+    test "selection #{action} #{expect_name_change} for project" do
       perform_selection_action src, dest, my_collection, action
 
       case action
       when 'Copy'
         assert page.has_text?(my_collection['name']), 'Collection not found in src project after copy'
         visit page_with_token 'active', '/'
-        find('.arv-project-list a,button', text: dest['name']).click
+        find("#projects-menu").click
+        find(".dropdown-menu a", text: dest['name']).click
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after copy'
 
         # now remove it from destination project to restore to original state
@@ -283,7 +291,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       when 'Move'
         assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after move'
         visit page_with_token 'active', '/'
-        find('.arv-project-list a,button', text: dest['name']).click
+        find("#projects-menu").click
+        find(".dropdown-menu a", text: dest['name']).click
         assert page.has_text?(my_collection['name']), 'Collection not found in dest project after move'
 
         # move it back to src project to restore to original state
@@ -291,15 +300,21 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       when 'Remove'
         assert page.has_no_text?(my_collection['name']), 'Collection still found in src project after remove'
         visit page_with_token 'active', '/'
-        find('.arv-project-list a,button', text: 'Home').click
+        find("#projects-menu").click
+        find(".dropdown-menu a", text: "Home").click
         assert page.has_text?(my_collection['name']), 'Collection not found in home project after remove'
+        if expect_name_change
+          assert page.has_text?(my_collection['name']+' removed from ' + src['name']),
+            'Collection with update name is not found in home project after remove'
+        end
       end
     end
   end
 
   def perform_selection_action src, dest, item, action
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: src['name']).click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: src['name']).click
     assert page.has_text?(item['name']), 'Collection not found in src project'
 
     within('tr', text: item['name']) do
@@ -335,10 +350,12 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # verify that selection options are disabled on the project until an item is selected
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: my_project['name']).click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: my_project['name']).click
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_selector 'li.disabled', text: 'Move selected'
@@ -347,7 +364,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # select collection and verify links are enabled
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: my_project['name']).click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: my_project['name']).click
     assert page.has_text?(my_collection['name']), 'Collection not found in project'
 
     within('tr', text: my_collection['name']) do
@@ -356,6 +374,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_no_selector 'li.disabled', text: 'Create new collection with selected collections'
+      page.assert_selector 'li', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_no_selector 'li.disabled', text: 'Copy selected'
       page.assert_selector 'li', text: 'Copy selected'
@@ -367,7 +387,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # select subproject and verify that copy action is disabled
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: my_project['name']).click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: my_project['name']).click
 
     click_link 'Subprojects'
     assert page.has_text?(my_subproject['name']), 'Subproject not found in project'
@@ -378,6 +399,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_no_selector 'li.disabled', text: 'Move selected'
@@ -388,7 +410,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # select subproject and a collection and verify that copy action is still disabled
     visit page_with_token 'active', '/'
-    find('.arv-project-list a,button', text: my_project['name']).click
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: my_project['name']).click
 
     click_link 'Subprojects'
     assert page.has_text?(my_subproject['name']), 'Subproject not found in project'
@@ -406,12 +429,47 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     click_button 'Selection...'
     within('.selection-action-container') do
+      page.assert_selector 'li.disabled', text: 'Create new collection with selected collections'
       page.assert_selector 'li.disabled', text: 'Compare selected'
       page.assert_selector 'li.disabled', text: 'Copy selected'
       page.assert_no_selector 'li.disabled', text: 'Move selected'
       page.assert_selector 'li', text: 'Move selected'
       page.assert_no_selector 'li.disabled', text: 'Remove selected'
       page.assert_selector 'li', text: 'Remove selected'
+    end
+  end
+
+  test "combine selected collections into new collection" do
+    my_project = api_fixture('groups')['aproject']
+    my_collection = api_fixture('collections')['collection_to_move_around_in_aproject']
+
+    visit page_with_token 'active', '/'
+    find("#projects-menu").click
+    find(".dropdown-menu a", text: my_project['name']).click
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+
+    within('tr', text: my_collection['name']) do
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Create new collection with selected collections'
+    end
+
+    # back in project page
+    assert page.has_text?(my_collection['name']), 'Collection not found in project'
+    assert page.has_link?('Jobs and pipelines'), 'Jobs and pipelines link not found in project'
+  end
+
+  [["jobs", "/jobs"],
+   ["pipelines", "/pipeline_instances"],
+   ["collections", "/collections"]
+  ].each do |target,path|
+    test "Test dashboard button all #{target}" do
+      visit page_with_token 'active', '/'
+      click_link "All #{target}"
+      assert_equal path, current_path
     end
   end
 

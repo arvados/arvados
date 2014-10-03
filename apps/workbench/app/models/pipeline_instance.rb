@@ -5,10 +5,14 @@ class PipelineInstance < ArvadosBase
     true
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     pipeline_name = self.name
     if pipeline_name.nil? or pipeline_name.empty?
-      template = PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+      template = if lookup and lookup[self.pipeline_template_uuid]
+                   lookup[self.pipeline_template_uuid]
+                 else
+                   PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+                 end
       if template
         template.name
       else
@@ -44,7 +48,7 @@ class PipelineInstance < ArvadosBase
   end
 
   def attribute_editable? attr, *args
-    super && (attr.to_sym == :name ||
+    super && (attr.to_sym == :name || attr.to_sym == :description ||
               (attr.to_sym == :components and
                (self.state == 'New' || self.state == 'Ready')))
   end
@@ -66,5 +70,9 @@ class PipelineInstance < ArvadosBase
     else
       "\"#{input_name.to_s}\" parameter for #{component[:script]} script in #{component_name} component"
     end
+  end
+
+  def textile_attributes
+    [ 'description' ]
   end
 end

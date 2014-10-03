@@ -1,66 +1,73 @@
-  <table class="table pipeline-components-table">
-    <colgroup>
-      <col style="width: 15%" />
-      <col style="width: 25%" />
-      <col style="width: 8%" />
-      <col style="width: 13%" />
-      <col style="width: 12%" />
-      <col style="width: 14%" />
-      <col style="width: 13%" />
-    </colgroup>
-    <thead>
-      <tr>
-        <th colspan="2">
-          component
-        </th><th colspan="5">
-          job
-          <%# format:'js' here helps browsers avoid using the cached js
-          content in html context (e.g., duplicate tab -> see
-          javascript) %>
-          <%= link_to '(refresh)', {format: :js}, {class: 'refresh hide', remote: true, method: 'get'} %>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <% render_pipeline_jobs.each do |pj| %>
-        <tr data-object-uuid="<%= pj[:job].andand[:uuid] %>">
-          <td>
-            <%= pj[:name] %>
-          </td><td>
-            <%= pj[:script] %>
-            <br /><span class="deemphasize"><%= pj[:script_version] %></span>
-          </td><td>
-            <%= render(partial: 'job_status_label', locals: { j: pj[:job] }) %>
-          </td><td>
-            <%= pj[:progress_bar] %>
-          </td>
-          <% current_job = pj[:job] rescue nil %>
-          <td>
-            <% if current_job.is_a? Job %>
-              <%= render partial: 'show_object_button', locals: {object: current_job, size: 'xs', link_text: 'Show job details'} %>
-            <% end %>
-          </td><td>
-            <% if current_job.andand[:log] %>
-              <% fixup = /([a-f0-9]{32}\+\d+)(\+?.*)/.match(current_job[:log])%>
-              <% Collection.limit(1).where(portable_data_hash: fixup[1]).each do |c| %>
-                <% c.files.first.andand do |file| %>
-                  <%= link_to url_for(controller: 'collections', action: 'show_file', uuid: current_job[:log], file: "#{file[0]}/#{file[1]}", disposition: 'inline', size: file[2]), class: 'btn btn-default btn-xs' do %>
-                    <i class="fa fa-fw fa-info"></i> Show log messages
-                  <% end %>
-                <% end %>
-              <% end %>
-            <% end %>
-          </td><td>
-            <% if pj[:output_uuid] %>
-                <%= link_to_if_arvados_object pj[:output_uuid], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
-            <% elsif current_job.andand[:output] %>
-                <%= link_to_if_arvados_object current_job[:output], {thumbnail: true, link_text: raw('<i class="fa fa-fw fa-archive"></i> Show output files')}, {class: 'btn btn-default btn-xs'} %>
-            <% end %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-    <tfoot>
-      <tr><td colspan="7"></td></tr>
-    </tfoot>
-  </table>
+<%# Summary %>
+
+<% if @object.state == 'Paused' %>
+  <p>
+    This pipeline is paused.  Jobs that are
+    already running will continue to run, but no new jobs will be submitted.
+  </p>
+<% end %>
+
+<% tasks = JobTask.filter([['job_uuid', 'in', render_pipeline_jobs.map { |j| j[:job].andand[:uuid] }]]).results %>
+<% runningtime = determine_wallclock_runtime(render_pipeline_jobs.map {|j| j[:job]}) %>
+
+<p>
+  <% if @object.started_at %>
+    This pipeline started at <%= render_localized_date(@object.started_at) %>.
+    It 
+    <% if @object.state == 'Complete' %>
+      completed in
+    <% elsif @object.state == 'Failed' %>
+      failed after
+    <% else %>
+      has been active for
+    <% end %>
+
+    <% walltime = if @object.finished_at then
+                    @object.finished_at - @object.started_at
+                  else
+                    Time.now - @object.started_at
+                  end %>
+    
+    <%= if walltime > runningtime 
+          render_runtime(walltime, true, false) 
+        else 
+          render_runtime(runningtime, true, false) 
+        end %><% if @object.finished_at %> at <%= render_localized_date(@object.finished_at) %><% end %>.
+    <% else %>
+      This pipeline is <%= if @object.state.start_with? 'Running' then 'active' else @object.state.downcase end %>.
+        <% walltime = 0%>
+    <% end %>
+
+  <% if @object.state == 'Failed' %>
+    Check the Log tab for more detail about why this pipeline failed.
+  <% end %>
+</p>
+
+<p>
+    This pipeline
+    <% if @object.state.start_with? 'Running' %>
+      has run
+    <% else %>
+      ran
+    <% end %>
+    for
+    <% cputime = tasks.map { |task|
+         if task.started_at
+           (if task.finished_at then task.finished_at else Time.now() end) - task.started_at
+           else
+         0
+       end
+       }.reduce(:+) || 0 %>
+    <%= render_runtime(runningtime, true, false) %><% if (walltime - runningtime) > 0 %>
+      (<%= render_runtime(walltime - runningtime, true, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+      and used
+    <%= render_runtime(cputime, true, false) %>
+    of CPU time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
+    <% end %>
+</p>
+
+<%# Components %>
+
+<% render_pipeline_jobs.each_with_index do |pj, i| %>
+  <%= render partial: 'running_component', locals: {tasks: tasks, pj: pj, i: i, expanded: false} %>
+<% end %>

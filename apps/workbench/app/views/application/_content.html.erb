@@ -1,15 +1,24 @@
 <% content_for :tab_panes do %>
 
-<% comparable = controller.respond_to? :compare %>
+  <% comparable = controller.respond_to? :compare %>
 
-<ul class="nav nav-tabs">
+<ul class="nav nav-tabs" data-tab-counts-url="<%= url_for(action: :tab_counts) rescue '' %>">
   <% pane_list.each_with_index do |pane, i| %>
-    <li class="<%= 'active' if i==0 %>"><a href="#<%= pane %>" data-toggle="tab" id="<%= pane %>-tab" data-pane-content-url="<%= url_for(params.merge(tab_pane: pane)) %>"> <%= pane.gsub('_', ' ') %></a></li>
+    <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
+    <li class="<%= 'active' if i==0 %>">
+      <a href="#<%= pane_name %>" data-toggle="tab"
+         class="pane-anchor"
+         id="<%= pane_name %>-tab"
+         data-pane-content-url="<%= url_for(params.merge(tab_pane: pane)) %>">
+        <%= pane_name.gsub('_', ' ') %> <span id="<%= pane_name %>-count"></span>
+      </a>
+    </li>
   <% end %>
 </ul>
 <div class="tab-content">
 <% pane_list.each_with_index do |pane, i| %>
-  <div id="<%= pane %>"
+      <% pane_name = (pane.is_a?(Hash) ? pane[:name] : pane) %>
+  <div id="<%= pane_name %>"
        class="tab-pane fade <%= 'in active loaded' if i==0 %> arv-log-event-listener"
 <% if controller.action_name == "index" %>
        data-object-kind="arvados#<%= ArvadosApiClient.class_kind controller.model_class %>"
@@ -17,18 +26,17 @@
        data-object-uuid="<%= @object.uuid %>"
 <% end %>
   >
-
-    <div id="<%= pane %>-scroll" style="margin-top:0.5em;">
-      <div class="pane-content">
-        <% if i == 0 %>
-          <%= render_pane pane, to_string: true %>
-        <% else %>
-          <div class="spinner spinner-32px spinner-h-center"></div>
-        <% end %>
+        <div id="<%= pane_name %>-scroll" style="margin-top:0.5em;">
+          <div class="pane-content">
+            <% if i == 0 %>
+              <%= render_pane pane_name, to_string: true %>
+            <% else %>
+              <div class="spinner spinner-32px spinner-h-center"></div>
+            <% end %>
+          </div>
+        </div>
       </div>
-    </div>
+    <% end %>
   </div>
-<% end %>
-</div>
 
 <% end %>

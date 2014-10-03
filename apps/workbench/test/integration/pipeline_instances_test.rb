@@ -38,7 +38,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     # Add this collection to the project
     visit '/projects'
-    find('.arv-project-list a,button', text: 'A Project').click
+    find("#projects-menu").click
+    find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
     within('.modal-dialog') do
       wait_for_ajax
@@ -74,14 +75,14 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     first('a,button', text: 'Run').click
 
-    # Pipeline is running. We have a "Stop" button instead now.
-    page.assert_selector 'a,button', text: 'Stop'
-    find('a,button', text: 'Stop').click
+    # Pipeline is running. We have a "Pause" button instead now.
+    page.assert_selector 'a,button', text: 'Pause'
+    find('a,button', text: 'Pause').click
 
     # Pipeline is stopped. It should now be in paused state and Runnable again.
     assert page.has_text? 'Paused'
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Resume'
-    page.assert_selector 'a,button', text: 'Clone and edit'
+    page.assert_selector 'a,button', text: 'Re-run with latest'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
     assert_not page.has_text? 'Graph'
@@ -100,7 +101,8 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
 
     # Add this collection to the project using collections menu from top nav
     visit '/projects'
-    find('.arv-project-list a,button', text: 'A Project').click
+    find("#projects-menu").click
+    find('.dropdown-menu a,button', text: 'A Project').click
     find('.btn', text: 'Add data').click
     within('.modal-dialog') do
       wait_for_ajax
@@ -136,13 +138,54 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
     first('a,button', text: 'Run').click
 
-    # Pipeline is running. We have a "Stop" button instead now.
+    # Pipeline is running. We have a "Pause" button instead now.
     page.assert_no_selector 'a,button', text: 'Run'
-    page.assert_selector 'a,button', text: 'Stop'
+    page.assert_selector 'a,button', text: 'Pause'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
     assert_not page.has_text? 'Graph'
   end
+
+  # Create a pipeline instance from within a project and run
+  test 'Run a pipeline from dashboard' do
+    visit page_with_token('active_trustedclient')
+
+    # create a pipeline instance
+    find('.btn', text: 'Run a pipeline').click
+    within('.modal-dialog') do
+      find('.selectable', text: 'Two Part Pipeline Template').click
+      find('.btn', text: 'Next: choose inputs').click
+    end
+
+    assert find('p', text: 'Provide a value')
+
+    find('div.form-group', text: 'Foo/bar pair').
+      find('.btn', text: 'Choose').
+      click
+
+    within('.modal-dialog') do
+      assert_selector 'button.dropdown-toggle', text: 'Home'
+      wait_for_ajax
+      click_button "Home"
+      click_link "A Project"
+      wait_for_ajax
+      first('span', text: 'foo_tag').click
+      find('button', text: 'OK').click
+    end
+    wait_for_ajax
+
+    # "Run" button present and enabled
+    page.assert_no_selector 'a.disabled,button.disabled', text: 'Run'
+    first('a,button', text: 'Run').click
+
+    # Pipeline is running. We have a "Pause" button instead now.
+    page.assert_no_selector 'a,button', text: 'Run'
+    page.assert_selector 'a,button', text: 'Pause'
+
+    # Since it is test env, no jobs are created to run. So, graph not visible
+    assert_not page.has_text? 'Graph'
+  end
+
 
   test 'view pipeline with job and see graph' do
     visit page_with_token('active_trustedclient')
@@ -158,6 +201,26 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'script_version'
   end
 
+  test 'pipeline description' do
+    visit page_with_token('active_trustedclient')
+
+    visit '/pipeline_instances'
+    assert page.has_text? 'pipeline_with_job'
+
+    find('a', text: 'pipeline_with_job').click
+
+    within('.arv-description-as-subtitle') do
+      find('.fa-pencil').click
+      find('.editable-input textarea').set('*Textile description for pipeline instance*')
+      find('.editable-submit').click
+    end
+    wait_for_ajax
+
+    # verify description
+    assert page.has_no_text? '*Textile description for pipeline instance*'
+    assert page.has_text? 'Textile description for pipeline instance'
+  end
+
   test "JSON popup available for strange components" do
     uuid = api_fixture("pipeline_instances")["components_is_jobspec"]["uuid"]
     visit page_with_token("active", "/pipeline_instances/#{uuid}")
@@ -167,5 +230,38 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     click_on "Show components JSON"
     assert(page.has_text?("script_parameters"),
            "components JSON not found")
+  end
+
+  PROJECT_WITH_SEARCH_COLLECTION = "A Subproject"
+  def check_parameter_search(proj_name)
+    template = api_fixture("pipeline_templates")["parameter_with_search"]
+    search_text = template["components"]["with-search"]["script_parameters"]["input"]["search_for"]
+    visit page_with_token("active", "/pipeline_templates/#{template['uuid']}")
+    click_on "Run this pipeline"
+    within(".modal-dialog") do  # Set project for the new pipeline instance
+      find(".selectable", text: proj_name).click
+      click_on "Choose"
+    end
+    assert(has_text?("This pipeline was created from the template"), "did not land on pipeline instance page")
+    first("a.btn,button", text: "Choose").click
+    within(".modal-body") do
+      if (proj_name != PROJECT_WITH_SEARCH_COLLECTION)
+        # Switch finder modal to Subproject to find the Collection.
+        click_on proj_name
+        click_on PROJECT_WITH_SEARCH_COLLECTION
+      end
+      assert_equal(search_text, first("input").value,
+                   "parameter search not preseeded")
+      assert(has_text?(api_fixture("collections")["baz_collection_name_in_asubproject"]["name"]),
+             "baz Collection not in preseeded search results")
+    end
+  end
+
+  test "Workbench respects search_for parameter in templates" do
+    check_parameter_search(PROJECT_WITH_SEARCH_COLLECTION)
+  end
+
+  test "Workbench preserves search_for parameter after project switch" do
+    check_parameter_search("A Project")
   end
 end

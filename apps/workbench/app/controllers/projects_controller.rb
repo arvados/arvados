@@ -1,4 +1,6 @@
 class ProjectsController < ApplicationController
+  before_filter :set_share_links, if: -> { defined? @object }
+
   def model_class
     Group
   end
@@ -28,15 +30,69 @@ class ProjectsController < ApplicationController
     end
   end
 
+  def set_share_links
+    @user_is_manager = false
+    @share_links = []
+    if @object.uuid != current_user.uuid
+      begin
+        @share_links = Link.permissions_for(@object)
+        @user_is_manager = true
+      rescue ArvadosApiClient::AccessForbiddenException,
+        ArvadosApiClient::NotFoundException
+      end
+    end
+  end
+
   def index_pane_list
     %w(Projects)
   end
 
+  # Returning an array of hashes instead of an array of strings will allow
+  # us to tell the interface to get counts for each pane (using :filters).
+  # It also seems to me that something like these could be used to configure the contents of the panes.
   def show_pane_list
-    if @user_is_manager
-      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Sharing Advanced)
-    else
-      %w(Data_collections Jobs_and_pipelines Pipeline_templates Subprojects Other_objects Advanced)
+    pane_list = [
+      {
+        :name => 'Data_collections',
+        :filters => [%w(uuid is_a arvados#collection)]
+      },
+      {
+        :name => 'Jobs_and_pipelines',
+        :filters => [%w(uuid is_a) + [%w(arvados#job arvados#pipelineInstance)]]
+      },
+      {
+        :name => 'Pipeline_templates',
+        :filters => [%w(uuid is_a arvados#pipelineTemplate)]
+      },
+      {
+        :name => 'Subprojects',
+        :filters => [%w(uuid is_a arvados#group)]
+      },
+      { :name => 'Other_objects',
+        :filters => [%w(uuid is_a) + [%w(arvados#human arvados#specimen arvados#trait)]]
+      }
+    ]
+    pane_list << { :name => 'Sharing',
+                   :count => @share_links.count } if @user_is_manager
+    pane_list << { :name => 'Advanced' }
+  end
+
+  # Called via AJAX and returns Javascript that populates tab counts into tab titles.
+  # References #show_pane_list action which should return an array of hashes each with :name
+  # and then optionally a :filters to run or a straight up :count
+  #
+  # This action could easily be moved to the ApplicationController to genericize the tab_counts behaviour,
+  # but one or more new routes would have to be created, the js.erb would also have to be moved
+  def tab_counts
+    @tab_counts = {}
+    show_pane_list.each do |pane|
+      if pane.is_a?(Hash)
+        if pane[:count]
+          @tab_counts[pane[:name]] = pane[:count]
+        elsif pane[:filters]
+          @tab_counts[pane[:name]] = @object.contents(filters: pane[:filters]).items_available
+        end
+      end
     end
   end
 
@@ -71,8 +127,23 @@ class ProjectsController < ApplicationController
       if item.owner_uuid == @object.uuid
         # Object is owned by this project. Remove it from the project by
         # changing owner to the current user.
-        item.update_attributes owner_uuid: current_user.uuid
-        @removed_uuids << item.uuid
+        begin
+          item.update_attributes owner_uuid: current_user.uuid
+          @removed_uuids << item.uuid
+        rescue ArvadosApiClient::ApiErrorResponseException => e
+          if e.message.include? 'collection_owner_uuid_name_unique'
+            rename_to = item.name + ' removed from ' +
+                        (@object.name ? @object.name : @object.uuid) +
+                        ' at ' + Time.now.to_s
+            updates = {}
+            updates[:name] = rename_to
+            updates[:owner_uuid] = current_user.uuid
+            item.update_attributes updates
+            @removed_uuids << item.uuid
+          else
+            raise
+          end
+        end
       end
     end
   end
@@ -160,17 +231,6 @@ class ProjectsController < ApplicationController
       return render_not_found("object not found")
     end
 
-    @user_is_manager = false
-    @share_links = []
-    if @object.uuid != current_user.uuid
-      begin
-        @share_links = Link.permissions_for(@object)
-        @user_is_manager = true
-      rescue ArvadosApiClient::AccessForbiddenException,
-        ArvadosApiClient::NotFoundException
-      end
-    end
-
     if params[:partial]
       load_contents_objects
       respond_to do |f|
@@ -213,13 +273,14 @@ class ProjectsController < ApplicationController
         objects_and_names << [object, @name_link_for[object.uuid]]
       elsif object.respond_to? :name
         objects_and_names << [object, object]
-      elsif not Collection.attribute_info.include?(:name)
+      else
         objects_and_names << [object,
                                Link.new(owner_uuid: @object.uuid,
                                         tail_uuid: @object.uuid,
                                         head_uuid: object.uuid,
                                         link_class: "name",
                                         name: "")]
+
       end
     end
     objects_and_names

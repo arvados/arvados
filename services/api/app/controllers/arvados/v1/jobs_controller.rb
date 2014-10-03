@@ -2,8 +2,8 @@ class Arvados::V1::JobsController < ApplicationController
   accept_attribute_as_json :script_parameters, Hash
   accept_attribute_as_json :runtime_constraints, Hash
   accept_attribute_as_json :tasks_summary, Hash
-  skip_before_filter :find_object_by_uuid, :only => :queue
-  skip_before_filter :render_404_if_no_object, :only => :queue
+  skip_before_filter :find_object_by_uuid, :only => [:queue, :queue_size]
+  skip_before_filter :render_404_if_no_object, :only => [:queue, :queue_size]
 
   def create
     [:repository, :script, :script_version, :script_parameters].each do |r|
@@ -65,9 +65,9 @@ class Arvados::V1::JobsController < ApplicationController
       incomplete_job = nil
       @objects.each do |j|
         if j.nondeterministic != true and
-            ((j.success == true and j.output != nil) or j.running == true) and
+            ["Queued", "Running", "Complete"].include?(j.state) and
             j.script_parameters == resource_attrs[:script_parameters]
-          if j.running && j.owner_uuid == current_user.uuid
+          if j.state != "Complete" && j.owner_uuid == current_user.uuid
             # We'll use this if we don't find a job that has completed
             incomplete_job ||= j
           else
@@ -97,6 +97,11 @@ class Arvados::V1::JobsController < ApplicationController
   def cancel
     reload_object_before_update
     @object.update_attributes! cancelled_at: Time.now
+    show
+  end
+
+  def lock
+    @object.lock current_user.uuid
     show
   end
 
@@ -151,15 +156,17 @@ class Arvados::V1::JobsController < ApplicationController
     params[:order] ||= ['priority desc', 'created_at']
     load_limit_offset_order_params
     load_where_param
-    @where.merge!({
-                    started_at: nil,
-                    is_locked_by_uuid: nil,
-                    cancelled_at: nil,
-                    success: nil
-                  })
+    @where.merge!({state: Job::Queued})
     return if false.equal?(load_filters_param)
     find_objects_for_index
     index
+  end
+
+  def queue_size
+    # Users may not be allowed to see all the jobs in the queue, so provide a
+    # method to get just the queue size in order to get a gist of how busy the
+    # cluster is.
+    render :json => {:queue_size => Job.queue.size}
   end
 
   def self._create_requires_parameters

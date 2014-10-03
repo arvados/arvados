@@ -5,9 +5,9 @@ Hi there,
 <% end -%>
 
 Your Arvados account has been set up. You can log in with your Google account
-associated with the e-mail address <%= @user.email %> at:
+associated with the e-mail address <%= @user.email %><% if Rails.configuration.workbench_address %> at:
 
-  <%= Rails.configuration.workbench_address %>
+  <%= Rails.configuration.workbench_address %><% else %>.<% end %>
 
 Thanks,
 The Arvados team.

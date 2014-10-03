@@ -353,7 +353,9 @@ CREATE TABLE job_tasks (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     created_by_job_task_uuid character varying(255),
-    qsequence bigint
+    qsequence bigint,
+    started_at timestamp without time zone,
+    finished_at timestamp without time zone
 );
 
 
@@ -420,7 +422,6 @@ CREATE TABLE jobs (
     output character varying(255),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    priority character varying(255),
     is_locked_by_uuid character varying(255),
     log character varying(255),
     tasks_summary text,
@@ -429,8 +430,9 @@ CREATE TABLE jobs (
     repository character varying(255),
     supplied_script_version character varying(255),
     docker_image_locator character varying(255),
-    name character varying(255),
-    description text
+    priority integer DEFAULT 0 NOT NULL,
+    description text,
+    state character varying(255)
 );
 
 
@@ -638,7 +640,9 @@ CREATE TABLE nodes (
     first_ping_at timestamp without time zone,
     last_ping_at timestamp without time zone,
     info text,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    properties text,
+    job_uuid character varying(255)
 );
 
 
@@ -680,6 +684,8 @@ CREATE TABLE pipeline_instances (
     properties text,
     state character varying(255),
     components_summary text,
+    started_at timestamp without time zone,
+    finished_at timestamp without time zone,
     description text
 );
 
@@ -869,7 +875,7 @@ ALTER SEQUENCE traits_id_seq OWNED BY traits.id;
 CREATE TABLE users (
     id integer NOT NULL,
     uuid character varying(255),
-    owner_uuid character varying(255),
+    owner_uuid character varying(255) NOT NULL,
     created_at timestamp without time zone NOT NULL,
     modified_by_client_uuid character varying(255),
     modified_by_user_uuid character varying(255),
@@ -2005,10 +2011,22 @@ INSERT INTO schema_migrations (version) VALUES ('20140714184006');
 
 INSERT INTO schema_migrations (version) VALUES ('20140811184643');
 
-INSERT INTO schema_migrations (version) VALUES ('20140815171049');
-
 INSERT INTO schema_migrations (version) VALUES ('20140817035914');
 
 INSERT INTO schema_migrations (version) VALUES ('20140818125735');
 
 INSERT INTO schema_migrations (version) VALUES ('20140826180337');
+
+INSERT INTO schema_migrations (version) VALUES ('20140828141043');
+
+INSERT INTO schema_migrations (version) VALUES ('20140909183946');
+
+INSERT INTO schema_migrations (version) VALUES ('20140911221252');
+
+INSERT INTO schema_migrations (version) VALUES ('20140918141529');
+
+INSERT INTO schema_migrations (version) VALUES ('20140918153541');
+
+INSERT INTO schema_migrations (version) VALUES ('20140918153705');
+
+INSERT INTO schema_migrations (version) VALUES ('20140924091559');

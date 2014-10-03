@@ -318,12 +318,18 @@ class ArvadosBase < ActiveRecord::Base
     false
   end
 
+  # can this class of object be copied into a project?
+  # override to false on indivudal model classes for which this should not be true
+  def self.copies_to_projects?
+    self.goes_in_projects?
+  end
+
   def editable?
     (current_user and current_user.is_active and
      (current_user.is_admin or
       current_user.uuid == self.owner_uuid or
       new_record? or
-      (writable_by.include? current_user.uuid rescue false)))
+      (writable_by.include? current_user.uuid rescue false))) or false
   end
 
   def attribute_editable?(attr, ever=nil)
@@ -373,7 +379,7 @@ class ArvadosBase < ActiveRecord::Base
     self.class.to_s.underscore
   end
 
-  def friendly_link_name
+  def friendly_link_name lookup=nil
     (name if self.respond_to? :name) || default_name
   end
 

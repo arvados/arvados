@@ -21,3 +21,13 @@
 .pipeline_color_legend a {
     color: #000;
 }
+
+.col-md-1.pipeline-instance-spacing {
+  padding: 0px;
+  margin: 0px;
+}
+
+.col-md-3.pipeline-instance-spacing > .progress {
+  padding: 0px;
+  margin: 0px;
+}

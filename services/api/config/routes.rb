@@ -22,7 +22,9 @@ Server::Application.routes.draw do
       resources :job_tasks
       resources :jobs do
         get 'queue', on: :collection
+        get 'queue_size', on: :collection
         post 'cancel', on: :member
+        post 'lock', on: :member
       end
       resources :keep_disks do
         post 'ping', on: :collection

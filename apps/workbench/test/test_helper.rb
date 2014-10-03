@@ -1,4 +1,5 @@
-ENV["RAILS_ENV"] = "test"
+ENV["RAILS_ENV"] = "test" if (ENV["RAILS_ENV"] != "diagnostics")
+
 unless ENV["NO_COVERAGE_TEST"]
   begin
     require 'simplecov'
@@ -21,6 +22,7 @@ end
 
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
+require 'mocha/mini_test'
 
 class ActiveSupport::TestCase
   # Setup all fixtures in test/fixtures/*.(yml|csv) for all tests in
@@ -130,7 +132,7 @@ class ApiServerForTests
       make_ssl_cert
       _system('bundle', 'exec', 'rake', 'db:test:load')
       _system('bundle', 'exec', 'rake', 'db:fixtures:load')
-      _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3001',
+      _system('bundle', 'exec', 'passenger', 'start', '-d', '-p3000',
               '--pid-file', SERVER_PID_PATH,
               '--ssl',
               '--ssl-certificate', 'self-signed.pem',
@@ -151,4 +153,26 @@ class ApiServerForTests
   end
 end
 
-ApiServerForTests.run
+class ActionController::TestCase
+  setup do
+    @counter = 0
+  end
+
+  def check_counter action
+    @counter += 1
+    if @counter == 2
+      assert_equal 1, 2, "Multiple actions in functional test"
+    end
+  end
+
+  [:get, :post, :put, :patch, :delete].each do |method|
+    define_method method do |action, *args|
+      check_counter action
+      super action, *args
+    end
+  end
+end
+
+if ENV["RAILS_ENV"].eql? 'test'
+  ApiServerForTests.run
+end

@@ -74,6 +74,7 @@ behavior (e.g., cancel job if cancelled_at becomes non-nil).
 
 use strict;
 use POSIX ':sys_wait_h';
+use POSIX qw(strftime);
 use Fcntl qw(F_GETFL F_SETFL O_NONBLOCK);
 use Arvados;
 use Digest::MD5 qw(md5_hex);
@@ -158,6 +159,10 @@ if ($job_has_uuid)
     # mark the job as failed.
     if ($Job->{'is_locked_by_uuid'}) {
       Log(undef, "Job is locked by " . $Job->{'is_locked_by_uuid'});
+      exit EX_TEMPFAIL;
+    }
+    if ($Job->{'state'} ne 'Queued') {
+      Log(undef, "Job state is " . $Job->{'state'} . ", but I can only start queued jobs.");
       exit EX_TEMPFAIL;
     }
     if ($Job->{'success'} ne undef) {
@@ -286,9 +291,7 @@ if ($job_has_uuid)
     Log(undef, "Error while updating / locking job, exiting ".EX_TEMPFAIL);
     exit EX_TEMPFAIL;
   }
-  $Job->update_attributes('started_at' => scalar gmtime,
-                          'running' => 1,
-                          'success' => undef,
+  $Job->update_attributes('state' => 'Running',
                           'tasks_summary' => { 'failed' => 0,
                                                'todo' => 1,
                                                'running' => 0,
@@ -447,9 +450,10 @@ else
   if ($treeish =~ m{^\d{1,4}$}) {
     my $gitlog = `git --git-dir=\Q$repo\E log --pretty="format:%H" --grep="git-svn-id:.*\@"\Q$treeish\E" " master`;
     chomp $gitlog;
-    if ($gitlog =~ /^[a-f0-9]{40}$/) {
+    Log(undef, "git Subversion search exited $?");
+    if (($? == 0) && ($gitlog =~ /^[a-f0-9]{40}$/)) {
       $commit = $gitlog;
-      Log (undef, "Using commit $commit for script_version $treeish");
+      Log(undef, "Using commit $commit for Subversion revision $treeish");
     }
   }
 
@@ -458,21 +462,19 @@ else
   if (!defined $commit) {
     my $found = `git --git-dir=\Q$repo\E rev-list -1 ''\Q$treeish\E`;
     chomp $found;
-    if ($found =~ /^[0-9a-f]{40}$/s) {
+    Log(undef, "git rev-list exited $? with result '$found'");
+    if (($? == 0) && ($found =~ /^[0-9a-f]{40}$/s)) {
       $commit = $found;
+      Log(undef, "Using commit $commit for tree-ish $treeish");
       if ($commit ne $treeish) {
 	# Make sure we record the real commit id in the database,
 	# frozentokey, logs, etc. -- instead of an abbreviation or a
 	# branch name which can become ambiguous or point to a
 	# different commit in the future.
-	$ENV{"CRUNCH_SRC_COMMIT"} = $commit;
-	Log (undef, "Using commit $commit for tree-ish $treeish");
-        if ($commit ne $treeish) {
-          $Job->{'script_version'} = $commit;
-          !$job_has_uuid or
-              $Job->update_attributes('script_version' => $commit) or
-              croak("Error while updating job");
-        }
+        $Job->{'script_version'} = $commit;
+        !$job_has_uuid or
+            $Job->update_attributes('script_version' => $commit) or
+            croak("Error while updating job");
       }
     }
   }
@@ -482,6 +484,7 @@ else
     @execargs = ("sh", "-c",
 		 "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
     $git_archive = `git --git-dir=\Q$repo\E archive ''\Q$commit\E`;
+    croak("git archive failed: exit " . ($? >> 8)) if ($? != 0);
   }
   else {
     croak ("could not figure out commit id for $treeish");
@@ -656,8 +659,10 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     if ($build_script)
     {
       $build_script_to_send = $build_script;
+      $command .=
+	  "&& perl -";
     }
-    $command .= "&& exec arv-mount --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
+    $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
     {
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$ENV{TASK_WORK}/docker.cid -poll=10000 ";
@@ -668,12 +673,16 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .=
           q{$(ip -o address show scope global |
               gawk 'match($4, /^([0-9\.:]+)\//, x){print "--dns", x[1]}') };
+      $command .= "--volume=\Q$ENV{CRUNCH_SRC}:/tmp/crunch-src:ro\E ";
       $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT}:/keep:ro\E ";
       $command .= "--env=\QHOME=/home/crunch\E ";
       while (my ($env_key, $env_val) = each %ENV)
       {
         if ($env_key =~ /^(ARVADOS|JOB|TASK)_/) {
-          if ($env_key eq "TASK_KEEPMOUNT") {
+          if ($env_key eq "TASK_WORK") {
+            $command .= "--env=\QTASK_WORK=/tmp/crunch-job\E ";
+          }
+          elsif ($env_key eq "TASK_KEEPMOUNT") {
             $command .= "--env=\QTASK_KEEPMOUNT=/keep\E ";
           }
           else {
@@ -685,13 +694,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--env=\QCRUNCH_SRC=/tmp/crunch-src\E ";
       $command .= "\Q$docker_hash\E ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - " if ($build_script);
       $command .= "/tmp/crunch-src/crunch_scripts/" . $Job->{"script"};
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
       $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - " if ($build_script);
       $command .= "$ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
 
@@ -724,6 +731,9 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
   $Jobstep->{slotindex} = $childslot;
   delete $Jobstep->{stderr};
   delete $Jobstep->{finishtime};
+
+  $Jobstep->{'arvados_task'}->{started_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{starttime});
+  $Jobstep->{'arvados_task'}->save;
 
   splice @jobstep_todo, $todo_ptr, 1;
   --$todo_ptr;
@@ -840,12 +850,6 @@ release_allocation();
 freeze();
 my $collated_output = &collate_output();
 
-if ($job_has_uuid) {
-  $Job->update_attributes('running' => 0,
-                          'success' => $collated_output && $main::success,
-                          'finished_at' => scalar gmtime)
-}
-
 if (!$collated_output) {
   Log(undef, "output undef");
 }
@@ -872,7 +876,16 @@ else {
 Log (undef, "finish");
 
 save_meta();
-exit ($Job->{'success'} ? 1 : 0);
+
+if ($job_has_uuid) {
+  if ($collated_output && $main::success) {
+    $Job->update_attributes('state' => 'Complete')
+  } else {
+    $Job->update_attributes('state' => 'Failed')
+  }
+}
+
+exit ($Job->{'state'} != 'Complete' ? 1 : 0);
 
 
 
@@ -975,6 +988,8 @@ sub reapchildren
   }
   $Jobstep->{exitcode} = $childstatus;
   $Jobstep->{finishtime} = time;
+  $Jobstep->{'arvados_task'}->{finished_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
+  $Jobstep->{'arvados_task'}->save;
   process_stderr ($jobstepid, $task_success);
   Log ($jobstepid, "output " . $Jobstep->{'arvados_task'}->{output});
 
@@ -1022,12 +1037,16 @@ sub check_refresh_wanted
       my $Job2 = $arv->{'jobs'}->{'get'}->execute('uuid' => $jobspec);
       for my $attr ('cancelled_at',
                     'cancelled_by_user_uuid',
-                    'cancelled_by_client_uuid') {
+                    'cancelled_by_client_uuid',
+                    'state') {
         $Job->{$attr} = $Job2->{$attr};
       }
-      if ($Job->{'cancelled_at'}) {
-        Log (undef, "Job cancelled at " . $Job->{cancelled_at} .
-             " by user " . $Job->{cancelled_by_user_uuid});
+      if ($Job->{'state'} ne "Running") {
+        if ($Job->{'state'} eq "Cancelled") {
+          Log (undef, "Job cancelled at " . $Job->{'cancelled_at'} . " by user " . $Job->{'cancelled_by_user_uuid'});
+        } else {
+          Log (undef, "Job state unexpectedly changed to " . $Job->{'state'});
+        }
         $main::success = 0;
         $main::please_freeze = 1;
       }
@@ -1196,7 +1215,8 @@ sub collate_output
   Log (undef, "collate");
 
   my ($child_out, $child_in);
-  my $pid = open2($child_out, $child_in, 'arv-put', '--raw');
+  my $pid = open2($child_out, $child_in, 'arv-put', '--raw',
+                  '--retries', put_retry_count());
   my $joboutput;
   for (@jobstep)
   {
@@ -1324,9 +1344,11 @@ sub croak
 sub cleanup
 {
   return if !$job_has_uuid;
-  $Job->update_attributes('running' => 0,
-                          'success' => 0,
-                          'finished_at' => scalar gmtime);
+  if ($Job->{'state'} eq 'Cancelled') {
+    $Job->update_attributes('finished_at' => scalar gmtime);
+  } else {
+    $Job->update_attributes('state' => 'Failed');
+  }
 }
 
 
@@ -1336,8 +1358,9 @@ sub save_meta
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
 
   $local_logfile->flush;
-  my $cmd = "arv-put --portable-data-hash --filename ''\Q$keep_logfile\E "
-      . quotemeta($local_logfile->filename);
+  my $retry_count = put_retry_count();
+  my $cmd = "arv-put --portable-data-hash --retries $retry_count " .
+      "--filename ''\Q$keep_logfile\E " . quotemeta($local_logfile->filename);
   my $loglocator = `$cmd`;
   die "system $cmd failed: $?" if $?;
   chomp($loglocator);
@@ -1461,14 +1484,40 @@ sub find_docker_image {
   # If so, return its stream name and Docker hash.
   # If not, return undef for both values.
   my $locator = shift;
+  my ($streamname, $filename);
   if (my $image = $arv->{collections}->{get}->execute(uuid => $locator)) {
-    my @file_list = @{$image->{files}};
-    if ((scalar(@file_list) == 1) &&
-        ($file_list[0][1] =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
-      return ($file_list[0][0], $1);
+    foreach my $line (split(/\n/, $image->{manifest_text})) {
+      my @tokens = split(/\s+/, $line);
+      next if (!@tokens);
+      $streamname = shift(@tokens);
+      foreach my $filedata (grep(/^\d+:\d+:/, @tokens)) {
+        if (defined($filename)) {
+          return (undef, undef);  # More than one file in the Collection.
+        } else {
+          $filename = (split(/:/, $filedata, 3))[2];
+        }
+      }
     }
   }
-  return (undef, undef);
+  if (defined($filename) and ($filename =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
+    return ($streamname, $1);
+  } else {
+    return (undef, undef);
+  }
+}
+
+sub put_retry_count {
+  # Calculate a --retries argument for arv-put that will have it try
+  # approximately as long as this Job has been running.
+  my $stoptime = shift || time;
+  my $starttime = $jobstep[0]->{starttime};
+  my $timediff = defined($starttime) ? ($stoptime - $starttime) : 1;
+  my $retries = 0;
+  while ($timediff >= 2) {
+    $retries++;
+    $timediff /= 2;
+  }
+  return ($retries > 3) ? $retries : 3;
 }
 
 __DATA__

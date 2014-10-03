@@ -3,8 +3,15 @@ class Node < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   serialize :info, Hash
+  serialize :properties, Hash
   before_validation :ensure_ping_secret
   after_update :dnsmasq_update
+
+  # Only a controller can figure out whether or not the current API tokens
+  # have access to the associated Job.  They're expected to set
+  # job_readable=true if the Job UUID can be included in the API response.
+  belongs_to(:job, foreign_key: :job_uuid, primary_key: :uuid)
+  attr_accessor :job_readable
 
   MAX_SLOTS = 64
 
@@ -19,7 +26,9 @@ class Node < ArvadosModel
     t.add :last_ping_at
     t.add :slot_number
     t.add :status
+    t.add :api_job_uuid, as: :job_uuid
     t.add :crunch_worker_state
+    t.add :properties
   end
   api_accessible :superuser, :extend => :user do |t|
     t.add :first_ping_at
@@ -27,16 +36,16 @@ class Node < ArvadosModel
     t.add lambda { |x| @@nameservers }, :as => :nameservers
   end
 
-  def info
-    @info ||= Hash.new
-    super
-  end
-
   def domain
     super || @@domain
   end
 
+  def api_job_uuid
+    job_readable ? job_uuid : nil
+  end
+
   def crunch_worker_state
+    return 'down' if slot_number.nil?
     case self.info.andand['slurm_state']
     when 'alloc', 'comp'
       'busy'
@@ -118,9 +127,9 @@ class Node < ArvadosModel
     # Record other basic stats
     ['total_cpu_cores', 'total_ram_mb', 'total_scratch_mb'].each do |key|
       if value = (o[key] or o[key.to_sym])
-        self.info[key] = value
+        self.properties[key] = value.to_i
       else
-        self.info.delete(key)
+        self.properties.delete(key)
       end
     end
 

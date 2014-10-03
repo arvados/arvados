@@ -26,31 +26,8 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
            "basic Collections index included manifest_text")
   end
 
-  test "can get non-database fields via index select" do
-    authorize_with :active
-    get(:index, filters: [["uuid", "=", collections(:foo_file).uuid]],
-        select: %w(uuid owner_uuid files))
-    assert_response :success
-    assert_equal(1, json_response["items"].andand.size,
-                 "wrong number of items returned for index")
-    assert_equal([[".", "foo", 3]], json_response["items"].first["files"],
-                 "wrong file list in index result")
-  end
-
-  test "can select only non-database fields for index" do
-    authorize_with :active
-    get(:index, select: %w(data_size files))
-    assert_response :success
-    assert(json_response["items"].andand.any?, "no items found in index")
-    json_response["items"].each do |coll|
-      assert_equal(coll["data_size"],
-                   coll["files"].inject(0) { |size, fspec| size + fspec.last },
-                   "mismatch between data size and file list")
-    end
-  end
-
   test "index with manifest_text selected returns signed locators" do
-    columns = %w(uuid owner_uuid data_size files manifest_text)
+    columns = %w(uuid owner_uuid manifest_text)
     authorize_with :active
     get :index, select: columns
     assert_response :success
@@ -127,41 +104,42 @@ EOS
     assert_response :success
     assert_nil assigns(:objects)
 
-    get :show, {
-      id: test_collection[:portable_data_hash]
-    }
-    assert_response :success
-    assert_not_nil assigns(:object)
-    resp = JSON.parse(@response.body)
-    assert_equal test_collection[:portable_data_hash], resp['portable_data_hash']
+    response_collection = assigns(:object)
+
+    stored_collection = Collection.select([:uuid, :portable_data_hash, :manifest_text]).
+      where(portable_data_hash: response_collection['portable_data_hash']).first
+
+    assert_equal test_collection[:portable_data_hash], stored_collection['portable_data_hash']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.
-    stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+    stripped_manifest = stored_collection['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
     assert_equal test_collection[:manifest_text], stripped_manifest
-    assert_equal 9, resp['data_size']
-    assert_equal [['.', 'foo.txt', 0],
-                  ['.', 'bar.txt', 6],
-                  ['./baz', 'bar.txt', 3]], resp['files']
+
+    # TBD: create action should add permission signatures to manifest_text in the response,
+    # and we need to check those permission signatures here.
   end
 
-  test "list of files is correct for empty manifest" do
-    authorize_with :active
-    test_collection = {
-      manifest_text: "",
-      portable_data_hash: "d41d8cd98f00b204e9800998ecf8427e+0"
-    }
-    post :create, {
-      collection: test_collection
-    }
-    assert_response :success
+  [:admin, :active].each do |user|
+    test "#{user} can get collection using portable data hash" do
+      authorize_with user
 
-    get :show, {
-      id: "d41d8cd98f00b204e9800998ecf8427e+0"
-    }
-    assert_response :success
-    resp = JSON.parse(@response.body)
-    assert_equal [], resp['files']
+      foo_collection = collections(:foo_file)
+
+      # Get foo_file using it's portable data has
+      get :show, {
+        id: foo_collection[:portable_data_hash]
+      }
+      assert_response :success
+      assert_not_nil assigns(:object)
+      resp = assigns(:object)
+      assert_equal foo_collection[:portable_data_hash], resp['portable_data_hash']
+
+      # The manifest in the response will have had permission hints added.
+      # Remove any permission hints in the response before comparing it to the source.
+      stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+      assert_equal foo_collection[:manifest_text], stripped_manifest
+    end
   end
 
   test "create with owner_uuid set to owned group" do
@@ -193,6 +171,27 @@ EOS
       }
     }
     assert_response 422
+    response_errors = json_response['errors']
+    assert_not_nil response_errors, 'Expected error in response'
+    assert(response_errors.first.include?('duplicate key'),
+           "Expected 'duplicate key' error in #{response_errors.first}")
+  end
+
+  test "create succeeds with duplicate name with ensure_unique_name" do
+    permit_unsigned_manifests
+    authorize_with :active
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e 0:0:foo.txt\n"
+    post :create, {
+      collection: {
+        owner_uuid: users(:active).uuid,
+        manifest_text: manifest_text,
+        portable_data_hash: "d30fe8ae534397864cb96c544f4cf102+47",
+        name: "owned_by_active"
+      },
+      ensure_unique_name: true
+    }
+    assert_response :success
+    assert_equal 'owned_by_active (2)', json_response['name']
   end
 
   test "create with owner_uuid set to group i can_manage" do
@@ -385,7 +384,6 @@ EOS
       assert_not_nil assigns(:object)
       resp = JSON.parse(@response.body)
       assert_equal manifest_uuid, resp['portable_data_hash']
-      assert_equal 48, resp['data_size']
       # All of the locators in the output must be signed.
       resp['manifest_text'].lines.each do |entry|
         m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
@@ -433,7 +431,6 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['portable_data_hash']
-    assert_equal 48, resp['data_size']
     # All of the locators in the output must be signed.
     resp['manifest_text'].lines.each do |entry|
       m = /([[:xdigit:]]{32}\+\S+)/.match(entry)
@@ -522,7 +519,6 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['portable_data_hash']
-    assert_equal 48, resp['data_size']
 
     # The manifest in the response will have had permission hints added.
     # Remove any permission hints in the response before comparing it to the source.
@@ -561,7 +557,6 @@ EOS
     assert_not_nil assigns(:object)
     resp = JSON.parse(@response.body)
     assert_equal manifest_uuid, resp['portable_data_hash']
-    assert_equal 48, resp['data_size']
     # All of the locators in the output must be signed.
     # Each line is of the form "path locator locator ... 0:0:file.txt"
     # entry.split[1..-2] will yield just the tokens in the middle of the line
@@ -591,4 +586,61 @@ EOS
     "Collection should not exist in database after failed create"
   end
 
+  test 'List expired collection returns empty list' do
+    authorize_with :active
+    get :index, {
+      where: {name: 'expired_collection'},
+    }
+    assert_response :success
+    found = assigns(:objects)
+    assert_equal 0, found.count
+  end
+
+  test 'Show expired collection returns 404' do
+    authorize_with :active
+    get :show, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+    }
+    assert_response 404
+  end
+
+  test 'Update expired collection returns 404' do
+    authorize_with :active
+    post :update, {
+      id: 'zzzzz-4zz18-mto52zx1s7sn3ih',
+      collection: {
+        name: "still expired"
+      }
+    }
+    assert_response 404
+  end
+
+  test 'List collection with future expiration time succeeds' do
+    authorize_with :active
+    get :index, {
+      where: {name: 'collection_expires_in_future'},
+    }
+    found = assigns(:objects)
+    assert_equal 1, found.count
+  end
+
+
+  test 'Show collection with future expiration time succeeds' do
+    authorize_with :active
+    get :show, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+    }
+    assert_response :success
+  end
+
+  test 'Update collection with future expiration time succeeds' do
+    authorize_with :active
+    post :update, {
+      id: 'zzzzz-4zz18-padkqo7yb8d9i3j',
+      collection: {
+        name: "still not expired"
+      }
+    }
+    assert_response :success
+  end
 end

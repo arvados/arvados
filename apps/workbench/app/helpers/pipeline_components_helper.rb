@@ -4,10 +4,12 @@ module PipelineComponentsHelper
       render(partial: "pipeline_instances/show_components_#{template_suffix}",
              locals: locals)
     rescue Exception => e
+      logger.error "#{e.inspect}"
       logger.error "#{e.backtrace.join("\n\t")}"
       case fallback
       when :json
-        render(partial: "pipeline_instances/show_components_json")
+        render(partial: "pipeline_instances/show_components_json",
+               locals: {error_name: e.inspect, backtrace: e.backtrace.join("\n\t")})
       end
     end
   end

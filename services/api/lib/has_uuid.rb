@@ -45,7 +45,7 @@ module HasUuid
         end
       else
         if self.new_record?
-          self.errors.add(:uuid, "assignment not permittid")
+          self.errors.add(:uuid, "assignment not permitted")
         else
           self.errors.add(:uuid, "change not permitted")
         end

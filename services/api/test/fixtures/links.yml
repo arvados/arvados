@@ -236,6 +236,20 @@ barbaz_job_readable_by_spectator:
   head_uuid: zzzzz-8i9sb-cjs4pklxxjykyuq
   properties: {}
 
+runningbarbaz_job_readable_by_spectator:
+  uuid: zzzzz-o0j2j-cpy7p41hpk531e2
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-01-24 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-01-24 20:42:26 -0800
+  updated_at: 2014-01-24 20:42:26 -0800
+  tail_uuid: zzzzz-tpzed-l1s2piq4t4mps8r
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-8i9sb-cjs4pklxxjykyuj
+  properties: {}
+
 foo_repository_readable_by_spectator:
   uuid: zzzzz-o0j2j-cpy7p41hpk5xxx
   owner_uuid: zzzzz-tpzed-000000000000000
@@ -262,6 +276,20 @@ foo_repository_manageable_by_active:
   link_class: permission
   name: can_manage
   head_uuid: zzzzz-s0uqq-382brsig8rp3666
+  properties: {}
+
+repository3_readable_by_active:
+  uuid: zzzzz-o0j2j-43iem9bdtefa76g
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-09-23 13:52:46 -0400
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-09-23 13:52:46 -0400
+  updated_at: 2014-09-23 13:52:46 -0400
+  tail_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  link_class: permission
+  name: can_read
+  head_uuid: zzzzz-s0uqq-38orljkqpyo1j61
   properties: {}
 
 miniadmin_user_is_a_testusergroup_admin:
