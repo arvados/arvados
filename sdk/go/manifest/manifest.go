@@ -77,6 +77,10 @@ func (m *Manifest) LineIter() <-chan ManifestLine {
 			// the first few lines.
 			ch <- parseManifestLine(scanner.Text())
 		}
+		if err := scanner.Err(); err != nil {
+			log.Fatalf("Error encountered iterating through manifest lines: %v",
+				err)
+		}
 		close(ch)
 	}(m.Text)
 	return ch
