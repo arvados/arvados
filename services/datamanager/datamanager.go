@@ -30,7 +30,7 @@ func main() {
 		collection.GetCollectionsParams{
 			Client: arv, Limit: 50, LogEveryNthCollectionProcessed: 10})
 
-	//log.Printf("Read Collections: %v", readCollections)
+	log.Printf("Read Collections: %v", readCollections)
 
 	// TODO(misha): Add a "readonly" flag. If we're in readonly mode,
 	// lots of behaviors can become warnings (and obviously we can't

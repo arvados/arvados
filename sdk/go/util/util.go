@@ -8,6 +8,35 @@ import (
 	"log"
 )
 
+type SdkListResponse interface {
+	NumItemsAvailable() (int, error)
+	NumItemsContained() (int, error)
+}
+
+type UnstructuredSdkListResponse map[string]interface{}
+
+func (m UnstructuredSdkListResponse) NumItemsAvailable() (numAvailable int, err error) {
+	if itemsAvailable, ok := m["items_available"]; !ok {
+		err = errors.New("Could not find \"items_available\" field in " +
+			"UnstructuredSdkListResponse that NumItemsAvailable was called on.")
+	} else {
+		// TODO(misha): Check whether this assertion will work before casting
+		numAvailable = int(itemsAvailable.(float64))
+	}
+	return
+}
+
+func (m UnstructuredSdkListResponse) NumItemsContained() (numContained int, err error) {
+	if value, ok := m["items"]; ok {
+		// TODO(misha): check whether this assertion will work before casting
+		numContained = len(value.([]interface{}))
+	} else {
+		err = errors.New(`Could not find "items" field in ` +
+			"UnstructuredSdkListResponse that NumItemsContained was called on.")
+	}
+	return
+}
+
 func UserIsAdmin(arv arvadosclient.ArvadosClient) (is_admin bool, err error) {
 	type user struct {
 		IsAdmin bool `json:"is_admin"`
@@ -17,23 +46,21 @@ func UserIsAdmin(arv arvadosclient.ArvadosClient) (is_admin bool, err error) {
 	return u.IsAdmin, err
 }
 
-func SdkListResponseContainsAllAvailableItems(response map[string]interface{}) (containsAll bool, numContained int, numAvailable int) {
-	if value, ok := response["items"]; ok {
-		items := value.([]interface{})
-		{
-			var itemsAvailable interface{}
-			if itemsAvailable, ok = response["items_available"]; !ok {
-				// TODO(misha): Consider returning an error here (and above if
-				// we can't find items) so that callers can recover.
-				log.Fatalf("API server did not return the number of items available")
-			}
-			numContained = len(items)
-			numAvailable = int(itemsAvailable.(float64))
-			// If we never entered this block, allAvailable would be false by
-			// default, which is what we want
-			containsAll = numContained == numAvailable
-		}
+// TODO(misha): Consider returning an error here instead of fatal'ing
+func ContainsAllAvailableItems(response SdkListResponse) (containsAll bool, numContained int, numAvailable int) {
+	var err error
+	numContained, err = response.NumItemsContained()
+	if err != nil {
+		log.Fatalf("Error retrieving number of items contained in SDK response: %v",
+			err)
 	}
+	numAvailable, err = response.NumItemsAvailable()
+	if err != nil {
+		log.Fatalf("Error retrieving number of items available from " +
+			"SDK response: %v",
+			err)
+	}
+	containsAll = numContained == numAvailable
 	return
 }
 

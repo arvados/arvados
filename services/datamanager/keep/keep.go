@@ -10,8 +10,8 @@ import (
 )
 
 type ServerAddress struct {
-	Host string
-	Port int
+	Host string `json:"service_host"`
+	Port int `json:"service_port"`
 }
 
 type ServerContents struct {
@@ -28,6 +28,21 @@ type GetKeepServersParams struct {
 	Limit int
 }
 
+type KeepServiceList struct {
+	ItemsAvailable int `json:"items_available"`
+	Items []ServerAddress `json:"items"`
+}
+
+// Methods to implement util.SdkListResponse Interface
+func (k KeepServiceList) NumItemsAvailable() (numAvailable int, err error) {
+	return k.ItemsAvailable, nil
+}
+
+func (k KeepServiceList) NumItemsContained() (numContained int, err error) {
+	return len(k.Items), nil
+}
+
+
 // TODO(misha): Send Keep requests in parallel
 func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 	if &params.Client == nil {
@@ -40,16 +55,18 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 		sdkParams["limit"] = params.Limit
 	}
 
-	var sdkResponse map[string]interface{}
-	err := params.Client.List("keep_disks", sdkParams, &sdkResponse)
+	var sdkResponse KeepServiceList
+	err := params.Client.List("keep_services", sdkParams, &sdkResponse)
 	if err != nil {
 		log.Fatalf("Error requesting keep disks from API server: %v", err)
 	}
 
+	log.Printf("Received keep services list: %v", sdkResponse)
+
 	{
 		var numReceived, numAvailable int
 		results.ReadAllServers, numReceived, numAvailable =
-			util.SdkListResponseContainsAllAvailableItems(sdkResponse)
+			util.ContainsAllAvailableItems(sdkResponse)
 
 		if (!results.ReadAllServers) {
 			log.Printf("ERROR: Did not receive all keep server addresses.")
@@ -58,20 +75,5 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers) {
 			numReceived,
 			numAvailable)
 	}
-
-	if addressChannel, err := util.IterateSdkListItems(sdkResponse); err != nil {
-		log.Fatalf("Error trying to iterate keep server addresses returned " +
-			"by SDK: %v", err)
-	} else {
-		results.AddressToContents = make(map[ServerAddress]ServerContents)
-		for addressMap := range addressChannel {
-			log.Printf("%v", addressMap)
-			address := ServerAddress{Host: addressMap["service_host"].(string),
-				Port: addressMap["service_port"].(int)}
-			contents := ServerContents{BlockDigestToSize: make(map[string]int)}
-			results.AddressToContents[address] = contents
-		}
-	}
-
 	return
 }

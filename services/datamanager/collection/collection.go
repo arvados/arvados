@@ -10,10 +10,10 @@ import (
 )
 
 type Collection struct {
-	BlockDigestToSize map[string]int
-	ReplicationLevel int
 	Uuid string
 	OwnerUuid string
+	ReplicationLevel int
+	BlockDigestToSize map[string]int
 }
 
 type ReadCollections struct {
@@ -27,8 +27,26 @@ type GetCollectionsParams struct {
 	LogEveryNthCollectionProcessed int  // 0 means don't report any
 }
 
+type SdkCollectionInfo struct {
+	Uuid           string   `json:"uuid"`
+	OwnerUuid      string   `json:"owner_uuid"`
+	Redundancy     int      `json:"redundancy"`
+	ManifestText   string   `json:"manifest_text"`
+}
 
+type SdkCollectionList struct {
+	ItemsAvailable   int                   `json:"items_available"`
+	Items            []SdkCollectionInfo   `json:"items"`
+}
 
+// Methods to implement util.SdkListResponse Interface
+func (s SdkCollectionList) NumItemsAvailable() (numAvailable int, err error) {
+	return s.ItemsAvailable, nil
+}
+
+func (s SdkCollectionList) NumItemsContained() (numContained int, err error) {
+	return len(s.Items), nil
+}
 
 func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	if &params.Client == nil {
@@ -47,7 +65,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 		sdkParams["limit"] = params.Limit
 	}
 
-	var collections map[string]interface{}
+	var collections SdkCollectionList
 	err := params.Client.List("collections", sdkParams, &collections)
 	if err != nil {
 		log.Fatalf("error querying collections: %v", err)
@@ -56,7 +74,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 	{
 		var numReceived, numAvailable int
 		results.ReadAllCollections, numReceived, numAvailable =
-			util.SdkListResponseContainsAllAvailableItems(collections)
+			util.ContainsAllAvailableItems(collections)
 
 		if (!results.ReadAllCollections) {
 			log.Printf("ERROR: Did not receive all collections.")
@@ -66,35 +84,32 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections) {
 			numAvailable)
 	}
 
-	if collectionChannel, err := util.IterateSdkListItems(collections); err != nil {
-		log.Fatalf("Error trying to iterate collections returned by SDK: %v", err)
-	} else {
-		index := 0
-	 	results.UuidToCollection = make(map[string]Collection)
-		for item_map := range collectionChannel {
-			index += 1
-			if m := params.LogEveryNthCollectionProcessed; m >0 && (index % m) == 0 {
-				log.Printf("Processing collection #%d", index)
-			}
-			collection := Collection{Uuid: item_map["uuid"].(string),
-				OwnerUuid: item_map["owner_uuid"].(string),
-				BlockDigestToSize: make(map[string]int)}
-			manifest := manifest.Manifest{item_map["manifest_text"].(string)}
-			blockChannel := manifest.BlockIterWithDuplicates()
-			for block := range blockChannel {
-				if stored_size, stored := collection.BlockDigestToSize[block.Digest];
-				stored && stored_size != block.Size {
-					log.Fatalf(
-						"Collection %s contains multiple sizes (%d and %d) for block %s",
-						collection.Uuid,
-						stored_size,
-						block.Size,
-						block.Digest)
-				}
-				collection.BlockDigestToSize[block.Digest] = block.Size
-			}
-			results.UuidToCollection[collection.Uuid] = collection
+	results.UuidToCollection = make(map[string]Collection)
+	for i, sdkCollection := range collections.Items {
+		count := i + 1
+		if m := params.LogEveryNthCollectionProcessed; m >0 && (count % m) == 0 {
+			log.Printf("Processing collection #%d", count)
 		}
+		collection := Collection{Uuid: sdkCollection.Uuid,
+			OwnerUuid: sdkCollection.OwnerUuid,
+			ReplicationLevel: sdkCollection.Redundancy,
+			BlockDigestToSize: make(map[string]int)}
+		manifest := manifest.Manifest{sdkCollection.ManifestText}
+		blockChannel := manifest.BlockIterWithDuplicates()
+		for block := range blockChannel {
+			if stored_size, stored := collection.BlockDigestToSize[block.Digest];
+			stored && stored_size != block.Size {
+				log.Fatalf(
+					"Collection %s contains multiple sizes (%d and %d) for block %s",
+					collection.Uuid,
+					stored_size,
+					block.Size,
+					block.Digest)
+			}
+			collection.BlockDigestToSize[block.Digest] = block.Size
+		}
+		results.UuidToCollection[collection.Uuid] = collection
 	}
+
 	return
 }
