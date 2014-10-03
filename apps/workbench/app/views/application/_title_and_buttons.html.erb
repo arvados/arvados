@@ -50,6 +50,7 @@
 <% end %>
 
 <%
+  # Display any flash messages in an alert. If there is any entry with "error" key, alert-danger is used. 
   flash_msg = ''
   flash_msg_is_error = false
   flash.each do |msg|
