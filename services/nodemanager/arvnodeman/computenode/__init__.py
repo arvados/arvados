@@ -1,0 +1,279 @@
+#!/usr/bin/env python
+
+import functools
+import itertools
+import logging
+import time
+
+import pykka
+
+from ..clientactor import _notify_subscribers
+from .. import config
+
+def arvados_node_mtime(node):
+    return time.mktime(time.strptime(node['modified_at'] + 'UTC',
+                                     '%Y-%m-%dT%H:%M:%SZ%Z')) - time.timezone
+
+def timestamp_fresh(timestamp, fresh_time):
+    return (time.time() - timestamp) < fresh_time
+
+def _retry(errors):
+    def decorator(orig_func):
+        @functools.wraps(orig_func)
+        def wrapper(self, *args, **kwargs):
+            try:
+                orig_func(self, *args, **kwargs)
+            except errors as error:
+                self._logger.warning(
+                    "Client error: %s - waiting %s seconds",
+                    error, self.retry_wait)
+                self._timer.schedule(self.retry_wait,
+                                     getattr(self._later, orig_func.__name__),
+                                     *args, **kwargs)
+                self.retry_wait = min(self.retry_wait * 2,
+                                      self.max_retry_wait)
+            else:
+                self.retry_wait = self.min_retry_wait
+        return wrapper
+    return decorator
+
+class BaseComputeNodeDriver(object):
+    def __init__(self, auth_kwargs, list_kwargs, create_kwargs, driver_class):
+        self.real = driver_class(**auth_kwargs)
+        self.list_kwargs = list_kwargs
+        self.create_kwargs = create_kwargs
+
+    def __getattr__(self, name):
+        # Proxy non-extension methods to the real driver.
+        if (not name.startswith('_') and not name.startswith('ex_')
+              and hasattr(self.real, name)):
+            return getattr(self.real, name)
+        else:
+            return super(BaseComputeNodeDriver, self).__getattr__(name)
+
+    def search_for(self, term, list_method, key=lambda item: item.id):
+        cache_key = (list_method, term)
+        if cache_key not in self.SEARCH_CACHE:
+            results = [item for item in getattr(self.real, list_method)()
+                       if key(item) == term]
+            count = len(results)
+            if count != 1:
+                raise ValueError("{} returned {} results for '{}'".format(
+                        list_method, count, term))
+            self.SEARCH_CACHE[cache_key] = results[0]
+        return self.SEARCH_CACHE[cache_key]
+
+    def list_nodes(self):
+        return self.real.list_nodes(**self.list_kwargs)
+
+    def arvados_create_kwargs(self, arvados_node):
+        raise NotImplementedError("BaseComputeNodeDriver.arvados_create_kwargs")
+
+    def create_node(self, size, arvados_node):
+        kwargs = self.create_kwargs.copy()
+        kwargs.update(self.arvados_create_kwargs(arvados_node))
+        kwargs['size'] = size
+        return self.real.create_node(**kwargs)
+
+    def post_create_node(self, cloud_node, arvados_node):
+        pass
+
+    @classmethod
+    def node_start_time(cls, node):
+        raise NotImplementedError("BaseComputeNodeDriver.node_start_time")
+
+
+ComputeNodeDriverClass = BaseComputeNodeDriver
+
+class ComputeNodeSetupActor(config.actor_class):
+    def __init__(self, timer_actor, arvados_client, cloud_client,
+                 cloud_size, arvados_node=None,
+                 retry_wait=1, max_retry_wait=180):
+        super(ComputeNodeSetupActor, self).__init__()
+        self._timer = timer_actor
+        self._arvados = arvados_client
+        self._cloud = cloud_client
+        self._later = self.actor_ref.proxy()
+        self._logger = logging.getLogger('arvnodeman.nodeup')
+        self.cloud_size = cloud_size
+        self.subscribers = set()
+        self.min_retry_wait = retry_wait
+        self.max_retry_wait = max_retry_wait
+        self.retry_wait = retry_wait
+        self.arvados_node = None
+        self.cloud_node = None
+        if arvados_node is None:
+            self._later.create_arvados_node()
+        else:
+            self._later.prepare_arvados_node(arvados_node)
+
+    @_retry(config.ARVADOS_ERRORS)
+    def create_arvados_node(self):
+        self.arvados_node = self._arvados.nodes().create(body={}).execute()
+        self._later.create_cloud_node()
+
+    @_retry(config.ARVADOS_ERRORS)
+    def prepare_arvados_node(self, node):
+        self.arvados_node = self._arvados.nodes().update(
+            uuid=node['uuid'],
+            body={'hostname': None,
+                  'ip_address': None,
+                  'slot_number': None,
+                  'first_ping_at': None,
+                  'last_ping_at': None,
+                  'info': {'ec2_instance_id': None,
+                           'last_action': "Prepared by Node Manager"}}
+            ).execute()
+        self._later.create_cloud_node()
+
+    @_retry(config.CLOUD_ERRORS)
+    def create_cloud_node(self):
+        self._logger.info("Creating cloud node with size %s.",
+                          self.cloud_size.name)
+        self.cloud_node = self._cloud.create_node(self.cloud_size,
+                                                  self.arvados_node)
+        self._logger.info("Cloud node %s created.  Setting up.",
+                          self.cloud_node.id)
+        self._later.setup_cloud_node()
+
+    @_retry(config.CLOUD_ERRORS)
+    def setup_cloud_node(self):
+        self._cloud.post_create_node(self.cloud_node, self.arvados_node)
+        self._logger.info("Cloud node %s set up.", self.cloud_node.id)
+        _notify_subscribers(self._later, self.subscribers)
+        self.subscribers = None
+
+    def stop_if_no_cloud_node(self):
+        if self.cloud_node is None:
+            self.stop()
+
+    def subscribe(self, subscriber):
+        if self.subscribers is None:
+            try:
+                subscriber(self._later)
+            except pykka.ActorDeadError:
+                pass
+        else:
+            self.subscribers.add(subscriber)
+
+
+class ComputeNodeShutdownActor(config.actor_class):
+    def __init__(self, timer_actor, cloud_client, cloud_node,
+                 retry_wait=1, max_retry_wait=180):
+        super(ComputeNodeShutdownActor, self).__init__()
+        self._timer = timer_actor
+        self._cloud = cloud_client
+        self._later = self.actor_ref.proxy()
+        self._logger = logging.getLogger('arvnodeman.nodedown')
+        self.cloud_node = cloud_node
+        self.min_retry_wait = retry_wait
+        self.max_retry_wait = max_retry_wait
+        self.retry_wait = retry_wait
+        self._later.shutdown_node()
+
+    @_retry(config.CLOUD_ERRORS)
+    def shutdown_node(self):
+        self._cloud.destroy_node(self.cloud_node)
+        self._logger.info("Cloud node %s shut down.", self.cloud_node.id)
+
+
+class ShutdownTimer(object):
+    def __init__(self, start_time, shutdown_windows):
+        first_window = shutdown_windows[0]
+        shutdown_windows = list(shutdown_windows[1:])
+        self._next_opening = start_time + (60 * first_window)
+        if len(shutdown_windows) % 2:
+            shutdown_windows.append(first_window)
+        else:
+            shutdown_windows[-1] += first_window
+        self.shutdown_windows = itertools.cycle([60 * n
+                                                 for n in shutdown_windows])
+        self._open_start = self._next_opening
+        self._open_for = next(self.shutdown_windows)
+
+    def _advance_opening(self):
+        while self._next_opening < time.time():
+            self._open_start = self._next_opening
+            self._next_opening += self._open_for + next(self.shutdown_windows)
+            self._open_for = next(self.shutdown_windows)
+
+    def next_opening(self):
+        self._advance_opening()
+        return self._next_opening
+
+    def window_open(self):
+        self._advance_opening()
+        return 0 < (time.time() - self._open_start) < self._open_for
+
+
+class ComputeNodeActor(config.actor_class):
+    def __init__(self, cloud_node, cloud_node_start_time, shutdown_timer,
+                 timer_actor, arvados_node=None,
+                 poll_stale_after=600, node_stale_after=3600):
+        super(ComputeNodeActor, self).__init__()
+        self._later = self.actor_ref.proxy()
+        self._logger = logging.getLogger('arvnodeman.computenode')
+        self._last_log = None
+        self._shutdowns = shutdown_timer
+        self._timer = timer_actor
+        self.cloud_node = cloud_node
+        self.cloud_node_start_time = cloud_node_start_time
+        self.arvados_node = arvados_node
+        self.poll_stale_after = poll_stale_after
+        self.node_stale_after = node_stale_after
+        self.subscribers = set()
+        self.last_shutdown_opening = None
+        self._later.consider_shutdown()
+
+    def subscribe(self, subscriber):
+        self.subscribers.add(subscriber)
+
+    def _debug(self, msg, *args):
+        if msg == self._last_log:
+            return
+        self._last_log = msg
+        self._logger.debug(msg, *args)
+
+    def _shutdown_eligible(self):
+        if self.arvados_node is None:
+            return timestamp_fresh(self.cloud_node_start_time,
+                                   self.node_stale_after)
+        else:
+            return (timestamp_fresh(arvados_node_mtime(self.arvados_node),
+                                    self.poll_stale_after) and
+                    (self.arvados_node['info'].get('slurm_state') == 'idle'))
+
+    def consider_shutdown(self):
+        next_opening = self._shutdowns.next_opening()
+        if self._shutdowns.window_open():
+            if self._shutdown_eligible():
+                self._debug("Node %s suggesting shutdown.", self.cloud_node.id)
+                _notify_subscribers(self._later, self.subscribers)
+            else:
+                self._debug("Node %s shutdown window open but node busy.",
+                            self.cloud_node.id)
+        else:
+            self._debug("Node %s shutdown window closed.  Next at %s.",
+                        self.cloud_node.id, time.ctime(next_opening))
+        if self.last_shutdown_opening != next_opening:
+            self._timer.schedule(next_opening, self._later.consider_shutdown)
+            self.last_shutdown_opening = next_opening
+
+    def offer_arvados_pair(self, arvados_node):
+        if self.arvados_node is not None:
+            return None
+        elif arvados_node['ip_address'] in self.cloud_node.private_ips:
+            self.arvados_node = arvados_node
+            return self.cloud_node.id
+        else:
+            return None
+
+    def update_cloud_node(self, cloud_node):
+        if cloud_node is not None:
+            self.cloud_node = cloud_node
+            self._later.consider_shutdown()
+
+    def update_arvados_node(self, arvados_node):
+        if arvados_node is not None:
+            self.arvados_node = arvados_node
+            self._later.consider_shutdown()
