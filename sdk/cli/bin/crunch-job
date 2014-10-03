@@ -883,7 +883,7 @@ if ($collated_output && $main::success) {
 } else {
   $final_state = 'Failed';
 }
-$Job->update_attributes('state' => $final_state)
+$Job->update_attributes('state' => $final_state);
 
 exit (($final_state eq 'Complete') ? 0 : 1);
 
